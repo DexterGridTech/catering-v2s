@@ -1,0 +1,192 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+import process from "node:process";
+
+const repoRoot = path.resolve(import.meta.dirname, "../..");
+const handoffPath = path.join(repoRoot, "HANDOFF.md");
+const COLUMNS = [
+  "id",
+  "currentBoundary",
+  "deferredReason",
+  "risk",
+  "activationTrigger",
+  "futureAcceptanceEvidence",
+  "decisionSource",
+];
+const APPROVED = [
+  {
+    id: "CI_EXECUTION_PLATFORM",
+    currentBoundary: "`scripts/verify` 由 Codex/Claude 本地显式执行，无 CI 平台",
+    deferredReason: "solo+AI 阶段先保留证据语义",
+    risk: "人工漏跑验证",
+    activationTrigger: "CI_PROVIDER_SELECTED",
+    futureAcceptanceEvidence: "provider workflow 运行 verify、保存 business/cleanup 与失败红例",
+    decisionSource: [{"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### H.1 现在就做(仅三件 + 一个顺手项)"}],
+  },
+  {
+    id: "BACKUP_RESTORE",
+    currentBoundary: "仅本地/单服务器开发数据，无恢复演练",
+    deferredReason: "当前未启用持久生产环境",
+    risk: "数据丢失后不可恢复",
+    activationTrigger: "PERSISTENT_ENVIRONMENT_ENABLED",
+    futureAcceptanceEvidence: "加密备份、恢复演练、RPO/RTO 结果与 cleanup PASS",
+    decisionSource: [{"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### H.2 本阶段明确不做"}],
+  },
+  {
+    id: "SECRET_ROTATION",
+    currentBoundary: "仅本地开发密钥边界",
+    deferredReason: "当前无非本地 secret store",
+    risk: "凭据长期不轮换",
+    activationTrigger: "NON_LOCAL_SECRET_STORE_ENABLED",
+    futureAcceptanceEvidence: "双版本轮换、撤销旧密钥、应用无中断 readback",
+    decisionSource: [{"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### H.2 本阶段明确不做"}],
+  },
+  {
+    id: "HEALTH_READINESS",
+    currentBoundary: "受管启动复用 walking-skeleton 入口断言，不建第二端点",
+    deferredReason: "防止漂移探针",
+    risk: "编排器无法判定接流/摘流",
+    activationTrigger: "ORCHESTRATOR_REQUIRES_PROBES",
+    futureAcceptanceEvidence: "liveness/readiness contract、故障红例、编排器接流/摘流证据",
+    decisionSource: [{"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### H.1 现在就做(仅三件 + 一个顺手项)"}],
+  },
+  {
+    id: "DEPLOYMENT_ROLLBACK",
+    currentBoundary: "单服务器重启即部署，无独立回滚故事",
+    deferredReason: "当前无第二部署环境",
+    risk: "失败发布恢复依赖人工",
+    activationTrigger: "SECOND_DEPLOYMENT_ENVIRONMENT_ENABLED",
+    futureAcceptanceEvidence: "前后版本部署/回滚演练、schema compatibility 与 cleanup PASS",
+    decisionSource: [{"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### H.2 本阶段明确不做"}],
+  },
+  {
+    id: "METRICS_ALERTING",
+    currentBoundary: "run-scoped 结构化日志，无生产指标/告警平台",
+    deferredReason: "当前无生产流量",
+    risk: "故障只能被动发现",
+    activationTrigger: "PRODUCTION_TRAFFIC_ENABLED",
+    futureAcceptanceEvidence: "SLI/SLO、告警触发/恢复红绿证据、owner routing",
+    decisionSource: [{"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### H.2 本阶段明确不做"}],
+  },
+  {
+    id: "RUNTIME_DB_ROLE_ISOLATION",
+    currentBoundary: "单 runtime DB role，可访问多 owner schema",
+    deferredReason: "solo+AI 单 deployable 暂不拆 credential",
+    risk: "单凭据扩大 schema blast radius",
+    activationTrigger: "SECURITY_REVIEW_REQUIRES_SCHEMA_SCOPED_RUNTIME_CREDENTIALS",
+    futureAcceptanceEvidence: "schema-scoped credential design、权限矩阵、跨 schema command/read/FK 回归",
+    decisionSource: [{"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "## 11. HANDOFF 初始生产化欠账"}],
+  },
+];
+
+function assert(condition, code, details = "") {
+  if (!condition) throw new Error(`${code}${details ? `: ${details}` : ""}`);
+}
+
+function parseTable(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const headerIndex = lines.findIndex((line) => line.trim() === `| ${COLUMNS.join(" | ")} |`);
+  assert(headerIndex >= 0, "HANDOFF_HEADER_MISSING");
+  assert(/^\|(?:---\|){6}---\|$/.test(lines[headerIndex + 1].replaceAll(" ", "")), "HANDOFF_SEPARATOR_INVALID");
+  const rows = [];
+  for (const line of lines.slice(headerIndex + 2)) {
+    if (!line.startsWith("|")) break;
+    const cells = line.slice(1, -1).split("|").map((cell) => cell.trim());
+    assert(cells.length === COLUMNS.length, "HANDOFF_COLUMN_COUNT_INVALID");
+    const row = Object.fromEntries(COLUMNS.map((column, index) => [column, cells[index]]));
+    try {
+      row.decisionSource = JSON.parse(row.decisionSource);
+    } catch {
+      throw new Error(`HANDOFF_DECISION_SOURCE_JSON_INVALID: ${row.id}`);
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function validateDecisionSources(row, {verifySources = true} = {}) {
+  assert(Array.isArray(row.decisionSource) && row.decisionSource.length > 0, "HANDOFF_DECISION_SOURCE_ARRAY_REQUIRED", row.id);
+  for (const source of row.decisionSource) {
+    assert(
+      source && typeof source === "object" && !Array.isArray(source) &&
+        JSON.stringify(Object.keys(source).sort()) === JSON.stringify(["anchor", "path"]),
+      "HANDOFF_DECISION_SOURCE_SHAPE_INVALID",
+      row.id,
+    );
+    assert(typeof source.path === "string" && !path.isAbsolute(source.path) && !source.path.includes(".."), "HANDOFF_DECISION_SOURCE_PATH_INVALID", row.id);
+    assert(typeof source.anchor === "string" && /^#{1,6} /.test(source.anchor), "HANDOFF_DECISION_SOURCE_ANCHOR_INVALID", row.id);
+    if (verifySources) {
+      const sourcePath = path.resolve(repoRoot, source.path);
+      assert(sourcePath.startsWith(`${repoRoot}${path.sep}`), "HANDOFF_DECISION_SOURCE_PATH_ESCAPE", row.id);
+      assert(fs.existsSync(sourcePath), "HANDOFF_DECISION_SOURCE_PATH_MISSING", row.id);
+      const sourceLines = fs.readFileSync(sourcePath, "utf8").split(/\r?\n/);
+      assert(sourceLines.includes(source.anchor), "HANDOFF_DECISION_SOURCE_ANCHOR_MISSING", row.id);
+    }
+  }
+}
+
+function validateRows(rows, {verifySources = true, compareApproved = true} = {}) {
+  assert(rows.length === 7, "HANDOFF_ROW_COUNT_INVALID");
+  const ids = rows.map(({id}) => id);
+  assert(new Set(ids).size === ids.length, "HANDOFF_ID_DUPLICATE");
+  for (const row of rows) {
+    assert(/^[A-Z][A-Z0-9_]*$/.test(row.activationTrigger), "HANDOFF_TRIGGER_GRAMMAR_INVALID", row.id);
+    assert(!/(?:^|_)(?:AND|OR)(?:_|$)/.test(row.activationTrigger), "HANDOFF_TRIGGER_COMPOUND_FORBIDDEN", row.id);
+    validateDecisionSources(row, {verifySources});
+  }
+  if (compareApproved) {
+    assert(JSON.stringify(rows) === JSON.stringify(APPROVED), "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");
+  }
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function expectFail(name, mutate, expectedCode, {verifySources = false} = {}) {
+  const rows = clone(APPROVED);
+  mutate(rows);
+  try {
+    validateRows(rows, {verifySources, compareApproved: true});
+  } catch (error) {
+    assert(error.message.startsWith(expectedCode), "HANDOFF_SELF_TEST_WRONG_FAILURE", `${name}: ${error.message}`);
+    process.stdout.write(`FIXTURE=${name}; EXPECTED=FAIL; ACTUAL=FAIL; CODE=${expectedCode}\n`);
+    return;
+  }
+  throw new Error(`HANDOFF_SELF_TEST_FALSE_GREEN: ${name}`);
+}
+
+function selfTest() {
+  validateRows(clone(APPROVED), {verifySources: true, compareApproved: true});
+  process.stdout.write("FIXTURE=seven-approved-rows; EXPECTED=PASS; ACTUAL=PASS\n");
+  expectFail("vague-trigger", (rows) => { rows[0].activationTrigger = "WHEN_NEEDED"; }, "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");
+  expectFail("compound-trigger", (rows) => { rows[0].activationTrigger = "CI_PROVIDER_SELECTED_AND_ENABLED"; }, "HANDOFF_TRIGGER_COMPOUND_FORBIDDEN");
+  expectFail("missing-threshold-trigger", (rows) => { rows[0].activationTrigger = "TEAM_GT_N"; }, "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");
+  expectFail("non-observable-trigger", (rows) => { rows[0].activationTrigger = "SCALE_GROWS"; }, "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");
+  expectFail("unknown-token", (rows) => { rows[0].activationTrigger = "UNKNOWN_FACT"; }, "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");
+  expectFail("alias-only-source", (rows) => { rows[0].decisionSource = ["manifest H.1"]; }, "HANDOFF_DECISION_SOURCE_SHAPE_INVALID");
+  expectFail("missing-source-path", (rows) => { rows[0].decisionSource = [{"anchor": "### H.1 现在就做(仅三件 + 一个顺手项)"}]; }, "HANDOFF_DECISION_SOURCE_SHAPE_INVALID");
+  expectFail("free-text-combined-source", (rows) => { rows[0].decisionSource = ["manifest H.1 + ADR 11"]; }, "HANDOFF_DECISION_SOURCE_SHAPE_INVALID");
+  expectFail(
+    "unresolved-anchor",
+    (rows) => { rows[0].decisionSource[0].anchor = "### DOES NOT EXIST"; },
+    "HANDOFF_DECISION_SOURCE_ANCHOR_MISSING",
+    {verifySources: true},
+  );
+  process.stdout.write("HANDOFF_DEBT_SELF_TEST=PASS\n");
+}
+
+try {
+  if (process.argv.includes("--self-test")) {
+    selfTest();
+  } else {
+    const rows = parseTable(fs.readFileSync(handoffPath, "utf8"));
+    validateRows(rows);
+    process.stdout.write("HANDOFF_DEBT=PASS\n");
+  }
+} catch (error) {
+  process.stderr.write(`HANDOFF_DEBT=FAIL; ${error.message}\n`);
+  process.exitCode = 1;
+}

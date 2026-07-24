@@ -1,0 +1,485 @@
+#!/usr/bin/env node
+
+import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const phaseOrder = new Map([
+  ["R2", 2],
+  ["R3", 3],
+  ["R4", 4],
+  ["R5", 5],
+  ["R6", 6],
+]);
+
+function sha256(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+function fail(reason) {
+  throw new Error(reason);
+}
+
+function parseStructuralRules(source) {
+  const units = [];
+  const numberedOrdinals = new Map();
+  const bulletOrdinals = new Map();
+  const tableOrdinals = new Map();
+  let part = "";
+  let section = "";
+  let inTable = false;
+  let tableRowIndex = 0;
+
+  for (const line of source.split("\n")) {
+    if (line.startsWith("## Part B.")) {
+      part = "B";
+      section = "";
+    } else if (line.startsWith("## Part C.")) {
+      part = "C";
+      section = "C";
+    } else if (line.startsWith("## Part D.")) {
+      part = "D";
+      section = "";
+    } else if (line.startsWith("## Part ") && !/^## Part [BCD]\./.test(line)) {
+      part = "";
+      section = "";
+    }
+
+    const sectionMatch = line.match(/^### ([BD]\.\d+)\b/);
+    if (sectionMatch) {
+      section = sectionMatch[1];
+    }
+
+    if (line.startsWith("|") && (part === "C" || part === "D")) {
+      if (!inTable) {
+        inTable = true;
+        tableRowIndex = 0;
+      }
+      tableRowIndex += 1;
+      if (tableRowIndex <= 2) {
+        continue;
+      }
+      const key = section || part;
+      const ordinal = (tableOrdinals.get(key) || 0) + 1;
+      tableOrdinals.set(key, ordinal);
+      units.push({
+        ruleId:
+          part === "C"
+            ? `C.T${String(ordinal).padStart(2, "0")}`
+            : `${section}.T${String(ordinal).padStart(2, "0")}`,
+        section: section || part,
+        type: "TABLE",
+        ordinal,
+        textSha256: sha256(line),
+      });
+      continue;
+    }
+    inTable = false;
+
+    if (part === "B" && /^(\d+)\.\s/.test(line)) {
+      const ordinal = (numberedOrdinals.get(section) || 0) + 1;
+      numberedOrdinals.set(section, ordinal);
+      units.push({
+        ruleId: `${section}.N${String(ordinal).padStart(2, "0")}`,
+        section,
+        type: "NUMBERED",
+        ordinal,
+        textSha256: sha256(line),
+      });
+    } else if (part === "D" && line.startsWith("- ")) {
+      const ordinal = (bulletOrdinals.get(section) || 0) + 1;
+      bulletOrdinals.set(section, ordinal);
+      units.push({
+        ruleId: `${section}.L${String(ordinal).padStart(2, "0")}`,
+        section,
+        type: "BULLET",
+        ordinal,
+        textSha256: sha256(line),
+      });
+    }
+  }
+
+  return {
+    units,
+    counts: {
+      partBNumbered: units.filter((unit) => unit.type === "NUMBERED").length,
+      partCTableRows: units.filter(
+        (unit) => unit.section === "C" && unit.type === "TABLE",
+      ).length,
+      partDBullets: units.filter(
+        (unit) => unit.section.startsWith("D.") && unit.type === "BULLET",
+      ).length,
+      partDTableRows: units.filter(
+        (unit) => unit.section.startsWith("D.") && unit.type === "TABLE",
+      ).length,
+      total: units.length,
+    },
+  };
+}
+
+function readMatrix(root, matrixPath) {
+  const absolutePath = path.join(root, matrixPath);
+  if (!fs.existsSync(absolutePath)) {
+    fail(`MATRIX_NOT_FOUND:${matrixPath}`);
+  }
+  try {
+    return JSON.parse(fs.readFileSync(absolutePath, "utf8"));
+  } catch {
+    fail(`MATRIX_INVALID_JSON:${matrixPath}`);
+  }
+}
+
+function validateMemoryRef(root, ruleId, memoryRef) {
+  const [relativePath, assertionKey] = memoryRef.split("#");
+  if (
+    !relativePath ||
+    !assertionKey ||
+    relativePath === "project-memory/index.md" ||
+    !/^project-memory\/(kernel|decisions|operations|pitfalls)\/[^/]+\.md$/.test(
+      relativePath,
+    )
+  ) {
+    fail(`MEMORY_REF_INVALID:${ruleId}:${memoryRef}`);
+  }
+  const absolutePath = path.join(root, relativePath);
+  if (!fs.existsSync(absolutePath)) {
+    fail(`MEMORY_REF_NOT_FOUND:${ruleId}:${relativePath}`);
+  }
+  if (!fs.readFileSync(absolutePath, "utf8").includes(assertionKey)) {
+    fail(`MEMORY_ASSERTION_NOT_FOUND:${ruleId}:${memoryRef}`);
+  }
+}
+
+function validateCoverage({
+  root,
+  matrixPath = "contracts/policy/standards-coverage-matrix.json",
+  matrix,
+  phase = "R2",
+}) {
+  if (!phaseOrder.has(phase)) {
+    fail(`UNKNOWN_PHASE:${phase}`);
+  }
+  const candidate = matrix || readMatrix(root, matrixPath);
+  if (
+    candidate.schemaVersion !== 1 ||
+    candidate.kind !== "standards-coverage-matrix" ||
+    candidate.programId !== "V2S_W0_W4_EXECUTION"
+  ) {
+    fail("MATRIX_IDENTITY_INVALID");
+  }
+  const sourcePath = candidate.source?.path;
+  const sourceAbsolutePath = sourcePath && path.join(root, sourcePath);
+  if (!sourcePath || !fs.existsSync(sourceAbsolutePath)) {
+    fail(`SOURCE_NOT_FOUND:${sourcePath || "UNSET"}`);
+  }
+  const source = fs.readFileSync(sourceAbsolutePath, "utf8");
+  if (sha256(source) !== candidate.source.sha256) {
+    fail("SOURCE_HASH_DRIFT");
+  }
+  if (candidate.source.parser !== "MARKDOWN_STRUCTURAL_RULES_V1") {
+    fail("SOURCE_PARSER_INVALID");
+  }
+
+  const parsed = parseStructuralRules(source);
+  if (
+    JSON.stringify(parsed.counts) !==
+    JSON.stringify(candidate.source.expectedCounts)
+  ) {
+    fail("SOURCE_COUNT_MISMATCH");
+  }
+  if (!Array.isArray(candidate.rules)) {
+    fail("RULES_NOT_ARRAY");
+  }
+  const rulesById = new Map();
+  for (const rule of candidate.rules) {
+    if (!rule?.ruleId || rulesById.has(rule.ruleId)) {
+      fail(`RULE_ID_INVALID_OR_DUPLICATE:${rule?.ruleId || "UNSET"}`);
+    }
+    rulesById.set(rule.ruleId, rule);
+  }
+  if (
+    candidate.rules.length !== parsed.units.length ||
+    parsed.units.some((unit) => !rulesById.has(unit.ruleId))
+  ) {
+    fail("SOURCE_DENOMINATOR_MISMATCH");
+  }
+
+  const checklistIds = new Set();
+  for (const checklist of candidate.reviewChecklists || []) {
+    if (
+      !checklist?.id ||
+      checklistIds.has(checklist.id) ||
+      !checklist.owner ||
+      !checklist.requiredEvidence
+    ) {
+      fail(`REVIEW_CHECKLIST_INVALID:${checklist?.id || "UNSET"}`);
+    }
+    checklistIds.add(checklist.id);
+  }
+
+  for (const unit of parsed.units) {
+    const rule = rulesById.get(unit.ruleId);
+    if (
+      rule.source?.section !== unit.section ||
+      rule.source?.type !== unit.type ||
+      rule.source?.ordinal !== unit.ordinal ||
+      rule.source?.textSha256 !== unit.textSha256
+    ) {
+      fail(`SOURCE_UNIT_DRIFT:${unit.ruleId}`);
+    }
+    if (!Array.isArray(rule.memoryRefs) || rule.memoryRefs.length === 0) {
+      fail(`MEMORY_REF_MISSING:${unit.ruleId}`);
+    }
+    for (const memoryRef of rule.memoryRefs) {
+      validateMemoryRef(root, unit.ruleId, memoryRef);
+    }
+
+    const enforcement = rule.enforcement;
+    const allowedKinds = new Set([
+      "GATE",
+      "ARCHUNIT",
+      "NEGATIVE_FIXTURE",
+      "UNENFORCEABLE_BY_MACHINE",
+    ]);
+    if (!enforcement || !allowedKinds.has(enforcement.kind)) {
+      fail(`ENFORCEMENT_KIND_INVALID:${unit.ruleId}`);
+    }
+    if (!phaseOrder.has(enforcement.enforcementPhase)) {
+      fail(`ENFORCEMENT_PHASE_INVALID:${unit.ruleId}`);
+    }
+    if (enforcement.kind === "UNENFORCEABLE_BY_MACHINE") {
+      if (
+        enforcement.status !== "ACTIVE" ||
+        !enforcement.reviewChecklistRef ||
+        !checklistIds.has(enforcement.reviewChecklistRef)
+      ) {
+        fail(`REVIEW_CHECKLIST_REF_MISSING:${unit.ruleId}`);
+      }
+      continue;
+    }
+    if (!["ACTIVE", "PLANNED"].includes(enforcement.status)) {
+      fail(`ENFORCEMENT_STATUS_INVALID:${unit.ruleId}`);
+    }
+    if (!enforcement.ref) {
+      fail(`ENFORCEMENT_REF_MISSING:${unit.ruleId}`);
+    }
+    if (
+      enforcement.status === "PLANNED" &&
+      phaseOrder.get(enforcement.enforcementPhase) <= phaseOrder.get(phase)
+    ) {
+      fail(`PLANNED_ENFORCEMENT_OVERDUE:${unit.ruleId}`);
+    }
+    if (enforcement.status === "ACTIVE") {
+      const refPath = enforcement.ref.split("#")[0];
+      if (!fs.existsSync(path.join(root, refPath))) {
+        fail(`ENFORCEMENT_REF_MISSING:${unit.ruleId}:${refPath}`);
+      }
+    }
+  }
+  return true;
+}
+function writeFixture(root) {
+  fs.mkdirSync(path.join(root, "contracts/policy"), { recursive: true });
+  fs.mkdirSync(path.join(root, "doc/plans/platform"), { recursive: true });
+  fs.mkdirSync(path.join(root, "project-memory/decisions"), { recursive: true });
+  fs.mkdirSync(path.join(root, "scripts/check"), { recursive: true });
+  const source = [
+    "## Part B. Rules",
+    "### B.1 Security",
+    "1. first rule",
+    "",
+    "## Part C. Patterns",
+    "| Pattern | Source | Purpose |",
+    "|---|---|---|",
+    "| sample | ref | reason |",
+    "",
+    "## Part D. Governance",
+    "### D.1 Layout",
+    "- layout rule",
+    "",
+  ].join("\n");
+  fs.writeFileSync(path.join(root, "doc/plans/platform/source.md"), source);
+  fs.writeFileSync(
+    path.join(root, "project-memory/decisions/coverage.md"),
+    "`CARRYOVER_STANDARDS_COVERAGE`\n",
+  );
+  fs.writeFileSync(path.join(root, "scripts/check/existing-gate"), "#!/bin/sh\n");
+  const matrix = {
+    schemaVersion: 1,
+    kind: "standards-coverage-matrix",
+    status: "IN_REVIEW",
+    programId: "V2S_W0_W4_EXECUTION",
+    source: {
+      path: "doc/plans/platform/source.md",
+      sha256: sha256(source),
+      parser: "MARKDOWN_STRUCTURAL_RULES_V1",
+      expectedCounts: {
+        partBNumbered: 1,
+        partCTableRows: 1,
+        partDBullets: 1,
+        partDTableRows: 0,
+        total: 3,
+      },
+    },
+    reviewChecklists: [
+      {
+        id: "REFERENCE_REVIEW",
+        owner: "Dexter",
+        requiredEvidence: "explicit applicability decision",
+      },
+    ],
+    rules: [
+      {
+        ruleId: "B.1.N01",
+        source: {
+          section: "B.1",
+          type: "NUMBERED",
+          ordinal: 1,
+          textSha256: sha256("1. first rule"),
+        },
+        memoryRefs: [
+          "project-memory/decisions/coverage.md#CARRYOVER_STANDARDS_COVERAGE",
+        ],
+        enforcement: {
+          kind: "GATE",
+          ref: "scripts/check/existing-gate",
+          status: "ACTIVE",
+          enforcementPhase: "R2",
+        },
+      },
+      {
+        ruleId: "C.T01",
+        source: {
+          section: "C",
+          type: "TABLE",
+          ordinal: 1,
+          textSha256: sha256("| sample | ref | reason |"),
+        },
+        memoryRefs: [
+          "project-memory/decisions/coverage.md#CARRYOVER_STANDARDS_COVERAGE",
+        ],
+        enforcement: {
+          kind: "UNENFORCEABLE_BY_MACHINE",
+          status: "ACTIVE",
+          enforcementPhase: "R2",
+          reviewChecklistRef: "REFERENCE_REVIEW",
+        },
+      },
+      {
+        ruleId: "D.1.L01",
+        source: {
+          section: "D.1",
+          type: "BULLET",
+          ordinal: 1,
+          textSha256: sha256("- layout rule"),
+        },
+        memoryRefs: [
+          "project-memory/decisions/coverage.md#CARRYOVER_STANDARDS_COVERAGE",
+        ],
+        enforcement: {
+          kind: "GATE",
+          ref: "scripts/check/future-gate",
+          status: "PLANNED",
+          enforcementPhase: "R4",
+        },
+      },
+    ],
+  };
+  fs.writeFileSync(
+    path.join(root, "contracts/policy/standards-coverage-matrix.json"),
+    `${JSON.stringify(matrix, null, 2)}\n`,
+  );
+  return matrix;
+}
+
+function expectFailure(expectedReason, action) {
+  assert.throws(action, (error) => error.message.includes(expectedReason));
+}
+
+function selfTest() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-standards-coverage-"));
+  try {
+    const matrix = writeFixture(root);
+    const matrixPath = "contracts/policy/standards-coverage-matrix.json";
+    assert.equal(validateCoverage({ root, matrixPath, phase: "R2" }), true);
+
+    const missingRule = structuredClone(matrix);
+    missingRule.rules.pop();
+    expectFailure("SOURCE_DENOMINATOR_MISMATCH", () =>
+      validateCoverage({ root, matrix: missingRule, phase: "R2" }),
+    );
+
+    const missingMemory = structuredClone(matrix);
+    missingMemory.rules[0].memoryRefs = [];
+    expectFailure("MEMORY_REF_MISSING", () =>
+      validateCoverage({ root, matrix: missingMemory, phase: "R2" }),
+    );
+
+    expectFailure("PLANNED_ENFORCEMENT_OVERDUE", () =>
+      validateCoverage({ root, matrix, phase: "R4" }),
+    );
+
+    const missingGate = structuredClone(matrix);
+    missingGate.rules[0].enforcement.ref = "scripts/check/missing-gate";
+    expectFailure("ENFORCEMENT_REF_MISSING", () =>
+      validateCoverage({ root, matrix: missingGate, phase: "R2" }),
+    );
+
+    const missingChecklist = structuredClone(matrix);
+    delete missingChecklist.rules[1].enforcement.reviewChecklistRef;
+    expectFailure("REVIEW_CHECKLIST_REF_MISSING", () =>
+      validateCoverage({ root, matrix: missingChecklist, phase: "R2" }),
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function optionValue(name, fallback) {
+  const index = process.argv.indexOf(name);
+  if (index === -1) {
+    return fallback;
+  }
+  if (!process.argv[index + 1]) {
+    fail(`MISSING_OPTION_VALUE:${name}`);
+  }
+  return process.argv[index + 1];
+}
+
+if (process.argv.includes("--self-test")) {
+  try {
+    selfTest();
+    console.log("STANDARDS_COVERAGE_SELF_TEST=PASS");
+    console.log("MISSING_RULE_RED=PASS");
+    console.log("MISSING_MEMORY_RED=PASS");
+    console.log("PLANNED_OVERDUE_RED=PASS");
+    console.log("MISSING_ENFORCEMENT_REF_RED=PASS");
+    console.log("MISSING_REVIEW_CHECKLIST_RED=PASS");
+  } catch (error) {
+    console.error("STANDARDS_COVERAGE_SELF_TEST=FAIL");
+    console.error(`REASON=${error.message}`);
+    process.exit(1);
+  }
+} else {
+  try {
+    const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+    const root = path.resolve(scriptDir, "../..");
+    const matrixPath = optionValue(
+      "--matrix",
+      "contracts/policy/standards-coverage-matrix.json",
+    );
+    const phase = optionValue("--phase", "R2");
+    const matrix = readMatrix(root, matrixPath);
+    validateCoverage({ root, matrixPath, matrix, phase });
+    console.log("STANDARDS_COVERAGE=PASS");
+    console.log(`PHASE=${phase}`);
+    console.log(`RULES=${matrix.rules.length}`);
+  } catch (error) {
+    console.error("STANDARDS_COVERAGE=FAIL");
+    console.error(`REASON=${error.message}`);
+    process.exit(1);
+  }
+}

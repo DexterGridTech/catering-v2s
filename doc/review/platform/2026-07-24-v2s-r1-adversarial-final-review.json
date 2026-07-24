@@ -1,0 +1,235 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "verdict": "NO_GO",
+  "authorSessionId": "019f92dc-93ff-7843-a1c6-3cb66edb87df",
+  "reviewerSessionId": "019f931b-5015-7c82-afa6-18ac881b5ee0",
+  "manifestSha256": "74a9db3491d90874479b5765197519fd43054a62d786d2ae68a046b95e7b41ad",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "expectedBehaviorDerivedBeforeDetailDesignVerdict": true,
+    "oldReviewsUsedOnlyAsFindingHistory": true,
+    "allFourUnitsReReviewed": true,
+    "riskClassesSampled": [
+      "wire-and-owner",
+      "data-and-transaction",
+      "security-and-authorization",
+      "ui-and-state-machine",
+      "evidence-and-oracle"
+    ]
+  },
+  "reviewInputs": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "331ad53e5000cbb757f680f339fb779e24c0ada6f881cfe4fcb01b214dd241b4"
+    },
+    {
+      "path": "doc/roadmaps/platform/2026-07-14-ai-first-foundation-roadmap.md",
+      "sha256": "82e6cb29daf10c50238065fe8a540d5133a747a4526f58c5da53e0ed3345ec41"
+    },
+    {
+      "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+      "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+      "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"
+    },
+    {
+      "path": "doc/handoffs/2026-07-24-v2s-w0-continuation-handoff.md",
+      "sha256": "c94afa29234b8e13ae96034091e6cbe7d517852418c997998f635696e20caeba"
+    },
+    {
+      "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+      "sha256": "3ea12a5434ffc01e97272686d272c3985f210927768482521fabe2ddf3662ee9"
+    },
+    {
+      "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+      "sha256": "a2216874062892229424cc9f8c2bc478d110795b4876433782c6d22a2e78b615"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-24-v2s-r1-implementation-plan.md",
+      "sha256": "ef1cf3cd58bb033dbf655047a91735c81de103e905aa1c80ed2ff97e0afd2289"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-r1-granularity-manifest.json",
+      "sha256": "74a9db3491d90874479b5765197519fd43054a62d786d2ae68a046b95e7b41ad"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-r1-adversarial-review.json",
+      "sha256": "eef6ff85943fddc227e0d2a3c67d9d56f51475fabf74628f5b55ce0d02f85d1f"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-r1-adversarial-rereview.json",
+      "sha256": "9799e395e7ef8406dc8ffb821b2830f6106272fa52c03bdcea8c6e4880a8822f"
+    }
+  ],
+  "expectedBehavior": [
+    "R1 remains limited to the authorized v2s repository foundation and governance surface and creates no W1 runtime, business OpenAPI, migration, dynamic environment, seed or reset operation, or Git write.",
+    "Every one of the eleven project-memory entries has an exact, satisfiable sourceRefs set and every required assertion maps to the literal heading that actually states and owns that assertion; the production checker can reject a non-owning substitution rather than merely confirm that an arbitrary heading exists.",
+    "Lifecycle evidence invokes the exact commands registered in .codex/hooks.json and discriminates Prompt source injection, malformed input, session goal state, managed-run state, cleanup failure, path traversal and schema errors without creating or repairing state.",
+    "The complete final Roadmap, receipt, expected ACTIVE Registry and Heritage candidate is validated under a non-current run-scoped root before publication; Roadmap and receipt are published while Registry remains PREPARED_NON_AUTHORITATIVE; the Registry is the only owner switch and is atomically published last; readback failure deactivates the Registry before any other restore.",
+    "COMMAND direction is independently decidable because COMMAND.apiPackage must belong to toModule.commandApiPackages; SCHEMA_FK direction follows ownerSchema; the two kinds have separate DAGs and TASK_READ may cycle without granting write, import, transaction, lock or FK authority.",
+    "HANDOFF contains exactly seven rows whose decisionSource is a parsed JSON array of repository-relative path and literal anchor objects, and every source is reopened rather than guessed from an alias.",
+    "Heritage contains exactly four read-only repositories and thirteen fresh all-v2 selected assets, while the other three repositories are explicit future-only empty selections and no old repository is a build, runtime or write-back fallback.",
+    "R1 closure has one non-contradictory exact allowlist and an explicit pre-transfer versus post-transfer evidence finalization point so that its hashes, self-review and Claude packet cannot become stale during the owner-switch sequence."
+  ],
+  "priorFindingAssessment": [
+    {
+      "findingId": "R1-ADR-M-001/R1-REREVIEW-M-001",
+      "status": "NOT_RESOLVED",
+      "reason": "The paths, routes and assertionSources shape are now explicit, but the sourceRefs rules contradict each other and several designated headings do not state the assertion they are said to own."
+    },
+    {
+      "findingId": "R1-ADR-M-002",
+      "status": "RESOLVED",
+      "reason": "The production event registrations, five-second timeout, stdin, stdout, exits, marker and managed-run schemas, and production-path fixtures are exact."
+    },
+    {
+      "findingId": "R1-ADR-S-003/R1-REREVIEW-S-002",
+      "status": "RESOLVED",
+      "reason": "The complete final candidate is now checked outside current truth, non-owner files publish while Registry stays PREPARED, ACTIVE Registry is the single atomic owner switch, and readback failure disables Registry first."
+    },
+    {
+      "findingId": "R1-ADR-M-004/R1-REREVIEW-M-003",
+      "status": "RESOLVED",
+      "reason": "Module.commandApiPackages is globally unique and COMMAND.apiPackage must belong to toModule, providing the independent correct, swapped and unknown-owner oracle."
+    },
+    {
+      "findingId": "R1-ADR-M-005",
+      "status": "RESOLVED",
+      "reason": "The four repositories, thirteen all-v2 assets, exact hashes, dispositions, explicit future-only empty selections and no-fallback flags are complete and currently fresh."
+    },
+    {
+      "findingId": "R1-ADR-M-006/R1-REREVIEW-M-004",
+      "status": "RESOLVED",
+      "reason": "All seven decisionSource cells now have an exact JSON-array object grammar and each path and literal heading is reopenable."
+    }
+  ],
+  "findings": [
+    {
+      "id": "R1-FINAL-M-001",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U01"
+      ],
+      "title": "Memory assertion provenance is structurally contradictory and semantically non-owning",
+      "evidence": "R1-U01-A first requires every sourceRefs set to contain at least the frozen ADR and manifest, then requires sourceRefs to equal exactly the deduplicated assertionSources paths. kernel.workspace-roadmap, for example, maps only to the Roadmap and R1 authorization, so no required-inventory record can satisfy both rules. Independently, multiple exact mappings reopen a real heading that does not state the named assertion: BUSINESS_CLEANUP_SEPARATE points to handoff section 6 although that section contains no business/cleanup rule; START_RESTART_MIGRATE points to manifest H.2 although the Flyway start rule is in H.1; NO_NORMAL_POLLING points to ADR 3.11 although that section has no polling rule; and NO_INTERNAL_OPENAPI_CLIENT plus the TDP part of NO_MQ_OUTBOX_TDP point to ADR 3.9 although those rules are owned by ADR 3.2 and 3.1. The proposed checker only verifies inventory equality and literal-heading existence, so each semantic substitution can remain green.",
+      "risk": "The target inventory is either impossible to instantiate without violating one stated exactness rule, or it must silently choose which rule to ignore. Even after choosing, fresh sessions can receive overclaimed or source-detached architecture assertions while the index, source reopen and red fixtures all pass.",
+      "disposition": "Remove the global ADR-plus-manifest sourceRefs requirement or make it explicitly entry-specific, then remap every assertion key to the literal heading that actually states that rule. Split combined keys when their owning headings differ. Require sourceRefs to equal only the sorted unique assertionSources paths and add red fixtures for each corrected cross-document class, including business/cleanup, start/Flyway, normal polling, internal OpenAPI client and MQ/outbox/TDP."
+    },
+    {
+      "id": "R1-FINAL-M-002",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U04"
+      ],
+      "title": "The R1 closure allowlist and evidence finalization point contradict the units they aggregate",
+      "evidence": "U03 explicitly creates contracts/policy/module-dependency-registry.json and its schema, while the U04 manifest says r1-closure rejects contracts. Separately, the U04 closure artifact is specified to record current target hashes after the final successful run and its dependency boundary says closure hashes follow all implementation changes, but the ordered chain creates the closure evidence and reviews before the source EVIDENCE_READY write, target candidate publication and Registry activation. Those later writes are part of the same R1 implementation and transfer evidence, so the design supplies no exact point at which the closure JSON is both a candidate input and truthfully final.",
+      "risk": "An implementation must either reject an authorized U03 output, weaken the forbidden-path check ad hoc, or leave a broad contract path unguarded. It must also either freeze stale closure/review hashes before transfer or mutate evidence after candidate verification, undermining the very hash-bound candidate and review packet that close R1.",
+      "disposition": "Define the exact R1 path allowlist and reject only contract paths outside the two approved module-dependency registry files. Split evidence into a hash-stable pre-transfer implementation closure consumed by the candidate gate and the immutable transfer receipt consumed as the post-transfer closure, or define another exact non-circular finalization model. State which artifact each self-review and Claude packet hashes and prohibit post-candidate mutation of candidate-bound bytes."
+    },
+    {
+      "id": "R1-FINAL-N-003",
+      "severity": "N",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U02",
+        "R1-U04"
+      ],
+      "title": "Immutable candidate receipt does not define an honest transferredAt value",
+      "evidence": "Roadmap 7.1 requires transferredAt in the receipt while also saying the candidate receipt is immutable after candidate verification, which occurs before ACTIVE Registry publication. The plan fixes candidateVerifiedAt but does not say whether transferredAt is null, a planned time, or the actual owner-switch time.",
+      "risk": "An implementer may predate the transfer, leave an unexplained null in a final R1 GO receipt, or mutate a candidate-verified byte after activation.",
+      "disposition": "Define transferredAt as a deterministic null-before-transfer field plus a separately non-candidate-bound activation record, rename it to activationPlannedAt, or remove it from immutable candidate bytes and make the exact post-transfer evidence owner explicit. Do not prestate an actual transfer time."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "R1-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R1-FINAL-M-001"
+      ],
+      "adversarialChecks": [
+        "Implementability: the eleven paths, routes and assertion keys are explicit, but the two sourceRefs rules cannot both be satisfied for several entries.",
+        "Authority and security: R1, Git and provider boundaries are named, yet source ownership must be the document and heading that actually states each rule.",
+        "Production consumer: lifecycle registration and real command contracts are exact and no helper-only proof remains.",
+        "Evidence oracle: literal heading existence does not prove that BUSINESS_CLEANUP_SEPARATE, START_RESTART_MIGRATE or the distributed-topology assertions are owned by that heading.",
+        "Plausible wrong mutation: retaining the same assertion key while pointing it at the currently listed non-owning heading passes the authored checker."
+      ]
+    },
+    {
+      "id": "R1-U02",
+      "verdict": "GO",
+      "findingIds": [
+        "R1-FINAL-N-003"
+      ],
+      "adversarialChecks": [
+        "Implementability: prepared current files, non-current final candidate, Registry-last publication and Registry-first rollback form an executable serial protocol.",
+        "Authority leakage: ordinary resolution stays empty until the already verified ACTIVE Registry is atomically published last.",
+        "Failure recovery: candidate failure publishes nothing, pre-activation failure restores only non-owner files, and post-activation failure deactivates Registry before restoring those files.",
+        "Evidence oracle: interruption before Registry-last cannot expose R1 GO; target hashes and sourcePreparedHash are independently bound.",
+        "Residual note: the owner-switch time field still needs exact immutable-receipt semantics but does not reopen the candidate-first authority fix."
+      ]
+    },
+    {
+      "id": "R1-U03",
+      "verdict": "GO",
+      "findingIds": [],
+      "adversarialChecks": [
+        "Implementability: dependency, HANDOFF and Heritage schemas, identities and negative controls are exact enough to implement without inventing topology.",
+        "Owner sovereignty: COMMAND.apiPackage belongs to toModule.commandApiPackages, while SCHEMA_FK object prefixes independently prove both directions.",
+        "Data and transaction: COMMAND and SCHEMA_FK use separate DAG projections and TASK_READ cycles are explicitly legal and authority-free.",
+        "Evidence oracle: all thirteen all-v2 hashes were recomputed and match; other repositories are explicit empty future-only sources with no fallback.",
+        "Production consumer: every HANDOFF decisionSource parses as a JSON array and every listed path and literal heading can be reopened."
+      ]
+    },
+    {
+      "id": "R1-U04",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R1-FINAL-M-002",
+        "R1-FINAL-N-003"
+      ],
+      "adversarialChecks": [
+        "Implementability: a broad contracts rejection conflicts with the authorized dependency-registry files and forces an unstated exception.",
+        "Evidence ordering: closure hashes are claimed to follow all changes even though source and target transfer writes occur after their specified creation and review.",
+        "Cleanup and exclusions: business and cleanup separation, zero active resources, no apps, no migrations, no DEV and no Git writes remain correctly bounded.",
+        "Authority boundary: the Claude packet cannot authorize R2 or W1, but its exact hash inputs cannot be stable until pre-transfer and post-transfer evidence roles are separated.",
+        "Plausible wrong mutation: a checker that special-cases contracts/policy without an approved exact allowlist and a closure JSON edited after candidate verification can appear green under the current prose."
+      ]
+    }
+  ],
+  "calibration": {
+    "reviewerInputDigest": "74a9db3491d90874479b5765197519fd43054a62d786d2ae68a046b95e7b41ad",
+    "rawOutputs": [
+      {
+        "caseId": "blind-red",
+        "expectedVerdict": "NO_GO",
+        "actualVerdict": "NO_GO",
+        "rawOutput": "CALIBRATION_CASE=blind-red; UNIT=R1-CAL-MEMORY; CANDIDATE=required-inventory maps BUSINESS_CLEANUP_SEPARATE to a heading that contains no business-cleanup rule and the checker only verifies that the heading exists; REVIEWER_VERDICT=NO_GO; REASON=path and literal anchor are structurally reopenable but do not independently own or prove the assertion.",
+        "rawOutputSha256": "18ff958a55a41e41e545e518e4af5220eabbe4efcd2bf4b653a5cc4332227e70",
+        "goldUnlockedAfter": "2026-07-24T17:05:00+09:00"
+      },
+      {
+        "caseId": "aligned-green",
+        "expectedVerdict": "GO",
+        "actualVerdict": "GO",
+        "rawOutput": "CALIBRATION_CASE=aligned-green; UNIT=R1-CAL-MEMORY; CANDIDATE=each assertion key maps to the exact heading that states that rule, sourceRefs equals the deduplicated assertionSources paths, and a non-owning-heading substitution fails; REVIEWER_VERDICT=GO; REASON=the memory rule is source-owned and independently discriminated.",
+        "rawOutputSha256": "1776e0bb3ccbae8fac80a05f2a040634a1c490340eeacb5530536288031e2d36",
+        "goldUnlockedAfter": "2026-07-24T17:05:01+09:00"
+      }
+    ]
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "The second revision genuinely closes the candidate-first Registry-last transfer leak, COMMAND direction, HANDOFF source reopening, lifecycle registration and Heritage completeness. R1 is still not implementation-ready because memory source ownership is internally contradictory and semantically wrong for several assertions, and the R1 closure allowlist/finalization point conflicts with authorized outputs and later transfer writes.",
+    "severityCounts": {
+      "M": 2,
+      "S": 0,
+      "N": 1
+    },
+    "authorizationBoundary": "This review authorizes no catering-v2s write, no transfer publication, no R2 fresh-session acceptance, no W1 runtime, no DEV seed or reset, and no Git write. Repair the two M findings, clarify the N, refresh the plan and manifest hashes and bindings, then obtain a new independent GO review from a different reviewer session."
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-hooks-config-compatibility-post-no-go-closure",
+  "status": "PASS_PENDING_INDEPENDENT_REREVIEW",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R2",
+  "roadmapStatus": "IN_REVIEW",
+  "observedAt": "2026-07-24T19:14:21+09:00",
+  "priorIndependentReview": {
+    "path": "doc/review/platform/2026-07-24-v2s-hooks-config-compatibility-review-claude.md",
+    "sha256": "3dd5c02bc514a1969c2ce452faa7218437d68503240640f321fa00a55e8fdf3e",
+    "verdict": "NO-GO(1 M / 1 S / 2 N)",
+    "reviewerObservedAgentLifecycleSha256Prefix": "d1e59383",
+    "disposition": "PRESERVED_AS_IMMUTABLE_REVIEW_EVIDENCE"
+  },
+  "currentDeliveryTree": {
+    "hooksConfig": {
+      "path": ".codex/hooks.json",
+      "sha256": "82b43833b89f257cc8d7b4431215a325bee6f5b5cf6f9eb82f3455a02bbfaafe"
+    },
+    "agentLifecycle": {
+      "path": "scripts/check/agent-lifecycle",
+      "sha256": "0a82ac8d9dc78e80426491837f4b935d7c2729bf9dc1ad4f1811f7ee0e0698ac",
+      "sizeBytes": 7584,
+      "mtime": "2026-07-24T18:52:28+09:00",
+      "nestedExtraction": ".hooks.<Event>[0].hooks[0].command",
+      "unknownTopLevelRedControl": true,
+      "flatRegistrationRedControl": true
+    },
+    "scriptsReadme": {
+      "path": "scripts/README.md",
+      "sha256": "0228e1e8a2bc75d718cc8e34936ef7bafde736b43503c3d1d40ffd52c9584b8b",
+      "clientReprobeTrigger": "CODEX_CLI_VERSION_CHANGED"
+    },
+    "viewDivergence": {
+      "status": "UNEXPLAINED_FAIL_CLOSED_REREVIEW_REQUIRED",
+      "sameWorkspaceCheckerWithReviewerPrefixFound": false,
+      "note": "The current filesystem bytes do not reproduce the checker hash observed by the prior reviewer. The prior NO-GO is not rewritten; this closure binds the current bytes and requires a fresh independent rereview."
+    }
+  },
+  "freshChecks": [
+    {
+      "command": "scripts/check/agent-lifecycle",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/provider-free-context",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/foundation-standard-actions",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/standards-coverage --phase R2",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/standards-coverage --self-test",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/project-memory",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/roadmap-program-registry",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/roadmap-control-plane-transfer",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/handoff-debt",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/heritage-registry",
+      "status": "PASS"
+    },
+    {
+      "command": "scripts/check/claude-review-handoff --self-test",
+      "status": "PASS"
+    }
+  ],
+  "independentScratchMutations": [
+    {
+      "mutation": "add top-level schemaVersion=1",
+      "validator": "scripts/check/agent-lifecycle",
+      "exitCode": 2,
+      "expectedReason": "top-level keys must be exactly hooks",
+      "status": "PASS"
+    },
+    {
+      "mutation": "replace SessionStart event group with flat command and timeout",
+      "validator": "scripts/check/agent-lifecycle",
+      "exitCode": 2,
+      "expectedReason": "invalid event group: SessionStart",
+      "status": "PASS"
+    }
+  ],
+  "nativeClientProbe": {
+    "client": "codex-cli",
+    "version": "0.144.6",
+    "command": "codex exec --ephemeral --json --dangerously-bypass-hook-trust '只验证 v2s SessionStart 入口；请仅回复 ENTRY_PROBE_OK，不执行工具或写操作。'",
+    "exitCode": 0,
+    "completeEventStreamHookParseFailureCount": 0,
+    "entryProbeOkCount": 1,
+    "status": "PASS",
+    "note": "The event stream signal is authoritative because the original parser failure was emitted even when the enclosing client process exited zero."
+  },
+  "boundArtifacts": {
+    "originalFixEvidence": {
+      "path": "doc/evidence/platform/2026-07-24-v2s-hooks-config-compatibility-fix.json",
+      "sha256": "9567d05163bfeb5c02c5c3b67836aa65a241b35f69bdc4ec02b844cecaa2d493"
+    },
+    "resolution": {
+      "path": "doc/review/platform/2026-07-24-v2s-hooks-config-compatibility-resolution.md",
+      "sha256": "526e5d77d05b7a2a401e525552a52f761f6e952133cf547178b2c733b79c3aef"
+    },
+    "roadmap": {
+      "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+      "sha256": "a36fc88b0c151fdae719365b11925941a20e7de771b970f8e6eb11b03ac50392"
+    },
+    "standardsMatrix": {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "sha256": "358dc6bea08b6094ce7bf633bf68ffcbb4dab777c895f87627b7b5d9b4a18ce9"
+    },
+    "immutableR1ImplementationClosure": {
+      "path": "doc/evidence/platform/2026-07-24-v2s-r1-implementation-closure.json",
+      "sha256": "e1bcbf43c8c6a0b475e14169ebc0e0dcc1248e54bbefc8097a384ed1ae1add91"
+    },
+    "immutableR1PostTransferClosure": {
+      "path": "doc/evidence/platform/2026-07-24-v2s-r1-post-transfer-closure.json",
+      "sha256": "8093559204490c147aa9cf8ff0828c9441428f85b53b8ca0dafe03e86f4d5b21"
+    },
+    "immutableRoadmapTransferReceipt": {
+      "path": "doc/evidence/platform/2026-07-24-v2s-roadmap-control-plane-transfer.json",
+      "sha256": "61bf4f4729efbb5bfbd8d5cbea1c43987503067c306deaf28a34ce7e350cefda"
+    }
+  },
+  "clientReprobePolicy": {
+    "trigger": "CODEX_CLI_VERSION_CHANGED",
+    "actionRef": "scripts/README.md#Codex hooks 客户端兼容性",
+    "handoffDisposition": "NOT_A_PRODUCTION_DEBT_HANDOFF_REMAINS_EXACTLY_SEVEN"
+  },
+  "controlPlane": "PASS",
+  "business": "NOT_APPLICABLE_CONTROL_PLANE_ONLY",
+  "cleanup": "PASS",
+  "activeManagedResources": 0,
+  "authorityBoundary": {
+    "r2AcceptanceClosed": false,
+    "r3OrW1Authorized": false,
+    "runtimeCreated": false,
+    "devStarted": false,
+    "seedOrResetExecuted": false,
+    "databaseTouched": false,
+    "heritageWritten": false,
+    "gitWriteExecuted": false
+  }
+}

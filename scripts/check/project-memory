@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$repo_root"
+
+node tools/project-memory/cli.mjs build --root "$repo_root" --check >/dev/null
+
+fixture_root="$(mktemp -d "${TMPDIR:-/tmp}/v2s-project-memory.XXXXXX")"
+cleanup() {
+  rm -rf "$fixture_root"
+}
+trap cleanup EXIT
+cp -R project-memory "$fixture_root/project-memory"
+mkdir -p "$fixture_root/doc"
+cp -R doc/decisions doc/plans doc/roadmaps "$fixture_root/doc/"
+
+node - "$fixture_root/project-memory/kernel/03-transaction-data-and-dependencies.md" <<'NODE'
+const fs = require("node:fs");
+const path = process.argv[2];
+const text = fs.readFileSync(path, "utf8");
+fs.writeFileSync(path, text.replace(',"COMMAND_REQUIRED_TRANSACTION"', ""));
+NODE
+if node tools/project-memory/cli.mjs build --root "$fixture_root" >/dev/null 2>&1; then
+  echo "PROJECT_MEMORY_RED_ASSERTION_OMISSION=FAIL"
+  exit 2
+fi
+echo "PROJECT_MEMORY_RED_ASSERTION_OMISSION=PASS"
+
+rm -rf "$fixture_root/project-memory"
+cp -R project-memory "$fixture_root/project-memory"
+node - "$fixture_root/project-memory/required-inventory.json" <<'NODE'
+const fs = require("node:fs");
+const path = process.argv[2];
+const value = JSON.parse(fs.readFileSync(path, "utf8"));
+const entry = value.entries.find((candidate) => candidate.id === "kernel.transaction-data");
+const source = entry.assertionSources.find((candidate) => candidate.assertionKey === "COMMAND_REQUIRED_TRANSACTION");
+source.anchor = "#### 3.7 单库、多 schema 与完整性";
+fs.writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+NODE
+if node tools/project-memory/cli.mjs build --root "$fixture_root" >/dev/null 2>&1; then
+  echo "PROJECT_MEMORY_RED_SOURCE_SUBSTITUTION=FAIL"
+  exit 2
+fi
+echo "PROJECT_MEMORY_RED_SOURCE_SUBSTITUTION=PASS"
+echo "PROJECT_MEMORY_CHECK=PASS"

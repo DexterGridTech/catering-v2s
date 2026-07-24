@@ -1,0 +1,224 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "verdict": "NO_GO",
+  "authorSessionId": "019f92dc-93ff-7843-a1c6-3cb66edb87df",
+  "reviewerSessionId": "019f930a-41f0-7e11-8ddf-24ff26f27c69",
+  "manifestSha256": "160e72e9334c1e455ff5df61c26d03e916c42fb5bf7bfb17b69fa029d2bd4109",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "expectedBehaviorDerivedBeforeDetailDesignVerdict": true,
+    "riskClassesSampled": [
+      "wire-and-owner",
+      "data-and-transaction",
+      "security-and-authorization",
+      "ui-and-state-machine",
+      "evidence-and-oracle"
+    ]
+  },
+  "reviewInputs": [
+    {
+      "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+      "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+      "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"
+    },
+    {
+      "path": "doc/handoffs/2026-07-24-v2s-w0-continuation-handoff.md",
+      "sha256": "c94afa29234b8e13ae96034091e6cbe7d517852418c997998f635696e20caeba"
+    },
+    {
+      "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+      "sha256": "3c968e2cef7cee7e03e9e5ce3d9e511abaaa9bcb78e866a3e3a9532a2dabca17"
+    },
+    {
+      "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+      "sha256": "a2216874062892229424cc9f8c2bc478d110795b4876433782c6d22a2e78b615"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-24-v2s-r1-implementation-plan.md",
+      "sha256": "0a499e4211d2d9c066f1d7111cb139a7213f8d9dfac63236f8275ad7cea920fc"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-r1-granularity-manifest.json",
+      "sha256": "160e72e9334c1e455ff5df61c26d03e916c42fb5bf7bfb17b69fa029d2bd4109"
+    }
+  ],
+  "expectedBehavior": [
+    "R1 creates only the authorized v2s AI-first and governance root; it creates no apps, business OpenAPI, migration, runtime, dynamic environment, seed/reset action, or Git write.",
+    "A fresh v2s-rooted session must resolve repository-owned entry documents, five repository skills, deterministic project-memory routes, provider-free code recall, and lifecycle hooks without reading a global same-name skill or injecting memory/code candidates from Prompt.",
+    "The Roadmap transfer must preserve one auditable state owner, exact source and target hashes, R1-to-R2 continuity, no old-program state, and read-only Heritage with writeBack=false and runtimeFallback=false.",
+    "The dependency truth begins from empty runtime reality, has one closed schema for COMMAND, SCHEMA_FK, and TASK_READ, requires DAGs only for COMMAND and SCHEMA_FK, allows TASK_READ cycles, and does not let read edges grant command, write, lock, transaction, or FK authority.",
+    "HANDOFF contains exactly the seven approved production debts with stable identities and seven complete fields; Heritage contains an exact frozen source inventory and never becomes runtime or build fallback.",
+    "R1 closes only after native clean and red controls, forbidden-path rejection, source-target transfer evidence, business PASS, cleanup PASS, zero active managed resources, self-review, and a review packet that cannot authorize R2 or W1."
+  ],
+  "findings": [
+    {
+      "id": "R1-ADR-M-001",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U01"
+      ],
+      "title": "The project-memory denominator is not enumerated",
+      "evidence": "The plan promises six always-read kernel files and five routed files, but it does not name those eleven paths, IDs, routes, sourceRefs, or the frozen assertions allocated to each file. The manifest names only the project-memory directory and generic build/query behavior.",
+      "risk": "An implementation and its self-test can omit a frozen Part B-D rule, agree on the same reduced corpus, and remain green. The fresh-session consumer would then receive a materially incomplete architecture and authority boundary.",
+      "disposition": "Revise R1-U01 to enumerate every project-memory file with exact path, stable ID, layer, closed route tuple, sourceRefs, and required assertion set. Add a source-derived inventory checked independently of the generated index, plus a red fixture that removes one required frozen assertion and must fail."
+    },
+    {
+      "id": "R1-ADR-M-002",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U01"
+      ],
+      "title": "Lifecycle hook registration and process contracts are underspecified",
+      "evidence": "The plan lists .codex/hooks.json, three hook scripts, a session goal marker, and managed-run cleanup, but provides no exact event-to-command registration, stdin/argv schema, stdout grammar, exit-code semantics, goal-marker path/schema, or managed-run manifest discovery boundary.",
+      "risk": "A static fixture can exercise a helper while the real client event is unregistered or differently shaped. Stop can also block unrelated state or miss a live run because the implementation must guess where session and run truth lives.",
+      "disposition": "Specify the exact hooks.json event mapping and each hook's input, output, exit, and failure contract; name the session marker and managed-run manifest paths and ownership rules; add production-path fixtures proving real registered commands reject Prompt source injection and distinguish no goal, active goal, clean run, and cleanup failure."
+    },
+    {
+      "id": "R1-ADR-S-003",
+      "severity": "S",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U02",
+        "R1-U04"
+      ],
+      "title": "The R1 GO and transfer sequence is circular",
+      "evidence": "The Roadmap state rule allows GO only after the Step acceptance evidence is linked, while R1 acceptance includes the transfer receipt and roadmap-control-plane-transfer PASS. The implementation plan nevertheless requires the all-v2 source Roadmap to record R1 GO before target adoption and transfer validation. No provisional source state, atomic publication model, rollback rule, or gate input distinct from final GO is specified.",
+      "risk": "Either the source advertises R1 GO before its required transfer evidence exists, or the transfer checker cannot obtain the lastClosedStep=R1 input it requires. A failed transfer can leave an authoritative false GO or force an unauthorized/manual rollback, defeating unique-owner and status-honesty guarantees.",
+      "disposition": "Define a non-circular two-phase protocol in the approved Roadmap and detail design. Use an explicit pre-transfer state/evidence snapshot that is not GO, specify the exact gate inputs and failure rollback behavior, and publish source closure, target adoption, receipt, and unique owner in an order whose every intermediate state is honest. Add a red fixture for failure after source preparation but before target adoption."
+    },
+    {
+      "id": "R1-ADR-M-004",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U03"
+      ],
+      "title": "COMMAND and SCHEMA_FK edge shapes and reconciliation keys are absent",
+      "evidence": "The detail design specifies the TASK_READ tuple but does not define the required fields, identities, or direction semantics for COMMAND and SCHEMA_FK. It also does not define how duplicate identity, target existence, or future imports and information_schema observations map to one registry record.",
+      "risk": "Implementers can invent incompatible schemas and write red fixtures against their own interpretation. A plausible wrong direction, duplicate edge, or wrong owner can pass because registry and checker share the same guessed model.",
+      "disposition": "Add the exact JSON schema for module records and all three edge variants, including stable identity, source/target direction, required API/FK/query keys, uniqueness, existence, and DAG projection. Add reverse fixtures for swapped COMMAND direction, FK owner inversion, duplicate identity, missing target, legal TASK_READ cycle, and illegal COMMAND/SCHEMA_FK cycles."
+    },
+    {
+      "id": "R1-ADR-M-005",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U03"
+      ],
+      "title": "The Heritage source denominator is not exact",
+      "evidence": "The plan says to copy a set of frozen all-v2 documents and register all-v1/all-v2/v4/v6 sources, but it does not enumerate every copied review/resolution path or any exact all-v1/v4/v6 source file. 'selected hashes' and 'frozen source assets' leave the checker denominator to the implementer.",
+      "risk": "The registry, receipt, and checker can agree on an arbitrarily small source set while claiming Heritage completeness. Missing frozen evidence can later be replaced by chat memory or a drifting old file without a machine-visible omission.",
+      "disposition": "Enumerate the complete R1 Heritage inventory with repository identity, repo-relative source path, expected SHA-256, copied-versus-external disposition, owning frozen assertion, and required writeBack/runtimeFallback flags. Make the checker compare against this independently approved inventory and fail on missing or extra current-truth entries."
+    },
+    {
+      "id": "R1-ADR-M-006",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "R1-U03"
+      ],
+      "title": "HANDOFF rows and trigger oracle remain author-defined",
+      "evidence": "The frozen sources name seven debts and seven columns, but R1-U03 does not assign exact stable IDs or complete field values per debt and does not define an executable grammar or independent oracle for a deterministically decidable activationTrigger.",
+      "risk": "A checker can validate only non-empty text and accept vague triggers such as 'when needed' because the implementation and test invent the same permissive rule. HANDOFF can then become a second backlog despite appearing structurally green.",
+      "disposition": "Specify all seven stable IDs and the required decisionSource/currentBoundary/deferredReason/risk/activationTrigger/futureAcceptanceEvidence values or constrained templates. Define the accepted trigger forms and add red controls for vague, compound, missing-threshold, and non-observable triggers plus a green control for every approved row."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "R1-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R1-ADR-M-001",
+        "R1-ADR-M-002"
+      ],
+      "adversarialChecks": [
+        "Implementability: exact top-level paths exist, but the eleven memory originals and lifecycle process interfaces still require authorial guessing.",
+        "Security and authority: repository-only and provider-free intent is correct, but an unregistered hook or guessed Stop scope can leak to global or unrelated state.",
+        "Missing consumer: the real Codex/Claude lifecycle event is not bound to a tested input/output contract, so helper-only green does not prove fresh-session consumption.",
+        "Evidence oracle: omission of a frozen memory assertion and client registration drift are not independently discriminated from a self-consistent reduced implementation.",
+        "Plausible wrong mutation: Prompt source injection is correctly named, but the design does not prove that the production registered hook, rather than only a helper fixture, rejects it."
+      ]
+    },
+    {
+      "id": "R1-U02",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R1-ADR-S-003"
+      ],
+      "adversarialChecks": [
+        "Implementability: registry identity and target state are named, but no honest state sequence resolves final R1 GO versus transfer evidence.",
+        "Authority leakage: prematurely publishing source GO can authorize the handoff marker before the unique-owner gate passes.",
+        "Shared-write boundary: source preparation, target adoption, receipt hashing, and owner switch are serial, yet rollback and intermediate ownership are unspecified.",
+        "Evidence oracle: a checker that requires source lastClosedStep=R1 can only observe a final claim made before the checker itself succeeds.",
+        "Plausible wrong mutation: a transfer failure after source GO but before target adoption has no required red fixture or deterministic recovery state."
+      ]
+    },
+    {
+      "id": "R1-U03",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R1-ADR-M-004",
+        "R1-ADR-M-005",
+        "R1-ADR-M-006"
+      ],
+      "adversarialChecks": [
+        "Implementability: empty runtime reality is explicit, but two edge variants, the Heritage denominator, and all HANDOFF row identities still require guesses.",
+        "Data and transaction: no database is correctly created in R1; the future command/FK direction schema must nevertheless be exact before it becomes an architectural authority.",
+        "Authority leakage: an underspecified TASK_READ-versus-COMMAND/FK model can accidentally grant future import or schema authority through a checker-owned interpretation.",
+        "Missing consumer: future W2 reconciliation cannot consume a stable registry until imports, FK observations, and query observations have exact matching keys.",
+        "Evidence oracle: self-authored Heritage and HANDOFF denominators can omit sources or accept vague triggers while their paired checks remain green.",
+        "Plausible wrong mutation: the TASK_READ missing-query fixture is useful, but swapped command direction, FK owner inversion, incomplete Heritage, and vague-but-nonempty trigger mutations remain admissible."
+      ]
+    },
+    {
+      "id": "R1-U04",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R1-ADR-S-003"
+      ],
+      "adversarialChecks": [
+        "Implementability: aggregate ordering is listed, but closure cannot honestly consume a transfer whose precondition is already source R1 GO.",
+        "Evidence and cleanup: business PASS, cleanup PASS, and zero resources are correctly separated; their publication point relative to source closure is unresolved.",
+        "Authority boundary: the packet correctly says GO cannot open R2 or W1, but a premature V2S_SESSION_ENTRY_READY caused by circular source GO would contradict that boundary.",
+        "Missing consumer: Claude handoff can consume hashes only after final closure, while source/target owner publication currently has no stable pre-final snapshot.",
+        "Plausible wrong mutation: all document checks can pass while a transfer fails after source GO, and the specified aggregate has no oracle for restoring an honest single owner."
+      ]
+    }
+  ],
+  "calibration": {
+    "reviewerInputDigest": "160e72e9334c1e455ff5df61c26d03e916c42fb5bf7bfb17b69fa029d2bd4109",
+    "rawOutputs": [
+      {
+        "caseId": "blind-red",
+        "expectedVerdict": "NO_GO",
+        "actualVerdict": "NO_GO",
+        "rawOutput": "CALIBRATION_CASE=blind-red; UNIT=R1-CAL-HOOK; CANDIDATE=Prompt hook emits RECOMMENDED_SKILL_PATH plus a matched project-memory source path; REVIEWER_VERDICT=NO_GO; REASON=the output looks helpful but violates the frozen rule that Prompt only recommends one repository skill and must not query or inject sources.",
+        "rawOutputSha256": "c82643126ef15ec79bb31b5052d33e2298c303fae13ee60968c26ab5840bf158",
+        "goldUnlockedAfter": "2026-07-24T14:12:00+09:00"
+      },
+      {
+        "caseId": "aligned-green",
+        "expectedVerdict": "GO",
+        "actualVerdict": "GO",
+        "rawOutput": "CALIBRATION_CASE=aligned-green; UNIT=R1-CAL-HOOK; CANDIDATE=Prompt hook emits exactly one repository-relative RECOMMENDED_SKILL_PATH, performs no memory or code query, and rejects an unknown route; REVIEWER_VERDICT=GO; REASON=the aligned control preserves deterministic routing without source injection.",
+        "rawOutputSha256": "ed7b2946c1fe47456a96cec75c50c5192c242c21270d8c7ae76c6f1abaeb4848",
+        "goldUnlockedAfter": "2026-07-24T14:12:01+09:00"
+      }
+    ]
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "R1 is not implementation-ready. The frozen intent is coherent, but the detail design still permits self-consistent wrong implementations and contains a circular Roadmap closure/transfer sequence.",
+    "severityCounts": {
+      "M": 5,
+      "S": 1,
+      "N": 0
+    },
+    "authorizationBoundary": "This review authorizes no v2s write, no R2 fresh-session acceptance, no W1 runtime, no dynamic environment, and no Git write. Repair the design and manifest, refresh their hashes and bindings, then rerun an independent adversarial review from a different session."
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-r1-implementation-closure",
+  "status": "PASS",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R1",
+  "createdAt": "2026-07-24T00:00:00+09:00",
+  "sourcePreparedHash": "a76b245cc4afe9a978989bb93b9024ef651a33aad6089d7f4d0a2f20fc0d71b5",
+  "targetPreparedHash": "7ed6fc31be727dd64483b6bc4b051c306fd93417272b8287e108ba00e42c6e76",
+  "adoptedSnapshotHash": "7ed6fc31be727dd64483b6bc4b051c306fd93417272b8287e108ba00e42c6e76",
+  "allowlistHash": "120572b0072eb60ea13e38256819840796d1f9cd7a0a757c6628c960060ca85e",
+  "designReviewHash": "0ea1af1280cc5ccdb4cbfab042da985e417b10ed8ab027af695e6270b1edf5da",
+  "checks": [
+    {
+      "command": "scripts/check/project-memory",
+      "result": "PASS",
+      "redControls": "assertion omission and owning-source substitution rejected"
+    },
+    {
+      "command": "scripts/check/agent-lifecycle",
+      "result": "PASS",
+      "redControls": "Prompt source injection, active goal, malformed marker and cleanup failure rejected"
+    },
+    {
+      "command": "scripts/check/provider-free-context",
+      "result": "PASS",
+      "redControls": "provider executable path rejected"
+    },
+    {
+      "command": "scripts/check/foundation-standard-actions",
+      "result": "PASS",
+      "redControls": "unknown deterministic route rejected"
+    },
+    {
+      "command": "scripts/check/roadmap-program-registry",
+      "result": "PASS",
+      "redControls": "prepared owner resolution, duplicate owner and old program state rejected"
+    },
+    {
+      "command": "scripts/check/module-dependency-registry --require-empty",
+      "result": "PASS",
+      "redControls": "COMMAND owner inversion, FK inversion, duplicate identity and COMMAND/SCHEMA_FK cycles rejected; TASK_READ cycle passed"
+    },
+    {
+      "command": "scripts/check/handoff-debt",
+      "result": "PASS",
+      "redControls": "vague trigger and unresolved decision source rejected"
+    },
+    {
+      "command": "scripts/check/heritage-registry",
+      "result": "PASS",
+      "redControls": "missing asset, extra current repository, hash drift and any fallback rejected"
+    },
+    {
+      "command": "scripts/check/r1-closure --self-test",
+      "result": "PASS",
+      "redControls": "third contract, apps and migration rejected while two policy contracts passed"
+    },
+    {
+      "command": "scripts/check/roadmap-control-plane-transfer --prepare",
+      "result": "PASS",
+      "redControls": "prepared resolver remains non-authoritative and source hash is exact"
+    }
+  ],
+  "defectRetrospective": [
+    {
+      "signal": "PREPARED_FALSE_GO",
+      "rootCause": "the prepared checker scanned protocol examples in the entire Roadmap instead of the authoritative current-state block",
+      "repair": "scope state markers to the Roadmap identity/current-state prefix before the first goal section",
+      "sameClassScan": "candidate and active state parsing use the same bounded state block",
+      "result": "FIXED_AND_FRESH_PASS"
+    },
+    {
+      "signal": "post-transfer review M-1",
+      "rootCause": "active transfer validation bound the mutable current Roadmap to the immutable adoption hash",
+      "repair": "persist an immutable adopted snapshot and let current Roadmap advance through R2-R6 while validating identity and minimum continuity",
+      "sameClassScan": "legal R2-to-R3 advance green and snapshot drift red added",
+      "result": "FIXED_AND_FRESH_PASS"
+    },
+    {
+      "signal": "post-transfer review M-2",
+      "rootCause": "active Registry publication did not update every fresh-session current-truth surface",
+      "repair": "Roadmap intro, active-document index, AGENTS, kernel memory and managed-runtime skill now say R1 closed, R2 current without write authority",
+      "sameClassScan": "repository-wide stale PREPARED/current-R1 phrase scan",
+      "result": "FIXED_AND_FRESH_PASS"
+    },
+    {
+      "signal": "post-transfer review S-1",
+      "rootCause": "scripts README used plural route flags not accepted by the production CLI",
+      "repair": "canonical command uses six singular flags and foundation gate executes the exact command",
+      "sameClassScan": "foundation gate rejects stale plural flags",
+      "result": "FIXED_AND_FRESH_PASS"
+    },
+    {
+      "signal": "post-transfer review S-2",
+      "rootCause": "allowlist validation checked only observed paths and did not require declared outputs to exist",
+      "repair": "final closure now requires every createPath, validates JSON and executable bits, and runs Claude handoff checker",
+      "sameClassScan": "required-output denominator self-test includes Claude request and adopted snapshot",
+      "result": "FIXED_AND_FRESH_PASS"
+    }
+  ],
+  "business": "PASS",
+  "cleanup": "PASS",
+  "activeManagedResources": 0,
+  "excluded": [
+    "R2",
+    "W1",
+    "apps",
+    "business OpenAPI",
+    "migration",
+    "DEV",
+    "seed",
+    "reset",
+    "Git stage/commit/push"
+  ]
+}

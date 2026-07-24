@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "dimensions": {
+    "taskKinds": ["all", "memory-recall", "review", "design", "implementation", "testing", "diagnostics", "runtime-management"],
+    "domains": ["all", "platform", "backend", "contract", "admin-ui"],
+    "consumerFaces": ["all", "backend", "platform-admin", "operations-admin"],
+    "owners": ["all", "product", "platform", "backend", "contract", "frontend-platform"],
+    "impacts": ["all", "architecture", "roadmap", "governance", "memory", "session", "owner", "transaction", "database", "contract", "evidence", "runtime", "cleanup", "heritage"],
+    "triggers": ["all", "session-start", "task-start", "implementation", "review", "failure", "runtime", "status-question", "cutover"]
+  }
+}

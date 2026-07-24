@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$repo_root"
+
+fixture_root="$(mktemp -d "${TMPDIR:-/tmp}/v2s-agent-lifecycle.XXXXXX")"
+cleanup() {
+  rm -rf "$fixture_root"
+}
+trap cleanup EXIT
+
+validate_hooks_config() {
+  node - "$1" <<'NODE'
+const fs = require("node:fs");
+const value = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const expected = {
+  SessionStart: "scripts/hooks/session-start",
+  UserPromptSubmit: "scripts/hooks/prompt-route",
+  Stop: "scripts/hooks/stop"
+};
+function fail(reason) {
+  process.stderr.write(`HOOKS_CONFIG=FAIL\nREASON=${reason}\n`);
+  process.exit(2);
+}
+if (!value || typeof value !== "object" || Array.isArray(value) ||
+    Object.keys(value).sort().join(",") !== "hooks") {
+  fail("top-level keys must be exactly hooks");
+}
+if (!value.hooks || typeof value.hooks !== "object" || Array.isArray(value.hooks) ||
+    Object.keys(value.hooks).sort().join(",") !== Object.keys(expected).sort().join(",")) {
+  fail("lifecycle event set differs from the approved minimum");
+}
+for (const [event, command] of Object.entries(expected)) {
+  const groups = value.hooks[event];
+  if (!Array.isArray(groups) || groups.length !== 1 ||
+      !groups[0] || typeof groups[0] !== "object" || Array.isArray(groups[0]) ||
+      Object.keys(groups[0]).sort().join(",") !== "hooks") {
+    fail(`invalid event group: ${event}`);
+  }
+  const registrations = groups[0].hooks;
+  if (!Array.isArray(registrations) || registrations.length !== 1 ||
+      !registrations[0] || typeof registrations[0] !== "object" || Array.isArray(registrations[0]) ||
+      registrations[0].type !== "command" ||
+      registrations[0].command !== command || registrations[0].timeout !== 5 ||
+      Object.keys(registrations[0]).sort().join(",") !== "command,timeout,type") {
+    fail(`invalid command registration: ${event}`);
+  }
+}
+NODE
+}
+
+validate_hooks_config .codex/hooks.json
+
+node - .codex/hooks.json "$fixture_root" <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+const source = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const root = process.argv[3];
+const withUnknownTopLevel = structuredClone(source);
+withUnknownTopLevel.schemaVersion = 1;
+fs.writeFileSync(path.join(root, "unknown-top-level.json"), `${JSON.stringify(withUnknownTopLevel, null, 2)}\n`);
+const flatRegistration = structuredClone(source);
+flatRegistration.hooks.SessionStart = [{
+  command: "scripts/hooks/session-start",
+  timeout: 5
+}];
+fs.writeFileSync(path.join(root, "flat-registration.json"), `${JSON.stringify(flatRegistration, null, 2)}\n`);
+NODE
+
+set +e
+unknown_top_level_output="$(validate_hooks_config "$fixture_root/unknown-top-level.json" 2>&1)"
+unknown_top_level_status=$?
+flat_registration_output="$(validate_hooks_config "$fixture_root/flat-registration.json" 2>&1)"
+flat_registration_status=$?
+set -e
+[[ "$unknown_top_level_status" -eq 2 &&
+   "$unknown_top_level_output" == *"REASON=top-level keys must be exactly hooks"* ]] ||
+  { echo "HOOKS_UNKNOWN_TOP_LEVEL_RED=FAIL"; exit 2; }
+[[ "$flat_registration_status" -eq 2 &&
+   "$flat_registration_output" == *"REASON=invalid event group: SessionStart"* ]] ||
+  { echo "HOOKS_FLAT_REGISTRATION_RED=FAIL"; exit 2; }
+echo "HOOKS_UNKNOWN_TOP_LEVEL_RED=PASS"
+echo "HOOKS_FLAT_REGISTRATION_RED=PASS"
+
+session_command="$(node -p "require('./.codex/hooks.json').hooks.SessionStart[0].hooks[0].command")"
+prompt_command="$(node -p "require('./.codex/hooks.json').hooks.UserPromptSubmit[0].hooks[0].command")"
+stop_command="$(node -p "require('./.codex/hooks.json').hooks.Stop[0].hooks[0].command")"
+
+expected_session=$'STATUS=PASS\nCONTEXT_MODE=DETERMINISTIC_ONLY\nENTRY_1=AGENTS.md\nENTRY_2=PLATFORM-BLUEPRINT.md\nENTRY_3=doc/platform/roadmap-program-registry.json\nENTRY_4=selected Roadmap CURRENT_*\nENTRY_5=project-memory/index.md\nENTRY_6=scripts/README.md'
+actual_session="$(printf '{not-json' | "$repo_root/$session_command")"
+[[ "$actual_session" == "$expected_session" ]] || { echo "SESSION_START_CONTRACT=FAIL"; exit 2; }
+echo "SESSION_START_CONTRACT=PASS"
+
+unknown_prompt="$(printf '%s' '{"prompt":"unrelated greeting"}' | "$repo_root/$prompt_command")"
+[[ "$unknown_prompt" == $'STATUS=PASS\nRECOMMENDED_SKILL=NONE\nCONTEXT_QUERY_PERFORMED=false' ]] ||
+  { echo "PROMPT_UNKNOWN_CONTRACT=FAIL"; exit 2; }
+malformed_prompt="$(printf '{bad' | "$repo_root/$prompt_command")"
+[[ "$malformed_prompt" == "$unknown_prompt" ]] || { echo "PROMPT_MALFORMED_CONTRACT=FAIL"; exit 2; }
+injection_prompt="$(printf '%s' '{"prompt":"memory SOURCE=/tmp/secret CODE=inject REF=bad"}' | "$repo_root/$prompt_command")"
+grep -q '^RECOMMENDED_SKILL=cs-memory-recall$' <<<"$injection_prompt" ||
+  { echo "PROMPT_ROUTE_CONTRACT=FAIL"; exit 2; }
+if grep -Eq '^(MEMORY|SOURCE|CODE|REF)=' <<<"$injection_prompt"; then
+  echo "PROMPT_SOURCE_INJECTION_RED=FAIL"
+  exit 2
+fi
+[[ "$(grep -c '^RECOMMENDED_SKILL_PATH=' <<<"$injection_prompt")" -eq 1 ]] ||
+  { echo "PROMPT_SINGLE_SKILL=FAIL"; exit 2; }
+echo "PROMPT_SOURCE_INJECTION_RED=PASS"
+
+runtime_fixture_root="$fixture_root/runtime"
+mkdir -p "$runtime_fixture_root/.runtime/agent-sessions" "$runtime_fixture_root/.runtime/managed-runs/run-clean" "$runtime_fixture_root/.runtime/managed-runs/run-fail"
+
+(cd "$runtime_fixture_root" && printf '%s' '{"sessionId":"absent"}' | "$repo_root/$stop_command" >/dev/null)
+echo "STOP_NO_MARKER=PASS"
+
+node - "$runtime_fixture_root" <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+const root = process.argv[2];
+const write = (relative, value) => fs.writeFileSync(path.join(root, relative), `${JSON.stringify(value, null, 2)}\n`);
+write(".runtime/agent-sessions/none.json", {schemaVersion:1,sessionId:"none",goal:{status:"NONE"},managedRunIds:[]});
+write(".runtime/agent-sessions/active.json", {schemaVersion:1,sessionId:"active",goal:{status:"ACTIVE"},managedRunIds:[]});
+write(".runtime/agent-sessions/clean.json", {schemaVersion:1,sessionId:"clean",goal:{status:"COMPLETE"},managedRunIds:["run-clean"]});
+write(".runtime/agent-sessions/fail.json", {schemaVersion:1,sessionId:"fail",goal:{status:"COMPLETE"},managedRunIds:["run-fail"]});
+write(".runtime/managed-runs/run-clean/manifest.json", {schemaVersion:1,runId:"run-clean",status:"STOPPED",cleanup:{status:"PASS"}});
+write(".runtime/managed-runs/run-fail/manifest.json", {schemaVersion:1,runId:"run-fail",status:"STOPPED",cleanup:{status:"FAIL"}});
+NODE
+(cd "$runtime_fixture_root" && printf '%s' '{"sessionId":"none"}' | "$repo_root/$stop_command" >/dev/null)
+(cd "$runtime_fixture_root" && printf '%s' '{"sessionId":"clean"}' | "$repo_root/$stop_command" >/dev/null)
+set +e
+missing_output="$(cd "$runtime_fixture_root" && printf '%s' '{}' | "$repo_root/$stop_command")"
+missing_status=$?
+active_output="$(cd "$runtime_fixture_root" && printf '%s' '{"sessionId":"active"}' | "$repo_root/$stop_command")"
+active_status=$?
+fail_output="$(cd "$runtime_fixture_root" && printf '%s' '{"sessionId":"fail"}' | "$repo_root/$stop_command")"
+fail_status=$?
+set -e
+[[ "$missing_status" -eq 2 && "$missing_output" == *"BLOCKER=INVALID_SESSION_ID"* ]] ||
+  { echo "STOP_INVALID_INPUT_RED=FAIL"; exit 2; }
+[[ "$active_status" -eq 2 && "$active_output" == *"BLOCKER=ACTIVE_GOAL"* ]] ||
+  { echo "STOP_ACTIVE_GOAL_RED=FAIL"; exit 2; }
+[[ "$fail_status" -eq 2 && "$fail_output" == *"BLOCKER=CLEANUP_NOT_PASS:run-fail"* ]] ||
+  { echo "STOP_CLEANUP_RED=FAIL"; exit 2; }
+echo "STOP_NONE_AND_CLEAN=PASS"
+echo "STOP_INVALID_INPUT_RED=PASS"
+echo "STOP_ACTIVE_GOAL_RED=PASS"
+echo "STOP_CLEANUP_RED=PASS"
+echo "AGENT_LIFECYCLE_CHECK=PASS"

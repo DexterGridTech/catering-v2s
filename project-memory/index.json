@@ -1,0 +1,668 @@
+{
+  "schemaVersion": 1,
+  "kind": "project-memory-index",
+  "denominatorSha256": "691762577b832efb329e0cfd2f49a0bc67cd4bb9712ab5e3ff5634748815e51f",
+  "entries": [
+    {
+      "id": "kernel.workspace-roadmap",
+      "path": "project-memory/kernel/01-workspace-and-roadmap.md",
+      "layer": "kernel",
+      "route": {
+        "taskKinds": [
+          "all"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "all"
+        ]
+      },
+      "assertions": [
+        "PROGRAM_SCOPED_CURRENT_ONLY",
+        "R1_ONLY",
+        "GIT_BY_DEXTER",
+        "NO_R2_W1"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "PROGRAM_SCOPED_CURRENT_ONLY",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 0. Roadmap 身份与当前状态"
+        },
+        {
+          "assertionKey": "R1_ONLY",
+          "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+          "anchor": "# catering-v2s Roadmap R1 实施授权"
+        },
+        {
+          "assertionKey": "GIT_BY_DEXTER",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 2. 不可突破的全程红线"
+        },
+        {
+          "assertionKey": "NO_R2_W1",
+          "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+          "anchor": "# catering-v2s Roadmap R1 实施授权"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+      ],
+      "sha256": "29bcf583ae6d606efdbdde3591afc5fccf0bfdfc7d18ca28892672667f1b792a"
+    },
+    {
+      "id": "kernel.service-owner",
+      "path": "project-memory/kernel/02-service-shape-and-owner.md",
+      "layer": "kernel",
+      "route": {
+        "taskKinds": [
+          "all"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "all"
+        ]
+      },
+      "assertions": [
+        "ONE_BUSINESS_DEPLOYABLE",
+        "MODULE_OWNER_SOVEREIGNTY",
+        "COORDINATOR_NO_ASSET"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "ONE_BUSINESS_DEPLOYABLE",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.1 部署拓扑"
+        },
+        {
+          "assertionKey": "MODULE_OWNER_SOVEREIGNTY",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.2 领域与模块边界"
+        },
+        {
+          "assertionKey": "COORDINATOR_NO_ASSET",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.3 跨模块原子写"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md"
+      ],
+      "sha256": "45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032"
+    },
+    {
+      "id": "kernel.transaction-data",
+      "path": "project-memory/kernel/03-transaction-data-and-dependencies.md",
+      "layer": "kernel",
+      "route": {
+        "taskKinds": [
+          "all"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "all"
+        ]
+      },
+      "assertions": [
+        "ONE_DB_MULTI_SCHEMA",
+        "ONE_FLYWAY_HISTORY",
+        "COMMAND_REQUIRED_TRANSACTION",
+        "TASK_READ_JOIN",
+        "NO_NORMAL_POLLING"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "ONE_DB_MULTI_SCHEMA",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.7 单库、多 schema 与完整性"
+        },
+        {
+          "assertionKey": "ONE_FLYWAY_HISTORY",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.7 单库、多 schema 与完整性"
+        },
+        {
+          "assertionKey": "COMMAND_REQUIRED_TRANSACTION",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.3 跨模块原子写"
+        },
+        {
+          "assertionKey": "TASK_READ_JOIN",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.5 任务型读取"
+        },
+        {
+          "assertionKey": "NO_NORMAL_POLLING",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "## Part G. 跨域同步的前端补偿清单——v2s 一律不再做"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
+      ],
+      "sha256": "f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44"
+    },
+    {
+      "id": "kernel.contract-admin",
+      "path": "project-memory/kernel/04-contract-consumer-and-admin.md",
+      "layer": "kernel",
+      "route": {
+        "taskKinds": [
+          "all"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "all"
+        ]
+      },
+      "assertions": [
+        "X_CONSUMER_FACES_ONLY",
+        "TWO_ADMIN_APPS",
+        "OWNER_RECHECKS_COMMAND"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "X_CONSUMER_FACES_ONLY",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.10 边缘、安全面与 OpenAPI face"
+        },
+        {
+          "assertionKey": "TWO_ADMIN_APPS",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### B.4 前端架构与状态"
+        },
+        {
+          "assertionKey": "OWNER_RECHECKS_COMMAND",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.6 授权与事务线性化"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
+      ],
+      "sha256": "6f74c55aac19d6ce4df3711b702a98d65f11bed2aa33983e912106346548efc6"
+    },
+    {
+      "id": "kernel.evidence-runtime",
+      "path": "project-memory/kernel/05-evidence-runtime-and-git.md",
+      "layer": "kernel",
+      "route": {
+        "taskKinds": [
+          "all"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "all"
+        ]
+      },
+      "assertions": [
+        "LOG_FIRST_RETRY",
+        "BUSINESS_CLEANUP_SEPARATE",
+        "DEV_START_NO_SEED",
+        "NO_GIT_WRITE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "LOG_FIRST_RETRY",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.8 日志与诊断"
+        },
+        {
+          "assertionKey": "BUSINESS_CLEANUP_SEPARATE",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.12 前端与工程证据"
+        },
+        {
+          "assertionKey": "DEV_START_NO_SEED",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### H.2 本阶段明确不做"
+        },
+        {
+          "assertionKey": "NO_GIT_WRITE",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 2. 不可突破的全程红线"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+      ],
+      "sha256": "37296dcc602e6173b41bab26246e00cba4a37541ff33935917468d73578a81d0"
+    },
+    {
+      "id": "kernel.heritage-change",
+      "path": "project-memory/kernel/06-heritage-and-change.md",
+      "layer": "kernel",
+      "route": {
+        "taskKinds": [
+          "all"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "all"
+        ]
+      },
+      "assertions": [
+        "HERITAGE_READ_ONLY",
+        "NO_RUNTIME_FALLBACK",
+        "NEW_DECISION_FOR_DRIFT"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "HERITAGE_READ_ONLY",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.2 旧仓只读策略"
+        },
+        {
+          "assertionKey": "NO_RUNTIME_FALLBACK",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.2 旧仓只读策略"
+        },
+        {
+          "assertionKey": "NEW_DECISION_FOR_DRIFT",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.2 旧仓只读策略"
+        }
+      ],
+      "sourceRefs": [
+        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+      ],
+      "sha256": "5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c"
+    },
+    {
+      "id": "decisions.deterministic-context-only",
+      "path": "project-memory/decisions/deterministic-context-only.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "memory-recall",
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "product"
+        ],
+        "impacts": [
+          "memory",
+          "session",
+          "architecture",
+          "transaction",
+          "database",
+          "contract",
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "session-start",
+          "task-start",
+          "implementation",
+          "review",
+          "status-question"
+        ]
+      },
+      "assertions": [
+        "NO_PROVIDER",
+        "NO_DAEMON",
+        "PROMPT_RECOMMENDS_ONLY",
+        "CARRYOVER_STANDARDS_COVERAGE",
+        "MACHINE_OR_REVIEW_DESTINATION",
+        "PHASE_DUE_FAILS",
+        "CLAUDE_ENTRY_INTENTIONAL"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "NO_PROVIDER",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
+        },
+        {
+          "assertionKey": "NO_DAEMON",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
+        },
+        {
+          "assertionKey": "PROMPT_RECOMMENDS_ONLY",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
+        },
+        {
+          "assertionKey": "CARRYOVER_STANDARDS_COVERAGE",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "## Part B. 通用设计要求(去场景化沉淀)"
+        },
+        {
+          "assertionKey": "MACHINE_OR_REVIEW_DESTINATION",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 8. R2：Fresh v2s-rooted 会话验收与 W0 正式关闭"
+        },
+        {
+          "assertionKey": "PHASE_DUE_FAILS",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 10. R4：W2——机器门、scripts/verify 与 red fixtures"
+        },
+        {
+          "assertionKey": "CLAUDE_ENTRY_INTENTIONAL",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+      ],
+      "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"
+    },
+    {
+      "id": "decisions.distributed-topology-is-not-current",
+      "path": "project-memory/decisions/distributed-topology-is-not-current.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "backend",
+          "platform"
+        ],
+        "impacts": [
+          "architecture",
+          "transaction"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "NO_MQ_OUTBOX_TDP",
+        "NO_INTERNAL_OPENAPI_CLIENT",
+        "NO_DISTRIBUTED_DEFAULTS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "NO_MQ_OUTBOX_TDP",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.1 部署拓扑"
+        },
+        {
+          "assertionKey": "NO_INTERNAL_OPENAPI_CLIENT",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.2 领域与模块边界"
+        },
+        {
+          "assertionKey": "NO_DISTRIBUTED_DEFAULTS",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.11 真实进程边界与触发制"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md"
+      ],
+      "sha256": "c578afa258d1a7cb610aa87f8a80f5693f0477cfebd0795c8a5c863633c7664e"
+    },
+    {
+      "id": "operations.dev-command-separation",
+      "path": "project-memory/operations/dev-command-separation.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "runtime-management",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "backend"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform"
+        ],
+        "impacts": [
+          "runtime",
+          "database",
+          "cleanup"
+        ],
+        "triggers": [
+          "runtime",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "START_RESTART_MIGRATE",
+        "START_RESTART_NO_SEED",
+        "RESET_SEPARATE_DESTRUCTIVE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "START_RESTART_MIGRATE",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### H.1 现在就做(仅三件 + 一个顺手项)"
+        },
+        {
+          "assertionKey": "START_RESTART_NO_SEED",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### H.1 现在就做(仅三件 + 一个顺手项)"
+        },
+        {
+          "assertionKey": "RESET_SEPARATE_DESTRUCTIVE",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### H.1 现在就做(仅三件 + 一个顺手项)"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
+      ],
+      "sha256": "aa11398ca191776e93073d54c7d6a2d5d93c69636494e5f0598ee38f341ccfe1"
+    },
+    {
+      "id": "operations.roadmap-control-transfer",
+      "path": "project-memory/operations/roadmap-control-transfer.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "memory-recall"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "product",
+          "platform"
+        ],
+        "impacts": [
+          "roadmap",
+          "governance",
+          "heritage"
+        ],
+        "triggers": [
+          "session-start",
+          "status-question",
+          "cutover"
+        ]
+      },
+      "assertions": [
+        "PREPARED_IS_NOT_ACTIVE",
+        "ONE_STATE_OWNER",
+        "SOURCE_NO_POST_PASS_WRITE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "PREPARED_IS_NOT_ACTIVE",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.1 Roadmap 控制面移交协议"
+        },
+        {
+          "assertionKey": "ONE_STATE_OWNER",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.1 Roadmap 控制面移交协议"
+        },
+        {
+          "assertionKey": "SOURCE_NO_POST_PASS_WRITE",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.1 Roadmap 控制面移交协议"
+        }
+      ],
+      "sourceRefs": [
+        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+      ],
+      "sha256": "bcff1e0404176b55ed2b2d438bec47985e88bdaf2b190ec310d84d8d89419e10"
+    },
+    {
+      "id": "pitfalls.log-first-failure-retry",
+      "path": "project-memory/pitfalls/log-first-failure-retry.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "diagnostics",
+          "testing",
+          "runtime-management"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend"
+        ],
+        "impacts": [
+          "evidence",
+          "runtime",
+          "cleanup"
+        ],
+        "triggers": [
+          "failure",
+          "runtime"
+        ]
+      },
+      "assertions": [
+        "READ_FIRST_FAILURE_LOG",
+        "SECOND_RETRY_REQUIRES_DIAGNOSIS",
+        "NO_TIMEOUT_OR_POLLING_PSEUDOFIX"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "READ_FIRST_FAILURE_LOG",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.8 日志与诊断"
+        },
+        {
+          "assertionKey": "SECOND_RETRY_REQUIRES_DIAGNOSIS",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.8 日志与诊断"
+        },
+        {
+          "assertionKey": "NO_TIMEOUT_OR_POLLING_PSEUDOFIX",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.8 日志与诊断"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
+      ],
+      "sha256": "48b5e1dbc06937033ca14f7aceedbb8deadde2422eb92d3d382e2dbd83177f24"
+    }
+  ]
+}

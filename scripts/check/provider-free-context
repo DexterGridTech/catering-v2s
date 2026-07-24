@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_root="${V2S_CHECK_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
+cd "$repo_root"
+
+[[ -L .claude/skills ]] || { echo "PROVIDER_FREE_CONTEXT=FAIL"; echo "REASON=.claude/skills is not a symlink"; exit 2; }
+[[ "$(readlink .claude/skills)" == "../.agents/skills" ]] ||
+  { echo "PROVIDER_FREE_CONTEXT=FAIL"; echo "REASON=.claude/skills target drift"; exit 2; }
+[[ "$(find .agents/skills -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')" -eq 5 ]] ||
+  { echo "PROVIDER_FREE_CONTEXT=FAIL"; echo "REASON=skill denominator is not five"; exit 2; }
+
+for forbidden in .openmemory .mcp semantic-index index-service background-daemon; do
+  if find . -path './.git' -prune -o -path './.runtime' -prune -o -name "$forbidden" -print | grep -q .; then
+    echo "PROVIDER_FREE_CONTEXT=FAIL"
+    echo "REASON=forbidden executable/config path: $forbidden"
+    exit 2
+  fi
+done
+
+if rg -n 'child_process|spawn\(|exec\(|project-memory|recall-code|\brg\b' scripts/hooks/prompt-route >/dev/null; then
+  echo "PROVIDER_FREE_CONTEXT=FAIL"
+  echo "REASON=Prompt hook can query context"
+  exit 2
+fi
+
+node - .codex/hooks.json <<'NODE'
+const fs = require("node:fs");
+const value = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const serialized = JSON.stringify(value);
+if (/\/Users\/|~\/|openmemory|semantic|daemon|index-service/i.test(serialized)) process.exit(2);
+NODE
+
+node - tools scripts/hooks <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+const files = [];
+function walk(candidate) {
+  const stat = fs.statSync(candidate);
+  if (stat.isDirectory()) {
+    for (const name of fs.readdirSync(candidate)) walk(path.join(candidate, name));
+  } else if (stat.isFile()) {
+    const text = fs.readFileSync(candidate, "utf8");
+    if (candidate.endsWith(".mjs") || text.startsWith("#!/usr/bin/env node")) files.push(candidate);
+  }
+}
+for (const candidate of process.argv.slice(2)) walk(candidate);
+for (const file of files) {
+  const text = fs.readFileSync(file, "utf8");
+  const specs = [
+    ...[...text.matchAll(/\bfrom\s+["']([^"']+)["']/g)].map((match) => match[1]),
+    ...[...text.matchAll(/\brequire\(["']([^"']+)["']\)/g)].map((match) => match[1])
+  ];
+  if (specs.some((spec) => !spec.startsWith("node:"))) {
+    process.stderr.write(`non-built-in dependency in ${file}\n`);
+    process.exit(2);
+  }
+}
+NODE
+echo "PROVIDER_FREE_CONTEXT=PASS"

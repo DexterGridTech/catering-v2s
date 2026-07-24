@@ -1,0 +1,2766 @@
+{
+  "schemaVersion": 1,
+  "kind": "standards-coverage-matrix",
+  "status": "IN_REVIEW",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R2",
+  "currentPhase": "R2",
+  "authorityBoundary": {
+    "r2FreshAcceptanceAuthorized": false,
+    "w1Authorized": false,
+    "runtimeAuthorized": false,
+    "gitWriteAuthorized": false
+  },
+  "source": {
+    "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+    "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69",
+    "parser": "MARKDOWN_STRUCTURAL_RULES_V1",
+    "denominatorDefinition": "Part B numbered list items + Part C data table rows + Part D bullet items and data table rows; headings, prose context and table headers are not independent rule units",
+    "expectedCounts": {
+      "partBNumbered": 85,
+      "partCTableRows": 23,
+      "partDBullets": 30,
+      "partDTableRows": 12,
+      "total": 150
+    }
+  },
+  "memoryPolicy": {
+    "generatedIndexIsNotNormative": true,
+    "universalAnchor": "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE",
+    "sourceReopenRequired": true
+  },
+  "reviewChecklists": [
+    {
+      "id": "JOURNEY_INTERACTION_REVIEW",
+      "owner": "Dexter + Claude",
+      "requiredEvidence": "approved Journey/interaction matrix plus task-specific L2 evidence or an explicit justified omission"
+    },
+    {
+      "id": "REFERENCE_PATTERN_APPLICABILITY_REVIEW",
+      "owner": "Codex + Claude",
+      "requiredEvidence": "trigger/applicability decision, exact Heritage source reopen, and rejection of topology-inapplicable copying"
+    },
+    {
+      "id": "DOCUMENT_GOVERNANCE_REVIEW",
+      "owner": "Codex + Claude",
+      "requiredEvidence": "current owner, supersession, evidence immutability, naming and authorization-boundary readback"
+    },
+    {
+      "id": "DELIVERY_PROCESS_REVIEW",
+      "owner": "Dexter + Claude",
+      "requiredEvidence": "finite scope, independent oracle, discriminator, business/cleanup separation and no superseded ceremony"
+    },
+    {
+      "id": "DEPENDENCY_AND_VERSION_DECISION_REVIEW",
+      "owner": "Dexter + Claude",
+      "requiredEvidence": "exact version spike or explicit deferred decision, whitelist proof and no silent compatibility line"
+    },
+    {
+      "id": "CLAUDE_ENTRY_INTENTIONAL_REVIEW",
+      "owner": "Dexter + Claude",
+      "requiredEvidence": "human-started v2s-rooted review proves CLAUDE.md entry-chain readback; no unverified second hook configuration"
+    }
+  ],
+  "rules": [
+    {
+      "ruleId": "B.1.N01",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 1,
+        "textSha256": "bf35f2e830c562113e735082e768871e1f501170572ecb8207ba9863b4eef113"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N02",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 2,
+        "textSha256": "8d7ce9551b3fe491158615441092c766863bb4e91844c1331b738382d029e811"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N03",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 3,
+        "textSha256": "c2431c03c87e2681e0eef12c2a25dadee1788e021dfb995ffcf86878f7c0c8c4"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N04",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 4,
+        "textSha256": "e1b7dd8319128cebd93a27deacff77666c30549c55a2791b0b95cc631d23976a"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N05",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 5,
+        "textSha256": "8efc353e903f5254ddd5dabcf426a7fd6edca41ca05cf98ac6bc27664b57d3dc"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N06",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 6,
+        "textSha256": "e2d5a09669fb11a649c6e00fce5257c54d198fa88d127186b17d2dcef349f513"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N07",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 7,
+        "textSha256": "bd69ae4f57e296e0fa67edfdd4d6c056a6043546c3b533034c86d026616b0bc8"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N08",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 8,
+        "textSha256": "6876c5690774a15fe6a025e1f94bd02ce2ed6aa678d5cba2abe95c5ec274a340"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N09",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 9,
+        "textSha256": "c60e693e2017120b52883e23d22f13f66023b099794e535a01ef92d2d76cfc39"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N10",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 10,
+        "textSha256": "ebfde20b31252f802f484ff11fed306aa9cee7cd6b07216c03e980003ccd5a69"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N11",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 11,
+        "textSha256": "34ebf5a4fd85cfcf8514bda8c50167cbd9270a013e1e4349f84b583fde346543"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N12",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 12,
+        "textSha256": "3e8e7d9813a63e7047cc6d65818654f405077e9ce76cdec83127ac4a6f2f2bc7"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N13",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 13,
+        "textSha256": "5e9e6247ca65e42659bd03485529f53208232cdc0c7af307674aa32fa59fe928"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N14",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 14,
+        "textSha256": "48264fe505bc3575d20465c66f171ba6f0bce08a380808c0f45b8cb85b4b5f21"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N15",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 15,
+        "textSha256": "ce548e61259dda2e9a5ec7ea8839806a992026811a34d3939639aa7110a726d0"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N16",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 16,
+        "textSha256": "093e8015a88496b9f72be983e761aa86ea302fcc5e82b2448e39b491f331956f"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.1.N17",
+      "source": {
+        "section": "B.1",
+        "type": "NUMBERED",
+        "ordinal": 17,
+        "textSha256": "29d262bd0d7deaf43f7578ce53f3edde3382ec74faf5f45ca50a0e4f6d921fe9"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/security-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N01",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 1,
+        "textSha256": "e3251a9d75fbc1cc284e8dffefc1a5eaa5db615d7cfbb8e7668e9149f9cdad7d"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N02",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 2,
+        "textSha256": "965e9d641e3b5b7a190d931eb351b0b364ba6fda092ab7284ee718959b8501ef"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N03",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 3,
+        "textSha256": "139ef016110c38f6580d7b819e6fe0404259631c05fda5f1390e3b3bf99bf8a9"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N04",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 4,
+        "textSha256": "31bab130f395d8b066edb38359dfbb2d75de94611a12e17be3df863f6ebd0da6"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N05",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 5,
+        "textSha256": "e3d491d0a78f43a69b0c3f019a7d24a31e9454d69f893d0694a478bfa1202e03"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N06",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 6,
+        "textSha256": "c0b6057f3fc11332791ba04955fed4b94b0635e5712e673fc0f9b2497a8b9fc1"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N07",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 7,
+        "textSha256": "c8933f2374479f17120626f3f07e18e740a1ae6996efcb91207d423428a3ceb1"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N08",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 8,
+        "textSha256": "d4bf5e0b9c2c3db3fbe4b4c930ac7b2ef65b7b955b65cc28dd9d8dcf8098976e"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N09",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 9,
+        "textSha256": "07f88d1d30f01c803464159b357d36724b9339cf146dc5a6ee66566a53a80e22"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N10",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 10,
+        "textSha256": "4b01fa50fd1c46b4da6b19a92a52338cd97463f2db3ba6d48c45015bf063769b"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N11",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 11,
+        "textSha256": "0ac9cbb44b59b1560a2101fce8a9f80efd68b89da58638f8fba8d45f178ec961"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N12",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 12,
+        "textSha256": "85d02a314a9b1cc1be8834f7a13329ad9d7697dc7c3a98833b4a6d3d2cb03cea"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N13",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 13,
+        "textSha256": "ae7cd65b89edec9541f73b8a8450d908ef1cec5bf600710a1140da38ccbd0eed"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N14",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 14,
+        "textSha256": "6c9cd34a1d756ea48cb045b576027ebba6d0df13913354c67d6f82db74f5eb0a"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.2.N15",
+      "source": {
+        "section": "B.2",
+        "type": "NUMBERED",
+        "ordinal": 15,
+        "textSha256": "7ff47f10ccf5706608cba776d2635e60f6c94991625c8768a47893bcdae435e7"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N01",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 1,
+        "textSha256": "25106f433cee192d5b511231c5d644e32bc5764d974bd927e618b6cd13c5bec7"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N02",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 2,
+        "textSha256": "55b09194a977f6c04995aec3e5e99b94ff936b62fa7c7ff600d702a13dd54206"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N03",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 3,
+        "textSha256": "6b45829ce146ccee1941998c5ffc9e05239e0a28cc943b2e031ec066353c1ef4"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N04",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 4,
+        "textSha256": "a103e19272e3959a2482efa86e3b2d343ebc8986d8273b7293641618126c8bae"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N05",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 5,
+        "textSha256": "bd864efea0600d7fd01c030ae2875db110bf507434a793781cfdb2e0b6823e6e"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N06",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 6,
+        "textSha256": "650e883fd46f92e1a9c53a0dad898159a2d657b460c51026023080fc06dc1256"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N07",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 7,
+        "textSha256": "265118833b5f1cbbe6260868b0442b41beeb2611294839cd622445ca8276b38a"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N08",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 8,
+        "textSha256": "4f149239ad786e1cdbd058c0f0df275c26cab2e52c281ab9470d12e608913f03"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N09",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 9,
+        "textSha256": "21a9ff81217cdf0513a940a5f82566004fe4e61036076c319aeb1a943d35617e"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N10",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 10,
+        "textSha256": "09f8683b4029acd54d49404f82b6e22f395fc5598e3ae071113cfb3770b43189"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N11",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 11,
+        "textSha256": "4e5f47c6d6eea439066affbbe77934f36b7b7d5f9d1ee52ce752c8ce95c77c3a"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.3.N12",
+      "source": {
+        "section": "B.3",
+        "type": "NUMBERED",
+        "ordinal": 12,
+        "textSha256": "e0b929d464c1af2cb89f43d862a8f63265665b7e47170739d9df40eadd5fd5f3"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "ARCHUNIT",
+        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N01",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 1,
+        "textSha256": "87578356bf98dda2a98a3983c1f949ecae45e15611e210ed5492939ff8adcf70"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N02",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 2,
+        "textSha256": "9edcea764456e26b96bc8278af86dfd7e27fe59206cc30437e1dd64ab2a582ed"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N03",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 3,
+        "textSha256": "df9e6c7cd7eba3793cb483b3e423892f157351f1479167f55fda9d75a38e5c87"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N04",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 4,
+        "textSha256": "3c60f073d5eead2cb049d73aa16e658208e8e6b8c6332115dc41e82b11d0540f"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N05",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 5,
+        "textSha256": "081610cee91a588e5e4e7b44b3f861413e7d0a28bcd66e3c60e148acc462bf5b"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N06",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 6,
+        "textSha256": "facee4e2e7a463f3d9c451886d027e559ff436fc5a90709af6db9a9ae8d916ca"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N07",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 7,
+        "textSha256": "43c774dd7baa26fc19fe6350569f1bda2a2ab242e997a89c45d82395307909ef"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N08",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 8,
+        "textSha256": "a68860bb17421f73dd71b3d3cc07f41ca3442c05ded44bbfb361b05f49e5fc9a"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N09",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 9,
+        "textSha256": "6c3c702854404e7d253cdb813971cb3032de9ba04ca8ce7cb092aeee08c986a1"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N10",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 10,
+        "textSha256": "4f751b37942451339f9d93a2ea4ddf0ecdb806bad2e63926f161297870b84da4"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N11",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 11,
+        "textSha256": "35fe4e52599387c97ea82a68db0c5345a547d85580fdb2a0564e229774c84aef"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N12",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 12,
+        "textSha256": "5a044712842b85acf0f0baddbd6fe55f191fa41cceb286d4ba8578ebb45aa516"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N13",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 13,
+        "textSha256": "da855b17993b7734b07b332d8590f25f03e16eafc265ff2d31972fd2796acd46"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N14",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 14,
+        "textSha256": "7a5b470d9af3c1a81d62a33cd89967ff21ee4d926a029947dc09ca848591cd14"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N15",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 15,
+        "textSha256": "8c6bd3e2cd5666be87b0b88e2b0cf5e1332c46291600f6e61417fc6064fa10f0"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N16",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 16,
+        "textSha256": "c30c97abf65edd32fe5ccb0d1641c7144cc4058647dc3d4358b7bade6bbf338d"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N17",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 17,
+        "textSha256": "15a3bf83fb1683a010456b1b863eea2b0231c835a466b96d941b72faabfc675a"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N18",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 18,
+        "textSha256": "f266107954cdc116a994203f189abc4f2731c27ce19fb1deaa39e117094da36e"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N19",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 19,
+        "textSha256": "4c81b73e0d8e25e75f6bc84d7ac567bcc70b5c8c7b8802409c9f5982acbd43ea"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.4.N20",
+      "source": {
+        "section": "B.4",
+        "type": "NUMBERED",
+        "ordinal": 20,
+        "textSha256": "1951055df67f82f344d3fd91f79cd63311aeec3c462628d72a8bea428b970df2"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/frontend-architecture",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.5.N01",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 1,
+        "textSha256": "f4f94fc6cb4f9b6f1bbe4f173d37efa33ce479b18ea197b78a86d8a682e043a9"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N02",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 2,
+        "textSha256": "e5222319571411c9b5a58319bbd8d33f3e3d8c7aacc6de9fb4f3608cb6f1882c"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N03",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 3,
+        "textSha256": "978494b9446157f938831e6aa46911b80b0ed0c505e7123bbda4409e2a02b3df"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N04",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 4,
+        "textSha256": "ddea5ff82044dbd8f5d58eecd28f31abbba7d85e339178846e3b04015c0e01b6"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N05",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 5,
+        "textSha256": "0fc114ec7bcf4593a02c3d674706b6bebee175a26b276c7fc47660836104d268"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N06",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 6,
+        "textSha256": "d92b3efcf7f660e3055da1dcb54661b7737d168b8b1bf58195af0127af0b2226"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N07",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 7,
+        "textSha256": "5dceb7fc16808aa1795740c83a14de228ef70ed64494f21be21be73fb0261b6c"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N08",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 8,
+        "textSha256": "65acf3039132341357d5acdcd9e121dd6e140fa5d63924ed33ec730f5b3e07a6"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N09",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 9,
+        "textSha256": "15cea09fe8a6c6ef9a6a1edf684158e2dfd19c86815cbf4ce990672fefa64daa"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N10",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 10,
+        "textSha256": "da94d8f2e6c50821726c6163d883c7f6d7694a4137c04dc690a5de02ddc72b15"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N11",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 11,
+        "textSha256": "f99fba3bb173fd2d9f3c76914fe0c120bd3908f997479379950a00cbaee5696d"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N12",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 12,
+        "textSha256": "6da55097696c52b6e633655b6a51d0413e1983e404c2b0ce0684422f54c6bca5"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N13",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 13,
+        "textSha256": "be6aa61a95fd12eded2f59d2bd1acacdbc6d9c963329361bf2f0510eae0d58da"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N14",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 14,
+        "textSha256": "29e9876614a2f58e6cabf0f97bb3c64e00acde684de5c27b3cc9f492f2111926"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.5.N15",
+      "source": {
+        "section": "B.5",
+        "type": "NUMBERED",
+        "ordinal": 15,
+        "textSha256": "9f687c5dd7c42b4d01d766ff43f2993d8e39b65faf653d223c1f69ed46b563a4"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5",
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "B.6.N01",
+      "source": {
+        "section": "B.6",
+        "type": "NUMBERED",
+        "ordinal": 1,
+        "textSha256": "9ae982b510fec47eec68f524056e6570c15dc748042c6506aa4d36731780f270"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-operation-budget",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.6.N02",
+      "source": {
+        "section": "B.6",
+        "type": "NUMBERED",
+        "ordinal": 2,
+        "textSha256": "def1767f0377c3dd4cc47d9dff83d2182063a8ed4252a43405912db6dbf9cf79"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-operation-budget",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.6.N03",
+      "source": {
+        "section": "B.6",
+        "type": "NUMBERED",
+        "ordinal": 3,
+        "textSha256": "c5a8f9792368cb69fdcadad25fd76aaa4088eee7596a611a4940f81b67736bfa"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-operation-budget",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.6.N04",
+      "source": {
+        "section": "B.6",
+        "type": "NUMBERED",
+        "ordinal": 4,
+        "textSha256": "20902341bb7629dc64aac50c580d08f933dd029895a82edde460bad492d17971"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-operation-budget",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.6.N05",
+      "source": {
+        "section": "B.6",
+        "type": "NUMBERED",
+        "ordinal": 5,
+        "textSha256": "7b376bd295c29197178cc98c253e88554833087316e18f3e5479ddf7c4820793"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-operation-budget",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "B.6.N06",
+      "source": {
+        "section": "B.6",
+        "type": "NUMBERED",
+        "ordinal": 6,
+        "textSha256": "59a52b2b47ce7699b17e1880e5b133df35d064e54e0204f09b5905dfe9048148"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/database-operation-budget",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "C.T01",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 1,
+        "textSha256": "1c6f4b6d9fa58714544f75396200442a2173a571eb12192d108ad9ba0990867b"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T02",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 2,
+        "textSha256": "33a3f359df1315f8f352d0f8f7159171654cd3d8fe4184f4532ccdb949bed328"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T03",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 3,
+        "textSha256": "22be2e555319e098fa454da3665b35c09556126bb543f717476e954c0df52926"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T04",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 4,
+        "textSha256": "049f95c283031d794621fd1f6a239b174aa961ee94ff58d32cac8836ad4a02e1"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T05",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 5,
+        "textSha256": "4855d2ec3e2f7a5c6d1c2c75bd8afe6a66042dcfbba3abf4ae15b400f9efb46e"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T06",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 6,
+        "textSha256": "0de6659350bc0c20987b82a8d95d45af9294d19ca1f405562793e5ab49f4c1c6"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T07",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 7,
+        "textSha256": "ebc99b4e0067831644836090b7a628995528c8ebc339ceb83c64b467ed6446b5"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T08",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 8,
+        "textSha256": "c13784b27b0a877dbff428a98fb6dc937e18c8adf9bb3a0cced3eb46406dbde8"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T09",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 9,
+        "textSha256": "bc50c0c0ea3ba2d588655bd2c1dd24cb2b2aa2898fbf12e7bd61ba99381933ca"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T10",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 10,
+        "textSha256": "eb4c1847fde1373d4b4bb22d21d33e88fb06236a08c2a91e502e9584954c56a8"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T11",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 11,
+        "textSha256": "fa7d968c39961b8762376fbdf752251abf98fe59f461526f1cb12620710c82c0"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T12",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 12,
+        "textSha256": "6e56ad6e13b12626f1f3cc2b5cb6eca0c474eb2172ff2ac31cdc99546a03202c"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T13",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 13,
+        "textSha256": "8b61882fe2ebd6e116d039000567e5162f0ad25943c545a351b31ef1c275c1bd"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T14",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 14,
+        "textSha256": "dba2934134df52541b09f17e6b01bfb2f582bb6e948acb22d83ab123f1775004"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T15",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 15,
+        "textSha256": "ee432d6af1fc6b1197f25fd9d42c3b82a33646e03182e679883d46305a8280d8"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T16",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 16,
+        "textSha256": "54bce0fafb9d3920a7c82803c2c4e943e5121dd31903d5b88906de4116cce651"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T17",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 17,
+        "textSha256": "3391537ebb146cb2922bed29045c2fa3ce7d152906160ea0743911a5f5226416"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T18",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 18,
+        "textSha256": "adcbc3f3eab617c630c0b35d44796024a924615622f99868e8df2f607dca2f85"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T19",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 19,
+        "textSha256": "a7ff97476ac5e4ac065fa0d0c7bc4e828212f1f72ee13108fa66ab9ea390d630"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T20",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 20,
+        "textSha256": "8e5d9cf43b255151938c0c43fc9f4fa2daa8d0a73a1f40b9d557424aafbadad1"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T21",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 21,
+        "textSha256": "62106e73fa26a471a6c2d0e0a6f37bfb748a41ef9bd3bb77f322caed6f8a59c9"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T22",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 22,
+        "textSha256": "0210007710a7542dd8c5a8991f556f21e7402bb1bf63e5c3a215c4e4e3615dee"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "C.T23",
+      "source": {
+        "section": "C",
+        "type": "TABLE",
+        "ordinal": 23,
+        "textSha256": "551ea8993da342082385b1c0fc2aa7686c2066a64edaf8c5fada18bbac36f25c"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.1.L01",
+      "source": {
+        "section": "D.1",
+        "type": "BULLET",
+        "ordinal": 1,
+        "textSha256": "1e225799cc2360a43a9c98b368337c793c1289ec324f35acbc96aeefbe124283"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/code-layout",
+        "status": "PLANNED",
+        "enforcementPhase": "R3"
+      }
+    },
+    {
+      "ruleId": "D.1.L02",
+      "source": {
+        "section": "D.1",
+        "type": "BULLET",
+        "ordinal": 2,
+        "textSha256": "df9a7dbaec2574d08b5db58def27cd696e88c76b57a2ed2783035ade468d8fdd"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/code-layout",
+        "status": "PLANNED",
+        "enforcementPhase": "R3"
+      }
+    },
+    {
+      "ruleId": "D.1.L03",
+      "source": {
+        "section": "D.1",
+        "type": "BULLET",
+        "ordinal": 3,
+        "textSha256": "5696a0b5976babd8b88d0b5153875c4b5130cf3aa769b2ce63ac73a8fdc023cb"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/code-layout",
+        "status": "PLANNED",
+        "enforcementPhase": "R3"
+      }
+    },
+    {
+      "ruleId": "D.1.L04",
+      "source": {
+        "section": "D.1",
+        "type": "BULLET",
+        "ordinal": 4,
+        "textSha256": "d2a7c7df6893538b50485bb478cab6b74f9754ec263a6dab86d2049444e50282"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/code-layout",
+        "status": "PLANNED",
+        "enforcementPhase": "R3"
+      }
+    },
+    {
+      "ruleId": "D.2.L01",
+      "source": {
+        "section": "D.2",
+        "type": "BULLET",
+        "ordinal": 1,
+        "textSha256": "b722a3c648ee0e2fdf370514212190eb99360155a92293ba834208ce1d455d0e"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/openapi-contracts",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.2.L02",
+      "source": {
+        "section": "D.2",
+        "type": "BULLET",
+        "ordinal": 2,
+        "textSha256": "d9ec68d32419ce335283fd98f7614fb61dce80a7cd0b9958be23ba627f54941e"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/openapi-contracts",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.2.L03",
+      "source": {
+        "section": "D.2",
+        "type": "BULLET",
+        "ordinal": 3,
+        "textSha256": "76fff70e58e026446d3ff72f314716634726499825c76b3cc15d4aea4b0953f5"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/openapi-contracts",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.2.L04",
+      "source": {
+        "section": "D.2",
+        "type": "BULLET",
+        "ordinal": 4,
+        "textSha256": "a3836257c70e2d129b0aaaa95ac5b248f8cbb9e14f4d376aae4c88575566fc83"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/openapi-contracts",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.3.L01",
+      "source": {
+        "section": "D.3",
+        "type": "BULLET",
+        "ordinal": 1,
+        "textSha256": "34db70895c9cb482e4f16c5d353986f661cfc6ef789321bc5e7be64b613335ca"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/verify",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.3.L02",
+      "source": {
+        "section": "D.3",
+        "type": "BULLET",
+        "ordinal": 2,
+        "textSha256": "ef870c5d1932e2bb733da97ebe2d70299899d94f4b532325a682367311410812"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/verify",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.3.L03",
+      "source": {
+        "section": "D.3",
+        "type": "BULLET",
+        "ordinal": 3,
+        "textSha256": "be03b18d1c774152ed9ef5e50c97a0f7c6d8b6b5619051c03b42711a7bf634c7"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/verify",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.4.L01",
+      "source": {
+        "section": "D.4",
+        "type": "BULLET",
+        "ordinal": 1,
+        "textSha256": "97de6f5bbd6f4372eca10d89dcff219de2b37b86cf228045ddbc616e93b29377"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DOCUMENT_GOVERNANCE_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.4.L02",
+      "source": {
+        "section": "D.4",
+        "type": "BULLET",
+        "ordinal": 2,
+        "textSha256": "e23b15f89581e6c7b14310e115b3a46a4fcfdb05506a16bca97947b9f001d16b"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DOCUMENT_GOVERNANCE_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.4.L03",
+      "source": {
+        "section": "D.4",
+        "type": "BULLET",
+        "ordinal": 3,
+        "textSha256": "47251d6c2cbd70e4e9147de0c205436961700f1f94a22e4767926f3d85d7ac10"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/roadmap-program-registry",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2"
+      }
+    },
+    {
+      "ruleId": "D.4.L04",
+      "source": {
+        "section": "D.4",
+        "type": "BULLET",
+        "ordinal": 4,
+        "textSha256": "b9f6c944223f19c9129a956fdd190297203fb377c25851503b1db27634256884"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DOCUMENT_GOVERNANCE_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.4.L05",
+      "source": {
+        "section": "D.4",
+        "type": "BULLET",
+        "ordinal": 5,
+        "textSha256": "315eba8f2ca303a8eb5a245f95d255740971d5c31c6b6daef10a56874717348a"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DOCUMENT_GOVERNANCE_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.5.L01",
+      "source": {
+        "section": "D.5",
+        "type": "BULLET",
+        "ordinal": 1,
+        "textSha256": "e984ce8920f85c07604c2fd358f396227ffd9730802813b69991e1100a4fa3e0"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.5.L02",
+      "source": {
+        "section": "D.5",
+        "type": "BULLET",
+        "ordinal": 2,
+        "textSha256": "5c4b79f477922febb0ed006f1c26e73ee1c16dd4125df348e06fee0cb35060b0"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.5.L03",
+      "source": {
+        "section": "D.5",
+        "type": "BULLET",
+        "ordinal": 3,
+        "textSha256": "d154a304ed832e969b033b8fa5f0fe2fb45b896a868ac2eefaedb028544a5874"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.5.L04",
+      "source": {
+        "section": "D.5",
+        "type": "BULLET",
+        "ordinal": 4,
+        "textSha256": "d6883c3ca56d465e659c2fd7921542654896f5875db4042f5623c481e595d675"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.5.L05",
+      "source": {
+        "section": "D.5",
+        "type": "BULLET",
+        "ordinal": 5,
+        "textSha256": "497f476955d801c37476999ad9dff6bd115b79b7236e4ee9ac180948068896cc"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.T01",
+      "source": {
+        "section": "D.6",
+        "type": "TABLE",
+        "ordinal": 1,
+        "textSha256": "42716a405e9907c821af339e459eae944cf5c944254c4f77cbce1e4e6cdc8570"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.T02",
+      "source": {
+        "section": "D.6",
+        "type": "TABLE",
+        "ordinal": 2,
+        "textSha256": "5d6e7341274e4f1f3b96aeefe830ad4f78d953694147bd9787da805607313e48"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.T03",
+      "source": {
+        "section": "D.6",
+        "type": "TABLE",
+        "ordinal": 3,
+        "textSha256": "c6d05a6c05f19ab78d8f004540dee55300e5ab550216fa4e51ebd8bbc143c1a6"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.T04",
+      "source": {
+        "section": "D.6",
+        "type": "TABLE",
+        "ordinal": 4,
+        "textSha256": "bda8bcebef33f1840ea6cd256274177cb61cbd3e698cec09f6e415b93c9e812a"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.T05",
+      "source": {
+        "section": "D.6",
+        "type": "TABLE",
+        "ordinal": 5,
+        "textSha256": "8e7cb0f426f6db8aadf758519d34df3ab9cbee6197925634c5879b178fd6edcc"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.L01",
+      "source": {
+        "section": "D.6",
+        "type": "BULLET",
+        "ordinal": 1,
+        "textSha256": "9c49b813b5f0ed18db46b503fa1b8d88e88fbb1792cd9bf5304808a36b9f1edd"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.L02",
+      "source": {
+        "section": "D.6",
+        "type": "BULLET",
+        "ordinal": 2,
+        "textSha256": "8c6b482336d486c411e53263b368af50a20d620ea5c190093502ce40ac857056"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.L03",
+      "source": {
+        "section": "D.6",
+        "type": "BULLET",
+        "ordinal": 3,
+        "textSha256": "dc5d481b29ee772f20d04cc4d134289516df960cea7ed87a118803a9152501e3"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.L04",
+      "source": {
+        "section": "D.6",
+        "type": "BULLET",
+        "ordinal": 4,
+        "textSha256": "940835193826c4d1ceabc02125427328131812ce3a11678c19c1d2828edfd6bf"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.L05",
+      "source": {
+        "section": "D.6",
+        "type": "BULLET",
+        "ordinal": 5,
+        "textSha256": "4245a0795748ed927efabda9cbb6ab8d2311f20df81adb1f8adfd3bb986d1d60"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.6.L06",
+      "source": {
+        "section": "D.6",
+        "type": "BULLET",
+        "ordinal": 6,
+        "textSha256": "5aa986502f757f5c1e0bd25820e5db913582bf1ff9a255551f4c7c3c293d967e"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R3",
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.7.T01",
+      "source": {
+        "section": "D.7",
+        "type": "TABLE",
+        "ordinal": 1,
+        "textSha256": "5d76732f91536c3f8d1826a855a01b5c6d7eb1b6c920ab572586d402b14e5b96"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/agent-lifecycle",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2"
+      }
+    },
+    {
+      "ruleId": "D.7.T02",
+      "source": {
+        "section": "D.7",
+        "type": "TABLE",
+        "ordinal": 2,
+        "textSha256": "e52d6153cc3c4cefa4429a68dacd5c35801f77dea943e6bb81eba616823da4c1"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "CLAUDE_ENTRY_INTENTIONAL_REVIEW"
+      }
+    },
+    {
+      "ruleId": "D.7.T03",
+      "source": {
+        "section": "D.7",
+        "type": "TABLE",
+        "ordinal": 3,
+        "textSha256": "d1f0fbf7fdc50c0463116896027e3c4b1925f5c57439349cd4c984c9e521a445"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/foundation-standard-actions",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2"
+      }
+    },
+    {
+      "ruleId": "D.7.T04",
+      "source": {
+        "section": "D.7",
+        "type": "TABLE",
+        "ordinal": 4,
+        "textSha256": "a406bab4bff0745dac167b47258223eb843f0d8fe91b1dd97b59931d9e2bbfa4"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/project-memory",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2"
+      }
+    },
+    {
+      "ruleId": "D.7.T05",
+      "source": {
+        "section": "D.7",
+        "type": "TABLE",
+        "ordinal": 5,
+        "textSha256": "7b8e0c9b07a155c1e80ad1b0aa1ac43f5772d9614e19e12409c9eebd96fd7b2d"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/provider-free-context",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2"
+      }
+    },
+    {
+      "ruleId": "D.7.T06",
+      "source": {
+        "section": "D.7",
+        "type": "TABLE",
+        "ordinal": 6,
+        "textSha256": "820435220ad5c38bb81bad39143a7e82aee966ded938c491e14bfddbd5ca0a96"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "NEGATIVE_FIXTURE",
+        "ref": "scripts/check/agent-lifecycle",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2"
+      }
+    },
+    {
+      "ruleId": "D.7.T07",
+      "source": {
+        "section": "D.7",
+        "type": "TABLE",
+        "ordinal": 7,
+        "textSha256": "8ecd6bfdb1edd5460fe80f28faf663b1386edfc8344d5794c1cfa016d7f90d44"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/roadmap-program-registry",
+        "status": "ACTIVE",
+        "enforcementPhase": "R2"
+      }
+    },
+    {
+      "ruleId": "D.8.L01",
+      "source": {
+        "section": "D.8",
+        "type": "BULLET",
+        "ordinal": 1,
+        "textSha256": "2eb8f2f73b791ed56fec7a316434772d01051d08d538ecf4c493a8c2a5097cf9"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/logging-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.8.L02",
+      "source": {
+        "section": "D.8",
+        "type": "BULLET",
+        "ordinal": 2,
+        "textSha256": "519887abcc15a0c8dd3771714f00c7efa11c6c618e0523b0538de387795367c3"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/logging-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    },
+    {
+      "ruleId": "D.8.L03",
+      "source": {
+        "section": "D.8",
+        "type": "BULLET",
+        "ordinal": 3,
+        "textSha256": "f2931832d06c0718c0f39b0340476e10f3d61589cda3fd79cb4c9f40e263fa32"
+      },
+      "memoryRefs": [
+        "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
+      ],
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/logging-boundaries",
+        "status": "PLANNED",
+        "enforcementPhase": "R4"
+      }
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+import { existsSync, readFileSync } from "node:fs";
+import { resolve, sep } from "node:path";
+
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => { input += chunk; });
+process.stdin.on("end", () => {
+  const blockers = [];
+  let sessionId;
+  try {
+    const parsed = JSON.parse(input || "{}");
+    if (typeof parsed.sessionId === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(parsed.sessionId)) sessionId = parsed.sessionId;
+    else blockers.push("INVALID_SESSION_ID");
+  } catch {
+    blockers.push("INVALID_INPUT");
+  }
+  const root = process.cwd();
+  if (sessionId) {
+    const markerPath = safeResolve(root, `.runtime/agent-sessions/${sessionId}.json`);
+    if (!markerPath) blockers.push("SESSION_PATH_ESCAPE");
+    else if (existsSync(markerPath)) inspectMarker(root, markerPath, sessionId, blockers);
+  }
+  if (blockers.length) {
+    process.stdout.write(`STATUS=BLOCKED\n${blockers.map((blocker) => `BLOCKER=${blocker}`).join("\n")}\n`);
+    process.exitCode = 2;
+  } else {
+    process.stdout.write("STATUS=PASS\n");
+  }
+});
+
+function safeResolve(root, relative) {
+  const absoluteRoot = resolve(root);
+  const candidate = resolve(absoluteRoot, relative);
+  return candidate === absoluteRoot || candidate.startsWith(`${absoluteRoot}${sep}`) ? candidate : undefined;
+}
+
+function inspectMarker(root, markerPath, sessionId, blockers) {
+  let marker;
+  try {
+    marker = JSON.parse(readFileSync(markerPath, "utf8"));
+  } catch {
+    blockers.push("INVALID_SESSION_MARKER");
+    return;
+  }
+  const goalStatuses = ["NONE", "ACTIVE", "COMPLETE", "BLOCKED"];
+  if (!marker || typeof marker !== "object" || Array.isArray(marker) ||
+      Object.keys(marker).sort().join(",") !== "goal,managedRunIds,schemaVersion,sessionId" ||
+      marker.schemaVersion !== 1 || marker.sessionId !== sessionId ||
+      !marker.goal || typeof marker.goal !== "object" || Array.isArray(marker.goal) ||
+      Object.keys(marker.goal).join(",") !== "status" ||
+      !goalStatuses.includes(marker.goal.status) ||
+      !Array.isArray(marker.managedRunIds) ||
+      marker.managedRunIds.some((runId) => typeof runId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(runId))) {
+    blockers.push("INVALID_SESSION_MARKER");
+    return;
+  }
+  if (marker.goal.status === "ACTIVE") blockers.push("ACTIVE_GOAL");
+  for (const runId of marker.managedRunIds) {
+    const manifestPath = safeResolve(root, `.runtime/managed-runs/${runId}/manifest.json`);
+    if (!manifestPath || !existsSync(manifestPath)) {
+      blockers.push(`UNKNOWN_MANAGED_RUN:${runId}`);
+      continue;
+    }
+    let manifest;
+    try {
+      manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    } catch {
+      blockers.push(`INVALID_MANAGED_RUN:${runId}`);
+      continue;
+    }
+    if (manifest.schemaVersion !== 1 || manifest.runId !== runId ||
+        !["STARTING", "RUNNING", "STOPPED"].includes(manifest.status) ||
+        !manifest.cleanup || !["PENDING", "PASS", "FAIL"].includes(manifest.cleanup.status)) {
+      blockers.push(`INVALID_MANAGED_RUN:${runId}`);
+      continue;
+    }
+    if (manifest.status !== "STOPPED") blockers.push(`RUN_NOT_STOPPED:${runId}`);
+    if (manifest.cleanup.status !== "PASS") blockers.push(`CLEANUP_NOT_PASS:${runId}`);
+  }
+}

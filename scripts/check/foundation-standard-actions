@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$repo_root"
+
+for path in AGENTS.md CLAUDE.md PLATFORM-BLUEPRINT.md \
+  .codex/hooks.json project-memory/required-inventory.json \
+  project-memory/index.json project-memory/index.md; do
+  [[ -f "$path" ]] || { echo "FOUNDATION_STANDARD_ACTIONS=FAIL"; echo "MISSING=$path"; exit 2; }
+done
+
+for path in scripts/hooks/session-start scripts/hooks/prompt-route scripts/hooks/stop \
+  scripts/context/agent-context scripts/context/recall-memory scripts/context/recall-code \
+  scripts/context/recall-failure scripts/context/working-set scripts/memory/build-index \
+  scripts/memory/query scripts/check/project-memory scripts/check/agent-lifecycle \
+  scripts/check/provider-free-context scripts/check/foundation-standard-actions; do
+  [[ -x "$path" ]] || { echo "FOUNDATION_STANDARD_ACTIONS=FAIL"; echo "NOT_EXECUTABLE=$path"; exit 2; }
+done
+
+scripts/check/provider-free-context
+scripts/check/agent-lifecycle
+scripts/check/project-memory
+scripts/context/working-set >/dev/null
+scripts/context/recall-code --query "ONE_BUSINESS_DEPLOYABLE" >/dev/null
+! grep -Eq -- '--task-kinds|--domains|--consumer-faces|--owners|--impacts|--triggers' scripts/README.md \
+  || { echo "FOUNDATION_STANDARD_ACTIONS=FAIL"; echo "README_ROUTE_FLAGS_STALE"; exit 2; }
+scripts/context/recall-memory \
+  --task-kind review --domain platform \
+  --consumer-face backend --owner platform \
+  --impact governance --trigger task-start >/dev/null
+echo "README_CANONICAL_MEMORY_COMMAND=PASS"
+
+provider_fixture="$(mktemp -d "${TMPDIR:-/tmp}/v2s-provider-red.XXXXXX")"
+cleanup() {
+  rm -rf "$provider_fixture"
+}
+trap cleanup EXIT
+cp -R .agents .claude .codex tools "$provider_fixture/"
+mkdir -p "$provider_fixture/scripts"
+cp -R scripts/hooks "$provider_fixture/scripts/hooks"
+mkdir "$provider_fixture/.mcp"
+set +e
+V2S_CHECK_ROOT="$provider_fixture" scripts/check/provider-free-context >/dev/null 2>&1
+provider_status=$?
+set -e
+[[ "$provider_status" -ne 0 ]] || { echo "PROVIDER_EXECUTABLE_PATH_RED=FAIL"; exit 2; }
+echo "PROVIDER_EXECUTABLE_PATH_RED=PASS"
+
+set +e
+scripts/memory/query \
+  --task-kind unknown --domain platform --consumer-face backend \
+  --owner platform --impact memory --trigger task-start >/dev/null 2>&1
+unknown_status=$?
+set -e
+[[ "$unknown_status" -ne 0 ]] || { echo "MEMORY_UNKNOWN_ROUTE_RED=FAIL"; exit 2; }
+echo "MEMORY_UNKNOWN_ROUTE_RED=PASS"
+echo "FOUNDATION_STANDARD_ACTIONS=PASS"

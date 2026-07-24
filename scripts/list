@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat <<'EOF'
+R1 context:
+  scripts/context/agent-context
+  scripts/context/recall-memory
+  scripts/context/recall-code
+  scripts/context/recall-failure
+  scripts/context/working-set
+
+R1 deterministic memory:
+  scripts/memory/build-index
+  scripts/memory/query
+
+R1 checks:
+  scripts/check/project-memory
+  scripts/check/agent-lifecycle
+  scripts/check/provider-free-context
+  scripts/check/foundation-standard-actions
+  scripts/check/roadmap-program-registry
+  scripts/check/roadmap-control-plane-transfer
+  scripts/check/module-dependency-registry
+  scripts/check/handoff-debt
+  scripts/check/heritage-registry
+  scripts/check/r1-closure
+  scripts/check/claude-review-handoff
+
+R1 does not provide DEV, seed, reset, migration, application, or business-runtime commands.
+EOF

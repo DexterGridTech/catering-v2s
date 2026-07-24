@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => { input += chunk; });
+process.stdin.on("end", () => {
+  let prompt = "";
+  try {
+    const parsed = JSON.parse(input || "{}");
+    if (typeof parsed.prompt === "string") prompt = parsed.prompt.trim().toLowerCase();
+  } catch {
+    prompt = "";
+  }
+  const routes = [
+    { name: "cs-failure-recall", match: /\b(fail|failure|error|exception|timeout|log|debug)\b|失败|报错|日志|排障/ },
+    { name: "cs-managed-runtime-execution", match: /\b(dev|start|restart|runtime|runner|container)\b|启动|重启|运行环境/ },
+    { name: "cs-memory-recall", match: /\b(memory|history|decision|heritage|roadmap)\b|记忆|历史|决策|路线图/ },
+    { name: "cs-code-structure-recall", match: /\b(code|symbol|class|method|reference|where)\b|代码|符号|引用|在哪/ },
+    { name: "cs-spec-to-plan", match: /\b(spec|plan|design|architecture)\b|规格|计划|设计|架构/ }
+  ];
+  const selected = prompt ? routes.find((route) => route.match.test(prompt)) : undefined;
+  const lines = ["STATUS=PASS", `RECOMMENDED_SKILL=${selected?.name ?? "NONE"}`];
+  if (selected) lines.push(`RECOMMENDED_SKILL_PATH=.agents/skills/${selected.name}/SKILL.md`);
+  lines.push("CONTEXT_QUERY_PERFORMED=false", "");
+  process.stdout.write(lines.join("\n"));
+});

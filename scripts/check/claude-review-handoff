@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/check/claude-review-handoff --file <review-request-relative-path>
+  scripts/check/claude-review-handoff --self-test
+
+Validates the mandatory Claude review handoff structure and the directly
+copyable Chinese message. It does not replace Codex's final-response duty.
+EOF
+}
+
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+
+fail() {
+  printf 'CLAUDE_REVIEW_HANDOFF=FAIL\nREASON=%s\n' "$1" >&2
+  exit 1
+}
+
+validate() {
+  local file="$1"
+  [[ -f "$file" ]] || fail "FILE_NOT_FOUND:$file"
+  grep -Eq '^REVIEW_STATUS=WITHDRAWN' "$file" && fail "REVIEW_WITHDRAWN"
+
+  local heading
+  for heading in "## 背景" "## 评审目标" "## 需阅读文件" "## 独立核验重点" "## 期望结论" "## 可直接复制给 Claude 的话术"; do
+    grep -Fqx "$heading" "$file" || fail "MISSING_SECTION:${heading#\#\# }"
+  done
+
+  local handoff
+  handoff="$(sed -n '/^## 可直接复制给 Claude 的话术$/,$p' "$file")"
+  grep -Fq '```text' <<< "$handoff" || fail "MISSING_COPYABLE_TEXT_BLOCK"
+  grep -Fq '您好 Claude' <<< "$handoff" || fail "MISSING_COURTEOUS_GREETING"
+  grep -Fq '背景：' <<< "$handoff" || fail "MISSING_HANDOFF_BACKGROUND"
+  grep -Fq '目标：' <<< "$handoff" || fail "MISSING_HANDOFF_TARGET"
+  grep -Fq 'GO' <<< "$handoff" && grep -Fq 'NO-GO' <<< "$handoff" && grep -Fq 'M' <<< "$handoff" && grep -Fq 'S' <<< "$handoff" && grep -Fq 'N' <<< "$handoff" || fail "MISSING_VERDICT_FORMAT"
+  grep -Fq '授权边界：' <<< "$handoff" || fail "MISSING_AUTHORITY_BOUNDARY"
+  printf '%s\n' "$handoff" | grep -Eq '(^|[^[:alnum:]_])(doc|apps|scripts|contracts|project-memory)/' || fail "MISSING_REPOSITORY_RELATIVE_PATH"
+
+  if grep -Fqx 'REVIEW_KIND=IMPLEMENTATION_FACING_DESIGN' "$file"; then
+    local manifest review
+    manifest="$(sed -n 's/^DESIGN_GRANULARITY_MANIFEST=//p' "$file" | head -1)"
+    review="$(sed -n 's/^ADVERSARIAL_REVIEW_REPORT=//p' "$file" | head -1)"
+    [[ -n "$manifest" && -n "$review" ]] || fail "IMPLEMENTATION_DESIGN_GATE_REFS_MISSING"
+    "$root_dir/scripts/check/implementation-design-granularity" --manifest "$manifest" --review "$review" >/dev/null || fail "IMPLEMENTATION_DESIGN_GATE_FAILED"
+  fi
+
+  printf 'CLAUDE_REVIEW_HANDOFF=PASS\nFILE=%s\n' "${file#"$root_dir"/}"
+}
+
+self_test() {
+  local temp_dir
+  temp_dir="$(mktemp -d)"
+  trap 'rm -rf "$temp_dir"' RETURN
+  local good="$temp_dir/good.md"
+  local bad="$temp_dir/bad.md"
+  cat > "$good" <<'EOF'
+## 背景
+x
+## 评审目标
+x
+## 需阅读文件
+- `doc/example.md`
+## 独立核验重点
+x
+## 期望结论
+x
+## 可直接复制给 Claude 的话术
+```text
+您好 Claude，烦请协助评审本次示例。
+背景：示例。
+目标：核验示例。
+请从仓库根阅读：doc/example.md。
+请重点独立核验：示例。
+烦请给出明确 GO 或 NO-GO；如有问题请按 M / S / N 标注。
+授权边界：示例。谢谢。
+```
+EOF
+  cat > "$bad" <<'EOF'
+## 背景
+x
+EOF
+  validate "$good" >/dev/null
+  if (validate "$bad") >/dev/null 2>&1; then
+    fail "RED_FIXTURE_MISSING_SECTION_DID_NOT_FAIL"
+  fi
+  printf 'CLAUDE_REVIEW_HANDOFF_SELF_TEST=PASS\nRED_FIXTURE_MISSING_SECTION=PASS\n'
+}
+
+case "${1:-}" in
+  --file)
+    [[ $# -eq 2 ]] || { usage >&2; exit 2; }
+    case "$2" in
+      /*) fail "ABSOLUTE_PATH_NOT_ALLOWED" ;;
+    esac
+    validate "$root_dir/$2"
+    ;;
+  --self-test)
+    [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    self_test
+    ;;
+  --help|-h)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-r1-post-transfer-closure",
+  "status": "PASS",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R1",
+  "activationObservedAt": "2026-07-24T17:36:19+09:00",
+  "resolver": "PASS",
+  "lastClosedStep": "R1",
+  "currentStep": "R2",
+  "currentStatus": "IN_REVIEW",
+  "hashes": {
+    "transferReceipt": "61bf4f4729efbb5bfbd8d5cbea1c43987503067c306deaf28a34ce7e350cefda",
+    "implementationClosure": "e1bcbf43c8c6a0b475e14169ebc0e0dcc1248e54bbefc8097a384ed1ae1add91",
+    "activeRegistry": "f3e232d2a1c39ed6bb196911e7c85a73429a5871a3fe8f7e16d2cfa0403f12a8",
+    "targetRoadmap": "7ed6fc31be727dd64483b6bc4b051c306fd93417272b8287e108ba00e42c6e76",
+    "adoptedRoadmapSnapshot": "7ed6fc31be727dd64483b6bc4b051c306fd93417272b8287e108ba00e42c6e76"
+  },
+  "sourceRole": "READ_ONLY_HERITAGE",
+  "sourceWriteBack": false,
+  "business": "PASS",
+  "cleanup": "PASS",
+  "activeManagedResources": 0,
+  "authorityBoundary": {
+    "r1Closed": true,
+    "r2Authorized": false,
+    "w1Authorized": false,
+    "devStarted": false,
+    "seedOrResetExecuted": false,
+    "gitWriteExecuted": false
+  }
+}

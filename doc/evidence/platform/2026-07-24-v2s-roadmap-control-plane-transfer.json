@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "roadmap-control-plane-transfer",
+  "phase": "CANDIDATE_VERIFIED",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "source": {
+    "repository": "catering-all-v2",
+    "relation": "../catering-all-v2",
+    "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+    "preparedSha256": "a76b245cc4afe9a978989bb93b9024ef651a33aad6089d7f4d0a2f20fc0d71b5",
+    "finalState": "EVIDENCE_READY__TRANSFER_PENDING"
+  },
+  "target": {
+    "repository": "catering-v2s",
+    "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+    "adoptedSnapshotPath": "doc/evidence/platform/2026-07-24-v2s-roadmap-adopted-snapshot.md",
+    "adoptedSha256": "7ed6fc31be727dd64483b6bc4b051c306fd93417272b8287e108ba00e42c6e76",
+    "gitHead": "5b083504f6687ca6be832171c79a4e1234078937",
+    "worktree": "DIRTY_R1_AUTHORIZED_UNCOMMITTED"
+  },
+  "registryPath": "doc/platform/roadmap-program-registry.json",
+  "expectedActiveRegistryHash": "f3e232d2a1c39ed6bb196911e7c85a73429a5871a3fe8f7e16d2cfa0403f12a8",
+  "lastClosedStep": "R1",
+  "currentStep": "R2",
+  "candidateVerifiedAt": "2026-07-24T17:34:57+09:00",
+  "reviewRefs": [
+    "doc/review/platform/2026-07-24-v2s-r1-adversarial-go-review.json",
+    "doc/review/platform/2026-07-24-v2s-r1-codex-self-review.md#sha256=c37cbebf6ec98c16e3568b0efb859942c6eca503647f539a9d293f1b5a593a0c"
+  ],
+  "implementationClosure": {
+    "path": "doc/evidence/platform/2026-07-24-v2s-r1-implementation-closure.json",
+    "sha256": "e1bcbf43c8c6a0b475e14169ebc0e0dcc1248e54bbefc8097a384ed1ae1add91"
+  },
+  "heritageRegistry": {
+    "path": "doc/heritage/registry.json",
+    "sha256": "1e613d23ea432efa394c6617c748901179fe80f74581f4b869923614b488286a"
+  },
+  "business": "PASS",
+  "cleanup": "PASS",
+  "activeManagedResources": 0
+}

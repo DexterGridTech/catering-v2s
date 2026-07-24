@@ -1,0 +1,113 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "V2S-R1-W0-4-7",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "deliveryUnits": [
+    {
+      "id": "R1-U01",
+      "approvedAssertions": [
+        "v2s fresh sessions must use repository-owned deterministic memory/code recall and must not restore providers, daemons or copied all-v2 program machinery",
+        "the project-memory denominator is exactly six named kernel entries and five named routed entries, independently closed by required-inventory.json with exact assertionSources path and literal heading per key",
+        "SessionStart UserPromptSubmit and Stop are bound through .codex/hooks.json to exact repository scripts with closed stdin stdout exit marker and managed-run contracts"
+      ],
+      "approvedSources": [
+        {"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)", "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"},
+        {"path": "doc/handoffs/2026-07-24-v2s-w0-continuation-handoff.md", "anchor": "## 6. W0 第 4-7 项获授权后的完成标准", "sha256": "c94afa29234b8e13ae96034091e6cbe7d517852418c997998f635696e20caeba"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-24-v2s-r1-implementation-plan.md", "anchor": "## R1-U01 — 仓根入口、skills/hooks 与确定性 project-memory"},
+      "currentDeviation": "v2s contains only IDE metadata and has no repository-owned session entry, deterministic project memory, skills, hooks or standard actions",
+      "changeSurfaces": [
+        {"path": "catering-v2s/AGENTS.md", "symbol": "v2s execution entry", "disposition": "create", "current": "absent", "target": "v2s identity, read order, R1/R2 authority and architecture redlines", "algorithm": "state immutable entry rules and resolve current work only through the v2s-native registry", "upstream": "frozen ADR and manifest", "downstream": "fresh Codex and Claude sessions"},
+        {"path": "catering-v2s/.agents/skills", "symbol": "five repository-owned cs skills", "disposition": "create", "current": "absent", "target": "deterministic memory, code, failure, spec and managed-runtime navigation", "algorithm": "each skill calls one repository-relative standard action and requires source reopen", "upstream": "AGENTS and routing vocabulary", "downstream": "Prompt skill recommendation"},
+        {"path": "catering-v2s/tools/project-memory/cli.mjs", "symbol": "build check query", "disposition": "create", "current": "absent", "target": "closed-route hash-bound project-memory index", "algorithm": "parse constrained frontmatter, validate vocabulary/source refs/kernel budget, sort and hash entries, fail on stale generated index", "upstream": "project-memory originals", "downstream": "recall-memory and working-set"},
+        {"path": "catering-v2s/project-memory/required-inventory.json", "symbol": "eleven-entry source-derived denominator", "disposition": "create", "current": "absent", "target": "exact IDs paths routes assertionSources sourceRefs and frozen assertion keys from U01-A", "algorithm": "compare originals and generated index against the approved inventory; reopen each exact owning path and literal heading; reject missing assertion, substituted non-owner source, missing entry, extra active entry or route drift", "upstream": "R1-U01-A assertion ownership table", "downstream": "project-memory build and omission/source-substitution red fixtures"},
+        {"path": "catering-v2s/.codex/hooks.json", "symbol": "three lifecycle event registrations", "disposition": "create", "current": "absent", "target": "SessionStart UserPromptSubmit Stop mapped to repository scripts with five-second timeout", "algorithm": "tests parse the production registration and invoke the registered command rather than a helper-only path", "upstream": "R1-U01-B contract", "downstream": "fresh client lifecycle"},
+        {"path": "catering-v2s/scripts/hooks/stop", "symbol": "session and managed-run blocker contract", "disposition": "create", "current": "absent", "target": "fail-closed status for one session marker and its explicitly owned run manifests", "algorithm": "validate closed schemas under .runtime/agent-sessions and .runtime/managed-runs; exit 2 for active goal unsafe run cleanup failure or path/schema error", "upstream": "hook stdin sessionId", "downstream": "Codex Stop"},
+        {"path": "catering-v2s/tools/agent-context/cli.mjs", "symbol": "session prompt stop memory code failure", "disposition": "create", "current": "absent", "target": "provider-free deterministic lifecycle adapter", "algorithm": "route explicit prompt keywords to one local skill, never query sources during Prompt, and scope Stop to live session/managed resources", "upstream": "hooks and local tools", "downstream": "SessionStart Prompt Stop outputs"}
+      ],
+      "orderedChain": ["frozen inputs", "entry documents", "memory originals", "generated index", "context adapter", "skills and hooks", "self-tests", "fresh-session-ready artifact"],
+      "dependencyAndSerialBoundaries": ["memory originals precede index generation; hooks follow stable standard action paths; no task may write all-v2 runtime"],
+      "dataEvolution": {"notApplicableReason": "R1 creates no database, migration or business data"},
+      "uiAndTerms": {"notApplicableReason": "R1 has no user-visible UI", "termSource": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md#D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"},
+      "evidence": {"l1": "project-memory, lifecycle, provider-free and standard-action clean/red checks", "l2": "not applicable before R2 fresh-session acceptance", "l3": "not applicable before W1", "business": "deterministic source reopen and no provider path", "cleanup": "no managed resources"},
+      "forbiddenPseudoFixes": ["copy all-v2 project-memory corpus", "restore semantic provider or daemon", "let Prompt inject memory or code candidates", "read global skills or memories"],
+      "discriminator": {"fixture": "the production registered prompt command emitting a source path, a missing COMMAND_REQUIRED_TRANSACTION, and the same assertion rebound to a non-owning ADR heading must independently fail"}
+    },
+    {
+      "id": "R1-U02",
+      "approvedAssertions": ["Roadmap state moves to one v2s-native registered owner with a hash-bound R1 to R2 transfer and no copied all-v2 CURRENT state"],
+      "approvedSources": [
+        {"path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md", "anchor": "### 7.1 Roadmap 控制面移交协议", "sha256": "c83b742ac4dbeafccedbfe2ce4eda0e11e0f1c37c3ec72b2456b4b80e559b380"},
+        {"path": "doc/decisions/2026-07-24-v2s-r1-authorization.md", "anchor": "# catering-v2s Roadmap R1 实施授权", "sha256": "a2216874062892229424cc9f8c2bc478d110795b4876433782c6d22a2e78b615"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-24-v2s-r1-implementation-plan.md", "anchor": "## R1-U02 — v2s-native Roadmap 控制面"},
+      "currentDeviation": "v2s has no registry or state owner and all-v2 is still the temporary R1 source owner",
+      "changeSurfaces": [
+        {"path": "catering-v2s/doc/platform/roadmap-program-registry.json", "symbol": "V2S_W0_W4_EXECUTION entry", "disposition": "create", "current": "absent", "target": "one target-native program and zero batch ids", "algorithm": "register one self-owned Roadmap and reject duplicate program roadmap or batch identities", "upstream": "accepted Roadmap", "downstream": "all v2s session entry"},
+        {"path": "catering-v2s/doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md", "symbol": "target-native prepared current and non-current final candidate", "disposition": "create", "current": "absent", "target": "current prepared R0 to R1 EVIDENCE_READY plus separately verified R1 GO to R2 IN_REVIEW bytes", "algorithm": "candidate root is invisible to resolver; candidate PASS precedes publishing Roadmap and receipt while Registry remains prepared", "upstream": "source EVIDENCE_READY hash and R1 evidence", "downstream": "Registry-last R2 discovery"},
+        {"path": "catering-v2s/doc/evidence/platform/2026-07-24-v2s-roadmap-control-plane-transfer.json", "symbol": "prepared and immutable candidate-verified receipt", "disposition": "create", "current": "absent", "target": "hash-bound source prepared, implementation closure, final target, expected active Registry and Heritage evidence without self hash or transferredAt", "algorithm": "record candidateVerifiedAt, business cleanup zero resources Git honesty and exact continuity before owner switch; do not mutate after candidate verification", "upstream": "source candidate target expected Registry Heritage implementation closure", "downstream": "Registry-last transfer checker and post-transfer closure"},
+        {"path": "catering-v2s/scripts/check/roadmap-control-plane-transfer", "symbol": "prepare candidate publish readback rollback validator and red fixtures", "disposition": "create", "current": "absent", "target": "non-circular candidate-first Registry-last owner transfer", "algorithm": "validate complete non-current candidate, publish verified Roadmap and receipt while resolver stays empty, atomically activate Registry last, then read back; on failure deactivate Registry first before restore", "upstream": "prepared snapshots and candidate Registry Roadmap Heritage receipt", "downstream": "V2S_SESSION_ENTRY_READY"}
+      ],
+      "orderedChain": ["R1 evidence", "source EVIDENCE_READY final write and hash", "target PREPARED current snapshots", "complete non-current candidate", "candidate gate", "publish verified Roadmap and receipt with Registry prepared", "atomic Registry-last activation", "post-publish readback or Registry-first deactivation"],
+      "dependencyAndSerialBoundaries": ["source preparation, non-current candidate validation, non-owner publication, Registry-last atomic activation, readback and Registry-first rollback are one serial critical section; source is never written after sourcePreparedHash"],
+      "dataEvolution": {"notApplicableReason": "control-plane JSON and Markdown only"},
+      "uiAndTerms": {"notApplicableReason": "no UI", "termSource": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md#Roadmap 控制面移交协议"},
+      "evidence": {"l1": "registry and transfer clean/red fixtures", "l2": "R2 reserved", "l3": "not applicable", "business": "one resolvable CURRENT owner", "cleanup": "source writeBack false"},
+      "forbiddenPseudoFixes": ["copy AI_FIRST_FOUNDATION CURRENT values", "maintain two active Roadmaps", "claim committed target hash", "open R2 before transfer PASS"],
+      "discriminator": {"fixture": "a process interruption after verified Roadmap and receipt publication but before Registry-last activation must leave the resolver at NO_ACTIVE_PROGRAM; a readback failure must deactivate Registry before restoring other files"}
+    },
+    {
+      "id": "R1-U03",
+      "approvedAssertions": [
+        "one empty-reality dependency registry has a closed exact schema and reconciliation key for COMMAND SCHEMA_FK and TASK_READ, including module-owned commandApiPackages as the independent COMMAND direction oracle",
+        "COMMAND and SCHEMA_FK each form their own DAG while TASK_READ may cycle and grants no write transaction lock import or FK authority",
+        "HANDOFF has exactly seven approved stable IDs and id-to-trigger mappings with complete fixed boundaries evidence and JSON-array decisionSource path plus literal-heading anchors",
+        "Heritage has exactly four repository records and thirteen selected all-v2 frozen assets; other repositories start with explicit empty future-only selections and never become fallback"
+      ],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.8 一份依赖登记、三类边", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"},
+        {"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### H.3 `HANDOFF.md` 欠账单(随仓建立,十分钟)", "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-24-v2s-r1-implementation-plan.md", "anchor": "## R1-U03 — 模块依赖、HANDOFF 与 Heritage"},
+      "currentDeviation": "v2s has no dependency, deferred-debt or Heritage truth",
+      "changeSurfaces": [
+        {"path": "catering-v2s/contracts/policy/module-dependency-registry.schema.json", "symbol": "closed module COMMAND SCHEMA_FK TASK_READ variants", "disposition": "create", "current": "absent", "target": "additionalProperties false variants, module-owned commandApiPackages and required direction-specific keys from U03-A", "algorithm": "enforce module schema and API package identities, edge and semantic uniqueness, target existence, toModule API ownership, object ownership and kind-specific exact fields", "upstream": "frozen ADR and R1-U03-A", "downstream": "registry checker and future reconcilers"},
+        {"path": "catering-v2s/contracts/policy/module-dependency-registry.json", "symbol": "empty modules and edges reality", "disposition": "create", "current": "absent", "target": "modules empty edges empty with no invented future topology", "algorithm": "validate against closed schema; DAG projection is separate for COMMAND and SCHEMA_FK and excludes TASK_READ", "upstream": "schema", "downstream": "future W2 reality checks"},
+        {"path": "catering-v2s/HANDOFF.md", "symbol": "seven exact production-debt rows", "disposition": "create", "current": "absent", "target": "the U03-C values for seven stable IDs, exact trigger allowlist, and reopenable decisionSource JSON arrays", "algorithm": "parse one Markdown table and compare every cell to approved inventory; triggers match exact id mapping; every source path exists and every literal heading is present", "upstream": "carryover manifest H.3 and R1-U03-C", "downstream": "handoff-debt gate"},
+        {"path": "catering-v2s/doc/heritage/required-inventory.json", "symbol": "four repositories and thirteen selected assets", "disposition": "create", "current": "absent", "target": "independent exact source path hash disposition assertion and no-fallback denominator", "algorithm": "require exact match; all-v2 selected assets must be complete and other three lists must be explicit empty future-only", "upstream": "R1-U03-B table", "downstream": "Heritage registry checker"},
+        {"path": "catering-v2s/doc/heritage/registry.json", "symbol": "read-only source registry", "disposition": "create", "current": "absent", "target": "four exact source records, thirteen all-v2 hashes and no current truth outside v2s", "algorithm": "compare against required inventory, verify copied bytes and external source when available, and require writeBack runtimeFallback buildFallback false", "upstream": "frozen source assets and required inventory", "downstream": "memory source reopen and transfer receipt"}
+      ],
+      "orderedChain": ["frozen boundaries", "empty module reality", "dependency schema", "dependency validator", "deferred debt rows", "Heritage assets and hashes", "negative fixtures", "future W2 placeholders remain absent"],
+      "dependencyAndSerialBoundaries": ["dependency and HANDOFF checks may be built independently; Heritage hashes wait for final all-v2 source state"],
+      "dataEvolution": {"notApplicableReason": "no database; dependency registry has zero actual edges"},
+      "uiAndTerms": {"notApplicableReason": "no UI", "termSources": ["doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md#一份依赖登记、三类边", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md#`HANDOFF.md` 欠账单(随仓建立,十分钟)"]},
+      "evidence": {"l1": "dependency, HANDOFF and Heritage clean/red fixtures", "l2": "not applicable", "l3": "not applicable", "business": "all three edge kinds represented by schema without invented edges", "cleanup": "old repositories unchanged"},
+      "forbiddenPseudoFixes": ["invent module edges before runtime", "make TASK_READ acyclic", "turn HANDOFF into a backlog", "write a read-only marker into old repositories"],
+      "discriminator": {"fixture": "a legal TASK_READ cycle and correct toModule API ownership pass while swapped or unknown COMMAND owner, FK owner inversion, vague trigger, alias-only or unresolved HANDOFF decisionSource, and one omitted Heritage asset each fail independently"}
+    },
+    {
+      "id": "R1-U04",
+      "approvedAssertions": ["R1 may close only with linked clean/red evidence, zero forbidden runtime paths, cleanup PASS and a self-contained Dexter/Claude review packet"],
+      "approvedSources": [
+        {"path": "doc/handoffs/2026-07-24-v2s-w0-continuation-handoff.md", "anchor": "## 6. W0 第 4-7 项获授权后的完成标准", "sha256": "c94afa29234b8e13ae96034091e6cbe7d517852418c997998f635696e20caeba"},
+        {"path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md", "anchor": "### 验收", "sha256": "c83b742ac4dbeafccedbfe2ce4eda0e11e0f1c37c3ec72b2456b4b80e559b380"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-24-v2s-r1-implementation-plan.md", "anchor": "## R1-U04 — R1 聚合证据、自审与 review handoff"},
+      "currentDeviation": "no v2s standard action, closure evidence, self-review or Claude handoff exists",
+      "changeSurfaces": [
+        {"path": "catering-v2s/scripts/check/r1-closure", "symbol": "R1 pre-transfer and post-transfer aggregate checker", "disposition": "create", "current": "absent", "target": "deterministic aggregate with exact baseline-diff allowlist and two non-circular closure phases", "algorithm": "run native checks, permit only two module-dependency contract files, reject apps libraries db migration other contracts business OpenAPI runtime, and require zero resources; final mode validates immutable receipt plus active resolver readback", "upstream": "U01 U02 U03 checkers and exact allowlist", "downstream": "implementation and post-transfer closure JSON"},
+        {"path": "catering-v2s/doc/evidence/platform/2026-07-24-v2s-r1-implementation-closure.json", "symbol": "immutable pre-transfer implementation evidence", "disposition": "create", "current": "absent", "target": "sourcePreparedHash, native clean red commands, business PASS cleanup PASS and zero resources before candidate", "algorithm": "freeze after source EVIDENCE_READY; candidate receipt binds its hash; no post-candidate mutation", "upstream": "fresh native checker outputs and source prepared hash", "downstream": "Codex self-review and candidate gate"},
+        {"path": "catering-v2s/doc/evidence/platform/2026-07-24-v2s-r1-post-transfer-closure.json", "symbol": "immutable activation readback evidence", "disposition": "create", "current": "absent", "target": "actual activationObservedAt plus active Registry target receipt implementation-closure hashes and resolver PASS", "algorithm": "create only after Registry-last readback; exclude from candidate bytes; never mutate after Claude handoff binding", "upstream": "active resolver and immutable receipt", "downstream": "Claude review packet"},
+        {"path": "catering-v2s/doc/review/platform/2026-07-24-v2s-r1-claude-review-request.md", "symbol": "copyable review handoff", "disposition": "create", "current": "absent", "target": "background, goals, relative refs, independent checks, GO NO-GO M S N and authority boundary", "algorithm": "bind review to R1 source/evidence hashes and state that GO cannot open R2 or W1", "upstream": "closure and self-review", "downstream": "Dexter and Claude"}
+      ],
+      "orderedChain": ["native checks and red fixtures", "exact allowlist scan", "source EVIDENCE_READY final write", "immutable implementation closure", "Codex self-review", "prepared current and non-current candidate check", "verified Roadmap receipt publish", "Registry-last activation and resolver readback", "immutable post-transfer closure", "Claude handoff check"],
+      "dependencyAndSerialBoundaries": ["implementation closure freezes after sourcePreparedHash and before candidate; candidate-bound bytes never mutate; post-transfer closure is outside candidate and freezes after active resolver readback"],
+      "dataEvolution": {"notApplicableReason": "no data or migration"},
+      "uiAndTerms": {"notApplicableReason": "no business UI", "termSource": "doc/handoffs/2026-07-24-v2s-w0-continuation-handoff.md#W0 第 4-7 项获授权后的完成标准"},
+      "evidence": {"l1": "all R1 native clean/red gates in immutable implementation closure", "l2": "explicitly deferred to R2", "l3": "explicitly not authorized", "business": "implementation closure plus immutable transfer receipt and post-transfer resolver closure", "cleanup": "active managed resources zero in both closures"},
+      "forbiddenPseudoFixes": ["claim R2 acceptance from static files", "claim clean Git after uncommitted R1 output", "omit red fixtures", "let old repositories become runtime dependencies"],
+      "discriminator": {"fixture": "the two approved contracts/policy files pass while a third contracts file, any apps directory or migration fails; simulated post-activation failure deactivates Registry first without mutating candidate-bound closure or receipt"}
+    }
+  ]
+}

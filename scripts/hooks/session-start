@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+process.stdin.resume();
+process.stdin.on("end", () => {
+  process.stdout.write([
+    "STATUS=PASS",
+    "CONTEXT_MODE=DETERMINISTIC_ONLY",
+    "ENTRY_1=AGENTS.md",
+    "ENTRY_2=PLATFORM-BLUEPRINT.md",
+    "ENTRY_3=doc/platform/roadmap-program-registry.json",
+    "ENTRY_4=selected Roadmap CURRENT_*",
+    "ENTRY_5=project-memory/index.md",
+    "ENTRY_6=scripts/README.md",
+    ""
+  ].join("\n"));
+});

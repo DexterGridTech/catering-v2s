@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-hooks-config-compatibility-fix",
+  "status": "FIXED_PENDING_REREVIEW",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R2",
+  "roadmapStatus": "IN_REVIEW",
+  "observedAt": "2026-07-24T18:53:17+09:00",
+  "lastReadbackAt": "2026-07-24T19:12:19+09:00",
+  "authorizedBy": "Dexter",
+  "authorizationScope": "hooks-config-schema-compatibility-regression-and-defect-evidence-only",
+  "client": {
+    "name": "codex-cli",
+    "version": "0.144.6"
+  },
+  "originalFailure": {
+    "command": "codex exec --ephemeral --json --dangerously-bypass-hook-trust 'hook schema probe; do not act'",
+    "clientExitCode": 0,
+    "failureSignal": "failed to parse hooks config /Users/dexter/Documents/workspace/idea/catering-v2s/.codex/hooks.json: unknown field `schemaVersion`, expected `description` or `hooks` at line 2 column 17",
+    "note": "The client emitted the hook parse failure as an error event while the enclosing ephemeral turn still exited zero, so regression evidence must inspect the signal rather than exit code alone."
+  },
+  "rootCause": [
+    {
+      "path": ".codex/hooks.json",
+      "cause": "The top-level schemaVersion field is not accepted by the installed Codex hooks parser."
+    },
+    {
+      "path": ".codex/hooks.json",
+      "cause": "SessionStart, UserPromptSubmit and Stop used legacy flat command entries instead of event groups containing typed command hooks."
+    },
+    {
+      "path": "scripts/check/agent-lifecycle",
+      "cause": "The checker encoded the same legacy shape and invoked command fields directly, so it bypassed the client parser and produced a false green."
+    }
+  ],
+  "changes": {
+    "create": [
+      "doc/evidence/platform/2026-07-24-v2s-hooks-config-compatibility-fix.json",
+      "doc/evidence/platform/2026-07-24-v2s-hooks-config-compatibility-post-no-go-closure.json",
+      "doc/review/platform/2026-07-24-v2s-hooks-config-compatibility-resolution.md",
+      "doc/review/platform/2026-07-24-v2s-hooks-config-compatibility-review-request.md"
+    ],
+    "update": [
+      ".codex/hooks.json",
+      "scripts/check/agent-lifecycle",
+      "scripts/README.md"
+    ],
+    "delete": [],
+    "retain": [
+      "scripts/hooks/session-start",
+      "scripts/hooks/prompt-route",
+      "scripts/hooks/stop",
+      "doc/evidence/platform/2026-07-24-v2s-r1-implementation-closure.json",
+      "doc/evidence/platform/2026-07-24-v2s-r1-post-transfer-closure.json",
+      "doc/evidence/platform/2026-07-24-v2s-roadmap-control-plane-transfer.json",
+      "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+    ]
+  },
+  "hashes": {
+    "hooksConfigBefore": "030978be945752d9da748d43035501055566f6a1e39e54b57b69b6974f242141",
+    "hooksConfigAfter": "82b43833b89f257cc8d7b4431215a325bee6f5b5cf6f9eb82f3455a02bbfaafe",
+    "agentLifecycleBefore": "583372cebe75f9e609103fa621744542e60b4af5e6c861e3daf4e8a2fe7e820b",
+    "agentLifecycleAfter": "0a82ac8d9dc78e80426491837f4b935d7c2729bf9dc1ad4f1811f7ee0e0698ac",
+    "immutableR1ImplementationClosure": "e1bcbf43c8c6a0b475e14169ebc0e0dcc1248e54bbefc8097a384ed1ae1add91",
+    "immutableR1PostTransferClosure": "8093559204490c147aa9cf8ff0828c9441428f85b53b8ca0dafe03e86f4d5b21",
+    "immutableRoadmapTransferReceipt": "61bf4f4729efbb5bfbd8d5cbea1c43987503067c306deaf28a34ce7e350cefda"
+  },
+  "regression": {
+    "productionValidator": "scripts/check/agent-lifecycle",
+    "redControls": [
+      "unknown top-level schemaVersion is rejected",
+      "legacy flat SessionStart registration is rejected"
+    ],
+    "independentScratchMutations": [
+      {
+        "mutation": "add top-level schemaVersion=1",
+        "exitCode": 2,
+        "reason": "top-level keys must be exactly hooks",
+        "result": "PASS"
+      },
+      {
+        "mutation": "replace SessionStart event group with flat command and timeout",
+        "exitCode": 2,
+        "reason": "invalid event group: SessionStart",
+        "result": "PASS"
+      }
+    ],
+    "registeredCommandControls": [
+      "SessionStart exact stdout",
+      "UserPromptSubmit source-injection rejection",
+      "Stop missing marker",
+      "Stop active goal rejection",
+      "Stop cleanup failure rejection"
+    ],
+    "clientParserProbe": {
+      "command": "codex exec --ephemeral --json --dangerously-bypass-hook-trust '只验证 v2s SessionStart 入口；请仅回复 ENTRY_PROBE_OK，不执行工具或写操作。'",
+      "exitCode": 0,
+      "hookParseFailurePresent": false,
+      "agentResponse": "ENTRY_PROBE_OK",
+      "result": "PASS"
+    }
+  },
+  "priorIndependentReview": {
+    "path": "doc/review/platform/2026-07-24-v2s-hooks-config-compatibility-review-claude.md",
+    "sha256": "3dd5c02bc514a1969c2ce452faa7218437d68503240640f321fa00a55e8fdf3e",
+    "verdict": "NO-GO(1 M / 1 S / 2 N)",
+    "reviewerObservedAgentLifecycleSha256Prefix": "d1e59383",
+    "currentAgentLifecycleSha256": "0a82ac8d9dc78e80426491837f4b935d7c2729bf9dc1ad4f1811f7ee0e0698ac",
+    "disposition": "The reviewer finding remains immutable evidence for its observation. Current-tree readback and rerun evidence are recorded in a new post-NO-GO closure; the unexplained view divergence is not rewritten as if it never occurred."
+  },
+  "clientReprobePolicy": {
+    "trigger": "CODEX_CLI_VERSION_CHANGED",
+    "action": "Rerun a read-only native Codex hooks parser probe from the v2s root, inspect the complete event stream for hook parse failures regardless of process exit code, and record client version plus signal evidence.",
+    "currentTruthRef": "scripts/README.md#Codex hooks 客户端兼容性",
+    "handoffDisposition": "NOT_A_PRODUCTION_DEBT_HANDOFF_REMAINS_EXACTLY_SEVEN"
+  },
+  "sameClassScan": {
+    "scope": "catering-v2s .codex scripts tools doc project-memory contracts",
+    "staleFlatLifecycleCommandAccesses": 0,
+    "otherHooksConfigFilesInRepository": 0,
+    "result": "PASS"
+  },
+  "controlPlane": "PASS",
+  "business": "NOT_APPLICABLE_CONTROL_PLANE_ONLY",
+  "cleanup": "PASS",
+  "activeManagedResources": 0,
+  "authorityBoundary": {
+    "r2AcceptanceClosed": false,
+    "r3OrW1Authorized": false,
+    "runtimeCreated": false,
+    "devStarted": false,
+    "seedOrResetExecuted": false,
+    "databaseTouched": false,
+    "heritageWritten": false,
+    "gitWriteExecuted": false
+  }
+}

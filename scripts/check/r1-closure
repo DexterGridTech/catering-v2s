@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/../.." && pwd)"
+allowlist="$root/doc/evidence/platform/2026-07-24-v2s-r1-allowlist.json"
+
+fail() {
+  printf 'R1_CLOSURE=FAIL\nREASON=%s\n' "$1" >&2
+  exit 1
+}
+
+sha_file() {
+  shasum -a 256 "$1" | awk '{print $1}'
+}
+
+path_allowed() {
+  jq -e --arg path "$1" '.createPaths | index($path) != null' "$allowlist" >/dev/null
+}
+
+validate_changed_paths() {
+  [[ -f "$allowlist" ]] || fail "ALLOWLIST_NOT_FOUND"
+  [[ "$(git -C "$root" rev-parse HEAD)" == "$(jq -r '.baselineHead' "$allowlist")" ]] || fail "BASELINE_HEAD_DRIFT"
+  local status path
+  while IFS= read -r status; do
+    [[ -n "$status" ]] || continue
+    path="${status:3}"
+    [[ "$path" != *" -> "* ]] || fail "RENAME_NOT_ALLOWED:$path"
+    path_allowed "$path" || fail "PATH_OUTSIDE_R1_ALLOWLIST:$path"
+  done < <(git -C "$root" status --porcelain=v1 --untracked-files=all)
+}
+
+validate_required_outputs() {
+  local relative absolute
+  while IFS= read -r relative; do
+    absolute="$root/$relative"
+    [[ -e "$absolute" || -L "$absolute" ]] || fail "REQUIRED_R1_OUTPUT_MISSING:$relative"
+    [[ ! -f "$absolute" || -s "$absolute" ]] || fail "REQUIRED_R1_OUTPUT_EMPTY:$relative"
+    case "$relative" in
+      *.json) jq empty "$absolute" >/dev/null || fail "REQUIRED_R1_JSON_INVALID:$relative" ;;
+      scripts/*|tools/*.mjs|tools/*/*.mjs)
+        [[ "$relative" == "scripts/README.md" || -x "$absolute" ]] || fail "REQUIRED_R1_EXECUTABLE_BIT_MISSING:$relative"
+        ;;
+    esac
+  done < <(jq -r '.createPaths[]' "$allowlist")
+}
+
+validate_forbidden_surfaces() {
+  local forbidden
+  for forbidden in apps libraries db migration migrations; do
+    [[ ! -e "$root/$forbidden" ]] || fail "FORBIDDEN_RUNTIME_SURFACE:$forbidden"
+  done
+  if [[ -d "$root/contracts" ]]; then
+    local file relative
+    while IFS= read -r file; do
+      relative="${file#"$root/"}"
+      case "$relative" in
+        contracts/policy/module-dependency-registry.json|contracts/policy/module-dependency-registry.schema.json) ;;
+        *) fail "FORBIDDEN_CONTRACT_SURFACE:$relative" ;;
+      esac
+    done < <(find "$root/contracts" -type f | sort)
+  fi
+  if find "$root" -type f \( -iname '*openapi*' -o -path '*/db/migration/*' -o -path '*/migrations/*' \) \
+    ! -path "$root/.git/*" | grep -q .; then
+    fail "BUSINESS_OPENAPI_OR_MIGRATION_PRESENT"
+  fi
+}
+
+validate_zero_resources() {
+  local manifest
+  if [[ -d "$root/.runtime/managed-runs" ]]; then
+    while IFS= read -r manifest; do
+      jq -e '.status=="STOPPED" and .cleanup.status=="PASS"' "$manifest" >/dev/null \
+        || fail "ACTIVE_OR_UNCLEAN_MANAGED_RESOURCE:${manifest#"$root/"}"
+    done < <(find "$root/.runtime/managed-runs" -type f -name manifest.json | sort)
+  fi
+}
+
+run_native_checks() {
+  "$root/scripts/check/project-memory"
+  "$root/scripts/check/agent-lifecycle"
+  "$root/scripts/check/provider-free-context"
+  "$root/scripts/check/foundation-standard-actions"
+  "$root/scripts/check/roadmap-program-registry"
+  "$root/scripts/check/module-dependency-registry" --require-empty
+  "$root/scripts/check/handoff-debt"
+  "$root/scripts/check/heritage-registry"
+}
+
+validate_implementation_closure() {
+  local file="$root/doc/evidence/platform/2026-07-24-v2s-r1-implementation-closure.json"
+  [[ -f "$file" ]] || fail "IMPLEMENTATION_CLOSURE_NOT_FOUND"
+  jq -e '
+    .kind=="v2s-r1-implementation-closure" and
+    .status=="PASS" and
+    .business=="PASS" and .cleanup=="PASS" and
+    .activeManagedResources==0 and
+    (.sourcePreparedHash|test("^[0-9a-f]{64}$")) and
+    (.checks|type=="array" and length>=9)
+  ' "$file" >/dev/null || fail "IMPLEMENTATION_CLOSURE_INVALID"
+  local source="$root/../catering-all-v2/doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+  [[ "$(sha_file "$source")" == "$(jq -r '.sourcePreparedHash' "$file")" ]] || fail "IMPLEMENTATION_SOURCE_HASH_STALE"
+}
+
+validate_final_closure() {
+  local file="$root/doc/evidence/platform/2026-07-24-v2s-r1-post-transfer-closure.json"
+  local receipt="$root/doc/evidence/platform/2026-07-24-v2s-roadmap-control-plane-transfer.json"
+  local implementation="$root/doc/evidence/platform/2026-07-24-v2s-r1-implementation-closure.json"
+  local registry="$root/doc/platform/roadmap-program-registry.json"
+  local roadmap="$root/doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+  [[ -f "$file" ]] || fail "POST_TRANSFER_CLOSURE_NOT_FOUND"
+  jq -e '
+    .kind=="v2s-r1-post-transfer-closure" and .status=="PASS" and
+    (.activationObservedAt|type=="string" and length>0) and
+    .resolver=="PASS" and .business=="PASS" and .cleanup=="PASS" and
+    .activeManagedResources==0
+  ' "$file" >/dev/null || fail "POST_TRANSFER_CLOSURE_INVALID"
+  [[ "$(jq -r '.hashes.transferReceipt' "$file")" == "$(sha_file "$receipt")" ]] || fail "POST_TRANSFER_RECEIPT_HASH_STALE"
+  [[ "$(jq -r '.hashes.implementationClosure' "$file")" == "$(sha_file "$implementation")" ]] || fail "POST_TRANSFER_IMPLEMENTATION_HASH_STALE"
+  [[ "$(jq -r '.hashes.activeRegistry' "$file")" == "$(sha_file "$registry")" ]] || fail "POST_TRANSFER_REGISTRY_HASH_STALE"
+  [[ "$(jq -r '.hashes.targetRoadmap' "$file")" == "$(sha_file "$roadmap")" ]] || fail "POST_TRANSFER_ROADMAP_HASH_STALE"
+}
+
+self_test() {
+  path_allowed "contracts/policy/module-dependency-registry.json" || fail "APPROVED_CONTRACT_NOT_ALLOWED"
+  path_allowed "contracts/policy/module-dependency-registry.schema.json" || fail "APPROVED_SCHEMA_NOT_ALLOWED"
+  if path_allowed "contracts/openapi/business.yaml"; then fail "THIRD_CONTRACT_UNEXPECTEDLY_ALLOWED"; fi
+  if path_allowed "apps/backend/Main.java"; then fail "APP_UNEXPECTEDLY_ALLOWED"; fi
+  if path_allowed "db/migration/V1__init.sql"; then fail "MIGRATION_UNEXPECTEDLY_ALLOWED"; fi
+  path_allowed "doc/review/platform/2026-07-24-v2s-r1-claude-review-request.md" || fail "CLAUDE_REQUEST_NOT_REQUIRED"
+  path_allowed "doc/evidence/platform/2026-07-24-v2s-roadmap-adopted-snapshot.md" || fail "ADOPTED_SNAPSHOT_NOT_REQUIRED"
+  printf 'R1_CLOSURE_SELF_TEST=PASS\n'
+  printf 'APPROVED_POLICY_CONTRACT_GREEN=PASS\n'
+  printf 'THIRD_CONTRACT_RED=PASS\n'
+  printf 'APPS_RED=PASS\n'
+  printf 'MIGRATION_RED=PASS\n'
+  printf 'REQUIRED_OUTPUT_DENOMINATOR=PASS\n'
+}
+
+case "${1:-}" in
+  --self-test)
+    self_test
+    ;;
+  --pre-transfer)
+    validate_changed_paths
+    validate_forbidden_surfaces
+    validate_zero_resources
+    run_native_checks
+    validate_implementation_closure
+    "$root/scripts/check/roadmap-control-plane-transfer" --prepare
+    printf 'R1_IMPLEMENTATION_CLOSURE=PASS\nBUSINESS=PASS\nCLEANUP=PASS\nACTIVE_MANAGED_RESOURCES=0\n'
+    ;;
+  --final)
+    validate_changed_paths
+    validate_required_outputs
+    validate_forbidden_surfaces
+    validate_zero_resources
+    run_native_checks
+    validate_implementation_closure
+    "$root/scripts/check/roadmap-control-plane-transfer"
+    validate_final_closure
+    "$root/scripts/check/claude-review-handoff" --file doc/review/platform/2026-07-24-v2s-r1-claude-review-request.md
+    printf 'R1_CLOSURE=PASS\nBUSINESS=PASS\nCLEANUP=PASS\nACTIVE_MANAGED_RESOURCES=0\n'
+    ;;
+  *)
+    fail "USAGE_EXPECTED_SELF_TEST_PRE_TRANSFER_OR_FINAL"
+    ;;
+esac

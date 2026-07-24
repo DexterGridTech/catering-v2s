@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://catering-v2s.local/contracts/policy/module-dependency-registry.schema.json",
+  "title": "catering-v2s module dependency registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "status", "modules", "edges"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "module-dependency-registry"},
+    "status": {"const": "ACTIVE"},
+    "modules": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/module"}
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"$ref": "#/$defs/commandEdge"},
+          {"$ref": "#/$defs/schemaFkEdge"},
+          {"$ref": "#/$defs/taskReadEdge"}
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleKey", "ownerSchema", "commandApiPackages"],
+      "properties": {
+        "moduleKey": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "ownerSchema": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "commandApiPackages": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          }
+        }
+      }
+    },
+    "commandEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edgeId",
+        "edgeKind",
+        "fromModule",
+        "toModule",
+        "rationale",
+        "apiPackage",
+        "operation"
+      ],
+      "properties": {
+        "edgeId": {"type": "string", "minLength": 1},
+        "edgeKind": {"const": "COMMAND"},
+        "fromModule": {"type": "string"},
+        "toModule": {"type": "string"},
+        "rationale": {"type": "string", "minLength": 1},
+        "apiPackage": {"type": "string"},
+        "operation": {"type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$"}
+      }
+    },
+    "schemaFkEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edgeId",
+        "edgeKind",
+        "fromModule",
+        "toModule",
+        "rationale",
+        "referencingObject",
+        "referencedObject",
+        "constraintName"
+      ],
+      "properties": {
+        "edgeId": {"type": "string", "minLength": 1},
+        "edgeKind": {"const": "SCHEMA_FK"},
+        "fromModule": {"type": "string"},
+        "toModule": {"type": "string"},
+        "rationale": {"type": "string", "minLength": 1},
+        "referencingObject": {"type": "string", "minLength": 3},
+        "referencedObject": {"type": "string", "minLength": 3},
+        "constraintName": {"type": "string", "minLength": 1}
+      }
+    },
+    "taskReadEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edgeId",
+        "edgeKind",
+        "fromModule",
+        "toModule",
+        "rationale",
+        "queryId",
+        "initiatingModule",
+        "referencedSchemaObject"
+      ],
+      "properties": {
+        "edgeId": {"type": "string", "minLength": 1},
+        "edgeKind": {"const": "TASK_READ"},
+        "fromModule": {"type": "string"},
+        "toModule": {"type": "string"},
+        "rationale": {"type": "string", "minLength": 1},
+        "queryId": {"type": "string", "minLength": 1},
+        "initiatingModule": {"type": "string"},
+        "referencedSchemaObject": {"type": "string", "minLength": 3}
+      }
+    }
+  }
+}
