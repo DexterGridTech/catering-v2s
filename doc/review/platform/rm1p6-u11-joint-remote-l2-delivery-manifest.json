@@ -1,0 +1,776 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p6-u11-joint-remote-l2-manifest",
+  "businessProblem": "Joint browser L2 must run from a managed local execution plane against isolated remote non-production middleware; the existing local runner is platform-only/persistent and P6-3 specs are absent.",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-JOINT-REMOTE-L2-U11",
+      "title": "Joint local-execution, remote-middleware P6-2/P6-3 L2",
+      "approvedAssertions": [
+        "LOCAL_EXECUTION_REMOTE_MIDDLEWARE_BOUNDARY",
+        "EXACT_21_SPEC_DENOMINATOR",
+        "OWNER_COMMAND_FIXTURE_ONLY",
+        "BUSINESS_AND_CLEANUP_SEPARATE"
+        ,"RETIRED_PLATFORM_INVITATION_NO_HTTP_BOOTSTRAP"
+      ],
+      "changeSurfaces": [
+        {
+          "path": ".runtime/compliance-control/active-package.json",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "disposition": "update",
+          "target": "U11 execution-deviation root-cause memory"
+        },
+        {
+          "path": "project-memory/operations/dev-command-separation.md",
+          "disposition": "update",
+          "target": "Dexter environment execution memory"
+        },
+        {
+          "path": "project-memory/index.json",
+          "disposition": "update",
+          "target": "generated project-memory index"
+        },
+        {
+          "path": "project-memory/index.md",
+          "disposition": "update",
+          "target": "generated project-memory index"
+        },
+        {
+          "path": "scripts/README.md",
+          "disposition": "update",
+          "target": "execution environment matrix"
+        },
+        {
+          "path": "PLATFORM-BLUEPRINT.md",
+          "disposition": "update",
+          "target": "platform execution environment matrix"
+        },
+        {
+          "path": "AGENTS.md",
+          "disposition": "update",
+          "target": "mandatory execution environment matrix"
+        },
+        {
+          "path": "project-memory/required-inventory.json",
+          "disposition": "update",
+          "target": "project-memory assertion inventory"
+        },
+        {
+          "path": "tools/project-memory/cli.mjs",
+          "disposition": "update",
+          "target": "deterministic project-memory index generator"
+        },
+        {
+          "path": "tools/compliance-control/cli.mjs",
+          "disposition": "update",
+          "target": "existing historical receipt-recovery control configuration"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-execution-deviation-memory-baseline-addendum.json",
+          "disposition": "create",
+          "target": "exact pre-change project-memory scope baseline"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-predecessor-platform-audit-codegen-baseline-addendum.json",
+          "disposition": "create",
+          "target": "exact U07 generated platform audit projection baseline"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-platform-invitation-bootstrap-baseline-addendum.json",
+          "disposition": "create",
+          "target": "exact pre-change late-admitted root OpenAPI and backend build scope baseline"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-frontend-json-transport-baseline-addendum.json",
+          "disposition": "create",
+          "target": "exact pre-change generated-client transport correction baseline"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-platform-l2-ia-locator-baseline-addendum.json",
+          "disposition": "create",
+          "target": "exact pre-change rendered-control L2 proof correction baseline"
+        },
+        {
+          "path": "contracts/openapi/edge.openapi.yaml",
+          "disposition": "update",
+          "target": "remove four dangling retired platform invitation path pointers"
+        },
+        {
+          "path": "contracts/policy/affected-l2-registry.json",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "contracts/openapi/paths/platform-admin/audit-history.paths.yaml",
+          "disposition": "update",
+          "target": "remove the retired platform invitation audit target from the contract truth"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2.mjs",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
+          "disposition": "update",
+          "target": "replace retired platform invitation HTTP calls with managed owner bootstrap"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/platformL2.ts",
+          "disposition": "modify",
+          "target": "scope shared platform select proof to the rendered visible Ant Design control"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-overview.spec.ts",
+          "disposition": "modify",
+          "target": "scope selected-workspace overview proof to the page content rather than the shell selector"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
+          "disposition": "modify",
+          "target": "scope the IA03 assignment-section proof to the account detail Drawer"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts",
+          "disposition": "modify",
+          "target": "scope the IA03 available-pages proof to the role detail Drawer"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/contract-overview.spec.ts",
+          "disposition": "modify",
+          "target": "use the contract filter automation anchor for the IA02 owner-backed query"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/organization-overview.spec.ts",
+          "disposition": "modify",
+          "target": "use the organization filter automation anchor for the IA02 owner-backed query"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts",
+          "disposition": "modify",
+          "target": "close the approved detail overlay before the authenticated-shell proof signs out"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+          "disposition": "modify",
+          "target": "prove the IA02 name-link detail Drawer through its approved automation anchor"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts",
+          "disposition": "modify",
+          "target": "follow the IA03 fixed business-object selector before opening the extension definition editor"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+          "disposition": "modify",
+          "target": "keep source-inspection proof aligned with the shared generated-client request-body foundation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+          "disposition": "modify",
+          "target": "delegate generated JSON and multipart request-body media-type handling to shared foundation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+          "disposition": "modify",
+          "target": "delegate generated JSON and multipart request-body media-type handling to shared foundation"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/http/wireRequestBody.ts",
+          "disposition": "create",
+          "target": "single JSON-or-multipart request-body serializer that preserves explicit headers and browser multipart boundaries"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/index.ts",
+          "disposition": "modify",
+          "target": "export the shared request-body serializer to both app-owned generated-client adapters"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+          "disposition": "modify",
+          "target": "prove JSON media type, multipart boundary preservation and explicit header preservation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/build.gradle.kts",
+          "disposition": "update",
+          "target": "explicit managed invitation bootstrap JavaExec entrypoint and the contract-owner receipt runtime module required by its LocalDate readback"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/store-contract/build.gradle.kts",
+          "disposition": "modify",
+          "target": "declare the Java-time module required to persist the contract owner LocalDate receipt readback"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+          "disposition": "modify",
+          "target": "bind absent IA03 administrator-list optional filters as explicit text parameters so the owner returns its approved unfiltered default page"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java",
+          "disposition": "modify",
+          "target": "prove the owner administrator page accepts omitted optional filters and retains the owner default page"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java",
+          "disposition": "modify",
+          "target": "bind absent IA02 workspace-list optional filters as explicit text parameters so the owner returns the approved default candidate page"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace/src/test/java/com/catering/v2s/platform/workspace/api/WorkspaceAdministrationPageRequestTest.java",
+          "disposition": "modify",
+          "target": "prove unfiltered workspace owner list binds nullable filters safely while retaining count/page predicate parity"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrap.java",
+          "disposition": "create",
+          "target": "non-web owner API bootstrap without Controller, OpenAPI or SQL"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java",
+          "disposition": "modify",
+          "target": "condition only MVC mapping validation out of the non-web owner-bootstrap context while retaining controller diagnostic beans"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java",
+          "disposition": "verify",
+          "target": "reopen the operations contract command boundary while diagnosing the managed L2 owner-command first failure"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/contract/OperationsContractControllerScopeAndCandidateTest.java",
+          "disposition": "modify",
+          "target": "prove generated contract request JSON is deserialized and mapped through the owner boundary"
+        },
+        {
+          "path": "scripts/generate/edge-codegen.mjs",
+          "disposition": "modify",
+          "target": "generate Jackson 3 JsonNode for every edge transport object field"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Brand.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandCreateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandUpdateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompany.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyCreateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyUpdateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStore.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCreateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreUpdateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContract.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCreateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractUpdateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Tenant.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantCreateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantUpdateRequest.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntry.java",
+          "disposition": "modify",
+          "target": "controlled regeneration of an affected JsonNode wire DTO"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/ContractWireMapper.java",
+          "disposition": "modify",
+          "target": "accept and emit the generated Jackson 3 transport type"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/BusinessEntityWireMapper.java",
+          "disposition": "modify",
+          "target": "accept and emit the generated Jackson 3 transport type"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileController.java",
+          "disposition": "modify",
+          "target": "emit the generated Jackson 3 contract transport type"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+          "disposition": "modify",
+          "target": "close the shared owner status transition entity-type denominator for STORE commands"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+          "disposition": "modify",
+          "target": "apply owner scope predicates to both project and store data-node selections"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java",
+          "disposition": "modify",
+          "target": "preserve candidate reads when the selected scope is a store"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileControllerTest.java",
+          "disposition": "modify",
+          "target": "keep the profile controller focused proof aligned with its owner read dependencies"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+          "disposition": "modify",
+          "target": "prove the shared owner status command accepts STORE and records the readback"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/WorkspaceSessionWireMapper.java",
+          "disposition": "modify",
+          "target": "emit the generated Jackson 3 session transport type"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementControllerCandidateScopeTest.java",
+          "disposition": "modify",
+          "target": "construct the generated Jackson 3 store request type in its focused owner-scope proof"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrapTest.java",
+          "disposition": "create",
+          "target": "focused owner-bootstrap intent and private-output proof"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+          "disposition": "modify",
+          "target": "bind recovery identity fields to the LoginFormPage owner form store"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.test.tsx",
+          "disposition": "modify",
+          "target": "focused proof for the recovery form binding"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+          "disposition": "modify",
+          "target": "keep the OTP login fields on the LoginFormPage owner form store"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.tsx",
+          "disposition": "modify",
+          "target": "keep password recovery fields on the LoginFormPage owner form store"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+          "disposition": "modify",
+          "target": "keep platform OTP login fields on the LoginFormPage owner form store"
+        },
+        {
+          "path": "contracts/catalog/admin-catalog.json",
+          "disposition": "modify",
+          "target": "align the contract page required data node with the IA project scope"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "disposition": "modify",
+          "target": "generated projection of the corrected contract page scope"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+          "disposition": "modify",
+          "target": "generated projection of the corrected contract page scope"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "disposition": "modify",
+          "target": "generated sibling projection of the corrected admin catalog"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+          "disposition": "modify",
+          "target": "resolve fixed target pages from the current assignment only when target type is identical"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+          "disposition": "modify",
+          "target": "prove same-target assignment fallback and cross-target denial"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/operationsL2.ts",
+          "disposition": "create",
+          "target": "reuse the rendered operations data-scope selector across owner-backed L2 page proofs"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/authentication.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/invitation-acceptance.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/organization-hierarchy.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/business-entity-management.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/store-management.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/contract-management.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-input.json",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-implementation-amendment.md",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-problem-family.json",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-source-compliance-disposition.json",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-dexter-authorized-historical-receipt-recovery.json",
+          "disposition": "create",
+          "target": "one-time verified receipt-gap recovery artifact"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-exit.json",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "doc/review/platform/rm1p6-u11-joint-remote-l2-delivery-manifest.json",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "doc/review/platform",
+          "disposition": "update",
+          "target": "direct joint L2 implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-design.md",
+          "disposition": "create",
+          "target": "immutable pointer to U11 review design"
+        },
+        {
+          "path": "doc/review/platform/rm1p6-u11-joint-remote-l2-design-adversarial-review-round1.json",
+          "disposition": "create",
+          "target": "independent design review"
+        },
+        {
+          "path": "doc/review/platform/rm1p6-u11-joint-remote-l2-implementation-adversarial-review-round1.json",
+          "disposition": "create",
+          "target": "independent implementation review"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-platform-audit-history-ui-ia-baseline.json",
+          "disposition": "update",
+          "target": "active U11 platform audit-history UI IA baseline"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/audit-history/index.ts",
+          "disposition": "update",
+          "target": "active U11 platform audit-history export"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+          "disposition": "update",
+          "target": "generated platform audit target projection"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history UI"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.test.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history focused proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history focused proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history focused proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history focused proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.mjs",
+          "disposition": "update",
+          "target": "retained platform-audit static contract proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history focused proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history focused proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.tsx",
+          "disposition": "update",
+          "target": "active U11 platform audit-history focused proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.mjs",
+          "disposition": "update",
+          "target": "active U11 platform audit-history architecture proof"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/architecture/platform-administration-boundary.test.mjs",
+          "disposition": "update",
+          "target": "active U11 platform audit-history architecture proof"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history UI"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+          "disposition": "modify",
+          "target": "remove duplicate manual list refetch after generated owner mutations; RTK invalidatesTags remains the cache authority"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.test.tsx",
+          "disposition": "modify",
+          "target": "focused proof that write readback does not add a page-owned refetch loop"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history Modal owner"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+          "disposition": "update",
+          "target": "active U11 operations scope-first owner reads"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-profile/ui/FixedStoreContractDetailDrawer.tsx",
+          "disposition": "modify",
+          "target": "keep the IA04 fixed-store contract detail read-only and bound to the fixed-store owner readback"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history trigger host"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history Modal owner"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.test.tsx",
+          "disposition": "update",
+          "target": "active U11 operations audit-history focused proof"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapper.java",
+          "disposition": "update",
+          "target": "active U11 audit-history edge mapper"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapperTest.java",
+          "disposition": "update",
+          "target": "active U11 audit-history mapper proof"
+        }
+      ],
+      "forbiddenPseudoFixes": [
+        "remote application, Vite, or Playwright execution for the current L2",
+        "persistent DEV runtime or namespace reused as L2 evidence",
+        "test-only UI",
+        "direct SQL business fixture",
+        "static proof as business result",
+        "hash-only or truncated subprocess failure output without a redacted run-scoped command diagnostic artifact"
+      ],
+      "memoryRoute": {
+        "taskKind": "implementation",
+        "domain": "admin-ui",
+        "consumerFace": "operations-admin",
+        "owner": "frontend-platform",
+        "impact": "evidence",
+        "trigger": "runtime"
+      }
+    }
+  ]
+}

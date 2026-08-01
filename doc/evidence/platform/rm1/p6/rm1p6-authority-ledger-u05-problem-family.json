@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-AUTHORITY-LEDGER-CARRYOVER-HASH-20260730",
+  "genericProblem": "Current-tree authority-ledger rows can retain stale authority hashes or feature paths after a governed source and consumer migration.",
+  "rootCauseClass": "AUTHORITY_LEDGER_CURRENT_TREE_DRIFT",
+  "finiteDenominator": [
+    "ST-2 ledger row",
+    "ST-8 ledger row",
+    "ST-11 ledger row",
+    "carry-over manifest authority source",
+    "ST-11 app trace",
+    "ST-11 policy trace",
+    "authority-ledger checker"
+  ],
+  "searchedSurfaces": [
+    "doc/evidence/platform/rm1/p1",
+    "contracts/policy",
+    "apps/frontend/platform-admin",
+    "tools/authority-source-ledger"
+  ],
+  "searchQueries": [
+    "ST-11",
+    "workspace-membership/ui/WorkspaceInvitationPanel",
+    "workspace-membership/ui/WorkspaceMembershipPage",
+    "PLATFORM-WORKSPACE-OVERVIEW|PLATFORM-WORKSPACES|WorkspaceAdministrationPage|WorkspaceManagementPage|transitionStatus|updateDisplay",
+    "PLATFORM-WORKSPACE-OVERVIEW|PLATFORM-WORKSPACES|focusedEvidence"
+  ],
+  "counterexamples": [
+    {
+      "id": "CE-01",
+      "claim": "A trace mismatch may be hidden by refreshing the authority hash.",
+      "result": "REJECTED_WITH_EVIDENCE",
+      "boundary": "Both exact rg traces are compared before the hash-only repair."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-01",
+      "classification": "CONFIRMED",
+      "summary": "ST-8 and ST-11 authority hashes are stale; ST-11's two finite consumer traces match the current tree, while ST-8 is a same-source hash-only row."
+    }
+    ,
+    {
+      "findingId": "PF-02",
+      "classification": "CONFIRMED",
+      "summary": "ST-2 retains two removed workspace-membership consumer paths while the same error-detail behavior now has two exact workspace-user consumers."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/authority-source-ledger/cli.mjs#validate and selfTest"
+    }
+    ,
+    {
+      "findingId": "PF-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/authority-source-ledger/cli.mjs#check-rows and validateConsumerTrace"
+    }
+  ]
+}

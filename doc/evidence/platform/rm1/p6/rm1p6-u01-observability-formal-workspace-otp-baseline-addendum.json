@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1P6-U01-OBSERVABILITY-FORMAL",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "authority": "Dexter authorized Codex for all necessary RM1-P6 work. The P6-1 workspace OTP owner file was receipted in the original RM1P6-U01 package before this observability package admitted the external-OTP safety finding. This addendum freezes only that exact already-receipted pre-remediation byte so the new remediation has its own same-package Pre/Post chain; it is not a baseline reset or cross-package receipt substitution.",
+  "entries": [
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+      "kind": "FILE",
+      "sha256": "f9d084fa4c6fa1dd0279ecec8d1b1ee8f94bdbf6ff457af6259afde8dcd25777"
+    }
+  ],
+  "receiptEvidence": {
+    "packageId": "RM1P6-U01",
+    "chain": [
+      {
+        "pre": ".runtime/compliance-control/hook-events/p6u01-workspace-debug-otp-001.pre.json",
+        "post": ".runtime/compliance-control/hook-events/p6u01-workspace-debug-otp-001.post.json",
+        "beforeSha256": "8d14a74a4ad03e939f8d5327d983c32f33d182d659cc5ef56a8889e82543cc14",
+        "afterSha256": "70b479e1114887488ff7943158ae786b923f312cae638e06f6d34b6f14da7f49"
+      },
+      {
+        "pre": ".runtime/compliance-control/hook-events/p6u01-workspace-debug-otp-compat-002.pre.json",
+        "post": ".runtime/compliance-control/hook-events/p6u01-workspace-debug-otp-compat-002.post.json",
+        "beforeSha256": "70b479e1114887488ff7943158ae786b923f312cae638e06f6d34b6f14da7f49",
+        "afterSha256": "f9d084fa4c6fa1dd0279ecec8d1b1ee8f94bdbf6ff457af6259afde8dcd25777"
+      }
+    ]
+  },
+  "redProof": {
+    "productionEntry": "node tools/compliance-control/cli.mjs validate-delta-receipts",
+    "mutation": "replace the addendum source path with an out-of-scope path or change its frozen SHA-256",
+    "expectedReason": "PACKAGE_BASELINE_ADDENDUM_OUT_OF_SURFACE or INCREMENTAL_RECEIPT_CHAIN_MISSING",
+    "status": "PASS",
+    "boundary": "The addendum is one source file only. Any subsequent mutation must be covered by this package's own receipt path from the frozen byte."
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-U03-DUAL-ADMIN-REACHABILITY-20260731",
+  "genericProblem": "An admin UI can retain a physically reachable-looking implementation module after its approved route, IA task, or canonical consumer has moved or been retired; a shallow page-only cleanup can then either preserve an unapproved duplicate path or delete a shared dependency that still has live consumers.",
+  "rootCauseClass": "ADMIN_UI_REACHABILITY_AND_RETAINED_DEPENDENCY_DENOMINATOR_OMISSION",
+  "finiteDenominator": [
+    "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+    "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx",
+    "apps/frontend/operations-admin/src/features/work-context/ui/RoleAssignmentSelector.tsx",
+    "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx",
+    "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleContextSelector.tsx",
+    "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordChangeDrawer.tsx",
+    "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+    "apps/frontend/platform-admin/src/features/audit-history/index.ts",
+    "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+    "apps/frontend/operations-admin/src/features/audit-history/index.ts",
+    "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+    "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u03-final-ui-ia-control-alignment.json"
+  ],
+  "searchedSurfaces": [
+    "both admin page registries and generated pageDesignKey route bindings",
+    "all operations-admin feature implementation paths that are candidate duplicates or superseded work-context consumers",
+    "platform-admin workspace-IAM account/invitation tab and its platform audit dependency chain",
+    "operations-admin audit-history export and every production import consumer",
+    "IA01 invitation boundary, IA02 role/data-scope boundary, IA03 workspace-account task, IA04 entity pages, final roster, physical import contract and the current U03 alignment record"
+  ],
+  "searchQueries": [
+    "operationsPageRegistry|platformPageRegistry|pageDesignKey|routeSegment",
+    "BrandManagementPage|TenantManagementPage|BusinessEntityManagementPage",
+    "ContextSelector|RoleAssignmentSelector|OperationsPasswordChangeDrawer",
+    "RoleContextSelector|DataScopeSelector|features/authentication/ui/OperationsPasswordChangeDrawer",
+    "AccountsPage|InvitationsPage|PlatformAuditHistoryModal",
+    "OperationsAuditHistoryModal",
+    "platform-face invitation|平台邀请中心|IA01-USER-INVITATION-ACTIONS|IA03-ACCOUNT-TAB|IA04-BRAND-PAGE|IA04-TENANT-PAGE"
+  ],
+  "counterexamples": [
+    {
+      "path": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+      "reason": "It is the live route-bound physical consumer for the three IA04 business-entity pageDesignKeys and therefore replaces, rather than joins, the removed brand and tenant duplicates."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleContextSelector.tsx and DataScopeSelector.tsx plus apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordChangeDrawer.tsx",
+      "reason": "These are the route/shell-connected canonical replacements; their existence is not a reason to retain the unreferenced work-context copies."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "reason": "The selected-workspace account task remains explicitly registered at PLATFORM-WORKSPACE-ACCOUNTS and is the IA03 account-tab physical consumer; only its unapproved platform invitation child tab is in the removal set."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+      "reason": "It has three live production consumers: OrganizationStructurePage, StoreManagementPage and WorkspaceUserPage. It must be retained and must not be removed merely because the platform-specific audit modal becomes orphaned with the retired platform invitation surface."
+    },
+    {
+      "path": "operations-admin public invitation-acceptance and workspace-user invitation surfaces",
+      "reason": "IA01 retains the public operations invitation flow and target-specific operations invitation actions; platform invitation retirement does not authorize deleting these distinct operations-admin tasks."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "DUAL-ADMIN-REACHABILITY-01",
+      "classification": "CONFIRMED",
+      "evidence": "The operations registry routes brand, tenant and head-company pageDesignKeys only to BusinessEntityManagementPage. BrandManagementPage.tsx and TenantManagementPage.tsx are already absent after authorized retirement. ContextSelector.tsx, RoleAssignmentSelector.tsx and the work-context OperationsPasswordChangeDrawer.tsx have no production import while RoleContextSelector.tsx, DataScopeSelector.tsx and authentication/OperationsPasswordChangeDrawer.tsx are the current shell/route consumers. The finite five-path operations removal set is therefore two completed deletions plus those three pending old consumers."
+    },
+    {
+      "findingId": "DUAL-ADMIN-REACHABILITY-02",
+      "classification": "CONFIRMED",
+      "evidence": "IA01 explicitly retires the platform-face invitation management surface and retains invitation creation/cancel/reissue only in target-specific operations user pages. Platform AccountsPage is correctly route-bound to PLATFORM-WORKSPACE-ACCOUNTS, but it imports and renders InvitationsPage as an extra invitation tab. InvitationsPage is the sole production importer of PlatformAuditHistoryModal, so the platform invitation page, platform audit modal and barrel form one retired dependency chain; AccountsPage must remain after removing only that tab/import."
+    },
+    {
+      "findingId": "DUAL-ADMIN-REACHABILITY-03",
+      "classification": "CONFIRMED",
+      "evidence": "The similarly named OperationsAuditHistoryModal is not a platform-invitation residue: the production import scan finds OrganizationStructurePage, StoreManagementPage and WorkspaceUserPage as three separate live operations consumers. Any dual-admin cleanup that deletes it by name or feature affinity would remove active detail-gated audit behavior."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "DUAL-ADMIN-REACHABILITY-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1p6-u03-final-ui-ia-control-alignment.json#requiredConsumerPaths",
+      "reason": "Before L2, compare each production consumer path against the catalog route, physical import contract and final IA record; deletion requires an explicit canonical replacement or an explicit retired consumer receipt."
+    },
+    {
+      "findingId": "DUAL-ADMIN-REACHABILITY-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md#1-原始业务问题范围与非目标",
+      "reason": "Before retaining a nested Tab or its shared dependency, re-check the approved actor and consumer face. A registered parent page does not authorize a retired child task."
+    },
+    {
+      "findingId": "DUAL-ADMIN-REACHABILITY-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1p6-u03-admin-ui-reachability-problem-family.json#counterexamples",
+      "reason": "Every cleanup candidate must have its actual production importers enumerated before deletion; same-named modules across the two independent admin applications are not interchangeable evidence."
+    }
+  ]
+}

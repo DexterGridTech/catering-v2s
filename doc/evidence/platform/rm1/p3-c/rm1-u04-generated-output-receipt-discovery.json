@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-U04-GENERATED-OUTPUT-RECEIPT-DISCONTINUITY",
+  "genericProblem": "A governed generator changed one or more generated artifacts after a package baseline without a pre/post receipt edge from the package baseline hash to the final hash.",
+  "rootCauseClass": "GENERATED_WRITE_CHANNEL_BYPASS",
+  "finiteDenominator": [
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationCreateRequest.java",
+    "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts"
+  ],
+  "searchedSurfaces": [
+    "U04 package baseline and delta graph",
+    "all U04 hook receipt events for the four generated outputs",
+    "P3-C authoritative OpenAPI/registry/generator inputs",
+    "IntelliJ LocalHistory and VFS content cache"
+  ],
+  "searchQueries": [
+    "WorkspaceMembershipRevokeRequest.java hook receipt graph",
+    "operations-edge.ts baseline and pre-hook hashes",
+    "edge-codegen deterministic scratch reconstruction",
+    "operations-edge.ts LocalHistory SHA-256 candidate scan"
+  ],
+  "counterexamples": [
+    {
+      "id": "U04-RECEIPT-RED-01",
+      "case": "Unreceipted generated output is present after baseline",
+      "evidence": "validate-delta-receipts fails with INCREMENTAL_RECEIPT_CHAIN_MISSING for the generated file."
+    },
+    {
+      "id": "U04-RECEIPT-RED-02",
+      "case": "Baseline-current disguise attempt",
+      "evidence": "baseline addendum accepts only non-baselined owner-scope files and cannot replace an existing U04 baseline entry."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "F1",
+      "surface": "P3-C generated output denominator",
+      "finding": "The four generated outputs lacked a complete U04 baseline-to-final receipt graph; TS operations-edge.ts additionally had a historic discontinuity 1160…e29db to f0c9…dcc45."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "F1",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs validate-delta-receipts",
+      "reason": "The existing control fail-closedly rejects the discontinuity; P3-C performs a truthful baseline restoration and pre-to-post generator replay rather than widening recovery policy."
+    }
+  ],
+  "lawfulRecovery": {
+    "historicalTsBaseline": {
+      "source": "IntelliJ 2026.2 VFS content cache contentId 21229178",
+      "sha256": "1160b8130832136c077e5db05783c39228773c2c4d78f8eae4e7bfde4dfe29db",
+      "verification": "Read-only raw-LZ4 decode of 87322 bytes matched the U04 baseline hash."
+    },
+    "replay": "Restore all four verified baseline bytes, record a four-path pre-hook, regenerate from current authoritative source, record post-hook, then require receipt equality and generator check."
+  }
+}

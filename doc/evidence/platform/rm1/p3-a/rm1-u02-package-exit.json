@@ -1,0 +1,550 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1-U02",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/08e1e7fa28f4a58764902d884b49a2ed4adb2c17d86df680d28e67397752363e.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b2981112b653c8ee210cabb6f22e17d37beff4218a11776e02a15abaf5b138d1"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/0ac46e6a542d23e3f3d04d01fd3b758672c947314780129537b02d54cb279f63.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a0afe7f34389ce8e1e1e018cd8eb93e40ed5ac382c5c5b85ea77f9ffb39b1361"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/23fa812e2ac5f3fd67bc7ea2a7b26efb495d90a0a296e9b57f053ecb8eb3c253.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "78c6620589a0fab6abe02b613156fd3c4a6c7fa50ddd934354d5756ad2e0de68"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/28fc13bdcc1ff1cf6f358e0b8c68835cd3922d009db6ad89d442ccccbacf87c7.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "af2c5984c918e216eb62c677df3d772a7950f407692ab431cf34dc0c48befc20"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/5a22d7093ae634aa4a2ddd863e547dfb6c76712599ae4ae9a304951a7f5a1dba.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e402eef79c173216fc983bea5ee89c30ba5e98b77d6f265eb89477d964eceb75"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityRequirementCatalog.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "370e295d88b290c586c2aa13dd3a26d5f05f608ffa33ff81caf0b15a0ac95828"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityResolverRegistry.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "96e4438b7147bbf73e38253cbda4ec51684ad96c110b9af6fe987d349190eab0"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationOtpSendResponse.java",
+      "beforeSha256": "c9d4918a3a574d763f857cbae3264f82cd5cdf6660647d8151b0ea9b83d2344e",
+      "afterSha256": "c4d9e4204d76d7164baf3901708e6d21488af19b6c8c25d5f3ee0b3c75032bcd"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOtpSendResponse.java",
+      "beforeSha256": "ad962511df3ca8f760206ece142ec4f775a0bbe45f715a252a985221645928da",
+      "afterSha256": "16a8baf1608253d7f0e3a958fdeab901fae3e2111e077cf7b9faa9e0d015e0ec"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetOtpSendResponse.java",
+      "beforeSha256": "9022a6473710ea0fbab439fadafefcb1716305df6ad7e8f9772e87a187b334fb",
+      "afterSha256": "d00faa57512a11fb8f8d007234da8e9274f62973593502ae51608e3ad9373676"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
+      "beforeSha256": "27213cf0f6748da3c8916058240b7503d7e92389bd19e5b8b7a7bb809bb4d498",
+      "afterSha256": "1bb404b538599ee26cdd191268a70e94023069fb71b5e6f667aa8bb66e7a2949"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java",
+      "beforeSha256": "4c2dffff997a6ed8ecdfb69c8117c751154997ee87015a0b5c6304811d4dee36",
+      "afterSha256": "46cc39517bc74b8baa220cf408053af8a29ee89c63451f405a32135ff49cf1e9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java",
+      "beforeSha256": "1940544345a7906e1f9f6b7af1d9823a144ffcb6cffc1c6f5a17386fbb418f9d",
+      "afterSha256": "ebfd374829c425f11ee74a680880e8dab77523237b866ce97b9aa440f8a140f7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+      "beforeSha256": "d3aa130b4729ecf46946ee64e637781c0afda678d054948afe54e9f944c306a0",
+      "afterSha256": "1ed67829f9984529f3437d83ea57ab817d537fa7a9b5f8d77faa9281d01a4d8f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordreset/PublicWorkspacePasswordResetController.java",
+      "beforeSha256": "e90b134a72ecf064afcbec05b1335fffb0de48cd16233f04ff422f8865de96fc",
+      "afterSha256": "5cf2d467c875d401e61ba9d268c34416443e3f1649d2d6fdb9b5e8b70ccb5049"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "20037a51ffd704c8b61921de3d26b4f8d317f8370b39ba508a61b53d28955d3d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/PlatformCommercialGroupControllerProblemTest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1f21c43c164f6a054df695fb8d809f08b1b9f75b0fb3a70d15fc02e1b4123ff8"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/problem/ContractProblemAdviceTypedOwnerMappingTest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "442cb0cd80ce883f767b0c17bcf0653bc257e1f5ee290083bb13e57c4e80fd98"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "beforeSha256": "054ce942875b374eb9f69954b9d6f3a7eb946a895ac921ab18e2cd950ae59312",
+      "afterSha256": "31ad34455ed4b41cbe517503b414517610d1a41f9f522b889d085021c2a26c28"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+      "beforeSha256": "36b4f64b80d6326a2b2dfdc59cb289b6e39f50ce24ad9df680a8cfe15a8e25fd",
+      "afterSha256": "9c5e65aeb3f8f1c74c0afdd08c66f6ccbe84ae14a1c3ec4811e0d093ca9086ba"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "beforeSha256": "cb8dba0799f39483d6bcdadd332ef1094aaeb57c6182e0fa7ba7f4d2be7ec0ee",
+      "afterSha256": "44d374bc966eb2710e1e4855085ecc06c33dbfcb9476a03b3f510295e9b707c9"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/brand-management.paths.yaml",
+      "beforeSha256": "62450cda26b18daf8ed8a466a05a0e92d526fec6b1c78608784aba3cc42b5452",
+      "afterSha256": "7552a618a656ac4c77afc0661bbb804b64ea8ea7f799a5a3b6e1363abdb08319"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/contract-management.paths.yaml",
+      "beforeSha256": "a6c7ce067b6c4cc94fda28246e59746d03a5c8b4ac698c62cdf27a606343fa6d",
+      "afterSha256": "af7a65f2252af1047c439c88e08e176ec27cac207d2de43b2218d703ee4f54d6"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/head-company-management.paths.yaml",
+      "beforeSha256": "1a43043f3796e125992d23c6254ebe3723999e71849bc4dd27a94b9e285bcd00",
+      "afterSha256": "4f2cd46344266d45d61b7d5cf67db4228dfdb953d421db76707ff431f269aa50"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/organization-hierarchy.paths.yaml",
+      "beforeSha256": "b7e6c491b7f566181cd180c23d4eee5434d916e5f8e7982f1e55ff8a19139c35",
+      "afterSha256": "a5aec0c0ddcf871d6d58c9f582cd9d8312de363f2b71a83a51a093a9c666b027"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/store-management.paths.yaml",
+      "beforeSha256": "5cafcdcef62d331106844027688ae6fcbf78c11f85793b845daa05ea85164e50",
+      "afterSha256": "c29dfe739ac702ceb306e5f63426f891d5f3e75ca402f5262073a2127cec7462"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/tenant-management.paths.yaml",
+      "beforeSha256": "91fd818f9a36e9cf243fb38631d18512ee4c0b22fab9a536fbe08b3a1791965f",
+      "afterSha256": "3aa365396a249cf037062dd0481f436182baaf25024c8e657879a6b0f19acd63"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml",
+      "beforeSha256": "29aadabd535f89d2cd7a21e332722eeca916d4dadfc00419094cd7a665f0ac5e",
+      "afterSha256": "b3c7f2e8322bf93a825df00921db98624330b7ac0d533c353d61b5234813c047"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-auth.paths.yaml",
+      "beforeSha256": "8e83f0d2958de3d156dc8d600dad8104b1a1c4a740d42700f99ba4447ac5341c",
+      "afterSha256": "9a454d47429be7bc3a80f86ef9b7fa8a42526eccc81b0da3c1cd65267c5b692b"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-session.paths.yaml",
+      "beforeSha256": "c9b309b0afb791d319b96835e51821e8ceeb454bb11d49c0ff926ce7b17e70e8",
+      "afterSha256": "c1c5cdeeeae69bd9226a6336a354f7c35868190dc8dd3f4a8ef76c44847f6e35"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/commercial-group.paths.yaml",
+      "beforeSha256": "7f75101060b50e77f53958bec584ef1f8adb37496529a5a1e59c5038eeb3e429",
+      "afterSha256": "30aebcc28c9fb052d76017c301ab9521c0c7d11f42190328a203799fcfa7d373"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/extension-definition.paths.yaml",
+      "beforeSha256": "eac9ac95c2f90ad484a740ea93b0ee167558459bd78a69531ae10697fa7389fa",
+      "afterSha256": "d191187a6cda1ad25fe8996e7ee052c598a8fe1858311c5e315bb8ebf1d508ec"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/group-workspace-management.paths.yaml",
+      "beforeSha256": "cf5249a1ef663e0c282088b54be70c8a06ddf265666e48c80b65979e588175b1",
+      "afterSha256": "1e3253777f8ee3a0f7a8c77b2a1d575b7a06013e856a952ebc378f7e59c50131"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/platform-admin-management.paths.yaml",
+      "beforeSha256": "050bd94ce22181377833fa7209c3bbe1e87b0d25429edc907ce1416a62ada934",
+      "afterSha256": "7c496a1d3105d0ed3ac5024d47928279ddbfacd823931081484133eff45b601e"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/platform-auth.paths.yaml",
+      "beforeSha256": "fa8cbc32ea6ea2b312b81e4f72babcd959f1bf4806db976278b649529e493f34",
+      "afterSha256": "33a33cf58256a5040b858a1e3db5ccf5350a9e5e6b3e0f2b3a05e77e93bf95ee"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/role-management.paths.yaml",
+      "beforeSha256": "a224be63e990bfba651f6486d6c0bdd67edbe3ad998b663bd29f8afc3234519e",
+      "afterSha256": "77df72a85c1c21d02e370595dd293ee184d0e719d3d111bd6b1d9095c03ffd1d"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml",
+      "beforeSha256": "4c78fc9a62251f724ca5fa62c21ed2c20e42cedd4e979dc9c2cf695da59bf931",
+      "afterSha256": "0e93d0c07f88f57ce7db827f2add2e92c417bb936a51c16ccdbd0dea342625d3"
+    },
+    {
+      "path": "contracts/openapi/paths/public/access-recovery.paths.yaml",
+      "beforeSha256": "0edd63a63499fbf5928985b2567ed37de807c565f06366b859ed5214cfe4d298",
+      "afterSha256": "afe64992e909889697d2f089440821f51b133b7328359fe912404f089251c470"
+    },
+    {
+      "path": "contracts/openapi/paths/public/invitation-acceptance.paths.yaml",
+      "beforeSha256": "5e6e77b24c323c54f082ac870e3b761550fe22f5a2636aed78d188cb7daf9c4d",
+      "afterSha256": "8c8960425450f55148bac8df8eb8a6082176c24695b87048d06cc29144e0cc5e"
+    },
+    {
+      "path": "contracts/registry/iam-org-governance-manifest.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b02ac52c2035729d6f7d2159cbbcf470acb8d4949b0b710e76d4ce3a1730b124"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-implementation-amendment.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "af3effcce7c57311e2fa611d54f6ec312d470c08495a5b6c1162503c5c23ef00"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-p3-abc-review-cadence-discovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "065a3fd3cf76d1ea46df86cd0bc63ba89f79acb8fe5b5e7d76aafec84fb434ee"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-package-input.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5c85495ebfa44f78e36c90ed8a4f339a4cb4d7ccb9ac52b2a6eb1be3156c5d2b"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-pd2-typed-owner-exception-set-discovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fd98125012cd89afe74c230d801624467845fc5f463997e6074624dd18843632"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7d809f345580c720adef305a961ae082c1e5bda1485e6cd986e9b4e453c9a4f9"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-successor-intake-baseline-scope-discovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5704cb3df12e00628659c476821ffab2d8c50255fdca74999bde67f5d998de2a"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8e1ca42ff407aa4de0becdfe3f4b97dfcfb48a28e0ff7a21b6a80f6def6576f7"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0e9431ca95053d7db501e8ac09afd4309b7478e8b15769221c0b7f4028d7ff8b"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolverTest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "94b3dfdd73a91291547d4db4652d8d43dc3805d5b0b4a70c2f826d2c8f189b5c"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "beforeSha256": "3cfba1c67bf314643d98f23b39d28e1391b9d59e3638f152ce488d2eb5aed849",
+      "afterSha256": "cd49d792c4451ea1df65e9ecd3a78f4da877494ea1fd0ecb2f71b3a97ba47158"
+    },
+    {
+      "path": "tools/capability-invariants/cli.mjs",
+      "beforeSha256": "2e3047f06c3dd2c071d6ac818885f450d68227d79a69e22fe6637331261114db",
+      "afterSha256": "e758a3021f98b901c31e95cfc90d3fa18c0df896ff317dc870f800a0e925eb72"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "b66dcdd083008d81a3f4d0af12f83e493539f7eee9f43bad3772c304bee47607",
+      "afterSha256": "00f411f7634286277192b063877eb229345e0493f0ee816e0c2268edd6970eb5"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/08e1e7fa28f4a58764902d884b49a2ed4adb2c17d86df680d28e67397752363e.json",
+      "afterSha256": "b2981112b653c8ee210cabb6f22e17d37beff4218a11776e02a15abaf5b138d1",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/0ac46e6a542d23e3f3d04d01fd3b758672c947314780129537b02d54cb279f63.json",
+      "afterSha256": "a0afe7f34389ce8e1e1e018cd8eb93e40ed5ac382c5c5b85ea77f9ffb39b1361",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/23fa812e2ac5f3fd67bc7ea2a7b26efb495d90a0a296e9b57f053ecb8eb3c253.json",
+      "afterSha256": "78c6620589a0fab6abe02b613156fd3c4a6c7fa50ddd934354d5756ad2e0de68",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/28fc13bdcc1ff1cf6f358e0b8c68835cd3922d009db6ad89d442ccccbacf87c7.json",
+      "afterSha256": "af2c5984c918e216eb62c677df3d772a7950f407692ab431cf34dc0c48befc20",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/5a22d7093ae634aa4a2ddd863e547dfb6c76712599ae4ae9a304951a7f5a1dba.json",
+      "afterSha256": "e402eef79c173216fc983bea5ee89c30ba5e98b77d6f265eb89477d964eceb75",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityRequirementCatalog.java",
+      "afterSha256": "370e295d88b290c586c2aa13dd3a26d5f05f608ffa33ff81caf0b15a0ac95828",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityResolverRegistry.java",
+      "afterSha256": "96e4438b7147bbf73e38253cbda4ec51684ad96c110b9af6fe987d349190eab0",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationOtpSendResponse.java",
+      "afterSha256": "c4d9e4204d76d7164baf3901708e6d21488af19b6c8c25d5f3ee0b3c75032bcd",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOtpSendResponse.java",
+      "afterSha256": "16a8baf1608253d7f0e3a958fdeab901fae3e2111e077cf7b9faa9e0d015e0ec",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetOtpSendResponse.java",
+      "afterSha256": "d00faa57512a11fb8f8d007234da8e9274f62973593502ae51608e3ad9373676",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
+      "afterSha256": "1bb404b538599ee26cdd191268a70e94023069fb71b5e6f667aa8bb66e7a2949",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java",
+      "afterSha256": "46cc39517bc74b8baa220cf408053af8a29ee89c63451f405a32135ff49cf1e9",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java",
+      "afterSha256": "ebfd374829c425f11ee74a680880e8dab77523237b866ce97b9aa440f8a140f7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+      "afterSha256": "1ed67829f9984529f3437d83ea57ab817d537fa7a9b5f8d77faa9281d01a4d8f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordreset/PublicWorkspacePasswordResetController.java",
+      "afterSha256": "5cf2d467c875d401e61ba9d268c34416443e3f1649d2d6fdb9b5e8b70ccb5049",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json",
+      "afterSha256": "20037a51ffd704c8b61921de3d26b4f8d317f8370b39ba508a61b53d28955d3d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/PlatformCommercialGroupControllerProblemTest.java",
+      "afterSha256": "1f21c43c164f6a054df695fb8d809f08b1b9f75b0fb3a70d15fc02e1b4123ff8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/problem/ContractProblemAdviceTypedOwnerMappingTest.java",
+      "afterSha256": "442cb0cd80ce883f767b0c17bcf0653bc257e1f5ee290083bb13e57c4e80fd98",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "afterSha256": "31ad34455ed4b41cbe517503b414517610d1a41f9f522b889d085021c2a26c28",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+      "afterSha256": "9c5e65aeb3f8f1c74c0afdd08c66f6ccbe84ae14a1c3ec4811e0d093ca9086ba",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "afterSha256": "44d374bc966eb2710e1e4855085ecc06c33dbfcb9476a03b3f510295e9b707c9",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/brand-management.paths.yaml",
+      "afterSha256": "7552a618a656ac4c77afc0661bbb804b64ea8ea7f799a5a3b6e1363abdb08319",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/contract-management.paths.yaml",
+      "afterSha256": "af7a65f2252af1047c439c88e08e176ec27cac207d2de43b2218d703ee4f54d6",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/head-company-management.paths.yaml",
+      "afterSha256": "4f2cd46344266d45d61b7d5cf67db4228dfdb953d421db76707ff431f269aa50",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/organization-hierarchy.paths.yaml",
+      "afterSha256": "a5aec0c0ddcf871d6d58c9f582cd9d8312de363f2b71a83a51a093a9c666b027",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/store-management.paths.yaml",
+      "afterSha256": "c29dfe739ac702ceb306e5f63426f891d5f3e75ca402f5262073a2127cec7462",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/tenant-management.paths.yaml",
+      "afterSha256": "3aa365396a249cf037062dd0481f436182baaf25024c8e657879a6b0f19acd63",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml",
+      "afterSha256": "b3c7f2e8322bf93a825df00921db98624330b7ac0d533c353d61b5234813c047",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-auth.paths.yaml",
+      "afterSha256": "9a454d47429be7bc3a80f86ef9b7fa8a42526eccc81b0da3c1cd65267c5b692b",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-session.paths.yaml",
+      "afterSha256": "c1c5cdeeeae69bd9226a6336a354f7c35868190dc8dd3f4a8ef76c44847f6e35",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/commercial-group.paths.yaml",
+      "afterSha256": "30aebcc28c9fb052d76017c301ab9521c0c7d11f42190328a203799fcfa7d373",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/extension-definition.paths.yaml",
+      "afterSha256": "d191187a6cda1ad25fe8996e7ee052c598a8fe1858311c5e315bb8ebf1d508ec",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/group-workspace-management.paths.yaml",
+      "afterSha256": "1e3253777f8ee3a0f7a8c77b2a1d575b7a06013e856a952ebc378f7e59c50131",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/platform-admin-management.paths.yaml",
+      "afterSha256": "7c496a1d3105d0ed3ac5024d47928279ddbfacd823931081484133eff45b601e",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/platform-auth.paths.yaml",
+      "afterSha256": "33a33cf58256a5040b858a1e3db5ccf5350a9e5e6b3e0f2b3a05e77e93bf95ee",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/role-management.paths.yaml",
+      "afterSha256": "77df72a85c1c21d02e370595dd293ee184d0e719d3d111bd6b1d9095c03ffd1d",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml",
+      "afterSha256": "0e93d0c07f88f57ce7db827f2add2e92c417bb936a51c16ccdbd0dea342625d3",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/public/access-recovery.paths.yaml",
+      "afterSha256": "afe64992e909889697d2f089440821f51b133b7328359fe912404f089251c470",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/public/invitation-acceptance.paths.yaml",
+      "afterSha256": "8c8960425450f55148bac8df8eb8a6082176c24695b87048d06cc29144e0cc5e",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/registry/iam-org-governance-manifest.json",
+      "afterSha256": "b02ac52c2035729d6f7d2159cbbcf470acb8d4949b0b710e76d4ce3a1730b124",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-implementation-amendment.json",
+      "afterSha256": "af3effcce7c57311e2fa611d54f6ec312d470c08495a5b6c1162503c5c23ef00",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-p3-abc-review-cadence-discovery.json",
+      "afterSha256": "065a3fd3cf76d1ea46df86cd0bc63ba89f79acb8fe5b5e7d76aafec84fb434ee",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-package-input.json",
+      "afterSha256": "5c85495ebfa44f78e36c90ed8a4f339a4cb4d7ccb9ac52b2a6eb1be3156c5d2b",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-pd2-typed-owner-exception-set-discovery.json",
+      "afterSha256": "fd98125012cd89afe74c230d801624467845fc5f463997e6074624dd18843632",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-source-compliance-disposition.json",
+      "afterSha256": "7d809f345580c720adef305a961ae082c1e5bda1485e6cd986e9b4e453c9a4f9",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-successor-intake-baseline-scope-discovery.json",
+      "afterSha256": "5704cb3df12e00628659c476821ffab2d8c50255fdca74999bde67f5d998de2a",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "afterSha256": "8e1ca42ff407aa4de0becdfe3f4b97dfcfb48a28e0ff7a21b6a80f6def6576f7",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java",
+      "afterSha256": "0e9431ca95053d7db501e8ac09afd4309b7478e8b15769221c0b7f4028d7ff8b",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolverTest.java",
+      "afterSha256": "94b3dfdd73a91291547d4db4652d8d43dc3805d5b0b4a70c2f826d2c8f189b5c",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "afterSha256": "cd49d792c4451ea1df65e9ecd3a78f4da877494ea1fd0ecb2f71b3a97ba47158",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/capability-invariants/cli.mjs",
+      "afterSha256": "e758a3021f98b901c31e95cfc90d3fa18c0df896ff317dc870f800a0e925eb72",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "00f411f7634286277192b063877eb229345e0493f0ee816e0c2268edd6970eb5",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-source-compliance-disposition.json",
+    "sha256": "7d809f345580c720adef305a961ae082c1e5bda1485e6cd986e9b4e453c9a4f9"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "controls": [
+    {
+      "ruleId": "CR05-WC-01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-WC-02",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-HISTORICAL-RECEIPT-RECOVERY",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1-U05",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "authority": "The approved P1 direct closure needed the pre-existing verifier and its approved implementation-design manifest after the initial U05 baseline. This addendum preserves their exact pre-change bytes and does not reset the package baseline.",
+  "entries": [
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "kind": "FILE",
+      "sha256": "ddc4798d8437da37c70a307de028ec3ae37114a61e3b7889824b7b947b9f731c"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "kind": "FILE",
+      "sha256": "ae80d9d645fc4c5cfed2f168b3c4f5125b5a2c989c258f09c8ce430e9bcaf821"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "kind": "FILE",
+      "sha256": "45a7539380cb44d6ba9730f4fc0713b9ff2cd193ff569acfbed863dae2bc67d6"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "kind": "FILE",
+      "sha256": "e44d71776aca8d6981286956627f8ba5f24a01536f9cf64de8cb1b4e908d432f"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "kind": "FILE",
+      "sha256": "d0fa1b2cb5af4db651d1f2f2d17d3323ae2e6cab65d8424aed4ee9c427961b6d"
+    }
+  ]
+}

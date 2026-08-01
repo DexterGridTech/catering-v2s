@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p3-abc-historical-dynamic-evidence-disposition",
+  "status": "OPEN_REMEDIATION",
+  "scope": [
+    "doc/evidence/platform/rm1/p3-a/rm1-u02-package-exit.json",
+    "doc/evidence/platform/rm1/p3-b/rm1-u03-package-exit.json",
+    "doc/evidence/platform/rm1/p3-c/rm1-u04-package-exit.json"
+  ],
+  "historicalFact": "Each historical P3 package exit declares business NOT_APPLICABLE and has no distinct dynamicEvidence field. incrementalChecks are static changed-file compliance records, not test-execution proof.",
+  "historicalRunClaim": {
+    "classification": "UNVERIFIED_REQUIRES_EVIDENCE",
+    "reason": "No run-scoped result and log establishing the alleged fixture failure and its exact cause were found in the repository. This record deliberately does not convert that claim into business PASS, business FAIL, or a named fixture cause."
+  },
+  "currentRemedy": {
+    "packageId": "RM1-U12",
+    "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_DYNAMIC_HIERARCHY_AND_CAPABILITY",
+    "machineControl": "tools/compliance-control/cli.mjs validateRequiredDynamicEvidence",
+    "requiredResult": "A PASS package exit must carry distinct dynamicEvidence with runner, suite, current source hashes, run-log hash, PASS result, and PASS cleanup."
+  },
+  "excludedInference": [
+    "A static incrementalChecks result PASS does not mean a test suite executed.",
+    "A missing historical log does not establish a fixture failure.",
+    "The historical exits remain historical records and are not rewritten as current-byte business proof."
+  ]
+}

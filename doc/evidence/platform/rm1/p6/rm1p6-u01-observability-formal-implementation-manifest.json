@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p6-observability-formal-implementation-manifest",
+  "status": "ACTIVE_NOT_EXIT",
+  "packageId": "RM1P6-U01-OBSERVABILITY-FORMAL",
+  "businessPurpose": "P6-1 lets an unauthenticated person authenticate or recover access safely while the operations entry shows the owning group workspace brand; this package adds the operational diagnostics and gate proof required to support that accepted behavior.",
+  "approvedDesignSources": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md","anchor":"## 3. P6-1：公开入口、认证恢复与品牌事实"},
+    {"path":"doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md","anchor":"# RM1 P6-1 observability extension implementation design"},
+    {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","anchor":"# RM1 P6-1 observability formal granularity-gate binding design"}
+  ],
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-U01-OBSERVABILITY-FORMAL",
+      "title": "P6-1 secret-safe diagnostics, managed runner, OTP external-surface and formal source-reopening gate",
+      "approvedAssertions": [
+        "Public authentication, recovery and workspace brand behavior remain owner-first and unchanged while diagnostic events expose only allowlisted operational facts.",
+        "The P6 runner reports run-scoped phase, heartbeat, remote process identity, log-read and cleanup without leaking command secrets.",
+        "Every P6 public OTP response uses debugVerificationCode only when the server-side policy permits it; legacy testCode remains confined to the administrator-only reset owner path, and the typed owner Problem inventory is an exact frozen set.",
+        "The production granularity checker reopens D2 through D6 sources, and edge root projection is jointly validated against the target-specific operation contract."
+      ],
+      "changeSurfaces": [
+        {"path":"tools/implementation-design-granularity/cli.mjs","disposition":"update","target":"reopen and exact-validate D2 through D6 source bindings with real red fixtures"},
+        {"path":"scripts/test/r5-remote-testcontainers.mjs","disposition":"update","target":"managed run manifest, heartbeat, log-read and reclaimable remote process lifecycle"},
+        {"path":"apps/backend/catering-business-server/modules/foundation","disposition":"update","target":"shared secret-safe diagnostic primitives"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java","disposition":"update","target":"operations public OTP debug-code owner accessor aligned to the approved external contract"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java","disposition":"update","target":"edge diagnostic interceptor registration"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge","disposition":"update","target":"22-operation exact-set registration and one-start-one-terminal integration"},
+        {"path":"apps/backend/catering-business-server/src/test","disposition":"update","target":"production-path diagnostics and red-mutation tests"},
+        {"path":"contracts/openapi/edge.openapi.yaml","disposition":"update","target":"target-specific root projection"},
+        {"path":"contracts/openapi/paths/operations-admin/workspace-access.paths.yaml","disposition":"update","target":"target-specific path-document alignment when root projection requires it"},
+        {"path":"tools/capability-invariants/cli.mjs","disposition":"update","target":"joint root-to-target projection invariant"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/api/generated","disposition":"update","target":"generator-owned Java output only"},
+        {"path":"apps/frontend/platform-admin/src/app/api/generated","disposition":"update","target":"generator-owned platform TypeScript output only"},
+        {"path":"apps/frontend/operations-admin/src/app/api/generated","disposition":"update","target":"generator-owned operations TypeScript output only"},
+        {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","disposition":"update","target":"selector grammar and actual UI denominator terminology correction"},
+        {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-manifest.json","disposition":"update","target":"formal checker and source-hash re-freeze"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","disposition":"update","target":"P6 U01 U02 U03 checker tool-hash re-freeze"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-manifest.json","disposition":"update","target":"extension admission state and implementation binding evidence"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-manifest.json","disposition":"update","target":"package-owned implementation denominator and source hashes"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-amendment.md","disposition":"update","target":"Dexter authorization boundary"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-package-input.json","disposition":"update","target":"package binding and manifest hash"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-source-disposition.json","disposition":"create","target":"six-denominator package exit source disposition"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-workspace-otp-baseline-addendum.json","disposition":"create","target":"one-file pre-scope owner baseline correction with original P6-1 receipt readback"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-package-exit.json","disposition":"create","target":"receipt-bound completion evidence"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-review-round1.json","disposition":"create","target":"fresh implementation adversarial review input"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-author-intake.md","disposition":"create","target":"author disposition after independent implementation review"}
+      ],
+      "forbiddenPseudoFixes": [
+        "A second relaxed checker or a static scan in place of production source reopening.",
+        "Raw headers, cookies, authorization values, OTPs, recovery grants, passwords, mobile numbers or request bodies in diagnostics.",
+        "Treating synchronous SSH completion as live runner liveness or using longer timeout as a lifecycle repair.",
+        "Hand-editing generated edge consumers or restoring generic workspace-user root operations.",
+        "Changing P6-2, P6-3, UI, DEV, seed, reset or Roadmap state in this P6-1 package."
+      ],
+      "sourceComplianceDispositionRequired": true,
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath":"project-memory/kernel/01-workspace-and-roadmap.md","selector":"Assertions","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63",
+          "owningSourceSet":[
+            {"path":"project-memory/decisions/confirmed-business-language-corpus.md","sha256":"51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503","selector":"Assertions"},
+            {"path":"project-memory/decisions/deterministic-context-only.md","sha256":"4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20","selector":"Assertions"},
+            {"path":"project-memory/decisions/incremental-compliance-hook.md","sha256":"0e0179020433b8948287f02b061cb1a7c456048b3cfeac0b8fc68a60e83af94d","selector":"Assertions"},
+            {"path":"project-memory/decisions/independent-subagent-adversarial-review.md","sha256":"891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf","selector":"Assertions"},
+            {"path":"project-memory/kernel/01-workspace-and-roadmap.md","sha256":"f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63","selector":"Assertions"},
+            {"path":"project-memory/kernel/02-service-shape-and-owner.md","sha256":"45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032","selector":"Assertions"},
+            {"path":"project-memory/kernel/03-transaction-data-and-dependencies.md","sha256":"f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44","selector":"Assertions"},
+            {"path":"project-memory/kernel/04-contract-consumer-and-admin.md","sha256":"1f6d9efbe0208f5b164d12effd4a4c4ab8f2c297b9b000462dc96820c3efa88d","selector":"Assertions"},
+            {"path":"project-memory/kernel/05-evidence-runtime-and-git.md","sha256":"d0d75e547400145ef7e764d735bc86e2fdaa5ea8a0b19ace213170b527d65a05","selector":"Assertions"},
+            {"path":"project-memory/kernel/06-heritage-and-change.md","sha256":"5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c","selector":"Assertions"},
+            {"path":"project-memory/operations/business-corpus-adoption-and-read-policy.md","sha256":"04d9329413131e369e8c1ea841f172d4c295f953b07b9768a0e597405fd28353","selector":"Assertions"},
+            {"path":"project-memory/operations/phase-retrospective-and-systemic-repair.md","sha256":"0d84a50de82b9f6e2fabee351f0a5a468cc26f6738b226af00c8479cbd769e35","selector":"Assertions"},
+            {"path":"project-memory/operations/verification-governance.md","sha256":"090e9ce7b6907404103353d69474071b9dc12048f9956e3c05a7847f1397b577","selector":"Assertions"}
+          ]
+        },
+        "APPROVED_ASSERTIONS":{"sourcePath":"doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md","selector":"md:# RM1 P6-1 observability extension implementation design","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"42540c01a04b902c04a5ef6f1d058ae1cc0b0399f305ba6e29dbcc14939202e7","owningSourceSet":[{"path":"doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md","sha256":"42540c01a04b902c04a5ef6f1d058ae1cc0b0399f305ba6e29dbcc14939202e7","selector":"md:# RM1 P6-1 observability extension implementation design"}]},
+        "FORBIDDEN_PSEUDO_FIXES":{"sourcePath":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","selector":"md:## 3. Prohibited pseudo-fixes","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","owningSourceSet":[{"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","sha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","selector":"md:## 3. Prohibited pseudo-fixes"}]},
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA":{"sourcePath":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","selector":"md:## 4. Required future implementation proof","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","owningSourceSet":[{"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","sha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","selector":"md:## 4. Required future implementation proof"}]},
+        "OWNED_SURFACE_AND_PAGE_KEYS":{"sourcePath":"contracts/policy/frontend-asset-carryover-manifest.json","selector":"json:/surfaces,json:/pageDesignKeySurfaceCrosswalk","applicability":"APPLICABLE_NO_UI_SCOPE","missingEntryFails":true,"sourceSha256":"6b531d3bba676f5cc24e3121f482f7920abfe0b4c476081c1ce0478a17ee3974","owningSourceSet":[{"path":"contracts/policy/frontend-asset-carryover-manifest.json","sha256":"6b531d3bba676f5cc24e3121f482f7920abfe0b4c476081c1ce0478a17ee3974","selector":"json:/surfaces,json:/pageDesignKeySurfaceCrosswalk"}]},
+        "DUE_STANDARDS_RULE_IDS":{"sourcePath":"contracts/policy/standards-coverage-matrix.json","selector":"json:/rules","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3","owningSourceSet":[{"path":"contracts/policy/standards-coverage-matrix.json","sha256":"7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3","selector":"json:/rules"}]}
+      },
+      "memoryRoute":{"taskKind":"implementation","domain":"backend","consumerFace":"backend","owner":"platform","impact":"governance","trigger":"implementation"}
+    }
+  ]
+}

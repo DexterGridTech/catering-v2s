@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1-U08",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "entries": [
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "kind": "FILE",
+      "sha256": "b184cd9d0b7533b8393859e3bda1463aef3d38bc2c36f19e89cf44e42182ff0d"
+    }
+  ]
+}

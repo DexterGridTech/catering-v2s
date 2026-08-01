@@ -9,10 +9,11 @@ owners: ["platform","backend"]
 impacts: ["evidence","runtime","cleanup"]
 triggers: ["failure","runtime"]
 assertions: ["READ_FIRST_FAILURE_LOG","SECOND_RETRY_REQUIRES_DIAGNOSIS","NO_TIMEOUT_OR_POLLING_PSEUDOFIX"]
-sourceRefs: ["doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
+sourceRefs: ["doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
 ---
 # Log-first failure retry
 
 - `READ_FIRST_FAILURE_LOG`: 首败先读取 command/service/browser/cleanup 日志。
 - `SECOND_RETRY_REQUIRES_DIAGNOSIS`: 同一 failure signal 第二次尝试前必须判定首个破损边界。
 - `NO_TIMEOUT_OR_POLLING_PSEUDOFIX`: 不得用加 timeout、DOM/状态轮询或魔法等待替代日志诊断。
+- 回读边界：本条是失败重试的压缩入口；涉及日志能力、run manifest、敏感字段、诊断事件或 `LOG_NOT_AVAILABLE` 时，必须回读冻结 Heritage 全文，不能以此三条省略完整标准。

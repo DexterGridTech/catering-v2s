@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-compliance-remediation-package-input",
+  "packageId": "R5-CR-U02",
+  "status": "ACTIVE_NOT_EXIT",
+  "serialPredecessor": {
+    "packageId": "R5-CR-U01",
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-package-exit.json",
+    "sha256": "07ae17db523215f2f97d757ce329841434a5d63d07a5e15bf4d5342a286bcffd",
+    "validated": "PACKAGE_EXIT=PASS"
+  },
+  "baseline": {
+    "path": ".runtime/compliance-control/package-baseline-R5-CR-U02.json",
+    "sha256": "e478e3553e2c4e3d3c114f6a71c436fd50eb167aa96407cadc14419ffa749f95"
+  },
+  "frozenInputs": {
+    "manifest": {
+      "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sha256": "e05265666c82c40398b0c991e285cda6a56183807196ce65e85364df334dea0d"
+    },
+    "plan": {
+      "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+      "sha256": "56a6fcaf8e42d80de04693940624f27071fcc2303b18b6826805637c07ed68ab"
+    },
+    "standardsMatrix": {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "sha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5"
+    },
+    "memoryInventory": {
+      "path": "project-memory/required-inventory.json",
+      "sha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3"
+    }
+  },
+  "completionOracle": "Each app owns its generated endpoint consumption, RTK store, router, session reconstruction and typed Chinese Problem feedback. Feature code has no raw HTTP path, generic request escape hatch, shared app session, business any or Record map.",
+  "authorityBoundary": "CR02 only. No owner, contract, migration, runtime, DEV, reset, seed, remote or CR03 implementation is authorized by this input."
+}

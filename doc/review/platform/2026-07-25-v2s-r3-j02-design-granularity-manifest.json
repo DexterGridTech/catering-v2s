@@ -1,0 +1,179 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "recoveryStatus": "PENDING_RECOVERY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "R3-J02-COMMERCIAL-GROUP-INITIALIZATION",
+  "design": {
+    "path": "doc/plans/platform/2026-07-25-v2s-r3-j02-commercial-group-initialization-implementation-design.md",
+    "sha256": "1cafc02e7607c3aa5320d467f24bfda8e8d7eb46c2e98472e1d87ada07b4683f"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-07-24-v2s-r3-specialized-design-authorization.md",
+    "sha256": "f912ce7942646d0aca5ce7ab045734286c1c7dc4f3ff03a6047de6f7a4cc7d99",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "d3327cda417bb9bf67a91110f88f1f2658a1dd11ba61460dd09aedc88f849a91"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "SEVERITY_COUNT_MISMATCH",
+      "ROUND_THREE",
+      "MISSING_FINDING_UNIT_LINK"
+    ]
+  },
+  "candidateJourney": {
+    "id": "R3-J02",
+    "status": "DEXTER_ACCEPTED_FOR_DESIGN",
+    "actor": "platform administrator",
+    "task": "from GroupWorkspace management, explicitly initialize the one CommercialGroup for an existing enabled and uninitialized GroupWorkspace with independently entered group code and group name",
+    "pageKey": "PLATFORM_GROUP_WORKSPACE_MANAGEMENT",
+    "ownerReadback": "organization CommercialGroup readback through platform-workspace",
+    "mutations": [
+      "initialize one CommercialGroup root exactly once"
+    ]
+  },
+  "deliveryUnits": [
+    {
+      "id": "R3J02-U01",
+      "title": "GATE_0 and R3-J02 immutable scope freeze",
+      "approvedAssertions": [
+        "R3-J02 replaces the unaccepted lookup Journey without widening into GroupWorkspace creation or organization-tree management.",
+        "D.1.L01–L04 are now backed by a production code-layout gate with real red fixtures; the remaining GATE_0 decision stays design-only."
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/decisions/2026-07-25-v2s-r3-j02-commercial-group-initialization-selection.md",
+          "anchor": "## 1. Dexter 裁决",
+          "sha256": "71edf62ba85a8a1c78fa88dfbb26695648bdd3ab61f5a77ae25279caf3bf2081"
+        },
+        {
+          "path": "doc/decisions/2026-07-24-v2s-r3-specialized-design-authorization.md",
+          "anchor": "## 1. 授权",
+          "sha256": "f912ce7942646d0aca5ce7ab045734286c1c7dc4f3ff03a6047de6f7a4cc7d99"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-25-v2s-r3-j02-commercial-group-initialization-implementation-design.md",
+        "anchor": "### R3J02-U01 — gate and version freeze"
+      },
+      "currentDeviation": "code-layout is active and coverage passes, but no GATE_0 version/checkpoint decision or implementation exists",
+      "changeSurfaces": [
+        {"path":"doc/evidence/platform/<gate-0-receipt>.json","disposition":"create","target":"immutable source/version/absence receipt"},
+        {"path":"doc/decisions/<version-spike-decision>.md","disposition":"create","target":"one exact version decision without running a spike"}
+      ],
+      "orderedChain": ["freeze J02 sources", "record GATE_0 decision", "permit production units"],
+      "dependencyAndSerialBoundaries": ["must finish before U02-U06; production layout control is mechanical and does not decide J02 business semantics"],
+      "dataEvolution": {"notApplicableReason":"design-only gate; no schema is authorized"},
+      "uiAndTerms": {"notApplicableReason":"no end-user UI is delivered by GATE_0", "termSource":"R3-J02 selection §2"},
+      "evidence": {"l1":"source/hash and absence-scan receipt","l2":"not applicable before app exists","l3":"not applicable before managed runtime exists","business":"scope receipt names explicit initialization rather than lookup","cleanup":"no dynamic resources are permitted"},
+      "forbiddenPseudoFixes": ["treating a version guess as a spike", "changing coverage phase", "starting DEV or dependency download"],
+      "discriminator": {"fixture":"source hash drift or a forbidden layout mutation must fail the gate"}
+    },
+    {
+      "id": "R3J02-U02",
+      "title": "Two independent admin identities and face boundary",
+      "approvedAssertions": ["platform-admin and operations-admin have independent session facts and no shared cookie/session/state.", "platform-identity owns the action authorizer and exports only typed ExecutionContext/capability to U04.", "operations-admin does not gain a fictitious business page."],
+      "approvedSources": [
+        {"path":"doc/decisions/2026-07-25-v2s-r3-j02-commercial-group-initialization-selection.md","anchor":"## 2. 已裁决边界","sha256":"71edf62ba85a8a1c78fa88dfbb26695648bdd3ab61f5a77ae25279caf3bf2081"},
+        {"path":"doc/decisions/2026-07-24-v2s-r3-specialized-design-authorization.md","anchor":"## 3. 明确不授权","sha256":"f912ce7942646d0aca5ce7ab045734286c1c7dc4f3ff03a6047de6f7a4cc7d99"}
+      ],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-25-v2s-r3-j02-commercial-group-initialization-implementation-design.md","anchor":"### R3J02-U02 — independent identities and app boundaries"},
+      "currentDeviation":"no app, identity owner, route or generated client exists in the successor repository",
+      "changeSurfaces":[{"path":"apps/platform-admin/<app-owned-files>","disposition":"create","target":"platform shell/session slice"},{"path":"apps/operations-admin/<app-owned-files>","disposition":"create","target":"operations shell/session slice"},{"path":"modules/platform-identity/<owner-files>","disposition":"create","target":"platform principal/session and action-authorizer owner"},{"path":"modules/operations-identity/<owner-files>","disposition":"create","target":"operations principal/session owner"}],
+      "orderedChain":["face routing", "principal/session owner", "platform typed ExecutionContext/action capability", "current-session readback", "independent shells"],
+      "dependencyAndSerialBoundaries":["U02 precedes platform action authorization in U04 and UI guard in U05; operations stops after its session proof"],
+      "dataEvolution":{"target":"two separate owner-schema session facts; no union principal"},
+      "uiAndTerms":{"pageKey":"PLATFORM_GROUP_WORKSPACE_MANAGEMENT","termSource":"design §5","requiresDexterDecision":"no; J02 explicitly limits operations to session"},
+      "evidence":{"l1":"face/session owner isolation plus platform action-authorizer ownership test","l2":"each app signs in, reads current session, signs out","l3":"cross-face cookie/session and caller-provided capability negative through managed proxy","business":"operations has independent session without a fabricated business task","cleanup":"managed session/run resources zero after test"},
+      "forbiddenPseudoFixes":["shared session table/cookie", "union login DTO", "operations business placeholder", "frontend-only face filtering"],
+      "discriminator":{"fixture":"platform cookie supplied to operations face is rejected"}
+    },
+    {
+      "id":"R3J02-U03",
+      "title":"GroupWorkspace and CommercialGroup owner facts",
+      "approvedAssertions":["CommercialGroup is unique by workspaceRef and its group code/name are independent inputs.","initialization cannot create organization children or copy GroupWorkspace facts."],
+      "approvedSources":[
+        {"path":"project-memory/decisions/confirmed-business-language-corpus.md","anchor":"## G-01 集团空间与商业集团","sha256":"51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path":"doc/decisions/2026-07-25-v2s-r3-j02-commercial-group-initialization-selection.md","anchor":"## 2. 已裁决边界","sha256":"71edf62ba85a8a1c78fa88dfbb26695648bdd3ab61f5a77ae25279caf3bf2081"}
+      ],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-25-v2s-r3-j02-commercial-group-initialization-implementation-design.md","anchor":"### R3J02-U03 — workspace and commercial-group owner facts"},
+      "currentDeviation":"there are no owner schemas, Flyway baseline, workspace status fact or CommercialGroup invariant yet",
+      "changeSurfaces":[{"path":"db/migration/V<UTC秒_毫秒>__platform_identity_baseline.sql","disposition":"create","target":"single Flyway history platform identity owner"},{"path":"db/migration/V<UTC秒_毫秒>__operations_identity_baseline.sql","disposition":"create","target":"operations identity owner"},{"path":"db/migration/V<UTC秒_毫秒>__platform_workspace_baseline.sql","disposition":"create","target":"GroupWorkspace owner and eligibility revision"},{"path":"db/migration/V<UTC秒_毫秒>__organization_commercial_group.sql","disposition":"create","target":"CommercialGroup composite FK/unique/audit owner"}],
+      "orderedChain":["single UTC-millisecond Flyway history", "workspace ENABLED/revision fact", "CommercialGroup composite workspace-key/ref FK and unique/idempotency owner", "owner invariant test"],
+      "dependencyAndSerialBoundaries":["U03 precedes U04 command; organization FK is one-way and cannot be paired with reverse command/FK; actual versions are frozen only in authorized GATE_0"],
+      "dataEvolution":{"target":"four owner schemas; organization stores group_workspace_key plus workspace_ref with a composite FK/unique invariant; additive only"},
+      "uiAndTerms":{"notApplicableReason":"owner fact unit has no standalone UI","termSource":"confirmed corpus G-01/G-02"},
+      "evidence":{"l1":"unique/idempotency/audit and independent-field owner tests","l2":"not applicable until U05","l3":"migration history and owner invariant run through managed chain","business":"empty GroupWorkspace remains legal until explicit command","cleanup":"database/run cleanup separately PASS"},
+      "forbiddenPseudoFixes":["store group fields on workspace", "two copies of CommercialGroup", "auto-create region/project/store", "second Flyway history"],
+      "discriminator":{"fixture":"second root for same workspaceRef fails while a different workspace can initialize"}
+    },
+    {
+      "id":"R3J02-U04",
+      "title":"Nine-operation contract and same-transaction initialization orchestration",
+      "approvedAssertions":["the contract denominator is 9 operations: 6 platform and 3 operations.","platform-workspace orchestrates while organization owns the create invariant in one REQUIRED transaction."],
+      "approvedSources":[
+        {"path":"project-memory/decisions/confirmed-business-language-corpus.md","anchor":"## G-01 集团空间与商业集团","sha256":"51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path":"doc/decisions/2026-07-25-v2s-r3-j02-commercial-group-initialization-selection.md","anchor":"## 1. Dexter 裁决","sha256":"71edf62ba85a8a1c78fa88dfbb26695648bdd3ab61f5a77ae25279caf3bf2081"}
+      ],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-25-v2s-r3-j02-commercial-group-initialization-implementation-design.md","anchor":"### R3J02-U04 — platform orchestration and nine-operation contract"},
+      "currentDeviation":"no OpenAPI, x-consumer-faces, command API or typed Problem contract exists",
+      "changeSurfaces":[{"path":"contracts/openapi/platform.yaml","disposition":"create","target":"single 9-operation x-consumer-faces truth"},{"path":"modules/platform-workspace/<coordinator-files>","disposition":"create","target":"eligible workspace check and organization.api command"},{"path":"modules/organization/<commercial-group-api-files>","disposition":"create","target":"owner command/query/invariant"}],
+      "orderedChain":["contract schemas/errors", "platform-identity ExecutionContext/action capability", "platform-workspace row-lock/CAS eligibility grant", "organization.api command REQUIRED transaction", "summary readback and typed recovery"],
+      "dependencyAndSerialBoundaries":["requires U02 authorization and U03 owner facts; U05 must only call generated platform operations"],
+      "dataEvolution":{"target":"no duplicate facts; typed workspace eligibility grant lets organization create one composite-keyed CommercialGroup/audit"},
+      "uiAndTerms":{"pageKey":"PLATFORM_GROUP_WORKSPACE_MANAGEMENT","termSource":"R3-J02 selection §2"},
+      "evidence":{"l1":"operation denominator, owner-command, grant-provenance and error-schema tests","l2":"generated platform call supports typed each-state recovery","l3":"proxy→single app→owner chain proves one transaction and rejects duplicate/concurrent/cross-face/revision-mismatch","business":"only explicit groupCode/groupName with an owner-issued eligibility grant can create root","cleanup":"managed chain cleanup PASS"},
+      "forbiddenPseudoFixes":["internal HTTP/OpenAPI client", "REQUIRES_NEW", "workspace table group write", "organization workspace requery", "browser boolean eligibility", "404 as empty-root", "optimistic success"],
+      "discriminator":{"fixture":"same idempotency key/different intent conflicts; stale eligibility revision or composite key mismatch rejects; different key/initialized workspace returns COMMERCIAL_GROUP_ALREADY_INITIALIZED"}
+    },
+    {
+      "id":"R3J02-U05",
+      "title":"Platform-admin GroupWorkspace task UI",
+      "approvedAssertions":["the only R3 business UI performs D01-S05 style explicit initialization, not lookup.","group fields are blank, required and never copied from GroupWorkspace name/key."],
+      "approvedSources":[
+        {"path":"doc/decisions/2026-07-25-v2s-r3-j02-commercial-group-initialization-selection.md","anchor":"## 2. 已裁决边界","sha256":"71edf62ba85a8a1c78fa88dfbb26695648bdd3ab61f5a77ae25279caf3bf2081"},
+        {"path":"project-memory/decisions/confirmed-business-language-corpus.md","anchor":"## G-01 集团空间与商业集团","sha256":"51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"}
+      ],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-25-v2s-r3-j02-commercial-group-initialization-implementation-design.md","anchor":"### R3J02-U05 — platform-admin task UI"},
+      "currentDeviation":"platform-admin app and its management/list/drawer UI do not exist",
+      "changeSurfaces":[{"path":"apps/platform-admin/src/pages/group-workspaces/<page-files>","disposition":"create","target":"app-owned list/detail/init drawers"},{"path":"apps/platform-admin/src/features/commercial-group/<generated-client-and-form-files>","disposition":"create","target":"generated requests, RTK query and ProForm draft"}],
+      "orderedChain":["management list", "detail summary Drawer", "close detail/open initialize Drawer", "blank independent input", "owner readback/recovery"],
+      "dependencyAndSerialBoundaries":["requires U02 session guard and U04 generated contract; operations app cannot import this UI or state"],
+      "dataEvolution":{"notApplicableReason":"UI consumes owner readback and creates no business fact outside U04"},
+      "uiAndTerms":{"pageKey":"PLATFORM_GROUP_WORKSPACE_MANAGEMENT","termSource":"confirmed corpus G-01; R3-J02 selection §2"},
+      "evidence":{"l1":"component/request state tests without business ownership substitution","l2":"live browser path plus validation, disabled, duplicate/concurrent, timeout-first-query and unknown states","l3":"managed browser→proxy→owner readback integration","business":"one user can explicitly initialize one eligible workspace and see the exact root readback","cleanup":"browser/managed runs cleanly stopped"},
+      "forbiddenPseudoFixes":["lookup field as page", "prefill/copy group values", "action column shortcut", "operations page reuse", "screenshot-only proof"],
+      "discriminator":{"fixture":"prepopulated group fields or action remaining after readback fails L2"}
+    },
+    {
+      "id":"R3J02-U06",
+      "title":"Managed evidence, closure and Claude handoff",
+      "approvedAssertions":["business result and cleanup are separate evidence dimensions.","R3 cannot reach implementation or GO without Claude review, Dexter authorization, GATE_0 and coverage recovery."],
+      "approvedSources":[
+        {"path":"doc/decisions/2026-07-24-v2s-r3-specialized-design-authorization.md","anchor":"## 4. 后继门","sha256":"f912ce7942646d0aca5ce7ab045734286c1c7dc4f3ff03a6047de6f7a4cc7d99"},
+        {"path":"doc/decisions/2026-07-25-v2s-r3-j02-commercial-group-initialization-selection.md","anchor":"## 3. 设计与授权边界","sha256":"71edf62ba85a8a1c78fa88dfbb26695648bdd3ab61f5a77ae25279caf3bf2081"}
+      ],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-25-v2s-r3-j02-commercial-group-initialization-implementation-design.md","anchor":"### R3J02-U06 — evidence and closure separation"},
+      "currentDeviation":"R3 has only design artifacts; no managed scripts, implementation evidence or independent Claude verdict for J02 exists",
+      "changeSurfaces":[{"path":"scripts/verify/<r3-j02-command>","disposition":"create","target":"minute-scale managed evidence entrance after authorization"},{"path":"doc/evidence/platform/<r3-j02-evidence>.json","disposition":"create","target":"business and cleanup separated receipt"},{"path":"doc/review/platform/<r3-j02-claude-review>.md","disposition":"create","target":"independent semantic review record"}],
+      "orderedChain":["Codex design review", "Claude design GO", "Dexter exact R3/W1 implementation authorization", "GATE_0", "U02-U05 implementation evidence", "implementation review and business/cleanup closure"],
+      "dependencyAndSerialBoundaries":["Claude design GO and Dexter implementation authorization precede GATE_0; U06 is closure-only after U01-U05 and cannot create/run implementation evidence under current design-only authorization"],
+      "dataEvolution":{"notApplicableReason":"evidence receipt is not business data and cannot substitute owner facts"},
+      "uiAndTerms":{"notApplicableReason":"closure unit has no additional end-user UI","termSource":"verification governance §2-§6"},
+      "evidence":{"l1":"production gates and red mutations","l2":"task-specific platform browser proof","l3":"managed real-chain proof","business":"explicit initialization result independently assessed","cleanup":"managed cleanup result recorded separately and must PASS"},
+      "forbiddenPseudoFixes":["treat checker PASS as semantic approval", "mix cleanup into business PASS", "run unmanaged process", "claim R3 GO before Dexter authorization"],
+      "discriminator":{"fixture":"cleanup failure or fake health/current-session proof blocks closure"}
+    }
+  ]
+}

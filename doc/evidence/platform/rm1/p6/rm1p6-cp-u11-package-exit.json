@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-CP-U11",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-source-compliance-disposition.json","beforeSha256":"ABSENT","afterSha256":"488206c2de5eb490b951dcebbcc3187cf6bb96d8c613b813472d445666f3ff49"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-granularity-binding-extension-manifest.json","beforeSha256":"ABSENT","afterSha256":"6eed668f02c3f4eba2d1f6485405c83ce3aac310c2be69c986a0892e1b854cc0"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-granularity-binding-source-disposition.json","beforeSha256":"ABSENT","afterSha256":"72ef5f4f2aed447231030529599f8cfb5a81e2915f9ed5ce465223e9a24da1d4"},
+    {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","beforeSha256":"ABSENT","afterSha256":"d1dcd436d957922bab1dfac2edf2de70279b9425eb5518911359274abc2f6028"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-author-intake.md","beforeSha256":"ABSENT","afterSha256":"53fea97d2d7c0bb95bc9f06731c03f24d9c65ac94283ab447fb255994d0979ed"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-manifest.json","beforeSha256":"ABSENT","afterSha256":"5774eae957b984d6e7830cf648f0ddf68d0ba1e659ff5144294546e9f273648a"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round1-input-checklist.md","beforeSha256":"ABSENT","afterSha256":"29fa8aed29b5055df80833108757d3d7f8c6d438d0645188565aa17966e97c2e"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round1.json","beforeSha256":"ABSENT","afterSha256":"bc6b87e8665dfbca96512d26347146f661571a5b73d9af35b72a665d04ce3026"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round2-input-checklist.md","beforeSha256":"ABSENT","afterSha256":"da33ea371d58ed23a533cb730beee14827d3d6185310b86e9ec0e86df5c10f08"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round2.json","beforeSha256":"ABSENT","afterSha256":"405db6c6c78c64738988d3022a9aa5cde5ed40188b87497bee1ee45c23f46a97"}
+  ],
+  "incrementalChecks": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-source-compliance-disposition.json","afterSha256":"488206c2de5eb490b951dcebbcc3187cf6bb96d8c613b813472d445666f3ff49","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-granularity-binding-extension-manifest.json","afterSha256":"6eed668f02c3f4eba2d1f6485405c83ce3aac310c2be69c986a0892e1b854cc0","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-granularity-binding-source-disposition.json","afterSha256":"72ef5f4f2aed447231030529599f8cfb5a81e2915f9ed5ce465223e9a24da1d4","result":"PASS"},
+    {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","afterSha256":"d1dcd436d957922bab1dfac2edf2de70279b9425eb5518911359274abc2f6028","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-author-intake.md","afterSha256":"53fea97d2d7c0bb95bc9f06731c03f24d9c65ac94283ab447fb255994d0979ed","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-manifest.json","afterSha256":"5774eae957b984d6e7830cf648f0ddf68d0ba1e659ff5144294546e9f273648a","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round1-input-checklist.md","afterSha256":"29fa8aed29b5055df80833108757d3d7f8c6d438d0645188565aa17966e97c2e","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round1.json","afterSha256":"bc6b87e8665dfbca96512d26347146f661571a5b73d9af35b72a665d04ce3026","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round2-input-checklist.md","afterSha256":"da33ea371d58ed23a533cb730beee14827d3d6185310b86e9ec0e86df5c10f08","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round2.json","afterSha256":"405db6c6c78c64738988d3022a9aa5cde5ed40188b87497bee1ee45c23f46a97","result":"PASS"}
+  ],
+  "sourceComplianceDisposition":{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-source-compliance-disposition.json","sha256":"488206c2de5eb490b951dcebbcc3187cf6bb96d8c613b813472d445666f3ff49"},
+  "fullComplianceScan":"PASS",
+  "business":"NOT_APPLICABLE",
+  "businessReason":"NOT_APPLICABLE_WITH_REASON: CP-U11 is a document-only design-control package. It creates no authentication/recovery runtime behavior, no dynamic run and no business claim; the repaired design remains explicitly awaiting Claude recheck.",
+  "cleanup":"PASS",
+  "controls":[
+    {"ruleId":"CR05-WC-01","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"CR05-WC-02","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"CR05-HISTORICAL-RECEIPT-RECOVERY","state":"ACTIVE_RED_VERIFIED"}
+  ]
+}

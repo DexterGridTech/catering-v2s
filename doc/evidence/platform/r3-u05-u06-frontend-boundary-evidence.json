@@ -1,0 +1,43 @@
+{
+  "kind": "r3-u05-u06-frontend-boundary-evidence",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "units": ["U05", "U06"],
+  "status": "DUAL_ADMIN_BOUNDARY_IMPLEMENTED",
+  "scope": [
+    "platform-admin-c01-static-journey",
+    "operations-admin-static-boundary-only",
+    "generated-platform-admin-edge-wire",
+    "generated-operations-admin-empty-receipt"
+  ],
+  "verification": {
+    "platformAdminSyntax": "PASS",
+    "operationsAdminSyntax": "PASS",
+    "platformAdminBuild": "PASS",
+    "operationsAdminBuild": "PASS",
+    "frontendBoundaryProduction": "PASS",
+    "frontendBoundarySelfTest": "PASS",
+    "operationsAdminBusinessEndpoints": "NONE",
+    "operationsAdminAuthSessionBusinessClosure": "NOT_IN_R3_SCOPE"
+  },
+  "behavior": {
+    "platformAdmin": ["list group workspaces", "view detail", "enter independent commercial group code and name", "owner readback"],
+    "operationsAdmin": ["static boundary page only", "no login", "no session", "no menu", "no business operation"]
+  },
+  "artifactHashes": [
+    {"path": "apps/frontend/platform-admin/package.json", "sha256": "09f89b474b1aff0a72c38507e59ac8e1171fca7a8e69ef8f281f27434b865709"},
+    {"path": "apps/frontend/platform-admin/index.html", "sha256": "d7b98106cbbe90a18e53361315fea0ea8dd2c67c172200daa1687c10152e498d"},
+    {"path": "apps/frontend/platform-admin/src/main.js", "sha256": "793ddb2191d39205616f3d9ae1cb56c2f9784147a80eb55aa3322df75c957c32"},
+    {"path": "apps/frontend/platform-admin/src/styles.css", "sha256": "184335da2c534989596e7090ebaff1fd05ead415e2345ded35f9c733aa015a7a"},
+    {"path": "apps/frontend/platform-admin/src/tests/architecture/r3-c01-boundary.test.mjs", "sha256": "6aa3f0484ebe013273c813b19939b0f1fda7b485be7367c37a29c39f57bd82e8"},
+    {"path": "apps/frontend/platform-admin/src/app/api/generated/r3-edge.ts", "sha256": "985db294d3062aca58a6402e506d62b9f1a41aaef1f98c9215a1e4227aac6cdd"},
+    {"path": "apps/frontend/operations-admin/package.json", "sha256": "ecd0db550dc40fb7d158f9a553bc72386d34993f91bc6ab4aa12e13b3e3c1f7f"},
+    {"path": "apps/frontend/operations-admin/index.html", "sha256": "d23ea44bb09a7996ed95b1180c91e1261e7646a08c29a578b71cd8add6801eb9"},
+    {"path": "apps/frontend/operations-admin/src/main.js", "sha256": "1e073ada1bb1768399dadb8383cc008eb0a86a851b0f0c325f5cdf014d002ebd"},
+    {"path": "apps/frontend/operations-admin/src/styles.css", "sha256": "c476f0131641180b8c34de61816d24cc76f7c0a5038bdb0c0af69f0c5f9a0b76"},
+    {"path": "apps/frontend/operations-admin/src/tests/architecture/r3-boundary.test.mjs", "sha256": "d64312b383be10e70e620dd32b9abd12542d6962d504d5816949801eeba5d018"},
+    {"path": "apps/frontend/operations-admin/src/app/api/generated/empty-endpoint-receipt.ts", "sha256": "dd45fcd6bd105109d8cc9f7f91537e6430588cc3e75c843b588d6795a202ae7e"},
+    {"path": "tools/r3-frontend-boundaries/cli.mjs", "sha256": "cb7685facb2aebdd078b7dc575e5d4d3aebf8af0f9d979d3e9155baa7aa714dd"},
+    {"path": "scripts/check/r3-frontend-boundaries", "sha256": "c938f1b3daa412999933eacf9eea4a09a3cc69051d785d4350f22d1b5fd51e3e"}
+  ]
+}

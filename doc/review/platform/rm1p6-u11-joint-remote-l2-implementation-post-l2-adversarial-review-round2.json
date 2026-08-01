@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-implementation-adversarial-review",
+  "reviewCycleId": "RM1P6-U11-IMPLEMENTATION-POST-L2-20260801",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "blindReview": true,
+  "roundFinalDecision": "SELF_DECIDED",
+  "verdict": "NO_GO",
+  "l2Admission": "NO_GO",
+  "businessOrCleanupStatus": {
+    "latestManagedRun": "PASS",
+    "runId": "rm1p6-joint-local-l2-1785527924967-97027-22336964",
+    "reportPath": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785527924967-97027-22336964/evidence/terminal-report.json",
+    "reportSha256": "1b8d5427ccf937e9334b683f552781d14cbfc536a2a5b6aa385e52733b8eb64d",
+    "platform": "PASS_9_TESTS",
+    "operations": "PASS_10_TESTS",
+    "business": "PASS",
+    "cleanup": "PASS",
+    "qualification": "Dynamic business and cleanup evidence is real and current-byte, but this review does not admit it as final implementation GO while S2-R2 and N1 remain unresolved."
+  },
+  "staticEvidence": {
+    "passed": [
+      "capability-invariants --self-test",
+      "frontend-architecture",
+      "security-boundaries",
+      "openapi-contracts",
+      "edge-codegen --self-test",
+      "edge-codegen --check",
+      "standards-coverage --phase R5",
+      "code-layout"
+    ],
+    "packageExit": "PASS",
+    "packageExitValidation": "PACKAGE_EXIT=PASS"
+  },
+  "findings": [
+    {
+      "id": "RM1P6-U11-S1",
+      "severity": "S",
+      "status": "CONFIRMED_CLOSED",
+      "title": "Password recovery verification now has one submit path",
+      "evidence": [
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx:95-111",
+        "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts:44-55",
+        ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785527924967-97027-22336964/evidence/commands/operations_playwright.log:1-18"
+      ],
+      "disposition": "The submitter has no custom verify callback; onFinish is the sole verify path. The fresh operations L2 captures POST /password-recovery/otp/verify and asserts the observed request count is exactly one before owner navigation."
+    },
+    {
+      "id": "RM1P6-U11-S2-R2-RESIDUAL",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "title": "A stale data-scope selection still breaks GROUP to HEAD_COMPANY user aggregation",
+      "finding": "IA02 makes data scope conditional on the selected page's requiredDataNodeType; IA05 fixes the HEAD_COMPANY user page target and does not allow a scope selector. The shell nevertheless keeps one global selectedDataNode in session and always puts it into queryContext. WorkspaceUserPage sends that scopeRef to the HEAD_COMPANY endpoint even though the catalog says requiredDataNodeType=NONE. WorkspaceUserService only treats a GROUP assignment as the approved HEAD_COMPANY aggregate when the effective scope is null or equals the group id; a prior REGION/PROJECT/STORE scope therefore falls through to requireTaskPath(HEAD_COMPANY, staleId) and rejects the otherwise authorized page. The fresh L2 only proves a null-scope navigation, so it does not close this boundary.",
+      "evidence": [
+        "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md:208-212",
+        "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md:43-49",
+        "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts:370-386",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx:102-107",
+        "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx:110-131",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java:47-60",
+        "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts:43-52",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java:47-52"
+      ],
+      "requiredRepair": "Keep the target fixed and fail-closed, but make the server's GROUP plus HEAD_COMPANY branch independent of any stale client scope (the scope is not an input for a NONE page); add a focused owner test with a non-group visibleDataNode and a managed L2 path that first selects a scope-required page, then opens HEAD_COMPANY users. The frontend may omit the irrelevant scopeRef as an optimization, but must not be the authority."
+    },
+    {
+      "id": "RM1P6-U11-N1-R2-RESIDUAL",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "title": "U11 write/readback denominator still excludes changed platform write surfaces",
+      "finding": "The U11 amendment requires every changed write surface to demonstrate control -> generated client request -> owner readback or subsequent GET -> rendered state. The package changed paths include platform administrator, workspace, role, account and extension write surfaces, but their governed specs stop after opening the owner detail or edit/status control: platform-admin-management.spec.ts, workspace-management.spec.ts, role-management.spec.ts, workspace-account-management.spec.ts and extension-field-management.spec.ts contain no request capture, response assertion or post-write owner readback. This is not a Redux-internal assertion request; it is the amendment's observable transport/readback bar. Operations store status and public recovery now provide examples, but they do not cover these changed platform surfaces.",
+      "evidence": [
+        "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-implementation-amendment.md:85-91",
+        "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-exit.json:109-141",
+        "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts:4-11",
+        "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts:4-10",
+        "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts:4-10",
+        "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts:4-10",
+        "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts:4-11",
+        ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785527924967-97027-22336964/evidence/commands/platform_playwright.log:1-16"
+      ],
+      "requiredRepair": "For each changed platform write surface, add only the approved existing control interaction, generated request assertion, owner response/readback and rendered state assertion; if a surface is intentionally not mutated in this L2, narrow the amendment/package denominator explicitly rather than counting a detail-only proof as write coverage."
+    },
+    {
+      "id": "RM1P6-U11-S3",
+      "severity": "S",
+      "status": "CONFIRMED_CLOSED",
+      "title": "Retired empty feature directories no longer fail code-layout",
+      "evidence": [
+        "./scripts/check/code-layout -> CODE_LAYOUT=PASS"
+      ],
+      "disposition": "The three empty operations-admin feature/ui directories are gone from the enforced source layout."
+    },
+    {
+      "id": "RM1P6-U11-N2",
+      "severity": "N",
+      "status": "REJECTED_WITH_EVIDENCE",
+      "title": "Detail/revoke scopeRef omission remains correct",
+      "evidence": [
+        "doc/evidence/platform/rm1/p3-c/rm1-p3-abc-claude-no-go-remediation-design-v2.md:27-31",
+        "doc/evidence/platform/rm1/p3-c/rm1-p3-abc-post-claude-remediation-design.json:24-25",
+        "doc/review/platform/2026-07-28-v2s-rm1-p3-abc-implementation-review-round2-claude.md:149-152"
+      ],
+      "disposition": "The server-resolved persisted intent remains the P3-frozen contract; this review does not request scopeRef on detail or revoke."
+    },
+    {
+      "id": "RM1P6-U11-N3",
+      "severity": "N",
+      "status": "REJECTED_WITH_EVIDENCE",
+      "title": "Store contract PROJECT scope remains aligned",
+      "evidence": [
+        "contracts/catalog/admin-catalog.json:534-570",
+        "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts:253-274"
+      ],
+      "disposition": "The current catalog and generated projection both require PROJECT; an older STORE expectation is stale."
+    }
+  ],
+  "inputs": [
+    "AGENTS.md@cf6cbf6bf1ec48b6773831b94ab574af0f30b90a9b277fe87888af1de1345f97",
+    "PLATFORM-BLUEPRINT.md@d9d061ef0a852488adff3d7b53f88ce75281e14aa9b68f0bf5426b3dd698e2f6",
+    "doc/platform/README.md@809f9567df2048bfe40c254c6a613dae7535a6fdebb802f8a06b1e15ebd3687e",
+    "scripts/README.md@1b7c83f93fd5d94b54b895dbf752ab83ac113f9844af54da643b0e8f08ef6235",
+    "project-memory/index.md@7aa925e4e50ff8b796a20693aede28fcbbeebfea8d262bb47ae6d5cdaf53e5c0",
+    "project-memory/decisions/deterministic-context-only.md@4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20",
+    "project-memory/operations/implementation-source-reread-discipline.md@6944ae47f0e059a52e75096b17620a3c43852e52a9b44e69737554ac646293ce",
+    "project-memory/operations/phase-retrospective-and-systemic-repair.md@b1486d2ba08b4d1e94fb825585dff4b4a80379044027587143ff9ff8d2a2b1ef",
+    "project-memory/decisions/independent-subagent-adversarial-review.md@891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf",
+    "contracts/policy/standards-coverage-matrix.json@b0519ea0e8691b204fc41f9a481665eaf381e067c1bf4f002b7913171476b149",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md@8d3821c8deaa5a7c0fa460e570b96247842d305daf387d6c59298d2fea442813",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md@c07271ef42b5dccac553c814c82117b36b3c46c381b5087cb5cad96e6b2863d0",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md@1cdc8034723f6630a86851cd5fcc058fc84d7969636499cce6fac3b31c4b49a5",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md@7f2a8f2447eb7b0e40f2556b5f4361e68197e74713c5f5220e8dace7742ad960",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-design.md@c188ab3b64fa83568475294c618dbacc4459b73f911e8670bbc387d3f02f469d",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-implementation-amendment.md@36d3753e439536b53940763e72c3a987ea26cd13ccaf61c623381c16ac880b93",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-input.json@6cde6402aaaaabd55ff8f4149bac4d0fbe1daf22f3c9d4c9bc15ddd7e6d77505",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-implementation-post-l2-adversarial-review-round1.json@f1ebd3c3226a93d4cc9a2c020462f7e18c86df51127d0c38595f3d77de2014ed",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-exit.json@2625f2eeb7a5f2e8e2a9304b19fd67c89d595ee3ff826fde00f91e25fed4c3f6",
+    ".runtime/compliance-control/active-package.json@390ddb988fb6ca36fb6d2f1a3350b816a04bd047c30a9204e63db75dfc3d4639",
+    ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785527924967-97027-22336964/evidence/terminal-report.json@1b8d5427ccf937e9334b683f552781d14cbfc536a2a5b6aa385e52733b8eb64d",
+    "contracts/catalog/admin-catalog.json@82d34c3f2966093f5702253895520cb0d8f437c415e7cb05cad63bf5fcd394b4",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx@06af4971cf5818bd901ba3aef02b677be319e859d44af3bd133991efbf271218",
+    "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts@900f48c5a137c2f11f10d2ce4729e986863724fb1018a44af119fc08985ab6b5",
+    "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts@6012763f0576ba703fcd05b97243e50728a6ed8b93c277fabbd6cbab02f142f2",
+    "apps/frontend/operations-admin/src/app/OperationsApp.tsx@05575bbf327fe453cf432f9453a506a52156d62970ed20b23221874ea13e6deb",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx@37f24ac7cd45434a9bee8aab22e933cadb49aac640dd9d23935f07d3033c9224",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java@5b91a4229098026c03a66a3a913fdd4cc4e3b86447978e0979d305621326678f",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java@83eb077f1760eb74092554f1a3f0f422cd1ade441f841d8f10a1f0845df51565",
+    "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts@57668b77cad75dcbac4e5e8bb2243089d4a31ce890afb48b1cc1345e112f0474",
+    "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts@234b1bd08a1d2f82f3e855d3080020f19144dca04d42e73e6696965423800e9d",
+    "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts@c18b29f83057c3ae5d6ff9eac28dca12f8c7348254df968a39a6dfc7fdd660b5",
+    "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts@4c83a1952149df015808e1cc0a3f364f70531ca7d3f2fea7bb74db1789e7ce77",
+    "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts@01c73adfce0540b39d6bc48d27db4164e782e08973fc79f0fb43ec110e612e20"
+  ],
+  "nextStep": "Round 2 is the hard stop. Do not run a third adversarial review. Resolve S2-R2 and N1 with the smallest root-cause implementation/test changes, rerun the exact governed local L2 with separate business and cleanup evidence, then hand the refreshed implementation package to Dexter and Claude.",
+  "authorizationBoundary": "Independent implementation review only; no product decision, P6-3 scope expansion, DEV/seed/reset, UAT, Roadmap status change, or Git authority."
+}

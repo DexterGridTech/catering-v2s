@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U02",
+  "kind": "typed-frontend-consumption-red-mutation",
+  "status": "PASS",
+  "execution": {
+    "location": "scratchpad copy outside repository",
+    "mutation": "append const __r5_cr02_mutation = \"/api/mutant\"; to one feature file per app boundary",
+    "command": "node --test copied architecture test",
+    "result": "each test failed with AssertionError from the exact no raw /api/ feature-literal invariant"
+  },
+  "cases": [
+    {
+      "app": "platform-admin",
+      "test": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "mutatedFeature": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "expectedFailure": "doesNotMatch /['\\\"`]\\s*\\/api\\//",
+      "exitCode": 1
+    },
+    {
+      "app": "operations-admin",
+      "test": "apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs",
+      "mutatedFeature": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "expectedFailure": "doesNotMatch /['\\\"`]\\s*\\/api\\//",
+      "exitCode": 1
+    },
+    {
+      "app": "operations-admin-public",
+      "test": "apps/frontend/operations-admin/src/tests/architecture/public-entry-boundary.test.mjs",
+      "mutatedFeature": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "expectedFailure": "doesNotMatch /['\\\"`]\\s*\\/api\\//",
+      "exitCode": 1
+    }
+  ],
+  "assertion": "R5_CR02_ARCHITECTURE_RED=PASS",
+  "authorityBoundary": "Static red proof only. No runtime, DEV, seed/reset, remote or CR03 action is authorized by this evidence."
+}
+

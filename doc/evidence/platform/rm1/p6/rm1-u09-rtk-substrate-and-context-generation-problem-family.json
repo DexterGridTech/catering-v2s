@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-RTK_SUBSTRATE_AND_CONTEXT_GENERATION",
+  "genericProblem": "A UI import or refresh rule can promote app-substrate transport into a screen primitive, or describe a cache-generation invariant too broadly, causing a later page implementation to violate the single-API boundary or retain a stale local view after a valid context change.",
+  "rootCauseClass": "SCREEN_SUBSTRATE_DENOMINATOR_AND_CONTEXT_GENERATION_CONFLATION",
+  "finiteDenominator": [
+    "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+    "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+    "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+    "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+    "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+    "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java"
+  ],
+  "searchedSurfaces": [
+    "apps/frontend/platform-admin/src",
+    "apps/frontend/operations-admin/src",
+    "libraries/frontend/admin-ui-foundation/src",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main",
+    "doc/evidence/platform/rm1/p6",
+    "tools/verify-gates/cli.mjs"
+  ],
+  "searchQueries": [
+    "createObservedBaseQuery",
+    "platformHttpProtocol",
+    "createApi",
+    "createSlice|useSelector|useDispatch",
+    "expectedContextVersion",
+    "context_version=context_version+1",
+    "setPage|Pagination.onChange",
+    "scopeRef|projectId|identityKey"
+  ],
+  "counterexamples": [
+    {"path":"apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx","reason":"scopeRef/projectId is an operation-specific business argument here, so it must not be removed or generalized into a claim that every list cache key has only contextVersion."},
+    {"path":"libraries/frontend/admin-ui-foundation/src/observability/observedBaseQuery.ts","reason":"platformHttpProtocol is a foundation transport dependency, not evidence that a page may build protocol headers."},
+    {"path":"apps/frontend/operations-admin/src/app/OperationsApp.tsx","reason":"The current query context includes identityKey, but there is no generated operation consumer; this is dormant generic context, not authority to invent a consumer."}
+  ],
+  "findings": [
+    {"findingId":"PF-RTK-SUBSTRATE-01","status":"CONFIRMED","finding":"The physical screen denominator incorrectly lists createObservedBaseQuery and platformHttpProtocol as screen-level imports although createObservedBaseQuery is consumed only by the two app API substrates and platformHttpProtocol has no app-side consumer."},
+    {"findingId":"PF-RTK-CONTEXT-01","status":"CONFIRMED","finding":"A contextVersion change recomputes generated query arguments but does not remount the operations content component; pagination and other local visual state can therefore survive a context switch and request an empty later page."},
+    {"findingId":"PF-RTK-CONTEXT-02","status":"PARTIALLY_CONFIRMED","finding":"contextVersion is the mandatory cache-generation input for every owner-scoped read, but scopeRef/projectId remains a separate required business argument for the concrete operations that declare it; identityKey has no current generated read consumer."},
+    {"findingId":"PF-RTK-READWRITE-01","status":"CONFIRMED","finding":"The design did not make the generated-hook/generated-client read-write boundary, tag invalidation, and context-generation refresh distinguishable, leaving a path for page-local fetch, refetch loop, or refresh-key duplication."},
+    {"findingId":"PF-RTK-STATE-01","status":"CONFIRMED","finding":"The selected platform workspace state owner was underspecified despite the existing app-owned React state implementation; an implementer could incorrectly add Redux state."}
+  ],
+  "preventionDispositions": [
+    {"findingId":"PF-RTK-SUBSTRATE-01","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md","reason":"Maintain separate exact denominators for screen primitives and app-substrate primitives; a screen import-equality rule may not require transport construction or protocol-header construction."},
+    {"findingId":"PF-RTK-CONTEXT-01","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","reason":"Every context-switching host must specify the shared local-view reset boundary and a focused red mutation."},
+    {"findingId":"PF-RTK-CONTEXT-02","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","reason":"The roster states the finite distinction between mandatory context generation, operation-specific scopeRef and dormant identityKey."},
+    {"findingId":"PF-RTK-READWRITE-01","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","reason":"The common UI contract distinguishes generated reads, generated-client writes, tag invalidation, and context-generation refresh while forbidding page-local fetch/refetch/refresh-key loops."},
+    {"findingId":"PF-RTK-STATE-01","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","reason":"The platform workspace selector is explicitly bound to existing app-owned React state and prohibited from adding a slice or reducer."}
+  ]
+}

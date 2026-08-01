@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-u06-affected-l2-post-verification",
+  "packageId": "RM1-U06",
+  "status": "PASS",
+  "ruleId": "P-C3",
+  "scope": "P2 post-restructure static affected-L2 layout verification only; it does not claim an L2 browser run or close any RM2 legacy test debt.",
+  "preReceipt": {
+    "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+    "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+    "role": "P-C3-PRE",
+    "assertion": "P0 established the RM1 production gate with the exact 18 pre-existing targets deferred to RM2."
+  },
+  "postReceipt": {
+    "command": "scripts/check/affected-l2",
+    "result": "PASS",
+    "mode": "ALL_R5_L2",
+    "phase": "RM1",
+    "assertion": "The post-restructure registry derives each carry-over layout path from the current frontend tree; the RM1 production gate passes while preserving the exact deferred set."
+  },
+  "postLayoutAnchor": {
+    "registryPath": "contracts/policy/affected-l2-registry.json",
+    "registrySha256": "818ddf7c834e8f7b7d0d31ee67a9178620d28a03c2ea5e6563eb33ba24d28602",
+    "surfaceId": "OPERATIONS-USERS",
+    "derivedPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/",
+    "target": "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
+    "targetStatus": "DEFERRED_UNTIL_RM2"
+  },
+  "redProof": {
+    "selectedChangeCommand": "node tools/verify-gates/cli.mjs affected-l2 --changed apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+    "selectedChangeResult": "EXPECTED_FAIL:R5_AFFECTED_L2_DEFERRED_SELECTED_FOR_CHANGE:apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
+    "expiryCommand": "scripts/check/affected-l2 --phase RM2",
+    "expiryResult": "EXPECTED_FAIL:R5_AFFECTED_L2_DEFERRED_EXPIRED",
+    "selfTestCommand": "scripts/check/affected-l2 --self-test",
+    "selfTestResult": "PASS:R5_AFFECTED_L2_MISSING_TARGET_RED,R5_AFFECTED_L2_EMPTY_STUB_RED,R5_AFFECTED_L2_LAYOUT_DERIVATION_RED,R5_AFFECTED_L2_SELECTED_CHANGE_RED,R5_AFFECTED_L2_EXPIRY_RED"
+  },
+  "boundary": "A changed-surface invocation intentionally remains red for a deferred target. P2 is a behavior-neutral relocation and validates the required post-restructure layout with the normal RM1 production invocation; a future behavioral change on this deferred surface remains blocked until RM2 supplies its real L2 target."
+}

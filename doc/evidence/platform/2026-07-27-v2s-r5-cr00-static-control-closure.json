@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-cr00-static-control-closure",
+  "packageId": "R5-CR-U00",
+  "status": "PASS",
+  "scope": "CR00 static control plane only; no business, runtime, DEV, reset, seed, or dynamic verification is claimed.",
+  "sourceDenominator": {
+    "totalRows": 170,
+    "sourceDerivedRules": 137,
+    "detailDesignRows": 1,
+    "carryoverRows": 1,
+    "dueStandardsRows": 31,
+    "applicableRows": 101,
+    "staticControlRows": 154,
+    "wholeScopeImplementationReviewRows": 16
+  },
+  "controls": [
+    {
+      "ruleId": "SOURCE_DERIVED_DENOMINATOR",
+      "state": "ACTIVE_RED_VERIFIED",
+      "verification": "print-current-source-disposition-template re-derives 170 rows from current frozen sources; missing/extra IDs fail package-exit.",
+      "evidence": "contracts/policy/source-compliance-predicate-map.json"
+    },
+    {
+      "ruleId": "CLIENT_HOOK_INVOCATION",
+      "state": "ACTIVE_RED_VERIFIED",
+      "verification": "fresh real Codex-client positive write produced a PostToolUse receipt; removal of PostToolUse registration produced HOOK_INVOCATION_RECEIPT_MISSING with exit 2.",
+      "evidence": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json"
+    },
+    {
+      "ruleId": "BASELINE_RECOVERY_CHAIN",
+      "state": "ACTIVE_RED_VERIFIED",
+      "verification": "receipt hash mutation in a scratchpad copy produced BASELINE_RECOVERY_RECEIPT_HASH_DRIFT.",
+      "evidence": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-baseline-recovery-hook-chain.json"
+    },
+    {
+      "ruleId": "INCREMENTAL_RECEIPT_SET_EQUALITY",
+      "state": "ACTIVE_RED_VERIFIED",
+      "verification": "an unreceipted source write produced INCREMENTAL_RECEIPT_CHAIN_MISSING; package-exit independently compares actualChangedPaths and incrementalChecks.",
+      "evidence": "tools/compliance-control/cli.mjs"
+    },
+    {
+      "ruleId": "SOURCE_MAPPING_AND_STATIC_ADMISSION",
+      "state": "ACTIVE_RED_VERIFIED",
+      "verification": "source mapping, serial predecessor, pending-control prohibition, baseline recovery, receipt coverage, and current hook canary are all called by static-scan.",
+      "evidence": "scripts/check/remediation-compliance"
+    },
+    {
+      "ruleId": "SEMANTIC_REVIEW_BOUNDARY",
+      "state": "ACTIVE_RED_VERIFIED",
+      "verification": "the 16 UNENFORCEABLE_BY_MACHINE standards rows are explicitly deferred to R5-CR-U09 whole-scope implementation review; CR00 does not misreport semantic review as a static gate result.",
+      "evidence": "contracts/policy/standards-coverage-matrix.json"
+    }
+  ],
+  "freshChecks": [
+    "node tools/compliance-control/cli.mjs static-scan => PASS",
+    "node tools/compliance-control/cli.mjs validate-source-map => PASS",
+    "node tools/compliance-control/cli.mjs validate-delta-receipts => PASS",
+    "node tools/compliance-control/cli.mjs validate-baseline-recovery => PASS",
+    "scripts/check/project-memory => PASS",
+    "scripts/check/standards-coverage --phase R5 => PASS",
+    "scripts/check/agent-lifecycle => PASS"
+  ],
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "nextBoundary": "This closure is evidence for the CR00 source-compliance disposition and package-exit. It does not authorize CR01 until the package-exit validator passes."
+}

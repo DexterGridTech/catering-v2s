@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U06",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "e1d8583116c252ebf598f2416c7bd9076050c03fb008810a721b7277591462d6",
+  "unitId": "RM1-U06",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/affected-l2"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/capability-invariants",
+    "scripts/check/flyway-test-locations"
+  ],
+  "requiredControlRuleIds": [
+    "P-A1",
+    "P-C3",
+    "P-Q6"
+  ],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_TECHNICAL_RELOCATION",
+  "serialPredecessor": {
+    "packageId": "RM1-U05",
+    "exitPath": "doc/evidence/platform/rm1/p1/rm1-u05-package-exit.json",
+    "exitSha256": "7019e63b2646af0789cdad2d9126412df3cbfc7496c5b410d54511521228b7b9"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p2/rm1-u06-implementation-amendment.json",
+    "sha256": "5df2c1857a596af1693aa43a7cfdb5dacdfb8ed19fa8a0d633da0ce35b53a5e8"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 P2 after P1 Claude GO and authorized RM1 implementation completion. P2 begins with a current-byte rename denominator freeze and may not mutate the eight-form set before that artifact exists; its relocation-safety dynamic proof is limited to six existing managed Testcontainers module suites, with no DEV, seed or reset."
+}

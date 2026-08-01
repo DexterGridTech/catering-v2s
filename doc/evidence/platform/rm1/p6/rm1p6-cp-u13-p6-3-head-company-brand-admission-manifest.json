@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U13-P6-3-HEAD-COMPANY-BRAND-ADMISSION",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "An operations administrator managing a head company must use current per-brand owner commands, not a retired bulk replacement, while preserving resource-command receipt semantics and safe in-use recovery.",
+  "deliveryUnits": [{
+    "id": "RM1P6-CP-U13-P6-3-HEAD-COMPANY-BRAND-ADMISSION",
+    "title": "P6-3 head-company brand authorization corrective design admission",
+    "sourceComplianceDispositionRequired": true,
+    "changeSurfaces": [
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md","disposition":"update","target":"move the IA04 corrective slice from P6-2 to its operations-admin P6-3 owner"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","disposition":"update","target":"remove the P6-2 exception and bind the exact P6-3 corrective chain"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","disposition":"update","target":"record the exact IA04 operations, safe recovery and P6-3 D5 membership"},
+      {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md","disposition":"create","target":"business-sourced P6-3 owner/edge/transport/Drawer detail design"},
+      {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-2-head-company-brand-authorization-corrective-design.md","disposition":"delete","target":"remove the superseded P6-2 placement artifact"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-manifest.json","disposition":"create","target":"exact design-only scope"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-amendment.md","disposition":"create","target":"Dexter placement correction"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-package-input.json","disposition":"create","target":"execution binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-source-disposition.json","disposition":"create","target":"scope source disposition"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-package-exit.json","disposition":"create","target":"admission exit"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-design-adversarial-review.md","disposition":"create","target":"new-scope independent DESIGN review rounds 1 and 2"}
+    ],
+    "forbiddenPseudoFixes": ["keeping a P6-2 cross-surface exception", "restoring the retired bulk operation", "looping individual commands under one idempotency key", "locally reconstructing owner truth after a 204", "passing raw problem detail to the Drawer"],
+    "completion": "Admission freezes the P6-3 corrective detail design and awaits fresh independent DESIGN review; it does not authorize implementation."
+  }]
+}

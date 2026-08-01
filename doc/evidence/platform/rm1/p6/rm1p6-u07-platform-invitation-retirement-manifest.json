@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "RM1_RESTRUCTURE_AND_REMEDIATION",
+  "design": {
+    "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+    "sha256": "8dfa1b07ede615bb9dbc4c0b2f9d3f21fffcda62b54f8302850a0d4550e9da2a"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-07-28-v2s-rm1-implementation-facing-design-authorization.md",
+    "sha256": "441a8855412d29b41dd2e3356fc43430686f3166b727b707aa340e288a033bd3",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {"path": "scripts/check/implementation-design-granularity", "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"},
+    "tool": {"path": "tools/implementation-design-granularity/cli.mjs", "sha256": "08f19fa7180e197ddc6cdbf4f076e07ee2a3d6e021fb4c2ca4bb4a80b88fcab8"},
+    "selfTest": true,
+    "redFixtures": ["DESIGN_HASH_DRIFT", "MISSING_BUSINESS_EVIDENCE", "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT", "REVIEWER_INPUT_CHECKLIST_NOT_FOUND", "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE", "UNIT_SOURCE_COMPLIANCE_DENOMINATOR_INVALID"]
+  },
+  "adversarialReviewPolicy": {"version": "INDEPENDENT_SUBAGENT_V1", "reviewerKindRequired": "INDEPENDENT_SUBAGENT", "blindReviewRequired": true},
+  "packageExitSourceCompliancePolicy": {"version": "SOURCE_DISPOSITION_V1", "appliesToAllDeliveryUnits": true, "missingOrUnboundEntryFails": true, "actualChangedPathsDerivedFromIndependentBaseline": true, "incrementalChecksMustEqualActualChangedPaths": true, "incrementalChecksMustBeNonEmpty": true, "hookInvocationCanaryRequired": true, "hookContractUnverifiedFailsCr00": true, "requiredDenominators": ["PROJECT_MEMORY_ASSERTION_OCCURRENCES", "APPROVED_ASSERTIONS", "FORBIDDEN_PSEUDO_FIXES", "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA", "OWNED_SURFACE_AND_PAGE_KEYS", "DUE_STANDARDS_RULE_IDS"]},
+  "candidateJourney": {"id": "RM1-P6-PLATFORM-INVITATION-RETIREMENT", "status": "DESIGN_ONLY_STATIC_RETIREMENT", "actor": "platform operator", "task": "use the single approved account task without a duplicate invitation-management entry", "pageKey": "PLATFORM-WORKSPACE-ACCOUNTS", "ownerReadback": "owner-authoritative account readback; operations/public invitation owner paths remain separate", "mutations": []},
+  "postRemediationDeclaration": {"version": "POST_REMEDIATION_V1", "reviewCycleId": "RM1-P6-IMPLEMENTATION-FACING-DESIGN-20260729", "reviewRound": 2, "reviewPath": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-adversarial-review-round2.json", "reviewedManifestSha256": "9a590edd67a4ff472c110126d92e9b584b8a11b0a2390d3b1decc596b4d29524", "reviewSha256": "06a723c5ed3fe542a2e6c9eeb96bdb1a3b95221ee51392d75b76e790e902a559", "currentBytesNotReviewedByAdversarialReviewer": true, "claudeRecheckRequired": true, "implementationAuthority": false, "addedDeliveryUnitIds": ["RM1P6-PLATFORM-INVITATION-RETIREMENT-U07"], "reason": "U07 is a post-round-two successor unit. Its static retirement design is independently reviewed in RM1P6-U03-PLATFORM-RETIREMENT-DESIGN and must be rechecked by Claude before implementation closure; no historical review is rewritten.", "intake": {"path": "doc/evidence/platform/rm1/p6/rm1-u09-claude-recheck-intake.md", "sha256": "e491d6125ea54fbe69d923d38a4f28c871b729b6c3f3c95a1a1f0e8b1e7c6d6e"}},
+  "businessProblem": "IA01 confines workforce invitation initiation, cancellation and reissue to the five target-specific operations-admin user pages, but platform-admin still exposes a duplicated invitation tab, page and platform HTTP face. The stale face also keeps a local L2 fixture dependent on a production platform command.",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-PLATFORM-INVITATION-RETIREMENT-U07",
+      "title": "Platform invitation face atomic retirement",
+      "sourceComplianceDispositionRequired": true,
+      "approvedAssertions": [
+        "IA01-OPERATIONS-TARGET-SPECIFIC-INVITATION-ONLY",
+        "IA03-ACCOUNT-SINGLE-CONTENT-PAGE-NO-INVITATION-ENTRY",
+        "PLATFORM-INVITATION-FACE-AND-CONSUMERS-RETIRE-ATOMically"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md",
+          "sha256": "099fabdc857bec269493ea52ac637fae59e3994283690ab426c326cfbba4f1ac",
+          "anchor": "# 原子退役分母"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md",
+        "anchor": "# 原子退役分母"
+      },
+      "currentDeviation": "The approved IA01 invitation task is operations-admin target-specific only, but platform-admin still exposes a duplicate invitation tab, page, edge face and audit branch. Historical U03 receipt evidence cannot honestly absorb the new retirement delta.",
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "exact successor package activation only"},
+        {"path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx", "disposition": "update", "target": "remove invitation import, state, tab and render while retaining account task"},
+        {"path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx", "disposition": "update", "target": "account-retention and no-invitation-entry focused proof"},
+        {"path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.mjs", "disposition": "update", "target": "source-boundary focused proof"},
+        {"path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx", "disposition": "delete", "target": "retired duplicated platform invitation consumer"},
+        {"path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx", "disposition": "delete", "target": "platform invitation page's sole audit-modal consumer chain"},
+        {"path": "apps/frontend/platform-admin/src/features/audit-history/index.ts", "disposition": "delete", "target": "retired audit-history barrel"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java", "disposition": "delete", "target": "platform invitation list/create/cancel/reissue edge controller"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationCandidateController.java", "disposition": "delete", "target": "platform invitation candidate edge controller"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java", "disposition": "update", "target": "remove only WORKSPACE_INVITATION audit dispatch; retain account and role targets; AccountsPage source-bound proof reads this retained boundary"},
+        {"path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryControllerTest.java", "disposition": "create", "target": "focused platform reject/account-role retain and operations invitation audit counterexample proof"},
+        {"path": "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml", "disposition": "update", "target": "remove only five platform invitation operations"},
+        {"path": "contracts/openapi/paths/platform-admin/audit-history.paths.yaml", "disposition": "update", "target": "remove retired platform invitation audit enum/member only"},
+        {"path": "contracts/registry/iam-org-governance-manifest.json", "disposition": "update", "target": "remove three platform mutating invitation requirements only"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json", "disposition": "update", "target": "remove exact five platform operation entries and real error augmentations"},
+        {"path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json", "disposition": "update", "target": "remove exact matching five placement entries and face denominator"},
+        {"path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts", "disposition": "update", "target": "controlled edge-codegen output only"},
+        {"path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.rtk.ts", "disposition": "update", "target": "controlled edge-codegen output only"},
+        {"path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json", "disposition": "update", "target": "controlled edge-codegen output only"},
+        {"path": "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json", "disposition": "update", "target": "controlled edge-codegen output only"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityRequirementCatalog.java", "disposition": "update", "target": "controlled edge-codegen output only"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityResolverRegistry.java", "disposition": "update", "target": "controlled edge-codegen output only"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java", "disposition": "update", "target": "controlled edge-codegen capability projection only"},
+        {"path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md", "disposition": "update", "target": "IA03 account selector refreeze: one account content page, no invitation tab or entry"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md", "disposition": "update", "target": "hash-bound physical contract refreeze"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md", "disposition": "update", "target": "hash-bound final roster refreeze"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u02-ui-ia-implementation-baseline.json", "disposition": "update", "target": "hash-bound baseline refreeze"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json", "disposition": "update", "target": "U03 historical-link correction only; no historical receipt recovery claim"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-manifest.json", "disposition": "update", "target": "U07 exact delivery manifest"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-package-input.json", "disposition": "update", "target": "U07 exact execution binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-implementation-amendment.md", "disposition": "update", "target": "U07 implementation boundary"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-problem-family.json", "disposition": "update", "target": "U07 generalized finding and prevention evidence"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-source-compliance-disposition.json", "disposition": "update", "target": "U07 derived source disposition"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-ui-ia-baseline.json", "disposition": "update", "target": "U07 UI IA prewrite baseline"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-package-exit.json", "disposition": "create", "target": "U07 exact receipt and closure evidence"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u07-workspace-capability-generated-baseline-addendum.json", "disposition": "create", "target": "owner-scope addendum for the generator-discovered capability projection"},
+        {"path": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md", "disposition": "update", "target": "corrected detailed design"},
+        {"path": "doc/review/platform", "disposition": "update", "target": "round-two independent review, finding intake and later implementation review"}
+      ],
+      "orderedChain": [
+        "independent design round two GO",
+        "activate U07 and create its fresh package baseline",
+        "refreeze IA03 plus every hash-bound physical/roster/baseline consumer",
+        "retire handwritten platform consumers and platform contract face",
+        "controlled edge-codegen receipt with exact output set",
+        "focused proof, two-admin zero-reference scan and final UI control alignment",
+        "separate remote managed-L2 bootstrap package"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "U07 starts from the current tree and never reclassifies U03's historical receipt-chain failure as a U07 receipt.",
+        "L2 bootstrap, fixture replacement and dynamic execution are outside U07 and cannot start until the static retirement and UI control alignment are PASS.",
+        "operations-admin and public invitation routes, controllers, generated projections and audit behavior are retained counterexamples, not deletion candidates."
+      ],
+      "dataEvolution": {"policy": "NO_DATABASE_OR_SEED_CHANGE"},
+      "uiAndTerms": {
+        "pageKeys": ["PLATFORM-WORKSPACE-ACCOUNTS"],
+        "interactionArtifacts": [
+          {"pageKey": "PLATFORM-WORKSPACE-ACCOUNTS", "path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md", "anchor": "### Screen: IA03-ACCOUNT-TAB"}
+        ],
+        "termSource": "contracts/catalog/admin-catalog.json",
+        "retiredConsumers": [
+          "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+          "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx"
+        ],
+        "retainedCounterexamples": [
+          "AccountsPage account list/detail/status/credential/assignment-revoke task",
+          "PlatformAuditHistoryController WORKSPACE_ACCOUNT and WORKSPACE_ROLE paths",
+          "operations-admin five target-specific invitation tasks and public invitation acceptance"
+        ]
+      },
+      "forbiddenPseudoFixes": [
+        "hide the platform tab but retain its route, controller or OpenAPI operations",
+        "retain platform invitation HTTP only for L2 fixture convenience",
+        "delete shared invitation schemas or operations/public invitation behavior by name alone",
+        "update IA03 without its hash-bound physical contract, roster and baseline",
+        "claim a static scan, code generation or typecheck as L2, business or cleanup PASS"
+      ],
+      "discriminator": {
+        "fixture": "After retirement, a full production importer scan must find no platform invitation consumer/operation/route while the operations target-specific create/cancel/reissue and public acceptance paths remain reachable. A controlled codegen receipt must be non-empty and exact; a platform-only UI deletion that leaves any platform face is a failure."
+      },
+      "evidence": {
+        "l1": "AccountsPage retained-task/no-entry proof and platform audit reject/retain source-bound proof",
+        "l2": "controlled edge-codegen red mutation and dual-face operations/public retained counterexample scan",
+        "l3": "exact incremental receipt equality, source disposition, static architecture/typecheck and final control alignment",
+        "business": "NOT_APPLICABLE_STATIC_RETIREMENT_ONLY",
+        "cleanup": "NOT_APPLICABLE_NO_MANAGED_RUNTIME"
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {"sourcePath": "project-memory/kernel/01-workspace-and-roadmap.md", "selector": "Assertions", "applicability": "APPLICABLE", "missingEntryFails": true, "sourceSha256": "f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63", "owningSourceSet": [{"path": "project-memory/decisions/confirmed-business-language-corpus.md", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503", "selector": "Assertions"}, {"path": "project-memory/kernel/01-workspace-and-roadmap.md", "sha256": "f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63", "selector": "Assertions"}, {"path": "project-memory/kernel/02-service-shape-and-owner.md", "sha256": "45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032", "selector": "Assertions"}, {"path": "project-memory/kernel/03-transaction-data-and-dependencies.md", "sha256": "f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44", "selector": "Assertions"}, {"path": "project-memory/kernel/04-contract-consumer-and-admin.md", "sha256": "1f6d9efbe0208f5b164d12effd4a4c4ab8f2c297b9b000462dc96820c3efa88d", "selector": "Assertions"}, {"path": "project-memory/kernel/05-evidence-runtime-and-git.md", "sha256": "d0d75e547400145ef7e764d735bc86e2fdaa5ea8a0b19ace213170b527d65a05", "selector": "Assertions"}, {"path": "project-memory/kernel/06-heritage-and-change.md", "sha256": "5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c", "selector": "Assertions"}, {"path": "project-memory/operations/business-corpus-adoption-and-read-policy.md", "sha256": "04d9329413131e369e8c1ea841f172d4c295f953b07b9768a0e597405fd28353", "selector": "Assertions"}, {"path": "project-memory/operations/implementation-source-reread-discipline.md", "sha256": "82bcb60c31a1779c03a2e0bdec84efc35d5b3de1145016b677591dc0c679a8e8", "selector": "Assertions"}]},
+        "APPROVED_ASSERTIONS": {"sourcePath": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md", "selector": "md:# 原子退役分母", "applicability": "APPLICABLE", "missingEntryFails": true, "sourceSha256": "099fabdc857bec269493ea52ac637fae59e3994283690ab426c326cfbba4f1ac", "owningSourceSet": [{"path": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md", "sha256": "099fabdc857bec269493ea52ac637fae59e3994283690ab426c326cfbba4f1ac", "selector": "md:# 原子退役分母"}]},
+        "FORBIDDEN_PSEUDO_FIXES": {"sourcePath": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md", "selector": "md:# 原子退役分母", "applicability": "APPLICABLE", "missingEntryFails": true, "sourceSha256": "099fabdc857bec269493ea52ac637fae59e3994283690ab426c326cfbba4f1ac", "owningSourceSet": [{"path": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md", "sha256": "099fabdc857bec269493ea52ac637fae59e3994283690ab426c326cfbba4f1ac", "selector": "md:# 原子退役分母"}]},
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {"sourcePath": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md", "selector": "md:# 实施分母、receipt 与 manifest 补充", "applicability": "APPLICABLE", "missingEntryFails": true, "sourceSha256": "099fabdc857bec269493ea52ac637fae59e3994283690ab426c326cfbba4f1ac", "owningSourceSet": [{"path": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md", "sha256": "099fabdc857bec269493ea52ac637fae59e3994283690ab426c326cfbba4f1ac", "selector": "md:# 实施分母、receipt 与 manifest 补充"}]},
+        "OWNED_SURFACE_AND_PAGE_KEYS": {"sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json", "selector": "json:/surfaces,json:/pageDesignKeySurfaceCrosswalk", "applicability": "APPLICABLE", "missingEntryFails": true, "sourceSha256": "32fd89d32b95f4386376a454f5d1fdec3cf0b3b519eb671e0a2f167531882a72", "owningSourceSet": [{"path": "contracts/policy/frontend-asset-carryover-manifest.json", "sha256": "32fd89d32b95f4386376a454f5d1fdec3cf0b3b519eb671e0a2f167531882a72", "selector": "json:/surfaces,json:/pageDesignKeySurfaceCrosswalk"}]},
+        "DUE_STANDARDS_RULE_IDS": {"sourcePath": "contracts/policy/standards-coverage-matrix.json", "selector": "json:/rules", "applicability": "APPLICABLE", "missingEntryFails": true, "sourceSha256": "7f59478c3b52aeef571f44a1b8e5e11ab2ddf8038d480fa1d7ac837901fdca70", "owningSourceSet": [{"path": "contracts/policy/standards-coverage-matrix.json", "sha256": "7f59478c3b52aeef571f44a1b8e5e11ab2ddf8038d480fa1d7ac837901fdca70", "selector": "json:/rules"}]}
+      },
+      "memoryRoute": {"taskKind": "implementation", "domain": "admin-ui", "consumerFace": "platform-admin", "owner": "frontend-platform", "impact": "architecture", "trigger": "implementation"}
+    }
+  ]
+}

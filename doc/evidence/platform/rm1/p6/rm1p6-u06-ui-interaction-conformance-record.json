@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "kind": "ui-interaction-conformance-record",
+  "packageId": "RM1P6-UI-IA-CONFORMANCE-U06",
+  "status": "PASS",
+  "basis": {
+    "physicalContractPath": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+    "reconciliationPath": "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
+    "requiredDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"],
+    "reuseRule": "Each binding points to the baseline's complete nine-dimension object rather than duplicating its business copy. Current source and exact sibling proof remain the static basis; implementation-source reread is advisory and is not represented as a historical machine receipt."
+  },
+  "screenRecords": [
+    {"screenId":"IA01-PLATFORM-LOGIN","bindings":[[0,"PlatformLoginPage.test.tsx"]]},
+    {"screenId":"IA01-PLATFORM-RECOVERY-VERIFY","bindings":[[1,"PlatformPasswordRecoveryVerifyPage.test.tsx"]]},
+    {"screenId":"IA01-PLATFORM-RECOVERY-PASSWORD","bindings":[[2,"PlatformPasswordRecoveryPasswordPage.test.tsx"]]},
+    {"screenId":"IA01-PLATFORM-RECOVERY-COMPLETE","bindings":[[3,"PlatformPasswordRecoveryCompletePage.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-AUTHENTICATED-SHELL","bindings":[[4,"PlatformApp.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-WORKSPACE-CONTEXT","bindings":[[4,"PlatformApp.test.tsx"],[5,"WorkspaceScope.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-WORKSPACE-SIDER-CONTROL","bindings":[[4,"PlatformApp.test.tsx"],[5,"WorkspaceScope.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-WORKSPACES-ACTIONS","bindings":[[6,"WorkspaceManagementPage.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-WORKSPACE-DETAIL-DRAWER","bindings":[[7,"WorkspaceDetailDrawer.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-WORKSPACE-CREATE-DRAWER","bindings":[[8,"WorkspaceCreateDrawer.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-COMMERCIAL-GROUP-INIT-DRAWER","bindings":[[9,"CommercialGroupInitializationDrawer.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-WORKSPACE-EDIT-DRAWER","bindings":[[10,"WorkspaceEditDrawer.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-WORKSPACE-STATUS-MODAL","bindings":[[11,"WorkspaceStatusModal.test.tsx"]]},
+    {"screenId":"IA02-PLATFORM-WORKSPACE-OVERVIEW","bindings":[[12,"WorkspaceAdministrationPage.test.tsx"]]},
+    {"screenId":"IA03-ADMIN-LIST","bindings":[[13,"AdministratorsPage.test.tsx"]]},
+    {"screenId":"IA03-ADMIN-DETAIL","bindings":[[14,"AdministratorDetailDrawer.test.tsx"]]},
+    {"screenId":"IA03-ADMIN-CREATE","bindings":[[15,"AdministratorCreateDrawer.test.tsx"]]},
+    {"screenId":"IA03-ADMIN-EDIT","bindings":[[16,"AdministratorEditDrawer.test.tsx"]]},
+    {"screenId":"IA03-ADMIN-CREDENTIAL","bindings":[[17,"AdministratorCredentialDrawer.test.tsx"]]},
+    {"screenId":"IA03-ADMIN-STATUS","bindings":[[18,"AdministratorStatusModal.test.tsx"]]},
+    {"screenId":"IA03-ORG-OVERVIEW","bindings":[[19,"PlatformReadPage.test.tsx"]]},
+    {"screenId":"IA03-ORG-HIERARCHY","bindings":[[19,"PlatformReadPage.test.tsx"]]},
+    {"screenId":"IA03-ORG-DETAIL","bindings":[[20,"OrganizationOverviewDetailDrawer.test.tsx"]]},
+    {"screenId":"IA03-CONTRACT-OVERVIEW","bindings":[[19,"PlatformReadPage.test.tsx"]]},
+    {"screenId":"IA03-CONTRACT-DETAIL","bindings":[[21,"ContractOverviewDetailDrawer.test.tsx"]]},
+    {"screenId":"IA03-ROLE-LIST","bindings":[[22,"RolesPage.test.tsx"]]},
+    {"screenId":"IA03-ROLE-DETAIL","bindings":[[23,"RoleDetailDrawer.test.tsx"]]},
+    {"screenId":"IA03-ROLE-CREATE","bindings":[[24,"RoleCreateDrawer.test.tsx"],[35,"RolePermissionFields.test.tsx"]]},
+    {"screenId":"IA03-ROLE-EDIT","bindings":[[25,"RoleEditDrawer.test.tsx"],[35,"RolePermissionFields.test.tsx"]]},
+    {"screenId":"IA03-ROLE-STATUS","bindings":[[26,"RoleStatusModal.test.tsx"]]},
+    {"screenId":"IA03-ACCOUNT-TAB","bindings":[[27,"AccountsPage.test.tsx"]]},
+    {"screenId":"IA03-ACCOUNT-DETAIL","bindings":[[28,"WorkspaceAccountDetailDrawer.test.tsx"]]},
+    {"screenId":"IA03-ACCOUNT-ACTION","bindings":[[29,"WorkspaceAccountActionModal.test.tsx"]]},
+    {"screenId":"IA03-EXTENSION-PAGE","bindings":[[30,"ExtensionsPage.test.tsx"]]},
+    {"screenId":"IA03-EXTENSION-EDIT","bindings":[[31,"ExtensionDefinitionEditDrawer.test.tsx"]]},
+    {"screenId":"IA03-EXTENSION-SAVE","bindings":[[32,"ExtensionDefinitionSaveModal.test.tsx"]]},
+    {"screenId":"IA03-PASSWORD-DRAWER","bindings":[[33,"PlatformPasswordChangeDrawer.test.tsx"]]},
+    {"screenId":"IA03-PASSWORD-RESULT","bindings":[[34,"PlatformPasswordChangeResult.test.tsx"]]}
+  ],
+  "bindingInterpretation": {
+    "tuple": "[baseline consumer binding index, exact sibling focused-test filename]",
+    "allControlDimensionsVerified": true,
+    "allBindingsReadBackAgainstCurrentSource": true,
+    "physicalScreenCount": 38,
+    "actualConsumerCount": 36,
+    "focusedProofKind": "Vitest source-to-current-implementation conformance; it does not claim browser business behavior."
+  },
+  "confirmedReconciliations": [
+    "Organization and contract owner filter GAP wording is superseded only by the U06 reconciliation after current OpenAPI/controller/task-read proof.",
+    "Dexter 2026-07-30 list-operation-column direction supersedes the IA03 account-detail revoke column; owner-marked active assignment selection precedes the existing independent confirmation Modal.",
+    "No operation URL is derived by the client; no list operation column remains in the U06 audited platform lists."
+  ],
+  "focusedProof": {
+    "command": "cd apps/frontend/platform-admin && yarn vitest run <the 36 exact *.test.tsx paths above>",
+    "result": "PASS",
+    "proofFileCount": 36,
+    "redEvidence": "Focused proof initially failed when it asserted a nonexistent platformPasswordOtpLogin operation; the source was reread and the proof was corrected to the actual sendPlatformLoginOtp plus verifyPlatformLoginOtp contract."
+  },
+  "postProofReview": {
+    "status": "PASS_FOR_CURRENT_STATIC_SOURCE_CONFORMANCE_ONLY",
+    "processDisciplineStatus": "ADVISORY_REREAD_NOT_MACHINE_RECORDED",
+    "discipline": "The mapping is static source conformance. Current-source reread remains a recommended implementation habit and is not a historical receipt or package-exit prerequisite.",
+    "remainingBeforeL2": ["managed L2 fixture failure diagnosis and repair", "fresh independent implementation adversarial review"]
+  },
+  "business": "NOT_RUN; this record is a static focused conformance admission, not a business result.",
+  "cleanup": "NOT_RUN; no managed runtime was started by this record."
+}

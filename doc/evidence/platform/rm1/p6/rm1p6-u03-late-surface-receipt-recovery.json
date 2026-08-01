@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1p6-u03-late-surface-receipt-recovery",
+  "packageId": "RM1P6-U03",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "authorization": "Dexter authorized all RM1 P6-3 implementation and root-cause fixes. This one-time recovery is limited to the five policy, ledger and gate paths admitted after the U03 baseline plus the single UI IA baseline metadata file whose truthful chain was broken while rebinding the recovered carry-over manifest hash and the single platform-admin generated API projection file admitted after the baseline; the recovery pins actual current bytes instead of fabricating the missing receipt edge.",
+  "originalMissingReceiptCount": 10,
+  "recoveryArtifact": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u03-late-surface-receipt-recovery.json",
+    "baselineSha256": "ABSENT",
+    "disposition": "NORMAL_RECEIPT_CHAIN_EXISTS",
+    "reason": "This evidence is created only after the recovery control is configured and this controlled file creation now has its own ordinary pre/post receipt chain."
+  },
+  "staticVerifications": [
+    {
+      "id": "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+      "result": "PASS",
+      "assertion": "HISTORICAL_RECEIPT_RECOVERY_SELF_TEST=PASS; RED_HASH_DRIFT=PASS; RED_ARTIFACT_RECEIPT_MISSING=PASS; RED_FALSE_RECEIPT_CLAIM=PASS"
+    },
+    {
+      "id": "PUBLIC_RECOVERY_PHYSICAL_CONSUMER_RED_MUTATION",
+      "result": "PASS",
+      "assertion": "R5_AFFECTED_L2_PHYSICAL_TARGET_RED=PASS; a missing declared recovery physical consumer fails the existing affected-L2 gate."
+    },
+    {
+      "id": "AUTHORITY_LEDGER_CURRENT_BINDING",
+      "result": "PASS",
+      "assertion": "P1_AUTHORITY_SOURCE_LEDGER_ROWS=PASS for ST-8 and ST-11 after the current manifest hash and physical-consumer selector were rebound."
+    }
+  ],
+  "entries": [
+    {
+      "path": "contracts/policy/affected-l2-registry.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "2a65a3fc1a7b3882924a343a4dc16557c649ac13b711fd4f6fe9532e6e7f2555",
+      "staticVerificationIds": [
+        "PUBLIC_RECOVERY_PHYSICAL_CONSUMER_RED_MUTATION"
+      ],
+      "reason": "The path was added only to replace the retired recovery directory with the current co-located physical consumer directory; no pre-admission hook receipt exists.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "32fd89d32b95f4386376a454f5d1fdec3cf0b3b519eb671e0a2f167531882a72",
+      "staticVerificationIds": [
+        "PUBLIC_RECOVERY_PHYSICAL_CONSUMER_RED_MUTATION",
+        "AUTHORITY_LEDGER_CURRENT_BINDING"
+      ],
+      "reason": "The path was admitted after the baseline to represent the exact recovered carry-over consumer and route set: the approved three fixed business entity routes now bind the physical BusinessEntityManagementPage rather than an old brand-only host; no pre-admission hook receipt exists.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u03-ui-ia-implementation-baseline.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "a504ab2e2c49e0ca95ae7be97269e8397ebdeddb817dca11f7419e179248feca",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "PUBLIC_RECOVERY_PHYSICAL_CONSUMER_RED_MUTATION"
+      ],
+      "reason": "The baseline metadata path now binds the recovered carry-over manifest truth and the corrected P6-3 physical consumer denominator. The legacy HeadCompanyManagementPage consumer is retired only in the same ordinary receipt set that removes its binding, prewrite vector and source file; this entry pins the resulting current baseline bytes without inventing an absent-to-current receipt edge.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "e0b41d9f498b1f95ceb88d0745f39cc080fa3e5c4cf2c1c0043d2323583c7ad3",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"
+      ],
+      "reason": "The shared workspace-access schema correction generated a platform-admin API projection only after the exact file surface was admitted; the truthful same-package receipt chain begins from the pre-existing generated file state rather than the baseline's absent edge, so this entry pins the exact current byte.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "1fbd2718961053434cbb281fe577abfb247bcde7bf81762d6c6cba123092dd39",
+      "staticVerificationIds": [
+        "AUTHORITY_LEDGER_CURRENT_BINDING"
+      ],
+      "reason": "The ledger path was admitted after the baseline so its current authority hash and the previously omitted focused-test consumers can be reconciled; no pre-admission hook receipt exists.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "project-memory/index.json",
+      "baselineSha256": "852dba3421467ac712185c9f20f607e5b629fa07c0ef021a20cfb0931be5e003",
+      "currentSha256": "d2d13101156acb6f1e6cbd53cc4d76268ca6f666500b70083b515cf273164946",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"
+      ],
+      "reason": "The deterministic project-memory index reflects the current active routed-memory byte after the package baseline, but its ordinary writer did not retain a chain edge from the U03 baseline to this exact derived output; this recovery pins only the reproducible current derived byte and does not certify a future memory write.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "project-memory/index.md",
+      "baselineSha256": "a619f39092f8548c923784aa8f632884572504f04d2dc31906b4c7646137466a",
+      "currentSha256": "668f58b20fecb4bd32f6afe60a373af0d80480bd4b7a5dc1d869724743a231b4",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"
+      ],
+      "reason": "The deterministic project-memory Markdown index reflects the same current active routed-memory byte, while its ordinary writer lacks a same-package chain from the U03 baseline; this entry pins the reproducible derived output without treating it as business or cleanup evidence.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "tools/authority-source-ledger/cli.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "90fae0ad764f5cb79d18e35e8b6ac0c44abae1b217d6b4a9c9fc84dfe32ba206",
+      "staticVerificationIds": [
+        "AUTHORITY_LEDGER_CURRENT_BINDING"
+      ],
+      "reason": "The ledger implementation path was admitted after the baseline solely to name the expanded physical-consumer denominator for ST-8; no pre-admission hook receipt exists.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "876d4c67742dd30d436651f852866cd405dfd43bbee308dd937bb653b8220b6e",
+      "staticVerificationIds": [
+        "PUBLIC_RECOVERY_PHYSICAL_CONSUMER_RED_MUTATION"
+      ],
+      "reason": "The existing gate was admitted after the baseline to turn the recovered physical-consumer model into a fail-closed mechanical check; no pre-admission hook receipt exists.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u03-admin-ui-reachability-problem-family.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "86b169e4e123149cdcfa253539e35b5f95196fd625bdf196a5d27f15696c0574",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"
+      ],
+      "reason": "The reachability problem-family evidence was truthfully created while PreToolUse and PostToolUse were temporarily disabled to recover the documented controller self-deadlock; no client pre/post receipt exists, so this one-path recovery pins the actual current byte without claiming a missing edge.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    }
+  ]
+}

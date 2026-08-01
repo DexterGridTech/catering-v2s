@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "CR06-R15-SELECTED-SESSION-CLOSURE",
+  "genericProblem": "A login response that represents a selectable or empty identity state is collapsed into a shell session before a selected assignment exists, leaving navigation and actions permanently unavailable.",
+  "rootCauseClass": "SESSION_OUTCOME_COLLAPSED_BEFORE_REQUIRED_SELECTION",
+  "finiteDenominator": ["DIRECT session outcome", "SELECT session outcome", "EMPTY session outcome", "login entry", "context selection response", "shell admission"],
+  "searchedSurfaces": ["apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx", "apps/frontend/operations-admin/src/app/OperationsApp.tsx", "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx", "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts"],
+  "searchQueries": ["WorkspaceSessionEntry mode outcome candidates", "selected?.roleAssignmentRef", "disabled={!session.assignmentId}", "selectOperationsWorkspaceSessionContext"],
+  "counterexamples": [{"case":"DIRECT","evidence":"A selected assignment yields page keys and action grants that can enter the shell."},{"case":"SELECT","evidence":"The login consumer previously converted absent selected into an empty shell session and offered no assignment selector."},{"case":"EMPTY","evidence":"The shell cannot create a selected assignment for an account with no candidate."}],
+  "findings": [{"findingId":"CR06-R15-01","genericProblem":"Session outcomes must be preserved until required assignment selection completes.","rootCauseClass":"SESSION_OUTCOME_COLLAPSED_BEFORE_REQUIRED_SELECTION"},{"findingId":"CR06-R15-02","genericProblem":"No-candidate authentication needs an explicit terminal user state rather than a disabled shell.","rootCauseClass":"EMPTY_SESSION_RENDERED_AS_UNUSABLE_SHELL"}],
+  "preventionDispositions": [{"findingId":"CR06-R15-01","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"generated WorkspaceSessionEntry mode/outcome consumer plus CR06 closure ledger"},{"findingId":"CR06-R15-02","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"CR06 selected-session closure table"}]
+}

@@ -1,0 +1,26 @@
+{
+  "components": {
+    "schemas": {
+      "SortDirection": {
+        "type": "string",
+        "enum": [
+          "ASC",
+          "DESC"
+        ]
+      },
+      "ServiceNodeType": {
+        "type": "string",
+        "enum": [
+          "GROUP",
+          "REGION",
+          "PROJECT",
+          "HEAD_COMPANY",
+          "STORE"
+        ]
+      },
+      "ProjectPhaseNames": {
+        "type": "array"
+      }
+    }
+  }
+}

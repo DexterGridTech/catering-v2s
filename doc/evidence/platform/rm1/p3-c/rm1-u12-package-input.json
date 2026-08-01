@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U12",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "2d392563709d2f3e059fc033b8c3cf502d01a9581574dffa0f1da001e382b43d",
+  "unitId": "RM1-U12",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/capability-invariants",
+    "scripts/check/security-boundaries"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/affected-l2"
+  ],
+  "requiredControlRuleIds": [
+    "P-D0c"
+  ],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_DYNAMIC_HIERARCHY_AND_CAPABILITY",
+  "generatedOutputReplayEvidenceRequired": true,
+  "serialPredecessor": {
+    "packageId": "RM1-U04",
+    "exitPath": "doc/evidence/platform/rm1/p3-c/rm1-u04-package-exit.json",
+    "exitSha256": "0416d89380971c640c578ec79eea8b8f3c44c77e3181acfa27a5fd78c51fc465"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p3-c/rm1-p3-abc-claude-no-go-remediation-design-v2.md",
+    "sha256": "6632fcf387dfa8efb835be5579bbeb0d48f8474fd9b5097aeb11a8b623de7f6a"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 implementation. This binding authorizes only the P3-A+B+C Claude NO-GO remediation: fixed target capability identities, receipt/evidence truth, and managed current-byte hierarchy/capability verification. It excludes P2 naming, P4 pagination, seed/reset, and every later RM1 package."
+}

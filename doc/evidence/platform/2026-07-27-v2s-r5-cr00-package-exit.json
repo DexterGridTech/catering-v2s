@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-compliance-remediation-package-exit",
+  "packageId": "R5-CR-U00",
+  "status": "PASS",
+  "serialPredecessor": null,
+  "actualChangedPaths": [
+    {
+      "path": ".agents/skills/cs-spec-to-plan/SKILL.md",
+      "beforeSha256": "191a944d717eef3754b322871630fffc5615aa3ba64750ac3290e045d69be989",
+      "afterSha256": "280f020255e6225bfd8f8ca57e4a9b892260efe81bd65013bbb58f3ae44700af"
+    },
+    {
+      "path": ".agents/skills/cs-writing-plans/SKILL.md",
+      "beforeSha256": "aa6576b041b0ebcae6695c6035eb8ada37cd6bcbae0641cdf4cd0f5386ccccc2",
+      "afterSha256": "64442138ead7879343f6f09f140092053ff27976a4dd97c602f727f7755d7532"
+    },
+    {
+      "path": "AGENTS.md",
+      "beforeSha256": "7df534e31d78cf9cbec390d0b1276abd069336d90f27a168969ae43c9d34315c",
+      "afterSha256": "9b4819b29b4d6b67659a2bd8ef5cd2714d38957bf5719b414278369795a30347"
+    },
+    {
+      "path": "CLAUDE.md",
+      "beforeSha256": "da3213ab7a75431198ac0d645d7de49b9705b07a27397a2e568d439ea4f66ca1",
+      "afterSha256": "8b12b36e0c852f3a55f40f29d3d21101b9acb113b969ff5f8a9c2152c2aec50f"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "68448dec10298a57e336bae2960906a9289f2221748c87782cf4f8b5988450cc"
+    },
+    {
+      "path": "doc/decisions/2026-07-27-v2s-r5-cr00-deterministic-generated-index-disposition.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7cb390d484ab6c0138442bbd64bf0930033ddfdf0e03e11a1d5aea9a9db9aff0"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-baseline-recovery-hook-chain.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "64b07a2f79987d9b8fb6768a23bbf86894fbce8b9324f06fb8a7d88efc7a6dab"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json",
+      "beforeSha256": "040ea7c3873d986008bacc4b72440efe7db43443602cdc117c0911edd2c037f5",
+      "afterSha256": "6463cdc2e96b387d38ed8999b0d2617bacb56c8b2478ee6dfe5ff99e35367446"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-package-input.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "678d2077b1b56c69c319af8d60bcdbcad81583eabaae0f645cd2ec9e0c074f97"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-pre-baseline-bootstrap-disclosure.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f6ef09e27607d3b0438531e940a7459722b9844307a6c08a20cf0d0b2bd9b335"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-source-compliance-disposition-draft.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "03e171734d283ea161a0cc28074dcc1b41d23e5ac1949a15431756b25c81f437"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-static-control-closure.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c56031c0ecacba246bd11771767c113f2de9034f90b84cd66485e0f63b1f8759"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-verify-self-test-boundary-deviation.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "93459c3861017f11ff7ac58a1ff44c75d0fbf5ba43263f041c8dd0effb0f75cf"
+    },
+    {
+      "path": "project-memory/decisions/incremental-compliance-hook.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0e0179020433b8948287f02b061cb1a7c456048b3cfeac0b8fc68a60e83af94d"
+    },
+    {
+      "path": "project-memory/required-inventory.json",
+      "beforeSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+      "afterSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3"
+    },
+    {
+      "path": "scripts/check/remediation-compliance",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9a6f7d29f3d67782c1f8c91307e455d7fe34a2ff118da5264c32c5b27f8b5d6b"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "54042feed948c2d3e58da038228686b25cfe3b57a413c48f64e17dc21136e29c",
+      "afterSha256": "afaddbc298a9f2dabb095cc719f90f5f6659e1e76b9c9db9a762e9631a3aec64"
+    },
+    {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "beforeSha256": "da68a5f4d48d786cc4b5ac9a2de2abf1f717b8b6baa51c75a07e3ec88c4508b4",
+      "afterSha256": "cf3b0770e150764c21078392593c6d729293f8ab5e1ffab0938e610f22d94851"
+    },
+    {
+      "path": "tools/project-memory/cli.mjs",
+      "beforeSha256": "cd1136cad6106ec401bfa6341c101f5240c1b05e78cdacd913f240342b12a8e5",
+      "afterSha256": "9992dafd2a03eb4ea98bed6017dae95b99ca1c735c5fd5da77e5e0ea23ff0ba9"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "beforeSha256": "107e322f6ddaa54973e956b00718017c5fc184b63c3f0977c9fa2b42beed70dc",
+      "afterSha256": "33a82acb36e8892baa861425d665b7b3b2cf01d6f11a0d365a1b57dab5ad1b34"
+    },
+    {
+      "path": "tools/verify-gates/verify.mjs",
+      "beforeSha256": "7c26cef88bf267aaf605126316dcf28aaff7086d19efe2717fddba80ff291bad",
+      "afterSha256": "73a868142049b42d98fa892e08995f78e77c899d4df89d2988a6320deb799eff"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": ".agents/skills/cs-spec-to-plan/SKILL.md",
+      "afterSha256": "280f020255e6225bfd8f8ca57e4a9b892260efe81bd65013bbb58f3ae44700af",
+      "result": "PASS"
+    },
+    {
+      "path": ".agents/skills/cs-writing-plans/SKILL.md",
+      "afterSha256": "64442138ead7879343f6f09f140092053ff27976a4dd97c602f727f7755d7532",
+      "result": "PASS"
+    },
+    {
+      "path": "AGENTS.md",
+      "afterSha256": "9b4819b29b4d6b67659a2bd8ef5cd2714d38957bf5719b414278369795a30347",
+      "result": "PASS"
+    },
+    {
+      "path": "CLAUDE.md",
+      "afterSha256": "8b12b36e0c852f3a55f40f29d3d21101b9acb113b969ff5f8a9c2152c2aec50f",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "afterSha256": "68448dec10298a57e336bae2960906a9289f2221748c87782cf4f8b5988450cc",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/decisions/2026-07-27-v2s-r5-cr00-deterministic-generated-index-disposition.md",
+      "afterSha256": "7cb390d484ab6c0138442bbd64bf0930033ddfdf0e03e11a1d5aea9a9db9aff0",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-baseline-recovery-hook-chain.json",
+      "afterSha256": "64b07a2f79987d9b8fb6768a23bbf86894fbce8b9324f06fb8a7d88efc7a6dab",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json",
+      "afterSha256": "6463cdc2e96b387d38ed8999b0d2617bacb56c8b2478ee6dfe5ff99e35367446",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-package-input.json",
+      "afterSha256": "678d2077b1b56c69c319af8d60bcdbcad81583eabaae0f645cd2ec9e0c074f97",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-pre-baseline-bootstrap-disclosure.json",
+      "afterSha256": "f6ef09e27607d3b0438531e940a7459722b9844307a6c08a20cf0d0b2bd9b335",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-source-compliance-disposition-draft.json",
+      "afterSha256": "03e171734d283ea161a0cc28074dcc1b41d23e5ac1949a15431756b25c81f437",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-static-control-closure.json",
+      "afterSha256": "c56031c0ecacba246bd11771767c113f2de9034f90b84cd66485e0f63b1f8759",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-verify-self-test-boundary-deviation.json",
+      "afterSha256": "93459c3861017f11ff7ac58a1ff44c75d0fbf5ba43263f041c8dd0effb0f75cf",
+      "result": "PASS"
+    },
+    {
+      "path": "project-memory/decisions/incremental-compliance-hook.md",
+      "afterSha256": "0e0179020433b8948287f02b061cb1a7c456048b3cfeac0b8fc68a60e83af94d",
+      "result": "PASS"
+    },
+    {
+      "path": "project-memory/required-inventory.json",
+      "afterSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/check/remediation-compliance",
+      "afterSha256": "9a6f7d29f3d67782c1f8c91307e455d7fe34a2ff118da5264c32c5b27f8b5d6b",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "afaddbc298a9f2dabb095cc719f90f5f6659e1e76b9c9db9a762e9631a3aec64",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "afterSha256": "cf3b0770e150764c21078392593c6d729293f8ab5e1ffab0938e610f22d94851",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/project-memory/cli.mjs",
+      "afterSha256": "9992dafd2a03eb4ea98bed6017dae95b99ca1c735c5fd5da77e5e0ea23ff0ba9",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "afterSha256": "33a82acb36e8892baa861425d665b7b3b2cf01d6f11a0d365a1b57dab5ad1b34",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/verify.mjs",
+      "afterSha256": "73a868142049b42d98fa892e08995f78e77c899d4df89d2988a6320deb799eff",
+      "result": "PASS"
+    }
+  ],
+  "controls": [
+    {
+      "ruleId": "SOURCE_DERIVED_DENOMINATOR",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CLIENT_HOOK_INVOCATION",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "BASELINE_RECOVERY_CHAIN",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "INCREMENTAL_RECEIPT_SET_EQUALITY",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SOURCE_MAPPING_AND_STATIC_ADMISSION",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SEMANTIC_REVIEW_BOUNDARY",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "PACKAGE_SERIAL_PREDECESSOR",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "fullComplianceScan": "PASS",
+  "tests": "NOT_APPLICABLE",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "denominators": {
+    "sourcePath": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-source-compliance-disposition-draft.json",
+    "sourceSha256": "03e171734d283ea161a0cc28074dcc1b41d23e5ac1949a15431756b25c81f437",
+    "derivedCount": 170,
+    "applicableCount": 101,
+    "staticControlRows": 154,
+    "wholeScopeImplementationReviewRows": 16
+  },
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-source-compliance-disposition-draft.json",
+    "sha256": "03e171734d283ea161a0cc28074dcc1b41d23e5ac1949a15431756b25c81f437"
+  },
+  "closureEvidence": {
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-static-control-closure.json",
+    "sha256": "c56031c0ecacba246bd11771767c113f2de9034f90b84cd66485e0f63b1f8759"
+  },
+  "authorityBoundary": "CR00 exit only. CR01 may begin only after this receipt validates fresh; no runtime, DEV, reset, seed, or business result is claimed."
+}

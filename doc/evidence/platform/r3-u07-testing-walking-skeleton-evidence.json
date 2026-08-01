@@ -1,0 +1,48 @@
+{
+  "kind": "r3-u07-testing-walking-skeleton-evidence",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "unit": "U07",
+  "status": "TEST_AND_WALKING_SKELETON_PASS",
+  "scope": [
+    "edge-context-unit-test",
+    "platform-admin-architecture-test",
+    "operations-admin-architecture-test",
+    "managed-c01-walking-skeleton",
+    "typed-negative-branches",
+    "business-cleanup-separate-evidence"
+  ],
+  "verification": {
+    "gradleOfflineCleanTestBootJar": "PASS",
+    "edgeContextVerifierTests": "PASS; 2 tests",
+    "platformAdminArchitectureTest": "PASS; 1 test",
+    "operationsAdminArchitectureTest": "PASS; 1 test",
+    "platformAdminBuild": "PASS",
+    "operationsAdminBuild": "PASS",
+    "codeLayout": "PASS",
+    "tdpPlaceholderBoundary": "PASS",
+    "hashEvidenceCheckpoint": "PASS",
+    "codexImplementationSelfReview": "PASS; REVIEW_TARGET=IMPLEMENTATION; REVIEW_ROUND=2; ROUND_FINAL_DECISION=SELF_DECIDED",
+    "walkingSkeletonBusiness": "PASS",
+    "walkingSkeletonCleanup": "PASS"
+  },
+  "managedRun": {
+    "runId": "20260725T100351Z-90982",
+    "manifest": ".runtime/r3/20260725T100351Z-90982/run-manifest.json",
+    "business": "PASS",
+    "cleanup": "PASS",
+    "activeManagedResources": 0,
+    "hashCheckpoint": ".runtime/r3/20260725T100351Z-90982/hash-checkpoint.json",
+    "hashCheckpointSha256": "f09930720e5d6c2d0a5d9ea412514e3521a0136787de6976373315a6119b7757",
+    "positive": "list-detail-initialize-owner-readback-same-key-replay",
+    "negative": "idempotency-conflict-duplicate-initialization-cross-workspace-scope-conflict-missing-edge-context"
+  },
+  "artifactHashes": [
+    {"path": "libraries/backend/platform-access/build.gradle.kts", "sha256": "5a36c32b11e74e89988861517a5242c51c0ff47b5a69b97720efed986748d080"},
+    {"path": "libraries/backend/platform-access/src/test/java/com/catering/v2s/platform/access/EdgeContextVerifierTest.java", "sha256": "4e9e53562b0851b185b341e13da91f548e44d9a3e966092e888726f5056e782e"},
+    {"path": "apps/frontend/platform-admin/src/tests/architecture/r3-c01-boundary.test.mjs", "sha256": "6aa3f0484ebe013273c813b19939b0f1fda7b485be7367c37a29c39f57bd82e8"},
+    {"path": "apps/frontend/operations-admin/src/tests/architecture/r3-boundary.test.mjs", "sha256": "d64312b383be10e70e620dd32b9abd12542d6962d504d5816949801eeba5d018"},
+    {"path": "scripts/run/r3-walking-skeleton", "sha256": "fd2c03a8b89534fff8cf750b23fe800f950267859d6f5db8bd7e39a77446e7a7"},
+    {"path": "doc/review/platform/2026-07-25-v2s-r3-implementation-codex-self-review-round-2.md", "sha256": "ac5d7cca1d42747d941923c3bf537657c800d3d5c0a145d50e2720cffbea9d19"}
+  ]
+}

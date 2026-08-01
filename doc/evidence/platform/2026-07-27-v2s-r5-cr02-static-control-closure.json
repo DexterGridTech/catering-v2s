@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U02",
+  "kind": "typed-frontend-consumption-static-control-closure",
+  "status": "PASS",
+  "completedAssertions": [
+    "Feature-level HTTP path literals are absent; generated face catalogs remain the location of concrete paths.",
+    "Platform-admin and operations-admin resolve endpoint identifiers through separate app-local facades.",
+    "Existing feature-level raw generic maps were replaced by named UI readback and row structures in the migrated registry and overview paths.",
+    "The platform, operations, and public architecture assertions all fail on a real scratchpad raw-path mutation."
+  ],
+  "staticEvidence": [
+    {
+      "command": "yarn typecheck",
+      "scope": "apps/frontend/platform-admin",
+      "result": "PASS"
+    },
+    {
+      "command": "yarn test",
+      "scope": "apps/frontend/platform-admin",
+      "result": "PASS"
+    },
+    {
+      "command": "yarn typecheck",
+      "scope": "apps/frontend/operations-admin",
+      "result": "PASS"
+    },
+    {
+      "command": "yarn test",
+      "scope": "apps/frontend/operations-admin",
+      "result": "PASS"
+    },
+    {
+      "command": "node tools/compliance-control/cli.mjs static-scan",
+      "result": "PASS",
+      "rules": 137
+    },
+    {
+      "command": "scripts/check/standards-coverage --phase R5",
+      "result": "PASS",
+      "rules": 150
+    },
+    {
+      "command": "scripts/check/project-memory",
+      "result": "PASS"
+    }
+  ],
+  "redProof": {
+    "evidencePath": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-red-mutation.json",
+    "assertion": "R5_CR02_ARCHITECTURE_RED=PASS"
+  },
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "deferredSemanticVerification": "CR02 establishes typed consumption substrate only. Whole-surface interaction, visual carry-over and behavior remain subject to CR06 and the requested whole-scope static code review before CR07.",
+  "authorityBoundary": "CR02 static closure only. No DEV, seed/reset, remote, dynamic verification, CR07 or CR08 action is authorized."
+}
+

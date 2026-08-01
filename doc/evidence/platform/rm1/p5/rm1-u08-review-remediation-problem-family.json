@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P5-READ_MODEL_CACHE_AND_ASYNC_OWNERSHIP",
+  "genericProblem": "A generated read endpoint is not a usable read-model consistency mechanism when no real consumer subscribes to its cache, and a locally owned asynchronous read is not safe when its success and failure writes lack a request-generation ownership check.",
+  "rootCauseClass": "READ_CONSUMER_LIFECYCLE_NOT_BOUND_TO_GENERATED_OPERATION",
+  "finiteDenominator": [
+    "scripts/generate/edge-codegen.mjs",
+    "apps/frontend/platform-admin/src/app/api/generated/platform-edge.rtk.ts",
+    "apps/frontend/operations-admin/src/app/api/generated/operations-edge.rtk.ts",
+    "apps/frontend/operations-admin/src/app/api/generated/public-edge.rtk.ts",
+    "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+    "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+    "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+    "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+    "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
+    "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+    "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+    "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx"
+  ],
+  "searchedSurfaces": [
+    "P5 original roadmap and implementation plan",
+    "both generated face clients and RTK endpoint outputs",
+    "both app API/transport boundaries",
+    "all platform-admin and operations-admin feature reads that update local state",
+    "foundation async-generation primitive and focused tests"
+  ],
+  "searchQueries": [
+    "build.query",
+    "FaceOperationRequest",
+    "use.*Query",
+    ".then(setResult)",
+    "useAsyncGenerationGuard",
+    "platformClient.get",
+    "operationsClient.get"
+  ],
+  "counterexamples": [
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "reason": "Already owns a request generation guard and preserves the previous successful result on page-change failure."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "reason": "Root session loading already has a request generation guard and is not a list or candidate consumer."
+    },
+    {
+      "path": "apps/frontend/*/src/features/audit-history/ui/*AuditHistoryModal.tsx",
+      "reason": "The modal uses an effect cleanup current flag; it is a distinct cancellation pattern rather than an unowned list state write."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "P5-READ-CACHE-01",
+      "status": "CONFIRMED",
+      "finding": "The former generic wire query had no generated operation-shaped hook or active consumer, so its tags could not make a feature read model refetch after a write."
+    },
+    {
+      "findingId": "P5-ASYNC-OWNERSHIP-02",
+      "status": "CONFIRMED",
+      "finding": "A finite set of local list, candidate, and form-constraint reads can write success or failure state after a newer pagination, context, route, or drawer lifecycle has superseded their request."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "P5-READ-CACHE-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/generate/edge-codegen.mjs --check and --self-test",
+      "reason": "The generated RTK output must contain a request helper and build.query/build.mutation endpoint for every face operation; the self-test removes a helper and must fail."
+    },
+    {
+      "findingId": "P5-ASYNC-OWNERSHIP-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-request.md",
+      "reason": "The P5 implementation review enumerates the finite consumer denominator and requires every retained local asynchronous state writer to prove a current-generation or lifecycle-cancellation owner."
+    }
+  ]
+}

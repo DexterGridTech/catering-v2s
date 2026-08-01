@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-compliance-disposition-template",
+  "packageId": "RM1P6-CP-U15-P6-3-BRAND-OWNER-EDGE-TRUTH",
+  "ruleCount": 2,
+  "applicableCount": 2,
+  "rows": [
+    {
+      "denominator": "CONTROL_PLANE_AUTHORIZATION_AND_SCOPE",
+      "sourcePath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-manifest.json",
+      "sourceSha256": "adf517178b3a1da3596ee06903f8f59aceeb94925ed20c88a1fd3ca0d00d1a76",
+      "anchor": "deliveryUnits[RM1P6-CP-U15-P6-3-BRAND-OWNER-EDGE-TRUTH]",
+      "ruleId": "CP:MANIFEST",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "EXACT_CONTROL_SURFACE_AND_RECEIPT_SET"
+    },
+    {
+      "denominator": "CONTROL_PLANE_AUTHORIZATION_AND_SCOPE",
+      "sourcePath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-amendment.md",
+      "sourceSha256": "a460c1b8fbb5c486fe95268ffbed91f4633b17c1200fb5927935c601c25bb0e6",
+      "anchor": "packageId: RM1P6-CP-U15-P6-3-BRAND-OWNER-EDGE-TRUTH",
+      "ruleId": "CP:AMENDMENT",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "NON_BUSINESS_SCOPE_AND_HANDOFF"
+    }
+  ]
+}

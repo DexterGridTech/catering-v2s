@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P2-FLYWAY_TEST_LOCATION_RELOCATION",
+  "genericProblem": "A module-relocation integration-test proof can be invalidated either by a stale filesystem Flyway location or by an assertion that reads shared class-level database state rather than the scenario's own row set.",
+  "rootCauseClass": "INTEGRATION_TEST_PROOF_SURFACE_UNDER_SPECIFIED",
+  "finiteDenominator": [
+    "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java",
+    "apps/backend/catering-business-server/modules/extension/src/test/java/com/catering/v2s/extension/application/ExtensionDefinitionServiceTest.java",
+    "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+    "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java",
+    "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java"
+  ],
+  "searchedSurfaces": [
+    "apps/backend/catering-business-server/modules/**/src/test",
+    "apps/backend/catering-business-server/modules/**/build.gradle.kts",
+    "apps/backend/catering-business-server/build.gradle.kts",
+    "scripts/test/r5-remote-testcontainers.mjs",
+    "tools/verify-gates/cli.mjs",
+    "doc/evidence/platform/rm1/p2"
+  ],
+  "searchQueries": [
+    "Flyway.configure",
+    "filesystem:../../../apps/backend/catering-business-server/src/main/resources/db/migration",
+    "filesystem:../../src/main/resources/db/migration",
+    "workingDir",
+    "locations("
+  ],
+  "counterexamples": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/backend/BusinessDataConfiguration.java",
+      "reason": "Production migration configuration uses classpath:db/migration and is outside the filesystem test-location denominator."
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/backend/DatabaseBoundariesTest.java",
+      "reason": "This test uses classpath migration discovery, not a module-relative filesystem location."
+    },
+    {
+      "path": "apps/backend/catering-business-server/build.gradle.kts",
+      "reason": "The Test task has no workingDir override; each affected module project directory remains the resolution base."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-FLYWAY-LOCATION-01",
+      "status": "CONFIRMED",
+      "finding": "All eight active filesystem Flyway test locations retain the obsolete ../../../ prefix after the P2 module relocation; the old resolved root is absent and ../../src/main/resources/db/migration is the unique existing application migration root relative to every module project directory."
+    },
+    {
+      "findingId": "PF-FLYWAY-LOCATION-02",
+      "status": "CONFIRMED",
+      "finding": "The former static-only P2 evidence binding did not require a test execution and existing Flyway layout controls did not resolve test filesystem locations, so this runtime-path class was unproved."
+    },
+    {
+      "findingId": "PF-FLYWAY-LOCATION-03",
+      "status": "CONFIRMED",
+      "finding": "WorkspaceInvitationPublicFlowTest reused one class-level database and asserted a global role_assignment count, so a prior test's completed invitation made later zero-assignment scenarios order-dependent. The finite counterexample is this one test class; all seven other Flyway filesystem tests completed in their suites without this signal."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-FLYWAY-LOCATION-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/flyway-test-locations",
+      "reason": "A finite live-source resolver denominator and red mutation will reject an obsolete module-relative prefix before package exit."
+    },
+    {
+      "findingId": "PF-FLYWAY-LOCATION-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs validateRequiredDynamicEvidence",
+      "reason": "The P2 technical-relocation binding will require current-byte dynamic evidence while preserving NOT_APPLICABLE for unchanged end-user behavior."
+    },
+    {
+      "findingId": "PF-FLYWAY-LOCATION-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/review/platform/2026-07-28-v2s-rm1-p2-implementation-review-claude.md",
+      "reason": "For Testcontainers classes with multiple scenarios, review assertions that count mutable rows to ensure they bind to the current scenario identity rather than a class-global residue."
+    }
+  ]
+}

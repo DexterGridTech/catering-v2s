@@ -1,0 +1,19 @@
+{
+  "schemaVersion":1,
+  "kind":"rm1-p6-u01-observability-extension-manifest",
+  "status":"R1_REMEDIATED_AWAITING_FINAL_INDEPENDENT_REVIEW",
+  "packageId":"RM1P6-U01-OBSERVABILITY-EXTENSION",
+  "authorizationBoundary":"Dexter authorized the P6-1 observability extension and universal logging/acceptance standard. This is design-only until a fresh independent design verdict and later implementation admission.",
+  "design":{"path":"doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md","sha256":"42540c01a04b902c04a5ef6f1d058ae1cc0b0399f305ba6e29dbcc14939202e7"},
+  "sourceSets":{
+    "business":["doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md#3.1","doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md#4"],
+    "diagnosticStandard":["doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md#长期约束"],
+    "runner":["scripts/test/r5-remote-testcontainers.mjs"],
+    "foundation":["apps/backend/catering-business-server/modules/foundation/build.gradle.kts","apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/PlatformFoundationBoundary.java"],
+    "edge":["apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/session/EdgeRequestContext.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/session/EdgeRequestContextArgumentResolver.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsWorkspaceLoginEntryController.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java"],
+    "contractProjection":["contracts/openapi/edge.openapi.yaml","contracts/openapi/paths/operations-admin/workspace-access.paths.yaml","tools/capability-invariants/cli.mjs"]
+  },
+  "fixedOperationIds":["platformPasswordLogin","sendPlatformLoginOtp","verifyPlatformLoginOtp","startPlatformPasswordRecovery","sendPlatformPasswordRecoveryOtp","verifyPlatformPasswordRecoveryOtp","completePlatformPasswordRecovery","operationsWorkspacePasswordLogin","sendOperationsWorkspaceOtp","verifyOperationsWorkspaceOtp","getOperationsWorkspaceLoginEntry","startOperationsPasswordRecovery","sendOperationsPasswordRecoveryOtp","verifyOperationsPasswordRecoveryOtp","completeOperationsPasswordRecovery","getPublicInvitationView","acceptPublicInvitation","sendPublicInvitationOtp","verifyPublicInvitationOtp","savePublicInvitationCredentials","completePublicInvitation","getPublicInvitationCompletion"],
+  "projectionInvariant":{"edgeRootPathCount":35,"pathDocumentOperationCount":40,"legacyGenericRootCount":0},
+  "acceptance":{"requiresRunScopedManifest":true,"requiresAtomicRemoteControlRecord":true,"requiresLogRead":true,"requiresPidReaped":true,"requiresBusinessCleanupSeparation":true,"requiresSecretRedMutation":true,"requiresOneTerminalEventTest":true,"requiresTypedProblemExactSet":75}
+}

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+exec node "$root_dir/tools/admin-boundary-checks/cli.mjs" "$@"

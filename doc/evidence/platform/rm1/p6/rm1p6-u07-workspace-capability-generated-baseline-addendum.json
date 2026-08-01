@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1P6-PLATFORM-INVITATION-RETIREMENT-U07",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "entries": [
+    {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java", "kind": "FILE", "sha256": "3e5767648cffd03677dc4dcae3a8c585faf7dabfd6ea04e133881e2154be297a"}
+  ]
+}

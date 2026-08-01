@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "R5-CR-U05",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "authority": "Dexter authorized all CR05 decisions after the real 0.145.0 canary established that patch events are observable while command events are not. This additive baseline records only pre-existing control owners newly admitted to CR05; it does not alter the one-time historical 43-path recovery.",
+  "entries": [
+    {"path":".codex/hooks.json","kind":"FILE","sha256":"6f8b2a2e0d90d9839e617b1171bbd0d69bb27691afd9a0fceff08b98140f4dc9"},
+    {"path":"scripts/hooks/pre-tool-compliance","kind":"FILE","sha256":"cf5840cdc09311472de60870a85a292590b3629f892c6777cf18fa8d6e4f091a"},
+    {"path":"scripts/hooks/post-tool-compliance","kind":"FILE","sha256":"a9a9cbeb1c1360bb561aa345db83e1ce965697b5af6e750a1ab8276de9655c43"},
+    {"path":"scripts/check/remediation-compliance","kind":"FILE","sha256":"9a6f7d29f3d67782c1f8c91307e455d7fe34a2ff118da5264c32c5b27f8b5d6b"},
+    {"path":"project-memory/decisions/incremental-compliance-hook.md","kind":"FILE","sha256":"0e0179020433b8948287f02b061cb1a7c456048b3cfeac0b8fc68a60e83af94d"}
+  ]
+}

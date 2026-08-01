@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-u12-evidence-truth-control-red-proof",
+  "status": "PASS",
+  "controls": [
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "sha256": "1aa1fa19ebc4793274f52764da282d1a449adb217d9e27a623c2910b2ab7c180",
+      "command": "node tools/compliance-control/cli.mjs rm1-evidence-truth-self-test",
+      "positive": "RM1_EVIDENCE_TRUTH_SELF_TEST=PASS",
+      "redMutations": [
+        "RED_REQUIRED_BUSINESS_NOT_APPLICABLE=PASS",
+        "RED_MISSING_DYNAMIC_EVIDENCE=PASS",
+        "RED_REPLAY_FINAL_HASH_MISMATCH=PASS"
+      ]
+    },
+    {
+      "path": "scripts/test/r5-remote-testcontainers.mjs",
+      "sha256": "e4cfab335cc88b945c680daa489a52c94dfb966f4fca1c4422a30a5b59c9127d",
+      "command": "node scripts/test/r5-remote-testcontainers.mjs --self-test",
+      "positive": "R5_REMOTE_RUNNER_SELF_TEST=PASS",
+      "redMutations": [
+        "RED_REMOTE_FAILURE_COLLECTION_MISSING=PASS",
+        "RED_EARLY_EXIT_REINTRODUCED=PASS"
+      ]
+    }
+  ],
+  "dynamicExecution": "NOT_RUN: this proof executes only deterministic local self-tests; no remote host, container, seed, reset, or business suite was started.",
+  "resultSeparation": "The controls prove schema and runner failure-path mechanics only. They are not current-byte business PASS evidence; that must be supplied as RM1-U12 package-exit dynamicEvidence after a managed run with cleanup PASS."
+}

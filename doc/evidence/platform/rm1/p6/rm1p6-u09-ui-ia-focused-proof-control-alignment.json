@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1p6-u09-pending-control-resolution",
+  "status": "P6_3_PENDING_CONTROLS_RESOLVED_P6_2_CURRENT_BYTE_REBASE_REQUIRED",
+  "baseRecord": {"path": "doc/evidence/platform/rm1/p6/rm1p6-u03-final-ui-ia-control-alignment.json", "recordCount": 58, "pendingCountBefore": 17},
+  "excludedStaleDenominator": [
+    {"screenId": "IA04-BRAND-PAGE", "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx", "reason": "file absent, symbol zero-reference; PgOrgBrand route mounts BusinessEntityManagementPage"},
+    {"screenId": "IA04-TENANT-PAGE", "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx", "reason": "file absent, symbol zero-reference; PgOrgTenant route mounts BusinessEntityManagementPage"}
+  ],
+  "resolvedCurrentControls": [
+    {"screenId": "IA02-OPERATIONS-AUTHENTICATED-SHELL", "source": "app/routing/pageRegistry.tsx", "proof": "pageRegistry.test.tsx PASS"},
+    {"screenId": "IA04-CONTRACT-PAGE", "source": "contract-management/ui/ContractManagementPage.tsx", "proof": "ContractManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-CONTRACT-CREATE", "source": "contract-management/ui/ContractCreateDrawer.tsx", "proof": "ContractManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-CONTRACT-EDIT", "source": "contract-management/ui/ContractEditDrawer.tsx", "proof": "ContractManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-CONTRACT-DETAIL", "source": "contract-management/ui/ContractDetailDrawer.tsx", "proof": "ContractManagementPage.test.tsx PASS; stable loading/error/extension-error ids added"},
+    {"screenId": "IA04-CONTRACT-INVALIDATE", "source": "contract-management/ui/ContractInvalidateModal.tsx", "proof": "ContractManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-STORE-PROFILE", "source": "store-profile/ui/StoreProfilePage.tsx", "proof": "StoreProfilePage.test.tsx PASS"},
+    {"screenId": "IA04-STORE-PROFILE-CONTRACT", "source": "store-profile/ui/FixedStoreContractDetailDrawer.tsx", "proof": "StoreProfilePage.test.tsx PASS"},
+    {"screenId": "IA04-BUSINESS-CREATE", "source": "business-entity-management/ui/BusinessEntityCreateDrawer.tsx", "proof": "BusinessEntityManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-BUSINESS-DETAIL", "source": "business-entity-management/ui/BusinessEntityDetailDrawer.tsx", "proof": "BusinessEntityManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-BUSINESS-EDIT", "source": "business-entity-management/ui/BusinessEntityEditDrawer.tsx", "proof": "BusinessEntityManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-BUSINESS-STATUS", "source": "business-entity-management/ui/BusinessEntityStatusModal.tsx", "proof": "BusinessEntityManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-PROJECT-CREATE", "source": "organization-structure/ui/ProjectPhaseFieldList.tsx", "proof": "OrganizationStructurePage.test.tsx PASS"},
+    {"screenId": "IA04-STORE-DETAIL", "source": "store-management/ui/StoreDetailDrawer.tsx", "proof": "StoreManagementPage.test.tsx PASS"},
+    {"screenId": "IA04-STORE-STATUS", "source": "store-management/ui/StoreStatusModal.tsx", "proof": "StoreManagementPage.test.tsx PASS"}
+  ],
+  "proofRuns": [
+    {"command": "yarn --cwd apps/frontend/operations-admin vitest run ContractManagementPage.test.tsx StoreProfilePage.test.tsx", "result": "PASS", "files": 2, "tests": 4},
+    {"command": "yarn --cwd apps/frontend/operations-admin vitest run BusinessEntityManagementPage.test.tsx OrganizationStructurePage.test.tsx StoreManagementPage.test.tsx ContractManagementPage.test.tsx StoreProfilePage.test.tsx", "result": "PASS", "files": 5, "tests": 11},
+    {"command": "yarn --cwd apps/frontend/operations-admin vitest run pageRegistry.test.tsx StoreManagementPage.test.tsx", "result": "PASS", "files": 2, "tests": 4},
+    {"command": "yarn --cwd apps/frontend/operations-admin typecheck", "result": "PASS"}
+  ],
+  "boundary": "These are static source/focused-proof results only. The 41 previously PASS base controls and the P6-2 38-screen current-byte rebase still require final complete alignment before joint managed L2. business=NOT_APPLICABLE; cleanup=NOT_APPLICABLE."
+}

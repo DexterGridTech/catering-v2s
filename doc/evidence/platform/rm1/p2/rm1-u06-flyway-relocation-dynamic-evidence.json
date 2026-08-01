@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p2-flyway-relocation-dynamic-evidence",
+  "packageId": "RM1-U06",
+  "status": "PASS",
+  "targetTestDenominator": [
+    {
+      "path": "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java",
+      "sha256": "854442342c98b0a5f0b02742c97e598314b85ce748d9e08c3c48c7139d463a82"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/extension/src/test/java/com/catering/v2s/extension/application/ExtensionDefinitionServiceTest.java",
+      "sha256": "d1372b4e191e09d241cb1573ffb7b392514517f9147628d4f79af7eabf8fdaa9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+      "sha256": "75a4a7219fd61638b4b000c226a10f96430aff8898575640825862743fd5fe6c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java",
+      "sha256": "1056f20895c41bd10608776a4e457d5c68979da2a51f3efff21d592579de0282"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+      "sha256": "c86a4e96dbeb6d76bff055415d1e13e25698ca97d37e86491630d73fa91016e7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+      "sha256": "c9f54952bbee1531b7d453ef55a8a9ca82acedeb0bcd21c688d05ebbef81d952"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java",
+      "sha256": "d399a6b328642b10d3766b0410837eb639f6b94626633996f853b5babf313a97"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+      "sha256": "7cfaf0a68c3ac600cacbe6897d6c3f7ab0f08ab975d40efac30dec9ef85077e4"
+    }
+  ],
+  "runs": [
+    {
+      "runner": "scripts/test/r5-remote-testcontainers.mjs",
+      "suite": ":apps:backend:catering-business-server:modules:asset:test",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java",
+          "sha256": "854442342c98b0a5f0b02742c97e598314b85ce748d9e08c3c48c7139d463a82"
+        }
+      ],
+      "log": {
+        "path": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785249707384-7066/gradle.log",
+        "sha256": "c01f5ac8f730c2d8a6f0a880d0aa17e07dde44dacfb348dc9236a59721b0a969"
+      }
+    },
+    {
+      "runner": "scripts/test/r5-remote-testcontainers.mjs",
+      "suite": ":apps:backend:catering-business-server:modules:extension:test",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "apps/backend/catering-business-server/modules/extension/src/test/java/com/catering/v2s/extension/application/ExtensionDefinitionServiceTest.java",
+          "sha256": "d1372b4e191e09d241cb1573ffb7b392514517f9147628d4f79af7eabf8fdaa9"
+        }
+      ],
+      "log": {
+        "path": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785249776336-8299/gradle.log",
+        "sha256": "d3b6a6cf7012dd56cda87988b592cdefeb910d00fd46f2b8c9214a938f6b46a3"
+      }
+    },
+    {
+      "runner": "scripts/test/r5-remote-testcontainers.mjs",
+      "suite": ":apps:backend:catering-business-server:modules:organization:test",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+          "sha256": "75a4a7219fd61638b4b000c226a10f96430aff8898575640825862743fd5fe6c"
+        }
+      ],
+      "log": {
+        "path": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785249839449-9478/gradle.log",
+        "sha256": "3401c522a89fa596418557fee8da307083967cba0b9aad20c2f5285347cdb538"
+      }
+    },
+    {
+      "runner": "scripts/test/r5-remote-testcontainers.mjs",
+      "suite": ":apps:backend:catering-business-server:modules:platform-admin-iam:test",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java",
+          "sha256": "1056f20895c41bd10608776a4e457d5c68979da2a51f3efff21d592579de0282"
+        }
+      ],
+      "log": {
+        "path": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785249893359-10477/gradle.log",
+        "sha256": "ee0c2e39ff053b6bddb49cd89903a604140a98aad85cebdd937ed620daa5966e"
+      }
+    },
+    {
+      "runner": "scripts/test/r5-remote-testcontainers.mjs",
+      "suite": ":apps:backend:catering-business-server:modules:store-contract:test",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+          "sha256": "c86a4e96dbeb6d76bff055415d1e13e25698ca97d37e86491630d73fa91016e7"
+        }
+      ],
+      "log": {
+        "path": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785249947852-11474/gradle.log",
+        "sha256": "72e744683941d4df9fbc6327e93498528d44db4245656a66ce9b4ee69108c81c"
+      }
+    },
+    {
+      "runner": "scripts/test/r5-remote-testcontainers.mjs",
+      "suite": ":apps:backend:catering-business-server:modules:workspace-iam:test",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+          "sha256": "c9f54952bbee1531b7d453ef55a8a9ca82acedeb0bcd21c688d05ebbef81d952"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java",
+          "sha256": "d399a6b328642b10d3766b0410837eb639f6b94626633996f853b5babf313a97"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+          "sha256": "7cfaf0a68c3ac600cacbe6897d6c3f7ab0f08ab975d40efac30dec9ef85077e4"
+        }
+      ],
+      "log": {
+        "path": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785250133978-14863/gradle.log",
+        "sha256": "1f659cb4b36d44a6ea625806db6138b2471b12d73a4dea439a4838a1c807e354"
+      }
+    }
+  ],
+  "failedAttemptDisposition": {
+    "run": "r5-tc-1785250000184-12399",
+    "status": "DIAGNOSED_NOT_RETAINED_AS_PASS",
+    "reason": "Class-global assignment assertion was narrowed to source_invitation_id; replacement run passed.",
+    "cleanup": "PASS"
+  },
+  "cleanup": "PASS"
+}

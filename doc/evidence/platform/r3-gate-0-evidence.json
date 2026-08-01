@@ -1,0 +1,67 @@
+{
+  "kind": "r3-gate-0-evidence",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "decision": "PASS",
+  "state": "EMPTY_SOURCE_PRECONDITION",
+  "checks": {
+    "gate0": "PASS",
+    "contractFace": "PASS",
+    "flywayLayout": "PASS",
+    "productionConformity": "PASS",
+    "codeLayout": "PASS",
+    "standardsCoverageR3": "PASS",
+    "projectMemory": "PASS",
+    "diffCheck": "PASS"
+  },
+  "redMutationSelfTests": {
+    "contractFace": "PASS",
+    "flywayLayout": "PASS",
+    "productionConformity": "PASS",
+    "gate0": "PASS"
+  },
+  "sourcePrecondition": {
+    "appsFiles": [],
+    "contractFaceFiles": [],
+    "flywayMigrationFiles": [],
+    "businessSources": []
+  },
+  "validatorArtifacts": [
+    {
+      "path": "tools/r3-gates/cli.mjs",
+      "sha256": "a78be788a3215d80799a4d62785452dba770b892c6caf10585b5c30128d48220"
+    },
+    {
+      "path": "scripts/check/gate-0",
+      "sha256": "78528371f03b63082369f13f311807fd56b067fba7dedb89275cf791e51176e2"
+    },
+    {
+      "path": "scripts/check/r3-contract-face",
+      "sha256": "c3f1a9bccb1c876a5a3931a11be4375ef00b4f864fa59829fdb955cebc9fbec2"
+    },
+    {
+      "path": "scripts/check/r3-flyway-layout",
+      "sha256": "9cb41034aa4dac0368db197001c85bd496b72196a6251e9fb11087d0eb215bb6"
+    },
+    {
+      "path": "scripts/check/r3-production-conformity",
+      "sha256": "a1e39a0066951b221a34b53b07a0b776edc3a024bab717757f6bf427bd10eee4"
+    },
+    {
+      "path": "scripts/check/code-layout",
+      "sha256": "c55c091ed0435193b689184878d88da0313e3334fd483ab2dd50b7063b01edab"
+    },
+    {
+      "path": "doc/evidence/platform/r3-gate-0-business-source-inventory.json",
+      "sha256": "2b5e4cb04a51b6a73837a468d172146d5d16d57a5563742727dc74bec1eac16c"
+    }
+  ],
+  "nextAction": "CONTINUE_U02_AFTER_GATE_0_PASS",
+  "hashEvidenceCheckpoint": {
+    "decision": "doc/decisions/2026-07-25-v2s-r3-hash-evidence-checkpoint.md",
+    "producer": "scripts/run/r3-walking-skeleton",
+    "algorithm": "SHA-256",
+    "selfHashExcluded": true,
+    "manifestFields": ["hashCheckpoint", "hashCheckpointSha256", "activeManagedResources"]
+  }
+}

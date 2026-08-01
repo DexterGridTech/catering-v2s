@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-contract-correction",
+  "authority": "Dexter delegated CR05 and CR06 implementation decisions to Codex; the frozen revoke operation must be reachable without a UI-guessed concurrency value.",
+  "problemFamilyId": "CR06-FROZEN_WRITE_OPERATION_UNREACHABLE",
+  "scope": ["WorkspaceAccount.assignments[].revision", "PlatformWorkspaceAccountController assignment readback"],
+  "correction": "Expose the already owner-held assignment revision in the platform workspace-account readback so revokePlatformWorkspaceAssignment can receive the exact expectedVersion required by its frozen request.",
+  "invariants": ["No operationId, HTTP path, consumer face, owner, error code, transaction semantic or migration changes.", "No direct assignment create or edit capability.", "The operations member readback already carries the same owner revision; this closes a platform-only projection omission."],
+  "completionEvidence": ["OpenAPI requires assignment revision", "both generated platform wire and server wire carry it", "platform UI sends selected assignment revision to revoke command"]
+}

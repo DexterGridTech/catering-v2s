@@ -145,6 +145,16 @@
     "actionRef": "scripts/README.md#Codex hooks 客户端兼容性",
     "handoffDisposition": "NOT_A_PRODUCTION_DEBT_HANDOFF_REMAINS_EXACTLY_SEVEN"
   },
+  "gitReadback": {
+    "observedAfterInitialClosure": true,
+    "actor": "Dexter",
+    "branch": "main",
+    "head": "331984e8147e435e1ac7029f66fe38ff9cc8214e",
+    "originMain": "331984e8147e435e1ac7029f66fe38ff9cc8214e",
+    "commitSubject": "0724",
+    "stagedCount": 0,
+    "note": "Dexter committed the delivery tree after this closure was first written. Codex performed no stage, commit or push. This readback records the authorized external Git action instead of preserving the now-stale initial-commit statement."
+  },
   "controlPlane": "PASS",
   "business": "NOT_APPLICABLE_CONTROL_PLANE_ONLY",
   "cleanup": "PASS",
@@ -157,6 +167,7 @@
     "seedOrResetExecuted": false,
     "databaseTouched": false,
     "heritageWritten": false,
-    "gitWriteExecuted": false
+    "codexGitWriteExecuted": false,
+    "externalDexterGitWriteObserved": true
   }
 }

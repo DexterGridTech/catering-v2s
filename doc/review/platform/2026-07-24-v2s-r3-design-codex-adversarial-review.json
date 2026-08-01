@@ -1,0 +1,258 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "R3-SPECIALIZED-DESIGN",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "authorSessionId": "019f93ab-6edc-7e62-87d5-804e3570741b",
+  "reviewerSessionId": "019f93ab-6edc-7e62-87d5-804e3570741b",
+  "independence": "SAME_SESSION_AUTHOR_ADVERSARIAL_REVIEW_NOT_INDEPENDENT",
+  "manifestSha256": "aeb5cabd4cdb3891c0166a469dfdd67bb67335c233358f37fa1c510475765e27",
+  "independentReviewSha256": "91bef03d7db0b15e26732a0e4ffc78467f9bbf6bf4c3e4d985f9485ae98bbb49",
+  "independentReviewResolutionSha256": "dd618ce63695f4465eadcdc39e289e67b54060039e90d2bf0814409ead61da76",
+  "revisedDesignIndependentVerificationSha256": "71813494e28b1211acd52d7e476504569dced1627fa37cdad2a2149dc9c8f568",
+  "revisedDesignVerificationResolutionSha256": "f83009d1abd5684e7cda9af42664eecced90ef41806853939a338a6483dc8bd7",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "twoRoundHardStopApplied": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "product-entry-and-scope",
+      "owner-and-transaction",
+      "schema-and-migration",
+      "security-and-session",
+      "contract-and-generated-consumer",
+      "ui-and-read-model",
+      "runtime-and-cleanup",
+      "evidence-and-authority"
+    ]
+  },
+  "expectedBehavior": [
+    "R3 design selects one non-trivial outcome-oriented exact workspaceKey lookup candidate but cannot convert it into approved product truth without Dexter acceptance.",
+    "GATE_0_READINESS is a real temporal predecessor of business source; Dexter publishes an immutable checkpoint commit and later targets prove descent before contract/generated and Flyway production conformity.",
+    "The runtime remains one Nginx ingress, one stateless Spring Boot application and one PostgreSQL database with three owner schemas and one global Flyway history.",
+    "Operations login crosses the owner boundary only through platform-workspace.api in the same REQUIRED transaction; schema and command dependency graphs remain acyclic.",
+    "Eight OpenAPI operations are sliced as server=8, platform=5 and operations=3, including face-specific current-session bootstrap and app-local reachable types.",
+    "The platform workspace check is one page with exact workspaceKey lookup and read-only detail confirmation, owner readback and explicit failure states.",
+    "Two principal systems have distinct requests, cookies, session stores, current-session bootstrap, filters and owners; bootstrap schemas are minimal and keep 401 separate from network or 5xx.",
+    "Browser forgery uses server-managed per-face canonical origins, fixed edge-to-forgery-to-auth ordering, exact Origin and conditional Fetch Metadata fallback, with no CORS allow headers or dual CSRF implementation.",
+    "Dynamic evidence is proxy-only and run-scoped; business and cleanup remain separate and cleanup requires zero active resources.",
+    "The implementation-facing design handoff uses a real hash, anchor, delivery-unit, finding, verdict and review-round production validator with shared-core red fixtures.",
+    "Design review authorizes no application, migration, DEV, database, browser or Git write."
+  ],
+  "standardsReview": {
+    "R3PhasePreflight": {
+      "command": "scripts/check/standards-coverage --phase R3",
+      "exitCode": 1,
+      "reason": "PLANNED_ENFORCEMENT_OVERDUE:D.1.L01",
+      "assessment": "EXPECTED_PRE_IMPLEMENTATION_RED_AND_G0_OWNED"
+    },
+    "referencePatternApplicability": {
+      "sourceReopened": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md#Part C",
+      "applicable": [
+        "dummy hash and fail-closed dual-bucket rate limiting",
+        "generated route face and denyAll",
+        "additive migration",
+        "page registry binding",
+        "architecture tests",
+        "five-state session guard",
+        "managed runner",
+        "red fixture",
+        "generator byte check and counts",
+        "declarative build inputs and outputs"
+      ],
+      "notApplicable": [
+        "proof receipt",
+        "outbox",
+        "projection and repair",
+        "closure append",
+        "invitation acceptance",
+        "internal command HMAC envelope",
+        "asset staging",
+        "extension definition",
+        "multi-step invitation or reset",
+        "Drawer form lifecycle",
+        "message envelope"
+      ],
+      "heritageCodeCopied": false
+    },
+    "dependencyVersionDecision": {
+      "verifiedCandidates": [
+        "Java 21",
+        "Spring Boot 4.1.0",
+        "OpenAPI Generator 7.22.0",
+        "Boot-managed Flyway 12.4.0",
+        "Boot-managed Testcontainers 2.0.5"
+      ],
+      "explicitlyDeferredBeforeImplementation": [
+        "ArchUnit",
+        "Gradle wrapper",
+        "Node",
+        "pnpm",
+        "React",
+        "Ant Design",
+        "ProComponents",
+        "Redux Toolkit"
+      ],
+      "silentCompatibilityLineAllowed": false
+    },
+    "journeyInteraction": {
+      "candidate": "R3-J01 platform-admin exact workspaceKey registration-status check",
+      "owner": "Dexter + Claude",
+      "status": "DEXTER_ACCEPTANCE_REQUIRED_BEFORE_IMPLEMENTATION",
+      "dynamicL2": "NOT_AUTHORIZED_IN_DESIGN"
+    }
+  },
+  "controlPlaneClosure": {
+    "authorityClarification": "Codex may directly create and maintain required repository control-plane checkers without a separate per-file authorization.",
+    "script": "scripts/check/implementation-design-granularity",
+    "tool": "tools/implementation-design-granularity/cli.mjs",
+    "productionValidation": "PASS",
+    "selfTest": "PASS",
+    "redFixtures": {
+      "designHashDrift": "PASS",
+      "missingBusinessEvidence": "PASS",
+      "severityCountMismatch": "PASS",
+      "roundThree": "PASS",
+      "missingFindingUnitLink": "PASS"
+    },
+    "businessImplementationAuthority": false
+  },
+  "independentFindingIntake": {
+    "method": "ADVERSARIAL_FINDING_DIALECTICAL_INTAKE",
+    "dispositions": {
+      "IR3-M-001": "DEXTER_DECISION_AND_PARTIALLY_CONFIRMED",
+      "IR3-M-002": "CONFIRMED_RESOLVED_BY_CODEX_CONTROL_PLANE_RIGHT",
+      "IR3-M-003": "CONFIRMED_RESOLVED_IN_DESIGN",
+      "IR3-M-004": "CONFIRMED_RESOLVED_IN_DESIGN",
+      "IR3-S-001": "PARTIALLY_CONFIRMED_RESOLVED_IN_DESIGN",
+      "IR3-S-002": "PARTIALLY_CONFIRMED_RESOLVED_IN_DESIGN",
+      "IR3-N-001": "CONFIRMED_RESOLVED_IN_DESIGN",
+      "IR3-N-002": "CONFIRMED_RESOLVED_IN_DESIGN"
+    },
+    "roundTwoDispositions": {
+      "R3-VERIFY-S-001": "CONFIRMED_RESOLVED_IN_DESIGN",
+      "R3-VERIFY-S-002": "CONFIRMED_RESOLVED_IN_DESIGN",
+      "R3-VERIFY-S-003": "PARTIALLY_CONFIRMED_RESOLVED_IN_DESIGN",
+      "R3-VERIFY-N-001": "CONFIRMED_RESOLVED_IN_MANIFEST",
+      "R3-VERIFY-N-002": "PARTIALLY_CONFIRMED_UNRECOVERABLE_PROVENANCE_DEBT",
+      "R3-DESIGN-N-003": "CONFIRMED_OPEN_BEFORE_IMPLEMENTATION"
+    },
+    "overdesignRejected": [
+      "second operations business Journey for session proof",
+      "current-session endpoint as the real page",
+      "R4 full gate set moved into R3",
+      "Origin defense and CSRF token dual implementation",
+      "REQUIRES_NEW denial audit",
+      "reviewer-selected product semantics treated as Dexter-approved",
+      "role, capability or generic scope in current-session bootstrap",
+      "checkpoint or trusted-time service",
+      "reject every request missing Sec-Fetch-Site",
+      "reconstructed historic bytes presented as an original snapshot",
+      "a third Codex adversarial review round"
+    ]
+  },
+  "findings": [
+    {
+      "id": "R3-DESIGN-M-001",
+      "severity": "M",
+      "status": "OPEN_REQUIRES_DEXTER",
+      "unitIds": [
+        "R3-U04",
+        "R3-U06"
+      ],
+      "title": "The real-page candidate is implementable but is not yet approved product truth",
+      "evidence": "The frozen Roadmap requires an approved walking-skeleton Journey but the current Heritage denominator contains no exact page entry. Independent review confirmed that navigation alone is not a user outcome, so the design now proposes an exact workspaceKey registration-status check while retaining DEXTER_ACCEPTANCE_REQUIRED_BEFORE_IMPLEMENTATION.",
+      "risk": "Treating design authorization as page approval would let architecture invent product scope and could build the wrong real page.",
+      "disposition": "Dexter must explicitly accept R3-J01 or choose an alternative. Any alternative must revise owner, wire, UI, data, test and generated-slice surfaces and be re-reviewed."
+    },
+    {
+      "id": "R3-DESIGN-N-003",
+      "severity": "N",
+      "status": "OPEN_BEFORE_IMPLEMENTATION",
+      "unitIds": [
+        "R3-U01",
+        "R3-U02",
+        "R3-U04"
+      ],
+      "title": "The backend core candidates are exact but build and frontend version sets remain deliberately deferred",
+      "evidence": "The design records exact official candidates for Boot, OpenAPI Generator and Boot-managed Flyway/Testcontainers, while ArchUnit, Gradle and frontend versions are DEFERRED_EXACT_VERSION_SET.",
+      "risk": "Implementation from memory could select incompatible APIs or silently produce two version lines.",
+      "disposition": "Fill one spike decision and lockfiles before GATE_0; a hard incompatibility requires one new decision."
+    },
+    {
+      "id": "R3-DESIGN-N-004",
+      "severity": "N",
+      "status": "OPEN_PROVENANCE_DEBT",
+      "unitIds": [
+        "R3-U06"
+      ],
+      "title": "The first review records old input hashes but the untracked historic bytes are not recoverable",
+      "evidence": "The first reviewer recorded design and manifest SHA-256 values and its findings, but those paths were untracked and mutated before an immutable snapshot, Git blob or commit was created.",
+      "risk": "A future reviewer cannot independently recompute the exact first-round input bytes.",
+      "disposition": "Do not fabricate a reconstructed snapshot. Preserve the hashes and reviewer report; future review cycles bind an immutable snapshot/blob before mutation."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "R3-U01",
+      "verdict": "GO_WITH_N",
+      "findingIds": [
+        "R3-DESIGN-N-003"
+      ]
+    },
+    {
+      "id": "R3-U02",
+      "verdict": "GO_WITH_N",
+      "findingIds": [
+        "R3-DESIGN-N-003"
+      ]
+    },
+    {
+      "id": "R3-U03",
+      "verdict": "GO",
+      "findingIds": []
+    },
+    {
+      "id": "R3-U04",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R3-DESIGN-M-001",
+        "R3-DESIGN-N-003"
+      ]
+    },
+    {
+      "id": "R3-U05",
+      "verdict": "GO",
+      "findingIds": []
+    },
+    {
+      "id": "R3-U06",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R3-DESIGN-M-001",
+        "R3-DESIGN-N-004"
+      ]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The design proves the actual target topology and owner/consumer boundaries with one outcome-oriented exact lookup and detail confirmation rather than substituting health or static shell evidence.",
+    "simplerAlternativeAssessment": "A /me or health page is smaller but cannot prove workspace task read or owner readback; current-session endpoints remain supporting infrastructure. Two full admin Journeys cost more without adding a necessary R3 oracle.",
+    "costFit": "Three owner modules and eight operations are the minimum refresh-safe two-principal shape that avoids a union login contract, cross-owner DML and a fake operations business page.",
+    "verdict": "REASONABLE_PENDING_PRODUCT_ACCEPTANCE"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "After two Codex adversarial rounds and dialectical resolution, the implementation design is concrete, bounded and technically coherent. The cycle is SELF_DECIDED and cannot start a third Codex round. The required granularity checker now passes production and red controls; the only major blocker is Dexter acceptance of the proposed product entry.",
+    "severityCounts": {
+      "M": 1,
+      "S": 0,
+      "N": 2
+    },
+    "authorizationBoundary": "This same-session review is not independent and authorizes no R3/W1 implementation, GATE_0 code, application, contract, migration, DEV, seed/reset, database, dynamic evidence or Git write."
+  }
+}

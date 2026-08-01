@@ -1,0 +1,89 @@
+package com.catering.v2s.platform.workspace.application;
+
+import com.catering.v2s.organization.api.CommercialGroupReadback;
+import com.catering.v2s.organization.api.InitializeCommercialGroupCommand;
+import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.access.PlatformExecutionContext;
+import com.catering.v2s.platform.workspace.api.GroupWorkspaceDetail;
+import com.catering.v2s.platform.workspace.api.GroupWorkspaceSummary;
+import com.catering.v2s.platform.workspace.api.GroupWorkspaceTaskQuery;
+import com.catering.v2s.platform.workspace.api.PlatformWorkspaceCoordinator;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class PlatformWorkspaceService implements GroupWorkspaceTaskQuery, PlatformWorkspaceCoordinator {
+    private final GroupWorkspaceRepository repository;
+    private final InitializeCommercialGroupCommand initializeCommercialGroupCommand;
+    private final JdbcTemplate jdbc;
+    private final TimeProvider time;
+
+    public PlatformWorkspaceService(
+        GroupWorkspaceRepository repository,
+        InitializeCommercialGroupCommand initializeCommercialGroupCommand,
+        JdbcTemplate jdbc,
+        TimeProvider time
+    ) {
+        this.repository = repository;
+        this.initializeCommercialGroupCommand = initializeCommercialGroupCommand;
+        this.jdbc = jdbc;
+        this.time = time;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupWorkspaceSummary> list(PlatformExecutionContext context, String name, String groupWorkspaceKey) {
+        return repository.list(context, name, groupWorkspaceKey);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<GroupWorkspaceDetail> detail(PlatformExecutionContext context, String groupWorkspaceKey) {
+        return repository.detail(context, groupWorkspaceKey);
+    }
+
+    @Override
+    @Transactional
+    public CommercialGroupReadback initializeCommercialGroup(
+        PlatformExecutionContext context,
+        String groupWorkspaceKey,
+        String idempotencyKey,
+        String commercialGroupCode,
+        String commercialGroupName,
+        AuditActor actor
+    ) {
+        GroupWorkspaceDetail workspace = repository.detail(context, groupWorkspaceKey)
+            .orElseThrow(() -> new GroupWorkspaceNotFoundException(groupWorkspaceKey));
+        if (!"ENABLED".equals(workspace.workspaceStatus())) {
+            throw new GroupWorkspaceNotEligibleException(groupWorkspaceKey);
+        }
+        UUID workspaceUuid = jdbc.queryForObject("SELECT workspace_uuid FROM platform_workspace.group_workspace WHERE group_workspace_key=? AND id=?", UUID.class, workspace.groupWorkspaceKey(), workspace.id());
+        return initializeCommercialGroupCommand.execute(
+            context,
+            workspaceUuid,
+            workspace.groupWorkspaceKey(),
+            workspace.id(),
+            idempotencyKey,
+            commercialGroupCode,
+            commercialGroupName,
+            actor
+        );
+    }
+
+    public static final class GroupWorkspaceNotFoundException extends RuntimeException {
+        public GroupWorkspaceNotFoundException(String groupWorkspaceKey) {
+            super(groupWorkspaceKey);
+        }
+    }
+
+    public static final class GroupWorkspaceNotEligibleException extends RuntimeException {
+        public GroupWorkspaceNotEligibleException(String groupWorkspaceKey) {
+            super(groupWorkspaceKey);
+        }
+    }
+}

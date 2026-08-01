@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P3-CONTIGUOUS-REVIEW-CADENCE-20260728",
+  "genericProblem": "A fixed per-package external-review cadence can conflict with Dexter's explicit request to review a tightly coupled serial chain as one implementation result.",
+  "rootCauseClass": "REVIEW_CADENCE_SCOPE_MISMATCH",
+  "finiteDenominator": [
+    "RM1-P3-A package exit",
+    "RM1-P3-B package exit",
+    "RM1-P3-C package exit",
+    "the cross-package capability requirement/resolver/owner/public-task dependency chain"
+  ],
+  "searchedSurfaces": [
+    "AGENTS.md",
+    "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+    "doc/plans/platform/2026-07-28-v2s-rm1-implementation-review-cadence-addendum.md"
+  ],
+  "searchQueries": [
+    "after every P Claude review",
+    "P3-A P3-B P3-C serial predecessor",
+    "P3-B depends P3-A generated source",
+    "P3-C P3-A/B actual changed-file receipts"
+  ],
+  "counterexamples": [
+    {
+      "id": "CE-01",
+      "claim": "A unified P3 review permits P3-B or P3-C to start without its predecessor package exit.",
+      "evidence": "The approved serial table still requires P3-A exit before P3-B and P3-B exit before P3-C; review timing does not replace package exit.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    },
+    {
+      "id": "CE-02",
+      "claim": "A unified P3 review removes independent implementation review.",
+      "evidence": "The batch review must still be fresh and independent, cover all three package inputs/exits and state its multi-package scope.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-01",
+      "classification": "DEXTER_DECISION",
+      "summary": "P3-A, P3-B and P3-C are reviewed together after all three package exits, rather than individually between serial packages."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p3-a/rm1-u02-implementation-amendment.json#reviewCadence"
+    }
+  ]
+}

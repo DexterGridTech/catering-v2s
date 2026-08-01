@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1-U04",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "entries": [
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "kind": "FILE",
+      "sha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3",
+      "purpose": "The Claude NO-GO remediation must be declared as its own serial delivery unit before its scope may change implementation sources. The current manifest is accepted as the explicit pre-remediation baseline; this addendum does not make any future manifest byte untracked."
+    },
+    {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "kind": "FILE",
+      "sha256": "9a52cf97e7ad39669be1ac511caefc8cd6a1e2c5de92ff7b85407d1b42d4f4e1",
+      "purpose": "Historical round-two reviewer coverage must remain immutable when a declared post-remediation delivery unit is introduced. This baseline permits only a fail-closed denominator distinction between historical reviewed units and explicitly declared current remediation units."
+    }
+  ]
+}

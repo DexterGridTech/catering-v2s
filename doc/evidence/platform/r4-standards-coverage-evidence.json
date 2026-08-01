@@ -1,0 +1,19 @@
+{
+  "kind": "r4-standards-coverage-evidence",
+  "roadmapStep": "R4",
+  "matrixSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+  "catalogSha256": "4cb6c680334890443c1586faf26267a0c5a2f90071454da3289fd3da68f6c321",
+  "commands": [
+    "scripts/check/standards-coverage --phase R4",
+    "scripts/check/standards-coverage --self-test"
+  ],
+  "result": "PASS",
+  "activeR4Enforcements": 82,
+  "plannedR4Enforcements": 0,
+  "notes": [
+    "R4 validators retain only their stated finite mechanical predicates and red mutations.",
+    "34 GATE and 2 ARCHUNIT rules are cataloged as finite R4 mechanical enforcement; 46 rules remain in R4_BOUNDARY_SEMANTICS_REVIEW only where approved feature absence or product/task judgment prevents an honest mechanical predicate.",
+    "B.2.N12 is bound to database-boundaries and B.3.N10 to backend-boundaries; the latter rejects outbox/event chains and prohibited infrastructure dependencies with a production-path Lombok mutation.",
+    "D.4.L03 remains an ACTIVE document-governance review checklist, not a false mechanical registry gate."
+  ]
+}

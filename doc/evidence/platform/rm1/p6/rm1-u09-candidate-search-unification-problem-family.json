@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-CANDIDATE-SEARCH-UNIFICATION-20260729",
+  "genericProblem": "Candidate selection controls were designed per screen, risking inconsistent query semantics, pagination, cascading cleanup and error recovery across otherwise similar business choices.",
+  "rootCauseClass": "The P6 search audit classified controls by individual page but did not elevate the repeated cross-owner candidate-query interaction into a consumer-protocol invariant.",
+  "finiteDenominator": [
+    "IA01 invitation organization candidate",
+    "IA01 invitation role candidate query/page branch",
+    "IA02 group workspace selector",
+    "IA03 role catalog selections",
+    "IA04 store project/brand/tenant/head-company candidates",
+    "IA04 contract project/store/phase candidates",
+    "IA03 platform overview reference candidates"
+  ],
+  "searchedSurfaces": [
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md#9",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md#10",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md#9",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md#9",
+    "contracts/openapi/components/organization/organization-hierarchy.schemas.yaml",
+    "contracts/openapi/components/contract/contract.schemas.yaml"
+  ],
+  "searchQueries": [
+    "rg -n Candidate|candidates|searchable|Select doc/decisions contracts/openapi apps/backend",
+    "rg -n getOperations.*Candidates|CandidatePage contracts/openapi apps/backend"
+  ],
+  "counterexamples": [
+    "Fixed state/type enumerations and a latest detail's immutable facts are not candidate searches.",
+    "A shared consumer query shape must not merge owner authorization or permit browser-derived candidates."
+  ],
+  "findings": [
+    {"findingId": "CANDIDATE-SEARCH-UNIFICATION-01", "severity": "M", "statement": "Growing, duplicate-prone or relationship-constrained choices require one consumer candidate-query protocol rather than page-local query designs."},
+    {"findingId": "CANDIDATE-SEARCH-UNIFICATION-02", "severity": "S", "statement": "Invitation business-role candidates lack the unified protocol's owner queryText, page, pageSize and context-token semantics, so a full readback or client filter cannot be treated as searchable selection."}
+  ],
+  "preventionDispositions": [
+    {"findingId": "CANDIDATE-SEARCH-UNIFICATION-01", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1-u09-form-command-variant-ledger.md#统一候选搜索查询设计"},
+    {"findingId": "CANDIDATE-SEARCH-UNIFICATION-02", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md#9-p6-搜索与候选选择复核2026-07-29"}
+  ]
+}

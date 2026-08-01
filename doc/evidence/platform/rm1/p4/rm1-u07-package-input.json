@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U07",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "f85a464ebdf3a409ac3707cb04228b6a1034cf3cc5554b38e9b1a9bede36fc74",
+  "unitId": "RM1-U07",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/canonical-performance-ledger",
+    "scripts/check/database-operation-budget"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/canonical-performance-ledger",
+    "scripts/check/database-operation-budget"
+  ],
+  "requiredControlRuleIds": [
+    "P-E1",
+    "P-E2",
+    "P-E3",
+    "P-E5",
+    "P-E6",
+    "P-E7",
+    "P-E8",
+    "P-E9",
+    "P-R8"
+  ],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_DYNAMIC_QUERY_BUDGETS",
+  "serialPredecessor": {
+    "packageId": "RM1-U06",
+    "exitPath": "doc/evidence/platform/rm1/p2/rm1-u06-package-exit.json",
+    "exitSha256": "ecc301dd23a9b1d43d291e993221b5809836b15aaa52d4449a5c2bed3c7723b2"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p4/rm1-u07-implementation-amendment.json",
+    "sha256": "c60472987ca54dd9fe297b27583f33f47fc87bb2ff2dc6f9d223a5af28d1f5dd"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 implementation and P4 after P2 Claude GO. This binding authorizes only the corrected P4 performance work: finite current-source ledger, owner-preserving batch reads, exact additive indexes, Java-side role parsing/request cache, bounded server reads, and focused managed Testcontainers SQL-count evidence. It excludes P5 P-E4/frontend lifecycle work, authorization semantics changes, DEV, seed and reset."
+}

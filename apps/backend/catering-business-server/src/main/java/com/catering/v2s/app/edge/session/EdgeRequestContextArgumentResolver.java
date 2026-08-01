@@ -1,0 +1,59 @@
+package com.catering.v2s.app.edge.session;
+
+import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
+import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
+import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
+import com.catering.v2s.platform.iam.application.PlatformAuthenticationService.PasswordRecoveryFlowCredential;
+import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryFlowCredential;
+import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryGrantCredential;
+import jakarta.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import org.springframework.core.MethodParameter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.method.support.ModelAndViewContainer;
+
+/** The only adapter that turns servlet request data into controller-visible request facts. */
+@Component
+public final class EdgeRequestContextArgumentResolver implements HandlerMethodArgumentResolver {
+    @Override
+    public boolean supportsParameter(MethodParameter parameter) {
+        return parameter.getParameterType().equals(EdgeRequestContext.class);
+    }
+
+    @Override
+    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer container, NativeWebRequest request, WebDataBinderFactory binderFactory) {
+        HttpServletRequest servlet = request.getNativeRequest(HttpServletRequest.class);
+        if (servlet == null) throw new IllegalStateException("servlet request is unavailable");
+        return new EdgeRequestContext(
+                rateLimitSourceFingerprint(servlet.getRemoteAddr()),
+                PublicSecurityDiagnosticRequestState.correlationId(servlet),
+                PlatformSessionCookie.fromCookie(cookie(servlet, "V2S_PLATFORM_SESSION")),
+                OperationsSessionCookie.fromCookie(cookie(servlet, "V2S_OPERATIONS_SESSION")),
+                PasswordRecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_PLATFORM_PASSWORD_RECOVERY")),
+                RecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_FLOW")),
+                RecoveryGrantCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_GRANT")));
+    }
+
+    private static String cookie(HttpServletRequest request, String name) {
+        if (request.getCookies() == null) return null;
+        for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+            if (name.equals(cookie.getName())) return cookie.getValue();
+        }
+        return null;
+    }
+
+    private static String rateLimitSourceFingerprint(String sourceAddress) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest((sourceAddress == null ? "unavailable" : sourceAddress).getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 unavailable", error);
+        }
+    }
+}

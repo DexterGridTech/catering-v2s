@@ -1,0 +1,1340 @@
+{
+  "schemaVersion": 2,
+  "generatedFrom": [
+    "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+    "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
+  ],
+  "closure": {
+    "operations": 147,
+    "faceCounts": {
+      "platform-admin": 43,
+      "operations-admin": 89,
+      "public": 15
+    }
+  },
+  "operations": [
+    {
+      "operationId": "acceptPublicInvitation",
+      "method": "POST",
+      "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "addOperationsOrganizationHeadCompanyBrandAuthorization",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "cancelOperationsWorkspaceGroupInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "cancelOperationsWorkspaceHeadCompanyInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "cancelOperationsWorkspaceProjectInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "cancelOperationsWorkspaceRegionInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "cancelOperationsWorkspaceStoreInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "changeCurrentPlatformPassword",
+      "method": "POST",
+      "path": "/api/platform/auth/password",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "changeCurrentWorkspacePassword",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "completeOperationsPasswordRecovery",
+      "method": "POST",
+      "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "completePlatformPasswordRecovery",
+      "method": "POST",
+      "path": "/api/platform/auth/password-recovery/complete",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "completePublicInvitation",
+      "method": "POST",
+      "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "completeWorkspacePasswordReset",
+      "method": "POST",
+      "path": "/api/public/password-reset/{resetGenerationKey}/complete",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "createOperationsContract",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "createOperationsOrganizationBrand",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "createOperationsOrganizationHeadCompany",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "createOperationsOrganizationProject",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "createOperationsOrganizationRegion",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "createOperationsOrganizationStore",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "createOperationsOrganizationTenant",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "createOperationsWorkspaceGroupInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "createOperationsWorkspaceHeadCompanyInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "createOperationsWorkspaceProjectInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "createOperationsWorkspaceRegionInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "createOperationsWorkspaceStoreInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "createPlatformAdmin",
+      "method": "POST",
+      "path": "/api/platform/admin-users",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "createPlatformGroupWorkspace",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-workspace"
+    },
+    {
+      "operationId": "createWorkspaceRole",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getCurrentPlatformSession",
+      "method": "GET",
+      "path": "/api/platform/auth/session",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "getExtensionDefinition",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "extension"
+    },
+    {
+      "operationId": "getExtensionEntityCatalog",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "extension"
+    },
+    {
+      "operationId": "getOperationsContract",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "getOperationsContractCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "getOperationsContractExtensionDefinition",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "getOperationsContracts",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "getOperationsEntityAuditHistory",
+      "method": "GET",
+      "path": "/api/operations/audit-history",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "platform-workspace"
+    },
+    {
+      "operationId": "getOperationsFixedStoreContracts",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "getOperationsOrganizationBrand",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationBrands",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationBusinessEntityExtensionDefinition",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationHeadCompanies",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationHeadCompany",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationHierarchy",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationStore",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationStoreCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationStoreExtensionDefinition",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationStores",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationTenant",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationTenants",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsStoreProfile",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceGroupInvitations",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceGroupUser",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceGroupUserAccount",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceHeadCompanyInvitations",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceHeadCompanyUser",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceHeadCompanyUserAccount",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceLoginEntry",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceProjectInvitationCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceProjectInvitations",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceProjectUser",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceProjectUserAccount",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceRegionInvitationCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceRegionInvitations",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceRegionUser",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceRegionUserAccount",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceSessionEntry",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceStoreInvitationCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceStoreInvitations",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceStoreUser",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getOperationsWorkspaceStoreUserAccount",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getPlatformAdminDetail",
+      "method": "GET",
+      "path": "/api/platform/admin-users/{platformAdminId}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "getPlatformAdminPage",
+      "method": "GET",
+      "path": "/api/platform/admin-users",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "getPlatformContractOverviewDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "getPlatformContractOverviewPage",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "getPlatformEntityAuditHistory",
+      "method": "GET",
+      "path": "/api/platform/audit-history",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-workspace"
+    },
+    {
+      "operationId": "getPlatformGroupWorkspaceDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-workspace"
+    },
+    {
+      "operationId": "getPlatformOrganizationHierarchyTree",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getPlatformOrganizationOverviewDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getPlatformOrganizationOverviewPage",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getPublicAssetContent",
+      "method": "GET",
+      "path": "/api/public/assets/{assetRef}/content",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "platform-asset"
+    },
+    {
+      "operationId": "getPublicInvitationCompletion",
+      "method": "GET",
+      "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getPublicInvitationView",
+      "method": "GET",
+      "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getWorkspaceAccount",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getWorkspaceAccounts",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getWorkspaceRole",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getWorkspaceRoles",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "initializeCommercialGroup",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "invalidateOperationsContract",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "listPlatformGroupWorkspaces",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-workspace"
+    },
+    {
+      "operationId": "operationsWorkspaceLogout",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "operationsWorkspacePasswordLogin",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "platformLogout",
+      "method": "POST",
+      "path": "/api/platform/auth/logout",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "platformPasswordLogin",
+      "method": "POST",
+      "path": "/api/platform/auth/password-login",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceGroupInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceHeadCompanyInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceProjectInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceRegionInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceStoreInvitation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "releasePlatformStagedAsset",
+      "method": "POST",
+      "path": "/api/platform/assets/staging/{assetRef}/release",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-asset"
+    },
+    {
+      "operationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+      "method": "DELETE",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "replaceExtensionDefinition",
+      "method": "PUT",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "extension"
+    },
+    {
+      "operationId": "requestWorkspaceCredentialReset",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "resetPlatformAdminCredential",
+      "method": "POST",
+      "path": "/api/platform/admin-users/{platformAdminId}/credential-reset",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceGroupUserAssignment",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceProjectUserAssignment",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceRegionUserAssignment",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceStoreUserAssignment",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "revokePlatformWorkspaceAssignment",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "savePublicInvitationCredentials",
+      "method": "POST",
+      "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "selectOperationsWorkspaceSessionContext",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "selectOperationsWorkspaceSessionDataNode",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "sendOperationsPasswordRecoveryOtp",
+      "method": "POST",
+      "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "sendOperationsWorkspaceOtp",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "sendPlatformLoginOtp",
+      "method": "POST",
+      "path": "/api/platform/auth/login-otp/send",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "sendPlatformPasswordRecoveryOtp",
+      "method": "POST",
+      "path": "/api/platform/auth/password-recovery/otp/send",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "sendPublicInvitationOtp",
+      "method": "POST",
+      "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "sendWorkspacePasswordResetOtp",
+      "method": "POST",
+      "path": "/api/public/password-reset/{resetGenerationKey}/otp/send",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "stagePlatformAsset",
+      "method": "POST",
+      "path": "/api/platform/assets/staging",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-asset"
+    },
+    {
+      "operationId": "startOperationsPasswordRecovery",
+      "method": "POST",
+      "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "startPlatformPasswordRecovery",
+      "method": "POST",
+      "path": "/api/platform/auth/password-recovery/start",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "transitionOperationsOrganizationBrandStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "transitionOperationsOrganizationHeadCompanyStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "transitionOperationsOrganizationNodeStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "transitionOperationsOrganizationStoreStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "transitionOperationsOrganizationTenantStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "transitionPlatformAdminStatus",
+      "method": "POST",
+      "path": "/api/platform/admin-users/{platformAdminId}/status",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "transitionPlatformGroupWorkspaceStatus",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-workspace"
+    },
+    {
+      "operationId": "transitionWorkspaceAccountStatus",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "transitionWorkspaceRoleStatus",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "updateOperationsContract",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "contract"
+    },
+    {
+      "operationId": "updateOperationsOrganizationBrand",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "updateOperationsOrganizationHeadCompany",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "updateOperationsOrganizationNode",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "updateOperationsOrganizationStore",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "updateOperationsOrganizationTenant",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "updatePlatformAdminProfile",
+      "method": "PATCH",
+      "path": "/api/platform/admin-users/{platformAdminId}/profile",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "updatePlatformGroupWorkspaceDisplay",
+      "method": "PATCH",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-workspace"
+    },
+    {
+      "operationId": "updateWorkspaceRole",
+      "method": "PATCH",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "verifyOperationsPasswordRecoveryOtp",
+      "method": "POST",
+      "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "verifyOperationsWorkspaceOtp",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "verifyPlatformLoginOtp",
+      "method": "POST",
+      "path": "/api/platform/auth/login-otp/verify",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "verifyPlatformPasswordRecoveryOtp",
+      "method": "POST",
+      "path": "/api/platform/auth/password-recovery/otp/verify",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "verifyPublicInvitationOtp",
+      "method": "POST",
+      "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "verifyWorkspacePasswordResetOtp",
+      "method": "POST",
+      "path": "/api/public/password-reset/{resetGenerationKey}/otp/verify",
+      "consumerFaces": [
+        "public"
+      ],
+      "owner": "workspace-iam"
+    }
+  ]
+}

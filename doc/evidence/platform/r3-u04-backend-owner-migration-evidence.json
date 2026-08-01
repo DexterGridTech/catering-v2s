@@ -1,0 +1,59 @@
+{
+  "kind": "r3-u04-backend-owner-migration-evidence",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "unit": "U04",
+  "status": "BACKEND_OWNER_MIGRATION_IMPLEMENTED",
+  "scope": [
+    "platform-access-edge-context-verification",
+    "platform-workspace-task-read-and-coordination",
+    "organization-command-owner",
+    "single-postgresql-single-flyway-history",
+    "parallel-business-and-future-tdp-app-layout"
+  ],
+  "architecture": {
+    "businessDeployable": "apps/backend/catering-business-server",
+    "futureTdpPlaceholder": "apps/backend/terminal-data-server",
+    "futureTdpPlaceholderRuntime": "NONE",
+    "database": "one-postgresql",
+    "flywayHistory": "one-business-server-lifecycle",
+    "ownerSchemas": ["platform_workspace", "organization"]
+  },
+  "verification": {
+    "gradleOfflineTest": "PASS",
+    "bootJar": "PASS",
+    "moduleDependencyRegistry": "PASS",
+    "moduleDependencyRegistrySelfTest": "PASS",
+    "flywayLayoutPostGate0": "PASS",
+    "tdpPlaceholderBoundary": "PASS",
+    "hashEvidenceCheckpoint": "PASS",
+    "freshManagedBusinessJourney": "PASS",
+    "freshManagedCleanup": "PASS",
+    "seedOrResetUsedByJourney": "NONE"
+  },
+  "managedRun": {
+    "runId": "20260725T100351Z-90982",
+    "manifest": ".runtime/r3/20260725T100351Z-90982/run-manifest.json",
+    "business": "PASS",
+    "cleanup": "PASS",
+    "activeManagedResources": 0,
+    "hashCheckpoint": ".runtime/r3/20260725T100351Z-90982/hash-checkpoint.json",
+    "hashCheckpointSha256": "f09930720e5d6c2d0a5d9ea412514e3521a0136787de6976373315a6119b7757",
+    "journey": "list-detail-initialize-owner-readback-idempotency-plus-negative-conflicts"
+  },
+  "artifactHashes": [
+    {"path": "apps/backend/catering-business-server/build.gradle.kts", "sha256": "47f7903083c3c1ac750e848b7f9ca87f4a697aa15ca353313a925cedf78a5fe8"},
+    {"path": "apps/backend/terminal-data-server/build.gradle.kts", "sha256": "e8d5c2ac24d64d42372281d89c65993c37f8f7a171bab17859aac50bd2826e7b"},
+    {"path": "apps/backend/terminal-data-server/README.md", "sha256": "51c0e9432582197f3db141ec107465423ccbca05e18621b5d3c470bb6afb89f0"},
+    {"path": "libraries/backend/platform-access/src/main/java/com/catering/v2s/platform/access/EdgeContextVerifier.java", "sha256": "d1fa33485c3d6653ce39881294fb93192a4f8a78f0843776bccded3c59357529"},
+    {"path": "libraries/backend/platform-workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceService.java", "sha256": "d85693e2ca61b4e2f5e060ee9f30ad1bff9fec7eaa74321a29b16d049a169360"},
+    {"path": "libraries/backend/platform-workspace/src/main/java/com/catering/v2s/platform/workspace/adapter/JdbcGroupWorkspaceRepository.java", "sha256": "27cd79942b55d0b7dd4798b99a50dba6a62573c9a2d07d3802791d7a8b67a607"},
+    {"path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java", "sha256": "cd5b301e0623c1e9c7be6f544b99325fa7b7047d8c716432ff7799d547799bcc"},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/CateringV2sApplication.java", "sha256": "7b437bbdfd2ff113c7be2d04183748fe1636abfdb0bc314c8ee742369de46ca5"},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/R3DataConfiguration.java", "sha256": "632c3bb684e7e083ba9b4cbbe81c38d84a6fcbab6f560de3a08d8f1ffdd94c4d"},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/R3PlatformController.java", "sha256": "739b04af9e1ff94b0a73f304f930bac13d88aaa752a31d5a0efbea00c6939d0e"},
+    {"path": "apps/backend/catering-business-server/src/main/resources/db/migration/V20260725_170000_000__r3_platform_workspace_and_organization.sql", "sha256": "72688ed43885c9c5995a43274ffc482b1e3b6b98e909f3c21b43327099fd7628"},
+    {"path": "contracts/policy/module-dependency-registry.json", "sha256": "7428dc2d000066aca10f88be009a56be9967447e19812760c51036e9231cfca4"},
+    {"path": "scripts/run/r3-walking-skeleton", "sha256": "fd2c03a8b89534fff8cf750b23fe800f950267859d6f5db8bd7e39a77446e7a7"}
+  ]
+}

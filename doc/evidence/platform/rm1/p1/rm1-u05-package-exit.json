@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-package-exit",
+  "packageId": "RM1-U05",
+  "status": "PASS",
+  "scope": "P1 seven-ID authority ledger, direct ST-3/ST-4/ST-8 closure, P1 frontend architecture admission repair, and final independent-review control remediation; no P5/P6 consumer closure.",
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "businessReason": "Control-only authority and generated-source provenance repair; P1 changes no user journey, API, database or dynamic runtime behavior.",
+  "cleanup": "NOT_APPLICABLE",
+  "cleanupReason": "No managed runtime, seed, reset or scratch environment was created.",
+  "controls": [
+    {
+      "ruleId": "ST-3",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "authority-source-ledger title mutation"
+    },
+    {
+      "ruleId": "ST-4",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "catalog-order assertion"
+    },
+    {
+      "ruleId": "ST-8",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "affected-l2 stale-layout mutation"
+    },
+    {
+      "ruleId": "R5_ADMIN_CATALOG_BACKEND_LITERAL",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "frontend architecture injected literal mutation"
+    },
+    {
+      "ruleId": "P1_LEDGER_AUTHORITY_RELATION",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "authority path/hash/selector and relation selector mutation"
+    },
+    {
+      "ruleId": "D5:OWNED_SURFACE",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "applicable owned-surface package-exit trace"
+    },
+    {
+      "ruleId": "RM1_APPROVED_SURFACE_SET",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "active allowlist extra-surface rejection"
+    }
+  ],
+  "actualChangedPaths": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "beforeSha256": "72bf1b3ac48fa4e4461f23302194f1f40b9cf26f9b202627676040189203509e",
+      "afterSha256": "c7beacd319f005677f28a13e790780fbc1c2b4639d0ca906619c136dbc7fb577"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/6cf2531ab1119b67ad2010040ae1ac73f817785684fccc26111b3b70ef5fcbe5.json",
+      "beforeSha256": "d555b28c51c5bacf06220e7d786fb585553f2777e659846b2a7de71dcd5902aa",
+      "afterSha256": "7318daf31013a58219c07d6d60d400e15d3c7da3369f7f8d6fb01d9d77b56e9c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx",
+      "beforeSha256": "7aa14017b459afda7607772ff53a9b4ae9b5a720cff9a70723f1e0044528866d",
+      "afterSha256": "7d180dd1fa636fe99a2f433b9c6e76c5fb96244ae43dec66a03c5774de30f635"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "beforeSha256": "ea24f584fc6b6250e6f4416cfbbd1f4862225a898c2f1b34bd03f1bb582a2e9a",
+      "afterSha256": "39b5eb70d36a2b754eeeaa5595a7ce43cbff7b243039b5fec876327a40511fa4"
+    },
+    {
+      "path": "contracts/policy/affected-l2-registry.json",
+      "beforeSha256": "e64ada918384d905d6077da9e676e15be1e64e3d3d2d1fd104f64eb14ec99963",
+      "afterSha256": "ca8124185fa66892a824a9555dfee0b5443160b610b14ab77ed5080fe79f5007"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "91d482df0b5e73f02b1e6b59ecfca29a589ffd14c9e297d77310d6186e86ca7d"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-backend-catalog-literal-discovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c4c55b4dedcc4539805db82c2d344ceec8624a1d02cc2aca8b2eec409beae9a9"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-implementation-amendment.json",
+      "beforeSha256": "08f4ac0ffb292c7e58574e5aa2bea3a5886a2a14b1dba465dc5cd219856c9f95",
+      "afterSha256": "0951640265d3b302bb4eb5b11f696a937aa36643b06454b93b999824e71f2ec7"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-owner-scope-baseline-addendum.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5df73236431faed587d3474f3f4f910bf152a7e0f234efd61695fd85d330d5ad"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-package-input.json",
+      "beforeSha256": "9ffde2362e37bd243c691f2684e9fb70fb1d2f4e53d43258e4de045ccd99ab55",
+      "afterSha256": "cb194ec59f4d6854e7947ed4a38f28c10369767aa2d99057e092f1e2184bc355"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "072743de512281ac9c48f1d866967cd25e23e3ca9f3d71e21fc53f16bf6211af"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-static-verification.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8cf52268002accbb2b907af108f48091546e47d098c666f36f18aed7d4a46012"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "beforeSha256": "ae80d9d645fc4c5cfed2f168b3c4f5125b5a2c989c258f09c8ce430e9bcaf821",
+      "afterSha256": "d37b3ed52c7c509f48a287d97f19e58e117f0b6fd6913f749bc42a4bbce5491c"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "beforeSha256": "45a7539380cb44d6ba9730f4fc0713b9ff2cd193ff569acfbed863dae2bc67d6",
+      "afterSha256": "a301cd5b4beb69015589ff603d0ec805bc3da67f8a9ac53a3377ee5082de959f"
+    },
+    {
+      "path": "scripts/check/authority-source-ledger",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b727afbfa91ecbcdac7ad44ab11f28d887b0411724e26078d2fe10c6175aec70"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "beforeSha256": "e44d71776aca8d6981286956627f8ba5f24a01536f9cf64de8cb1b4e908d432f",
+      "afterSha256": "1470963f6e86c26dd265d12a0493dde338ece5f2b63566a0fc0fad37610bd310"
+    },
+    {
+      "path": "tools/authority-source-ledger/cli.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b5c7f74fea6c00476f32649dc9cb913a9422ba7c09830026291bef1327a6e985"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "d0fa1b2cb5af4db651d1f2f2d17d3323ae2e6cab65d8424aed4ee9c427961b6d",
+      "afterSha256": "1aa29be8a87f304e4f5b8af2a6710a64508e460e1bbd8794b178817d8b5bdf63"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "beforeSha256": "ddc4798d8437da37c70a307de028ec3ae37114a61e3b7889824b7b947b9f731c",
+      "afterSha256": "f12ed68f7bb91ec5e4f66a548afa625c21529877bc3ed26bd9c3ed4faf532570"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "afterSha256": "c7beacd319f005677f28a13e790780fbc1c2b4639d0ca906619c136dbc7fb577",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/6cf2531ab1119b67ad2010040ae1ac73f817785684fccc26111b3b70ef5fcbe5.json",
+      "afterSha256": "7318daf31013a58219c07d6d60d400e15d3c7da3369f7f8d6fb01d9d77b56e9c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx",
+      "afterSha256": "7d180dd1fa636fe99a2f433b9c6e76c5fb96244ae43dec66a03c5774de30f635",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "afterSha256": "39b5eb70d36a2b754eeeaa5595a7ce43cbff7b243039b5fec876327a40511fa4",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/policy/affected-l2-registry.json",
+      "afterSha256": "ca8124185fa66892a824a9555dfee0b5443160b610b14ab77ed5080fe79f5007",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+      "afterSha256": "91d482df0b5e73f02b1e6b59ecfca29a589ffd14c9e297d77310d6186e86ca7d",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-backend-catalog-literal-discovery.json",
+      "afterSha256": "c4c55b4dedcc4539805db82c2d344ceec8624a1d02cc2aca8b2eec409beae9a9",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-implementation-amendment.json",
+      "afterSha256": "0951640265d3b302bb4eb5b11f696a937aa36643b06454b93b999824e71f2ec7",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-owner-scope-baseline-addendum.json",
+      "afterSha256": "5df73236431faed587d3474f3f4f910bf152a7e0f234efd61695fd85d330d5ad",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-package-input.json",
+      "afterSha256": "cb194ec59f4d6854e7947ed4a38f28c10369767aa2d99057e092f1e2184bc355",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-source-compliance-disposition.json",
+      "afterSha256": "072743de512281ac9c48f1d866967cd25e23e3ca9f3d71e21fc53f16bf6211af",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p1/rm1-u05-static-verification.json",
+      "afterSha256": "8cf52268002accbb2b907af108f48091546e47d098c666f36f18aed7d4a46012",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "afterSha256": "d37b3ed52c7c509f48a287d97f19e58e117f0b6fd6913f749bc42a4bbce5491c",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "afterSha256": "a301cd5b4beb69015589ff603d0ec805bc3da67f8a9ac53a3377ee5082de959f",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/check/authority-source-ledger",
+      "afterSha256": "b727afbfa91ecbcdac7ad44ab11f28d887b0411724e26078d2fe10c6175aec70",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "afterSha256": "1470963f6e86c26dd265d12a0493dde338ece5f2b63566a0fc0fad37610bd310",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/authority-source-ledger/cli.mjs",
+      "afterSha256": "b5c7f74fea6c00476f32649dc9cb913a9422ba7c09830026291bef1327a6e985",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "1aa29be8a87f304e4f5b8af2a6710a64508e460e1bbd8794b178817d8b5bdf63",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "afterSha256": "f12ed68f7bb91ec5e4f66a548afa625c21529877bc3ed26bd9c3ed4faf532570",
+      "result": "PASS"
+    }
+  ],
+  "ownedSurfaceTrace": [
+    {
+      "surfaceId": "PLATFORM-WORKSPACE-OVERVIEW",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "targetAfterSha256": "39b5eb70d36a2b754eeeaa5595a7ce43cbff7b243039b5fec876327a40511fa4",
+      "supportPaths": [
+        {
+          "path": "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx",
+          "afterSha256": "7d180dd1fa636fe99a2f433b9c6e76c5fb96244ae43dec66a03c5774de30f635"
+        }
+      ]
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p1/rm1-u05-source-compliance-disposition.json",
+    "sha256": "072743de512281ac9c48f1d866967cd25e23e3ca9f3d71e21fc53f16bf6211af"
+  },
+  "staticVerification": {
+    "path": "doc/evidence/platform/rm1/p1/rm1-u05-static-verification.json",
+    "sha256": "8cf52268002accbb2b907af108f48091546e47d098c666f36f18aed7d4a46012"
+  },
+  "authorityLedger": {
+    "path": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+    "sha256": "91d482df0b5e73f02b1e6b59ecfca29a589ffd14c9e297d77310d6186e86ca7d"
+  },
+  "deferredLedgerClosure": {
+    "ST-2": "P6",
+    "ST-6": "P6",
+    "ST-9": "P5",
+    "ST-11": "P6"
+  }
+}

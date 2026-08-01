@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "Platform administrators and selected-workspace accounts are separate user-management tasks; P6-2 implementation needs one route-backed final page denominator for each.",
+  "deliveryUnits": [{
+    "id": "RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+    "title": "P6-2 platform administrator surface denominator corrective design",
+    "sourceComplianceDispositionRequired": true,
+    "changeSurfaces": [
+      {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-2-platform-admin-surface-denominator-corrective-design.md","disposition":"create","target":"source-backed correction and scope boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","disposition":"update","target":"bind PLATFORM-ADMIN-USERS to AdministratorsPage and its own focused test"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md","disposition":"update","target":"bind IA03 administrator child surfaces to platform-administration module"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","disposition":"update","target":"record revised exact source hashes"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u16-p6-2-admin-surface-denominator-problem-family.json","disposition":"create","target":"finite finding family and prevention rule"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-manifest.json","disposition":"create","target":"exact control-only scope"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-amendment.md","disposition":"create","target":"Dexter authorization boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-package-input.json","disposition":"create","target":"execution binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-source-disposition.json","disposition":"create","target":"source disposition"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-package-exit.json","disposition":"create","target":"receipt-bound design-only exit"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-2-admin-surface-denominator-design-adversarial-review.md","disposition":"create","target":"fresh independent DESIGN review and author disposition"}
+    ],
+    "forbiddenPseudoFixes": ["ignoring a final roster mismatch during implementation", "moving PlatformAdminUsers to AccountsPage", "altering IA03 or route registration to fit the stale roster", "changing production code, contract, generated output, test, runtime, DEV, seed, reset or Roadmap state"],
+    "completion": "The corrected sources agree with the frozen route binding, carry revised manifest hashes, and receive fresh independent design review. This unit authorizes no P6-2 production implementation."
+  }]
+}

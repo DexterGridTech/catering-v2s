@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "kind": "r4-gate-catalog",
+  "status": "ACTIVE",
+  "roadmapStep": "R4",
+  "owner": "scripts/verify",
+  "gates": [
+    {
+      "id": "R4-G01",
+      "command": "scripts/check/security-boundaries",
+      "selfTest": "scripts/check/security-boundaries --self-test; mutates the production-read generated R3 platform route-face registry",
+      "matrixRuleIds": [
+        "B.1.N02",
+        "B.4.N19"
+      ]
+    },
+    {
+      "id": "R4-G02",
+      "command": "scripts/check/database-boundaries",
+      "selfTest": "scripts/check/database-boundaries --self-test",
+      "matrixRuleIds": [
+        "B.2.N01",
+        "B.2.N02",
+        "B.2.N03",
+        "B.2.N04",
+        "B.2.N05",
+        "B.2.N06",
+        "B.2.N12",
+        "B.2.N13"
+      ]
+    },
+    {
+      "id": "R4-G03",
+      "command": "scripts/check/backend-boundaries",
+      "selfTest": "scripts/check/backend-boundaries --self-test",
+      "matrixRuleIds": [
+        "B.3.N03",
+        "B.3.N05",
+        "B.3.N09",
+        "B.3.N10",
+        "B.6.N05"
+      ]
+    },
+    {
+      "id": "R4-G04",
+      "command": "scripts/check/frontend-architecture",
+      "selfTest": "scripts/check/frontend-architecture --self-test",
+      "matrixRuleIds": [
+        "B.4.N15",
+        "B.4.N17"
+      ]
+    },
+    {
+      "id": "R4-G05",
+      "command": "scripts/check/ui-wireframe-traceability",
+      "selfTest": "scripts/check/ui-wireframe-traceability --self-test",
+      "matrixRuleIds": [
+        "B.5.N01"
+      ]
+    },
+    {
+      "id": "R4-G06",
+      "command": "scripts/check/business-terminology-traceability",
+      "selfTest": "scripts/check/business-terminology-traceability --self-test",
+      "matrixRuleIds": [
+        "B.5.N08"
+      ]
+    },
+    {
+      "id": "R4-G07",
+      "command": "scripts/check/database-operation-budget",
+      "selfTest": "scripts/check/database-operation-budget --self-test",
+      "matrixRuleIds": [
+        "B.3.N07",
+        "B.3.N08",
+        "B.6.N01",
+        "B.6.N03",
+        "B.6.N06"
+      ]
+    },
+    {
+      "id": "R4-G08",
+      "command": "scripts/check/openapi-contracts",
+      "selfTest": "scripts/check/openapi-contracts --self-test",
+      "matrixRuleIds": [
+        "B.4.N18",
+        "B.4.N20",
+        "D.2.L01",
+        "D.2.L02"
+      ]
+    },
+    {
+      "id": "R4-G09",
+      "command": "scripts/verify",
+      "selfTest": "production checks plus native tests",
+      "matrixRuleIds": [
+        "B.3.N01",
+        "B.3.N02",
+        "D.3.L01",
+        "D.3.L02",
+        "D.3.L03"
+      ]
+    },
+    {
+      "id": "R4-G10",
+      "command": "scripts/check/logging-boundaries",
+      "selfTest": "scripts/check/logging-boundaries --self-test",
+      "matrixRuleIds": [
+        "B.1.N16",
+        "D.8.L01",
+        "D.8.L03"
+      ]
+    },
+    {
+      "id": "R4-G11",
+      "command": "scripts/check/retirement",
+      "selfTest": "scripts/check/retirement --self-test",
+      "matrixRuleIds": []
+    },
+    {
+      "id": "R4-G12",
+      "command": "scripts/check/affected-l2",
+      "selfTest": "scripts/check/affected-l2 --self-test",
+      "matrixRuleIds": []
+    }
+  ]
+}

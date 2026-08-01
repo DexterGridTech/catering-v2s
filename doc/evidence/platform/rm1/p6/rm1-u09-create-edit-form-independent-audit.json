@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-CREATE-EDIT-FORM-OWNER-BOUNDARY-20260729",
+  "genericProblem": "A P6 form or confirmation surface can list plausible labels while omitting required command facts, exposing immutable facts, asserting owner authorization that the command path does not perform, or silently leaving credential, assignment, invitation and staging mutations outside the declared denominator.",
+  "rootCauseClass": "The sheets lacked one finite action denominator cross-checking original business purpose, visible controls, request schema, controller mapping and owner validation for every create/edit, status, credential, assignment, invitation and precondition variant.",
+  "finiteDenominator": [
+    "IA01 operations invitation create form",
+    "IA02 workspace create, commercial-group initialization and workspace edit forms",
+    "IA03 platform admin create/edit, role create/edit, extension-definition edit and own-password forms",
+    "IA04 15 organization/contract create-edit variants and 7 linked status/void variants",
+    "11 total entity status/void variants including platform workspace account status",
+    "20 authenticated credential, assignment and invitation action variants",
+    "one platform-asset Logo staging precondition",
+    "public invitation and public password-reset security flow exclusions with explicit NOT_APPLICABLE_WITH_REASON / retired dispositions"
+  ],
+  "searchedSurfaces": [
+    "R5 Journey decision D01-S02/S03/S05/S07P, D02-S02/S03/S04, D03-S01/S02/S03, D04-S01/S02/S05O/S11/S12P",
+    "IA01 through IA05 form and confirmation sheets",
+    "all edge classes under apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge with Post/Patch/Put/Delete mappings",
+    "OpenAPI schemas, edge controllers and owner commands"
+  ],
+  "searchQueries": [
+    "CREATE|EDIT|UpdateRequest|CreateRequest|expectedVersion|extensionValues",
+    "@PostMapping|@PatchMapping|@PutMapping|@DeleteMapping",
+    "credential-reset|revoke|cancel|reissue|stage|password-reset",
+    "required fields versus current Drawer controls",
+    "owner command validation and fixed fact revalidation"
+  ],
+  "counterexamples": [
+    "Workspace create/edit, commercial-group initialization and own password preserve their principal fixed boundaries.",
+    "Status/void Modals have no editable business field, but identity, target and version remain fixed command facts.",
+    "Credentials and recovery are security mutations, not entity create/edit forms.",
+    "Public invitation enrollment and public password-reset completion are public security flows, not authenticated management entity mutations.",
+    "PlatformWorkspaceInvitation edge commands remain in source but are retired by the current P6 scope; their existence does not authorize restoring a platform invitation surface."
+  ],
+  "findings": [
+    {"findingId":"P6-FORM-AUDIT-01","classification":"CONFIRMED","evidence":"Business entity forms collapse different request schemas, and contract forms collapse required item arrays into one item-code input."},
+    {"findingId":"P6-FORM-AUDIT-02","classification":"CONFIRMED","evidence":"Project/Store/Contract/Role/Extension edit sheets omit immutable or hidden owner facts required by their updates."},
+    {"findingId":"P6-FORM-AUDIT-03","classification":"CONFIRMED","evidence":"Extension definition and extension values are contract-required but lack a complete dynamic-form and version/failure design."},
+    {"findingId":"P6-FORM-AUDIT-04","classification":"CONFIRMED","evidence":"The contract form claims current-scope reauthorization, while the current owner path validates only workspace/project relationships."},
+    {"findingId":"P6-FORM-AUDIT-05","classification":"CONFIRMED","evidence":"The former unique ledger omitted PlatformWorkspaceAccount status/credential-reset/revoke, PlatformAdmin credential-reset, five target-specific operations user revokes, ten operations invitation cancel/reissue actions and PlatformAsset staging; public/retired variants were also not explicitly disposed."}
+  ],
+  "preventionDispositions": [
+    {"findingId":"P6-FORM-AUDIT-01","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/decisions/templates/ui-interaction-design-template.md#ui-detailed-design-admission"},
+    {"findingId":"P6-FORM-AUDIT-02","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/decisions/templates/ui-interaction-design-template.md#ui-detailed-design-admission"},
+    {"findingId":"P6-FORM-AUDIT-03","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/decisions/templates/ui-interaction-design-template.md#ui-detailed-design-admission"},
+    {"findingId":"P6-FORM-AUDIT-04","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/decisions/templates/ui-interaction-design-template.md#ui-detailed-design-admission"},
+    {"findingId":"P6-FORM-AUDIT-05","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-form-command-variant-ledger.md#s2n4-full-same-root-scan-and-counterexample-boundaries-2026-07-29"}
+  ],
+  "status": "CONFIRMED_AUDIT_NO_GO"
+}

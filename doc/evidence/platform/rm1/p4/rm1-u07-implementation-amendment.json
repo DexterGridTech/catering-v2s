@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p4-implementation-amendment",
+  "status": "ACTIVE_IMPLEMENTATION_DESIGN",
+  "scope": "RM1 P4 only: P-E1, P-E2, P-E3, P-E5, P-E6, P-E7, P-E8, P-E9 and P-R8. It establishes the finite canonical query-path ledger, runtime SQL-count budgets, owner-owned batch reads, precise additive query indexes, Java-side role parsing/request cache, and bounded server reads. P-E4 is exclusively P5 and is not implemented here.",
+  "businessUserTask": "Existing platform and operations administration reads must continue to return the same authorized owner facts while user, candidate, invitation, organization-overview and authenticated-session reads remain bounded as records and assignments grow.",
+  "dexterStageIntent": "Replace unbounded per-row and per-request query amplification with the smallest owner-preserving batch/read-one implementations, and prove each declared path with a real SQL-count red mutation rather than a broad syntax rule.",
+  "originalSources": [
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-r6-problem-inventory-claude.md",
+      "anchors": ["P-E1", "P-E2", "P-E3", "P-E5", "P-E6", "P-E7", "P-E8", "P-E9", "P-R8"],
+      "sha256": "ec3eabd35f3c9a27592e38190d0c726aac76e1fd2a2749a9e3cbc8c422ec4376"
+    },
+    {
+      "path": "doc/roadmaps/platform/2026-07-28-v2s-rm1-restructure-and-remediation-roadmap-claude.md",
+      "anchors": ["P4 allocation table", "RM1-P4"],
+      "sha256": "e4cb040ec24c62504ed2d919af848b7c5c6f1b4b6dcdea9107a1d1bfc056e70f"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+      "anchors": ["RM1-P4", "57-item execution table"],
+      "sha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c"
+    }
+  ],
+  "confirmedFindingDispositions": [
+    {
+      "findingId": "P4-PACKAGE-SCOPE-P-E4-OVERLAP",
+      "status": "CONFIRMED",
+      "evidence": "The current Roadmap allocation table and the implementation plan P4 input/table both assign P-E4 to P5, while an obsolete P4 prose list and U07 legacy surface still include it.",
+      "action": "Keep P-E4 exclusively in P5; remove it from U07 deviation and omit frontend foundation surfaces from P4."
+    },
+    {
+      "findingId": "P4-P2-RELOCATION-SURFACE-DRIFT",
+      "status": "CONFIRMED",
+      "evidence": "P2 moved production modules from libraries/backend to apps/backend/catering-business-server/modules; U07 still named the derived legacy root.",
+      "action": "Bind P4 only to the current app-contained module root and do not mutate derived legacy output."
+    },
+    {
+      "findingId": "P4-REGEX-SCANNER-OVERCLAIM",
+      "status": "CONFIRMED",
+      "evidence": "The existing scanner is only a Java query-token candidate detector and lacks the required caller-to-boundary identity, owner, fixture, budget and disposition fields; P-E9's denominator is the finite M1-M13/S1-S5/original-six call paths.",
+      "action": "Retain the scanner only as a candidate/delta detector and establish a separately reviewable finite canonical ledger before business optimization."
+    },
+    {
+      "findingId": "P4-SCANNER-RESULTSET-OBJECTSTORE-CONFLATION",
+      "status": "CONFIRMED",
+      "evidence": "The initial object-store candidate expression matched every ResultSet.getObject call, while excluding the real AssetObjectStorage objects.exists/put/delete boundary. A full source scan proved both false positives and false negatives.",
+      "action": "Restrict object-store candidates to explicit object-storage receivers and require a self-test that rejects ResultSet.getObject while retaining objects.exists. Recompute the complete candidate fingerprint before accepting the ledger."
+    },
+    {
+      "findingId": "P4-S6-INVITATION-FULL-MATERIALIZATION",
+      "status": "CONFIRMED",
+      "businessRequirement": "P4's original businessUserTask requires authorized invitation reads to remain bounded as records and assignments grow; the approved RM1-P4 P4-F explicitly requires true pagination and each ledger row to carry a budget and real red mutation.",
+      "owningSources": [
+        "doc/evidence/platform/rm1/p4/rm1-u07-implementation-amendment.json#businessUserTask",
+        "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md#RM1-P4",
+        "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md#P-E5"
+      ],
+      "evidence": "Both invitation controllers obtain an unpaged owner list and the shared edge mapper filters, sorts and sublists that complete list. The owner service itself reads all invitations before operations scope filtering. This preserves facts but violates the approved bounded server-read shape for both administration faces.",
+      "design": "Add owner-owned platform and operations invitation page reads. Endpoint-fixed target type and server-resolved task scope remain inputs to the operations owner page; all filtering, total calculation, sorting and page bounds complete before edge mapping. Organization-path matching uses only the existing organization-owned candidate public API; the workspace owner must not derive target type from a page key, session assignment type or client-supplied organization type, and it must not add cross-owner direct SQL.",
+      "verification": "Add S6 to the canonical ledger and amend S3 to require real 1/100 records plus page-size 1/100 counter evidence, response total/items authorization checks, and red mutations that restore full-list materialization or per-invitation target reads."
+    }
+  ],
+  "alternatives": [
+    {
+      "id": "STATIC_CALLBACK_BAN",
+      "decision": "rejected",
+      "reason": "The original inventory proves that it misses named helper calls, RowCallbackHandler, stream/loop paths and repeated reads."
+    },
+    {
+      "id": "WORKSPACE_DIRECT_ORGANIZATION_SQL",
+      "decision": "rejected",
+      "reason": "It would improve query count by violating owner boundaries; P4-B instead adds an organization public batch read API."
+    },
+    {
+      "id": "INCLUDE_P_E4_IN_P4",
+      "decision": "rejected",
+      "reason": "It duplicates the current P5 allocation and mixes an interaction-affecting frontend lifecycle change into a no-changed-user-interaction P4 package."
+    }
+  ],
+  "authorizationBoundary": "Dexter authorized RM1 implementation and P4 after P2 Claude GO. P4 may modify only the corrected U07 surfaces, additive owner-schema indexes, focused managed Testcontainers evidence and static gates. It may not implement P5 frontend lifecycle work, change authorization semantics, start DEV, seed, reset, or add cross-owner direct SQL."
+}

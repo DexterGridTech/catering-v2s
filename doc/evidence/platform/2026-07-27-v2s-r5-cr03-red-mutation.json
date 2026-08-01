@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U03",
+  "kind": "security-authorization-red-mutation",
+  "status": "PASS",
+  "execution": {
+    "location": "fresh operating-system scratchpad copy outside repository",
+    "mode": "static source/design invariant validation; no DEV, database, seed or remote runtime",
+    "cleanResult": "PASS",
+    "cleanup": "PASS"
+  },
+  "cases": [
+    {
+      "mutation": "raise OTP send threshold from 3 to 300",
+      "result": "RED",
+      "reason": "OTP_SEND_THRESHOLD_NOT_ENFORCED"
+    },
+    {
+      "mutation": "remove password-reset invalid-OTP noRollbackFor",
+      "result": "RED",
+      "reason": "OTP_FAILURE_FACTS_ROLL_BACK"
+    },
+    {
+      "mutation": "remove host authorization before audit owner dispatch",
+      "result": "RED",
+      "reason": "AUDIT_HOST_AUTHORIZATION_NOT_BEFORE_OWNER_READ"
+    },
+    {
+      "mutation": "inject workspace_iam.role_assignment read into operations audit edge",
+      "result": "RED",
+      "reason": "EDGE_DIRECT_ROLE_ASSIGNMENT_READ"
+    },
+    {
+      "mutation": "remove owner-global last-platform-admin advisory transaction lock",
+      "result": "RED",
+      "reason": "LAST_ADMIN_SERIALIZATION_MISSING"
+    },
+    {
+      "mutation": "reintroduce mobileNormalized into platform invitation UI",
+      "result": "RED",
+      "reason": "RAW_MOBILE_READBACK:invitationsUi"
+    },
+    {
+      "mutation": "remove pre-command workspace-IAM receipt lookup",
+      "result": "RED",
+      "reason": "WORKSPACE_IAM_REPLAY_CHECK_AFTER_COMMAND"
+    }
+  ],
+  "assertion": "R5_CR03_SECURITY_STATIC_RED=PASS",
+  "authorityBoundary": "Static red proof only. This evidence does not authorize DEV, seed/reset, remote runtime or CR04+."
+}

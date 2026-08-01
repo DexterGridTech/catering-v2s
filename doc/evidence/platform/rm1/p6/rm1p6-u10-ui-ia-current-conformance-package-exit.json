@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-UI-IA-CURRENT-CONFORMANCE-U10",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u10-p6-2-current-byte-conformance.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "709d4de5dd1384eaef20e00146ba870712ba7c051001fcdf5c6a160a92d9cb2a"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u10-p6-3-current-control-conformance.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b9ff877b6d330045b67815b97a9aa097c70d67731cfa118de65f80e1b8ef557d"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u10-ui-ia-current-conformance-source-compliance-disposition.json",
+      "beforeSha256": "5a400fe5db88b64c99e063f7c42f921ce12ddebfaf12c320ff0a48327935ceb0",
+      "afterSha256": "6284e3c20f6d7b7422027998bf329c047b942a1388310f58b0603379fb158c37"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u10-p6-2-current-byte-conformance.json",
+      "afterSha256": "709d4de5dd1384eaef20e00146ba870712ba7c051001fcdf5c6a160a92d9cb2a",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u10-p6-3-current-control-conformance.json",
+      "afterSha256": "b9ff877b6d330045b67815b97a9aa097c70d67731cfa118de65f80e1b8ef557d",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u10-ui-ia-current-conformance-source-compliance-disposition.json",
+      "afterSha256": "6284e3c20f6d7b7422027998bf329c047b942a1388310f58b0603379fb158c37",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u10-ui-ia-current-conformance-source-compliance-disposition.json",
+    "sha256": "6284e3c20f6d7b7422027998bf329c047b942a1388310f58b0603379fb158c37"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "controls": [
+    {
+      "ruleId": "CR05-WC-01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-WC-02",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-HISTORICAL-RECEIPT-RECOVERY",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "deferredBusinessEvidenceObligation": "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+  "staticScopeConclusion": "U10 proves present current-byte static UI IA alignment only: P6-2 38 screen / 36 consumer and P6-3 56 current controls, while two absent legacy rows are explicitly excluded. It is not business, cleanup or managed L2 evidence."
+}

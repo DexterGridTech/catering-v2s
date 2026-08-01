@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "R5-CR-U04",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "authority": "CR04 owns module dependency registry enforcement. The active package baseline was created before the checker implementation path was admitted to the CR04 change surface, so the checker pre-change bytes are frozen here from the real Desktop PostToolUse receipt. This is a one-time owner-scope correction, not a baseline reset.",
+  "entries": [
+    {
+      "path": "tools/module-dependency-registry/check.mjs",
+      "kind": "FILE",
+      "sha256": "fd62a85c2858439ff21be315b06083b6ce2856d7e5fc0cc714c6d1512739b03c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+      "kind": "FILE",
+      "sha256": "18cbd247ff7bb696f194437c1c57d6645ff24fdee9e8fa613200da918d5e0e3e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/asset/PlatformAssetController.java",
+      "kind": "FILE",
+      "sha256": "2205b9d9036ab426f03a86c5f419829581a11b21a0cee0589bdd12e0417c1668"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+      "kind": "FILE",
+      "sha256": "36d5fdc2bee4969901b3f70af9b718bd5884a07c92f55d58c70c98116113bd3d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+      "kind": "FILE",
+      "sha256": "a0b4bb9e3ec32c39d0f660baba7df7f79611814f1ed7373bfc736103c6ae6dd4"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java",
+      "kind": "FILE",
+      "sha256": "249e4aeac2636285689c7f5b33af7c0dbea1631dd2bbe01caf0bf38e86ca2336"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceMembershipController.java",
+      "kind": "FILE",
+      "sha256": "3248979b70a4bccaaea751e3e774adbb5f71b212f4c7740a4c35a5ae4f546f53"
+    }
+  ],
+  "receiptEvidence": {
+    "path": ".runtime/compliance-control/hook-events/call_WPvL98E4UdKq0IKhBsmITkiW.post.json",
+    "beforeSha256": "fd62a85c2858439ff21be315b06083b6ce2856d7e5fc0cc714c6d1512739b03c",
+    "afterSha256": "f957cdc6d2bacb18c2ddaa60e1d97176d5501915048de90d7afd0025d2eb1c14"
+  },
+  "redProof": {
+    "productionEntry": "node tools/compliance-control/cli.mjs validate-delta-receipts",
+    "mutation": "replace the addendum entry path with a path outside the active CR04 change surface",
+    "expectedReason": "PACKAGE_BASELINE_ADDENDUM_OUT_OF_SURFACE:<path>",
+    "status": "PASS",
+    "actualResult": "A full scratch repository copy with the checker entry changed to outside/owner.java failed through the production validate-delta-receipts entry with PACKAGE_BASELINE_ADDENDUM_OUT_OF_SURFACE:outside/owner.java.",
+    "cleanup": "PASS"
+  },
+  "boundary": "This addendum freezes the registry checker, the two exact edge adapters required to pass already-contracted idempotency keys into migration-bound extension and asset owner receipts, and the four existing command adapters required to propagate authenticated audit actors into owner writes. It does not add an endpoint, operation or business behavior and does not alter any previously captured baseline entry."
+}

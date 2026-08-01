@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+exec node "$root_dir/tools/platform-boundary-gates/cli.mjs" contract --post-gate-0 "$@"

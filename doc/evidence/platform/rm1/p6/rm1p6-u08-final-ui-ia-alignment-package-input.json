@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-UI-IA-FINAL-ALIGNMENT-U08",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u08-final-ui-ia-alignment-delivery-manifest.json",
+  "deliveryManifestSha256": "c39612b566dff100073100a6b4a92340ce65ec638b357e2ec67f52d663a616cc",
+  "unitId": "RM1P6-UI-IA-FINAL-ALIGNMENT-U08",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/frontend-architecture", "scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/frontend-architecture", "scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["U08-IA04-CURRENT-CONSUMER-DENOMINATOR", "U08-CONTRACT-DETAIL-STABLE-STATE-IDENTIFIERS", "U08-FOCUSED-PROOF-BEFORE-JOINT-L2"],
+  "businessEvidenceObligation": "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+  "serialPredecessor": {
+    "packageId": "RM1P6-PLATFORM-INVITATION-RETIREMENT-U07",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-package-exit.json",
+    "exitSha256": "25510099d3cd17fa189cddb05957c114948dd1c96deb32e0fce688357bc6ed28"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-implementation-amendment.md",
+    "sha256": "7ca0e59619e5aa2b318dfd1c5509016c2af97f63cd0ab86da4bc33cf78a68f4e"
+  },
+  "authorizationBoundary": "Dexter authorized P6-3 root-cause implementation. U08 is the direct, finite operations-admin UI IA final-alignment package. It excludes control-plane self-bootstrap, DEV, seed, reset, joint L2, business PASS and cleanup PASS."
+}

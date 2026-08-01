@@ -1,0 +1,50 @@
+{
+  "kind": "r3-u02-skeleton-evidence",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "unit": "U02",
+  "status": "SKELETON_READY",
+  "scope": [
+    "java-21-single-spring-boot-deployable",
+    "platform-access-module-boundary",
+    "external-access-provider-contract-template",
+    "private-reverse-proxy-route-templates",
+    "five-command-dev-entrypoints"
+  ],
+  "verification": {
+    "gradleOfflineTest": "PASS",
+    "bootJar": "PASS",
+    "shellSyntax": "PASS",
+    "startSeedMisuseRed": "PASS",
+    "seedConfirmationGuardRed": "PASS",
+    "resetConfirmationGuardRed": "PASS"
+  },
+  "notYetCreated": {
+    "openapiFace": true,
+    "databaseMigration": true,
+    "seedManifest": true,
+    "resetAllowlist": true,
+    "businessJourney": true
+  },
+  "artifactHashes": [
+    {"path": "settings.gradle.kts", "sha256": "365940ee68eab7ec2ca95009a8aedca9653a11e59a83cc5b2cef8fbfaffd0052"},
+    {"path": "build.gradle.kts", "sha256": "9cc39417e3067a7b60cdc841c91666a7f22356d48d4bcbc139a52e8e5e49471c"},
+    {"path": "apps/backend/catering-business-server/build.gradle.kts", "sha256": "47f7903083c3c1ac750e848b7f9ca87f4a697aa15ca353313a925cedf78a5fe8"},
+    {"path": "apps/backend/terminal-data-server/build.gradle.kts", "sha256": "e8d5c2ac24d64d42372281d89c65993c37f8f7a171bab17859aac50bd2826e7b"},
+    {"path": "apps/backend/terminal-data-server/README.md", "sha256": "51c0e9432582197f3db141ec107465423ccbca05e18621b5d3c470bb6afb89f0"},
+    {"path": "libraries/backend/platform-access/build.gradle.kts", "sha256": "5a36c32b11e74e89988861517a5242c51c0ff47b5a69b97720efed986748d080"},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/CateringV2sApplication.java", "sha256": "7b437bbdfd2ff113c7be2d04183748fe1636abfdb0bc314c8ee742369de46ca5"},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/R3SkeletonBoundary.java", "sha256": "623afcd8ffe24941d003084ad1dc52db803ab81d7341623a056d61d10a396d21"},
+    {"path": "libraries/backend/platform-access/src/main/java/com/catering/v2s/platform/access/PlatformAccessModule.java", "sha256": "03dd03a9e205785b8d4dbc241c424db602fcd5f2dfbd25cea2914000ceaf4f64"},
+    {"path": "libraries/backend/platform-access/src/main/java/com/catering/v2s/platform/access/PlatformExecutionContext.java", "sha256": "c36994b377bc68f53b35e1522089776dbf1d62e3de8244cff2b79d14a7b2c11b"},
+    {"path": "infra/r3/access-provider-contract.json", "sha256": "f69d8284243193ab68596cadf8a4741a76803ab3093810e052bb971749e1adc8"},
+    {"path": "infra/r3/nginx.conf", "sha256": "ba57dd490a34d29a4029255aa4e678a2e2c334d0614c9490644066e2e5d7f80f"},
+    {"path": "infra/r3/platform-admin-route.conf", "sha256": "e8afb7369424f9daa62ed93a6b9981440b685d3182468501ec4a18bdffe89c33"},
+    {"path": "infra/r3/operations-admin-route.conf", "sha256": "3018afa35cd444aa84a0737964dbdb9cfcc9166b8f22fa9d11617ffe9a32d679"},
+    {"path": "scripts/dev/start", "sha256": "fd3dd9f47924e41ec677ea221371e63fa7fd0ed2b7b60318222439bee622e8d0"},
+    {"path": "scripts/dev/restart", "sha256": "9d86d52e0582326e5e952c553cf602964ab7a6c06110477675e3728ba119eec2"},
+    {"path": "scripts/dev/stop", "sha256": "d3e6ab2620659c950f53d40b0821195e567374a18eee86612aa26e3b100eea3d"},
+    {"path": "scripts/dev/seed", "sha256": "1f5e51f0fe017f04f5d1a9d231f69135b2d8b83f6f10fdfe65f04261b02cd7ae"},
+    {"path": "scripts/dev/reset", "sha256": "db9159c8cffa7630b366410c257d5b903021f38eb4a409dc6f0cd5727b6819c6"}
+  ]
+}

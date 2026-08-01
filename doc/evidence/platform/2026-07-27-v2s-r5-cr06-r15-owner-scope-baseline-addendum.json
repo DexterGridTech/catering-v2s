@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "R5-CR-U06",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "correction": "The accepted CR06 R15 requirement is a frozen owner outcome/readback contract. Its existing operations edge cannot satisfy that contract because workspace-iam exposes only a current-session readback and organization exposes only a boolean visibility predicate. In the same bounded frozen-operations correction, four existing workspace-IAM edge commands require expectedContextVersion before owner dispatch, but their three existing request schemas and deterministic operations wire omit that field. This additive correction admits only the minimum existing owner sources and those two contract/wire inputs. It adds no operation, persistence evolution, consumer face, error code, transaction semantic, or business capability.",
+  "entries": [
+    {"path":"libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java","kind":"FILE","sha256":"d3428791523fe03174f15330e7783fca627f16e94f02b8dc527a77a1fc13e449"},
+    {"path":"libraries/backend/organization/src/main/java/com/catering/v2s/organization/api/OrganizationVisibilityLookup.java","kind":"FILE","sha256":"116028030be735d7d0f68ca49c654449e547b9c485d00fa265a1083517e343f3"},
+    {"path":"libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java","kind":"FILE","sha256":"dc2a47c6f54d15041fec640bfe209654863029b5b9f17d2ef1e6390c53679a5b"},
+    {"path":"apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts","kind":"FILE","sha256":"d9a63afca5ec53dca57d3e2d80b6e949e3f9f0d697423da43e59c9b15afa13ec"},
+    {"path":"contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml","kind":"FILE","sha256":"66928db55fdee46561b8a73a5cdd91ae498594b3072c864f0b4d683e55d61b37"}
+  ]
+}

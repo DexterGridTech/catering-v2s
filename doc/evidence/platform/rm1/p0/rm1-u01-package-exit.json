@@ -1,0 +1,501 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1-U01",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/00cba6c5851bae2f02208af59eccd812972d38b7bf7a1e5d83e18263a9a19ea4.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "39e752d428acb1e26cdddb5c0f588e508377ee3de564bd39d7fe195390b22b8a"
+    },
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "beforeSha256": "783d92739a7b6af95b5290d3ef40370c98a95e3bf943c0968f0c2e9d5fe5f59d",
+      "afterSha256": "904f86c8f03ba7261233b136cb7b7ce1cdab4392d2abf9b55327064e37b5663d"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/043b10db27d590480a52e662e9cb1c356ea384b3a774a93bd81f453d283e16c7.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0ff3641cd083252996b0de2018862a6c57239f93358fe1753bf092d5e69cbbc0"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/0d1d294a9589985aa8cc1d669dd5233ab5b39679ed3dc2d992a674ffbdbf9a5e.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0fa97485ceaf48fa8d19f2048d5058ff18b30c214ae8e06f3e26c0a629502ecf"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/3b04203badb0514f90aafb3570a070cd146af9fcfb0c2aff00277d4e2880d6cc.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f444a268cf9cd81c1857f49e39ca788cbfc1e80dc7377b68b0c94e4eb5733bb2"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/a72df12edfffa3bb7d4d715be9156e9466dbb4bc46ce82dcebb61d83423340c6.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4ef6ba92413d08bfda8c15b8540aa9cffccd8960f5686a866fb712d9c6f5f11d"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/ebfd69458c6809315beef0e5edcc337f910c423e52ba894388ffcc162b238072.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "02faf9b6270b8f4160d3e5d1c10fac2a6fddafaeae20d831bb328f141dbcd029"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/database/DatabaseBoundariesTest.java",
+      "beforeSha256": "5a11e861f397390eaf2f22becb465134583bdafe8356e7af9835593677917b3d",
+      "afterSha256": "8944879cc2579b70aedb3a93f546c50ba12bb35d55f099eee70cb1478872a34f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/EdgeRouteRegistryCoverageTest.java",
+      "beforeSha256": "961eed3b609b35c7c46d29caf7e380dbca37012d703f7262ab7c92a40a8eaf38",
+      "afterSha256": "8c1d64464c13628c22d4ee2465e85612768829571b2917ce687d8961399e43cf"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "beforeSha256": "55121bcb9b5b577ba940d7b3cd82fef7717d8509cc33a91fe95745f78411bcfd",
+      "afterSha256": "de9baed1c9fe59360c1840652967b151f752e175995623f7d7ed7b847d921a0f"
+    },
+    {
+      "path": "contracts/policy/affected-l2-registry.json",
+      "beforeSha256": "b0214e08980ec7ba8fdd03d7e5858fc845f50e12dbaea225fbb2ca06513af9ca",
+      "afterSha256": "e64ada918384d905d6077da9e676e15be1e64e3d3d2d1fd104f64eb14ec99963"
+    },
+    {
+      "path": "contracts/policy/standards-enforcement-execution-catalog.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b8cc694dcf18aca04ba802cca9fdb0f7c9b3b20e6423842282100de5ba72b515"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-claude-no-go-intake.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e0151c5e80923e30209796ef2ffe5c31a152a186d9b440dcefb39115b02fb7d2"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-independent-implementation-review-round-1.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d427bd5fc92ca2a1b0f2c726f626c10f9c09e803c5dbd1797987806b3461f2b1"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-independent-review-counterexample-intake.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "771492df2838f77a13992a727f96c93705f57ee56ef0f47a1dc0dac4ff665324"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-implementation-amendment.json",
+      "beforeSha256": "4b13be87aac4da2a9dec9405bd576383a8ad30bbb888cd9f2f93e3183ac0b3c3",
+      "afterSha256": "a242d8870c88a0acb28b35efcbb5becea508211d7454af7fbc0a877bb09d4db1"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-owner-scope-baseline-addendum.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2ddc52c6a1ff8faacf56d22dda40c3589acc8b133f06f0e655ac2c570d3b8f44"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-package-input.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bf00258ffb9b17cdef7a156bd0a500c1856cfefdf53d160736b8ef5e66e40072"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-pre-admission-linkage-recovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f632715887f3bb6b369b7bc4356fbad35de908b9177f0caf2b52ecbbfd555cec"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3ab64598b8c748e2976ff4d05785003e8c9b1e49941aec9f619b1e90ca12b481"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-28-v2s-rm1-implementation-review-cadence-addendum.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a0a3159007edee017d48254f9afef99734740552c51c7bd010165c23b0b88e74"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/AssetObjectStorage.java",
+      "beforeSha256": "0f0d8cc45d80417498f457b00407dcb76989f984dd27b382502e79cce3aed2dc",
+      "afterSha256": "3cf6fafe48f9b42c731c67ad2626fb109f5b3414db313e9413b39c196d2a18e0"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/MinioAssetObjectStorage.java",
+      "beforeSha256": "16b454f281142f5732b640740ef95f05f1722c10480273410e7d999996d5fe46",
+      "afterSha256": "de977564cad33c184979f788cbb7dd6f898bd6e92cbeea508ffb130d3cb47bd8"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+      "beforeSha256": "20b0d4e2a8ed19b39821c9e1e0a405999ea11f0a8f06b5d2c4b9f14c4e53e49c",
+      "afterSha256": "f795c3e14bad842e13fb3786c03f0d30154f543868d2b8a05c17a1375979cf21"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java",
+      "beforeSha256": "c9a5b1fdaf2f517ffff4fab567729499923eb2f4ee689d678aca1dd7bf4fe648",
+      "afterSha256": "d0ffd33681ccf50d9a7ed0c5397a3dde3f87fa2f3261b583c9003aa4c2b11343"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "beforeSha256": "2ec3c771aa3b985fa303a45ef218f7c6fb591eb544bc1e020f92a726765b6cfd",
+      "afterSha256": "b77131224a1db8bb00c3d2ff024111f95d068951e28b4ea1ff890fb67c3f399a"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamSummaryReadService.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b8bd6e83f076dd62a0bf38bc18c8533cdb8e0070896cfa9e0919ba2ad0855339"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceLoginRateLimitService.java",
+      "beforeSha256": "e6bb9c9640bfb48a14beae07ca482fd060688b98353eff07b1feccaffcf77f15",
+      "afterSha256": "3e2d7598fc782542321e0684ac36dfa96c03cbb32f309a41bf78a1371340d532"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipService.java",
+      "beforeSha256": "ef3abb348ebfae28700a5c82ec95c94fc19456a05eb1c2351faca126a4e6cdb8",
+      "afterSha256": "097029930101e16f4f7992714f5bda91dc64bd835da1d3de2bd71c6374ada11b"
+    },
+    {
+      "path": "scripts/check/canonical-performance-ledger",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "734710db3641f8c54b1f720f946e81f46d6c98a2b044bf4e20f384f952b92e17"
+    },
+    {
+      "path": "scripts/check/capability-invariants",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "258bdd6ba9b1e153432f6e2a97d884f7b46eeb6caef892eeb3f31f5d24b77f8e"
+    },
+    {
+      "path": "scripts/check/standards-coverage",
+      "beforeSha256": "683c696bd042e4ca865e859e82a42bace74f4bbccd499e38d42921b2c8606238",
+      "afterSha256": "7b689a25cd11eec763b150b2bb4eefebbaf7970cc5eda7112b9c64752f639776"
+    },
+    {
+      "path": "scripts/run/rm1-p0-standards-execution",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f76f9dd74b754afb4b6a0240c9d33ed0b00a30c68575f9cea11612059b380a10"
+    },
+    {
+      "path": "tools/capability-invariants/cli.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2e3047f06c3dd2c071d6ac818885f450d68227d79a69e22fe6637331261114db"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "0d05b7c0b5c878369700b1d858bad5b2582be728d2e088a548fb3386ee3851f5",
+      "afterSha256": "b66dcdd083008d81a3f4d0af12f83e493539f7eee9f43bad3772c304bee47607"
+    },
+    {
+      "path": "tools/performance/canonical-ledger-scanner.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "82caad355dd42ecc7e2a4ab3552cf8f8461023b22c4918fffd1a52e1f9b7f816"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "beforeSha256": "6a24735a581e7018ea04b44e4b6facdd2f12fa8d207494aec27c3eea6f37db14",
+      "afterSha256": "8c1246e1246c06995290acc12e5c46a0a0c3506ca6bc84fdec86aed78d7960a1"
+    },
+    {
+      "path": "tools/verify-gates/strict-openapi-resolver.mjs",
+      "beforeSha256": "59a973cc7c7140e88398bc5eb560d993ea4c80c081d17f0f79fb58192604fc8c",
+      "afterSha256": "43eda261dd0d7b4cb66c6ff988ae0d03a8facbdd0f4dc3028d1f3ef90455c357"
+    },
+    {
+      "path": "tools/verify-gates/verify.mjs",
+      "beforeSha256": "73a868142049b42d98fa892e08995f78e77c899d4df89d2988a6320deb799eff",
+      "afterSha256": "b6e084a380afc0408ab8a70b1983cd3fc356e4cbf6ef3c19a35d522b1a4f30f7"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/00cba6c5851bae2f02208af59eccd812972d38b7bf7a1e5d83e18263a9a19ea4.json",
+      "afterSha256": "39e752d428acb1e26cdddb5c0f588e508377ee3de564bd39d7fe195390b22b8a",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "afterSha256": "904f86c8f03ba7261233b136cb7b7ce1cdab4392d2abf9b55327064e37b5663d",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/043b10db27d590480a52e662e9cb1c356ea384b3a774a93bd81f453d283e16c7.json",
+      "afterSha256": "0ff3641cd083252996b0de2018862a6c57239f93358fe1753bf092d5e69cbbc0",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/0d1d294a9589985aa8cc1d669dd5233ab5b39679ed3dc2d992a674ffbdbf9a5e.json",
+      "afterSha256": "0fa97485ceaf48fa8d19f2048d5058ff18b30c214ae8e06f3e26c0a629502ecf",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/3b04203badb0514f90aafb3570a070cd146af9fcfb0c2aff00277d4e2880d6cc.json",
+      "afterSha256": "f444a268cf9cd81c1857f49e39ca788cbfc1e80dc7377b68b0c94e4eb5733bb2",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/a72df12edfffa3bb7d4d715be9156e9466dbb4bc46ce82dcebb61d83423340c6.json",
+      "afterSha256": "4ef6ba92413d08bfda8c15b8540aa9cffccd8960f5686a866fb712d9c6f5f11d",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/problem-family-dispositions/ebfd69458c6809315beef0e5edcc337f910c423e52ba894388ffcc162b238072.json",
+      "afterSha256": "02faf9b6270b8f4160d3e5d1c10fac2a6fddafaeae20d831bb328f141dbcd029",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/database/DatabaseBoundariesTest.java",
+      "afterSha256": "8944879cc2579b70aedb3a93f546c50ba12bb35d55f099eee70cb1478872a34f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/EdgeRouteRegistryCoverageTest.java",
+      "afterSha256": "8c1d64464c13628c22d4ee2465e85612768829571b2917ce687d8961399e43cf",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "afterSha256": "de9baed1c9fe59360c1840652967b151f752e175995623f7d7ed7b847d921a0f",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/policy/affected-l2-registry.json",
+      "afterSha256": "e64ada918384d905d6077da9e676e15be1e64e3d3d2d1fd104f64eb14ec99963",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/policy/standards-enforcement-execution-catalog.json",
+      "afterSha256": "b8cc694dcf18aca04ba802cca9fdb0f7c9b3b20e6423842282100de5ba72b515",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-claude-no-go-intake.json",
+      "afterSha256": "e0151c5e80923e30209796ef2ffe5c31a152a186d9b440dcefb39115b02fb7d2",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-independent-implementation-review-round-1.md",
+      "afterSha256": "d427bd5fc92ca2a1b0f2c726f626c10f9c09e803c5dbd1797987806b3461f2b1",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-independent-review-counterexample-intake.json",
+      "afterSha256": "771492df2838f77a13992a727f96c93705f57ee56ef0f47a1dc0dac4ff665324",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+      "afterSha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-implementation-amendment.json",
+      "afterSha256": "a242d8870c88a0acb28b35efcbb5becea508211d7454af7fbc0a877bb09d4db1",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-owner-scope-baseline-addendum.json",
+      "afterSha256": "2ddc52c6a1ff8faacf56d22dda40c3589acc8b133f06f0e655ac2c570d3b8f44",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-package-input.json",
+      "afterSha256": "bf00258ffb9b17cdef7a156bd0a500c1856cfefdf53d160736b8ef5e66e40072",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-pre-admission-linkage-recovery.json",
+      "afterSha256": "f632715887f3bb6b369b7bc4356fbad35de908b9177f0caf2b52ecbbfd555cec",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p0/rm1-u01-source-compliance-disposition.json",
+      "afterSha256": "3ab64598b8c748e2976ff4d05785003e8c9b1e49941aec9f619b1e90ca12b481",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-28-v2s-rm1-implementation-review-cadence-addendum.md",
+      "afterSha256": "a0a3159007edee017d48254f9afef99734740552c51c7bd010165c23b0b88e74",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/AssetObjectStorage.java",
+      "afterSha256": "3cf6fafe48f9b42c731c67ad2626fb109f5b3414db313e9413b39c196d2a18e0",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/MinioAssetObjectStorage.java",
+      "afterSha256": "de977564cad33c184979f788cbb7dd6f898bd6e92cbeea508ffb130d3cb47bd8",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+      "afterSha256": "f795c3e14bad842e13fb3786c03f0d30154f543868d2b8a05c17a1375979cf21",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java",
+      "afterSha256": "d0ffd33681ccf50d9a7ed0c5397a3dde3f87fa2f3261b583c9003aa4c2b11343",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "afterSha256": "b77131224a1db8bb00c3d2ff024111f95d068951e28b4ea1ff890fb67c3f399a",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamSummaryReadService.java",
+      "afterSha256": "b8bd6e83f076dd62a0bf38bc18c8533cdb8e0070896cfa9e0919ba2ad0855339",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceLoginRateLimitService.java",
+      "afterSha256": "3e2d7598fc782542321e0684ac36dfa96c03cbb32f309a41bf78a1371340d532",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipService.java",
+      "afterSha256": "097029930101e16f4f7992714f5bda91dc64bd835da1d3de2bd71c6374ada11b",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/check/canonical-performance-ledger",
+      "afterSha256": "734710db3641f8c54b1f720f946e81f46d6c98a2b044bf4e20f384f952b92e17",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/check/capability-invariants",
+      "afterSha256": "258bdd6ba9b1e153432f6e2a97d884f7b46eeb6caef892eeb3f31f5d24b77f8e",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/check/standards-coverage",
+      "afterSha256": "7b689a25cd11eec763b150b2bb4eefebbaf7970cc5eda7112b9c64752f639776",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/run/rm1-p0-standards-execution",
+      "afterSha256": "f76f9dd74b754afb4b6a0240c9d33ed0b00a30c68575f9cea11612059b380a10",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/capability-invariants/cli.mjs",
+      "afterSha256": "2e3047f06c3dd2c071d6ac818885f450d68227d79a69e22fe6637331261114db",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "b66dcdd083008d81a3f4d0af12f83e493539f7eee9f43bad3772c304bee47607",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/performance/canonical-ledger-scanner.mjs",
+      "afterSha256": "82caad355dd42ecc7e2a4ab3552cf8f8461023b22c4918fffd1a52e1f9b7f816",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "afterSha256": "8c1246e1246c06995290acc12e5c46a0a0c3506ca6bc84fdec86aed78d7960a1",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/strict-openapi-resolver.mjs",
+      "afterSha256": "43eda261dd0d7b4cb66c6ff988ae0d03a8facbdd0f4dc3028d1f3ef90455c357",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/verify.mjs",
+      "afterSha256": "b6e084a380afc0408ab8a70b1983cd3fc356e4cbf6ef3c19a35d522b1a4f30f7",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p0/rm1-u01-source-compliance-disposition.json",
+    "sha256": "3ab64598b8c748e2976ff4d05785003e8c9b1e49941aec9f619b1e90ca12b481"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "controlRefStatus": {
+    "manifestPath": ".runtime/managed-runs/rm1-p0-standards-20260728T070240Z-809/manifest.json",
+    "manifestSha256": "e10a221750061630b2563dcb52ce76a13410933f84c59699ece9c60e247cac1f",
+    "entries": [
+      {"kind": "STANDARDS_REF", "ref": "scripts/check/database-operation-budget", "exitCode": 0},
+      {"kind": "STANDARDS_REF", "ref": "scripts/check/frontend-architecture", "exitCode": 0},
+      {"kind": "STANDARDS_REF", "ref": "scripts/check/logging-boundaries", "exitCode": 0},
+      {"kind": "STANDARDS_REF", "ref": "scripts/check/security-boundaries", "exitCode": 0},
+      {"kind": "CONTROL_REF", "ref": "scripts/check/affected-l2", "exitCode": 0}
+    ]
+  },
+  "controls": [
+    {
+      "ruleId": "P-C1",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": {
+        "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+        "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+        "assertion": "frontend architecture gate and red self-test passed"
+      }
+    },
+    {
+      "ruleId": "P-C2",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": {
+        "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+        "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+        "assertion": "catalog selection, dependency, missing-marker, and nonzero-exit reds passed"
+      }
+    },
+    {
+      "ruleId": "P-C3",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": {
+        "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+        "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+        "assertion": "affected L2 production execution has exact RM1 zero statuses; missing-target, empty-stub, RM2-expiry, and selected-change red fixtures passed without creating production target paths"
+      }
+    },
+    {
+      "ruleId": "P-C5",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": {
+        "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+        "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+        "assertion": "page registry reachability red self-test passed"
+      }
+    },
+    {
+      "ruleId": "P-X2",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": {
+        "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+        "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+        "assertion": "embedded-secret red self-test passed"
+      }
+    },
+    {
+      "ruleId": "P-X5",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": {
+        "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+        "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+        "assertion": "configured object-prefix red self-test passed"
+      }
+    },
+    {
+      "ruleId": "P-X6",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": {
+        "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+        "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+        "assertion": "real operation-budget red self-test passed"
+      }
+    },
+    {
+      "ruleId": "ST-7",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": {
+        "path": "doc/evidence/platform/rm1/p0/rm1-u01-control-evidence.json",
+        "sha256": "ba7acb331c28eea18255b1edf98408918f32d3b799048f857b34f6678259e692",
+        "assertion": "exact ref-set, historical-intake accounting, and incremental-receipt reds passed"
+      }
+    }
+  ]
+}

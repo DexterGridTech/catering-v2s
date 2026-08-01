@@ -1,0 +1,34 @@
+import {expect, test} from '@playwright/test';
+import {requiredL2Env, selectWorkspace, signInPlatform, signOutPlatform} from './platformL2';
+
+test('platform administrator verifies a role detail and proves atomic role edit owner readback', async ({page}) => {
+  const roleName = requiredL2Env('R5_L2_PLATFORM_ROLE_NAME');
+  await signInPlatform(page); await page.goto('/platform/roles'); await selectWorkspace(page);
+  await page.getByRole('button', {name: roleName, exact: true}).click();
+  await expect(page.getByText('业务角色详情')).toBeVisible();
+  await expect(page.getByRole('dialog', {name: '业务角色详情'}).getByText('可使用的功能菜单', {exact: true})).toBeVisible();
+  await expect(page.getByRole('button', {name: '编辑业务角色'})).toBeVisible();
+  await page.getByRole('button', {name: '编辑业务角色'}).click();
+  await expect(page.getByTestId('workspace-role-edit-submit')).toBeVisible();
+  const currentName = await page.getByTestId('workspace-role-edit-name').inputValue();
+  const currentDescription = await page.getByTestId('workspace-role-edit-description').inputValue();
+  const requestPromise = page.waitForRequest((request) => request.method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+\/roles\/[^/]+$/.test(new URL(request.url()).pathname));
+  const responsePromise = page.waitForResponse((response) => response.request().method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+\/roles\/[^/]+$/.test(new URL(response.url()).pathname));
+  await page.getByTestId('workspace-role-edit-submit').click();
+  const [request, response] = await Promise.all([requestPromise, responsePromise]);
+  expect(response.status()).toBe(200);
+  const body = request.postDataJSON() as {name?: string; description?: string | null; pageAccessKeys?: unknown[]; capabilityKeys?: unknown[]; expectedVersion?: number};
+  expect(body).toMatchObject({name: currentName, description: currentDescription.trim() || null});
+  expect(body.pageAccessKeys).toEqual(expect.any(Array));
+  expect(body.capabilityKeys).toEqual(expect.any(Array));
+  expect(body.expectedVersion).toBeGreaterThan(0);
+  expect(request.headers()['idempotency-key']).toBeTruthy();
+  const readback = await response.json() as {name?: string; revision?: number; pageAccessKeys?: unknown[]; capabilityKeys?: unknown[]};
+  expect(readback).toMatchObject({name: currentName});
+  expect(readback.revision).toBeGreaterThan(0);
+  expect(readback.pageAccessKeys).toEqual(expect.any(Array));
+  expect(readback.capabilityKeys).toEqual(expect.any(Array));
+  await expect(page.getByRole('dialog', {name: '业务角色详情'})).toBeVisible();
+  await expect(page.getByRole('dialog', {name: '业务角色详情'}).getByText(currentName, {exact: true})).toBeVisible();
+  await signOutPlatform(page);
+});

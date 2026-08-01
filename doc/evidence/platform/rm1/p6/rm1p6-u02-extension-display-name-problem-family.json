@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-U02-EXTENSION-DISPLAY-NAME-20260730",
+  "genericProblem": "A technical definition-field label can leak into a consumer read projection even when the projection is intended to contain only business display facts.",
+  "rootCauseClass": "The new overview display projection reused the owner definition record property name instead of defining its consumer-facing business term.",
+  "finiteDenominator": ["organization platform overview ExtensionDisplayField record", "contract platform overview ExtensionDisplayField record", "organization overview OpenAPI extensionFields item", "contract overview OpenAPI extensionFields item", "two generated platform-admin extensionFields wire shapes"],
+  "searchedSurfaces": ["apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java", "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java", "contracts/openapi/components/organization/organization-overview.schemas.yaml", "contracts/openapi/components/contract/contract.schemas.yaml", "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts"],
+  "searchQueries": ["ExtensionDisplayField", "extensionFields", "label/value"],
+  "counterexamples": ["ExtensionDefinitionReadback.Field.label and extension-definition management contracts retain label because they are existing owner definition vocabulary, not a platform overview display projection.", "No frontend source is in this correction scope; generated wire is the only consumer surface changed."],
+  "findings": [{"findingId": "RM1P6-U02-EXTENSION-DISPLAY-NAME-01", "classification": "CONFIRMED", "evidence": "Both new overview projections and their OpenAPI/generated wire shapes call the business display name label, while IA03 requires a returned definition business name followed by its value and prohibits technical facts."}],
+  "preventionDispositions": [{"findingId": "RM1P6-U02-EXTENSION-DISPLAY-NAME-01", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1p6-u02-extension-display-name-problem-family.json#finiteDenominator"}]
+}

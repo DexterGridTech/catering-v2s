@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "cr05-command-event-variant-diagnostic",
+  "status": "UNVERIFIED_REQUIRES_CLIENT_EVENT_DISPATCH",
+  "packageId": "R5-CR-U05",
+  "genericProblem": "A repository hook may classify a command-tool name correctly while the Desktop client never dispatches that tool as a PreToolUse/PostToolUse event, leaving the command-write receipt chain absent.",
+  "rootCauseLayer": "CLIENT_HOOK_EVENT_DISPATCH",
+  "finiteDenominator": {
+    "configuredPrePostMatchers": 2,
+    "supportedCommandToolNames": [
+      "exec_command",
+      "functions.exec_command",
+      "functions.exec",
+      "write_stdin",
+      "functions.write_stdin"
+    ],
+    "observedCommandSnapshotPreReceipts": 0,
+    "observedCommandSnapshotPostReceipts": 0,
+    "realOuterFunctionsExecCanaries": 1
+  },
+  "observedEvidence": {
+    "outerFunctionsExecCanaryPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr05-command-event-variant-canary.txt",
+    "outerCanaryResult": "Only the nested apply_patch receipt exists; no receipt with toolKind=COMMAND_SNAPSHOT was emitted.",
+    "classificationSelfTest": "COMMAND_TOOL_EVENT_SELF_TEST=PASS; RED_FUNCTIONS_EXEC_UNSUPPORTED=PASS",
+    "staticAdmissionResult": "REMEDIATION_COMPLIANCE=FAIL; HOOK_CANARY_BINDING_DRIFT:controlCliSha256",
+    "sameClientCliCommandCanary": {
+      "client": "/opt/homebrew/bin/codex exec --ephemeral --json --dangerously-bypass-hook-trust --skip-git-repo-check",
+      "result": "The agent ran node write-canary.mjs successfully in an isolated scratchpad; canary.txt SHA-256 was 94dad01b3767abcdb98cfee441ade77ae0bf0e374d3986fb05bec71f350a4135; hook-events directory remained absent.",
+      "interpretation": "The current Codex client did not dispatch PreToolUse/PostToolUse for its command_execution event.",
+      "cleanup": "PASS"
+    },
+    "desktopRestartCanary": {
+      "trigger": "Dexter restarted Codex Desktop before the retry.",
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr05-desktop-restart-command-event-canary.txt",
+      "result": "The protected file was created and ordinary apply_patch receipts exist with invocationId exec-30f331a3-fc65-4b07-8663-1ba6ab38cb2f, but both receipts have no toolKind/toolName and the global COMMAND_SNAPSHOT pre/post counts remain 0.",
+      "interpretation": "Restarting the current Desktop client did not make it dispatch command-tool PreToolUse/PostToolUse events."
+    },
+    "v01450UpgradeCanary": {
+      "trigger": "Dexter upgraded Codex Desktop and CLI to 0.145.0 before the retry.",
+      "versionReadback": {
+        "codexCli": "0.145.0",
+        "npmPublished": "0.145.0"
+      },
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr05-v01450-command-event-canary.txt",
+      "result": "The protected file was created and an ordinary receipt exists with invocationId exec-ad5f3cd9-0373-4587-9c38-c57b06f4c830, but toolKind/toolName are null and the global COMMAND_SNAPSHOT pre/post counts remain 0.",
+      "interpretation": "The confirmed latest client did not dispatch a command-tool PreToolUse/PostToolUse event for the real canary."
+    }
+  },
+  "preventionDisposition": {
+    "existingControl": "tools/compliance-control/cli.mjs#isCommandTool",
+    "implemented": [
+      "functions.exec is an explicit supported command-tool variant",
+      "COMMAND_SNAPSHOT receipts persist toolName when a client event is actually dispatched",
+      "a mutation removing functions.exec is proven red by command-tool-event-self-test"
+    ],
+    "notClaimed": [
+      "No claim is made that the Desktop client dispatched functions.exec hooks.",
+      "No claim is made that the historical 43 paths received contemporaneous hook receipts."
+    ],
+    "closureRequirement": "A fresh real-client positive and negative functions.exec canary must produce and then withhold an exact COMMAND_SNAPSHOT receipt before the current hook-canary binding can be rebound."
+  }
+}

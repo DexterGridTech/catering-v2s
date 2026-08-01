@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-U01-OBSERVABILITY-FORMAL",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-manifest.json",
+  "deliveryManifestSha256": "f97d63168d40377dcf87d0466c015b65e07c374af4d5a02f73fa5113016c9e29",
+  "unitId": "RM1P6-U01-OBSERVABILITY-FORMAL",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/implementation-design-granularity",
+    "scripts/check/openapi-contracts",
+    "scripts/check/edge-codegen",
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/implementation-design-granularity",
+    "scripts/check/remediation-compliance",
+    "scripts/check/openapi-contracts",
+    "scripts/check/edge-codegen"
+  ],
+  "requiredControlRuleIds": [
+    "P6-U01-FORMAL-D2-D6-SOURCE-REOPEN",
+    "P6-U01-SECRET-SAFE-DIAGNOSTICS",
+    "P6-U01-MANAGED-RUNNER-LIFECYCLE",
+    "P6-U01-EDGE-PROJECTION"
+  ],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_MANAGED_RUN_AND_PUBLIC_EDGE_SECURITY_PROOF",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U11",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u11-package-exit.json",
+    "exitSha256": "b5d0cac50b59ac56557f0b55cae699fc66c9b3b02ff9491b7b8754cb8c38422b"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-implementation-amendment.md",
+    "sha256": "5ee41cb82f8baace8a4989b6e254d1dd97a4cffa48d06c3297384e180a9bc924"
+  },
+  "authorizationBoundary": "Dexter authorized Codex to complete RM1-P6. This package implements only the accepted P6-1 observability extension and formal granularity binding: production source reopening, managed runner, secret-safe backend diagnostics and edge-root projection. It excludes P6-2/P6-3, UI, DEV, seed, reset and Roadmap state changes."
+}

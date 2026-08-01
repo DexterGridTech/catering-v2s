@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-u06-review-remediation-static-verification",
+  "packageId": "RM1-U06",
+  "status": "PASS",
+  "findings": [
+    {
+      "id": "RM1-P2-R1-M01",
+      "disposition": "CONFIRMED_AND_REPAIRED",
+      "failurePattern": "A rename freeze can omit approved lexical forms or active generated-authority inputs while a narrower post-search happens to be zero.",
+      "remedy": "The frozen denominator now names all eight forms, binds the two late-admitted active sources to their pre-rename hashes, and records the accessor/record forms carried by an already frozen source."
+    },
+    {
+      "id": "RM1-P2-R1-M02",
+      "disposition": "CONFIRMED_AND_REPAIRED",
+      "failurePattern": "A source relocation can leave empty old source directories and empty feature paths even after every file moved.",
+      "remedy": "All empty source directories under the legacy module root and retired feature paths were removed; derived build outputs remain excluded by the existing code-layout control."
+    }
+  ],
+  "checks": [
+    {
+      "command": "scripts/check/code-layout",
+      "result": "PASS",
+      "assertion": "No legacy empty source directory or retired feature path remains in the code-layout denominator."
+    },
+    {
+      "command": "eight exact rg forms over the freeze roots plus all active generated-authority sources, excluding E",
+      "result": "PASS",
+      "forms": [
+        "Membership",
+        "membership",
+        "MEMBERSHIP",
+        "\\bMember\\b",
+        "WorkspaceMember",
+        "\\.member\\(",
+        "\\.Member\\b",
+        "/membership"
+      ],
+      "assertion": "All forms are zero except the one explicitly enumerated historical SQL comment, which is in E."
+    },
+    {
+      "command": "node tools/compliance-control/cli.mjs validate-delta-receipts",
+      "result": "PASS",
+      "assertion": "Every actual P2 file change, including this remediation evidence, has a contiguous pre/post receipt chain."
+    }
+  ],
+  "boundary": "This static remediation does not delete or claim ownership of derived build output under libraries/backend; the production source-layout control excludes derived directories and is PASS."
+}

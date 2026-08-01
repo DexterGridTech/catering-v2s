@@ -1,0 +1,61 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "verdict": "GO",
+  "manifestSha256": "3466a34d848d1fff9f0e855b00dfdf0967fd2f473fe00a838e6ce1d6e0128129",
+  "postClaudeNResolution": {
+    "source": "doc/review/platform/2026-07-25-v2s-r4-whole-scope-design-review-claude.md#N-1,N-2",
+    "N-1": "Mechanical refresh only: manifest checker binding and this manifest hash were refreshed after independent-subagent governance evolved the checker; the review cycle is not reset.",
+    "N-2": "R4-U01 now explicitly requires correction of all 12 ARCHUNIT refs to the catering-business-server test path and an item-by-item R2 standards N-2 enforcement-kind review before any phase activation."
+  },
+  "reviewCycleId": "R4-W2-DESIGN-20260725",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "machine-gate-false-green",
+      "module-owner-transaction",
+      "database-and-query",
+      "edge-contract-generated-wire",
+      "frontend-foundation-and-v2-carryover",
+      "retirement-and-logging",
+      "runtime-cleanup",
+      "scope-and-review-governance"
+    ]
+  },
+  "expectedBehavior": [
+    "R4 remains NOT_A_BUSINESS_JOURNEY and creates no account, session, UI feature, operations login or R5 business scope.",
+    "Every R4 machine gate has a one-line mechanical rule, production-driven validator, behavior-changing red mutation and a minute-scale scripts/verify path.",
+    "The standards matrix remains the source denominator; planned R4 enforcement fails closed until actual validators and evidence are implemented.",
+    "Testcontainers and scratch resources are isolated from DEV and report business/cleanup separately; static PASS never becomes business PASS.",
+    "Future UI design must first compare all-v2 counterparts, record CARRY/ADAPT/NOT_CARRIED, and preferentially consume admin-ui-foundation rather than duplicate existing primitives."
+  ],
+  "findings": [],
+  "unitVerdicts": [
+    {"id": "R4-U01", "verdict": "GO", "findingIds": []},
+    {"id": "R4-U02", "verdict": "GO", "findingIds": []},
+    {"id": "R4-U03", "verdict": "GO", "findingIds": []},
+    {"id": "R4-U04", "verdict": "GO", "findingIds": []},
+    {"id": "R4-U05", "verdict": "GO", "findingIds": []},
+    {"id": "R4-U06", "verdict": "GO", "findingIds": []},
+    {"id": "R4-U07", "verdict": "GO", "findingIds": []},
+    {"id": "R4-U08", "verdict": "GO", "findingIds": []}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The design solves the actual pre-migration need: reliably exposing mechanical regression before multiple R5 modules and user surfaces amplify the cost of a wrong boundary.",
+    "simplerAlternativeAssessment": "Keeping only R3 focused checks leaves unguarded dependency, migration, generated-wire, retirement and affected-L2 drift. A CI platform or a semantic mega-checker adds more lifecycle and false confidence than this stage warrants.",
+    "costFit": "Eight internal units share one orchestrator and reuse existing generators/tests; each requires a true red discriminator and the full verify run has a minute-scale budget. No new runtime, deployable, business data or UI is introduced.",
+    "verdict": "REASONABLE"
+  },
+  "conclusion": {
+    "verdict": "GO",
+    "summary": "The final second-round design review confirms that U01-U08 cover the Roadmap R4 deliverables, standards Part B-D mapping and future UI carry-over/foundation discipline without fabricating a Journey or implementation completion.",
+    "severityCounts": {"M": 0, "S": 0, "N": 0},
+    "authorizationBoundary": "This GO is only for the R4 implementation-facing design packet to enter Claude/Dexter review. It does not authorize R4 source changes, dynamic execution, DEV actions, seed/reset, or alter R3/J02/C-02/TDP boundaries."
+  }
+}

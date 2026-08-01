@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "kind": "dexter-authorized-rm1-u04-implementation-amendment",
+  "packageId": "RM1-U04",
+  "status": "ACTIVE_NOT_EXIT",
+  "authorization": "Dexter explicitly authorized complete RM1 implementation. This package executes only the frozen P3-C removal of client pageKey authorization derivation from the five PG-IAM context/access endpoints.",
+  "frozenDesignBinding": {
+    "plan": {
+      "path": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+      "sha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c",
+      "anchor": "### RM1-P3-C｜context/access endpoint 去 pageKey 推导"
+    },
+    "manifest": {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "sha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3",
+      "unitId": "RM1-U04"
+    }
+  },
+  "scopeClarification": {
+    "classification": "FROZEN_DESIGN_INTERPRETATION",
+    "reason": "The phrase 'five PG-IAM endpoints' denotes the five approved PG-IAM target page identities (GROUP, REGION, PROJECT, HEAD_COMPANY and STORE), while the same frozen design requires removal of request pageDesignKey and all fallbacks across four controllers. Current source proves that the complete implementation denominator is eight operations; narrowing to five would retain three instances of the prohibited authority chain.",
+    "exactOperationIds": [
+      "getOperationsWorkspaceInvitations",
+      "createOperationsWorkspaceInvitation",
+      "getOperationsWorkspaceInvitationCandidates",
+      "cancelOperationsWorkspaceInvitation",
+      "reissueOperationsWorkspaceInvitation",
+      "getOperationsWorkspaceMembership",
+      "getOperationsWorkspaceMembershipAccount",
+      "revokeOperationsWorkspaceMembershipAssignment"
+    ],
+    "targetTypeSet": ["GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"],
+    "controllerSet": [
+      "OperationsWorkspaceInvitationController",
+      "OperationsWorkspaceInvitationCandidateController",
+      "OperationsWorkspaceMembershipController"
+    ],
+    "nonExpansion": "This is the complete existing pageKey authority/fallback surface required by the already-frozen P3-C instruction; it adds no Journey, endpoint family, permission model, migration, UI behavior or product decision."
+  },
+  "actualChangeSurfaceCorrection": {
+    "reason": "The frozen manifest lists the access OpenAPI path and two owner libraries. P3-C necessarily also changes the authoritative generated route/consumer artifacts, edge adapters, capability resolver enforcement and focused tests that consume the same five approved endpoint contracts. This enumerates existing dependencies without adding a Journey, migration, UI interaction, or P3-D behavior.",
+    "surfaces": [
+      {"path": "tools/compliance-control/cli.mjs", "disposition": "update", "purpose": "package-aware actual-change and receipt evidence only if required by a discovered control defect"},
+      {"path": "tools/capability-invariants/cli.mjs", "disposition": "update", "purpose": "five-endpoint exact set and pageKey/fallback negative assertions"},
+      {"path": "scripts/check/capability-invariants", "disposition": "update", "purpose": "P3-C checker entrypoint"},
+      {"path": "scripts/generate/edge-codegen.mjs", "disposition": "update", "purpose": "authoritative generated route and consumer artifacts after request-shape change"},
+      {"path": "contracts/openapi", "disposition": "update", "purpose": "remove pageDesignKey request fields from only the five approved PG-IAM endpoints"},
+      {"path": "contracts/registry/iam-org-governance-manifest.json", "disposition": "update", "purpose": "retain server-derived requirement/resolver identity for the exact endpoint set"},
+      {"path": "libraries/backend/{workspace-iam,organization}", "disposition": "update", "purpose": "public task API and target-plus-ancestor owner predicates without cross-schema direct reads"},
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge", "disposition": "update", "purpose": "remove client pageKey/fallback adaptation and use server-resolved assignment target"},
+      {"path": "apps/backend/catering-business-server/src/test/java", "disposition": "update", "purpose": "five endpoint scope-out, ancestor and real red mutation proofs"},
+      {"path": "apps/frontend/{platform-admin,operations-admin}/src/app/{api/catalog}/generated", "disposition": "update", "purpose": "generated request type change only; no UI behavior change"},
+      {"path": "doc/evidence/platform/rm1/p3-c", "disposition": "create", "purpose": "binding, source disposition, focused proof and package-exit evidence"}
+    ]
+  },
+  "exitRules": [
+    "RM1-U04 starts from a distinct successor baseline after RM1-U03 exit and retains its own non-empty actual changed-path receipt set",
+    "the exact five approved PG-IAM endpoints contain no request pageDesignKey or fallback and derive resource type/id from the authenticated server-side assignment",
+    "workspace-iam reaches organization hierarchy only through an explicit public task API, never by direct organization schema read",
+    "each endpoint proves target plus ancestor scope predicate and a scope-out negative; type matching alone is insufficient",
+    "P3-C makes no migration, P3-B receipt/FK, P3-D interaction, or new UI behavior claim"
+  ]
+}

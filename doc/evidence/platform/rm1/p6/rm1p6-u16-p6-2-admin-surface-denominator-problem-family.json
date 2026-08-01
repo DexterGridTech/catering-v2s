@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-2-ADMIN-SURFACE-DENOMINATOR",
+  "genericProblem": "An implementation-facing UI denominator can assign two distinct user tasks to one module path, causing implementation to choose between an approved business task and a contradictory final artifact.",
+  "rootCauseClass": "UI_SURFACE_DENOMINATOR_CONFLATION",
+  "finiteDenominator": [
+    "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md#IA03-ADMIN",
+    "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md#PLATFORM-ADMIN-USERS",
+    "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md#IA03-ADMIN",
+    "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx#PlatformAdminUsers",
+    "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx#PlatformWorkspaceAccounts",
+    "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json#uiArtifacts"
+  ],
+  "searchedSurfaces": ["doc/evidence/platform/rm1/p6", "doc/decisions", "apps/frontend/platform-admin/src/app/routing", "apps/frontend/platform-admin/src/features/platform-administration", "apps/frontend/platform-admin/src/features/workspace-iam"],
+  "searchQueries": ["PLATFORM-ADMIN-USERS|PLATFORM-WORKSPACE-ACCOUNTS", "AccountsPage|AdministratorsPage", "IA03-ADMIN"],
+  "counterexamples": [
+    {"path":"PLATFORM-WORKSPACE-ACCOUNTS","reason":"The selected-workspace account task remains correctly bound to workspace-iam/AccountsPage.tsx and must not be renamed."},
+    {"path":"IA03 organization, contract, role and extension surfaces","reason":"These are different business tasks and were not found to share a contradictory route-backed page assignment."}
+  ],
+  "findings": [
+    {"findingId":"PF-ADMIN-SURFACE-01","status":"CONFIRMED","finding":"The roster and physical contract bound PLATFORM-ADMIN-USERS and its administrator child surfaces to workspace-iam/AccountsPage, while IA03 and route registration bind the administrator task to platform-administration/AdministratorsPage."}
+  ],
+  "preventionDispositions": [
+    {"findingId":"PF-ADMIN-SURFACE-01","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","reason":"Before implementation, every catalog page final path must equal the physical import contract path and the route-registration module for the same business task; a mismatch is a design blocker, not an implementation choice."}
+  ]
+}

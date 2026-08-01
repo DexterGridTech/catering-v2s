@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-compliance-disposition-template",
+  "packageId": "RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+  "ruleCount": 2,
+  "applicableCount": 2,
+  "rows": [
+    {
+      "denominator": "CONTROL_PLANE_AUTHORIZATION_AND_SCOPE",
+      "sourcePath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-manifest.json",
+      "sourceSha256": "9e68cea0088ef856517394eb5ec602bdfcc918c58c8a815cf0fe891b04427ce8",
+      "anchor": "deliveryUnits[RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR]",
+      "ruleId": "CP:MANIFEST",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "EXACT_CONTROL_SURFACE_AND_RECEIPT_SET"
+    },
+    {
+      "denominator": "CONTROL_PLANE_AUTHORIZATION_AND_SCOPE",
+      "sourcePath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-amendment.md",
+      "sourceSha256": "f4b33f682e4128729dea55e11a3a3d73c52cde95cfff62734e378c527bd77504",
+      "anchor": "packageId: RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+      "ruleId": "CP:AMENDMENT",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "NON_BUSINESS_SCOPE_AND_HANDOFF"
+    }
+  ]
+}

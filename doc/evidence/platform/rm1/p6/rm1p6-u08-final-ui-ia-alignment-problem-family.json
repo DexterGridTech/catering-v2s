@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "identified-problem-family",
+  "id": "RM1P6-FINAL-UI-ALIGNMENT-DENOMINATOR-AND-PROOF-20260731",
+  "status": "OPEN_FOR_IMPLEMENTATION",
+  "rootCause": "Historical alignment evidence treated deleted legacy paths and current physical consumers as one denominator, and recorded source comparison without the focused proof required for final UI admission. A permitted successor mechanism was also incorrectly considered a reason to create an intermediate package.",
+  "finiteDenominator": ["58 current U03 control records", "two absent legacy page paths", "ContractDetailDrawer loading/error states", "ContractManagementPage focused proof", "StoreProfile focused proof", "operations-admin Node architecture tests", "operations-admin focused Vitest files", "operations-admin Playwright L2 specs"],
+  "counterexamples": ["PgOrgBrand and PgOrgTenant remain route-mounted through BusinessEntityManagementPage", "Store Profile remains read-only", "Contract create/edit/invalidate remain independent overlays", "U07 static exit remains fixed and is not reopened"],
+  "minimalReusableFix": "Use one direct package for the real source/test/evidence delta, remove absent paths from the new current alignment denominator rather than calling them retired consumers, and require current-source focused proof before recording PASS.",
+  "prevention": [
+    {"destination": "PROJECT_MEMORY", "owner": "project-memory/operations/phase-retrospective-and-systemic-repair.md#SUCCESSOR_ADMISSION_SURFACE_FREEZE_BEFORE_HANDOFF", "evidence": "U08 applies direct denominator rule; follow-up memory wording is retained for the next memory-indexed package"},
+    {"destination": "EXISTING_MACHINE_CONTROL", "owner": "tools/compliance-control/cli.mjs#validateUiIaAdmission", "evidence": "production consumer writes require an admitted binding and source hash"},
+    {"destination": "REVIEW_CHECKLIST", "owner": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md", "evidence": "fresh reviewer compares current controls, absent paths, IA04 and proof"}
+  ],
+  "runnerBoundaryFinding": {
+    "status": "CONFIRMED",
+    "genericProblem": "A repository with Node architecture tests, focused Vitest source tests and Playwright L2 specifications cannot treat an unrestricted Vitest glob as its aggregate test command; doing so feeds foreign runner files to Vitest and creates false suite failures.",
+    "evidence": "Exact U08 Vitest selection passed 2 files / 4 tests. `yarn --cwd apps/frontend/operations-admin vitest run` reported 37 tests passed and four runner-selection failures for Node `.mjs` architecture files and a Playwright L2 spec. The package-owned `yarn test` command separately ran the 10 Node architecture tests PASS.",
+    "minimalReusableFix": "For static focused proof, invoke Vitest with an explicit `.test.tsx` or `.test.ts` denominator; invoke the package-owned Node architecture command separately; reserve Playwright specs for their managed L2 entrypoint. Do not classify a mixed-runner discovery failure as a UI business failure.",
+    "preventionDestination": "REVIEW_CHECKLIST",
+    "owningSourceOrControl": "apps/frontend/operations-admin/package.json#scripts.test and scripts/README.md managed-L2 boundary"
+  }
+}

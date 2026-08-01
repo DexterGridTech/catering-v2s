@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-design-adversarial-review",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewCycleId": "R5-REVISED-DESIGN-20260726",
+  "reviewTarget": "DESIGN",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "manifestSha256": "ae8b8bdcfa64dfd4aebbf566d3674b06f959950cb27012f82204e7e684c25606",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-26-v2s-r5-revised-design-adversarial-round-2-inputs.json",
+    "sha256": "d7095b732572147766372550217c85cf184bc93ca61710abe3797586c1db3f2c"
+  },
+  "blindReviewDeclaration": "Fresh v2s-rooted independent review first reopened every mandatory input, recomputed the declared hashes, ran both required six-dimension routes, and formed the findings and NO_GO verdict before reading any author self-review, finding disposition, or round-1 intake. The author intake was read only afterwards for difference reporting and was not treated as authority.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "design-only authorization and Roadmap consistency",
+      "standards traceability and mechanical-validator coverage",
+      "carry-over-first UI asset completeness",
+      "owner authorization, actor snapshot, face projection, and sensitive-data containment"
+    ]
+  },
+  "expectedBehavior": [
+    "R5 remains design-only: implementation, runtime, and seed/reset are false until the stated review and Dexter-acceptance chain completes.",
+    "Each Part C rule is referenced by its real C.T01 through C.T23 matrix identifier and remains review-routed, not disguised as a semantic gate.",
+    "Every carried/adapted page, feature, app shell, and foundation asset has a source-path/hash, target path, owning app, explicit disposition, retained boundary, and focused evidence responsibility.",
+    "getEntityAuditHistory is one dual-face task read for the approved twelve entity types; host read authorization precedes owner-local audit reading, and the response exposes only face-projected command-time display snapshots and human-readable safe diffs."
+  ],
+  "unitVerdicts": [
+    { "id": "R5-U01", "verdict": "NO_GO", "findingIds": ["R5-R2-M-001", "R5-R2-N-004"] },
+    { "id": "R5-U02", "verdict": "NO_GO", "findingIds": ["R5-R2-M-001", "R5-R2-N-004"] },
+    { "id": "R5-U03", "verdict": "NO_GO", "findingIds": ["R5-R2-M-001", "R5-R2-N-004"] },
+    { "id": "R5-U04", "verdict": "NO_GO", "findingIds": ["R5-R2-M-001", "R5-R2-N-004"] },
+    { "id": "R5-U05", "verdict": "NO_GO", "findingIds": ["R5-R2-M-001", "R5-R2-N-004"] },
+    { "id": "R5-U06", "verdict": "NO_GO", "findingIds": ["R5-R2-M-001", "R5-R2-M-002", "R5-R2-N-004"] },
+    { "id": "R5-U07", "verdict": "NO_GO", "findingIds": ["R5-R2-M-001", "R5-R2-M-002", "R5-R2-N-004"] },
+    { "id": "R5-U08", "verdict": "NO_GO", "findingIds": ["R5-R2-M-001", "R5-R2-M-003"] }
+  ],
+  "findings": [
+    {
+      "id": "R5-R2-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["R5-U01", "R5-U02", "R5-U03", "R5-U04", "R5-U05", "R5-U06", "R5-U07", "R5-U08"],
+      "title": "Manifest Part C does not bind any real C.T matrix rule",
+      "evidence": "The manifest records only C.T01-C.T06, C.T07-C.T12, C.T13-C.T19, and C.T20-C.T23. Fresh exact lookup against contracts/policy/standards-coverage-matrix.json found no ruleId for any of those four strings; the matrix instead contains the twenty-three individual ruleIds C.T01 through C.T23. standards-coverage --phase R5 passed because it validates the matrix denominator, not this manifest-to-matrix reference relation.",
+      "risk": "The design claims all Part C coverage but supplies no stable actual-ID trace from any delivery unit to the rule and its review destination. A later reviewer cannot tell which of the twenty-three reference-pattern obligations applies, while a green coverage command can be misreported as proof of that absent mapping.",
+      "disposition": "Before any further review or implementation decision, replace the four range tokens with the actual individual C.T01-C.T23 IDs, map each to the applicable delivery unit and its review checklist/source anchor, and re-run the existing coverage and granularity checks. This is a manifest-only trace repair; it must not create a semantic keyword gate or alter the frozen matrix."
+    },
+    {
+      "id": "R5-R2-M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["R5-U06", "R5-U07"],
+      "title": "Carry-over-first is asserted but no implementation-facing carry/adapt inventory exists",
+      "evidence": "The revised design says the 22 surfaces and 25 pageDesignKeys continue to rely on accepted artifacts and a frozen frontend manifest, while R5-U07 contains only three broad feature/foundation directories. Neither reviewed document contains the required per-page/feature/app-shell/foundation sourcePath@hash, targetPath, owning app, CARRY/ADAPT/REWRITE/NOT_APPLICABLE disposition, retained boundary, or focused evidence mapping. The only concrete audit screen records NO_V2_COUNTERPART, which cannot inventory the remaining approved UI assets.",
+      "risk": "An implementer must rediscover the v2 baseline and decide carry versus rewrite during implementation. That defeats the mandatory carry-over-first control, permits accidental shell/foundation duplication or missed pages, and means the claimed 22/25 denominator is not an implementation-ready plan.",
+      "disposition": "Add one bounded manifest inventory for the already approved 22 surfaces/25 page keys and the two app shells/foundation consumers. It should reference existing frozen interaction assets rather than redraw UI, and for each asset state source hash, target, app owner, disposition, retained/non-inherited boundary, and L2/L3 evidence. The accepted audit Modal remains one NO_V2_COUNTERPART entry with its stated new-scope reason."
+    },
+    {
+      "id": "R5-R2-M-003",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["R5-U08"],
+      "title": "Current manifest cannot pass the production granularity validator",
+      "evidence": "Fresh execution of scripts/check/implementation-design-granularity with the current manifest and this review fails closed with UNIT_SOURCE_R5-U08_2_ANCHOR_NOT_UNIQUE:0. R5-U08 binds doc/decisions/2026-07-24-v2s-verification-governance.md to the anchor # V2S 验证治理, but the frozen document's actual unique heading is # 验证工作的通用规则.",
+      "risk": "The proposed design package has no runnable production binding proof. Its stated managed-DEV, seed, L2/L3, and cleanup unit can therefore reach neither the checker nor a trustworthy implementation-facing handoff.",
+      "disposition": "Correct the manifest source anchor to the exact frozen heading and re-run the unchanged production validator with this review. Do not weaken the anchor-uniqueness control or change the frozen verification decision."
+    },
+    {
+      "id": "R5-R2-N-004",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "unitIds": ["R5-U01", "R5-U02", "R5-U03", "R5-U04", "R5-U05", "R5-U06", "R5-U07"],
+      "title": "Production granularity validation is healthy but is not proof of the two missing design relations",
+      "evidence": "scripts/check/implementation-design-granularity --self-test fresh passed all declared red fixtures, including hash drift, missing evidence, review-round, input-checklist, post-remediation, flow-name, and baseline-state controls. Its production implementation validates manifest structure, hashes, anchors, units, review links, and severity counts, but does not read standardsCoverage.partC or test carry-over asset inventory. Consequently it can pass a review bound to the current manifest while M-001 and M-002 remain.",
+      "risk": "The validator may be cited beyond its mechanical scope, creating a false claim that it approved standards traceability or carry-over completeness.",
+      "disposition": "Keep the validator and its current controls; record its scope honestly in evidence. Resolve M-001 and M-002 through the design artifact and fresh human review rather than adding a semantic checker solely to satisfy this review."
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The approved audit addition solves the user task of understanding who changed what while remaining in the current entity detail. Its single dual-face operation and Modal avoid a second permission model, twelve duplicated endpoints, a route, or a log browser.",
+    "simplerAlternativeAssessment": "A live cross-owner identity lookup would be shorter to sketch but violates the owner and least-disclosure boundary; a global audit owner or copied identity projection would add an unnecessary fact owner and topology. The current command-time minimal display snapshot plus face projection is the smaller valid approach, provided host authorization is performed before owner task reading as stated.",
+    "costFit": "The audit snapshot/projection design is proportionate and does not itself require a finding: it keeps audit facts owner-local, uses no new authorization, avoids sensitive identity fields, and preserves historical display after account changes. By contrast, missing actual C.T links and the required carry/adapt inventory leave mandatory design work to implementation, so their cost is not yet proportionate to an implementation-facing handoff.",
+    "verdict": "NOT_REASONABLE_TO_HAND_OFF_YET"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Independent round 2 confirms Roadmap/current authorization consistency and finds the actor snapshot/face projection a bounded solution for the approved audit task. The revised design still cannot be handed off because it has no exact Part C C.T01-C.T23 trace, no mandatory carry-over-first implementation inventory, and a broken R5-U08 frozen-source anchor that makes the production granularity validator fail closed. M=3, S=0, N=1. This is a design review only.",
+    "severityCounts": { "M": 3, "S": 0, "N": 1 },
+    "authorizationBoundary": "This verdict neither authorizes R5 implementation, runtime, DEV, seed/reset, contracts, migrations, tests, scripts, nor any source change. It only records the final independent adversarial review result for the current design bytes."
+  },
+  "authorIntakeComparison": {
+    "path": "doc/review/platform/2026-07-26-v2s-r5-revised-design-adversarial-round-1-intake.md",
+    "sha256": "b12e208436de6f33811a302d9a4282710c5c30ae594c1cde1ed31d156ef37df5",
+    "readAfterIndependentVerdict": true,
+    "difference": "The round-1 intake correctly repaired the prior C.TABLE aliases, Roadmap state, authorization metadata, and actor snapshot shape. This round independently found that the replacement Part C range tokens still are not actual matrix rule IDs, and that carry-over-first remains absent at implementation-facing asset granularity. The intake did not change this verdict."
+  },
+  "clericalCorrection": {
+    "date": "2026-07-26",
+    "reason": "Corrected two unitVerdicts-to-findings link-consistency defects: replaced stale R5-R2-N-003 references with existing R5-R2-N-004 for U01-U07, then removed R5-R2-N-004 from U08 because that finding applies only to U01-U07.",
+    "verdictFindingsSeverityUnchanged": true
+  }
+}

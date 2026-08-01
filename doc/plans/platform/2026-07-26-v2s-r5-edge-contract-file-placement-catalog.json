@@ -1,0 +1,152 @@
+{
+  "kind": "R5_EDGE_CONTRACT_FILE_PLACEMENT_CATALOG",
+  "status": "NORMATIVE_DESIGN_INPUT",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "reviewCycleId": "R5-W3-DESIGN-20260725",
+  "reviewTarget": "DESIGN",
+  "implementationAuthority": false,
+  "sourceCatalog": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+  "rules": {
+    "root": "contracts/openapi/edge.openapi.yaml",
+    "operationResolution": "operation override wins, otherwise pageKeyToCapability; target path is paths/<face>/<capability>.paths.yaml",
+    "componentResolution": "exactComponentOverrides wins, otherwise first and only matching componentFamilyRules entry; target path is components/<familyToOwner[family]>/<family>.schemas.yaml",
+    "ambiguity": "FAIL",
+    "unresolved": "FAIL",
+    "inlineOperationOrSchema": "FORBIDDEN",
+    "maxNonBlankLinesPerHandwrittenYaml": 500,
+    "mediaTypes": {
+      "jsonSuccess": "application/json",
+      "noContent": "NONE",
+      "binarySuccess": "SOURCE_MEDIA_TYPE",
+      "error": "application/problem+json"
+    }
+  },
+  "pageKeyToCapability": {
+    "PLATFORM-CONTRACT-OVERVIEW": "contract-overview",
+    "OPERATIONS-LOGIN": "workspace-auth",
+    "OPERATIONS-SHELL": "workspace-session",
+    "PLATFORM-WORKSPACES": "group-workspace-management",
+    "PLATFORM-ORGANIZATION-OVERVIEW": "organization-overview",
+    "PLATFORM-ROLES": "role-management",
+    "PLATFORM-WORKSPACE-ACCOUNTS": "workspace-access",
+    "PLATFORM-EXTENSION-FIELDS": "extension-definition",
+    "PLATFORM-LOGIN-OR-PASSWORD": "platform-auth",
+    "PLATFORM-ADMIN-USERS": "platform-admin-management",
+    "OPERATIONS-BRAND": "brand-management",
+    "OPERATIONS-TENANT": "tenant-management",
+    "OPERATIONS-HEAD-COMPANY": "head-company-management",
+    "OPERATIONS-BUSINESS-ENTITY": "business-entity-extension",
+    "OPERATIONS-FIVE-USER-PAGES": "workspace-access",
+    "OPERATIONS-ORG-STRUCTURE": "organization-hierarchy",
+    "OPERATIONS-STORE-MANAGEMENT": "store-management",
+    "OPERATIONS-STORE-PROFILE": "store-profile",
+    "OPERATIONS-CONTRACT-MANAGEMENT": "contract-management",
+    "PUBLIC-INVITATION-ACCEPTANCE": "invitation-acceptance",
+    "PUBLIC-ACCESS-RECOVERY": "access-recovery",
+    "PLATFORM-WORKSPACE-OVERVIEW": "group-workspace-management"
+  },
+  "operationOverrides": {
+    "initializeCommercialGroup": {
+      "capability": "commercial-group",
+      "pathFile": "paths/platform-admin/commercial-group.paths.yaml"
+    },
+    "getPublicAssetContent": {
+      "capability": "asset-content",
+      "pathFile": "paths/public/asset-content.paths.yaml"
+    },
+    "getPlatformEntityAuditHistory": {
+      "capability": "audit-history",
+      "pathFile": "paths/platform-admin/audit-history.paths.yaml"
+    },
+    "getOperationsEntityAuditHistory": {
+      "capability": "audit-history",
+      "pathFile": "paths/operations-admin/audit-history.paths.yaml"
+    }
+  },
+  "componentFamilyRules": [
+    {"match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditEntity.*|AuditActor.*|AuditTarget.*)$", "family": "common"},
+    {"match": "^(GroupWorkspace)", "family": "group-workspace"},
+    {"match": "^(CommercialGroup)", "family": "commercial-group"},
+    {"match": "^(PlatformAsset|BinaryAssetContent)", "family": "asset"},
+    {"match": "^(PlatformAdmin|PlatformSession|PlatformCurrent|LoginRequest)", "family": "platform-identity"},
+    {"match": "^(ContractOverview|StoreContract)", "family": "contract"},
+    {"match": "^(Extension)", "family": "extension"},
+    {"match": "^(Brand|Tenant|HeadCompany|BusinessEntity)", "family": "business-entity"},
+    {"match": "^(OrganizationOverview)", "family": "organization-overview"},
+    {"match": "^(OrganizationNode|OrganizationHierarchy|OrganizationProject)", "family": "organization-hierarchy"},
+    {"match": "^(OrganizationStore)", "family": "store"},
+    {"match": "^(WorkspaceSession|WorkspaceLogin|WorkspacePasswordLogin|WorkspaceCurrent|WorkspaceSelect)", "family": "workspace-session"},
+    {"match": "^(Workspace|PublicInvitation)", "family": "workspace-access"}
+  ],
+  "familyToOwner": {
+    "common": "common",
+    "group-workspace": "platform-workspace",
+    "commercial-group": "organization",
+    "asset": "platform-asset",
+    "platform-identity": "platform-iam",
+    "contract": "contract",
+    "extension": "extension",
+    "business-entity": "organization",
+    "organization-overview": "organization",
+    "organization-hierarchy": "organization",
+    "store": "organization",
+    "workspace-session": "workspace-iam",
+    "workspace-access": "workspace-iam"
+  },
+  "exactComponentOverrides": {
+    "WorkspaceLoginEntry": "components/workspace-iam/workspace-session.schemas.yaml",
+    "WorkspacePasswordLoginRequest": "components/workspace-iam/workspace-session.schemas.yaml",
+    "WorkspaceSessionEntry": "components/workspace-iam/workspace-session.schemas.yaml",
+    "WorkspaceSelectContextRequest": "components/workspace-iam/workspace-session.schemas.yaml",
+    "WorkspaceCurrentPasswordChangeRequest": "components/workspace-iam/workspace-session.schemas.yaml",
+    "WorkspaceCurrentPasswordChangeResult": "components/workspace-iam/workspace-session.schemas.yaml",
+    "WorkspaceSelectDataNodeRequest": "components/workspace-iam/workspace-session.schemas.yaml",
+    "PlatformAssetStageMultipart": "components/platform-asset/asset.schemas.yaml",
+    "BinaryAssetContent": "components/platform-asset/asset.schemas.yaml",
+    "Problem": "components/common/problem.schemas.yaml",
+    "EpochMillis": "components/common/time.schemas.yaml",
+    "SortDirection": "components/common/enum.schemas.yaml",
+    "ServiceNodeType": "components/common/enum.schemas.yaml",
+    "ProjectPhaseNames": "components/common/enum.schemas.yaml",
+    "NoBody": "components/common/empty.schemas.yaml",
+    "NoContent": "components/common/empty.schemas.yaml"
+  },
+  "resolvedFieldContract": {
+    "requiredOnEveryOperation": [
+      "capability",
+      "pathFile",
+      "requestComponentFile",
+      "responseComponentFile",
+      "successContentType",
+      "errorContentType"
+    ],
+    "materialization": "U01 resolves and emits a 118-row placement report before creating any OpenAPI file; row count, operationId set, scalar face closure, uniqueness, target file existence and 500-line limit are fail-closed",
+    "noDeveloperChoice": "the resolver rules above are normative; implementation agents may not choose a different target file",
+    "requiredNestedReferenceChecks": [
+      {
+        "hostComponent": "StoreContractCandidatePage",
+        "propertyPath": "stores.items",
+        "requiredTargetComponent": "StoreContractStoreCandidate",
+        "requiredTargetFile": "components/contract/contract.schemas.yaml",
+        "evidence": "the U01 component generation report must emit this host/property/target tuple and fail on an unresolved, ambiguous or different target"
+      }
+    ]
+  },
+  "closure": {
+    "sourceOperationCount": 104,
+    "plannedAdditionalOperationCount": 14,
+    "expectedResolvedOperationCount": 118,
+    "expectedUnresolvedOperationCount": 0,
+    "expectedAmbiguousOperationCount": 0,
+    "sourceComponentCount": 140,
+    "expectedResolvedComponentCount": 139,
+    "expectedExplicitNotCarriedComponentCount": 1,
+    "expectedUnresolvedComponentCount": 0,
+    "expectedAmbiguousComponentCount": 0,
+    "faceCounts": {
+      "platform-admin": 47,
+      "operations-admin": 56,
+      "public": 15
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-ADMIN-CATALOG-TRUTH-MODEL-20260730",
+  "genericProblem": "Static admin catalog relationships can be duplicated across position-dependent tuples, binding maps and handwritten owner switches, allowing each consumer to become a partial truth source.",
+  "rootCauseClass": "PARALLEL_STATIC_RELATION_SOURCES_WITHOUT_TYPED_NODE_PROJECTION",
+  "finiteDenominator": [
+    "contracts/catalog/admin-catalog.json: 25 PAGE, 34 ACTION, 4 navigation group, 4 action group and 10 user-management purpose relations",
+    "scripts/generate/edge-codegen.mjs: static catalog parser, TypeScript projections and WorkspaceAuthorizationCatalog generator",
+    "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+    "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#homePage"
+  ],
+  "searchedSurfaces": [
+    "contracts/catalog",
+    "scripts/generate",
+    "apps/frontend/platform-admin/src/app/catalog",
+    "apps/frontend/operations-admin/src/app/catalog",
+    "apps/backend/catering-business-server/modules/workspace-iam",
+    "tools/capability-invariants",
+    "tools/authority-source-ledger",
+    "contracts/openapi/paths/operations-admin",
+    "apps/frontend/operations-admin/src/app/api/generated",
+    "apps/frontend/operations-admin/src/features/head-company-management",
+    "apps/frontend/operations-admin/package.json",
+    "tools/compliance-control/cli.mjs",
+    "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-input.json"
+  ],
+  "searchQueries": [
+    "platformPages|operationsPages|operationsPageUx|actionGroups|actions|userManagementActionBindings",
+    "WorkspaceAuthenticationService homePage",
+    "generatedAdminCatalog userManagementActionBindings",
+    "WorkspaceAuthorizationCatalog pageCatalog capabilityCatalog",
+    "replaceOperationsOrganizationHeadCompanyBrandAuthorizations",
+    "addOperationsOrganizationHeadCompanyBrandAuthorization|removeOperationsOrganizationHeadCompanyBrandAuthorization",
+    "operations-admin typecheck|operations-admin test",
+    "businessEvidenceObligation|NOT_REQUIRED_CONTROL_ONLY|NOT_APPLICABLE_STATIC_ONLY"
+  ],
+  "counterexamples": [
+    {
+      "id": "CE-01",
+      "claim": "All runtime IAM and organization facts should become generic catalog nodes.",
+      "result": "REJECTED_WITH_EVIDENCE",
+      "boundary": "The catalog contains only static relation types; current grant, candidate, selected scope and owner-command recheck remain owner truth."
+    },
+    {
+      "id": "CE-02",
+      "claim": "A P6-2 static catalog migration authorizes operations-admin feature behavior changes.",
+      "result": "REJECTED_WITH_EVIDENCE",
+      "boundary": "Operations .tsx consumer refactoring requires its own IA baseline and stays outside this package."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-01",
+      "classification": "CONFIRMED",
+      "summary": "Tuple positions and parallel user-management bindings duplicate static page/action relations."
+    },
+    {
+      "findingId": "PF-02",
+      "classification": "CONFIRMED",
+      "summary": "Role home routing is separately hardcoded in WorkspaceAuthenticationService instead of projected from the static catalog."
+    },
+    {
+      "findingId": "PF-03",
+      "classification": "CONFIRMED",
+      "summary": "Using historical U02's expanded active allowlist for this migration causes correct manifest-drift fail-closed behavior."
+    },
+    {
+      "findingId": "PF-04",
+      "classification": "CONFIRMED",
+      "summary": "A generated-contract retirement can expose a legacy feature consumer that still calls the retired operation; a passing architecture-test-only command does not establish typecheck compatibility. The finite affected set is the retired operation's OpenAPI/generated/catalog identities, the two HeadCompanyManagementPage call sites, its P6-3 removal receipt, and the operations-admin test/typecheck scripts."
+    },
+    {
+      "findingId": "PF-05",
+      "classification": "CONFIRMED",
+      "summary": "A generated runtime lookup for a source-model 1:1 relation must fail closed if a duplicate projection somehow reaches runtime, rather than silently selecting its first row."
+    },
+    {
+      "findingId": "PF-06",
+      "classification": "CONFIRMED",
+      "summary": "A static-only successor package used a prose-like business-evidence obligation value that is not in the compliance controller's closed vocabulary, so package exit was mechanically uncloseable despite the approved no-dynamic boundary."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/generate/edge-codegen.mjs#loadAdminCatalog and its red fixtures"
+    },
+    {
+      "findingId": "PF-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-implementation-amendment.md#Package exit"
+    },
+    {
+      "findingId": "PF-03",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs#successorPackageAdmission"
+    },
+    {
+      "findingId": "PF-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md#P6-3 corrective slice — IA04 total-company brand authorization: the P6-3 receipt must remove the legacy Drawer/calls and include operations-admin typecheck in addition to focused tests"
+    },
+    {
+      "findingId": "PF-05",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/generate/edge-codegen.mjs#javaWorkspaceAuthorizationCatalog and role-home output drift red mutation"
+    },
+    {
+      "findingId": "PF-06",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs#validateRequiredDynamicEvidence: static-only packages use NOT_REQUIRED_CONTROL_ONLY"
+    }
+  ]
+}

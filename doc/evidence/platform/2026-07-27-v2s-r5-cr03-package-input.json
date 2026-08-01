@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U03",
+  "kind": "security-authorization-package-input",
+  "predecessor": {
+    "packageId": "R5-CR-U02",
+    "packageExitPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-package-exit.json",
+    "status": "PASS"
+  },
+  "frozenInputs": [
+    {
+      "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+      "anchor": "### 4.4 R5-CR03 安全与授权闭合"
+    },
+    {
+      "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "deliveryUnit": "R5-CR-U03"
+    },
+    {
+      "path": "project-memory/decisions/confirmed-business-language-corpus.md",
+      "entries": [
+        "G-05",
+        "G-07",
+        "G-10"
+      ]
+    },
+    {
+      "path": "project-memory/decisions/deterministic-context-only.md"
+    }
+  ],
+  "invariants": [
+    "Public OTP has a distinct purpose and rate-limited security facts survive business failure.",
+    "Audit read is preceded by authorized host detail read and does not expose raw mobile.",
+    "Last-platform-admin guard serializes the platform-iam owner-global invariant check.",
+    "Replay returns original readback and never appends duplicate audit."
+  ],
+  "authorityBoundary": "CR03 only. No migration, contract, surface-completion, DEV, seed/reset, remote or CR04+ action is authorized."
+}

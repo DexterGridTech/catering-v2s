@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-cr01-static-contract-and-generation-closure",
+  "packageId": "R5-CR-U01",
+  "status": "PASS",
+  "evidence": [
+    "node tools/verify-gates/strict-openapi-resolver.mjs => PASS; REFERENCES=1355",
+    "node tools/verify-gates/cli.mjs openapi => PASS",
+    "node scripts/generate/edge-codegen.mjs --check => PASS; FILES=210",
+    "node scripts/generate/edge-codegen.mjs --self-test => PASS; R5_EDGE_WIRE_UNTYPED_MAP exact red",
+    "node tools/compliance-control/cli.mjs validate-delta-receipts => PASS; CHANGED=250"
+  ],
+  "closure": {
+    "strictResolver": {"references": 1355, "unresolved": 0},
+    "generatedWireUntypedMap": 0,
+    "frozenOperationDenominators": "unchanged; verified by existing catalog and codegen closure"
+  },
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "reviewBoundary": "UNENFORCEABLE_BY_MACHINE standards rows remain explicitly deferred to the CR06 static code review and eventual R5 whole-scope implementation review."
+}

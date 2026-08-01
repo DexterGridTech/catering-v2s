@@ -1,0 +1,1007 @@
+// Generated from accepted R5 edge catalog; do not edit.
+
+import type {BaseQueryFn, EndpointBuilder, FetchArgs, FetchBaseQueryError, FetchBaseQueryMeta} from "@reduxjs/toolkit/query";
+import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest} from "./operations-edge";
+
+type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
+export type OperationsAdminOperationId = keyof FaceOperationContracts;
+export type OperationsAdminRtkWireRequest = <I extends OperationsAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs;
+
+/**
+ * Operation-shaped request constructors for RTK hooks. Consumers supply only
+ * typed path parameters and operation options; catalog id, method and path are
+ * frozen here rather than handwritten in pages.
+ */
+export const operationsAdminRtkRequest = {
+    addOperationsOrganizationHeadCompanyBrandAuthorization: (pathParameters: FaceOperationContracts["addOperationsOrganizationHeadCompanyBrandAuthorization"]["path"], options: FaceOperationOptions<"addOperationsOrganizationHeadCompanyBrandAuthorization">): FaceOperationRequest<"addOperationsOrganizationHeadCompanyBrandAuthorization"> => ({
+      operationId: "addOperationsOrganizationHeadCompanyBrandAuthorization",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceGroupInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceGroupInvitation"> => ({
+      operationId: "cancelOperationsWorkspaceGroupInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceHeadCompanyInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceHeadCompanyInvitation"> => ({
+      operationId: "cancelOperationsWorkspaceHeadCompanyInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceProjectInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceProjectInvitation"> => ({
+      operationId: "cancelOperationsWorkspaceProjectInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceRegionInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceRegionInvitation"> => ({
+      operationId: "cancelOperationsWorkspaceRegionInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceStoreInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceStoreInvitation"> => ({
+      operationId: "cancelOperationsWorkspaceStoreInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    changeCurrentWorkspacePassword: (pathParameters: FaceOperationContracts["changeCurrentWorkspacePassword"]["path"], options: FaceOperationOptions<"changeCurrentWorkspacePassword">): FaceOperationRequest<"changeCurrentWorkspacePassword"> => ({
+      operationId: "changeCurrentWorkspacePassword",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsContract: (pathParameters: FaceOperationContracts["createOperationsContract"]["path"], options: FaceOperationOptions<"createOperationsContract">): FaceOperationRequest<"createOperationsContract"> => ({
+      operationId: "createOperationsContract",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["createOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"createOperationsOrganizationBrand">): FaceOperationRequest<"createOperationsOrganizationBrand"> => ({
+      operationId: "createOperationsOrganizationBrand",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["createOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"createOperationsOrganizationHeadCompany">): FaceOperationRequest<"createOperationsOrganizationHeadCompany"> => ({
+      operationId: "createOperationsOrganizationHeadCompany",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationProject: (pathParameters: FaceOperationContracts["createOperationsOrganizationProject"]["path"], options: FaceOperationOptions<"createOperationsOrganizationProject">): FaceOperationRequest<"createOperationsOrganizationProject"> => ({
+      operationId: "createOperationsOrganizationProject",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationRegion: (pathParameters: FaceOperationContracts["createOperationsOrganizationRegion"]["path"], options: FaceOperationOptions<"createOperationsOrganizationRegion">): FaceOperationRequest<"createOperationsOrganizationRegion"> => ({
+      operationId: "createOperationsOrganizationRegion",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationStore: (pathParameters: FaceOperationContracts["createOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"createOperationsOrganizationStore">): FaceOperationRequest<"createOperationsOrganizationStore"> => ({
+      operationId: "createOperationsOrganizationStore",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["createOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"createOperationsOrganizationTenant">): FaceOperationRequest<"createOperationsOrganizationTenant"> => ({
+      operationId: "createOperationsOrganizationTenant",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceGroupInvitation">): FaceOperationRequest<"createOperationsWorkspaceGroupInvitation"> => ({
+      operationId: "createOperationsWorkspaceGroupInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceHeadCompanyInvitation">): FaceOperationRequest<"createOperationsWorkspaceHeadCompanyInvitation"> => ({
+      operationId: "createOperationsWorkspaceHeadCompanyInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceProjectInvitation">): FaceOperationRequest<"createOperationsWorkspaceProjectInvitation"> => ({
+      operationId: "createOperationsWorkspaceProjectInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceRegionInvitation">): FaceOperationRequest<"createOperationsWorkspaceRegionInvitation"> => ({
+      operationId: "createOperationsWorkspaceRegionInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceStoreInvitation">): FaceOperationRequest<"createOperationsWorkspaceStoreInvitation"> => ({
+      operationId: "createOperationsWorkspaceStoreInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsContract: (pathParameters: FaceOperationContracts["getOperationsContract"]["path"], options: FaceOperationOptions<"getOperationsContract">): FaceOperationRequest<"getOperationsContract"> => ({
+      operationId: "getOperationsContract",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsContractCandidates: (pathParameters: FaceOperationContracts["getOperationsContractCandidates"]["path"], options: FaceOperationOptions<"getOperationsContractCandidates">): FaceOperationRequest<"getOperationsContractCandidates"> => ({
+      operationId: "getOperationsContractCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsContractExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsContractExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsContractExtensionDefinition">): FaceOperationRequest<"getOperationsContractExtensionDefinition"> => ({
+      operationId: "getOperationsContractExtensionDefinition",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsContracts: (pathParameters: FaceOperationContracts["getOperationsContracts"]["path"], options: FaceOperationOptions<"getOperationsContracts">): FaceOperationRequest<"getOperationsContracts"> => ({
+      operationId: "getOperationsContracts",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsEntityAuditHistory: (pathParameters: FaceOperationContracts["getOperationsEntityAuditHistory"]["path"], options: FaceOperationOptions<"getOperationsEntityAuditHistory">): FaceOperationRequest<"getOperationsEntityAuditHistory"> => ({
+      operationId: "getOperationsEntityAuditHistory",
+      method: "GET",
+      path: "/api/operations/audit-history",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsFixedStoreContracts: (pathParameters: FaceOperationContracts["getOperationsFixedStoreContracts"]["path"], options: FaceOperationOptions<"getOperationsFixedStoreContracts">): FaceOperationRequest<"getOperationsFixedStoreContracts"> => ({
+      operationId: "getOperationsFixedStoreContracts",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["getOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBrand">): FaceOperationRequest<"getOperationsOrganizationBrand"> => ({
+      operationId: "getOperationsOrganizationBrand",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationBrands: (pathParameters: FaceOperationContracts["getOperationsOrganizationBrands"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBrands">): FaceOperationRequest<"getOperationsOrganizationBrands"> => ({
+      operationId: "getOperationsOrganizationBrands",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationBusinessEntityExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationBusinessEntityExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBusinessEntityExtensionDefinition">): FaceOperationRequest<"getOperationsOrganizationBusinessEntityExtensionDefinition"> => ({
+      operationId: "getOperationsOrganizationBusinessEntityExtensionDefinition",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationHeadCompanies: (pathParameters: FaceOperationContracts["getOperationsOrganizationHeadCompanies"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHeadCompanies">): FaceOperationRequest<"getOperationsOrganizationHeadCompanies"> => ({
+      operationId: "getOperationsOrganizationHeadCompanies",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["getOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHeadCompany">): FaceOperationRequest<"getOperationsOrganizationHeadCompany"> => ({
+      operationId: "getOperationsOrganizationHeadCompany",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationHierarchy: (pathParameters: FaceOperationContracts["getOperationsOrganizationHierarchy"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHierarchy">): FaceOperationRequest<"getOperationsOrganizationHierarchy"> => ({
+      operationId: "getOperationsOrganizationHierarchy",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationStore: (pathParameters: FaceOperationContracts["getOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStore">): FaceOperationRequest<"getOperationsOrganizationStore"> => ({
+      operationId: "getOperationsOrganizationStore",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationStoreCandidates: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreCandidates">): FaceOperationRequest<"getOperationsOrganizationStoreCandidates"> => ({
+      operationId: "getOperationsOrganizationStoreCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationStoreExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreExtensionDefinition">): FaceOperationRequest<"getOperationsOrganizationStoreExtensionDefinition"> => ({
+      operationId: "getOperationsOrganizationStoreExtensionDefinition",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationStores: (pathParameters: FaceOperationContracts["getOperationsOrganizationStores"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStores">): FaceOperationRequest<"getOperationsOrganizationStores"> => ({
+      operationId: "getOperationsOrganizationStores",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["getOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"getOperationsOrganizationTenant">): FaceOperationRequest<"getOperationsOrganizationTenant"> => ({
+      operationId: "getOperationsOrganizationTenant",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationTenants: (pathParameters: FaceOperationContracts["getOperationsOrganizationTenants"]["path"], options: FaceOperationOptions<"getOperationsOrganizationTenants">): FaceOperationRequest<"getOperationsOrganizationTenants"> => ({
+      operationId: "getOperationsOrganizationTenants",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsStoreProfile: (pathParameters: FaceOperationContracts["getOperationsStoreProfile"]["path"], options: FaceOperationOptions<"getOperationsStoreProfile">): FaceOperationRequest<"getOperationsStoreProfile"> => ({
+      operationId: "getOperationsStoreProfile",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceGroupInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceGroupInvitationCandidates"> => ({
+      operationId: "getOperationsWorkspaceGroupInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceGroupInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitations">): FaceOperationRequest<"getOperationsWorkspaceGroupInvitations"> => ({
+      operationId: "getOperationsWorkspaceGroupInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceGroupUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupUser">): FaceOperationRequest<"getOperationsWorkspaceGroupUser"> => ({
+      operationId: "getOperationsWorkspaceGroupUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceGroupUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupUserAccount">): FaceOperationRequest<"getOperationsWorkspaceGroupUserAccount"> => ({
+      operationId: "getOperationsWorkspaceGroupUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceHeadCompanyInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceHeadCompanyInvitationCandidates"> => ({
+      operationId: "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceHeadCompanyInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyInvitations">): FaceOperationRequest<"getOperationsWorkspaceHeadCompanyInvitations"> => ({
+      operationId: "getOperationsWorkspaceHeadCompanyInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceHeadCompanyUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyUser">): FaceOperationRequest<"getOperationsWorkspaceHeadCompanyUser"> => ({
+      operationId: "getOperationsWorkspaceHeadCompanyUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceHeadCompanyUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyUserAccount">): FaceOperationRequest<"getOperationsWorkspaceHeadCompanyUserAccount"> => ({
+      operationId: "getOperationsWorkspaceHeadCompanyUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceLoginEntry: (pathParameters: FaceOperationContracts["getOperationsWorkspaceLoginEntry"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceLoginEntry">): FaceOperationRequest<"getOperationsWorkspaceLoginEntry"> => ({
+      operationId: "getOperationsWorkspaceLoginEntry",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceProjectInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceProjectInvitationCandidates"> => ({
+      operationId: "getOperationsWorkspaceProjectInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceProjectInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectInvitations">): FaceOperationRequest<"getOperationsWorkspaceProjectInvitations"> => ({
+      operationId: "getOperationsWorkspaceProjectInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceProjectUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectUser">): FaceOperationRequest<"getOperationsWorkspaceProjectUser"> => ({
+      operationId: "getOperationsWorkspaceProjectUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceProjectUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectUserAccount">): FaceOperationRequest<"getOperationsWorkspaceProjectUserAccount"> => ({
+      operationId: "getOperationsWorkspaceProjectUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceRegionInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceRegionInvitationCandidates"> => ({
+      operationId: "getOperationsWorkspaceRegionInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceRegionInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionInvitations">): FaceOperationRequest<"getOperationsWorkspaceRegionInvitations"> => ({
+      operationId: "getOperationsWorkspaceRegionInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceRegionUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionUser">): FaceOperationRequest<"getOperationsWorkspaceRegionUser"> => ({
+      operationId: "getOperationsWorkspaceRegionUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceRegionUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionUserAccount">): FaceOperationRequest<"getOperationsWorkspaceRegionUserAccount"> => ({
+      operationId: "getOperationsWorkspaceRegionUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceSessionEntry: (pathParameters: FaceOperationContracts["getOperationsWorkspaceSessionEntry"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceSessionEntry">): FaceOperationRequest<"getOperationsWorkspaceSessionEntry"> => ({
+      operationId: "getOperationsWorkspaceSessionEntry",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceStoreInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceStoreInvitationCandidates"> => ({
+      operationId: "getOperationsWorkspaceStoreInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceStoreInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreInvitations">): FaceOperationRequest<"getOperationsWorkspaceStoreInvitations"> => ({
+      operationId: "getOperationsWorkspaceStoreInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceStoreUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreUser">): FaceOperationRequest<"getOperationsWorkspaceStoreUser"> => ({
+      operationId: "getOperationsWorkspaceStoreUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceStoreUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreUserAccount">): FaceOperationRequest<"getOperationsWorkspaceStoreUserAccount"> => ({
+      operationId: "getOperationsWorkspaceStoreUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    invalidateOperationsContract: (pathParameters: FaceOperationContracts["invalidateOperationsContract"]["path"], options: FaceOperationOptions<"invalidateOperationsContract">): FaceOperationRequest<"invalidateOperationsContract"> => ({
+      operationId: "invalidateOperationsContract",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+      pathParameters,
+      ...options,
+    }),
+    operationsWorkspaceLogout: (pathParameters: FaceOperationContracts["operationsWorkspaceLogout"]["path"], options: FaceOperationOptions<"operationsWorkspaceLogout">): FaceOperationRequest<"operationsWorkspaceLogout"> => ({
+      operationId: "operationsWorkspaceLogout",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
+      pathParameters,
+      ...options,
+    }),
+    operationsWorkspacePasswordLogin: (pathParameters: FaceOperationContracts["operationsWorkspacePasswordLogin"]["path"], options: FaceOperationOptions<"operationsWorkspacePasswordLogin">): FaceOperationRequest<"operationsWorkspacePasswordLogin"> => ({
+      operationId: "operationsWorkspacePasswordLogin",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceGroupInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceGroupInvitation"> => ({
+      operationId: "reissueOperationsWorkspaceGroupInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceHeadCompanyInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceHeadCompanyInvitation"> => ({
+      operationId: "reissueOperationsWorkspaceHeadCompanyInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceProjectInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceProjectInvitation"> => ({
+      operationId: "reissueOperationsWorkspaceProjectInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceRegionInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceRegionInvitation"> => ({
+      operationId: "reissueOperationsWorkspaceRegionInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceStoreInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceStoreInvitation"> => ({
+      operationId: "reissueOperationsWorkspaceStoreInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    removeOperationsOrganizationHeadCompanyBrandAuthorization: (pathParameters: FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["path"], options: FaceOperationOptions<"removeOperationsOrganizationHeadCompanyBrandAuthorization">): FaceOperationRequest<"removeOperationsOrganizationHeadCompanyBrandAuthorization"> => ({
+      operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+      method: "DELETE",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceGroupUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceGroupUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceGroupUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceGroupUserAssignment"> => ({
+      operationId: "revokeOperationsWorkspaceGroupUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceHeadCompanyUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceHeadCompanyUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceHeadCompanyUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceHeadCompanyUserAssignment"> => ({
+      operationId: "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceProjectUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceProjectUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceProjectUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceProjectUserAssignment"> => ({
+      operationId: "revokeOperationsWorkspaceProjectUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceRegionUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceRegionUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceRegionUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceRegionUserAssignment"> => ({
+      operationId: "revokeOperationsWorkspaceRegionUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceStoreUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceStoreUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceStoreUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceStoreUserAssignment"> => ({
+      operationId: "revokeOperationsWorkspaceStoreUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    selectOperationsWorkspaceSessionContext: (pathParameters: FaceOperationContracts["selectOperationsWorkspaceSessionContext"]["path"], options: FaceOperationOptions<"selectOperationsWorkspaceSessionContext">): FaceOperationRequest<"selectOperationsWorkspaceSessionContext"> => ({
+      operationId: "selectOperationsWorkspaceSessionContext",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
+      pathParameters,
+      ...options,
+    }),
+    selectOperationsWorkspaceSessionDataNode: (pathParameters: FaceOperationContracts["selectOperationsWorkspaceSessionDataNode"]["path"], options: FaceOperationOptions<"selectOperationsWorkspaceSessionDataNode">): FaceOperationRequest<"selectOperationsWorkspaceSessionDataNode"> => ({
+      operationId: "selectOperationsWorkspaceSessionDataNode",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
+      pathParameters,
+      ...options,
+    }),
+    sendOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["sendOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"sendOperationsWorkspaceOtp">): FaceOperationRequest<"sendOperationsWorkspaceOtp"> => ({
+      operationId: "sendOperationsWorkspaceOtp",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationBrandStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationBrandStatus">): FaceOperationRequest<"transitionOperationsOrganizationBrandStatus"> => ({
+      operationId: "transitionOperationsOrganizationBrandStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationHeadCompanyStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationHeadCompanyStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationHeadCompanyStatus">): FaceOperationRequest<"transitionOperationsOrganizationHeadCompanyStatus"> => ({
+      operationId: "transitionOperationsOrganizationHeadCompanyStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationNodeStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationNodeStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationNodeStatus">): FaceOperationRequest<"transitionOperationsOrganizationNodeStatus"> => ({
+      operationId: "transitionOperationsOrganizationNodeStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationStoreStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationStoreStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationStoreStatus">): FaceOperationRequest<"transitionOperationsOrganizationStoreStatus"> => ({
+      operationId: "transitionOperationsOrganizationStoreStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationTenantStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationTenantStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationTenantStatus">): FaceOperationRequest<"transitionOperationsOrganizationTenantStatus"> => ({
+      operationId: "transitionOperationsOrganizationTenantStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsContract: (pathParameters: FaceOperationContracts["updateOperationsContract"]["path"], options: FaceOperationOptions<"updateOperationsContract">): FaceOperationRequest<"updateOperationsContract"> => ({
+      operationId: "updateOperationsContract",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["updateOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationBrand">): FaceOperationRequest<"updateOperationsOrganizationBrand"> => ({
+      operationId: "updateOperationsOrganizationBrand",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["updateOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationHeadCompany">): FaceOperationRequest<"updateOperationsOrganizationHeadCompany"> => ({
+      operationId: "updateOperationsOrganizationHeadCompany",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationNode: (pathParameters: FaceOperationContracts["updateOperationsOrganizationNode"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationNode">): FaceOperationRequest<"updateOperationsOrganizationNode"> => ({
+      operationId: "updateOperationsOrganizationNode",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationStore: (pathParameters: FaceOperationContracts["updateOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationStore">): FaceOperationRequest<"updateOperationsOrganizationStore"> => ({
+      operationId: "updateOperationsOrganizationStore",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["updateOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationTenant">): FaceOperationRequest<"updateOperationsOrganizationTenant"> => ({
+      operationId: "updateOperationsOrganizationTenant",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+      pathParameters,
+      ...options,
+    }),
+    verifyOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["verifyOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"verifyOperationsWorkspaceOtp">): FaceOperationRequest<"verifyOperationsWorkspaceOtp"> => ({
+      operationId: "verifyOperationsWorkspaceOtp",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
+      pathParameters,
+      ...options,
+    })
+} as const;
+
+/**
+ * Operation-shaped RTK definitions generated from the face catalog.  The app
+ * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.
+ */
+export function createOperationsAdminRtkEndpoints(
+  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,
+  toWireRequest: OperationsAdminRtkWireRequest,
+) {
+  return {
+    addOperationsOrganizationHeadCompanyBrandAuthorization: build.mutation<FaceOperationContracts["addOperationsOrganizationHeadCompanyBrandAuthorization"]["response"], FaceOperationRequest<"addOperationsOrganizationHeadCompanyBrandAuthorization">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    cancelOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceGroupInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    cancelOperationsWorkspaceHeadCompanyInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceHeadCompanyInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceHeadCompanyInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    cancelOperationsWorkspaceProjectInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceProjectInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceProjectInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    cancelOperationsWorkspaceRegionInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceRegionInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceRegionInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    cancelOperationsWorkspaceStoreInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceStoreInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceStoreInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    changeCurrentWorkspacePassword: build.mutation<FaceOperationContracts["changeCurrentWorkspacePassword"]["response"], FaceOperationRequest<"changeCurrentWorkspacePassword">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsContract: build.mutation<FaceOperationContracts["createOperationsContract"]["response"], FaceOperationRequest<"createOperationsContract">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsOrganizationBrand: build.mutation<FaceOperationContracts["createOperationsOrganizationBrand"]["response"], FaceOperationRequest<"createOperationsOrganizationBrand">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsOrganizationHeadCompany: build.mutation<FaceOperationContracts["createOperationsOrganizationHeadCompany"]["response"], FaceOperationRequest<"createOperationsOrganizationHeadCompany">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsOrganizationProject: build.mutation<FaceOperationContracts["createOperationsOrganizationProject"]["response"], FaceOperationRequest<"createOperationsOrganizationProject">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsOrganizationRegion: build.mutation<FaceOperationContracts["createOperationsOrganizationRegion"]["response"], FaceOperationRequest<"createOperationsOrganizationRegion">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsOrganizationStore: build.mutation<FaceOperationContracts["createOperationsOrganizationStore"]["response"], FaceOperationRequest<"createOperationsOrganizationStore">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsOrganizationTenant: build.mutation<FaceOperationContracts["createOperationsOrganizationTenant"]["response"], FaceOperationRequest<"createOperationsOrganizationTenant">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceGroupInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsWorkspaceHeadCompanyInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceHeadCompanyInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceHeadCompanyInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsWorkspaceProjectInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceProjectInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceProjectInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsWorkspaceRegionInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceRegionInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceRegionInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createOperationsWorkspaceStoreInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceStoreInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceStoreInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsContract: build.query<FaceOperationContracts["getOperationsContract"]["response"], FaceOperationRequest<"getOperationsContract">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsContractCandidates: build.query<FaceOperationContracts["getOperationsContractCandidates"]["response"], FaceOperationRequest<"getOperationsContractCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsContractExtensionDefinition: build.query<FaceOperationContracts["getOperationsContractExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsContractExtensionDefinition">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsContracts: build.query<FaceOperationContracts["getOperationsContracts"]["response"], FaceOperationRequest<"getOperationsContracts">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsEntityAuditHistory: build.query<FaceOperationContracts["getOperationsEntityAuditHistory"]["response"], FaceOperationRequest<"getOperationsEntityAuditHistory">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsFixedStoreContracts: build.query<FaceOperationContracts["getOperationsFixedStoreContracts"]["response"], FaceOperationRequest<"getOperationsFixedStoreContracts">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationBrand: build.query<FaceOperationContracts["getOperationsOrganizationBrand"]["response"], FaceOperationRequest<"getOperationsOrganizationBrand">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationBrands: build.query<FaceOperationContracts["getOperationsOrganizationBrands"]["response"], FaceOperationRequest<"getOperationsOrganizationBrands">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationBusinessEntityExtensionDefinition: build.query<FaceOperationContracts["getOperationsOrganizationBusinessEntityExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsOrganizationBusinessEntityExtensionDefinition">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationHeadCompanies: build.query<FaceOperationContracts["getOperationsOrganizationHeadCompanies"]["response"], FaceOperationRequest<"getOperationsOrganizationHeadCompanies">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationHeadCompany: build.query<FaceOperationContracts["getOperationsOrganizationHeadCompany"]["response"], FaceOperationRequest<"getOperationsOrganizationHeadCompany">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationHierarchy: build.query<FaceOperationContracts["getOperationsOrganizationHierarchy"]["response"], FaceOperationRequest<"getOperationsOrganizationHierarchy">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationStore: build.query<FaceOperationContracts["getOperationsOrganizationStore"]["response"], FaceOperationRequest<"getOperationsOrganizationStore">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationStoreCandidates: build.query<FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["response"], FaceOperationRequest<"getOperationsOrganizationStoreCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationStoreExtensionDefinition: build.query<FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsOrganizationStoreExtensionDefinition">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationStores: build.query<FaceOperationContracts["getOperationsOrganizationStores"]["response"], FaceOperationRequest<"getOperationsOrganizationStores">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationTenant: build.query<FaceOperationContracts["getOperationsOrganizationTenant"]["response"], FaceOperationRequest<"getOperationsOrganizationTenant">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationTenants: build.query<FaceOperationContracts["getOperationsOrganizationTenants"]["response"], FaceOperationRequest<"getOperationsOrganizationTenants">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsStoreProfile: build.query<FaceOperationContracts["getOperationsStoreProfile"]["response"], FaceOperationRequest<"getOperationsStoreProfile">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceGroupInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupInvitationCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceGroupInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceGroupInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupInvitations">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceGroupUser: build.query<FaceOperationContracts["getOperationsWorkspaceGroupUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupUser">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceGroupUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceGroupUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupUserAccount">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceHeadCompanyInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceHeadCompanyInvitationCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceHeadCompanyInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceHeadCompanyInvitations">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceHeadCompanyUser: build.query<FaceOperationContracts["getOperationsWorkspaceHeadCompanyUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceHeadCompanyUser">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceHeadCompanyUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceHeadCompanyUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceHeadCompanyUserAccount">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceLoginEntry: build.query<FaceOperationContracts["getOperationsWorkspaceLoginEntry"]["response"], FaceOperationRequest<"getOperationsWorkspaceLoginEntry">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceProjectInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceProjectInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceProjectInvitationCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceProjectInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceProjectInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceProjectInvitations">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceProjectUser: build.query<FaceOperationContracts["getOperationsWorkspaceProjectUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceProjectUser">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceProjectUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceProjectUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceProjectUserAccount">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceRegionInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceRegionInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceRegionInvitationCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceRegionInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceRegionInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceRegionInvitations">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceRegionUser: build.query<FaceOperationContracts["getOperationsWorkspaceRegionUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceRegionUser">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceRegionUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceRegionUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceRegionUserAccount">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceSessionEntry: build.query<FaceOperationContracts["getOperationsWorkspaceSessionEntry"]["response"], FaceOperationRequest<"getOperationsWorkspaceSessionEntry">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceStoreInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceStoreInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceStoreInvitationCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceStoreInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceStoreInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceStoreInvitations">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceStoreUser: build.query<FaceOperationContracts["getOperationsWorkspaceStoreUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceStoreUser">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsWorkspaceStoreUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceStoreUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceStoreUserAccount">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    invalidateOperationsContract: build.mutation<FaceOperationContracts["invalidateOperationsContract"]["response"], FaceOperationRequest<"invalidateOperationsContract">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    operationsWorkspaceLogout: build.mutation<FaceOperationContracts["operationsWorkspaceLogout"]["response"], FaceOperationRequest<"operationsWorkspaceLogout">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    operationsWorkspacePasswordLogin: build.mutation<FaceOperationContracts["operationsWorkspacePasswordLogin"]["response"], FaceOperationRequest<"operationsWorkspacePasswordLogin">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    reissueOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceGroupInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    reissueOperationsWorkspaceHeadCompanyInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceHeadCompanyInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceHeadCompanyInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    reissueOperationsWorkspaceProjectInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceProjectInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceProjectInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    reissueOperationsWorkspaceRegionInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceRegionInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceRegionInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    reissueOperationsWorkspaceStoreInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceStoreInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceStoreInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    removeOperationsOrganizationHeadCompanyBrandAuthorization: build.mutation<FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["response"], FaceOperationRequest<"removeOperationsOrganizationHeadCompanyBrandAuthorization">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    revokeOperationsWorkspaceGroupUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceGroupUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceGroupUserAssignment">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    revokeOperationsWorkspaceHeadCompanyUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceHeadCompanyUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceHeadCompanyUserAssignment">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    revokeOperationsWorkspaceProjectUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceProjectUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceProjectUserAssignment">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    revokeOperationsWorkspaceRegionUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceRegionUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceRegionUserAssignment">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    revokeOperationsWorkspaceStoreUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceStoreUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceStoreUserAssignment">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    selectOperationsWorkspaceSessionContext: build.mutation<FaceOperationContracts["selectOperationsWorkspaceSessionContext"]["response"], FaceOperationRequest<"selectOperationsWorkspaceSessionContext">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    selectOperationsWorkspaceSessionDataNode: build.mutation<FaceOperationContracts["selectOperationsWorkspaceSessionDataNode"]["response"], FaceOperationRequest<"selectOperationsWorkspaceSessionDataNode">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    sendOperationsWorkspaceOtp: build.mutation<FaceOperationContracts["sendOperationsWorkspaceOtp"]["response"], FaceOperationRequest<"sendOperationsWorkspaceOtp">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionOperationsOrganizationBrandStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationBrandStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionOperationsOrganizationHeadCompanyStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationHeadCompanyStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationHeadCompanyStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionOperationsOrganizationNodeStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationNodeStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationNodeStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionOperationsOrganizationStoreStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationStoreStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationStoreStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionOperationsOrganizationTenantStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationTenantStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationTenantStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updateOperationsContract: build.mutation<FaceOperationContracts["updateOperationsContract"]["response"], FaceOperationRequest<"updateOperationsContract">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updateOperationsOrganizationBrand: build.mutation<FaceOperationContracts["updateOperationsOrganizationBrand"]["response"], FaceOperationRequest<"updateOperationsOrganizationBrand">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updateOperationsOrganizationHeadCompany: build.mutation<FaceOperationContracts["updateOperationsOrganizationHeadCompany"]["response"], FaceOperationRequest<"updateOperationsOrganizationHeadCompany">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updateOperationsOrganizationNode: build.mutation<FaceOperationContracts["updateOperationsOrganizationNode"]["response"], FaceOperationRequest<"updateOperationsOrganizationNode">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updateOperationsOrganizationStore: build.mutation<FaceOperationContracts["updateOperationsOrganizationStore"]["response"], FaceOperationRequest<"updateOperationsOrganizationStore">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updateOperationsOrganizationTenant: build.mutation<FaceOperationContracts["updateOperationsOrganizationTenant"]["response"], FaceOperationRequest<"updateOperationsOrganizationTenant">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    verifyOperationsWorkspaceOtp: build.mutation<FaceOperationContracts["verifyOperationsWorkspaceOtp"]["response"], FaceOperationRequest<"verifyOperationsWorkspaceOtp">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    })
+  };
+}

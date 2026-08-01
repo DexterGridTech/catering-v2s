@@ -1,0 +1,119 @@
+{
+  "REVIEW_CYCLE_ID": "R5-IMPLEMENTATION-STRUCTURE-REMEDIATION-CHECKPOINT",
+  "REVIEW_TARGET": "IMPLEMENTATION",
+  "REVIEW_ROUND": 1,
+  "REVIEW_ROUND_LIMIT": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "inputManifestPath": "doc/review/platform/2026-07-26-v2s-r5-s0-s4-structure-remediation-adversarial-input-manifest.md",
+  "inputManifestSha256": "c92851219bb3bb24fa6b3f7a36c38e18ae96da33072d90e0098885a30e00849f",
+  "blindReviewDeclaration": "本 fresh v2s-rooted 独立子 agent 在形成本 JSON 的 findings 与 verdict 前，未读取作者 self-review、finding-intake、Claude review request/handoff；尤其未读取任何 *structure-remediation-review-request.md。结论先由冻结输入、实际生产源码和 fresh 静态复跑得出。",
+  "reviewMethod": {
+    "stance": "证伪：先找出 S0-S4 为什么不能成立，而非确认作者结论。",
+    "staticOnly": true,
+    "dynamicEnvironment": "未启动 DEV、seed、reset、server、Testcontainers、浏览器或远端环境。",
+    "denominatorReadback": {
+      "edgeControllers": 24,
+      "operations": 104,
+      "consumerFaces": {
+        "platform-admin": 38,
+        "operations-admin": 55,
+        "public": 11
+      },
+      "frontendSurfaces": 22,
+      "assessment": "未见本次结构整改改写 104=38+55+11 或 22-surface 的生成 registry/manifest 分母；32 scenario 分母仍只能在后续全范围 L2/L3/business evidence 关闭。"
+    },
+    "freshChecks": [
+      "standards-coverage --phase R5: PASS",
+      "code-layout: production PASS; self-test PASS",
+      "frontend-architecture: production PASS; self-test PASS",
+      "security-boundaries: production PASS; self-test FAIL (finding S-01)",
+      "verify-gates backend/traceability/openapi: production+self-test PASS",
+      "affected-l2: production FAIL (missing mapped L2 targets; finding N-01)",
+      "Gradle backend compileJava: PASS; platform-admin and operations-admin test/build: PASS"
+    ]
+  },
+  "findings": [
+    {
+      "id": "M-01",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "fact": "S1 的 capability package move 已发生，但 edge 的职责归位没有完成：controller 仍直接依赖 Servlet API，且大量 request/response 仍是 controller 内嵌 record、Object 或 owner readback，而不是当前 edge codegen 的 generated wire type。该状态违反整改计划 4.1.1 的 controller 不直读 servlet API、generated wire/typed Problem 要求，也不能由现有仅禁止 Cookie.class 与 IllegalArgumentException.class 的 ArchUnit 规则证明。",
+      "owningPaths": [
+        "apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsAuthenticationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationController.java"
+      ],
+      "evidence": [
+        "`BackendModuleBoundariesTest` 的两条 edge 规则仅匹配 Cookie 与 IllegalArgumentException；没有拒绝 HttpServletRequest、JDBC 或 repository。",
+        "前两份 session controller 的 handler 方法直接接收 HttpServletRequest；OperationsOrganizationController 仍返回 Object，并在 controller 内以 String/Set 判定 hostType。",
+        "24 个 controller 中广泛存在内嵌 record；仅 PlatformCommercialGroupController 导入 generated enum，未形成 server generated request/response type 的实际闭包。",
+        "未运行 EdgeRouteRegistryCoverageTest：它启动 PostgreSQL Testcontainers，超出本轮静态授权。"
+      ],
+      "minimalFix": "不新建 gate：在既有 edge 结构内引入 capability-scoped argument/session resolver，让 controller 不再直接依赖 HttpServletRequest；把 contract-bound request/response 映射到现有生成输入/输出类型，保留 owner API；扩展现有 BackendModuleBoundariesTest 以拒绝 controller 的 Servlet/JDBC/repository 依赖，并为每类加入真实 red fixture。"
+    },
+    {
+      "id": "M-02",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "fact": "S3 没有实现 capability-first feature 私有 UI。operations 端把多个组织、合同与 IAM 页面集中为 OperationsPageRegistry：按 pageKey 动态选择 URL、列、表格、创建抽屉和状态转换；它手写 api 路径、使用 Record<string, unknown>/unknown，并有状态 POST 未使用 lifecycle Idempotency-Key。该中心化 generic page 正是整改计划禁止的反向组织，frontend-architecture 的 PASS 只证明 direct fetch/private-ui import 两个机械条件，未证明此业务结构。",
+      "owningPaths": [
+        "apps/frontend/operations-admin/src/features/operations-page-registry/ui/OperationsPageRegistry.tsx",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+        "tools/verify-gates/cli.mjs"
+      ],
+      "evidence": [
+        "OperationsPageRegistry 的 definitions/columnsByPage 以 11 个 PG key 驱动不同 capability 的 URL 与 UI；EntityCreateDrawer、StoreCreateDrawer、ContractCreateDrawer 也集中于同一 feature。",
+        "该文件多处调用 api<Record<string, unknown>>，并以 Record/unknown 动态推导 rows/columns；第 200 行 transition 的 POST 仅带 Content-Type，没有 Idempotency-Key。",
+        "OperationsApp 只渲染此 generic registry，故缺少 capability 私有 page/api 层；与 R5 design 的 `features/<capability>/api` typed facade 和整改计划 S3 目标不符。"
+      ],
+      "minimalFix": "按已冻结 surface/capability 拆出 organization、business-entity、store、contract、user-management 等 feature 私有 ui/api；feature api 只消费 app generated client 的 typed facade/query hook，保留 app 的 shell/router/session；将每个需写操作接入既有 Drawer lifecycle 的稳定 Idempotency-Key。无需为能力归属另造语义 gate，使用现有 frontend architecture 的 direct-fetch/private-ui 检查并补 focused source/test evidence 即可。"
+    },
+    {
+      "id": "S-01",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "fact": "`scripts/check/security-boundaries --self-test` 真实失败：输出 R4_GATE_SELF_TEST_RED_NOT_DETECTED:security。生产 PASS 不能证明该 control 可拒绝它声称的 OpenAPI consumer-face 退化。",
+      "owningPaths": [
+        "tools/verify-gates/cli.mjs",
+        "scripts/check/security-boundaries"
+      ],
+      "evidence": [
+        "selfTest(security) 只把 contracts/openapi/edge.openapi.yaml 的 x-consumer-faces 改名。",
+        "security(base) 读取 EdgeContextVerifier、三份 R3 path fragment、route registry 和特定 controller，却不读取被变异的 root OpenAPI；因此变异后仍 PASS。",
+        "此结论来自 fresh scratch copy；没有写入仓库生产路径。"
+      ],
+      "minimalFix": "采用更小修复：让 security self-test 变异 security() 实际读取且应拒绝的输入，或若 root x-consumer-faces 确属该 control 的 production responsibility，则将 root 明确加入 security() 的同一机械校验；保留 openapi gate 对 contract 语法的职责，不新建 gate。"
+    },
+    {
+      "id": "N-01",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "fact": "affected-L2 仍无法 PASS，缺少例如 apps/frontend/operations-admin/src/tests/l2/authentication.spec.ts 的 mapped target。它与 S0 evidence 所述“可见红色、不得用 path-only stub 关闭”一致，不是本轮把静态结构错判为动态完成的依据。",
+      "owningPaths": [
+        "contracts/policy/affected-l2-registry.json",
+        "tools/verify-gates/cli.mjs",
+        "doc/evidence/platform/2026-07-26-v2s-r5-code-structure-s0-baseline.md"
+      ],
+      "evidence": [
+        "fresh `node tools/verify-gates/cli.mjs affected-l2` 报 R5_AFFECTED_L2_TARGET_MISSING。",
+        "S0 baseline 明示 18 个 future R5 L2 文件尚不存在，不能被 stub 伪绿。"
+      ],
+      "minimalFix": "不在 S0-S4 以空文件或 mock 补洞；按 R5 主线的受管 DEV/真实浏览器任务在后续范围实现并运行。该项阻止 L2/L3/business/cleanup closure，但不单独要求为静态结构整改新建 gate。"
+    }
+  ],
+  "reasonableness": {
+    "judgment": "能力目录而非多 deployable 是正确且较小的结构方向；问题不在于缺一套新 gate，而在 S1/S3 的实际生产源码仍保留了与该方向相反的 servlet/手写 wire/通用页面承载。",
+    "smallerAlternative": "复用现有 ArchUnit、frontend-architecture 与 gate self-test 的职责，补足其真实 production input 和 focused fixtures；不引入新服务、BFF、通用 registry、MQ/outbox 或额外治理门。"
+  },
+  "verificationBoundary": {
+    "L1": "已 fresh 重放静态 checker、compile 与前端 test/build；其中 S-01 自检 FAIL。",
+    "L2": "未完成；affected-l2 目标缺失，且本轮禁止动态环境。",
+    "L3": "未运行；本轮禁止 DEV/远端/浏览器。",
+    "business": "未完成；本轮不构成 32 scenarios / 104 operations 的行为验收。",
+    "cleanup": "动态资源未创建；无动态 cleanup evidence 可声明。"
+  },
+  "verdict": "NO_GO",
+  "verdictSummary": "M=2, S=1, N=1。S0-S4 不能以当前字节通过：两个 M 直接否定 S1/S3 的承诺，S-01 使既有 security control 的 red proof 不成立。",
+  "scopeBoundary": "这只是 R5 内部 S0-S4 静态结构整改的 IMPLEMENTATION 第一轮盲审，不是 R5 全范围 implementation closure；不评价或关闭 R5 的完整 L2/L3、32 scenarios、104 operations 行为、remote DEV/seed、business 或 cleanup。"
+}

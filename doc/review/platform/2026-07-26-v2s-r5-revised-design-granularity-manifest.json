@@ -1,0 +1,217 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "goalId": "R5-REVISED-WHOLE-SCOPE-DESIGN",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "authorization": {
+    "path": "doc/decisions/2026-07-26-v2s-r5-revised-design-authorization.md",
+    "sha256": "45d91fc8e7c947b1e5f21418e838577c74c59b336b8a26806a5311e7f0d25eac",
+    "scope": "design-only"
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md",
+    "sha256": "e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"
+  },
+  "candidateJourney": {
+    "id": "R5-J01",
+    "status": "DEXTER_ACCEPTED_WITH_R5_AUDIT_ADDITION",
+    "actor": "系统服务提供者、商场运营方、店铺运营方与被邀请运营用户",
+    "task": "在两个独立后台完成已确认的 32 项任务，并在实体详情中按获准范围查看操作历史",
+    "pageKey": "R5-WHOLE-SCOPE-32-SCENARIOS",
+    "ownerReadback": "七个 owner module 的 command/task-query readback，以及 12 个实体的同权限审计 task read",
+    "mutations": [
+      "operation denominator is exactly 106 with scalar face closure platform-admin=39, operations-admin=56, public=11",
+      "all time instants use epochMillis long/BIGINT",
+      "extension and role remain JSONB shapes",
+      "static images and videos use public URL/object storage only"
+    ]
+  },
+  "standardsCoverage": {
+    "source": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+    "matrix": "contracts/policy/standards-coverage-matrix.json",
+    "partB": {
+      "B.1": { "ruleIds": ["B.1.N01","B.1.N02","B.1.N03","B.1.N04","B.1.N05","B.1.N06","B.1.N07","B.1.N08","B.1.N09","B.1.N10","B.1.N11","B.1.N12","B.1.N13","B.1.N14","B.1.N15","B.1.N16","B.1.N17"], "designUnits": ["R5-U02", "R5-U03", "R5-U04"], "reviewRuleIds":["B.1.N01","B.1.N03","B.1.N04","B.1.N05","B.1.N06","B.1.N07","B.1.N08","B.1.N09","B.1.N10","B.1.N11","B.1.N12","B.1.N13","B.1.N14","B.1.N15","B.1.N17"], "reviewChecklistRef":"R4_BOUNDARY_SEMANTICS_REVIEW", "notApplicableRuleIds":["B.1.N02","B.1.N16"], "notApplicableReason":"Machine-enforced by the matrix GATE; this human design review does not re-assert it.", "sourceAnchor":"## 3. 目标架构与不可变边界；## 5. 数据库与 owner 详设" },
+      "B.2": { "ruleIds": ["B.2.N01","B.2.N02","B.2.N03","B.2.N04","B.2.N05","B.2.N06","B.2.N07","B.2.N08","B.2.N09","B.2.N10","B.2.N11","B.2.N12","B.2.N13","B.2.N14","B.2.N15"], "designUnits": ["R5-U02", "R5-U03", "R5-U04", "R5-U05"], "reviewRuleIds":["B.2.N07","B.2.N08","B.2.N09","B.2.N10","B.2.N11","B.2.N14","B.2.N15"], "reviewChecklistRef":"R4_BOUNDARY_SEMANTICS_REVIEW", "notApplicableRuleIds":["B.2.N01","B.2.N02","B.2.N03","B.2.N04","B.2.N05","B.2.N06","B.2.N12","B.2.N13"], "notApplicableReason":"Machine-enforced by the matrix GATE/ARCHUNIT; this human design review does not re-assert it.", "sourceAnchor":"## 4. 契约先行的 106-operation 基线；## 5. 数据库与 owner 详设" },
+      "B.3": { "ruleIds": ["B.3.N01","B.3.N02","B.3.N03","B.3.N04","B.3.N05","B.3.N06","B.3.N07","B.3.N08","B.3.N09","B.3.N10","B.3.N11","B.3.N12"], "designUnits": ["R5-U03", "R5-U04", "R5-U05", "R5-U08"], "reviewRuleIds":["B.3.N04","B.3.N06","B.3.N11","B.3.N12"], "reviewChecklistRef":"R4_BOUNDARY_SEMANTICS_REVIEW", "notApplicableRuleIds":["B.3.N01","B.3.N02","B.3.N03","B.3.N05","B.3.N07","B.3.N08","B.3.N09","B.3.N10"], "notApplicableReason":"Machine-enforced by the matrix GATE/ARCHUNIT; this human design review does not re-assert it.", "sourceAnchor":"## 5. 数据库与 owner 详设；## 10. DEV、seed、测试与证据" },
+      "B.4": { "ruleIds": ["B.4.N01","B.4.N02","B.4.N03","B.4.N04","B.4.N05","B.4.N06","B.4.N07","B.4.N08","B.4.N09","B.4.N10","B.4.N11","B.4.N12","B.4.N13","B.4.N14","B.4.N15","B.4.N16","B.4.N17","B.4.N18","B.4.N19","B.4.N20"], "designUnits": ["R5-U06", "R5-U07"], "reviewRuleIds":["B.4.N01","B.4.N02","B.4.N03","B.4.N04","B.4.N05","B.4.N06","B.4.N07","B.4.N08","B.4.N09","B.4.N10","B.4.N11","B.4.N12","B.4.N13","B.4.N14","B.4.N16"], "reviewChecklistRef":"R4_BOUNDARY_SEMANTICS_REVIEW", "notApplicableRuleIds":["B.4.N15","B.4.N17","B.4.N18","B.4.N19","B.4.N20"], "notApplicableReason":"Machine-enforced by the matrix GATE; this human design review does not re-assert it.", "sourceAnchor":"## 6. 前端底座与页面实现详设；carry-over inventory ## 1" },
+      "B.5": { "ruleIds": ["B.5.N01","B.5.N02","B.5.N03","B.5.N04","B.5.N05","B.5.N06","B.5.N07","B.5.N08","B.5.N09","B.5.N10","B.5.N11","B.5.N12","B.5.N13","B.5.N14","B.5.N15"], "designUnits": ["R5-U07"], "reviewRuleIds":["B.5.N02","B.5.N03","B.5.N04","B.5.N05","B.5.N06","B.5.N07","B.5.N09","B.5.N10","B.5.N11","B.5.N12","B.5.N13","B.5.N14","B.5.N15"], "notApplicableRuleIds":["B.5.N01","B.5.N08"], "notApplicableReason":"Both are ACTIVE_R4 gates already enforced before this R5 design; they are not reimplemented here. All remaining B.5 IDs are reviewed through JOURNEY_INTERACTION_REVIEW.", "reviewChecklistRef":"JOURNEY_INTERACTION_REVIEW", "sourceAnchor":"### 6.2 页面与交互承载；operation-history interaction ## 4/## 7" },
+      "B.6": { "ruleIds": ["B.6.N01","B.6.N02","B.6.N03","B.6.N04","B.6.N05","B.6.N06"], "designUnits": ["R5-U05", "R5-U08"], "reviewRuleIds":["B.6.N02","B.6.N04"], "reviewChecklistRef":"R4_BOUNDARY_SEMANTICS_REVIEW", "notApplicableRuleIds":["B.6.N01","B.6.N03","B.6.N05","B.6.N06"], "notApplicableReason":"Machine-enforced by the matrix GATE/NEGATIVE_FIXTURE; this human design review does not re-assert it.", "sourceAnchor":"## 5. 数据库与 owner 详设；## 10. DEV、seed、测试与证据" }
+    },
+    "partC": {
+      "C.1-owner-and-transaction": { "ruleIds": ["C.T01","C.T02","C.T03","C.T04","C.T05","C.T06"], "designUnits": ["R5-U03", "R5-U04", "R5-U05"], "reviewChecklistRef":"REFERENCE_PATTERN_APPLICABILITY_REVIEW", "sourceAnchor":"## 3. 目标架构与不可变边界；## 5. 数据库与 owner 详设" },
+      "C.2-contract-and-generated-face": { "ruleIds": ["C.T07","C.T08","C.T09","C.T10","C.T11","C.T12"], "designUnits": ["R5-U02"], "reviewChecklistRef":"REFERENCE_PATTERN_APPLICABILITY_REVIEW", "sourceAnchor":"## 4. 契约先行的 106-operation 基线" },
+      "C.3-frontend-foundation-and-test-patterns": { "ruleIds": ["C.T13","C.T14","C.T15","C.T16","C.T17","C.T18","C.T19"], "designUnits": ["R5-U06", "R5-U07"], "reviewChecklistRef":"REFERENCE_PATTERN_APPLICABILITY_REVIEW", "sourceAnchor":"## 6. 前端底座与页面实现详设；carry-over inventory ## 1/## 3" },
+      "C.4-run-and-red-fixture-patterns": { "ruleIds": ["C.T20","C.T21","C.T22","C.T23"], "designUnits": ["R5-U01", "R5-U08"], "reviewChecklistRef":"REFERENCE_PATTERN_APPLICABILITY_REVIEW", "sourceAnchor":"## 7. 控制先行基线（工作边界契约）；## 10. DEV、seed、测试与证据" }
+    },
+    "partD": {
+      "D.1-layout": { "ruleIds": ["D.1.L01","D.1.L02","D.1.L03","D.1.L04"], "designUnits": ["R5-U04", "R5-U06", "R5-U07"], "reviewRuleIds":[], "notApplicableRuleIds":["D.1.L01","D.1.L02","D.1.L03","D.1.L04"], "notApplicableReason":"All are machine-enforced GATE rules; this human design review does not re-assert them.", "sourceAnchor":"## 3. 目标架构与不可变边界；## 6. 前端底座与页面实现详设" },
+      "D.2-contract-governance": { "ruleIds": ["D.2.L01","D.2.L02","D.2.L03","D.2.L04"], "designUnits": ["R5-U02"], "reviewRuleIds":["D.2.L03","D.2.L04"], "reviewChecklistRef":"R4_BOUNDARY_SEMANTICS_REVIEW", "notApplicableRuleIds":["D.2.L01","D.2.L02"], "notApplicableReason":"Machine-enforced by the matrix GATE; this human design review does not re-assert it.", "sourceAnchor":"## 4. 契约先行的 106-operation 基线" },
+      "D.3-gate-discipline": { "ruleIds": ["D.3.L01","D.3.L02","D.3.L03"], "designUnits": ["R5-U01", "R5-U08"], "reviewRuleIds":[], "notApplicableRuleIds":["D.3.L01","D.3.L02","D.3.L03"], "notApplicableReason":"All are machine-enforced GATE rules; this human design review does not re-assert them.", "sourceAnchor":"## 7. 控制先行基线（工作边界契约）" },
+      "D.4-document-governance": { "ruleIds": ["D.4.L01","D.4.L02","D.4.L03","D.4.L04","D.4.L05"], "designUnits": ["R5-U01"], "reviewRuleIds":["D.4.L01","D.4.L02","D.4.L03","D.4.L04","D.4.L05"], "reviewChecklistRef":"DOCUMENT_GOVERNANCE_REVIEW", "sourceAnchor":"## 0. 状态、继承与明确阻断；## 2. 冻结输入与已完成字节盘点的处理" },
+      "D.5-process-sizing": { "ruleIds": ["D.5.L01","D.5.L02","D.5.L03","D.5.L04","D.5.L05"], "designUnits": ["R5-U01", "R5-U08"], "reviewRuleIds":["D.5.L01","D.5.L02","D.5.L03","D.5.L04","D.5.L05"], "reviewChecklistRef":"DELIVERY_PROCESS_REVIEW", "sourceAnchor":"## 7. 控制先行基线（工作边界契约）；## 9. 实施阶段与顺序" },
+      "D.6-version-and-dependency": { "ruleIds": ["D.6.T01","D.6.T02","D.6.T03","D.6.T04","D.6.T05","D.6.L01","D.6.L02","D.6.L03","D.6.L04","D.6.L05","D.6.L06"], "designUnits": ["R5-U02", "R5-U03", "R5-U08"], "reviewRuleIds":["D.6.T01","D.6.T02","D.6.T03","D.6.T04","D.6.T05","D.6.L01","D.6.L02","D.6.L03","D.6.L04","D.6.L05","D.6.L06"], "reviewChecklistRef":"DEPENDENCY_AND_VERSION_DECISION_REVIEW", "sourceAnchor":"## 4. 契约先行的 106-operation 基线；## 5. 数据库与 owner 详设；## 10. DEV、seed、测试与证据" },
+      "D.7-AI-first-entry": { "ruleIds": ["D.7.T01","D.7.T02","D.7.T03","D.7.T04","D.7.T05","D.7.T06","D.7.T07"], "designUnits": ["R5-U01", "R5-U08"], "reviewRuleIds":["D.7.T02"], "reviewChecklistRef":"CLAUDE_ENTRY_INTENTIONAL_REVIEW", "notApplicableRuleIds":["D.7.T01","D.7.T03","D.7.T04","D.7.T05","D.7.T06","D.7.T07"], "notApplicableReason":"Machine-enforced by the matrix GATE/NEGATIVE_FIXTURE; this human design review does not re-assert it.", "sourceAnchor":"## 0. 状态、继承与明确阻断；## 7. 控制先行基线（工作边界契约）" },
+      "D.8-logging": { "ruleIds": ["D.8.L01","D.8.L02","D.8.L03"], "designUnits": ["R5-U01", "R5-U04", "R5-U06", "R5-U08"], "reviewRuleIds":["D.8.L02"], "reviewChecklistRef":"R4_BOUNDARY_SEMANTICS_REVIEW", "notApplicableRuleIds":["D.8.L01","D.8.L03"], "notApplicableReason":"Machine-enforced by the matrix GATE; this human design review does not re-assert it.", "sourceAnchor":"## 7. 控制先行基线（工作边界契约）；## 10. DEV、seed、测试与证据" }
+    }
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "deliveryUnits": [
+    {
+      "id": "R5-U01",
+      "title": "修订来源、控制先行与证据真实度",
+      "approvedAssertions": ["eight baseline controls precede every guarded work item", "no control can remain pending inside this package", "only mechanical rules become gates and each has a real red mutation"],
+      "approvedSources": [{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"## 0. 状态、继承与明确阻断","sha256":"e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"},{"path":"doc/review/platform/2026-07-26-v2s-problem-discovery-and-direction-claude.md","anchor":"### G 档:测试、门与证据","sha256":"4f1607d8ecaf888f58d06dd07d5f4fb84557357d3fd927ac42edfc2a232fd3af"}],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"## 0. 状态、继承与明确阻断"},
+      "supplementalDesignAnchors":["## 1. 用户任务、方案取舍与最小替代","## 2. 冻结输入与已完成字节盘点的处理","## 7. 控制先行基线（工作边界契约）","## 8. 总册 §4 八档问题逐项闭合矩阵","## 9. 实施阶段与顺序","## 11. 实施限制与下一步"],
+      "currentDeviation":"Existing controls contain false-green, semantic-keyword, and undisclosed-red risks; none is treated as complete merely by self-test.",
+      "changeSurfaces":[{"path":"scripts/check/","disposition":"update","target":"extend existing mechanical control classes and preserve production-driven red fixtures"},{"path":"tools/verify-gates/","disposition":"update","target":"keep minute-scale orchestration while recording exact evidence criteria"},{"path":"doc/review/platform/","disposition":"create","target":"preserve scratchpad mutation and current-red evidence"}],
+      "orderedChain":["reopen production checker input","perform scratchpad mutation","record precise red reason","enable guarded work only after ACTIVE_RED_VERIFIED"],
+      "dependencyAndSerialBoundaries":["Must complete before every contract, runtime, migration, frontend, or evidence unit; no in-package PENDING state is allowed."],
+      "dataEvolution":{"notApplicableReason":"Control changes do not mutate business data."},
+      "uiAndTerms":{"notApplicableReason":"No user interface is delivered by this unit.","termSource":"project-memory/decisions/confirmed-business-language-corpus.md"},
+      "evidence":{"l1":"eight production controls and exact source bindings","l2":"focused production-driven red mutation output","l3":"minute-scale verify composition","business":"controls do not claim business semantics","cleanup":"scratchpad mutations removed and run evidence separated"},
+      "forbiddenPseudoFixes":["self-test-only green","keyword semantic verdict","pending control after protected work","timeout extension"],
+      "discriminator":{"fixture":"each of the eight listed scratchpad mutations must fail with its named production reason"}
+    },
+    {
+      "id": "R5-U02",
+      "title": "106 operation 契约、Problem 与生成闭合",
+      "approvedAssertions":["the operation denominator is exactly 106 with scalar face closure 39/56/11", "contract sources are capability/face/schema-family files", "generated wire is the only frontend/backend boundary"],
+      "approvedSources":[{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"## 4. 契约先行的 106-operation 基线","sha256":"e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"}],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"## 4. 契约先行的 106-operation 基线"},
+      "currentDeviation":"104 current operation declarations do not yet carry revised JSONB item, asset URL, unified Problem, or audit readback shapes.",
+      "changeSurfaces":[{"path":"contracts/openapi/paths/","disposition":"update","target":"add two scalar face/capability audit reads, never a shared path"},{"path":"contracts/openapi/components/","disposition":"update","target":"add typed wire schemas by domain family under 500 nonblank-line authoring limit"},{"path":"doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json","disposition":"update","target":"normative scalar face placement, common audit family and 106/39/56/11 closure input"},{"path":"doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json","disposition":"update","target":"normative 104 crosswalk plus exactly two accepted non-scenario audit operation exceptions and host bindings"},{"path":"scripts/generate/","disposition":"update","target":"generate reachable server and independent face clients"},{"path":"tools/platform-boundary-gates/","disposition":"update","target":"accept only generated 106/39/56/11 route-face closure"},{"path":"tools/verify-gates/","disposition":"update","target":"bind 106 catalog/route-face evidence without a second cold verify run"}],
+      "orderedChain":["declare 106 scalar-face contract inventory","define common Problem/page and revised business schemas","generate server and two face clients","prove route/face/schema reachability"],
+      "dependencyAndSerialBoundaries":["Precedes all consumers of audit, contract items, asset URLs, and generated feedback models."],
+      "dataEvolution":{"notApplicableReason":"This unit declares wire shape; database evolution is handled by R5-U03."},
+      "uiAndTerms":{"notApplicableReason":"No page behavior is implemented in this contract unit.","termSource":"project-memory/decisions/confirmed-business-language-corpus.md"},
+      "evidence":{"l1":"106 operation and 39/56/11 generated closure inventory; each audit face has its closed entity enum and accepted non-scenario/host exception proof","l2":"typed Problem/audit/contract-item binding tests","l3":"two generated face targets expose only allowed operations","business":"104 operations trace to frozen 32 scenarios; only the two named audit operations trace to the accepted audit Journey","cleanup":"generated scratch output is removed"},
+      "forbiddenPseudoFixes":["single oversized contract file","manual client HTTP shapes","shared or array-face audit operation","generic business error collapse"],
+      "discriminator":{"fixture":"unknown face, 107th operation, unresolved schema, or raw map boundary fails the production contract gate"}
+    },
+    {
+      "id":"R5-U03",
+      "title":"新增式数据形态、JSONB 与约束收敛",
+      "approvedAssertions":["executed migration bytes never change", "extension/role storage uses accepted JSONB forms", "contract items become a normalized JSONB array", "time instants are BIGINT/long/epochMillis"],
+      "approvedSources":[{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"### 5.1 新增式 migration 规则","sha256":"e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"},{"path":"doc/review/platform/2026-07-26-v2s-extension-and-role-storage-alignment-design-claude.md","anchor":"## 2. 已决事项","sha256":"e3ac462114a39be45dad682002623d82e147746f4fbcb2a1ae0a1d1f32d8ac61"}],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"### 5.1 新增式 migration 规则"},
+      "scopeBoundary":"Only persistence/migration/data-shape work in §5.1; command semantics are exclusively R5-U04 §5.2/§5.3 and asset behavior is exclusively R5-U05.",
+      "currentDeviation":"Existing migration bytes contain the accepted V160 JSON shape but older asset BYTEA, relational contract items, dead columns, and incomplete constraints require additive evolution.",
+      "changeSurfaces":[{"path":"apps/backend/catering-business-server/src/main/resources/db/migration/","disposition":"create","target":"append preconditioned owner-schema migrations only"},{"path":"libraries/backend/","disposition":"update","target":"align persistence adapters with accepted JSONB and BIGINT shapes"},{"path":"contracts/openapi/components/","disposition":"update","target":"match authoritative data readback shapes"}],
+      "orderedChain":["run typed data preconditions","append named-check/index/JSONB migrations","migrate/readback facts","retire obsolete shapes only after validation"],
+      "dependencyAndSerialBoundaries":["Follows R5-U01 and R5-U02; precedes owner services and DEV seed."],
+      "dataEvolution":{"migrationPolicy":"additive only after executed bytes","preconditions":"typed NULL/blank/length/duplicate and legacy-data scans list violating ids"},
+      "uiAndTerms":{"notApplicableReason":"No page interaction is delivered by persistence evolution.","termSource":"project-memory/decisions/confirmed-business-language-corpus.md"},
+      "evidence":{"l1":"migration catalog, named constraints, and schema shape scan","l2":"owner persistence integration tests and typed precondition fixtures","l3":"fresh database migration/readback proof","business":"retained facts preserve frozen owner and terminology boundaries","cleanup":"test schemas and failed fixture data are cleaned"},
+      "forbiddenPseudoFixes":["rewrite executed migration","recreate extension relation tables","timestamp business facts","untyped JSON map persistence"],
+      "discriminator":{"fixture":"a duplicate normalized item/name, invalid status, or legacy relation access fails with the declared constraint or typed precondition"}
+    },
+    {
+      "id":"R5-U04",
+      "title":"owner command、receipt、审计与安全闭合",
+      "approvedAssertions":["business mutation, receipt, and audit append share REQUIRED transaction", "security six are implemented from verified v2 semantics", "audit facts remain owner-local and task reads inherit host access"],
+      "approvedSources":[{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"### 5.2 各 owner command 的必做语义","sha256":"e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"},{"path":"doc/review/platform/2026-07-26-v2s-problem-discovery-and-direction-claude.md","anchor":"### A 档:安全缺陷(6 条,全部 Claude 亲验)","sha256":"4f1607d8ecaf888f58d06dd07d5f4fb84557357d3fd927ac42edfc2a232fd3af"}],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"### 5.2 各 owner command 的必做语义"},
+      "supplementalDesignAnchors":["### 5.3 审计 task API、Actor 与 changes allowlist（R5 新能力的精确形状）"],
+      "currentDeviation":"Controllers are capability-located but owner behavior has incomplete idempotency, audit consumption, transactionality, rate limits, and invariant guards.",
+      "changeSurfaces":[{"path":"libraries/backend/audit-contract/","disposition":"create","target":"value-only AuditActor/Target/Scope/Cursor/ChangePolicy API; no owner schema or persistence"},{"path":"contracts/policy/module-dependency-registry.json","disposition":"update","target":"declare audit-contract dependencies and platform-workspace-to-organization audit TASK_READ"},{"path":"libraries/backend/","disposition":"update","target":"complete owner command/task-read APIs, session actor propagation and transaction-scoped receipts/audits"},{"path":"apps/backend/catering-business-server/src/main/java/","disposition":"update","target":"adapt generated edge to typed owner APIs only"},{"path":"apps/backend/catering-business-server/src/test/","disposition":"update","target":"add owner security, receipt, rollback, audit writer/reader cutover and sensitive-field focused tests"}],
+      "orderedChain":["consume generated contract","implement owner invariant and transaction","map typed Problem","prove negative and rollback behavior"],
+      "dependencyAndSerialBoundaries":["Follows R5-U02/R5-U03; no frontend mutation or audit consumer precedes the owner readback."],
+      "dataEvolution":{"notApplicableReason":"Database tables are created by R5-U03; this unit consumes them through owner APIs."},
+      "uiAndTerms":{"notApplicableReason":"No page is delivered by owner/edge behavior alone.","termSource":"project-memory/decisions/confirmed-business-language-corpus.md"},
+      "evidence":{"l1":"controller-to-owner and typed Problem mappings","l2":"receipt/replay/rollback, six security, and audit transaction focused tests","l3":"managed owner integration proof","business":"host authorization and user-visible audit changes are read back from owners","cleanup":"run-scoped integration resources cleaned"},
+      "forbiddenPseudoFixes":["edge JDBC","receipt header validation only","audit empty JSON","audit as new authorization","frontend-owned time","sensitive candidate only asserted outside persisted/readback/modal triplet","direct externalSubject audit write"],
+      "discriminator":{"fixture":"replay, changed fingerprint, failed transaction, locked account, wrong grant, and forbidden target each produce their exact typed outcome"}
+    },
+    {
+      "id":"R5-U05",
+      "title":"静态图片视频对象存储与绑定证明",
+      "approvedAssertions":["platform-asset owns public static images and videos only", "asset bytes never remain BYTEA or proxy through business edge", "bind grant is verified exactly once within claim transaction"],
+      "approvedSources":[{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"- `platform-asset` 只拥有公开静态展示资源：图片和视频。","sha256":"e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"},{"path":"doc/review/platform/2026-07-26-v2s-problem-discovery-and-direction-claude.md","anchor":"### F 档:资产与 CDN","sha256":"4f1607d8ecaf888f58d06dd07d5f4fb84557357d3fd927ac42edfc2a232fd3af"}],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"#### 5.1.1 静态资产的新增式形态"},
+      "scopeBoundary":"Only static image/video object-storage and bind-proof behavior; audit persistence and owner command semantics are exclusively R5-U03/U04.",
+      "currentDeviation":"Existing V140 retains BYTEA and issues but does not consume bind grant; static image/video URL and Range behavior are absent.",
+      "changeSurfaces":[{"path":"libraries/backend/platform-asset/","disposition":"update","target":"add object-storage metadata, streaming validation, URL and one-time claim capability"},{"path":"contracts/openapi/components/platform-asset/","disposition":"update","target":"expose typed public URL and stage/claim shapes"},{"path":"apps/backend/catering-business-server/src/test/","disposition":"update","target":"cover image/video, Range, cache, grant, and cross-workspace rejection"}],
+      "orderedChain":["define public URL contract","append object metadata migration","stage/verify/claim through owner API","migrate historical bytes then retire BYTEA"],
+      "dependencyAndSerialBoundaries":["Follows contract/data baseline; page implementation only consumes generated publicUrl after owner proof exists."],
+      "dataEvolution":{"assetPolicy":"object metadata and business asset ref remain different owners; no import/export/report/temp artifact is allowed"},
+      "uiAndTerms":{"notApplicableReason":"This unit provides a URL boundary; pages consume it in R5-U07.","termSource":"project-memory/decisions/confirmed-business-language-corpus.md"},
+      "evidence":{"l1":"no BYTEA/base64 and metadata boundary scan","l2":"magic/decode, grant, asset-ref and error fixtures","l3":"managed image/video Range/cache readback","business":"static asset URL displays only after a valid owner claim","cleanup":"staged test objects are deleted by explicit cleanup"},
+      "forbiddenPseudoFixes":["business byte proxy","authenticated CDN static read","grant display/persistence","temporary artifacts in platform-asset"],
+      "discriminator":{"fixture":"invalid media, wrong/expired/reused/cross-workspace grant, missing metadata, or Range violation fails exact owner checks"}
+    },
+    {
+      "id":"R5-U06",
+      "title":"两个独立后台 routing、RTK 与 foundation 接线",
+      "approvedAssertions":["each app owns its router, store, session boundary and generated API facade", "foundation provides observed query/logger/lifecycle rather than duplicated app primitives", "server time and idempotency originate outside feature components"],
+      "approvedSources":[{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"### 6.1 先于页面的两 app substrate","sha256":"e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"}],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"### 6.1 先于页面的两 app substrate"},
+      "currentDeviation":"Generated platform/operations/public descriptors already exist (38/55/11); frontend lacks their RTK endpoint wiring plus routing, Redux/RTK context fan-out and foundation consumption.",
+      "changeSurfaces":[{"path":"apps/frontend/platform-admin/src/app/","disposition":"create","target":"platform router/store/api/feedback/logger capabilities"},{"path":"apps/frontend/operations-admin/src/app/","disposition":"create","target":"operations router/store/api/feedback/logger capabilities"},{"path":"libraries/frontend/admin-ui-foundation/","disposition":"retain","target":"consume existing foundation without duplicating its primitives"}],
+      "orderedChain":["generate face API","install independent router/store/session boundaries","wire foundation observed query/logger/lifecycle","prove context/401 invalidation"],
+      "dependencyAndSerialBoundaries":["Follows contract code generation and precedes every migrated page."],
+      "dataEvolution":{"notApplicableReason":"Frontend substrate does not evolve persisted business data."},
+      "uiAndTerms":{"notApplicableReason":"This is shared app infrastructure; concrete pages are delivered by R5-U07.","termSource":"project-memory/decisions/confirmed-business-language-corpus.md"},
+      "evidence":{"l1":"two app dependency and route registry checks","l2":"401/context invalidation, idempotency lifecycle, and safe logger focused tests","l3":"each independent app boots only its own face closure","business":"no user task is claimed before a page consumes this substrate","cleanup":"test browser/session storage is cleared"},
+      "forbiddenPseudoFixes":["shared app session/store","feature handwritten HTTP client","frontend Date.now business fact","duplicate foundation primitive"],
+      "discriminator":{"fixture":"a feature direct client import, missing lifecycle key, or foreign face route makes the production frontend architecture control fail"}
+    },
+    {
+      "id":"R5-U07",
+      "title":"v2 carry/adapt 页面与操作历史 Master–Detail Modal",
+      "approvedAssertions":["22 surfaces and 25 pageDesignKeys remain fixed", "pages carry/adapt v2 before inventing new UI", "operation history is one accepted modal in twelve existing details with no new page key"],
+      "approvedSources":[{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"### 6.2 页面与交互承载","sha256":"e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"},{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-carryover-execution-inventory.md","anchor":"## 1. 22 surface 执行表","sha256":"95415ec2db922f31809342901e052622b89f6188248c176125c67f273c4d4ccc"},{"path":"doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md","anchor":"## 4. 低保真线框","sha256":"fd5cc25851021fe84f11172f1d5978a9630ba2eec86939957b149dc33f2c477f"}],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"### 6.2 页面与交互承载"},
+      "currentDeviation":"Existing pages are partial and precede the required substrate; no complete operation-history consumer exists.",
+      "changeSurfaces":[{"path":"apps/frontend/platform-admin/src/features/","disposition":"update","target":"carry/adapt platform surfaces and entity-detail actions"},{"path":"apps/frontend/operations-admin/src/features/","disposition":"update","target":"carry/adapt operations surfaces and entity-detail actions"},{"path":"libraries/frontend/admin-ui-foundation/","disposition":"retain","target":"use overlay/lifecycle/observability primitives without a new app-local duplicate"}],
+      "orderedChain":["reopen accepted v2 visual baseline","carry/adapt route and detail behavior through R5-U06 substrate","add detail-right action","render accepted Master–Detail Modal from generated audit page"],
+      "dependencyAndSerialBoundaries":["Follows R5-U04/R5-U06; does not add a new route, page key, auth model, or per-item audit operation."],
+      "dataEvolution":{"notApplicableReason":"Pages consume generated owner readback and do not write direct persistence shapes."},
+      "uiAndTerms":{"pageKey":"AUDIT-HISTORY-MODAL","termSource":"project-memory/decisions/confirmed-business-language-corpus.md","interactionArtifact":{"path":"doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md","anchor":"## 4. 低保真线框"}},
+      "evidence":{"l1":"22/25 surface-page mapping and generated endpoint imports","l2":"locator/readback checks including audit selection, pagination, empty and denied states","l3":"both face flows through managed DEV","business":"every page action maps to an accepted task; audit list selection shows right-side human-readable detail","cleanup":"browser/session and created test facts are cleaned separately"},
+      "forbiddenPseudoFixes":["new dashboard or page key","entity list operation column","Drawer audit interaction","raw JSON/technical audit details","page-local HTTP or overlay primitive"],
+      "discriminator":{"fixture":"missing v2 disposition, direct HTTP, audit without selected current-page item, or foreign-face route fails its applicable production control"}
+    },
+    {
+      "id":"R5-U08",
+      "title":"managed DEV、丰富 seed、L2/L3 与全范围证据",
+      "approvedAssertions":["ordinary dev start never seeds", "seed is explicit and owner-command first", "business and cleanup are separate completion facts", "one whole-scope implementation review follows full R5 evidence only"],
+      "approvedSources":[{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"## 10. DEV、seed、测试与证据","sha256":"e7eab446fba849ae31e7f85f92facc72f71e8e273259d031f96762a4bde3d4dd"},{"path":"doc/decisions/2026-07-24-v2s-verification-governance.md","anchor":"## 1. 目标与总原则","sha256":"c9632a65f9eac7678a4be919d980894e3f1e71e5e2e1ddce70ea3c7091d829dc"}],
+      "detailDesign":{"path":"doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md","anchor":"## 10. DEV、seed、测试与证据"},
+      "currentDeviation":"No complete managed DEV, r5-full seed, discovered L2/L3 runner closure, or whole-scope business/cleanup evidence exists.",
+      "changeSurfaces":[{"path":"scripts/dev/","disposition":"update","target":"managed explicit start/restart/stop/reset/seed/check lifecycle"},{"path":"tools/verify-gates/","disposition":"update","target":"discover declared L2/L3 tests without repeated cold runs"},{"path":"doc/evidence/","disposition":"create","target":"record separate DEV business and cleanup evidence"}],
+      "orderedChain":["list tests before execution","build clean DEV namespace","run explicit owner-command-first r5-full seed","execute selected L2/L3 and business flows","close cleanup separately"],
+      "dependencyAndSerialBoundaries":["Follows all functional units; cannot compensate for an incomplete owner/frontend capability."],
+      "dataEvolution":{"seedPolicy":"only explicit DEV reset/seed changes data; normal start migrates additively and never seeds"},
+      "uiAndTerms":{"notApplicableReason":"This unit verifies previously delivered UI; it does not define a new page.","termSource":"project-memory/decisions/confirmed-business-language-corpus.md"},
+      "evidence":{"l1":"runner discovery, denominator, and script manifest evidence","l2":"selected owner/frontend integration tests","l3":"managed two-app DEV flows","business":"r5-full seeded user tasks produce owner readbacks","cleanup":"remote namespace/reset/object cleanup each PASS independently"},
+      "forbiddenPseudoFixes":["seed during start","direct table seed for producible facts","undiscovered L2/L3 declaration","business-pass with cleanup failure"],
+      "discriminator":{"fixture":"an undiscovered test, accidental start seed, direct business table seed, or cleanup failure makes the relevant completion state fail"}
+    }
+  ],
+  "implementationDesignGranularityChecker": {
+    "status":"ACTIVE",
+    "script":{"path":"scripts/check/implementation-design-granularity","sha256":"e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"},
+    "tool":{"path":"tools/implementation-design-granularity/cli.mjs","sha256":"da68a5f4d48d786cc4b5ac9a2de2abf1f717b8b6baa51c75a07e3ec88c4508b4"},
+    "selfTest":true,
+    "redFixtures":["DESIGN_HASH_DRIFT","MISSING_BUSINESS_EVIDENCE","MISSING_UI_INTERACTION_ARTIFACT","DUPLICATE_UI_INTERACTION_ANCHOR","SEVERITY_COUNT_MISMATCH","ROUND_THREE","MISSING_FINDING_UNIT_LINK","REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT","REVIEWER_INPUT_CHECKLIST_NOT_FOUND","POST_REMEDIATION_WITHOUT_DECLARATION","POST_REMEDIATION_INTAKE_NOT_FOUND","FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE","S0_BASELINE_PENDING_CONTROL"]
+  },
+  "postRemediationDeclaration": {
+    "version":"POST_REMEDIATION_V1",
+    "reviewCycleId":"R5-REVISED-DESIGN-20260726",
+    "reviewRound":2,
+    "reviewPath":"doc/review/platform/2026-07-26-v2s-r5-revised-design-adversarial-review-round-2.json",
+    "reviewSha256":"bf29bf3982e2b476a5094386c7b6bb805e190c2054ba39bdd8f6ffa923209dd4",
+    "reviewedDesignSha256":"0d76887513c2d687b42a3526b0a3ce2438a155dc1e68be564a104e4a94175e73",
+    "reviewedManifestSha256":"ae8b8bdcfa64dfd4aebbf566d3674b06f959950cb27012f82204e7e684c25606",
+    "intake":{"path":"doc/review/platform/2026-07-26-v2s-r5-revised-design-post-remediation-intake.md","sha256":"586e5360424c1dd18731687bf849ff8e91d89b4690056e65860d2139bd193c9a"},
+    "reason":"After the final independent round and two Claude POST_REMEDIATION rechecks, the author applies Dexter's scalar-face 106 decision and the bounded catalog/audit/checklist correction pack. The current bytes were not reviewed by the final independent reviewer and require Claude recheck; no third Codex adversarial round is allowed. Matrix-to-manifest identifier semantics are human-reviewed now; their future mechanical consistency check is explicitly planned inside existing standards-coverage and is not claimed as implemented.",
+    "currentBytesNotReviewedByAdversarialReviewer":true,
+    "claudeRecheckRequired":true,
+    "implementationAuthority":false
+  }
+}

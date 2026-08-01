@@ -1,0 +1,21 @@
+{
+  "kind": "r4-verify-evidence",
+  "roadmapStep": "R4",
+  "entrypoint": {
+    "path": "scripts/verify",
+    "sha256": "c607e045189b0425600358b252b1b4612d21e603adeb2431180d46d6a9708b2c",
+    "resolvedTarget": "tools/verify-gates/verify.mjs"
+  },
+  "command": "scripts/verify --changed apps/backend/catering-business-server/src/test/java/database/DatabaseBoundariesTest.java,apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/PlatformCommercialGroupController.java,contracts/openapi/edge.openapi.yaml",
+  "result": "PASS",
+  "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP",
+  "cleanup": "PASS",
+  "freshRun": "scripts/verify standard entrypoint PASS after Claude delta review; Gradle test passed and Testcontainers cleanup reported PASS.",
+  "runtime": {
+    "testcontainers": "temporary PostgreSQL only",
+    "dockerContext": "derived at runtime",
+    "residualTestcontainersResources": 0
+  },
+  "testCoverage": ["clean migration", "composite FK negative", "stale CAS", "RLS bound context", "rollback cleanup", "ArchUnit module boundaries", "capability-named runtime and test sources"],
+  "firstFailureRetained": "Testcontainers initially lacked the Colima socket context; the managed verify entry now derives the current context, requires explicit changed surfaces, and performs a residual-resource inspection even when Gradle fails."
+}

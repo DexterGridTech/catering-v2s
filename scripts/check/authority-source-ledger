@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd "$(dirname "$0")/../.." && pwd)"
+exec node "$root/tools/authority-source-ledger/cli.mjs" check "$@"

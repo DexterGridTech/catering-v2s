@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P5-CANDIDATE-FAILURE-STATE-AND-LOGOUT-PROOF",
+  "genericProblem": "A locally owned asynchronous candidate read must distinguish pending, failed, and completed states; a failed remote logout must still clear app-owned local session state, and that invariant needs a directly red-verifiable proof.",
+  "rootCauseClass": "ASYNC_FAILURE_STATE_CONFLATED_WITH_PENDING_AND_LOGOUT_INVARIANT_UNPROVEN",
+  "finiteDenominator": [
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+    "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+    "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+    "tools/verify-gates/cli.mjs"
+  ],
+  "searchedSurfaces": [
+    "apps/frontend/*/src/**/*.tsx candidate Select loading expressions",
+    "both app roots and their app-owned transport cleanup functions",
+    "P5 original business requirements G-03, G-05 and G-10",
+    "P5 detailed design P-R2 and P-R6",
+    "existing frontend architecture gate and its real self-test"
+  ],
+  "searchQueries": [
+    "loading={!candidates}",
+    "loading={!result && !problem}",
+    "setCandidates(undefined)",
+    "catch((error)",
+    "platformLogout",
+    "operationsWorkspaceLogout",
+    "finally",
+    "clearLocalSession"
+  ],
+  "counterexamples": [
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "reason": "The local result selector already distinguishes failed from pending with loading={!result && !problem}."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+      "reason": "Its empty candidate collection is guarded by !problem and is not a failed undefined candidate state."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "reason": "It uses an explicit lifecycle submitting flag rather than an undefined candidate object as a loading proxy."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "P5-CANDIDATE-FAILURE-STATE-01",
+      "status": "CONFIRMED",
+      "finding": "Eight Select controls in two P5-changed candidate drawers used loading={!candidates}. Their catch paths keep candidates undefined and set problem, so an already-visible failure still presents a permanent loading spinner."
+    },
+    {
+      "findingId": "P5-LOGOUT-LOCAL-CLEAR-PROOF-02",
+      "status": "CONFIRMED_EVIDENCE_GAP",
+      "finding": "Both production logout paths already use try/finally and call clearLocalSession in finally, but P5 did not carry a direct source assertion and red mutation for the failed-remote-logout invariant."
+    },
+    {
+      "findingId": "P5-REFRESH-SIGNAL-03",
+      "status": "NOT_A_P5_FUNCTIONAL_DEFECT",
+      "finding": "RefreshSignal has publish sites but no production subscriber. RTK tags are the current write-refresh authority; the dormant publish has no behavioral effect and deleting it is not required to close S1."
+    },
+    {
+      "findingId": "P5-FRONTEND-TEST-FRESHNESS-04",
+      "status": "REQUIRES_CURRENT_RERUN",
+      "finding": "The Claude review intentionally did not execute frontend tests; its artifact-only verification must be replaced by a fresh focused run after the S1 remediation."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "P5-CANDIDATE-FAILURE-STATE-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/frontend-architecture via tools/verify-gates/cli.mjs",
+      "reason": "A bounded AST rule covers candidate state that is cleared before a request and whose catch writes problem; bare loading={!candidate} is rejected, and an actual P5 drawer red mutation must fail."
+    },
+    {
+      "findingId": "P5-LOGOUT-LOCAL-CLEAR-PROOF-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/frontend-architecture via tools/verify-gates/cli.mjs",
+      "reason": "Both app roots must structurally prove that the exact remote logout await is enclosed by a finally containing clearLocalSession; removal is a real red mutation."
+    },
+    {
+      "findingId": "P5-REFRESH-SIGNAL-03",
+      "preventionDestination": "NOT_APPLICABLE_WITH_REASON",
+      "owningSourceOrControl": "P5 scope boundary",
+      "reason": "There is no subscriber or functional divergence to repair. Removing a dormant legacy signal would expand a focused S1 repair without changing the P5 user outcome."
+    },
+    {
+      "findingId": "P5-FRONTEND-TEST-FRESHNESS-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p5/rm1-u08-focused-frontend-recovery-evidence.json",
+      "reason": "The evidence is regenerated from a fresh focused frontend run only after all S1 source and prevention-control edits are complete."
+    }
+  ]
+}

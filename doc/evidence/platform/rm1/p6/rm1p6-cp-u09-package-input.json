@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U09",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u09-control-plane-manifest.json",
+  "deliveryManifestSha256": "6d350f2f02ec9cbbb20a4d4241c75630dad2468ac23dd35196820d35ff024a39",
+  "unitId": "RM1P6-CP-U09",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/remediation-compliance",
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/remediation-compliance"
+  ],
+  "requiredControlRuleIds": [
+    "P6-CP-U09-PREDECESSOR_HASH_AND_EXTENSION_SCOPE"
+  ],
+  "businessEvidenceObligation": "CONTROL_PLANE_NOT_APPLICABLE",
+  "serialPredecessor": {
+    "packageId": "RM1-U08",
+    "exitPath": "doc/evidence/platform/rm1/p5/rm1-u08-package-exit.json",
+    "exitSha256": "3271d82b1ce99b646f390edd146693ad22fa4e44d2558920227c590ed55ab2f9"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u09-control-plane-amendment.md",
+    "sha256": "3e3e6b8d719ba9b2e02dee2f52bb005b82858a03c1ca0b5cbe188a1233f1d2b8"
+  },
+  "authorizationBoundary": "Dexter authorized a separate P6 observability/security extension admission package. CP-U09 may land only the named development standard, deterministic memory routing/index derivation, exact predecessor-hash verifier and CP evidence. It excludes U01 business/contract/generated/backend/frontend/database bytes and all runner/foundation/backend/OpenAPI/generated/migration paths until a later approved extension design enumerates their exact files."
+}

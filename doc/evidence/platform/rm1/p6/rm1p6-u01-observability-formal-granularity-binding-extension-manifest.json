@@ -1,0 +1,23 @@
+{
+  "kind": "rm1-p6-observability-formal-granularity-binding-extension-manifest",
+  "status": "DESIGN_REVIEW_PENDING",
+  "implementationAuthority": false,
+  "cycleId": "RM1-P6-U01-FORMAL-GRANULARITY-BINDING-DESIGN-20260730",
+  "design": {
+    "path": "doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md",
+    "sha256": "d1dcd436d957922bab1dfac2edf2de70279b9425eb5518911359274abc2f6028"
+  },
+  "formalGranularityManifest": "doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-manifest.json",
+  "implementationDenominator": [
+    "tools/implementation-design-granularity/cli.mjs",
+    "scripts/test/r5-remote-testcontainers.mjs",
+    "apps/backend/catering-business-server/modules/foundation",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge",
+    "apps/backend/catering-business-server/src/test",
+    "contracts/openapi/edge.openapi.yaml",
+    "tools/capability-invariants/cli.mjs"
+  ],
+  "forbiddenCurrentWrites": ["apps/**", "libraries/**", "contracts/**", "scripts/**", "tools/**"],
+  "admissionRequirement": "A fresh independent review and the production implementation-design-granularity checker must bind the formal manifest before any future implementation package opens. The existing checker must reopen, hash-bind and selector-validate D2 through D6 rather than treating them as field-shaped metadata."
+}

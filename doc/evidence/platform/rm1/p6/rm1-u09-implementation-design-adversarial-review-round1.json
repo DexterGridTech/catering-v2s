@@ -1,0 +1,70 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "RM1-P6-IMPLEMENTATION-FACING-DESIGN-20260729",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {"path": "doc/evidence/platform/rm1/p6/rm1-u09-independent-design-review-round1-input-checklist.md", "sha256": "8530a6369fb6f408e169ad55a28f22cc96c720a24fd30024a3b6d00a900f33c3"},
+  "blindReviewDeclaration": "This fresh independent reviewer formed the findings and NO_GO verdict from checklist-bound owning sources before reading any author self-assessment, disposition, or Claude handoff; none of those author materials were read.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "f15e38fece98ae01b0213ed1f6ae27008e45adc4988e56144c7fd27f8f39274d",
+  "reviewMethod": {"sourceFirst": true, "solutionReasonablenessReviewedBeforeClosure": true, "allDeliveryUnitsReviewed": true, "riskClasses": ["business-user-task", "owner-and-contract", "serial-boundary", "ui-surface-denominator", "foundation-reuse", "package-exit-evidence"]},
+  "expectedBehavior": [
+    "P6-1 freezes only contract, owner, edge, additive-data and generated-consumer inputs, proves owner/controller unit behavior before its phase review, and does not implement a UI page.",
+    "P6-2 starts only after P6-1 Dexter and Claude implementation GO; P6-3 starts only after the corresponding P6-2 GO.",
+    "All 22 carry-over surfaces and 25 pageDesignKeys have delivery-unit assignment, accepted IA anchor, generated operation or exact N/A reason, failure/recovery, and exact CARRY/ADAPT/NOT_CARRIED disposition.",
+    "Every UI-bearing screen has exact current-to-final paths and an explicit admin-ui-foundation primitive or concrete NONE_WITH_REASON, enabling import equality and its red mutations.",
+    "Owner readback, candidate selection, command authorization, generation, six source-compliance denominators, non-empty incremental receipts, and forbidden pseudo-fixes remain independently testable at package exit."
+  ],
+  "findings": [
+    {
+      "id": "RM1-P6-DESIGN-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["RM1P6-U01", "RM1P6-U02", "RM1P6-U03"],
+      "title": "The manifest cannot close the seven non-catalog surface denominator across the three delivery units.",
+      "evidence": "No delivery unit has uiAndTerms.nonCatalogSurfaces; its lists contain only 8 platform and 17 operations/home pageDesignKeys. frontend-asset-carryover-manifest.json#pageDesignKeySurfaceCrosswalk names seven additional surfaces: PLATFORM-AUTH, PLATFORM-PASSWORD, OPERATIONS-AUTH, PUBLIC-INVITATION, PUBLIC-ACCESS-RECOVERY, OPERATIONS-SHELL and OPERATIONS-PASSWORD. P6 preparation #5 D5 requires all 22 surfaces and 25 keys to carry exact CARRY/ADAPT/NOT_CARRIED reasoning and accepted IA hash/anchor; its #10 assigns these seven across P6-1/P6-2/P6-3. The reviewed manifest contains no unit-level IA anchor, generated operation/N-A, failure/recovery or receipt binding for them.",
+      "risk": "A phase can claim its generic OWNED_SURFACE_AND_PAGE_KEYS denominator while omitting an unauthenticated, shell, or Drawer behavior. This leaves self-service recovery, operations branding, invitation no-session behavior, and password-session revocation unprotected because no catalog page key can infer them.",
+      "disposition": "NO_GO until the manifest adds exact non-catalog assignments: U01 for PLATFORM-AUTH, OPERATIONS-AUTH and PUBLIC-ACCESS-RECOVERY contract/owner inputs; U02 for PLATFORM-PASSWORD; U03 for PUBLIC-INVITATION, OPERATIONS-SHELL and OPERATIONS-PASSWORD. Each needs IA anchor, exact implementation/retained path, operation/N-A, failure/recovery, applicable foundation declaration, focused proof and D5 assertion. This is smaller than changing the three-stage sequence or adding UI to P6-1."
+    },
+    {
+      "id": "RM1-P6-DESIGN-M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["RM1P6-U02", "RM1P6-U03"],
+      "title": "UI-bearing units cite page keys but omit the required screen-level final design and foundation-import contract.",
+      "evidence": "P6 preparation #4/#4.1 makes final admission fail closed unless each U09 row declares exact current-to-final paths, owner, prerequisite source/hash, interaction anchor, operation/N-A, failure/recovery, test contract, incremental verification and package-exit assertion; each UI screen must declare face, surface, host/entry, actor, scenario, goal, visible copy, technical boundary and FOUNDATION_PRIMITIVE or concrete NONE_WITH_REASON. U02/U03 only provide broad directories, pageKey-to-IA anchors and prose 'using admin-ui-foundation'. frontend-asset-carryover-manifest.json#foundationConsumptionBySurface is the counterexample: primitive requirements differ by surface, so that prose cannot supply the required import contract.",
+      "risk": "The promised frontend-architecture declaration/import equality cannot be implemented honestly; later code would guess Drawer, detail, lifecycle, context, overlay or protocol applicability, reopening duplicate-foundation and wrong-surface failures.",
+      "disposition": "NO_GO until U02/U03 materialize a screen/surface roster from accepted IA sheets, bind every FOUNDATION_PRIMITIVE to an exact final implementation path or unique same-surface shared owner, and add the two prescribed import-equality red mutations. Do not create new screens or duplicate UI behavior."
+    },
+    {
+      "id": "RM1-P6-DESIGN-M-003",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["RM1P6-U01"],
+      "title": "U01's declared D1 owning source set is not equal to its six-dimension route result.",
+      "evidence": "A fresh `scripts/check/implementation-design-granularity --manifest ...rm1-u09-implementation-design-granularity-manifest.json --review ...round1.json` fails `D1_ROUTED_SOURCE_SET_MISMATCH:RM1P6-U01`. The checker derives the expected set from project-memory/index.json using U01's design/backend/all/backend/contract/implementation route. It includes project-memory/decisions/deterministic-context-only.md and project-memory/decisions/independent-subagent-adversarial-review.md in addition to U01's eight declared kernel/corpus entries, while U01's D1 owningSourceSet omits both.",
+      "risk": "The implementation-facing manifest cannot pass its own fail-closed six-denominator gate, and the omitted deterministic-context and independent-review assertions are not optional for this route.",
+      "disposition": "NO_GO until U01's D1 owningSourceSet is reconciled exactly to the route-derived project-memory/index.json set, including path, current hash and Assertions selector; rerun the production granularity check after remediation. This is a bounded denominator correction, not a reason to weaken D1."
+    }
+  ],
+  "unitVerdicts": [
+    {"id": "RM1P6-U01", "verdict": "NO_GO", "findingIds": ["RM1-P6-DESIGN-M-001", "RM1-P6-DESIGN-M-003"]},
+    {"id": "RM1P6-U02", "verdict": "NO_GO", "findingIds": ["RM1-P6-DESIGN-M-001", "RM1-P6-DESIGN-M-002"]},
+    {"id": "RM1P6-U03", "verdict": "NO_GO", "findingIds": ["RM1-P6-DESIGN-M-001", "RM1-P6-DESIGN-M-002"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The owner-first three-phase direction fits the accepted business problem: anonymous recovery and workspace branding need owner truth before rendering, and operations scope/candidate/authorization cannot be reconstructed from page keys.",
+    "simplerAlternativeAssessment": "Retain the three phases and extend the existing manifest with the missing seven assignments and screen-level foundation/path records. Treating generic directories or catalog keys as their substitute loses non-catalog user tasks.",
+    "costFit": "Postponing UI until owner behavior is proved is proportionate. The missing records are bounded design work derivable from accepted IA sheets; without them material UI and evidence choices are transferred into coding, so current cost/benefit is not yet acceptable.",
+    "verdict": "REASONABLE_DIRECTION_BLOCKED_BY_INCOMPLETE_IMPLEMENTATION_FACING_DENOMINATOR"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Round 1 independently confirms the owner-first serial direction and 25 catalog-key partition, but finds three blocking omissions: seven non-catalog surfaces lack delivery-unit manifest binding, UI-bearing units lack screen-level exact path/foundation-import contracts, and U01's D1 route set fails exact equality. M=3, S=0, N=0; no implementation conclusion follows.",
+    "severityCounts": {"M": 3, "S": 0, "N": 0},
+    "authorizationBoundary": "Static independent DESIGN verdict only. It authorizes no source, contract, migration, test, runtime, seed/reset, Roadmap, or repository-control changes. The author may do bounded design remediation and seek permitted Round 2 review; product/Journey changes remain Dexter decisions."
+  }
+}

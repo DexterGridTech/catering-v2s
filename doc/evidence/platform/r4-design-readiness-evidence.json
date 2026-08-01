@@ -1,0 +1,34 @@
+{
+  "kind": "r4-design-readiness-evidence",
+  "status": "READY_FOR_CLAUDE_REVIEW",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R4",
+  "design": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md",
+  "authorization": "doc/decisions/2026-07-25-v2s-r4-design-authorization.md",
+  "manifest": "doc/review/platform/2026-07-25-v2s-r4-design-granularity-manifest.json",
+  "chapterHitMap": "doc/review/platform/2026-07-25-v2s-r4-design-manifest-chapter-hit-map.md",
+  "codexReview": "doc/review/platform/2026-07-25-v2s-r4-design-codex-self-review-round-2.md",
+  "adversarialReview": "doc/review/platform/2026-07-25-v2s-r4-design-adversarial-review-round-2.json",
+  "claudeReviewRequest": "doc/review/platform/2026-07-25-v2s-r4-design-review-request.md",
+  "expectedChecks": {
+    "implementationDesignGranularity": "PASS",
+    "codexSelfReview": "PASS",
+    "claudeReviewHandoff": "PASS",
+    "roadmapProgramRegistry": "PASS",
+    "projectMemory": "PASS",
+    "standardsCoverageR4": "FAIL_EXPECTED_UNIMPLEMENTED:PLANNED_ENFORCEMENT_OVERDUE:B.1.N01"
+  },
+  "scopeAssertions": {
+    "r4IsBusinessJourney": false,
+    "r4ImplementationAuthorized": false,
+    "dynamicRuntimeExecuted": false,
+    "devOrSeedResetExecuted": false,
+    "newBusinessSourceCreated": false,
+    "r3J02OrC02Recovered": false,
+    "tdpExpanded": false,
+    "futureUiDesignMustCompareAllV2AndUseFoundationFirst": true
+  },
+  "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP",
+  "cleanup": "NOT_APPLICABLE_NO_DYNAMIC_RESOURCES_CREATED",
+  "nextAction": "Claude independent whole-scope design review, then Dexter acceptance; only a later exact authorization may start R4 implementation."
+}

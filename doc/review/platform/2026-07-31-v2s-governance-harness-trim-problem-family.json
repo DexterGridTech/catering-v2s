@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-GOVERNANCE-HARNESS-COST-YIELD-20260731",
+  "genericProblem": "Governance receipt and prewrite-recording controls accumulated without demonstrated defect interception, consuming more effort and artifact volume than the semantic gates and focused proofs that found the actual defects.",
+  "rootCauseClass": "CONTROL_ACCUMULATION_WITHOUT_RETIREMENT_CRITERION",
+  "finiteDenominator": [
+    "the six package-exit source/receipt denominator families",
+    "prewrite baseline and correction-audit records",
+    "pointwise reread recording and hook invocation canary",
+    "the five-package control-retirement review window"
+  ],
+  "searchedSurfaces": [
+    "doc/review/platform/2026-07-30-v2s-harness-cost-yield-and-trim-proposal-claude.md",
+    "project-memory/operations/verification-governance.md",
+    "project-memory/decisions/incremental-compliance-hook.md",
+    "tools/compliance-control/cli.mjs",
+    "tools/implementation-design-granularity/cli.mjs",
+    "doc/evidence/platform/rm1/p6/*package-exit.json",
+    "doc/evidence/platform/rm1/p6/*source-compliance-disposition.json"
+  ],
+  "searchQueries": [
+    "actualChangedPaths incrementalChecks afterSha256 sourceComplianceDisposition",
+    "prewriteReadback correction audit pointwise reread hookInvocationCanary",
+    "verification governance gate admission production red mutation"
+  ],
+  "counterexamples": [
+    "typecheck, focused tests, generated drift checks, contract/owner exact-set invariants and real red mutation gates have demonstrated defect interception and remain retained",
+    "a future package may retain a removed control only when its five-package review records a concrete expected failure mode and why the smaller form is insufficient"
+  ],
+  "findings": [
+    {
+      "findingId": "F-GOVERNANCE-CONTROL-ACCUMULATION-WITHOUT-RETIREMENT",
+      "status": "CONFIRMED",
+      "scope": "package-exit receipt families and prewrite/correction/pointwise recording controls",
+      "evidence": "proposal cost/yield table and current compliance-control/package-exit implementation"
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "F-GOVERNANCE-CONTROL-ACCUMULATION-WITHOUT-RETIREMENT",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/operations/verification-governance.md#CONTROL_RETIREMENT_AFTER_FIVE_PACKAGES"
+    }
+  ]
+}

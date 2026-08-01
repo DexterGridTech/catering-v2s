@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "r3-external-access-provider-contract",
+  "consumerFace": "PLATFORM_ADMIN",
+  "appTrustsOnly": "X-Edge-Auth",
+  "providerResponsibilities": [
+    "authenticate-system-service-provider",
+    "strip-client-forwarded-and-correlation-headers",
+    "inject-signed-short-lived-edge-context",
+    "route-only-to-private-business-app"
+  ],
+  "applicationResponsibilities": [
+    "fail-closed-before-controller-on-missing-or-invalid-edge-context",
+    "never-store-credentials",
+    "never-create-root-or-default-account"
+  ],
+  "r3Boundary": "EXTERNAL_PLATFORM_ACCESS_PRECONDITION"
+}

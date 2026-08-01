@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-L2-SCOPE-SUPERSESSION-20260730",
+  "genericProblem": "A historical deferred-L2 registry can be read as a permanent exemption after Dexter changes a delivery unit's acceptance scope, allowing unit/static proof to be mistaken for completed browser business evidence.",
+  "rootCauseClass": "HISTORICAL_DEFER_OVERRIDE_OF_CURRENT_DEXTER_SCOPE",
+  "finiteDenominator": [
+    "RM1P6-U02: PLATFORM-AUTH, PLATFORM-PASSWORD, PLATFORM-WORKSPACES, PLATFORM-ADMIN-USERS, PLATFORM-WORKSPACE-OVERVIEW, PLATFORM-ORGANIZATION-OVERVIEW, PLATFORM-CONTRACT-OVERVIEW, PLATFORM-ROLES, PLATFORM-WORKSPACE-ACCOUNTS, PLATFORM-EXTENSION-FIELDS",
+    "RM1P6-U03: OPERATIONS-AUTH, PUBLIC-INVITATION, PUBLIC-ACCESS-RECOVERY, OPERATIONS-SHELL, OPERATIONS-PASSWORD, OPERATIONS-ORG-STRUCTURE, OPERATIONS-BUSINESS-ENTITIES, OPERATIONS-STORES, OPERATIONS-CONTRACTS, OPERATIONS-USERS, OPERATIONS-STORE-PROFILE, OPERATIONS-FIVE-HOME-BOOTSTRAPS"
+  ],
+  "searchedSurfaces": [
+    "contracts/policy/affected-l2-registry.json",
+    "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+    "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+    "apps/frontend/platform-admin/playwright.config.ts",
+    "apps/frontend/operations-admin/playwright.config.ts",
+    "apps/frontend/platform-admin/src/tests/l2",
+    "apps/frontend/operations-admin/src/tests/l2"
+  ],
+  "searchQueries": [
+    "legacyDeferredTestCount|legacyTestDebts|DEFERRED|RM2",
+    "RM1P6-U02|RM1P6-U03",
+    "R5_L2_PLATFORM_BASE_URL|R5_L2_OPERATIONS_BASE_URL",
+    "src/tests/l2"
+  ],
+  "counterexamples": [
+    {
+      "path": "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
+      "reason": "A test file already exists but is not itself enough: each phase obligation requires a non-empty real browser case through a managed run with business and cleanup evidence."
+    },
+    {
+      "path": "apps/frontend/platform-admin/playwright.config.ts",
+      "reason": "A Playwright configuration without an injected managed base URL cannot establish a completed L2 run."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-L2-SCOPE-01",
+      "status": "CONFIRMED",
+      "finding": "The old registry deferred all currently named platform and operations L2 targets to RM2, while the current Dexter instruction explicitly requires P6-2 and P6-3 to complete the L2 tests within their business scopes."
+    },
+    {
+      "findingId": "PF-L2-SCOPE-02",
+      "status": "CONFIRMED",
+      "finding": "P6-2's prior final-review disposition and PASS package-exit draft depended on the historical defer, so neither can remain a valid closure after the scope correction."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-L2-SCOPE-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "contracts/policy/affected-l2-registry.json#phaseBusinessL2Obligations",
+      "reason": "The exact surface and test denominators are package-specific and require real managed browser evidence rather than a broad future-phase label."
+    },
+    {
+      "findingId": "PF-L2-SCOPE-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1p6-u02-final-review-finding-disposition.json",
+      "reason": "A material Dexter scope correction reopens any finding disposition and package exit that relied on superseded scope."
+    }
+  ]
+}

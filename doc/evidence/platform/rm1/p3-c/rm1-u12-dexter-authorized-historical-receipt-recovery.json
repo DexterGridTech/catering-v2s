@@ -1,0 +1,727 @@
+{
+  "schemaVersion": 1,
+  "kind": "dexter-authorized-historical-receipt-recovery",
+  "packageId": "RM1-U12",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "authorization": "DEXTER_DIRECT_SESSION_AUTHORIZATION_2026-07-28",
+  "classificationPredicate": "For RM1-U12, REPLAYED_RECEIPT_CHAIN_EXISTS is true only when same-package RM1-U12 pre/post receipt edges form a directed path from the package baseline SHA-256 to the current SHA-256; DEXTER_AUTHORIZED_HISTORICAL_RECOVERY is true only when that same-package path is absent. Cross-package receipt edges never classify RM1-U12 entries.",
+  "originalMissingReceiptCount": 51,
+  "recoveryArtifact": {
+    "path": "doc/evidence/platform/rm1/p3-c/rm1-u12-dexter-authorized-historical-receipt-recovery.json",
+    "baselineSha256": "ABSENT",
+    "disposition": "NORMAL_RECEIPT_CHAIN_EXISTS",
+    "reason": "The only self-describing artifact is pinned in the control configuration and is bound by its ordinary pre/post receipt chain."
+  },
+  "staticVerifications": [
+    {
+      "id": "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+      "result": "PASS",
+      "assertion": "HISTORICAL_RECEIPT_RECOVERY_SELF_TEST=PASS; RED_HASH_DRIFT=PASS; RED_FALSE_RECEIPT_CLAIM=PASS"
+    },
+    {
+      "id": "RM1_REPLAY_TERMINAL_EQUALITY",
+      "result": "PASS",
+      "assertion": "RM1_EVIDENCE_TRUTH_SELF_TEST=PASS; RED_REPLAY_FINAL_HASH_MISMATCH=PASS"
+    },
+    {
+      "id": "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+      "result": "PASS",
+      "assertion": "Three managed current-byte focused suites report business PASS and cleanup PASS."
+    },
+    {
+      "id": "RM1_STATIC_ADMISSION",
+      "result": "PASS",
+      "assertion": "U12 design granularity, standards coverage, edge-codegen and capability checks are rerun after recovery."
+    }
+  ],
+  "entries": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "baselineSha256": "b1aac1ede8a85ff6ec4d3869f6f67ce483ca267d8799b1ef9e7cf6fe4a899f65",
+      "currentSha256": "89c98b3e0e25f68ada2655193184131d9a3a9b28e5f49bb4f600716b35d4ff4d",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java",
+      "baselineSha256": "0c9c006568618ac72f0df43215507dd192935aa191d93c5aa0d4ebc3e7bbb618",
+      "currentSha256": "4f6538263ba1f14ba6fd691e5fa088af82f30c499a764de6fa64e859a43af9f3",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "baselineSha256": "f9e136a9d4eb5061af34bffb60ee4205a1fcee7e8e6ed09b0e893d5511e5733d",
+      "currentSha256": "67993d66df8a65ee7926860aecd5a164540b4ea9cf59a79ff6a54276344708c4",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceMembershipController.java",
+      "baselineSha256": "3b90b705500a29e2f076b65cdd9400b5a2111f98f359a9cac09e9c9fc7ffdf25",
+      "currentSha256": "517d7983fcad76696cc21ae572089dd3e27d154a77ab6549dfdd62d7d64651e6",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/db/migration/V20260728_100000_000__rm1_p3_c_invitation_completing_status.sql",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "34cf02b3ab569273e543c356fd7cf9025725dcfcabf3e278aa4d37d75a1c09cb",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+      "baselineSha256": "90b7262177f09042bd9a6d07eb3bac101d7e7e721a53cba86c91f1b662bd959a",
+      "currentSha256": "8e2b24ff13fe46eac2cf68c7e0e744d01bb350a3e8980f80dc8f90f1d9acd5d1",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceMembershipServerScopeTest.java",
+      "baselineSha256": "07bab64f49828f4f31a0bd0bee17e9e69b007c57869ca682a0efd0765e365c6d",
+      "currentSha256": "121b2ce1ac3321a15ef15dce0c007026ddfc1befe812c726a8559f4cdbfd1c7a",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "baselineSha256": "c09b37ff604bf4fa5781d99579e109181dd2fc3e1e86b8ec35e6d9fdd5ed3c10",
+      "currentSha256": "437e13a68e407cd24dfd2a9bd68042bc7a44d7aaf0d8f4eb4949649ef4eb405a",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceInvitationPanel.tsx",
+      "baselineSha256": "b0d0ad26d67d73f50662e573a80aaaf202946aada8a6c87bc8c531af1b723a19",
+      "currentSha256": "ca9ac4ba58b65154752ecdd0be0536da14eb5283ea1a4e6cb76c2a6e00cee935",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
+      "baselineSha256": "b1ace443b02e8d2f1273f27c7079d1754fbf112f356ee54c1f1c8751167d245b",
+      "currentSha256": "98f037005a6ebb05ac7e769701c0276302405a757154435df3e9327ee26815f2",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "a75b84e22d1db2ca5deaaed4bb0270d2805c592cf9da50e67a2d0d8dadc9a932",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml",
+      "baselineSha256": "cbdc656ba7b87e8d92e68f43c12a589b6571594a447c70461e954b672c9f6101",
+      "currentSha256": "ebe6c64eb7d96691b0e6483dfe849111a94e6dccdbb474afe68bd6b45c4a470f",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "30915b220415c4ac177190d43560bf3edecdab0655a2c82ac4b46e978e1dbcb7",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "contracts/registry/iam-org-governance-manifest.json",
+      "baselineSha256": "9216460d9d03cec93019366e9a9399b0a1b5bc1a41dab2cce5e590e87482dc08",
+      "currentSha256": "e7b865a24fdc2af0be7b2b5325b41cfeb924bd06dc92482293e76e06d5c28093",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-implementation-amendment.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "af3effcce7c57311e2fa611d54f6ec312d470c08495a5b6c1162503c5c23ef00",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-p3-abc-review-cadence-discovery.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "065a3fd3cf76d1ea46df86cd0bc63ba89f79acb8fe5b5e7d76aafec84fb434ee",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-package-exit.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "95f92181aaee90e795a143d96e713c49e4a6506870fe540b94fa6f7206294082",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-package-input.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "5c85495ebfa44f78e36c90ed8a4f339a4cb4d7ccb9ac52b2a6eb1be3156c5d2b",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-pd2-typed-owner-exception-set-discovery.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "fd98125012cd89afe74c230d801624467845fc5f463997e6074624dd18843632",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-source-compliance-disposition.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "7d809f345580c720adef305a961ae082c1e5bda1485e6cd986e9b4e453c9a4f9",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-successor-intake-baseline-scope-discovery.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "5704cb3df12e00628659c476821ffab2d8c50255fdca74999bde67f5d998de2a",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-implementation-amendment.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "eefd1d51a66b7ef77e825e6a07d05b9ec9082eb3af82629aabad56c5495fd285",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-package-exit.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "1e7efd4155faea2345927b038ccca3143455fb6c609ec5dd587bdb8113dbc1a5",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-package-input.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "f66fe51444602cb3757a3bf5e13f4891f524468c61494af2d051680d95a23d47",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-route-gate-baseline-addendum.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "5606142914fef5e70cd9eb34d704d84a7909b715e10405993d9d8faa73051b27",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-source-compliance-disposition.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "d0ce867d97d428ae2b046e013bba92f820bfbd1120b9d597360875cd887bec34",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-c/rm1-p3-abc-claude-no-go-remediation-design-v2.md",
+      "baselineSha256": "aa019bb19d84c0fad91f29f230ab770283fc5890e3713bbec7d853ee22badc99",
+      "currentSha256": "6632fcf387dfa8efb835be5579bbeb0d48f8474fd9b5097aeb11a8b623de7f6a",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-c/rm1-p3-abc-historical-dynamic-evidence-disposition.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "2c0511bb02dcd16b031eaf3d78bf6cd39edf2632c26384d0f120b1f1ad6d8b13",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-c/rm1-u04-generated-output-replay.json",
+      "baselineSha256": "d3dfd7b15bfe5294deaad171ede0e244ba783d8ca910487453a0817582f46876",
+      "currentSha256": "287f891323440bafa14341ef68f4a930646934fed34643cccaf257a2862081b3",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-c/rm1-u12-evidence-truth-control-red-proof.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "ca0b671b973dfa34fccc7d2000d1bcc42fe5f7250dc175960e36c83c22a0789c",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-c/rm1-u12-package-input.json",
+      "baselineSha256": "6b4420a69bf3fa139338bee4e03886bb5b228d42a6f73308e9fcdd2ccf00ea64",
+      "currentSha256": "5db0ae955ec95c5e22202fedae63b84cf6578348da9b7baa84925048ad0f1023",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "baselineSha256": "0bf9345bb4a1b1f541c98fc12cad9de7c8a1af0d1013223e519d07ece42a8448",
+      "currentSha256": "2d392563709d2f3e059fc033b8c3cf502d01a9581574dffa0f1da001e382b43d",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "be477e5f83735120d83059a79532d8e6b29bbddaf557cc70cbcefb3a56ceecc3",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "libraries/backend/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+      "baselineSha256": "a5932d51c17723cce2e71d4ad7515ffa024d84231d724e3e0329e34cb9d3bfcd",
+      "currentSha256": "86549494643eac894010e4bb3ab488f4914e581e0d09bc4b1307793ea2e95187",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "1ba3a7f01b32c306fb9a54d2d76de6fca3da2197b24438a1cc813a5959c2a6e6",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformCommandReceiptService.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "a1bbb0e2041e6377502dee236446b7628ef08a6076e2c0782991f5e0deafd6d7",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformIamAuditHistoryService.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "99477bfa051ac77bb4e3dcec49ebe210e43a1832fda94711a1d09d91c76c5bf5",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "baselineSha256": "3f6518d55a7b74a70282bb5475aabc0434d4958519bff230dc18068eeb2b858c",
+      "currentSha256": "45a7539380cb44d6ba9730f4fc0713b9ff2cd193ff569acfbed863dae2bc67d6",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java",
+      "baselineSha256": "4917c1004e19e8e6fe3c67cb8c750e6f1cec12a209dba048e9d1051c5e420368",
+      "currentSha256": "09c322384b4f2743857bcb0622334c816ca702e146babec15b2a94a7ae2f58b0",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+      "baselineSha256": "6841dc9fd2535aaa4b263948422a9a11fc34491a4f9a16badea77c36ed84868d",
+      "currentSha256": "62ed8f3b4e513ab956904f3279f6deb93767ba15904d5449f4b552dc20f540d1",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceLoginRateLimitService.java",
+      "baselineSha256": "3e2d7598fc782542321e0684ac36dfa96c03cbb32f309a41bf78a1371340d532",
+      "currentSha256": "741d1cdf8e64553920e7f182816499101662ca0927854bdaa82827468fdd5c3a",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipService.java",
+      "baselineSha256": "8e9781e7b5464b3bd7ab3eab81e4afd687b80be7313515084fc662e149fc4a76",
+      "currentSha256": "ef65e4007ccffb1b9f41442cad052f19bcc5b5de67b6016900f79405787f8ede",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceOtpRateLimitService.java",
+      "baselineSha256": "ea8ed68bd7d8ddcae8b64f3a865033583f4885f83efc56ba21753b549749848b",
+      "currentSha256": "a837dd9430c6039743481f6e86d3db4285ab9d7588d7029938324a6397d3bbfd",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolverTest.java",
+      "baselineSha256": "502195cce966b637e85fe1e738082969bd8cac28072359929ccd9afa4a174653",
+      "currentSha256": "482508108e7d6d7cb440349ff441e997e94fa7780544c7b64302389542555703",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+      "baselineSha256": "38902913b34ebe199c0efe7e864eb4fa9c7b9d3033e2875e4d91e95eb8efe6b4",
+      "currentSha256": "a524ebe1e8a0235b74ca6562ccab8c3d44dde29b63ba1a5e9bc68bf77b785493",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipTaskScopeTest.java",
+      "baselineSha256": "92d54ae035657e0284a2a12a6e2042e96015d55e163b9342b14ea0beca9bee1c",
+      "currentSha256": "e81962d3b849a3303248eb9e55da86e738f5a519d3fb1d25c325effed7f56721",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java",
+      "baselineSha256": "4dcabf9e6e19eafa3c0f3e28fb53f071e2438ce9d92abb45c82bcd80bf58ded7",
+      "currentSha256": "95197bab4b4ba263962bc8742562e689a9e2845945756fb1d8cfc6283abf29a7",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "baselineSha256": "3f369faa5700b5905b9632abd822cdee1ddc1dd3797a47db2b551c012b63cdc8",
+      "currentSha256": "e44d71776aca8d6981286956627f8ba5f24a01536f9cf64de8cb1b4e908d432f",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "scripts/test/r5-remote-testcontainers.mjs",
+      "baselineSha256": "a0aa5028f9c8b8a9b1109fc7f880db242ed1505f46baec4fad4657e503ec7739",
+      "currentSha256": "ff0d0376808b446812c76ef6dc57fcc73fabe7974c25d578b9fd465c653d4f1a",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "tools/capability-invariants/cli.mjs",
+      "baselineSha256": "c60199f19f5a38346c77cd4f28ea4b56a31952a03afd39c87645263838a9fcc2",
+      "currentSha256": "e728b6ad47f96202f725b6fa8d0481a03f5bf92b5397dd6bd765e4d6bd35ba25",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "baselineSha256": "00f411f7634286277192b063877eb229345e0493f0ee816e0c2268edd6970eb5",
+      "currentSha256": "d0fa1b2cb5af4db651d1f2f2d17d3323ae2e6cab65d8424aed4ee9c427961b6d",
+      "staticVerificationIds": [
+        "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+        "RM1_REPLAY_TERMINAL_EQUALITY",
+        "RM1_CURRENT_BYTE_DYNAMIC_RUNS",
+        "RM1_STATIC_ADMISSION"
+      ],
+      "reason": "This RM1-U12 baseline delta is bound to its exact baseline and current bytes; any byte drift fails admission.",
+      "disposition": "REPLAYED_RECEIPT_CHAIN_EXISTS"
+    }
+  ],
+  "nonClaims": [
+    "No entry asserts that a PreToolUse or PostToolUse hook ran at the historical write time.",
+    "No entry converts this historical recovery into a normal hook receipt.",
+    "Future changes remain subject to the normal pre/post receipt chain."
+  ]
+}

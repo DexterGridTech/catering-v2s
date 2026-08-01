@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-u07-historical-receipt-recovery",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "packageId": "RM1-U07",
+  "originalMissingReceiptCount": 5,
+  "authorization": "Dexter granted Codex full RM1 implementation authority; this one-time recovery is limited to the proven U07 pre-scope controller baseline gap.",
+  "recoveryArtifact": {
+    "path": "doc/evidence/platform/rm1/p4/rm1-u07-dexter-authorized-historical-receipt-recovery.json",
+    "baselineSha256": "ABSENT",
+    "disposition": "NORMAL_RECEIPT_CHAIN_EXISTS",
+    "reason": "This recovery record itself is created through the active RM1-U07 pre/post hook channel."
+  },
+  "staticVerifications": [
+    {
+      "id": "P4_APPROVED_EXACT_CONTROLLER_SURFACE",
+      "result": "PASS",
+      "evidence": "RM1-U07 manifest declares OperationsStoreManagementController.java as update-only P-E2 surface."
+    },
+    {
+      "id": "P4_CONTROLLER_CURRENT_BYTE_POST_RECEIPT",
+      "result": "PASS",
+      "evidence": "RM1-U07 hook receipt call_p71c9chYslhtmVK7eqUVH5Lt records the current controller SHA-256."
+    },
+    {
+      "id": "P4_CONTROLLER_BASELINE_GAP_REPRODUCED",
+      "result": "PASS",
+      "evidence": "validate-delta-receipts reports the expected absent baseline edge before this recovery is admitted."
+    },
+    {
+      "id": "P4_OPERATIONS_INVITATION_CONTROLLER_APPROVED_SURFACE",
+      "result": "PASS",
+      "evidence": "RM1-U07 manifest declares OperationsWorkspaceInvitationController.java as an update-only P4-F/P-E5 invitation-page surface."
+    },
+    {
+      "id": "P4_OPERATIONS_INVITATION_CONTROLLER_CURRENT_BYTE_POST_RECEIPT",
+      "result": "PASS",
+      "evidence": "The current controller byte is recorded by the active RM1-U07 pre/post hook channel before P4-F implementation changes."
+    },
+    {
+      "id": "P4_OPERATIONS_INVITATION_CONTROLLER_BASELINE_GAP_REPRODUCED",
+      "result": "PASS",
+      "evidence": "validate-delta-receipts reports the expected absent baseline edge for the preexisting controller before this recovery is admitted."
+    },
+    {
+      "id": "P4_PLATFORM_INVITATION_PAGE_SURFACES_APPROVED",
+      "result": "PASS",
+      "evidence": "The U07 manifest declares PlatformWorkspaceInvitationController.java and WorkspaceInvitationPageWireMapper.java as update-only P4-F surfaces after the complete invitation caller scan."
+    },
+    {
+      "id": "P4_PLATFORM_INVITATION_PAGE_SURFACES_BASELINE_GAP_REPRODUCED",
+      "result": "PASS",
+      "evidence": "validate-delta-receipts reports their absent baseline edges before this recovery is admitted."
+    },
+    {
+      "id": "P4_OPERATIONS_INVITATION_SCOPE_TEST_APPROVED",
+      "result": "PASS",
+      "evidence": "The complete P4-F caller scan proves this controller test is the owning assertion for requested scope delegation and must follow the owner-page API change."
+    },
+    {
+      "id": "P4_OPERATIONS_INVITATION_SCOPE_TEST_BASELINE_GAP_REPRODUCED",
+      "result": "PASS",
+      "evidence": "validate-delta-receipts reports the absent baseline edge before this recovery is admitted."
+    }
+  ],
+  "entries": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "ef3bd69df957d70c77d76b57b13a2998604249df4806b48b7820e89b7246a90e",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The controller existed before RM1-U07 but was omitted from U07's initial allowed surface. The later P-E2 scope correction made the package baseline classify it as ABSENT, while the only truthful same-package receipt begins at the preexisting controller byte.",
+      "staticVerificationIds": [
+        "P4_APPROVED_EXACT_CONTROLLER_SURFACE",
+        "P4_CONTROLLER_CURRENT_BYTE_POST_RECEIPT",
+        "P4_CONTROLLER_BASELINE_GAP_REPRODUCED"
+      ]
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "d125a4e0011aa0a19baa101c576a56e84207de9aed39e06d06b89642ec0c5748",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The controller existed before RM1-U07 but was omitted from U07's initial allowed surface. P4-F now needs its owner-page boundary; the package baseline therefore classifies the already-existing controller as ABSENT, while the only truthful same-package receipt begins at its preexisting byte.",
+      "staticVerificationIds": [
+        "P4_OPERATIONS_INVITATION_CONTROLLER_APPROVED_SURFACE",
+        "P4_OPERATIONS_INVITATION_CONTROLLER_CURRENT_BYTE_POST_RECEIPT",
+        "P4_OPERATIONS_INVITATION_CONTROLLER_BASELINE_GAP_REPRODUCED"
+      ]
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "6352c3ace207cec3070578857b8f1a6c04e0126c71374b9326a5302b86c58a79",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The controller existed before RM1-U07 but the original U07 surface omitted the platform half of the invitation page problem family. The complete caller scan proves it shares the same P4-F full-materialization root cause.",
+      "staticVerificationIds": [
+        "P4_PLATFORM_INVITATION_PAGE_SURFACES_APPROVED",
+        "P4_PLATFORM_INVITATION_PAGE_SURFACES_BASELINE_GAP_REPRODUCED"
+      ]
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationPageWireMapper.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "a30fc717929a7cec55a58dfe5c235e92ea2dcce48a7bd70ba8c90315b550b534",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The mapper existed before RM1-U07 but the original U07 surface omitted the shared post-list filtering, sorting and sublisting boundary. The complete caller scan proves it is part of the same P4-F full-materialization root cause.",
+      "staticVerificationIds": [
+        "P4_PLATFORM_INVITATION_PAGE_SURFACES_APPROVED",
+        "P4_PLATFORM_INVITATION_PAGE_SURFACES_BASELINE_GAP_REPRODUCED"
+      ]
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "ff4b0e5caa3519cd080eec08102d42f17609b08e48f032518b2565f97a1c4e1c",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The preexisting test was omitted from U07's initial scope. The first real P4-F suite run proved it owns the old service-call expectation and therefore must be updated with the same endpoint-fixed scope invariant.",
+      "staticVerificationIds": [
+        "P4_OPERATIONS_INVITATION_SCOPE_TEST_APPROVED",
+        "P4_OPERATIONS_INVITATION_SCOPE_TEST_BASELINE_GAP_REPRODUCED"
+      ]
+    }
+  ]
+}

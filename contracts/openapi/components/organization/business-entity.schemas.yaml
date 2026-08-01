@@ -1,0 +1,695 @@
+{
+  "components": {
+    "schemas": {
+      "Brand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "code",
+          "name",
+          "extensionValues",
+          "extensionRuleRevision",
+          "status",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "alias": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "remark": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/BusinessEntityStatus"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "BrandCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "alias": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "remark": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          }
+        }
+      },
+      "BrandPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metadata",
+          "items"
+        ],
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "groupWorkspaceKey",
+              "page",
+              "pageSize",
+              "total",
+              "sort",
+              "direction"
+            ],
+            "properties": {
+              "groupWorkspaceKey": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "total": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "sort": {
+                "$ref": "#/components/schemas/BusinessEntitySortKey"
+              },
+              "direction": {
+                "$ref": "#/components/schemas/BusinessEntitySortDirection"
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Brand"
+            }
+          }
+        }
+      },
+      "BrandUpdateRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BrandCreateRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "expectedVersion",
+              "expectedContextVersion"
+            ],
+            "properties": {
+              "expectedVersion": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "expectedContextVersion": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
+      "BusinessEntitySortDirection": {
+        "type": "string",
+        "enum": [
+          "ASC",
+          "DESC"
+        ]
+      },
+      "BusinessEntitySortKey": {
+        "type": "string",
+        "enum": [
+          "NAME",
+          "CODE",
+          "UPDATED_AT"
+        ]
+      },
+      "BusinessEntityStatus": {
+        "type": "string",
+        "enum": [
+          "ENABLED",
+          "DISABLED"
+        ]
+      },
+      "BusinessEntityStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetStatus",
+          "expectedVersion"
+        ],
+        "properties": {
+          "targetStatus": {
+            "$ref": "#/components/schemas/BusinessEntityStatus"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "HeadCompany": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "code",
+          "name",
+          "legalName",
+          "unifiedSocialCreditCode",
+          "authorizedBrands",
+          "extensionValues",
+          "extensionRuleRevision",
+          "status",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "legalName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "unifiedSocialCreditCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "remark": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "authorizedBrands": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "code",
+                "name",
+                "status"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "status": {
+                  "$ref": "#/components/schemas/BusinessEntityStatus"
+                }
+              }
+            }
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/BusinessEntityStatus"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "HeadCompanyBrandAuthorizationAddRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "brandId"
+        ],
+        "properties": {
+          "brandId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      },
+      "HeadCompanyCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name",
+          "legalName",
+          "unifiedSocialCreditCode"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "legalName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "unifiedSocialCreditCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "remark": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          }
+        }
+      },
+      "HeadCompanyPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metadata",
+          "items"
+        ],
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "groupWorkspaceKey",
+              "page",
+              "pageSize",
+              "total",
+              "sort",
+              "direction"
+            ],
+            "properties": {
+              "groupWorkspaceKey": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "total": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "sort": {
+                "$ref": "#/components/schemas/BusinessEntitySortKey"
+              },
+              "direction": {
+                "$ref": "#/components/schemas/BusinessEntitySortDirection"
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeadCompany"
+            }
+          }
+        }
+      },
+      "HeadCompanyUpdateRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/HeadCompanyCreateRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "expectedVersion",
+              "expectedContextVersion"
+            ],
+            "properties": {
+              "expectedVersion": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "expectedContextVersion": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
+      "Tenant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "code",
+          "name",
+          "legalName",
+          "unifiedSocialCreditCode",
+          "extensionValues",
+          "extensionRuleRevision",
+          "status",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "legalName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "unifiedSocialCreditCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "remark": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/BusinessEntityStatus"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TenantCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name",
+          "legalName",
+          "unifiedSocialCreditCode"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "legalName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "unifiedSocialCreditCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "remark": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          }
+        }
+      },
+      "TenantPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metadata",
+          "items"
+        ],
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "groupWorkspaceKey",
+              "page",
+              "pageSize",
+              "total",
+              "sort",
+              "direction"
+            ],
+            "properties": {
+              "groupWorkspaceKey": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "total": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "sort": {
+                "$ref": "#/components/schemas/BusinessEntitySortKey"
+              },
+              "direction": {
+                "$ref": "#/components/schemas/BusinessEntitySortDirection"
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tenant"
+            }
+          }
+        }
+      },
+      "TenantUpdateRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TenantCreateRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "expectedVersion",
+              "expectedContextVersion"
+            ],
+            "properties": {
+              "expectedVersion": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "expectedContextVersion": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

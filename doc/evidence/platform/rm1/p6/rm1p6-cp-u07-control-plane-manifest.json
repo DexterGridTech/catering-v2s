@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U07",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "CP-U05 has a missing package baseline for one placement report. Without a narrow, receipt-bound recovery, the control plane cannot distinguish that historic omission from an unreceipted new change.",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-CP-U07",
+      "title": "P6 CP-U05 exact missing-baseline recovery control",
+      "sourceComplianceDispositionRequired": true,
+      "changeSurfaces": [
+        {"path": "tools/compliance-control/cli.mjs", "disposition": "update", "target": "CP-U05 exact single-path baseline recovery and red self-test"},
+        {"path": "doc/evidence/platform/rm1/p6", "disposition": "update", "target": "hash-bound recovery proof and CP-U07 evidence"}
+      ],
+      "forbiddenPseudoFixes": [
+        "create or rewrite the missing CP-U05 package baseline",
+        "recover more than the placement-report path",
+        "accept a receipt from a different package",
+        "accept a recovery without the declared pre/post receipt pair",
+        "accept a baseline or current hash drift"
+      ],
+      "completion": "The only recovered baseline is 0f476795 for the P6 placement report; exact receipt exec-2e174d74 is hash-bound; missing, path, hash and extra-path mutations red."
+    }
+  ]
+}

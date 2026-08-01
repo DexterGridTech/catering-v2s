@@ -1,0 +1,1557 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-compliance-disposition-template",
+  "packageId": "R5-CR-U03",
+  "ruleCount": 185,
+  "applicableCount": 117,
+  "rows": [
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/11/assertionSources/1",
+      "ruleId": "SRC-02e69ff1695c04987321060fe5239e0d7fc1d740e1317657b3eed9ba6f389102",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U07/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-0537062e324a12c0985cb0734df60616005c284b762e942c8ac4221407f77290",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U07",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U07/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-0620215df1b05d210b26d2e0b1fd1b1c0b114a8370c880eada6f65994f1f70de",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U07",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/17/assertionSources/1",
+      "ruleId": "SRC-071b8169bb5650ec7c1ca5d352ae23276214a9b2a63a1df733860a5ddf83d963",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/approvedAssertions/2",
+      "ruleId": "SRC-0938ccb7c40d115a8398c1d70ea37715ccfb46d21fac2ffc133bb2e69b7b49c0",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/approvedAssertions/1",
+      "ruleId": "SRC-09cd2ffc1d819206de93132c4e81ec30083c33fc993204498f7f4f0974c7c612",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/6/assertionSources/2",
+      "ruleId": "SRC-0a5c23c302cdb95082295001db1878a5cb50dbcaef6b3bd31955a2f23d111884",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/10/assertionSources/3",
+      "ruleId": "SRC-0f694d7816a0243e31d6450a7d5ebdb7ada2d03ce4d1b68146b02a01e4d8e583",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/2/assertionSources/1",
+      "ruleId": "SRC-10913bac675ecff0196df656c1dfeffb3eb04da6b82d05208f5773b916655333",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/18/assertionSources/0",
+      "ruleId": "SRC-132903a02c0a25e11ac128ff0e645ed970571b82f0cdb8b8d32771d59233e0a3",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/11/assertionSources/2",
+      "ruleId": "SRC-1ae1fd5584bc8c46ad5710132933c6de23ff2fc778504d65018b16f394c00b2c",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/14/assertionSources/0",
+      "ruleId": "SRC-1e6941e32438e790af8ba63a12cb7c6cf89b69a6cec1d3ecec20612dba3b3592",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/approvedAssertions/0",
+      "ruleId": "SRC-1e85d6c5003657dcc140cd8b7db014776f8eb6720ee2b795b538087f465708be",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/18/assertionSources/2",
+      "ruleId": "SRC-1e88dacdebca281722f4a67d8ad5ad120f86d1ab6d56a08152b68b73d0afceeb",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/10/assertionSources/2",
+      "ruleId": "SRC-1fd11eef2c04ab5343c8f7c98ec2a14f990ce13f355c866a9a3e2ae3e4d3406b",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/approvedAssertions/4",
+      "ruleId": "SRC-21b3b3b75a1bec18a89fef8103d9f37a4be5c0f49d00e78a7fd340ed177d7fb7",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U05/approvedAssertions/2",
+      "ruleId": "SRC-23aadf69c80a2ba2e53326675241b003cd403cc0652c269a2dd4c985c76c69ab",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U05",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/10/assertionSources/4",
+      "ruleId": "SRC-2585a5d76c8c2a7ad6d4b5e046cdfe588fc874824d4aac793211510fad745129",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U05/approvedAssertions/0",
+      "ruleId": "SRC-299b423c25fdfd4c0047c1de027a84a67863813491098c05da6308645c040713",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U05",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U05/approvedAssertions/1",
+      "ruleId": "SRC-2a0b3e79a8d9442ace8f1d372ddd12cb25602d9455f7f4fb49daabfa3955f651",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U05",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/2/assertionSources/3",
+      "ruleId": "SRC-2a38e5ba792340ee4d87069eb2ad14ae37111898a64f9c7c42bdb2d83c575976",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/6/assertionSources/4",
+      "ruleId": "SRC-2bf0cdb11c457d4e9e6f14fed1c64c7cd119b74bec525bb2c1441a985544cd19",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U08/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-2bf5a72c92521c543edd5bb9486d85376b57ce0c985bc783de9bad6af673096b",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U08",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U08/approvedAssertions/2",
+      "ruleId": "SRC-2ec0eb6f6fb5ab0c053326710c1dbaa9a0004b6b2d629261c9e397e3bb749fab",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U08",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/6/assertionSources/6",
+      "ruleId": "SRC-2f05211287f3df4e01b87aebfe0e6b25c1f35f0c9db0cc2e944487b2ce6d9faf",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/6",
+      "ruleId": "SRC-35f3ef826a5582b6fab46e3e5574d91f25bb93c6edf395e658d9209b8d86ab54",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/5/assertionSources/2",
+      "ruleId": "SRC-36a009cd17b8769c522857a89cb3e169dd9a3822b4a21239c8723420c1839ea6",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/12/assertionSources/1",
+      "ruleId": "SRC-3a2bad2861d1c9997a181b9f852a00d4f6d5645221612dfeda39537671dcc3be",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U07/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-3b91ceed20ed4af904da6a406d343870519debe2707d4f9afa88ddb6e53f555d",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U07",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/8/assertionSources/1",
+      "ruleId": "SRC-3fd89d3cdaa8bd115b33a501bbed268b9890a34174a729e6a7d0a7591ee2abf9",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/6/assertionSources/5",
+      "ruleId": "SRC-3ffa06035eb1c125cc9c26a646efeb1a6f2245a4cc757d3936560220edabee2a",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-40ecc74808715e19648725dd8aefd7dd48444bf37d17da83930020cdfcdcd6c5",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/7",
+      "ruleId": "SRC-41c362e20cd3d0f0b59f86cd1b9f9099fa3b2b4c530efd5c891c38837340e4fd",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/5/assertionSources/0",
+      "ruleId": "SRC-435148aeec5bbd990b5a9a932166f66c42c5677be08d9c0b195ffb47a1223cc5",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U02/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-44d357c0d958514252d97e1c5bf30d0151fa3e1c251b3ee9cec124719642c2f0",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U02",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/7/assertionSources/3",
+      "ruleId": "SRC-45bd04cc0de17c2c25ba854554998616456db46be8cc779729572f310875bd72",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/10/assertionSources/0",
+      "ruleId": "SRC-498d64766f47af0d2899fc52e702de5a46722838db0a83c07815d50cc88864fb",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/2",
+      "ruleId": "SRC-49f10dcd4b8c3eb4ea414f0bbad959092b08d958c7503714e74795fd1026ba6a",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/4",
+      "ruleId": "SRC-4b4c10c3886ce40e8d9db2aed87656b176f065c66e945c7c79ccef0e7a3aa607",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U00/approvedAssertions/2",
+      "ruleId": "SRC-4c6027b5838244c224a3d1b470941647d5c31011f1f8b68e6619a3bac85d95b9",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U00",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/15/assertionSources/1",
+      "ruleId": "SRC-4c885355c64c0f691d50a30c62772e391619ce572a801e43cfda99258afe7469",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/4/assertionSources/2",
+      "ruleId": "SRC-4d048aef4399a18365a71110ce1cc034eb8f6c0f7b512407384ca69143710e70",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/9/assertionSources/0",
+      "ruleId": "SRC-4d6874bf14ea556559eb1f4afd31694242c21ed12e3cb993221a72e770eddfbf",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/4/assertionSources/1",
+      "ruleId": "SRC-4dd600403c86d77db5503445cf90d887a427f3c4e74eb557ea5e514657b91d20",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/approvedAssertions/2",
+      "ruleId": "SRC-4df854a03b629b85513f1d3a4df3b5b4b786e0d25e901562846bd1b1fd663654",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U06/approvedAssertions/0",
+      "ruleId": "SRC-4df99e8c6d086ade4f370be01ee21020e8cd586915a22307c277d693ce1c816a",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U06",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/16/assertionSources/2",
+      "ruleId": "SRC-4f53980569591742069ebc50670edcb2953c3a80b0f9ea8d1dc88e7a7d113b42",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U08/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-4fa625626bd85930854ca7de9de6e8ef5ac4944cc9c13be6f16dee0338575fe4",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U08",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/approvedAssertions/1",
+      "ruleId": "SRC-525552f78fbdc57396121666e48bed8658f64a84108316aa24107c0c08d9675a",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U07/approvedAssertions/0",
+      "ruleId": "SRC-53060e2e944e32c91c8fa2437241b7177bb4bd0134d68f912f2f69b1b9e32d1c",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U07",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/3",
+      "ruleId": "SRC-5455568e08438c30fa95fb40118175a9510d0be26311e39350a5cb9f7f0bf90c",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U01/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-54fe7b73b449d6aaf25d8c37524680ec3d35abfad91afb95e2b473edbba424fe",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U01",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U00/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-5b025a87ec5a80697ae72f844e0b9197fbc06f7f8b75040aee0a6fe13ffea2fa",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U00",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U00/approvedAssertions/1",
+      "ruleId": "SRC-5de4c8535cf2f0a0543bf5e26cc76cd17a1b3058f7cdc2a5d98e5de33a7010c4",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U00",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-630b66f445b476fe3a4bddd21656bf01eedd9d2b163c8482db32d772fc105fd7",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U02/approvedAssertions/1",
+      "ruleId": "SRC-63159677aada334595e0ccd6329d1ae48ff62f1d2a3dd30ea3c3139d71a56953",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U02",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/1/assertionSources/1",
+      "ruleId": "SRC-6344231692cf402b4426eadcef9856582046c0f491899ad1bdcff17e7206c2e6",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-64cc2fce71869839c948b8fe6780a376435f978ef147fee6ed99e75e4d8f3931",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/1",
+      "ruleId": "SRC-659437981caa12277760d69ff11f1daaebab129afd260abf78ab435d9b2e8124",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/7/assertionSources/1",
+      "ruleId": "SRC-6860371ea5abbb86068bb2a57a3264a7526c727c8d82f6ae1a863e87fd241eb2",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/4/assertionSources/0",
+      "ruleId": "SRC-688ca0d07ee054342eaf07365490a3824cf7e2082b3f2a4f30d6ad1bd60c6c8e",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U05/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-68bd098ebeb7d0fa7eeac55180395105cba6d2ebabf13a0a987cd73e899d5a47",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U05",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U05/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-6c3e24af562813c8d2676555865d7afad1f8d579c0277ed95d9ffc324a9fecbb",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U05",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/10/assertionSources/1",
+      "ruleId": "SRC-6cbcfa7f0f5aae815cdea8bd3af41960619f7119262d6c5f385cd8d0a116fda7",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U01/approvedAssertions/2",
+      "ruleId": "SRC-6d8b7246bf02f36f31d09960c4f8e366d33008fe26121844cb9f8416a0615230",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U01",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U02/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-7013e75bda0702b20baf7d423356cd4893812b86a7f967fad558e0da69014a93",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U02",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/5/assertionSources/1",
+      "ruleId": "SRC-70b2a2cb352fdc0ab935e03b0d1aeb7f59aa86eb0ea275263d73f0e47cf5b8e2",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/5",
+      "ruleId": "SRC-70e54bf64f290965d3e0fa44447109e88c9a58f6da6e3dfba20429740c22cab5",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/14/assertionSources/1",
+      "ruleId": "SRC-72faa949f9b8e2cb490fc48ff8ff931e3de5595b1e2d7713474905a73e246573",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/7/assertionSources/2",
+      "ruleId": "SRC-753cd3ea2f18884c755aa3e464921b88089133c84bf9dd918d126bfe9845555e",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/10/assertionSources/5",
+      "ruleId": "SRC-7597899c7243991509062e2261acd822c25ffcc0f596f73871e204ea0fe93c13",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/0/assertionSources/3",
+      "ruleId": "SRC-798d4a18402e0313ad27e0411157faa6fb5eb8f11548183c964d293639896741",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/approvedAssertions/0",
+      "ruleId": "SRC-7beb5cc4291f57646bda99ad027094749401ae1ff8aa875360e28ddc98952a01",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U06/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-7c29cdaa2b34ed748606e2e5b1e50fe02c4d2673c03b23331f87b1abd421bf7f",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U06",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/6/assertionSources/0",
+      "ruleId": "SRC-7c34adc9c143d60efd190fc9caab113993eff72381898899807ebaa95845cf95",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/1/assertionSources/2",
+      "ruleId": "SRC-80ce4c65b3c147920a4dc0fac33443ff346c4ec6cb5103ead42716fe55441c5b",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/7/assertionSources/0",
+      "ruleId": "SRC-820b02aca255e06705fefb483455ba0a977fdd0aa28ddea0a15b77974fa164f1",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/2/assertionSources/2",
+      "ruleId": "SRC-845be7e7a8b17ab6c4e899a256390e8411da1c3f93c7adb8bee03649fbbc8e17",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U06/approvedAssertions/2",
+      "ruleId": "SRC-84d2b140d73e25f43a6e9ca35969b66798da101e2aeb0053e5c51b4f7d7fa57a",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U06",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-87cc11475841b0383bcf243eb228260efe9717015e0984b87e869de7e8e281cc",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/forbiddenPseudoFixes/4",
+      "ruleId": "SRC-8b499c81355a3aeb099889e47d35921561b7a3140e45792432d6f5d696fc78dc",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U01/approvedAssertions/1",
+      "ruleId": "SRC-8c54184c10b6ebe7dd23caa23fc9540bc51735ff116a566260fd8360658de79e",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U01",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U00/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-90469a086c2c7c576d9a5480698fe72ceb2fbac61eeaa1dd3b57cda5b89b6254",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U00",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U01/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-923c4c9d205649bba68ebf1cbcba847b482b5467c29dd71e40c008804b4832bc",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U01",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U00/approvedAssertions/0",
+      "ruleId": "SRC-94424cd820c171644fefa69f4aa3fda021b0a71183aa8f5f14512f80556dd306",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U00",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/8/assertionSources/2",
+      "ruleId": "SRC-95be3beb5e5322dc55890adfb1f15ef0a18d608b308ceda614423d351cf44e25",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U05/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-9c5e3a38d649a208622ca2f3ae0ca52e38b0220e5ad315becfb92f3da325505b",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U05",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U02/approvedAssertions/0",
+      "ruleId": "SRC-9df3f29e29af29e072e9f9eef859d8a0f1ff25005d21ccaeca91732499ff508e",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U02",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U07/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-9e10bb57896cf4813d9228450263e6a2cccb0b5b0f18c54016beebaaa602a56d",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U07",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/10/assertionSources/6",
+      "ruleId": "SRC-9e3b19900bcde8323ac0437edb09da97b839f9699087f88664be52ee4d0162c9",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/9/assertionSources/1",
+      "ruleId": "SRC-9ed950eb2d717d4743e7188066575208dd0e912884dba551d6102e9cb1a097fe",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U06/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-a0bfb48126bd9caa6fc14957ee2dd0e67c0c2e4a7c38b9505b3044e29dbe9762",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U06",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/13/assertionSources/1",
+      "ruleId": "SRC-a10cd7edd6cc69d50bdcd20ad69b00884877876530575cb3e86516a84d84df1e",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U06/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-a3343bdcb207d3b15733bab0a5f2f33af41d12617e24aba08cab8cf930de3af0",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U06",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/0",
+      "ruleId": "SRC-a3fdfefde07f4100ca058c1fdbaf912c07af3175d55e9eb40da0ce9b75046269",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U02/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-a9058f48780eac41749eb73ccfea4eadfc0f7a84c5efbdbce45668c72731bcbe",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U02",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/8",
+      "ruleId": "SRC-aa8e677500a582ec4f95445fb46ba64787d57601fa6e2bc3372c0f0e5cd3a8cd",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U05/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-aadab22f76566e72fc12584cc6674f6be2050ac4ea8b0bccb28a130473623592",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U05",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/3/assertionSources/9",
+      "ruleId": "SRC-ab732ccaf09c6a5bfb69fd87b2289d1afe06ab0593d2f741649ba4bc12e8c006",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U01/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-aba2c3929580ba2692b1a865352c5dad26a3bb2a45d49b11b1b01fd4b4b164ec",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U01",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U01/approvedAssertions/0",
+      "ruleId": "SRC-ac193173b2db6d597d6b26518e38e96f89a502fff254bfd2b3b5a9c576ef1f75",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U01",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/1/assertionSources/0",
+      "ruleId": "SRC-ad4bcb4d15a97e4578bcbf741682c3d395814030bae9bd80dfb216d02d667da6",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/6/assertionSources/1",
+      "ruleId": "SRC-ad508668ee68399935a6bf34f6f95564cde388158d27eaedb2b5b079e0e51cb5",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U02/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-aec212678a5e972b4dd9997a82ed54f70704cd0417429dafacdfd13b9337f4dc",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U02",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-b152f10794c628ed3eb61698095fbc580d52af8d493fec527ab54954fd7d3970",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U07/approvedAssertions/1",
+      "ruleId": "SRC-b19d7c2ecc68673a88b8ac879a4dff6b0b623609f41704fcb9e0ffa36a16bc99",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U07",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/12/assertionSources/2",
+      "ruleId": "SRC-b3a057ad18dca4bc80abf7e14ebf63ae2e2f1736eda89350935d372dc6c06730",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U08/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-b4fa2571d8dedbdc270e8957720270cebfd7016ee828f3bc9999c05d30096f79",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U08",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U06/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-b56bd5941217fed0bad6447fa922ed2f467d840a139e3a0a65e6166717e243c5",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U06",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U07/approvedAssertions/2",
+      "ruleId": "SRC-b6eba8386a9335878a09c3afebb870f410f4f483a93bfab92d188c53161e5394",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U07",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/approvedAssertions/3",
+      "ruleId": "SRC-b7380efb6f58b9b8906985af6abd2bf4ed7d2099f91b3ac436096907e8adb96d",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-ba445cdfc3ccbd37d14e6dc52ab16e75cc6c902a8aca7229d3ce0d76a2524165",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/forbiddenPseudoFixes/5",
+      "ruleId": "SRC-bc6623aeb736917732e269992d648b639cd3e38d7648bc5200ec3e4ccf577d27",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U00/forbiddenPseudoFixes/2",
+      "ruleId": "SRC-be7e4d0e4f035d66f2d07aa1d91be953fcbbd618283c1a5e7bd9e806ac136501",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U00",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/18/assertionSources/1",
+      "ruleId": "SRC-c08335cb60dd60946e9a792cd3073a9db8cecd7662d82dee62e5df3bb967eeaf",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/0/assertionSources/0",
+      "ruleId": "SRC-c0b0b22bf90682f6dbaa5ae443b63ce3e2076b136bd2f029d2a9c9570ca3667a",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U06/approvedAssertions/1",
+      "ruleId": "SRC-c20ff89ad46844e8f48359775dd674ed0d2c6c1b9b4e1fffd10aee6853a1ca27",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U06",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/17/assertionSources/0",
+      "ruleId": "SRC-c3a36f99cbb82aecbdc36280cd0114cc034a565127ab6d41031fad14b1995ada",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/8/assertionSources/0",
+      "ruleId": "SRC-c53ef34f41e0a8f08dcdd7c33f7c5a6bab6e94aa992e2e5c695c658fd4981e6f",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U08/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-c5625902d200dad142eeaba8314761175d8655223508ffc869fd6d7b472b321d",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U08",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/4/assertionSources/3",
+      "ruleId": "SRC-caa5d620dc264b0ab1e1e4f45e515b28e1792cb7da528df3d5703c1a192ff4a6",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/15/assertionSources/0",
+      "ruleId": "SRC-ccf1c5fab3da77ffad7500888a338deb7e653db1a29d1f8ab617457ca7a620ec",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/6/assertionSources/3",
+      "ruleId": "SRC-ce3ceadf69748112d2a13c598089bc9434223f9dad99a98fc90b176e14d55244",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U04/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-d238631497d06ca4e0dbd51c4cc3ce134c5cc624a5c88f36d755c14d26ca6a3c",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U04",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/16/assertionSources/1",
+      "ruleId": "SRC-d25128662bd9d817995f0c13d55d2f7435075973d29c361e78201cd6aa225579",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/approvedAssertions/3",
+      "ruleId": "SRC-da4416ff5acb4fad0fcad092a42a7b5b5ee2052a9d1e244af30a29dfec954b30",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/11/assertionSources/0",
+      "ruleId": "SRC-dc1b36c72ffc9efb80cfac489c87a0bfb32364bde5718d37a79383c528ce6722",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/13/assertionSources/2",
+      "ruleId": "SRC-dff7202075a673d829c8fe0480aa9945a2be8ee8287ec99dd5cf336bed00fc22",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U00/forbiddenPseudoFixes/0",
+      "ruleId": "SRC-e0260b7d704ca747a8b39344b4c42910281c11f6f85904d70f32467a01330e26",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U00",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U08/approvedAssertions/0",
+      "ruleId": "SRC-e0271784e5c226dac2546f9946ae1c8428dd5e5b56fdbb89fddbc02fa2907ebd",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U08",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/12/assertionSources/0",
+      "ruleId": "SRC-e3c8f57c4276b5d66a951a7155f0ab39c69b9b2529033e142c66355721687ee7",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/16/assertionSources/0",
+      "ruleId": "SRC-e409165479a48aa3130df1452fadb2966dbd5485eccb470ae758bc17dda003b3",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U08/approvedAssertions/1",
+      "ruleId": "SRC-e9a7afac0fa3367f9d1c376a4483edbbc208558a63a4e734aafdbb715152cea8",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U08",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/13/assertionSources/0",
+      "ruleId": "SRC-f045ac66028c139ea4c9c2d08436a6c516f5475af3b526f5522686c1de98c8ed",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "SIX_DIMENSION_ROUTE_DOES_NOT_MATCH_ACTIVE_UNIT",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/0/assertionSources/2",
+      "ruleId": "SRC-f0eb602d96bfffca6adeee53811231f77b0f44049bb2cb079ff17580081d6ad0",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U02/approvedAssertions/2",
+      "ruleId": "SRC-f1b4a20bd4b088e806cc36fa715408465f570cc82777dc2739100ddc4d76f33c",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U02",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/0/assertionSources/1",
+      "ruleId": "SRC-f2b74ff163629157f2bb500d7bdb7b9a9f032fa6ea06bf02096435f91fe8f310",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U01/forbiddenPseudoFixes/1",
+      "ruleId": "SRC-f6ec020e4c18b4f11980000720fd03d58bc2eafb9163df265443de68e61d5f49",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "OWNED_BY:R5-CR-U01",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/9/assertionSources/2",
+      "ruleId": "SRC-f8f6d7b62a12ca06672ef9e14d046a2ab0e98917d01dffa1f8607d6482d3164b",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/2/assertionSources/0",
+      "ruleId": "SRC-fa1c761ebc2e7d91f07824281c74419f67779d1d0bc2850339d4eda73f842d84",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sourceSha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3",
+      "anchor": "/deliveryUnits/R5-CR-U03/forbiddenPseudoFixes/3",
+      "ruleId": "SRC-fa94f1fac81d1bd9d5534bb66feabc14596e9e89aac6a7dafcf9e9e5a6be95ff",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "anchor": "/entries/2/assertionSources/4",
+      "ruleId": "SRC-fc66e3d04d4a350e4e7f63193abab3187168af20f3128ac190494bc8dcae8877",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+      "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+      "anchor": "### 4.4 R5-CR03 安全与授权闭合",
+      "ruleId": "DESIGN-759f733b9c864439f3e96848e47622c9fbbc76be4eef5f50bd67f1c03eb66299",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "PACKAGE_EXIT_DETAIL_DESIGN_CLOSURE"
+    },
+    {
+      "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+      "anchor": "surfaceAndPageKeyPackageOwnership rows",
+      "ruleId": "CARRY-f1184e8c2d6a778dfafbacae5f59f01b272bf873a06e902685a9c4f09fb30fca",
+      "applicability": "NOT_APPLICABLE",
+      "notApplicableReason": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+      "requiredEvidence": "PACKAGE_EXIT_OWNERSHIP_TRANSFER"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N01",
+      "ruleId": "B.1.N01",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N02",
+      "ruleId": "B.1.N02",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/security-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N03",
+      "ruleId": "B.1.N03",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N04",
+      "ruleId": "B.1.N04",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N05",
+      "ruleId": "B.1.N05",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N06",
+      "ruleId": "B.1.N06",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N07",
+      "ruleId": "B.1.N07",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N08",
+      "ruleId": "B.1.N08",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N09",
+      "ruleId": "B.1.N09",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N10",
+      "ruleId": "B.1.N10",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N11",
+      "ruleId": "B.1.N11",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N12",
+      "ruleId": "B.1.N12",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N13",
+      "ruleId": "B.1.N13",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N14",
+      "ruleId": "B.1.N14",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N15",
+      "ruleId": "B.1.N15",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N16",
+      "ruleId": "B.1.N16",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/logging-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.1.N17",
+      "ruleId": "B.1.N17",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N01",
+      "ruleId": "B.2.N01",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/database-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N02",
+      "ruleId": "B.2.N02",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/database-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N03",
+      "ruleId": "B.2.N03",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/database-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N04",
+      "ruleId": "B.2.N04",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/database-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N05",
+      "ruleId": "B.2.N05",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/database-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N06",
+      "ruleId": "B.2.N06",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/database-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N07",
+      "ruleId": "B.2.N07",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N08",
+      "ruleId": "B.2.N08",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N09",
+      "ruleId": "B.2.N09",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N10",
+      "ruleId": "B.2.N10",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N11",
+      "ruleId": "B.2.N11",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N12",
+      "ruleId": "B.2.N12",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/database-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N13",
+      "ruleId": "B.2.N13",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/database-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N14",
+      "ruleId": "B.2.N14",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/B.2.N15",
+      "ruleId": "B.2.N15",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/C.T01",
+      "ruleId": "C.T01",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/C.T02",
+      "ruleId": "C.T02",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/C.T03",
+      "ruleId": "C.T03",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/C.T04",
+      "ruleId": "C.T04",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/C.T05",
+      "ruleId": "C.T05",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/C.T06",
+      "ruleId": "C.T06",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:REFERENCE_PATTERN_APPLICABILITY_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/D.8.L01",
+      "ruleId": "D.8.L01",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/logging-boundaries"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/D.8.L02",
+      "ruleId": "D.8.L02",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "REVIEW_CHECKLIST:R4_BOUNDARY_SEMANTICS_REVIEW"
+    },
+    {
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+      "anchor": "/rules/D.8.L03",
+      "ruleId": "D.8.L03",
+      "applicability": "APPLICABLE",
+      "requiredEvidence": "MACHINE_GATE:scripts/check/logging-boundaries"
+    }
+  ]
+}

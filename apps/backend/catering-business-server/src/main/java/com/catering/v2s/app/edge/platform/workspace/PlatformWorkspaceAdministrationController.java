@@ -1,0 +1,139 @@
+package com.catering.v2s.app.edge.platform.workspace;
+
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceCreateResult;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceDetail;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceDetailCommercialGroup;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceDetailCommercialGroupRoot;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceDisplayUpdateRequest;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspacePage;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspacePageItemsItem;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspacePageItemsItemCommercialGroup;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceSortKey;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceStatus;
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceStatusTransitionRequest;
+import com.catering.v2s.app.edge.generated.wire.SortDirection;
+import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
+import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
+import com.catering.v2s.platform.access.PlatformExecutionContext;
+import com.catering.v2s.platform.workspace.api.GroupWorkspaceTaskQuery;
+import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationPageRequest;
+import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
+import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
+import com.catering.v2s.platform.asset.application.PlatformAssetService;
+import java.time.Instant;
+import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/** The platform-workspace edge owns generated-wire adaptation only; facts remain owner readbacks. */
+@RestController
+@RequestMapping("/api/platform/group-workspaces")
+public final class PlatformWorkspaceAdministrationController {
+    private final PlatformSessionResolver sessions;
+    private final WorkspaceAdministrationService workspaces;
+    private final GroupWorkspaceTaskQuery initializationFacts;
+    private final PlatformAssetService assets;
+
+    public PlatformWorkspaceAdministrationController(PlatformSessionResolver sessions, WorkspaceAdministrationService workspaces, GroupWorkspaceTaskQuery initializationFacts, PlatformAssetService assets) {
+        this.sessions = sessions;
+        this.workspaces = workspaces;
+        this.initializationFacts = initializationFacts;
+        this.assets = assets;
+    }
+
+    @GetMapping
+    GroupWorkspacePage list(
+        EdgeRequestContext request,
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String groupWorkspaceKey,
+        @RequestParam(required = false) String operationsTitle,
+        @RequestParam(required = false) GroupWorkspaceStatus status,
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "50") int pageSize,
+        @RequestParam(defaultValue = "NAME") GroupWorkspaceSortKey sortKey,
+        @RequestParam(defaultValue = "ASC") SortDirection sortDirection
+    ) {
+        PlatformExecutionContext context = context(request);
+        var ownerPage = workspaces.list(ownerPage(name, groupWorkspaceKey, operationsTitle, status, page, pageSize, sortKey, sortDirection));
+        var items = ownerPage.items().stream().map(this::listItem).toList();
+        return new GroupWorkspacePage(items, ownerPage.page(), ownerPage.pageSize(), ownerPage.total(), sortKey, sortDirection);
+    }
+
+    @PostMapping
+    ResponseEntity<GroupWorkspaceCreateResult> create(
+        EdgeRequestContext request,
+        @RequestHeader("Idempotency-Key") String headerIdempotencyKey,
+        @RequestBody GroupWorkspaceCreateRequest body
+    ) {
+        sessions.require(request);
+        requireMatchingKey(headerIdempotencyKey, body.idempotencyKey());
+        WorkspaceAdministrationReadback created = workspaces.create(body.groupWorkspaceKey(), body.name(), body.operationsTitle(), uuid(body.logoAssetRef()), body.logoBindGrant(), body.notes(), body.idempotencyKey(), sessions.requireActor(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(toCreateResult(created));
+    }
+
+    @GetMapping("/{groupWorkspaceKey}")
+    GroupWorkspaceDetail detail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey) {
+        PlatformExecutionContext context = context(request);
+        return toDetail(context, workspaces.require(groupWorkspaceKey));
+    }
+
+    @PatchMapping("/{groupWorkspaceKey}")
+    GroupWorkspaceDetail update(
+        EdgeRequestContext request,
+        @PathVariable String groupWorkspaceKey,
+        @RequestHeader("Idempotency-Key") String headerIdempotencyKey,
+        @RequestBody GroupWorkspaceDisplayUpdateRequest body
+    ) {
+        PlatformExecutionContext context = context(request);
+        requireMatchingKey(headerIdempotencyKey, body.idempotencyKey());
+        if (body.expectedVersion() == null) throw new InvalidEdgeRequestException("expected version is required");
+        return toDetail(context, workspaces.updateDisplay(groupWorkspaceKey, body.name(), body.operationsTitle(), body.notes(), body.logoIntent(), nullableUuid(body.logoAssetRef()), body.logoBindGrant(), body.expectedVersion(), body.idempotencyKey(), sessions.requireActor(request)));
+    }
+
+    @PostMapping("/{groupWorkspaceKey}/status")
+    GroupWorkspaceDetail status(
+        EdgeRequestContext request,
+        @PathVariable String groupWorkspaceKey,
+        @RequestHeader("Idempotency-Key") String headerIdempotencyKey,
+        @RequestBody GroupWorkspaceStatusTransitionRequest body
+    ) {
+        PlatformExecutionContext context = context(request);
+        requireMatchingKey(headerIdempotencyKey, body.idempotencyKey());
+        if (body.targetStatus() == null || body.expectedVersion() == null) throw new InvalidEdgeRequestException("status and expected version are required");
+        return toDetail(context, workspaces.transitionStatus(groupWorkspaceKey, body.targetStatus().wire(), body.expectedVersion(), body.idempotencyKey(), sessions.requireActor(request)));
+    }
+
+    private GroupWorkspaceDetail toDetail(PlatformExecutionContext context, WorkspaceAdministrationReadback value) {
+        var legacy = initializationFacts.detail(context, value.groupWorkspaceKey()).orElse(null);
+        GroupWorkspaceDetailCommercialGroupRoot root = legacy == null || legacy.commercialGroup() == null ? null : new GroupWorkspaceDetailCommercialGroupRoot(String.valueOf(legacy.commercialGroup().id()), value.groupWorkspaceKey(), legacy.commercialGroup().commercialGroupCode(), legacy.commercialGroup().commercialGroupName(), legacy.commercialGroup().version(), legacy.commercialGroup().createdAtEpochMillis(), legacy.commercialGroup().createdAtEpochMillis());
+        GroupWorkspaceDetailCommercialGroup commercialGroup = new GroupWorkspaceDetailCommercialGroup(root != null, root);
+        return new GroupWorkspaceDetail(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), logoUrl(value.logoAssetRef()), value.notes(), GroupWorkspaceStatus.valueOf(value.status()), value.statusChangedAtEpochMillis(), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis(), commercialGroup, "AVAILABLE", value.updatedAtEpochMillis(), null, "AVAILABLE", value.updatedAtEpochMillis(), null, "AVAILABLE", value.updatedAtEpochMillis(), null, workspaces.accountCount(value.workspaceUuid()), workspaces.roleCount(value.workspaceUuid()));
+    }
+
+    private GroupWorkspacePageItemsItem listItem(WorkspaceAdministrationReadback value) {
+        GroupWorkspacePageItemsItemCommercialGroup commercialGroup = new GroupWorkspacePageItemsItemCommercialGroup(value.commercialGroupInitialized(), null);
+        return new GroupWorkspacePageItemsItem(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), logoUrl(value.logoAssetRef()), commercialGroup, GroupWorkspaceStatus.valueOf(value.status()), value.updatedAtEpochMillis());
+    }
+
+    private String logoUrl(String value) { return value == null ? null : assets.requireActivePublicReference(UUID.fromString(value)).publicUrl(); }
+    private PlatformExecutionContext context(EdgeRequestContext request) { var session = sessions.require(request); return new PlatformExecutionContext(session.platformAdminId().toString(), "platform-admin", Instant.ofEpochMilli(session.expiresAtEpochMillis()), request.correlationId() == null ? "platform-session" : request.correlationId()); }
+    private static WorkspaceAdministrationPageRequest ownerPage(String name, String groupWorkspaceKey, String operationsTitle, GroupWorkspaceStatus status, int page, int pageSize, GroupWorkspaceSortKey sortKey, SortDirection sortDirection) {
+        try { return new WorkspaceAdministrationPageRequest(name, groupWorkspaceKey, operationsTitle, status == null ? null : status.wire(), page, pageSize, sortKey.name(), sortDirection.name()); }
+        catch (IllegalArgumentException failure) { throw new InvalidEdgeRequestException("invalid workspace list request"); }
+    }
+    private static void requireMatchingKey(String header, String body) { if (header == null || body == null || !header.equals(body) || header.length() < 16 || header.length() > 128) throw new InvalidEdgeRequestException("invalid idempotency key"); }
+    private static UUID uuid(String value) { try { return UUID.fromString(value); } catch (RuntimeException exception) { throw new InvalidEdgeRequestException("invalid asset ref"); } }
+    private static UUID nullableUuid(String value) { return value == null ? null : uuid(value); }
+    private static GroupWorkspaceCreateResult toCreateResult(WorkspaceAdministrationReadback value) { return new GroupWorkspaceCreateResult(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), value.notes(), GroupWorkspaceStatus.valueOf(value.status()), value.statusChangedAtEpochMillis(), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis()); }
+}

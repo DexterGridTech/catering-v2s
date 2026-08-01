@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-compliance-remediation-package-input",
+  "packageId": "R5-CR-U00",
+  "status": "ACTIVE_NOT_EXIT",
+  "serialPredecessor": null,
+  "baseline": {
+    "path": ".runtime/compliance-control/package-baseline.json",
+    "sha256": "790e4d41d191cb7e22289fb5daeb901a928247cc809db3d9ba6dae8929e470f1"
+  },
+  "frozenDesign": {
+    "manifest": {
+      "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sha256": "e05265666c82c40398b0c991e285cda6a56183807196ce65e85364df334dea0d"
+    },
+    "plan": {
+      "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+      "sha256": "56a6fcaf8e42d80de04693940624f27071fcc2303b18b6826805637c07ed68ab"
+    }
+  },
+  "currentDerivedSources": {
+    "projectMemoryRequiredInventory": {
+      "path": "project-memory/required-inventory.json",
+      "sha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3",
+      "ruleCount": 137,
+      "reasonForCurrentHash": "CR00 registers the accepted incremental-compliance assertions; the package exit must use current source bytes rather than falsely repeating the design-time inventory hash."
+    },
+    "standardsCoverageMatrix": {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "sha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5"
+    },
+    "frontendAssetCarryoverManifest": {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "sha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09"
+    }
+  },
+  "baselineReconciliation": {
+    "deterministicGeneratedIndexException": {
+      "path": "doc/decisions/2026-07-27-v2s-r5-cr00-deterministic-generated-index-disposition.md",
+      "sha256": "7cb390d484ab6c0138442bbd64bf0930033ddfdf0e03e11a1d5aea9a9db9aff0",
+      "excludedPaths": ["project-memory/index.json", "project-memory/index.md"]
+    },
+    "nonIndexRecovery": {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-baseline-recovery-hook-chain.json",
+      "sha256": "64b07a2f79987d9b8fb6768a23bbf86894fbce8b9324f06fb8a7d88efc7a6dab",
+      "recoveredPathCount": 3
+    }
+  },
+  "authorizationBoundary": "CR00 only. This input creates neither a package exit nor authority to start CR01."
+}

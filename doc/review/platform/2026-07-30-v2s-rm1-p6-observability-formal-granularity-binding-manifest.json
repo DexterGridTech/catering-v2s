@@ -1,0 +1,237 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "RM1_RESTRUCTURE_AND_REMEDIATION",
+  "design": {
+    "path": "doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md",
+    "sha256": "ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-07-28-v2s-rm1-implementation-facing-design-authorization.md",
+    "sha256": "441a8855412d29b41dd2e3356fc43430686f3166b727b707aa340e288a033bd3",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "08f19fa7180e197ddc6cdbf4f076e07ee2a3d6e021fb4c2ca4bb4a80b88fcab8"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "SEVERITY_COUNT_MISMATCH",
+      "ROUND_THREE",
+      "D1_ROUTED_SOURCE_OMISSION",
+      "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE",
+      "D2_STALE_SOURCE_HASH",
+      "D3_MISSING_SOURCE",
+      "D4_DUPLICATE_MARKDOWN_ANCHOR",
+      "D5_INVALID_JSON_POINTER",
+      "D6_OWNING_SOURCE_SET_MISMATCH"
+    ]
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "RM1-P6-U01-FORMAL-GRANULARITY-BINDING-DESIGN-20260730",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round2.json",
+    "reviewedManifestSha256": "7e45b05f15003f5e019ec9a6886e15078428472cb776d8e8492db863647ea15b",
+    "reviewSha256": "405db6c6c78c64738988d3022a9aa5cde5ed40188b87497bee1ee45c23f46a97",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false,
+    "reason": "Round 2 confirmed two duplicate Markdown selectors. The current bytes bind each denominator to a unique normative invariant while retaining the strict exact-once selector grammar.",
+    "intake": {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-author-intake.md",
+      "sha256": "53fea97d2d7c0bb95bc9f06731c03f24d9c65ac94283ab447fb255994d0979ed"
+    }
+  },
+  "packageExitSourceCompliancePolicy": {
+    "version": "SOURCE_DISPOSITION_V1",
+    "appliesToAllDeliveryUnits": true,
+    "missingOrUnboundEntryFails": true,
+    "actualChangedPathsDerivedFromIndependentBaseline": true,
+    "incrementalChecksMustEqualActualChangedPaths": true,
+    "incrementalChecksMustBeNonEmpty": true,
+    "hookInvocationCanaryRequired": true,
+    "hookContractUnverifiedFailsCr00": true,
+    "requiredDenominators": [
+      "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "APPROVED_ASSERTIONS",
+      "FORBIDDEN_PSEUDO_FIXES",
+      "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA",
+      "OWNED_SURFACE_AND_PAGE_KEYS",
+      "DUE_STANDARDS_RULE_IDS"
+    ]
+  },
+  "candidateJourney": {
+    "id": "RM1-P6-FORMAL-GRANULARITY-BINDING",
+    "status": "DEXTER_AUTHORIZED_DESIGN_ONLY",
+    "actor": "P6-1 implementation and review operator",
+    "task": "bind the accepted observability extension to the production granularity gate before implementation",
+    "pageKey": "NO_UI_CONTROL_PLANE",
+    "ownerReadback": "platform owner remains responsible for runner, foundation, edge, contract and evidence boundaries",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-FORMAL-GRANULARITY-U01",
+      "title": "Formal production-granularity binding for P6-1 observability extension",
+      "approvedAssertions": [
+        "The current P6-1 observability extension must be admitted by the production granularity checker before source implementation.",
+        "The six package-exit denominators are source-bound, complete and fail closed.",
+        "This design-only binding never grants runner, backend, contract, generated-output, UI, migration, DEV, seed/reset or Roadmap authority."
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md",
+          "anchor": "P6-1 exists so an unauthenticated person can safely authenticate or recover access",
+          "sha256": "ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md",
+        "anchor": "## 2. Formal binding contract"
+      },
+      "currentDeviation": "The previous observability extension used a descriptive manifest whose identity did not meet the production implementation-design-granularity contract, so the formal checker could not examine its six-denominator binding.",
+      "changeSurfaces": [
+        {
+          "path": "tools/implementation-design-granularity/cli.mjs",
+          "disposition": "update",
+          "target": "future production-gate reopening, source-hash, selector and owning-source validation for D2 through D6"
+        },
+        {
+          "path": "scripts/test/r5-remote-testcontainers.mjs",
+          "disposition": "update",
+          "target": "future managed runner heartbeat, remote control record, log-read and process-reaping control"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/foundation",
+          "disposition": "update",
+          "target": "future reusable secret-safe request diagnostic foundation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java",
+          "disposition": "update",
+          "target": "future edge diagnostic registration"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge",
+          "disposition": "update",
+          "target": "future one-start-one-terminal public-edge diagnostic control"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test",
+          "disposition": "update",
+          "target": "future production-path red-mutation and security diagnostic tests"
+        },
+        {
+          "path": "contracts/openapi/edge.openapi.yaml",
+          "disposition": "update",
+          "target": "future root projection of all current target-specific operations"
+        },
+        {
+          "path": "tools/capability-invariants/cli.mjs",
+          "disposition": "update",
+          "target": "future joint root-to-target edge projection invariant"
+        }
+      ],
+      "orderedChain": [
+        "admit this formal manifest with the production checker and independent review",
+        "on later implementation authority, establish managed runner observability before dynamic validation",
+        "implement foundation and edge diagnostics with secret-safe red mutations",
+        "repair and validate root-to-target OpenAPI projection",
+        "bind actual changed paths, hook receipts and incremental checks into a package exit"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "This design admission precedes all listed implementation surfaces.",
+        "Runner remote control and log-read controls precede any long dynamic test.",
+        "Foundation diagnostics precede edge integration so no app-local duplicate is introduced.",
+        "Root projection validation precedes generated consumer regeneration; generated outputs are never hand edited.",
+        "A future package exit must compare independent baseline paths, pre/post receipts and incremental checks by exact set equality."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "The formal binding has no persistence, migration, seed or reset behavior; future runner evidence is external diagnostic output and must be separately cleaned up."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "This is a no-UI control-plane design unit; it neither adds nor changes a page, shell, form, wording or interaction.",
+        "termSource": "doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md §1 and contracts/policy/frontend-asset-carryover-manifest.json surfaces and pageDesignKeySurfaceCrosswalk"
+      },
+      "evidence": {
+        "l1": "Production implementation-design-granularity checker validates manifest identity, source hashes, unique anchors, unit surfaces and review fields.",
+        "l2": "Future P6-1 implementation validates OpenAPI root/target projection and public security error mapping through production paths.",
+        "l3": "Future package exit proves actual changed paths equal pre/post receipt paths and non-empty incremental checks, with hook canary and source disposition.",
+        "business": "Unauthenticated authentication and recovery remain safe, supportable and brand-correct without changing the accepted product behavior.",
+        "cleanup": "NOT_APPLICABLE_WITH_REASON: no dynamic environment is started by this design-only CP-U11 unit; future managed runs report cleanup separately."
+      },
+      "forbiddenPseudoFixes": [
+        "A prose checklist or relaxed checker in place of the existing production gate.",
+        "Treating the former extension cycle as review evidence for this material new scope.",
+        "Replacing a source-bound denominator with a static scan, source-string self-test or exit code.",
+        "Implementing future runner, foundation, edge, OpenAPI, generated, UI or database bytes during this design-only unit."
+      ],
+      "discriminator": {
+        "fixture": "The production checker self-test must retain real red fixtures for missing D1 sources, flow-named runtime surfaces, review round overflow and manifest/hash drift; later production-path mutations must prove security terminal, runner and edge-projection controls."
+      },
+      "sourceComplianceDispositionRequired": true,
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/kernel/01-workspace-and-roadmap.md",
+          "selector": "Assertions",
+          "applicability": "APPLICABLE",
+          "missingEntryFails": true,
+          "sourceSha256": "f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63",
+          "owningSourceSet": [
+            {"path":"project-memory/decisions/confirmed-business-language-corpus.md","sha256":"51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503","selector":"Assertions"},
+            {"path":"project-memory/decisions/deterministic-context-only.md","sha256":"4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20","selector":"Assertions"},
+            {"path":"project-memory/decisions/incremental-compliance-hook.md","sha256":"0e0179020433b8948287f02b061cb1a7c456048b3cfeac0b8fc68a60e83af94d","selector":"Assertions"},
+            {"path":"project-memory/decisions/independent-subagent-adversarial-review.md","sha256":"891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf","selector":"Assertions"},
+            {"path":"project-memory/kernel/01-workspace-and-roadmap.md","sha256":"f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63","selector":"Assertions"},
+            {"path":"project-memory/kernel/02-service-shape-and-owner.md","sha256":"45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032","selector":"Assertions"},
+            {"path":"project-memory/kernel/03-transaction-data-and-dependencies.md","sha256":"f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44","selector":"Assertions"},
+            {"path":"project-memory/kernel/04-contract-consumer-and-admin.md","sha256":"1f6d9efbe0208f5b164d12effd4a4c4ab8f2c297b9b000462dc96820c3efa88d","selector":"Assertions"},
+            {"path":"project-memory/kernel/05-evidence-runtime-and-git.md","sha256":"d0d75e547400145ef7e764d735bc86e2fdaa5ea8a0b19ace213170b527d65a05","selector":"Assertions"},
+            {"path":"project-memory/kernel/06-heritage-and-change.md","sha256":"5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c","selector":"Assertions"},
+            {"path":"project-memory/operations/business-corpus-adoption-and-read-policy.md","sha256":"04d9329413131e369e8c1ea841f172d4c295f953b07b9768a0e597405fd28353","selector":"Assertions"},
+            {"path":"project-memory/operations/verification-governance.md","sha256":"090e9ce7b6907404103353d69474071b9dc12048f9956e3c05a7847f1397b577","selector":"Assertions"}
+          ]
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","selector":"md:P6-1 exists so an unauthenticated person can safely authenticate or recover access","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","owningSourceSet":[{"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","sha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","selector":"md:P6-1 exists so an unauthenticated person can safely authenticate or recover access"}]
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","selector":"md:Formal prohibition completion invariant: a source binding is never replaced by prose; scanner result; or exit code.","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","owningSourceSet":[{"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","sha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","selector":"md:Formal prohibition completion invariant: a source binding is never replaced by prose; scanner result; or exit code."}]
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","selector":"md:Formal incremental completion invariant: production validation executes every declared future red fixture.","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","owningSourceSet":[{"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","sha256":"ab1dacc83fb9d0b350f84776fafd4be8ec5302d7d55de3447cac834ee24a7e2b","selector":"md:Formal incremental completion invariant: production validation executes every declared future red fixture."}]
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath":"contracts/policy/frontend-asset-carryover-manifest.json","selector":"json:/surfaces,json:/pageDesignKeySurfaceCrosswalk","applicability":"APPLICABLE_NO_UI_SCOPE","missingEntryFails":true,"sourceSha256":"6b531d3bba676f5cc24e3121f482f7920abfe0b4c476081c1ce0478a17ee3974","owningSourceSet":[{"path":"contracts/policy/frontend-asset-carryover-manifest.json","sha256":"6b531d3bba676f5cc24e3121f482f7920abfe0b4c476081c1ce0478a17ee3974","selector":"json:/surfaces,json:/pageDesignKeySurfaceCrosswalk"}]
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath":"contracts/policy/standards-coverage-matrix.json","selector":"json:/rules","applicability":"APPLICABLE","missingEntryFails":true,"sourceSha256":"7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3","owningSourceSet":[{"path":"contracts/policy/standards-coverage-matrix.json","sha256":"7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3","selector":"json:/rules"}]
+        }
+      },
+      "memoryRoute": {
+        "taskKind":"design",
+        "domain":"backend",
+        "consumerFace":"backend",
+        "owner":"platform",
+        "impact":"governance",
+        "trigger":"implementation"
+      }
+    }
+  ]
+}

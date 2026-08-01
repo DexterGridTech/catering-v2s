@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1-U06",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "scopeCorrection": "The P2 baseline was created before the required active error-code authority was added to the exact approved surface. This addendum baselines its pre-rename current bytes; later rename bytes remain an incremental receipt obligation.",
+  "entries": [
+    {
+      "path": "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-catalog.json",
+      "kind": "FILE",
+      "sha256": "00f4fcf29511f6a2c823d43b17311b4903c544244065f0a2677b279fb12d9c5d"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+      "kind": "FILE",
+      "sha256": "c3d4f1f1117aa9ae37e22499c5d6c4a85bb81230e116016b59b51fde9f969b65"
+    },
+    {
+      "path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+      "kind": "FILE",
+      "sha256": "48aef9f9221e8cc1fcb13bc80c32fdcbe41bee242f0dbdee0fd0ccd71a431fec"
+    }
+  ]
+}

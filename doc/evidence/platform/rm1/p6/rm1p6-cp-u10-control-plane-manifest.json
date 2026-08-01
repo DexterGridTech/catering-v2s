@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U10",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "P6-1 public authentication and recovery must be diagnosable without exposing secrets, while the discovered edge-root projection defect must be understood at the owner/edge boundary before any observability instrumentation is allowed to shape runtime behavior.",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-CP-U10",
+      "title": "P6-1 observability extension design admission",
+      "sourceComplianceDispositionRequired": true,
+      "changeSurfaces": [
+        {"path":"doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md","disposition":"create","target":"future implementation-facing extension design only"},
+        {"path":"doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-design-granularity-manifest.json","disposition":"create","target":"future design denominator and exact-path admission"},
+        {"path":"doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-independent-design-review-round1-input-checklist.md","disposition":"create","target":"fresh independent round-one input"},
+        {"path":"doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-independent-design-review-round1.json","disposition":"create","target":"fresh independent round-one verdict"},
+        {"path":"doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-independent-design-review-round2-input-checklist.md","disposition":"create","target":"bounded final independent review input"},
+        {"path":"doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-independent-design-review-round2.json","disposition":"create","target":"bounded final independent review verdict"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-manifest.json","disposition":"create","target":"future extension source and change-surface manifest"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-source-disposition.json","disposition":"create","target":"future extension source-compliance disposition"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u10-control-plane-manifest.json","disposition":"create","target":"CP-U10 scope record"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u10-design-admission-amendment.md","disposition":"create","target":"Dexter-authorized design-admission boundary"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u10-package-input.json","disposition":"create","target":"CP-U10 binding"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u10-source-compliance-disposition.json","disposition":"create","target":"CP-U10 two-source denominator"},
+        {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u10-package-exit.json","disposition":"create","target":"CP-U10 exit"}
+      ],
+      "forbiddenPseudoFixes": [
+        "writing runner, foundation, backend, OpenAPI, generated, migration, frontend or DEV implementation bytes",
+        "treating unfinished RM1P6-U01 as this package's serial predecessor",
+        "turning a public edge-root projection symptom into a controller-local logging patch before owner truth is designed",
+        "claiming runner or public-auth dynamic observability PASS before an approved extension design and implementation package",
+        "writing runtime implementation or an author-written independent-review verdict; the admitted plan may be authored later and a verdict may only be authored by the fresh independent reviewer"
+      ],
+      "completion": "CP-U10 only establishes a source-bound, exact-document admission lane for future extension design and independent review, proves its own receipt/source-disposition set, then restores the original RM1P6-U01 active pointer byte-for-byte."
+    }
+  ]
+}

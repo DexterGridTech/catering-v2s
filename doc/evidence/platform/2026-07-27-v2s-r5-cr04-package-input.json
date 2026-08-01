@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U04",
+  "kind": "owner-boundary-data-integrity-package-input",
+  "predecessor": {
+    "packageId": "R5-CR-U03",
+    "packageExitPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-package-exit.json",
+    "status": "PASS"
+  },
+  "delegatedDecisions": {
+    "D-4": "commercial-group initialization audit fact is organization-owned; platform-workspace is task-read only",
+    "D-5": "restore extension workspace_uuid additively and enforce workspace/key/entityType integrity without restoring external-sync semantics",
+    "D-6": "no speculative secondary indexes; only evidence-backed query/EXPLAIN indexes qualify"
+  },
+  "invariants": [
+    "Executed migration bytes are immutable; all schema changes use a new additive migration.",
+    "Cross-owner writes use public command APIs in one REQUIRED transaction; task reads do not imply write authority.",
+    "Extension receipt identity uses canonical workspace/key/entityType after additive correction.",
+    "Platform-asset receipt stores no bindGrant and replay issues a fresh one-time grant only for the same staged asset and fingerprint.",
+    "Commercial-group audit writer and fact move to organization before any legacy path is retired.",
+    "platform-access remains schema-less; the fact-owner schema denominator remains seven."
+  ],
+  "forbidden": [
+    "rewrite an executed migration",
+    "introduce an undeclared cross-schema read",
+    "derive audit actor from external subject in an owner",
+    "add an anonymous CHECK constraint",
+    "add a speculative index without query and EXPLAIN evidence"
+  ],
+  "authorityBoundary": "R5-CR-U04 only. No UI completion, CR05+, DEV, seed/reset or remote runtime is authorized."
+}

@@ -1,0 +1,37 @@
+{
+  "kind": "r5-cr00-execution-boundary-deviation",
+  "status": "STOPPED_CLEANED_AND_PREVENTED_NOT_VALIDATION_EVIDENCE",
+  "occurredAt": "2026-07-27",
+  "trigger": "scripts/verify --self-test",
+  "finding": "scripts/verify has no static self-test mode; the supplied argument entered the managed DEV start path during CR00.",
+  "requiredBoundary": "CR00 permits static source checks and scratch mutations only; managed DEV and runtime validation are owned by CR08.",
+  "containment": {
+    "command": "node scripts/dev/r5-dev-runner.mjs stop",
+    "result": "R5_DEV_STOP=PASS",
+    "postStopProcessCheck": "no r5-dev-runner start, catering-v2s bootRun, or Vite host process remained"
+  },
+  "retainedLogs": [
+    {
+      "path": ".runtime/r5/business-server.log",
+      "sha256": "b68f4b9de8e2fc77fa34e67dcaf9c977d6d8ae76cd8a6c8eb3e2d0c1a426c14d"
+    },
+    {
+      "path": ".runtime/r5/operations-admin.log",
+      "sha256": "57b1ae104c122e22c2ce5bd29a04c9395ab4d81125a77c203f5b137f97dcd3b0"
+    },
+    {
+      "path": ".runtime/r5/platform-admin.log",
+      "sha256": "8e173a6df3533628924a29add06079d50796fcde3e19ae5e1f37c25c0a43da5f"
+    },
+    {
+      "path": ".runtime/r5/remote-postgres-tunnel.log",
+      "sha256": "3cc22995952e65a743d9a81b341fd081c0f9430951124becb53b21f552f1af24"
+    }
+  ],
+  "prevention": {
+    "changedPath": "tools/verify-gates/verify.mjs",
+    "newBehavior": "scripts/verify rejects --self-test and any extra argument before constructing its command list or starting a managed DEV process.",
+    "readback": "R5_VERIFY=FAIL / VERIFY_ACCEPTS_NO_SELF_TEST_OR_EXTRA_ARGUMENTS / exit=2"
+  },
+  "disposition": "No runtime output, build result, seed state, or test result from the inadvertent invocation is used as CR00 evidence. Future CR00 static checks must invoke only explicit static/self-test entries declared by their owning tool."
+}

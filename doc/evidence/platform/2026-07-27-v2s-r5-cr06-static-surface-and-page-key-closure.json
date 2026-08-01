@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-cr06-static-surface-and-page-key-closure",
+  "status": "PASS_STATIC_ONLY_DYNAMIC_L2_DEFERRED_TO_CR08",
+  "packageId": "R5-CR-U06",
+  "sources": [
+    {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "sha256": "c3b42d0f9f851ffd2dbbca2bbf5f184aeb410683ae1f61d77d9c1ad257658af0"
+    },
+    {
+      "path": "contracts/catalog/admin-catalog.json",
+      "sha256": "5cf60243f4173eed3f06fd680358b7b1fde5a4cee4246bfb394d45fe0e99589f"
+    }
+  ],
+  "method": "Static-only evidence: verifies every carry-over target source exists and binds current source bytes, and enumerates catalog page-design keys with their authoritative face and label. It does not claim browser L2, DEV, seed, route-runtime, or user-behaviour evidence.",
+  "surfaceCount": 22,
+  "pageDesignKeyCount": 25,
+  "surfaces": [
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "sourceSha256": "83aa1c365ab84df20d37a1256d445b8b0a8775223b0721c19d51878a91aa8a2b",
+      "targetPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "targetExists": true,
+      "targetSha256": "6a225b44348302321da7b90b2b3f0737941885d1fc7bb4fcb1301b88c0169600"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "sourceSha256": "0af9be8c884de227c28b875f4e41626f6a20d932b43e4ab6064289e7cbfe63dc",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "targetExists": true,
+      "targetSha256": "fee571d1898598834663ddfd6b5c9e2f0c88d9c8f5f44f7469d9264e0b4e0e5c"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/platform-admin-governance/ui/PlatformAdminGovernancePage.tsx",
+      "sourceSha256": "c0a872918f604834f56fa3b45e92b59ef3f6cffb310bb3c29f47c732768188cd",
+      "targetPath": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "targetExists": true,
+      "targetSha256": "b1cdddda5ca85154f1c7e40fa9d1fdb60ccb78531e6b49e00b4d21cf3824fc9c"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/workspace-overview/ui/WorkspaceOverviewPage.tsx",
+      "sourceSha256": "cb1de9be62db383895141c9014f4b363906f967be0d32a3b4c2e596bae1f8d4f",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "targetExists": true,
+      "targetSha256": "ea24f584fc6b6250e6f4416cfbbd1f4862225a898c2f1b34bd03f1bb582a2e9a"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/organization-overview/ui/OrganizationOverviewPage.tsx",
+      "sourceSha256": "72f5ab9beb8f9eb58b1f44effcaaad924d7fcd2dba00e96b93ad21b43c408829",
+      "targetPath": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "targetExists": true,
+      "targetSha256": "46bcbbb18017931cb78bf2586b0b4943a28a268fc07712e6524c936bad02536d"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/contract-overview/ui/ContractOverviewPage.tsx",
+      "sourceSha256": "932784738052ab15f1733900b6d47e29718e0334b8f3e0a32fac8b76f363dfe0",
+      "targetPath": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "targetExists": true,
+      "targetSha256": "46bcbbb18017931cb78bf2586b0b4943a28a268fc07712e6524c936bad02536d"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/role-management/ui/RoleManagementPage.tsx",
+      "sourceSha256": "45111b3d93310ffdbe7a3700822bf76a3d0630ac3917b21ede091996dea7efe0",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "targetExists": true,
+      "targetSha256": "7e5da4e69f9664e5ed35219ee45d3988333eea1458cae0b2f46f49f32a26fd94"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/workspace-account-management/ui/WorkspaceAccountManagementPage.tsx",
+      "sourceSha256": "f91df607180aebc2354e7e811c9abcb316121f24bc121b711314280cb207011e",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "targetExists": true,
+      "targetSha256": "4cca83a5171fe68bd01ec2f881978246987fee75ba969c75d2c4bb9f75e65088"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/extension-field-management/ui/ExtensionFieldManagementPage.tsx",
+      "sourceSha256": "4d23ecd15dcfe641c38c3292076c1ebb452f309fb36a4e1d59c9729ee554cc4e",
+      "targetPath": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "targetExists": true,
+      "targetSha256": "71fa4e7d2a5c81543af26c11630a1352eabb7f7b2ab04c185b80fd77b63811e3"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.tsx",
+      "sourceSha256": "7f628b6e14e5b4965d59db9282b6e3aa78a85cf851b823e2f182f381c143dc57",
+      "targetPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.tsx",
+      "targetExists": true,
+      "targetSha256": "d7ea8a4129a908a5f62fc6713ad7a4e3f2422f594e451024344f69b645f41b74"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/authentication/ui/WorkspaceLoginPage.tsx",
+      "sourceSha256": "d04db79096a1f474aac00b0de3f67e07a9848dd38c388a06b2a2f3daf28a3f0f",
+      "targetPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "targetExists": true,
+      "targetSha256": "e85521bb0fe8f7e12a4e174dbe278fdf37757f2ab6d968f2d1cc6c1e1ec4e07f"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/InvitationAcceptancePage.tsx",
+      "sourceSha256": "0a9973f2c8f4f94cf76f5c82b61fc2987e13205e364ca0e30f97d74016c5cafd",
+      "targetPath": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "targetExists": true,
+      "targetSha256": "43949b5df6d4f43bdcabd3feaca3c51c57eec5d4cda7eed5c909abd14ee820f3"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/access-recovery/ui/AccessRecoveryPage.tsx",
+      "sourceSha256": "2c7d8ecde8aeb446734a2606e563260a58195a01b4a05731b99236361d1e6bd6",
+      "targetPath": "apps/frontend/operations-admin/src/features/access-recovery/ui/PublicPasswordRecoveryEntry.tsx",
+      "targetExists": true,
+      "targetSha256": "bb91d87f0b7fd115c400e6c03e6e99d5c346ea62f327c21f215846c861bc8e73"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsContextShell.tsx",
+      "sourceSha256": "ac41148c6a40d0abde90611e6c06a718738634dd5f9dcdab170b1667dc257be6",
+      "targetPath": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "targetExists": true,
+      "targetSha256": "bc68141ae96606f332fdc4af3939da5de76830330299a94327f3d93514948207"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx",
+      "sourceSha256": "eeaf97cdbe180f5855ac68932c62e22caa8615cdb51861db797faa0243fa0432",
+      "targetPath": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx",
+      "targetExists": true,
+      "targetSha256": "537bbb4d00b663776ab0cc6bf50d80415a6d4de09f93baa221e67a44e45ebe2a"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/organization-hierarchy/ui/OrganizationHierarchyPage.tsx",
+      "sourceSha256": "116c878d01954e1642df7a6c2b5b7fc4524cefd0da7aa01e3b83c942e96d2626",
+      "targetPath": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "targetExists": true,
+      "targetSha256": "205b166e84735c589631f2755ee02b0d505dede4c5d8fff2446c6eb7b8343b3f"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+      "sourceSha256": "ce3ff54d22af79f5e973c42cfa8040199b1feb4d11f0dae03464fc417340276f",
+      "targetPath": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+      "targetExists": true,
+      "targetSha256": "dac5db6122106dfd806e62c4f954334e5dd5050f023e25569d2ff19e32c8dc86"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "sourceSha256": "4a4d270aefd097cd6f842327439c56180af396c63c642300997fb553e5d292a5",
+      "targetPath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "targetExists": true,
+      "targetSha256": "ac870eb8d315ef4cf17b447d086b84bef7169fcd969b71545a69f3b9eca45364"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "sourceSha256": "7bd2bd086555904ba4a33c9350a7af8fb28a220f2bff5b1e54efacffc5a6c3e3",
+      "targetPath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "targetExists": true,
+      "targetSha256": "68449e4b875af8f43001577a1e121091e713c9a214b472bef7620d7c30475fc5"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/user-management/ui/UserManagementPage.tsx",
+      "sourceSha256": "c811961086741b0da5a53f8a38dcc4ef7d7df9a3589be466bb95ea58e7f44265",
+      "targetPath": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
+      "targetExists": true,
+      "targetSha256": "b1ace443b02e8d2f1273f27c7079d1754fbf112f356ee54c1f1c8751167d245b"
+    },
+    {
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "sourceSha256": "24511b42b2f589c6034a16ae12abacd4e41c2cea7915cf949fd63e5673c1e3c9",
+      "targetPath": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "targetExists": true,
+      "targetSha256": "92930ddea0f564632101b9edf6b84eeb2373124bb265036934297ea6fbe6cfb6"
+    },
+    {
+      "disposition": "CARRY_ROUTE_BOOTSTRAP_ONLY",
+      "sourcePath": "apps/frontend/operations-admin/src/app/OperationsAdminSeed.tsx",
+      "sourceSha256": "535e7b1d7c1550f45491a3f49a96af0399d71d1450a83caf0a908028c9d93cb9",
+      "targetPath": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleHomeBootstrapPage.tsx",
+      "targetExists": true,
+      "targetSha256": "e6f19fa0488d9d9f5cbb290486a35fd424636cd91a52129380e393ff5d2ec51b"
+    }
+  ],
+  "pageDesignKeys": [
+    {"pageDesignKey": "PLATFORM-WORKSPACES", "consumerFace": "platform-admin", "label": "集团空间管理"},
+    {"pageDesignKey": "PLATFORM-ADMIN-USERS", "consumerFace": "platform-admin", "label": "运维管理员管理"},
+    {"pageDesignKey": "PLATFORM-WORKSPACE-OVERVIEW", "consumerFace": "platform-admin", "label": "集团空间总览"},
+    {"pageDesignKey": "PLATFORM-ORGANIZATION-OVERVIEW", "consumerFace": "platform-admin", "label": "组织与经营概览"},
+    {"pageDesignKey": "PLATFORM-CONTRACT-OVERVIEW", "consumerFace": "platform-admin", "label": "合同概览"},
+    {"pageDesignKey": "PLATFORM-ROLES", "consumerFace": "platform-admin", "label": "业务角色"},
+    {"pageDesignKey": "PLATFORM-WORKSPACE-ACCOUNTS", "consumerFace": "platform-admin", "label": "空间账号"},
+    {"pageDesignKey": "PLATFORM-EXTENSION-FIELDS", "consumerFace": "platform-admin", "label": "扩展字段"},
+    {"pageDesignKey": "HOME-GROUP", "consumerFace": "operations-admin", "label": "集团首页"},
+    {"pageDesignKey": "HOME-REGION", "consumerFace": "operations-admin", "label": "大区首页"},
+    {"pageDesignKey": "HOME-PROJECT", "consumerFace": "operations-admin", "label": "项目首页"},
+    {"pageDesignKey": "HOME-HEAD-COMPANY", "consumerFace": "operations-admin", "label": "总公司首页"},
+    {"pageDesignKey": "HOME-STORE", "consumerFace": "operations-admin", "label": "门店首页"},
+    {"pageDesignKey": "PG-ORG-STRUCTURE", "consumerFace": "operations-admin", "label": "组织架构"},
+    {"pageDesignKey": "PG-ORG-BRAND", "consumerFace": "operations-admin", "label": "品牌管理"},
+    {"pageDesignKey": "PG-ORG-TENANT", "consumerFace": "operations-admin", "label": "经营租户管理"},
+    {"pageDesignKey": "PG-ORG-HEAD-COMPANY", "consumerFace": "operations-admin", "label": "总公司管理"},
+    {"pageDesignKey": "PG-ORG-STORE-MANAGE", "consumerFace": "operations-admin", "label": "门店管理"},
+    {"pageDesignKey": "PG-CONTRACT-STORE-MANAGE", "consumerFace": "operations-admin", "label": "门店合同"},
+    {"pageDesignKey": "PG-IAM-GROUP-USERS", "consumerFace": "operations-admin", "label": "集团用户管理"},
+    {"pageDesignKey": "PG-IAM-REGION-USERS", "consumerFace": "operations-admin", "label": "大区用户管理"},
+    {"pageDesignKey": "PG-IAM-PROJECT-USERS", "consumerFace": "operations-admin", "label": "项目用户管理"},
+    {"pageDesignKey": "PG-IAM-HEAD-COMPANY-USERS", "consumerFace": "operations-admin", "label": "总公司用户管理"},
+    {"pageDesignKey": "PG-IAM-STORE-USERS", "consumerFace": "operations-admin", "label": "门店用户管理"},
+    {"pageDesignKey": "PG-STORE-PROFILE", "consumerFace": "operations-admin", "label": "门店资料"}
+  ]
+}

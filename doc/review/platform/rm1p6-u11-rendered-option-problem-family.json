@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-JOINT-REMOTE-L2-RENDERED-OPTION-20260731",
+  "genericProblem": "A managed browser proof clicks a data-backed Ant Design Select before its asynchronous owner result has materialized in the rendered popup, then targets a semantic option shape that is not the rendered option content.",
+  "rootCauseClass": "BROWSER_PROOF_ASSUMES_DATA_AND_SEMANTIC_RENDERING_SYNCHRONY",
+  "finiteDenominator": [
+    "the shared platform workspace Select helper",
+    "the shared platform finite-option Select helper",
+    "all managed platform specs that consume those helpers"
+  ],
+  "searchedSurfaces": [
+    "apps/frontend/platform-admin/src/tests/l2/platformL2.ts",
+    "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+    "the fresh platform Playwright trace and network response"
+  ],
+  "searchQueries": [
+    "platform-workspace-selector",
+    "ant-select-item-option-content",
+    "group-workspaces?status=ENABLED"
+  ],
+  "counterexamples": [
+    "a static Select with synchronously present options can use its approved rendered option locator without an asynchronous owner-readback wait",
+    "an independently provisioned test control with a documented stable role option is outside this Ant Design virtual-list denominator"
+  ],
+  "findings": [
+    {
+      "findingId": "RM1P6-U11-F-RENDERED-OPTION-HYDRATION",
+      "classification": "CONFIRMED",
+      "evidence": "The owner group-workspaces response was HTTP 200 with the fixture label, while the trace showed the popup empty at the click boundary and the old role locator never matched the rendered .ant-select-item-option-content.",
+      "minimumFix": "Wait for the visible popup option-content node and click that rendered node in both shared helpers; keep the owner query and IA single-select behavior unchanged."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "RM1P6-U11-F-RENDERED-OPTION-HYDRATION",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/operations/phase-retrospective-and-systemic-repair.md plus U11 implementation review checklist"
+    }
+  ]
+}

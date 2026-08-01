@@ -1,0 +1,979 @@
+{
+  "schemaVersion": 2,
+  "kind": "canonical-performance-ledger",
+  "candidateScan": {
+    "count": 393,
+    "fingerprint": "1744444b8d888122d209d36354a0e3573afc30c423483954a765434ce1ca2074"
+  },
+  "rows": [
+    {
+      "id": "M1",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/store-contract/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/store-contract/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "ContractTaskReadService#overview",
+        "queryBoundarySymbol": "ContractTaskReadService#view",
+        "mechanism": "CALLBACK_PUBLIC_READ"
+      },
+      "classification": "callback/mapper",
+      "owner": "contract",
+      "testClass": "ContractTaskReadServiceTest",
+      "fixture": "100 contracts",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 1
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "<= 2 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M2",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/store-contract/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/store-contract/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "ContractTaskReadService#fixedStoreContracts",
+        "queryBoundarySymbol": "ContractTaskReadService#view",
+        "mechanism": "CALLBACK_PUBLIC_READ"
+      },
+      "classification": "callback/mapper",
+      "owner": "contract",
+      "testClass": "ContractTaskReadServiceTest",
+      "fixture": "100 contracts",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 1
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "<= 2 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M3",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/store-contract/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/store-contract/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "ContractTaskReadService#page",
+        "queryBoundarySymbol": "project+count+page",
+        "mechanism": "FIXED_OWNER_READS"
+      },
+      "classification": "callback/mapper",
+      "owner": "contract",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "P=1/P=100; authorized project + count + page",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 3
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 3
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 3 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M4",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/store-contract/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/store-contract/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "ContractTaskReadService#platformOverview",
+        "queryBoundarySymbol": "count+page+filters+asOf",
+        "mechanism": "FIXED_OWNER_READS"
+      },
+      "classification": "callback/mapper",
+      "owner": "contract",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "P=1/P=100; count + page + filter options + asOf",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 4
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 4
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 4 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M5",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/store-contract/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/store-contract/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "ContractCommandService#list",
+        "queryBoundarySymbol": "ContractCommandService#require",
+        "mechanism": "CALLBACK_PUBLIC_READ"
+      },
+      "classification": "callback/mapper",
+      "owner": "contract",
+      "testClass": "ContractCommandServiceTest",
+      "fixture": "100 contracts",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 1
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "<= 1 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M6",
+      "findingIds": [
+        "P-E3",
+        "P-R8"
+      ],
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceRoleService#list",
+        "queryBoundarySymbol": "WorkspaceRoleService#require",
+        "mechanism": "CALLBACK_PUBLIC_READ"
+      },
+      "classification": "callback/mapper",
+      "owner": "workspace-iam",
+      "testClass": "WorkspaceRoleServiceTest",
+      "fixture": "P=1/P=100 roles",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 1
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "<= 1 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M7",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "BusinessEntityService#listEntities",
+        "queryBoundarySymbol": "BusinessEntityService#requireEntity",
+        "mechanism": "CALLBACK_PUBLIC_READ"
+      },
+      "classification": "callback/mapper",
+      "owner": "organization",
+      "testClass": "OrganizationOwnerServiceTest",
+      "fixture": "100 entities",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 1
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "<= 2 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M8",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "BusinessEntityService#authorizedBrands",
+        "queryBoundarySymbol": "BusinessEntityService#requireEntity",
+        "mechanism": "CALLBACK_PUBLIC_READ"
+      },
+      "classification": "callback/mapper",
+      "owner": "organization",
+      "testClass": "OrganizationOwnerServiceTest",
+      "fixture": "100 brands",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 2
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 2
+          }
+        ],
+        "semanticInvariants": [
+          "<= 2 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M9",
+      "findingIds": [
+        "P-R8"
+      ],
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "BusinessEntityService#authorizedBrandAuthorizations",
+        "queryBoundarySymbol": "jdbc.query",
+        "mechanism": "RESULT_SET_EXTRACTOR_QUERY"
+      },
+      "classification": "extractor",
+      "owner": "organization",
+      "testClass": "OrganizationOwnerServiceTest",
+      "fixture": "one head company",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 2
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 2
+          }
+        ],
+        "semanticInvariants": [
+          "<= 2 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M10",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/extension/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/extension/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "ExtensionDefinitionService#listDefinitions",
+        "queryBoundarySymbol": "jdbc.query",
+        "mechanism": "JDBC_QUERY"
+      },
+      "classification": "callback/mapper",
+      "owner": "extension",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "all five legal host types: BRAND,TENANT,HEAD_COMPANY,STORE,CONTRACT",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 1
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 1 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M11",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "OrganizationVisibilityService#listVisibleDataNodeCandidates",
+        "queryBoundarySymbol": "isVisibleDataNodeAllowed+ancestorPath",
+        "mechanism": "ROW_CALLBACK_MULTI_QUERY"
+      },
+      "classification": "callback/mapper",
+      "owner": "organization",
+      "testClass": "OrganizationOwnerServiceTest",
+      "fixture": "100 visible nodes",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 2
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 2
+          }
+        ],
+        "semanticInvariants": [
+          "<= 4 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M12",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "OrganizationCommandService#describeCommercialGroup",
+        "queryBoundarySymbol": "workspace-status + commercial-group",
+        "mechanism": "FIXED_OWNER_READS"
+      },
+      "classification": "callback/mapper",
+      "owner": "organization",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "one enabled commercial group",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 2
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 2
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 2 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M13",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/asset/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "PlatformAssetService#requireActivePublicReference",
+        "queryBoundarySymbol": "objects.exists",
+        "mechanism": "RESULT_SET_EXTRACTOR_OBJECT_STORE_IO"
+      },
+      "classification": "extractor",
+      "owner": "asset",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "one public asset; ResultSet closes before object I/O",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "SINGLE_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "<= 1 SQL; object I/O after cursor"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "S1",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceAuthenticationService#login",
+        "queryBoundarySymbol": "credential+assignment+session assembly",
+        "mechanism": "FIXED_BRANCH_OWNER_READS"
+      },
+      "classification": "callback/mapper",
+      "owner": "workspace-iam",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "successful login: DIRECT A=1 / SELECT A=100 are distinct public outcomes",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "DIRECT_A1",
+            "expectedStatements": 14
+          },
+          {
+            "id": "SELECT_A100",
+            "expectedStatements": 12
+          }
+        ],
+        "semanticInvariants": [
+          "DIRECT A=1 <= 14 SQL; SELECT A=100 <= 12 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "S2",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceAuthenticationService#sessionEntry",
+        "queryBoundarySymbol": "active assignments+batch availability+labels+visibility",
+        "mechanism": "FIXED_OWNER_READS"
+      },
+      "classification": "callback/mapper",
+      "owner": "workspace-iam",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "selected-assignment A=1/A=100 same user outcome",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "DIRECT_A1",
+            "expectedStatements": 9
+          },
+          {
+            "id": "SELECT_A100",
+            "expectedStatements": 9
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 9 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "S3",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceInvitationService#managementPage",
+        "queryBoundarySymbol": "count+LIMIT/OFFSET+page-bundle",
+        "mechanism": "JDBC_QUERY"
+      },
+      "classification": "unbounded full-read",
+      "owner": "workspace-iam",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "platform records=1/100; pageSize=1/100; total/items",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 7
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 7
+          }
+        ],
+        "semanticInvariants": [
+          "fixed owner page budget with no record-count or page-size amplification"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "S4",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceInvitationService#managementView",
+        "queryBoundarySymbol": "invitation+intent+task-path",
+        "mechanism": "JDBC_QUERY"
+      },
+      "classification": "unbounded full-read",
+      "owner": "workspace-iam",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "first/last record from 100 invitation fixture",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 5
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 5
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 5 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "S5",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceUserService#candidates",
+        "queryBoundarySymbol": "five owner candidate families+role list",
+        "mechanism": "FIXED_FAMILY_OWNER_READS"
+      },
+      "classification": "callback/mapper",
+      "owner": "workspace-iam",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "all five target types; 203 candidates",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 22
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 22
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 22 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "O1",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceUserService#pageForOperations",
+        "queryBoundarySymbol": "scope+page+user bundle",
+        "mechanism": "FIXED_OWNER_READS"
+      },
+      "classification": "callback/mapper",
+      "owner": "workspace-iam",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "PROJECT scope, P=1/P=100, A=3",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 17
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 17
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 17 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "O2",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceUserService#page",
+        "queryBoundarySymbol": "page+scope+user bundle",
+        "mechanism": "FIXED_OWNER_READS"
+      },
+      "classification": "callback/mapper",
+      "owner": "workspace-iam",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "PROJECT scope, P=1/P=100, A=3",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 12
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 12
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 13 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "O3",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "OrganizationOverviewTaskReadService#page",
+        "queryBoundarySymbol": "items/subList",
+        "mechanism": "UNBOUNDED_FULL_READ"
+      },
+      "classification": "unbounded full-read",
+      "owner": "organization",
+      "testClass": "OrganizationOwnerServiceTest",
+      "fixture": "P=1/P=100",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 4
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 4
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 4 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "O4",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "OrganizationOverviewTaskReadService#detail",
+        "queryBoundarySymbol": "items/filter",
+        "mechanism": "UNBOUNDED_FULL_READ"
+      },
+      "classification": "unbounded full-read",
+      "owner": "organization",
+      "testClass": "OrganizationOwnerServiceTest",
+      "fixture": "100 category items",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 1
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "<= 1 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "O5",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "OrganizationAssignmentCandidateService#listEnabled",
+        "queryBoundarySymbol": "describePath/describeEntityPath",
+        "mechanism": "CALLBACK_OWNER_LOOKUP"
+      },
+      "classification": "callback/mapper",
+      "owner": "organization",
+      "testClass": "OrganizationOwnerServiceTest",
+      "fixture": "100 candidates",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 5
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 5
+          }
+        ],
+        "semanticInvariants": [
+          "fixed <= 4 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "O6",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceAccountService#list",
+        "queryBoundarySymbol": "WorkspaceAccountService#require",
+        "mechanism": "CALLBACK_PUBLIC_READ"
+      },
+      "classification": "callback/mapper",
+      "owner": "workspace-iam",
+      "testClass": "WorkspaceUserTaskScopeTest",
+      "fixture": "100 accounts",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 1
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "<= 1 SQL"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "R8",
+      "findingIds": [
+        "P-R8"
+      ],
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/modules/organization/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "OrganizationHierarchyService#requireNode",
+        "queryBoundarySymbol": "jdbc.query(project_phase_name)",
+        "mechanism": "RESULT_SET_EXTRACTOR_QUERY"
+      },
+      "classification": "extractor",
+      "owner": "organization",
+      "testClass": "OrganizationOwnerServiceTest",
+      "fixture": "one project node",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 2
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 2
+          }
+        ],
+        "semanticInvariants": [
+          "<= 2 SQL; nested extractor query = 0"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "S6",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main",
+          "apps/backend/catering-business-server/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceInvitationService#managementPageForOperations",
+        "queryBoundarySymbol": "count+LIMIT/OFFSET+page-bundle",
+        "mechanism": "JDBC_QUERY"
+      },
+      "classification": "unbounded full-read",
+      "owner": "workspace-iam",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "REGION scope: records=1/100; pageSize=1/100; authorized total/items",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "FIRST_CALL",
+            "expectedStatements": 11
+          },
+          {
+            "id": "SECOND_CALL",
+            "expectedStatements": 11
+          }
+        ],
+        "semanticInvariants": [
+          "fixed owner page budget with no record-count or page-size amplification"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    }
+  ]
+}

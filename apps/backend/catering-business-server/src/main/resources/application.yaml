@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: ${CATERING_BUSINESS_DB_URL:jdbc:postgresql://127.0.0.1:25432/catering_v2s}
+    username: ${CATERING_BUSINESS_DB_USERNAME:}
+    password: ${CATERING_BUSINESS_DB_PASSWORD:}
+  flyway:
+    locations: classpath:db/migration
+    default-schema: public
+platform:
+  otp:
+    debug-code-exposure: ${CATERING_OTP_DEBUG_CODE_EXPOSURE:false}
+  iam:
+    rate-limit-hmac-secret: ${CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET:}
+workspace-iam:
+  rate-limit-hmac-secret: ${CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET:}

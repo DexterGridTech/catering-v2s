@@ -1,0 +1,75 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "RM1-P6-U01-FORMAL-GRANULARITY-BINDING-DESIGN-20260730",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round2-input-checklist.md",
+    "sha256": "da33ea371d58ed23a533cb730beee14827d3d6185310b86e9ec0e86df5c10f08"
+  },
+  "blindReviewDeclaration": "This fresh independent reviewer formed the targeted falsification finding and NO_GO verdict from the amended design, manifest, current checker, six-dimensional D1 recomputation, selector counterexamples and required raw sources before reading either the Round 1 verdict or author intake. The Round 1 material and intake were reopened only afterward to challenge their disposition claims. Current checker behavior is reported separately from the specified future D2-D6 implementation; no absence of that future implementation is treated as a design defect by itself.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "7e45b05f15003f5e019ec9a6886e15078428472cb776d8e8492db863647ea15b",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "formal-gate-soundness",
+      "future-selector-grammar",
+      "source-denominator-binding",
+      "no-ui-scope",
+      "implementation-authority-boundary"
+    ]
+  },
+  "expectedBehavior": [
+    "Current production admission recomputes the D1 six-dimensional project-memory exact set and accepts the amended manifest only for the validation it currently implements.",
+    "The future extension of the existing production checker must reopen and hash-bind every D2-D6 owning source, require each md literal exactly once, require each JSON RFC 6901 pointer to resolve to a non-empty value, and compare the normalized declared owning-source set.",
+    "The no-UI denominator uses existing non-empty JSON locations json:/surfaces and json:/pageDesignKeySurfaceCrosswalk, without adding a UI, generated hand edit, database, migration, DEV, seed/reset or Roadmap surface.",
+    "Formal admission stays design-only and does not authorize the runner, backend foundation, edge, OpenAPI, generated output, UI, migration, DEV, seed/reset or Roadmap mutation."
+  ],
+  "findings": [
+    {
+      "id": "RM1-P6-U01-DESIGN-R2-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "RM1P6-FORMAL-GRANULARITY-U01"
+      ],
+      "title": "Two D2-D6 Markdown selectors violate the amended future exact-once grammar",
+      "evidence": "The amended design section 2.3 defines `md:<literal anchor>` as a literal that exists exactly once. Its manifest binds FORBIDDEN_PSEUDO_FIXES to `md:## 3. Prohibited pseudo-fixes` and DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA to `md:## 4. Required future implementation proof`. Each literal occurs twice in the same design: once in section 2.2's numbered denominator list (lines 33 and 34) and once as its actual section heading (lines 52 and 63). The new approved-assertion sentence occurs once, and json:/surfaces plus json:/pageDesignKeySurfaceCrosswalk both resolve to non-empty current values; this finding is limited to the two remaining duplicate Markdown bindings. The current checker does not reopen D2-D6 yet, so its present pass cannot expose this contradiction; that implementation gap is expressly scheduled for later authorized P6-1 work and is not the basis of this finding.",
+      "risk": "Once the specified future production control is implemented faithfully, it must reject the present formal manifest for non-unique D3 and D4 selectors. Admitting the design unchanged would therefore recreate the exact declared-but-not-reopened failure family at the moment the control becomes real, leaving the delivery operator without one self-consistent source-bound denominator.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO: make the D3 and D4 bound Markdown literals uniquely selectable (for example, bind unique stable sentences or remove the duplicated literal references while preserving the normative meaning), refresh the design and manifest hashes under the governing post-remediation path, and obtain the required Claude recheck. This is the final independent Codex adversarial round; no third Codex round is allowed for this cycle."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "RM1P6-FORMAL-GRANULARITY-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "RM1-P6-U01-DESIGN-R2-M-001"
+      ]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "Making the observability extension admissible through the existing granularity gate is the correct bounded objective: it protects the future implementation operator from a descriptive but unvalidated denominator without altering authentication, recovery, owner facts or approved UI behavior.",
+    "simplerAlternativeAssessment": "A prose exception, a relaxed side checker, or treating current D2-D6 shape validation as enough would not meet the formal-binding objective. The proportionate remedy remains the planned extension of the one production checker; the confirmed defect is smaller still—make the two already-declared source selectors unambiguous before implementing that control.",
+    "costFit": "The finding is a two-selector design correction with no runtime or product expansion. It prevents future red fixtures from rejecting the project's own manifest and is substantially cheaper than weakening the exact-once rule or discovering the inconsistency during the later authorized implementation package.",
+    "verdict": "DIRECTION_REASONABLE_BUT_NO_GO_UNTIL_ALL_DECLARED_FUTURE_MD_SELECTORS_ARE_SELF_CONSISTENT_WITH_THE_EXACT_ONCE_GRAMMAR"
+  },
+  "verdict": "NO_GO",
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Round 2 confirms the three Round 1 repairs at design level: the approved assertion is unique, the no-UI JSON locations are real and non-empty, and D1 recomputes to the declared 12-source exact set. The design honestly leaves D2-D6 source reopening to its later authorized implementation, so that absence is not treated as a present design failure. However, the amended future grammar requires every Markdown selector to be unique while the manifest's D3 and D4 literals each occur twice. This one M finding means the future production gate would reject the current manifest when implemented faithfully. Final-round result: NO_GO (M=1, S=0, N=0); no further Codex adversarial round is permitted.",
+    "authorizationBoundary": "DESIGN review only. This final independent verdict authorizes no source, contract, generated-output, UI, database, migration, build, remote runner, DEV, seed/reset, Roadmap or repository-control action. It does not claim D2-D6 are implemented in the current checker. Any author remediation must follow the existing post-remediation/Claude-recheck governance and cannot create a third Codex adversarial round.",
+    "severityCounts": {
+      "M": 1,
+      "S": 0,
+      "N": 0
+    }
+  }
+}

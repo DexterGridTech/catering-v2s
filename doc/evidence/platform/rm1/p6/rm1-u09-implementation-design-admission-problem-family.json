@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-IMPLEMENTATION-DESIGN-ADMISSION-DENOMINATOR-20260729",
+  "genericProblem": "An implementation-facing design can describe a valid direction while omitting the finite surface/screen denominator, exact consumer binding, or routed memory denominator needed to keep later implementation from guessing.",
+  "rootCauseClass": "DESIGN_ADMISSION_DENOMINATOR_OMISSION",
+  "finiteDenominator": [
+    "22 carry-over surfaces including seven non-catalog surfaces",
+    "25 catalog pageDesignKeys",
+    "all accepted IA screen contracts within UI-bearing delivery units",
+    "all D1 source entries derived from each unit's six-dimension memory route"
+  ],
+  "searchedSurfaces": [
+    "contracts/policy/frontend-asset-carryover-manifest.json",
+    "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+    "project-memory/index.json"
+  ],
+  "searchQueries": [
+    "pageDesignKeySurfaceCrosswalk.nonCatalogSurfaces",
+    "foundationConsumptionBySurface",
+    "FINAL P6 screen current-to-final path foundation primitive",
+    "D1_ROUTED_SOURCE_SET_MISMATCH"
+  ],
+  "counterexamples": [
+    "The 25 catalog page keys were already partitioned 8 + 17, but that did not cover any of the seven non-catalog user tasks.",
+    "A broad feature directory can name admin-ui-foundation in prose while still failing to name the per-surface primitive required by the carry-over manifest.",
+    "A source list that contains all kernel and business-corpus entries can still fail exact D1 because route-specific decision sources are omitted."
+  ],
+  "findings": [
+    {
+      "findingId": "RM1-P6-DESIGN-M-001",
+      "genericProblem": "Non-catalog surfaces were not assigned to a delivery unit with contract/consumer boundary and proof.",
+      "rootCauseClass": "FINITE_SURFACE_DENOMINATOR_OMISSION",
+      "applicability": "CONFIRMED for all three P6 units",
+      "evidence": "Round-1 independent review and carry-over manifest nonCatalogSurfaces.",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "rm1-u09-final-ui-surface-roster.md and future P6 design review checklist"
+    },
+    {
+      "findingId": "RM1-P6-DESIGN-M-002",
+      "genericProblem": "UI-bearing design lacked exact screen-to-path and foundation primitive import contracts.",
+      "rootCauseClass": "SCREEN_CONSUMER_BINDING_OMISSION",
+      "applicability": "CONFIRMED for P6-2 and P6-3",
+      "evidence": "P6 preparation section 4/4.1 and carry-over foundationConsumptionBySurface.",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/frontend-architecture manifest-backed import equality with two red mutations"
+    },
+    {
+      "findingId": "RM1-P6-DESIGN-M-003",
+      "genericProblem": "A routed source denominator was copied as a plausible subset instead of recalculated from the exact memory route.",
+      "rootCauseClass": "ROUTED_MEMORY_SET_DRIFT",
+      "applicability": "CONFIRMED for P6-1 D1",
+      "evidence": "Fresh production granularity check returned D1_ROUTED_SOURCE_SET_MISMATCH:RM1P6-U01.",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/implementation-design-granularity exact D1 route equality"
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "RM1-P6-DESIGN-M-001",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "rm1-u09-final-ui-surface-roster.md and future P6 design review checklist"
+    },
+    {
+      "findingId": "RM1-P6-DESIGN-M-002",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/frontend-architecture manifest-backed import equality with two red mutations"
+    },
+    {
+      "findingId": "RM1-P6-DESIGN-M-003",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/implementation-design-granularity exact D1 route equality"
+    }
+  ]
+}

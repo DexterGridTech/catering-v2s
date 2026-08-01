@@ -1,0 +1,16 @@
+{
+  "name": "catering-v2s-frontend-workspace",
+  "private": true,
+  "packageManager": "yarn@4.17.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/frontend/*",
+    "libraries/frontend/*"
+  ],
+  "devDependencies": {
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "7.0.1"
+  }
+}

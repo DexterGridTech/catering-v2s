@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-ACTIVE-PACKAGE-SELF-LOCK-20260731",
+  "genericProblem": "A package admission control couples the exact evidence denominator to the entire future implementation path set and has no recoverable control-plane branch when its own package file is malformed.",
+  "rootCauseClass": "AUTHORIZATION_DENOMINATOR_COUPLING_AND_UNRECOVERABLE_CONTROL_PLANE",
+  "finiteDenominator": [
+    "RM1P6-JOINT-REMOTE-L2-U11 active package admission",
+    "PreToolUse/PostToolUse package path admission",
+    "package-exit delta and receipt enumeration"
+  ],
+  "searchedSurfaces": [
+    "tools/compliance-control/cli.mjs readActivePackage, allowed, hook-pre, hook-post, deltaState",
+    ".runtime/compliance-control/active-package.json",
+    "project-memory/decisions/incremental-compliance-hook.md",
+    "project-memory/operations/phase-retrospective-and-systemic-repair.md"
+  ],
+  "searchQueries": [
+    "ACTIVE_PACKAGE_INVALID",
+    "allowedChangeSurfaces",
+    "extractPatchPaths",
+    "snapshotActivePackage",
+    "validateDeltaReceipts"
+  ],
+  "counterexamples": [
+    "A control-only package with a deliberately single immutable file may retain an exact-only surface, but it still needs an explicit recovery policy if its own pointer is mutable."
+  ],
+  "findings": [
+    {
+      "findingId": "F-ACTIVE-PACKAGE-SELF-LOCK",
+      "genericProblem": "Malformed active package prevents both diagnosis and authorized repair.",
+      "rootCauseClass": "UNRECOVERABLE_CONTROL_PLANE",
+      "applicability": "Packages with a mutable active package and PreToolUse validation.",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL"
+    },
+    {
+      "findingId": "F-EXACT-SURFACE-FUTURE-DISCOVERY",
+      "genericProblem": "Exact evidence paths are incorrectly treated as the complete implementation authorization denominator.",
+      "rootCauseClass": "AUTHORIZATION_DENOMINATOR_COUPLING",
+      "applicability": "Implementation packages whose same-root owner/test files can be discovered after admission.",
+      "preventionDestination": "PROJECT_MEMORY"
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "F-ACTIVE-PACKAGE-SELF-LOCK",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs active-package recovery request/command and red/green self-test"
+    },
+    {
+      "findingId": "F-EXACT-SURFACE-FUTURE-DISCOVERY",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/operations/phase-retrospective-and-systemic-repair.md ACTIVE_PACKAGE_CONTROL_PLANE_MUST_BE_RECOVERABLE_AND_SCOPE_BASED"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "CR05-CLIENT-WRITE-CHANNEL-CAPABILITY",
+  "genericProblem": "A repository control can classify a tool name correctly while the active client does not dispatch the corresponding lifecycle event, so the declared control exceeds its observable capability.",
+  "rootCauseClass": "CLIENT_HOOK_EVENT_DISPATCH_CAPABILITY_MISMATCH",
+  "finiteDenominator": ["real Agent patch write event", "real functions.exec command write event", "real client restart retry", "real client 0.145.0 upgrade retry", "baseline-to-current receipt-chain reconciliation", "scratch unreceipted governed-delta mutation"],
+  "searchedSurfaces": [".codex/hooks.json", "scripts/hooks/pre-tool-compliance", "scripts/hooks/post-tool-compliance", "tools/compliance-control/cli.mjs", ".runtime/compliance-control/hook-events/", "doc/evidence/platform/2026-07-27-v2s-r5-cr05-command-event-variant-diagnostic.json"],
+  "searchQueries": ["toolKind=COMMAND_SNAPSHOT", "toolName=functions.exec", "PreToolUse/PostToolUse real client canary", "receiptPathExists baseline current"],
+  "counterexamples": [{"case":"PATCH_EVENT_EXISTS","evidence":"The real Agent patch receipt records exact path, before hash, after hash and invocation id."},{"case":"COMMAND_EVENT_ABSENT","evidence":"The real 0.145.0 functions.exec canary changed its file but produced zero COMMAND_SNAPSHOT pre/post receipts."},{"case":"UNRECEIPTED_GOVERNED_DELTA","evidence":"write-channel-reconcile-self-test creates a receipt-bound governed delta, removes its post receipt, and verifies the exact red reason INCREMENTAL_RECEIPT_CHAIN_MISSING."}],
+  "findings": [{"findingId":"CR05-WC-01","genericProblem":"Tool classification is not proof of client event dispatch.","rootCauseClass":"CLIENT_HOOK_EVENT_DISPATCH_CAPABILITY_MISMATCH"},{"findingId":"CR05-WC-02","genericProblem":"A direct command write can bypass immediate hook evidence, but an independent baseline-to-current receipt chain detects the missing edge before package exit.","rootCauseClass":"UNRECEIPTED_GOVERNED_DELTA"}],
+  "preventionDispositions": [{"findingId":"CR05-WC-01","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"tools/compliance-control/cli.mjs write-channel-reconcile and real patch canary"},{"findingId":"CR05-WC-02","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"tools/compliance-control/cli.mjs write-channel-reconcile-self-test and production baseline-to-current receipt reconciliation"}]
+}

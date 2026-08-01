@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "vendor": "superpowers",
+  "vendorVersion": "6.2.0",
+  "runtimeFetch": false,
+  "admissionPolicy": "FROZEN_SOURCE_PLUS_CS_ADAPTER_ONLY",
+  "skills": [
+    {
+      "name": "brainstorming",
+      "sourcePath": "codex-plugin-cache:openai-curated-remote/superpowers/6.2.0/skills/brainstorming/SKILL.md",
+      "sourceSha256": "4a54a4858b99807f3155ed1614b2f116e35ea5c1b788e793f565dd837fd3891f",
+      "frozenPath": ".agents/skills/vendor/superpowers-6.2.0/brainstorming/VENDOR-SKILL.md",
+      "adapter": "cs-brainstorming",
+      "phase": "BEFORE_JOURNEY_DECISION"
+    },
+    {
+      "name": "writing-plans",
+      "sourcePath": "codex-plugin-cache:openai-curated-remote/superpowers/6.2.0/skills/writing-plans/SKILL.md",
+      "sourceSha256": "72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a226f4cc7b99d0",
+      "frozenPath": ".agents/skills/vendor/superpowers-6.2.0/writing-plans/VENDOR-SKILL.md",
+      "adapter": "cs-writing-plans",
+      "phase": "IMPLEMENTATION_FACING_DESIGN_ONLY"
+    },
+    {
+      "name": "systematic-debugging",
+      "sourcePath": "codex-plugin-cache:openai-curated-remote/superpowers/6.2.0/skills/systematic-debugging/SKILL.md",
+      "sourceSha256": "808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787",
+      "frozenPath": ".agents/skills/vendor/superpowers-6.2.0/systematic-debugging/VENDOR-SKILL.md",
+      "adapter": "cs-systematic-debugging",
+      "phase": "AUTHORIZED_IMPLEMENTATION_ONLY"
+    }
+  ]
+}

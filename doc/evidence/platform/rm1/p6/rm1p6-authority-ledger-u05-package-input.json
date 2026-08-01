@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-AUTHORITY-LEDGER-U05",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+  "deliveryManifestSha256": "8e7a3c0b345697b7aa0b1e633711e1f90a2b96a05923382dfdc4435e435ca1bb",
+  "unitId": "RM1P6-AUTHORITY-LEDGER-U05",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/remediation-compliance"
+  ],
+  "requiredControlRuleIds": [
+    "U05-P6-CURRENT-TREE-LEDGER-RECONCILIATION",
+    "P1-AUTHORITY-SOURCE-LEDGER"
+  ],
+  "businessEvidenceObligation": "NOT_REQUIRED_CONTROL_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-ADMIN-CATALOG-TRUTH-U04",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-exit.json",
+    "exitSha256": "d53387749141ae017cab584d7acbf342729067ebc3e4fb3a33908e2ea5d1840a"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-implementation-amendment.md",
+    "sha256": "387c0309fa48a7ef6ad7cd81964e60e3e1dc047e3f220ffbc07f45551d44f11a"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 P6 implementation. This successor permits only the ST-8/ST-11 shared authority-ledger hash reconciliation and static proof. It excludes UI consumers, P6-3, DEV, seed, reset, L2 and dynamic business results."
+}

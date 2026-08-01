@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "dexter-authorized-rm1-u02-implementation-amendment",
+  "packageId": "RM1-U02",
+  "status": "ACTIVE_NOT_EXIT",
+  "authorization": "Dexter explicitly authorized the complete RM1 implementation and, on 2026-07-28, ruled P3-A/P6 OTP partition and PUBLIC_PROTOCOL handling for the finite public-write exception.",
+  "frozenDesignBinding": {
+    "plan": {
+      "path": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+      "sha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c",
+      "anchor": "### RM1-P3-A｜三层 scope 与 generated capability requirement"
+    },
+    "manifest": {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "sha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3",
+      "unitId": "RM1-U02"
+    }
+  },
+  "decisions": {
+    "platformOtp": {
+      "classification": "DEXTER_DECISION",
+      "p3a": "Only remove any existing OTP testCode response exposure and establish server-side capability framework integration; do not create a mobile OTP endpoint, token/receipt storage, or UI behavior.",
+      "p6": "Any new platform mobile OTP protocol or UI remains P6 and requires Dexter acceptance of RM1-IA-01."
+    },
+    "publicWrites": {
+      "classification": "DEXTER_DECISION",
+      "mode": "PUBLIC_PROTOCOL",
+      "finiteException": "The eight public invitation/password-reset writes remain in the dynamic mutating-operation denominator. Their requirement resolves from server-validated invitation/reset token protocol and owner invariant, never an authenticated workspace session, page key, URL-derived role, or client capability literal."
+    }
+  },
+  "reviewCadence": {
+    "classification": "DEXTER_DECISION",
+    "reviewBoundary": "Complete P3-A, P3-B and P3-C serially with each predecessor package-exit PASS, then provide one unified implementation review package to Dexter and Claude.",
+    "nonWaivers": [
+      "P3-B cannot begin until RM1-U02 P3-A package-exit PASS",
+      "P3-C cannot begin until RM1-U03 P3-B package-exit PASS",
+      "each package retains its own actual changed-path/receipt/source-disposition equality",
+      "the unified review is a fresh independent implementation review and Claude handoff covering all three packages"
+    ]
+  },
+  "actualChangeSurfaceCorrection": {
+    "reason": "The approved P3-A action explicitly owns generator, CapabilityRequirement compiler, typed resolver registry, Problem mapping, every mutating-operation template and owner recheck. The manifest's three broad source roots omit their existing generator, generated artifacts, owner implementation and focused-test paths; this correction makes those already-approved implementation dependencies enumerable without changing frozen design bytes or adding a Journey/UI behavior.",
+    "surfaces": [
+      {"path": "tools/compliance-control/cli.mjs", "disposition": "update", "purpose": "RM1 package-aware binding; preserve P0 historical branch"},
+      {"path": "tools/capability-invariants/cli.mjs", "disposition": "update", "purpose": "dynamic requirement/resolver/owner/public-protocol exact-set enforcement"},
+      {"path": "scripts/check/capability-invariants", "disposition": "update", "purpose": "P3-A checker entrypoint"},
+      {"path": "scripts/generate/edge-codegen.mjs", "disposition": "update", "purpose": "generate server, operations and typed resolver catalogs from authoritative registry"},
+      {"path": "contracts/openapi", "disposition": "update", "purpose": "single requirement ID per current mutating operation"},
+      {"path": "contracts/registry/iam-org-governance-manifest.json", "disposition": "create", "purpose": "new authoritative capability requirement/resolver/problem registry"},
+      {"path": "contracts/catalog/admin-catalog.json", "disposition": "update", "purpose": "retain UI catalog as display input without authorization authority"},
+      {"path": "libraries/backend/{workspace-iam,platform-iam,organization,contract,platform-workspace,extension,platform-asset}", "disposition": "update", "purpose": "owner-public command rechecks and typed resolver integration"},
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge", "disposition": "update", "purpose": "generated catalog consumption and typed Problem mapping"},
+      {"path": "apps/backend/catering-business-server/src/main/resources/generated", "disposition": "update", "purpose": "generated route and requirement registry"},
+      {"path": "apps/backend/catering-business-server/src/test/java/edge", "disposition": "update", "purpose": "focused negative fixtures"},
+      {"path": "apps/frontend/{platform-admin,operations-admin}/src/app/{api/catalog}/generated", "disposition": "update", "purpose": "generated consumer catalogs only; no new UI behavior"},
+      {"path": "doc/evidence/platform/rm1/p3-a", "disposition": "create", "purpose": "binding, source disposition, focused proof, exit and review artifacts"}
+    ]
+  },
+  "exitRules": [
+    "P3-A uses a new RM1-U02 baseline and never reuses P0 receipt or prompt-recovery evidence",
+    "all actual changed paths have real pre/post receipt chains and exact package-exit equality",
+    "the dynamic mutating-operation inventory covers every current public/admin write without a handwritten count",
+    "P3-A does not implement P6-only platform OTP interaction, protocol storage, endpoint or UI"
+  ]
+}

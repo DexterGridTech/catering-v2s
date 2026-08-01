@@ -1,0 +1,129 @@
+{
+  "kind": "independent-subagent-adversarial-review",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewCycleId": "R4-W2-IMPLEMENTATION-20260725",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "ROUND_FINAL_DECISION": "SELF_DECIDED",
+  "blindReviewDeclaration": "Fresh v2s-rooted independent review. Before reading round-1 review or the author intake, this reviewer reopened the entry chain, all required production objects, routed memory, current authorization, standards matrix, evidence, and ran a first-pass falsification. That first-pass verdict was NO_GO (M=2, S=1). Author material was read only afterward for targeted difference verification.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "inputChecklist": [
+    {"path":"AGENTS.md","sha256":"cdc6e5bfccd34e33210c0b8f611e1fe8b512427cfc87f2d7ab18f250ea8292a1","read":true},
+    {"path":"CLAUDE.md","sha256":"da3213ab7a75431198ac0d645d7de49b9705b07a27397a2e568d439ea4f66ca1","read":true},
+    {"path":"PLATFORM-BLUEPRINT.md","sha256":"91c0a83511df10a63a581c0678d7c2cdbc8a204b515bb570f3edba9fd92c365f","read":true},
+    {"path":"doc/platform/README.md","sha256":"809f9567df2048bfe40c254c6a613dae7535a6fdebb802f8a06b1e15ebd3687e","read":true},
+    {"path":"doc/platform/roadmap-program-registry.json","sha256":"f3e232d2a1c39ed6bb196911e7c85a73429a5871a3fe8f7e16d2cfa0403f12a8","read":true},
+    {"path":"doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md","sha256":"3fd7f69528a94f53c5417af7ef87a79dd74d0045ea42f1928e245e7bf863050c","read":true},
+    {"path":"project-memory/index.md","sha256":"8fbedd001edda5bfff87d2ab1d31580d7f674582ff67a17b2cf19dbb37c260cb","read":true},
+    {"path":"project-memory/kernel/01-workspace-and-roadmap.md","sha256":"f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63","read":true},
+    {"path":"project-memory/kernel/02-service-shape-and-owner.md","sha256":"45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032","read":true},
+    {"path":"project-memory/kernel/03-transaction-data-and-dependencies.md","sha256":"f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44","read":true},
+    {"path":"project-memory/kernel/04-contract-consumer-and-admin.md","sha256":"1f6d9efbe0208f5b164d12effd4a4c4ab8f2c297b9b000462dc96820c3efa88d","read":true},
+    {"path":"project-memory/kernel/05-evidence-runtime-and-git.md","sha256":"101a8d9952efff6bd217488c2444616e19af43a75413619055f9b0590e1a20a8","read":true},
+    {"path":"project-memory/kernel/06-heritage-and-change.md","sha256":"5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c","read":true},
+    {"path":"project-memory/decisions/confirmed-business-language-corpus.md","sha256":"51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503","read":true},
+    {"path":"project-memory/decisions/deterministic-context-only.md","sha256":"4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20","read":true},
+    {"path":"project-memory/decisions/independent-subagent-adversarial-review.md","sha256":"891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf","read":true},
+    {"path":"project-memory/operations/business-corpus-adoption-and-read-policy.md","sha256":"04d9329413131e369e8c1ea841f172d4c295f953b07b9768a0e597405fd28353","read":true},
+    {"path":"project-memory/operations/business-corpus-parked-domain-intake.md","sha256":"739473d09701aba15332c6de72f1f1965b7b5048732fd60d3b97c7934febee9e","read":true},
+    {"path":"scripts/README.md","sha256":"786b14c8d0823f6afc3c800fcf29a24e72467f7b1fcf54e763bad79e8d6ca46e","read":true},
+    {"path":"scripts/verify","sha256":"bb9450a8ffee2a1d82a6a246ddf76f36b53f64c8efd77a6b894f7de27dd2d0d7","read":true},
+    {"path":"tools/r4-gates/cli.mjs","sha256":"b15f692dbbdae416211f74383f55b23f5f97ad20d93270634848e7434c8c8c12","read":true},
+    {"path":"tools/r4-gates/verify.mjs","sha256":"2826faccfa974c0f1879bf2197550a3228aaf62cd1e03ad3da115e0a50646e95","read":true},
+    {"path":"tools/r4-gates/red-fixtures/README.md","sha256":"159276172c5a208857bdef3ae2575df875ef3736f1fbeb31a7632b3a6930e7ae","read":true},
+    {"path":"contracts/policy/standards-coverage-matrix.json","sha256":"b49c82e3eaac47422b2100e21ddb052dc7bcc862f1fac7ea67912237ca3bebbe","read":true},
+    {"path":"contracts/policy/r4-gate-catalog.json","sha256":"849f9afa7f5d8bea062d7fc21601ff9a062ff267a5a2a83e8e11238f9e782b2f","read":true},
+    {"path":"contracts/policy/r4-evidence.schema.json","sha256":"3eb96fb41a09a63efb99e4a1e79ec810d818c042601493b506c266dc11c671fc","read":true},
+    {"path":"contracts/policy/affected-l2-registry.json","sha256":"53e66778b4a13bd60becf99f51959aad1603223be183994c09fb90676ac05309","read":true},
+    {"path":"apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java","sha256":"e256fb722c33dc1dc9b88cc349b7c396e840840f38320f493b5226790e11aae3","read":true},
+    {"path":"apps/backend/catering-business-server/src/test/java/r4/database/R4DatabaseBoundariesTest.java","sha256":"50cca87faa712d369a7475ef2c6a5ab92ee7982c6fc0a2b91acbe8d2b5a669ae","read":true},
+    {"path":"doc/evidence/platform/r4-closure-readiness-evidence.json","sha256":"f0b37509a50c6233cca5f5c21ab523a7736dbb6ae32c51764606f26c0cec36f8","read":true},
+    {"path":"doc/evidence/platform/r4-standards-coverage-evidence.json","sha256":"c8fcb72bddb18d72d2e2f0c227dfc98d79dce33dd8d688ec0c49210917ca3a1f","read":true},
+    {"path":"doc/evidence/platform/r4-verify-evidence.json","sha256":"2be046e88d3e6f847f6d3d306a22443e72177ba4ccdf4aa97b5089743071cd9a","read":true},
+    {"path":"doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md","sha256":"c822ef279c015ff6f7ce2ff697138f754b3eacf53fb8a96323a48b8a6e564965","read":true},
+    {"path":"doc/review/platform/2026-07-25-v2s-r4-design-granularity-manifest.json","sha256":"3466a34d848d1fff9f0e855b00dfdf0967fd2f473fe00a838e6ce1d6e0128129","read":true},
+    {"path":"doc/decisions/2026-07-25-v2s-r4-design-authorization.md","sha256":"2d6715e1aca11a00a7f78da34bae00c441219871198a750066f95b9cd21b2ae5","read":true},
+    {"path":"doc/decisions/2026-07-25-v2s-r4-design-acceptance-and-implementation-authorization.md","sha256":"5a8b2ff70ac9dfff14b4b1078aae056fb2e402be45234711fed622af5bb3185b","read":true},
+    {"path":"doc/decisions/2026-07-24-v2s-verification-governance.md","sha256":"c9632a65f9eac7678a4be919d980894e3f1e71e5e2e1ddce70ea3c7091d829dc","read":true},
+    {"path":"doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md","sha256":"95b79f7c74a3f867e9fdfef6b9f0d63d9e51e50cb08abc905056307d9423d508","read":true},
+    {"path":"doc/decisions/2026-07-25-v2s-r3-r6-journey-inventory.md","sha256":"753f6f0d8bfdbacecd9360c6cefe195e0229a39b7240a52f3035a7e99c78fa14","read":true},
+    {"path":"doc/decisions/2026-07-25-v2s-r3-c02-operations-real-login-rejected-inventory.md","sha256":"39162c733eedaffbd6167893e8c4b8903a847ca6615a372c4f6c427a00fbc923","read":true},
+    {"path":"doc/review/platform/2026-07-25-v2s-r4-implementation-adversarial-round-2-inputs.json","sha256":"7b4261951f729914a86f71d08152f169712a55656920ce1d720256ab62719bde","read":true},
+    {"path":"doc/review/platform/2026-07-25-v2s-r4-implementation-adversarial-review-round-1.json","sha256":"ae65e7ecac4fe2c0a3bd624ad29adaaaef65c56e6fb72280819137b81ee2e2f3","read":true},
+    {"path":"doc/review/platform/2026-07-25-v2s-r4-implementation-round-1-finding-intake.md","sha256":"cb4e846056cc0d856885c8a9ad1e2cf97faa0ecaa37aa9f7b8575a8e9cf3057a","readAfterIndependentVerdict":true}
+  ],
+  "inputCoverage": {
+    "decisionTitleInventory": "All 26 doc/decisions/*.md titles were independently enumerated; R4 authorization, implementation authorization, verification, independent-subagent, solution-reasonableness, service-shape, R3-R6 inventory, C-02 rejection, and atomic-R decisions were opened.",
+    "r4CheckEntrypointsRead": ["security-boundaries","database-boundaries","backend-boundaries","frontend-architecture","ui-wireframe-traceability","business-terminology-traceability","database-operation-budget","query-boundaries","openapi-contracts","logging-boundaries","retirement","affected-l2","standards-coverage"],
+    "routedMemoryCommand": "scripts/memory/query --task-kind review --domain platform --consumer-face backend --owner platform --impact governance --trigger task-start",
+    "hashManifestRecomputed": "All 15 path+hash entries in doc/review/platform/2026-07-25-v2s-r4-implementation-adversarial-round-2-inputs.json matched current bytes."
+  },
+  "commandsRun": [
+    "scripts/memory/query --task-kind review --domain platform --consumer-face backend --owner platform --impact governance --trigger task-start",
+    "scripts/check/standards-coverage --phase R4 (PASS; 150 rules)",
+    "scripts/verify --changed apps/backend/catering-business-server/src/test/java/r4/database/R4DatabaseBoundariesTest.java,contracts/openapi/edge.openapi.yaml (PASS; BUSINESS=NOT_APPLICABLE_R4_TECHNICAL_STEP; CLEANUP=PASS)",
+    "scripts/verify (expected red: R4_AFFECTED_L2_CHANGED_SURFACE_REQUIRED)",
+    "scripts/check/standards-coverage --self-test (PASS)",
+    "all R4-G01..G08 and R4-G10..G12 production-path --self-test commands (PASS)",
+    "SHA-256 recomputation for the round-2 input manifest (15/15 MATCH)",
+    "matrix enforcement and R4_BOUNDARY_SEMANTICS_REVIEW route enumeration (0 routed rows)"
+  ],
+  "findings": [
+    {
+      "id": "M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "title": "Round-1 M-001/M-002/M-003 were claimed as matrix reclassifications but no R4 semantic-review routing exists in the production matrix.",
+      "evidence": "The author intake states that unsupported B.1/B.2/B.3/B.6/D.2 claims were moved to R4_BOUNDARY_SEMANTICS_REVIEW. Fresh enumeration finds zero rules with reviewChecklistRef=R4_BOUNDARY_SEMANTICS_REVIEW. Instead B.1.N01-N17 still point to security-boundaries, B.2.N01-N15 to database-boundaries, B.3.N01-N12 to the limited BackendModuleBoundariesTest, B.6.N01-N06 to database-operation-budget, and D.2.L01-L04 to openapi-contracts as ACTIVE R4 enforcement.",
+      "impact": "The status/evidence repair is not present in the reviewed production bytes. standards-coverage PASS therefore still converts broad semantic claims into ACTIVE machine enforcement contrary to verification governance.",
+      "counterexample": "security() accepts any EdgeContextVerifier containing the word edge, x-consumer-faces anywhere in the OpenAPI, and a fixed operations-admin sentence; database()/budget() inspect one migration plus SELECT */FOR UPDATE tokens; openapi() only checks codegen drift and a non-empty registry. Their self-tests prove only those narrow predicates, not the matrix claims.",
+      "smallerRepair": "Either implement a narrow mechanical proof for each still-ACTIVE rule with production-path red evidence, or actually move each non-mechanical rule to R4_BOUNDARY_SEMANTICS_REVIEW. Update the intake and evidence only after the matrix is truthful."
+    },
+    {
+      "id": "M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "title": "The current closure and standards evidence falsely report semantic-review routing.",
+      "evidence": "r4-standards-coverage-evidence.json says architecture, database/query, security/route, logging/retirement and UI-traceability semantics are bound to R4_BOUNDARY_SEMANTICS_REVIEW. The matrix contains that checklist definition but zero rule references to it, while the associated rows remain ACTIVE gates. The round-1 intake repeats the same unsupported claim.",
+      "impact": "The evidence packet is not an honest statement of the active enforcement denominator and cannot support a GO verdict.",
+      "smallerRepair": "Do not add a new checker. Correct the matrix/evidence relationship and rerun the existing coverage and verify evidence with current hashes."
+    },
+    {
+      "id": "S-001",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "title": "Affected-L2 now requires changed input and reports a deterministic selection, but verify does not execute the selected two frontend architecture targets.",
+      "evidence": "The fresh required command passed and printed backend plus both admin architecture directories. verify.mjs then runs only :apps:backend:catering-business-server:test; affected-l2 validates target existence but never executes or records separate frontend test results. The evidence describes selection, so it must not be read as two-admin test execution.",
+      "impact": "This is not a reason to expand R4 into a browser/UI run, but the L3/evidence wording must remain selection-only unless those target tests are actually run through the managed entry.",
+      "smallerRepair": "Keep the current selection mechanism and amend evidence wording, or invoke the already-selected architecture tests only if their runtime remains minute-scale."
+    },
+    {
+      "id": "N-001",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "title": "Round-1 M-004, M-005, and S-002 have real focused repairs.",
+      "evidence": "verify now rejects an omitted --changed input, forwards the provided paths to affected-l2, and its fresh run selected the expected targets. The closure packet hashes match current scripts/verify, verify.mjs, and cli.mjs. Testcontainers residual inspection is in finally around Gradle, so a native-test failure still receives cleanup inspection."
+    }
+  ],
+  "verdict": {
+    "status": "NO_GO",
+    "summary": "M=2, S=1, N=1. The round-1 fix is only partial: changed-input, hash freshness, and failed-test cleanup are repaired, but the claimed semantic-review rerouting is absent from the matrix and evidence remains materially false. This is round 2 and the final independent-subagent verdict for the cycle."
+  },
+  "scopeBoundary": {
+    "r4IsTechnicalStep": true,
+    "newBusinessJourney": false,
+    "operationsRealLogin": false,
+    "r3J02OrC02Restored": false,
+    "tdpExpanded": false,
+    "devStartSeedReset": false,
+    "dynamicRuntime": "temporary Testcontainers PostgreSQL only"
+  },
+  "businessStatus": {
+    "status": "NOT_APPLICABLE_R4_TECHNICAL_STEP",
+    "corpusSearchTerms": ["R4","W2","scripts/verify","gate","validator","Testcontainers","operations login","J02","C-02","TDP","seed","reset"],
+    "corpusResult": "NO_CORPUS_ENTRY_MATCHED",
+    "freshBusinessResult": "NOT_APPLICABLE_R4_TECHNICAL_STEP",
+    "freshCleanupResult": "PASS"
+  }
+}

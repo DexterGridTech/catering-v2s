@@ -1,0 +1,89 @@
+package com.catering.v2s.workspace.iam.application;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.organization.api.CommercialGroupLookup;
+import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
+import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.organization.application.OrganizationHierarchyService;
+import com.catering.v2s.platform.foundation.time.TimeProvider;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+@Testcontainers
+class WorkspaceAuthenticationContextVersionTest {
+    @Container static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+    private static final long NOW = 1_785_000_000_000L;
+    private static Flyway flyway;
+    private static JdbcTemplate jdbc;
+    private static UUID workspaceId;
+    private static OrganizationHierarchyService hierarchy;
+    private static WorkspaceRoleService roles;
+
+    @BeforeAll static void setup() {
+        flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).locations("filesystem:../../src/main/resources/db/migration").schemas("public").defaultSchema("public").cleanDisabled(false).load();
+        flyway.migrate();
+        jdbc = new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
+        workspaceId = UUID.randomUUID();
+        jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, 'context-version-test', 'Context version test', 'context version test', 'Context version test', 'ENABLED', 1, 1, ?, ?, ?)", workspaceId, NOW, NOW, NOW);
+        hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        roles = new WorkspaceRoleService(jdbc, () -> NOW);
+    }
+
+    @Test void assignmentAndDataNodeSelectionEachAdvanceContextVersionAndAStaleCompareAndSetCannotAdvanceItAgain() {
+        UUID regionId = hierarchy.create(workspaceId, "context-version-test", "REGION", null, "context-region", "Context region").id();
+        UUID accountId = UUID.randomUUID();
+        UUID roleId = roles.create(workspaceId, "context-version-test", "Context operator", "REGION", null, Set.of(), Set.of()).id();
+        UUID invitationId = UUID.randomUUID();
+        UUID assignmentId = UUID.randomUUID();
+        String token = "context-version-token";
+        jdbc.update("INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, mobile_normalized, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', '13800000111', 'context-user', 'Context user', 'ENABLED', 1, ?, ?)", accountId, workspaceId, NOW, NOW);
+        jdbc.update("INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, mobile_normalized, status, expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, 'context-version-test', 'context-invitation-token-hash', '13800000111', 'COMPLETED', ?, 1, ?)", invitationId, workspaceId, NOW + 60_000L, NOW);
+        jdbc.update("INSERT INTO workspace_iam.role_assignment (id, workspace_uuid, group_workspace_key, account_id, role_id, source_invitation_id, service_node_type, service_node_id, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, ?, 'REGION', ?, 'ACTIVE', 1, ?, ?)", assignmentId, workspaceId, accountId, roleId, invitationId, regionId, NOW, NOW);
+        jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, 1, 1, 'ACTIVE', ?)", UUID.randomUUID(), workspaceId, accountId, sha256(token), NOW + 60_000L);
+
+        WorkspaceAuthenticationService authentication = authentication(regionId);
+        var afterContextSelection = authentication.selectContext(token, assignmentId, 1L);
+        assertEquals("Context version test", afterContextSelection.workspaceName());
+        assertEquals("Context version test", afterContextSelection.operationsTitle());
+        assertEquals(null, afterContextSelection.logoAssetRef());
+        assertEquals(2L, afterContextSelection.contextVersion());
+        var afterDataNodeSelection = authentication.selectDataNode(token, "REGION", regionId, 2L);
+        assertEquals("Context version test", afterDataNodeSelection.workspaceName());
+        assertEquals("Context version test", afterDataNodeSelection.operationsTitle());
+        assertEquals(null, afterDataNodeSelection.logoAssetRef());
+        assertEquals(3L, afterDataNodeSelection.contextVersion());
+        assertThrows(WorkspaceAuthenticationService.SessionConflictException.class, () -> authentication.selectDataNode(token, "REGION", regionId, 2L));
+        assertEquals(3L, jdbc.queryForObject("SELECT context_version FROM workspace_iam.workspace_session WHERE token_hash=?", Long.class, sha256(token)));
+    }
+
+    private static WorkspaceAuthenticationService authentication(UUID visibleNodeId) {
+        TimeProvider time = () -> NOW;
+        BusinessEntityService entities = new BusinessEntityService(jdbc, time, new ExtensionDefinitionService(jdbc, time), hierarchy);
+        CommercialGroupLookup groups = new CommercialGroupLookup() {
+            @Override public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) { return visibleNodeId; }
+            @Override public boolean isEnterableCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return visibleNodeId.equals(commercialGroupRef); }
+            @Override public String describeCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return "Context group"; }
+        };
+        OrganizationVisibilityLookup visibility = new OrganizationVisibilityLookup() {
+            @Override public boolean isVisibleDataNodeAllowed(UUID workspaceUuid, String groupWorkspaceKey, String assignmentNodeType, UUID assignmentNodeId, UUID candidateVisibleNodeId) { return visibleNodeId.equals(candidateVisibleNodeId); }
+            @Override public List<VisibleDataNodeCandidate> listVisibleDataNodeCandidates(UUID workspaceUuid, String groupWorkspaceKey, String assignmentNodeType, UUID assignmentNodeId) { return List.of(new VisibleDataNodeCandidate("REGION", visibleNodeId, "Context region", List.of("Context region"), visibleNodeId, null, null)); }
+        };
+        return new WorkspaceAuthenticationService(jdbc, time, roles, hierarchy, entities, entities, groups, new WorkspaceLoginRateLimitService(jdbc, time), new WorkspaceOtpRateLimitService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, visibility, new WorkspaceSessionRequestCache(false), null);
+    }
+
+    private static String sha256(String value) { try { return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8))); } catch (Exception failure) { throw new IllegalStateException(failure); } }
+    @AfterAll static void cleanup() { if (flyway != null) flyway.clean(); }
+}

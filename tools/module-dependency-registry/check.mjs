@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 
-const MODULE_KEYS = ["moduleKey", "ownerSchema", "commandApiPackages"];
+const MODULE_KEYS = ["moduleKey", "sourceRoot", "ownerSchema", "commandApiPackages"];
+const VALUE_ONLY_MODULE_KEYS = [...MODULE_KEYS, "valueOnly"];
 const COMMON_EDGE_KEYS = ["edgeId", "edgeKind", "fromModule", "toModule", "rationale"];
 const EDGE_KEYS = {
   COMMAND: [...COMMON_EDGE_KEYS, "apiPackage", "operation"],
+  VALUE_API: [...COMMON_EDGE_KEYS, "apiPackage", "operation"],
   SCHEMA_FK: [...COMMON_EDGE_KEYS, "referencingObject", "referencedObject", "constraintName"],
   TASK_READ: [...COMMON_EDGE_KEYS, "queryId", "initiatingModule", "referencedSchemaObject"],
 };
 const MODULE_KEY = /^[a-z][a-z0-9-]*$/;
+const MODULE_SOURCE_ROOT = /^apps\/backend\/catering-business-server\/modules\/[a-z][a-z0-9-]*$/;
 const OWNER_SCHEMA = /^[a-z][a-z0-9_]*$/;
 const JAVA_PACKAGE = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 const OPERATION = /^[A-Z][A-Za-z0-9]*$/;
@@ -55,10 +59,62 @@ function semanticKey(edge) {
   if (edge.edgeKind === "COMMAND") {
     return ["COMMAND", edge.fromModule, edge.toModule, edge.apiPackage, edge.operation].join("|");
   }
+  if (edge.edgeKind === "VALUE_API") {
+    return ["VALUE_API", edge.fromModule, edge.toModule, edge.apiPackage, edge.operation].join("|");
+  }
   if (edge.edgeKind === "SCHEMA_FK") {
     return ["SCHEMA_FK", edge.referencingObject, edge.referencedObject, edge.constraintName].join("|");
   }
   return ["TASK_READ", edge.queryId, edge.initiatingModule, edge.referencedSchemaObject].join("|");
+}
+
+function walkFiles(directory) {
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, {withFileTypes: true}).flatMap((entry) => {
+    const absolute = path.join(directory, entry.name);
+    return entry.isDirectory() ? walkFiles(absolute) : [absolute];
+  });
+}
+
+function javaStringLiterals(source) {
+  return [...source.matchAll(/"""[\s\S]*?"""|"(?:\\.|[^"\\])*"/g)].map((match) => match[0]);
+}
+
+export function validateSourceFacts(root, registry) {
+  const ownerBySchema = new Map(
+    registry.modules
+      .filter((module) => module.ownerSchema !== null)
+      .map((module) => [module.ownerSchema, module.moduleKey]),
+  );
+  const declaredReads = new Set(
+    registry.edges
+      .filter((edge) => edge.edgeKind === "TASK_READ")
+      .map((edge) => `${edge.fromModule}|${edge.toModule}|${edge.referencedSchemaObject}`),
+  );
+  for (const module of registry.modules) {
+    const sourceRoot = path.join(root, module.sourceRoot, "src/main");
+    assert(fs.existsSync(sourceRoot), "MODULE_SOURCE_ROOT_MISSING", module.sourceRoot);
+    const javaFiles = walkFiles(sourceRoot).filter((candidate) => candidate.endsWith(".java"));
+    assert(javaFiles.length > 0, "MODULE_SOURCE_ROOT_EMPTY", module.sourceRoot);
+    for (const file of javaFiles) {
+      const relative = path.relative(root, file);
+      for (const literal of javaStringLiterals(fs.readFileSync(file, "utf8"))) {
+        for (const [schema, ownerModule] of ownerBySchema) {
+          if (ownerModule === module.moduleKey || !literal.includes(`${schema}.`)) continue;
+          const objects = [...literal.matchAll(new RegExp(`\\b${schema}\\.([a-z][a-z0-9_]*)`, "g"))]
+            .map((match) => `${schema}.${match[1]}`);
+          assert(objects.length > 0, "SOURCE_SCHEMA_OBJECT_DYNAMIC", `${relative}:${schema}`);
+          for (const object of new Set(objects)) {
+            assert(
+              declaredReads.has(`${module.moduleKey}|${ownerModule}|${object}`),
+              "SOURCE_TASK_READ_UNDECLARED",
+              `${relative}:${object}`,
+            );
+          }
+        }
+      }
+    }
+  }
 }
 
 export function validateRegistry(registry, {requireEmpty = false} = {}) {
@@ -73,17 +129,23 @@ export function validateRegistry(registry, {requireEmpty = false} = {}) {
   assert(Array.isArray(registry.edges), "REGISTRY_EDGES_INVALID");
 
   const modulesByKey = new Map();
+  const moduleSourceRoots = new Set();
   const ownerSchemas = new Set();
   const apiOwners = new Map();
   for (const module of registry.modules) {
-    assert(sameKeys(module, MODULE_KEYS), "MODULE_SHAPE_INVALID");
+    const valueOnly = module.valueOnly === true;
+    assert(sameKeys(module, valueOnly ? VALUE_ONLY_MODULE_KEYS : MODULE_KEYS), "MODULE_SHAPE_INVALID");
     assert(MODULE_KEY.test(module.moduleKey), "MODULE_KEY_INVALID", module.moduleKey);
-    assert(OWNER_SCHEMA.test(module.ownerSchema), "OWNER_SCHEMA_INVALID", module.ownerSchema);
+    assert(MODULE_SOURCE_ROOT.test(module.sourceRoot), "MODULE_SOURCE_ROOT_INVALID", module.sourceRoot);
+    assert(!moduleSourceRoots.has(module.sourceRoot), "MODULE_SOURCE_ROOT_DUPLICATE", module.sourceRoot);
+    moduleSourceRoots.add(module.sourceRoot);
+    assert(module.ownerSchema === null || OWNER_SCHEMA.test(module.ownerSchema), "OWNER_SCHEMA_INVALID", module.ownerSchema);
+    if (valueOnly) assert(module.ownerSchema === null, "VALUE_ONLY_OWNER_SCHEMA_FORBIDDEN", module.moduleKey);
     assert(Array.isArray(module.commandApiPackages), "COMMAND_API_PACKAGES_INVALID", module.moduleKey);
     assert(!modulesByKey.has(module.moduleKey), "MODULE_KEY_DUPLICATE", module.moduleKey);
-    assert(!ownerSchemas.has(module.ownerSchema), "OWNER_SCHEMA_DUPLICATE", module.ownerSchema);
+    if (module.ownerSchema !== null) assert(!ownerSchemas.has(module.ownerSchema), "OWNER_SCHEMA_DUPLICATE", module.ownerSchema);
     modulesByKey.set(module.moduleKey, module);
-    ownerSchemas.add(module.ownerSchema);
+    if (module.ownerSchema !== null) ownerSchemas.add(module.ownerSchema);
     const localPackages = new Set();
     for (const apiPackage of module.commandApiPackages) {
       assert(JAVA_PACKAGE.test(apiPackage), "COMMAND_API_PACKAGE_INVALID", apiPackage);
@@ -110,12 +172,13 @@ export function validateRegistry(registry, {requireEmpty = false} = {}) {
     const from = modulesByKey.get(edge.fromModule);
     const to = modulesByKey.get(edge.toModule);
 
-    if (edge.edgeKind === "COMMAND") {
+    if (edge.edgeKind === "COMMAND" || edge.edgeKind === "VALUE_API") {
       assert(JAVA_PACKAGE.test(edge.apiPackage), "COMMAND_API_PACKAGE_INVALID", edge.apiPackage);
       assert(OPERATION.test(edge.operation), "COMMAND_OPERATION_INVALID", edge.operation);
       assert(apiOwners.get(edge.apiPackage) === edge.toModule, "COMMAND_API_OWNER_MISMATCH", edge.edgeId);
       assert(!from.commandApiPackages.includes(edge.apiPackage), "COMMAND_API_OWNED_BY_CALLER", edge.edgeId);
       assert(to.commandApiPackages.includes(edge.apiPackage), "COMMAND_API_NOT_OWNED_BY_TARGET", edge.edgeId);
+      if (edge.edgeKind === "VALUE_API") assert(to.valueOnly === true, "VALUE_API_TARGET_NOT_VALUE_ONLY", edge.edgeId);
     } else if (edge.edgeKind === "SCHEMA_FK") {
       assertNonEmpty(edge.constraintName, "SCHEMA_FK_CONSTRAINT_INVALID");
       assert(
@@ -135,6 +198,7 @@ export function validateRegistry(registry, {requireEmpty = false} = {}) {
     } else {
       assertNonEmpty(edge.queryId, "TASK_READ_QUERY_ID_INVALID");
       assert(edge.initiatingModule === edge.fromModule, "TASK_READ_INITIATOR_MISMATCH", edge.edgeId);
+      assert(to.ownerSchema !== null, "TASK_READ_TARGET_SCHEMALESS", edge.edgeId);
       assert(
         typeof edge.referencedSchemaObject === "string" &&
           edge.referencedSchemaObject.startsWith(`${to.ownerSchema}.`) &&
@@ -175,11 +239,13 @@ function edgeFixture() {
     modules: [
       {
         moduleKey: "orders",
+        sourceRoot: "apps/backend/catering-business-server/modules/orders",
         ownerSchema: "orders",
         commandApiPackages: ["com.catering.orders.api"],
       },
       {
         moduleKey: "inventory",
+        sourceRoot: "apps/backend/catering-business-server/modules/inventory",
         ownerSchema: "inventory",
         commandApiPackages: ["com.catering.inventory.api"],
       },
@@ -303,6 +369,36 @@ function selfTest() {
   );
   expectPass("task-read-cycle-legal", reads);
 
+  const schemaLessAndValueOnly = edgeFixture();
+  schemaLessAndValueOnly.modules.push({
+    moduleKey: "access-facade",
+    sourceRoot: "apps/backend/catering-business-server/modules/access-facade",
+    ownerSchema: null,
+    commandApiPackages: ["com.catering.access.api"],
+  });
+  schemaLessAndValueOnly.modules.push({
+    moduleKey: "audit-values",
+    sourceRoot: "apps/backend/catering-business-server/modules/audit-values",
+    ownerSchema: null,
+    valueOnly: true,
+    commandApiPackages: ["com.catering.audit.values"],
+  });
+  schemaLessAndValueOnly.edges.push({
+    edgeId: "value-orders-audit",
+    edgeKind: "VALUE_API",
+    fromModule: "orders",
+    toModule: "audit-values",
+    rationale: "Carry immutable audit value objects without a fact schema.",
+    apiPackage: "com.catering.audit.values",
+    operation: "AuditValues",
+  });
+  expectPass("schema-less-facade-and-value-api", schemaLessAndValueOnly);
+
+  const invalidValueTarget = deepClone(schemaLessAndValueOnly);
+  invalidValueTarget.edges[0].toModule = "access-facade";
+  invalidValueTarget.edges[0].apiPackage = "com.catering.access.api";
+  expectFail("value-api-target-must-be-value-only", invalidValueTarget, "VALUE_API_TARGET_NOT_VALUE_ONLY");
+
   const missingQuery = deepClone(reads);
   delete missingQuery.edges[0].queryId;
   expectFail("task-read-missing-query-id", missingQuery, "EDGE_SHAPE_INVALID");
@@ -310,6 +406,22 @@ function selfTest() {
   const extraField = deepClone(reads);
   extraField.edges[0].apiPackage = "com.catering.inventory.api";
   expectFail("task-read-extra-kind-field", extraField, "EDGE_SHAPE_INVALID");
+  const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-module-source-root-"));
+  try {
+    for (const module of edgeFixture().modules) {
+      const source = path.join(sourceRoot, module.sourceRoot, "src/main", `${module.moduleKey}.java`);
+      fs.mkdirSync(path.dirname(source), {recursive: true});
+      fs.writeFileSync(source, `package fixture; class ${module.moduleKey === "orders" ? "Orders" : "Inventory"} {}\n`);
+    }
+    validateSourceFacts(sourceRoot, edgeFixture());
+    fs.rmSync(path.join(sourceRoot, "apps/backend/catering-business-server/modules/orders"), {recursive: true, force: true});
+    try { validateSourceFacts(sourceRoot, edgeFixture()); throw new Error("SELF_TEST_FALSE_GREEN:module-source-root-missing"); }
+    catch (error) { assert(error.message.startsWith("MODULE_SOURCE_ROOT_MISSING"), "SELF_TEST_WRONG_FAILURE", error.message); }
+    fs.mkdirSync(path.join(sourceRoot, "apps/backend/catering-business-server/modules/orders/src/main"), {recursive: true});
+    try { validateSourceFacts(sourceRoot, edgeFixture()); throw new Error("SELF_TEST_FALSE_GREEN:module-source-root-empty"); }
+    catch (error) { assert(error.message.startsWith("MODULE_SOURCE_ROOT_EMPTY"), "SELF_TEST_WRONG_FAILURE", error.message); }
+    process.stdout.write("RED_MODULE_SOURCE_ROOT_MISSING=PASS\nRED_MODULE_SOURCE_ROOT_EMPTY=PASS\n");
+  } finally { fs.rmSync(sourceRoot, {recursive: true, force: true}); }
   process.stdout.write("MODULE_DEPENDENCY_REGISTRY_SELF_TEST=PASS\n");
 }
 
@@ -334,6 +446,7 @@ try {
     const registryPath = path.resolve(root, args.registry || "contracts/policy/module-dependency-registry.json");
     const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
     validateRegistry(registry, {requireEmpty: args.requireEmpty});
+    if (!args.registry && !args.requireEmpty) validateSourceFacts(root, registry);
     process.stdout.write(`MODULE_DEPENDENCY_REGISTRY=PASS; PATH=${path.relative(root, registryPath)}\n`);
   }
 } catch (error) {

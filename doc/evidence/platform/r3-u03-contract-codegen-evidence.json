@@ -1,0 +1,48 @@
+{
+  "kind": "r3-u03-contract-codegen-evidence",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "unit": "U03",
+  "status": "CONTRACT_GENERATED",
+  "scope": [
+    "three-platform-admin-edge-operations",
+    "closed-problem-code-enum",
+    "server-route-face-registry",
+    "platform-admin-typed-generated-slice",
+    "operations-admin-empty-generated-receipt"
+  ],
+  "contractOperations": [
+    {"operationId": "listPlatformGroupWorkspaces", "method": "GET", "path": "/api/platform/group-workspaces", "consumerFaces": ["platform-admin"]},
+    {"operationId": "getPlatformGroupWorkspaceDetail", "method": "GET", "path": "/api/platform/group-workspaces/{groupWorkspaceKey}", "consumerFaces": ["platform-admin"]},
+    {"operationId": "initializeCommercialGroup", "method": "POST", "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group", "consumerFaces": ["platform-admin"]}
+  ],
+  "problemCodes": [
+    "INVALID_EDGE_CONTEXT",
+    "GROUP_WORKSPACE_NOT_FOUND",
+    "COMMERCIAL_GROUP_ALREADY_INITIALIZED",
+    "IDEMPOTENCY_CONFLICT",
+    "VALIDATION_FAILED",
+    "UNKNOWN_SUBMISSION_RESULT"
+  ],
+  "verification": {
+    "generator": "PASS",
+    "generatedByteCheck": "PASS",
+    "generatedByteMutationSelfTest": "PASS",
+    "postGate0ContractFace": "PASS",
+    "postGate0ProductionConformity": "PASS",
+    "operationsAdminBusinessEndpoints": "NONE"
+  },
+  "artifactHashes": [
+    {"path": "contracts/openapi/edge.openapi.yaml", "sha256": "395e9376d7c084080fe02550aef395b4f3f8e40f5c89574b2e04c0168675d290"},
+    {"path": "contracts/openapi/components/platform-workspace.schemas.yaml", "sha256": "731f17f38a25b7183bb60668987114f1ff0d88353d621f83157c9d672891ad57"},
+    {"path": "contracts/openapi/components/commercial-group.schemas.yaml", "sha256": "3b42708ed281172d87f08e0c6bd3386d95211b582497c1066f502115e9212906"},
+    {"path": "contracts/openapi/components/problem.schemas.yaml", "sha256": "4d9970ac873bb26dce9c5aacb6e9de91a92a6074e11548a20f5e0dd714e5c2fb"},
+    {"path": "scripts/generate/r3-edge-codegen.mjs", "sha256": "e0e7b8965653ed10b08f214ebadeac6fc01a2757b936b9920f3fac864c3e555c"},
+    {"path": "scripts/generate/r3-edge-codegen", "sha256": "39fa78185ed330c3906f60e3eb968a5fff86f79c35724bf67d725adb09a8b994"},
+    {"path": "scripts/check/r3-edge-codegen", "sha256": "8ac7e68d2109c94150eec1d6529ad993e587082ebd447e302c6270a619940833"},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/generated/R3ProblemCode.java", "sha256": "673d5c90668cb001622738f86ee4ec63149a86096a5e9e1310e0ca061bda409f"},
+    {"path": "apps/backend/catering-business-server/src/main/resources/generated/r3-route-face-registry.json", "sha256": "a2ea3cd7d824f13f1f9b1ba4d970d840efd9e0873a860762c4a450afca3ca9bc"},
+    {"path": "apps/frontend/platform-admin/src/app/api/generated/r3-edge.ts", "sha256": "985db294d3062aca58a6402e506d62b9f1a41aaef1f98c9215a1e4227aac6cdd"},
+    {"path": "apps/frontend/operations-admin/src/app/api/generated/empty-endpoint-receipt.ts", "sha256": "dd45fcd6bd105109d8cc9f7f91537e6430588cc3e75c843b588d6795a202ae7e"}
+  ]
+}

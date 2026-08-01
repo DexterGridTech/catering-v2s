@@ -1,0 +1,417 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-JOINT-REMOTE-L2-U11",
+  "status": "PASS",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    ".runtime/compliance-control/problem-family-dispositions/034aa2054885cf007689d4703e424295f1f8289488f406f147509edb0775a132.json",
+    ".runtime/compliance-control/problem-family-dispositions/180daebd09cc94ae1b13e42ee202915ae673bdbfd12c7ad9982f3e85e782721f.json",
+    ".runtime/compliance-control/problem-family-dispositions/1b4462fc25bcdb5716291f37ad8baa7939bff7da28ba6a59aae716a3741a52c3.json",
+    ".runtime/compliance-control/problem-family-dispositions/1ed3372343befffae9703d465d73402c287be6d69a1f6a0d4a7eed8eff236925.json",
+    ".runtime/compliance-control/problem-family-dispositions/2d82f489d73a3665ab04c24b265e28569e6cb29c808bf7e3701a5b9b001e3311.json",
+    ".runtime/compliance-control/problem-family-dispositions/33207ad680297ab4274c72bc87a7c7ca2368c14d4e293ec02d5ab0b414d256a4.json",
+    ".runtime/compliance-control/problem-family-dispositions/372fe984afaff2513d5ef9c465d5e0a456a701ea7ec3c0f409ecac0a888856cf.json",
+    ".runtime/compliance-control/problem-family-dispositions/3af712255f60d052916ce52ee868b65c5bd4931e25196d1c7051380ea6343153.json",
+    ".runtime/compliance-control/problem-family-dispositions/3fb3f1ee48e4395f1f98f66d7fc21caf96cb09ad43530dc773cb189ccc7b419f.json",
+    ".runtime/compliance-control/problem-family-dispositions/4ad329d8d863f298fe771c1f1853cdcc6bf87e5bdbdcfb3c313a2265d7dd1df0.json",
+    ".runtime/compliance-control/problem-family-dispositions/4d6d4339f8d84ee6041e71bc0c4c8e89f3939d4a818644708e1c790644a6b366.json",
+    ".runtime/compliance-control/problem-family-dispositions/4fa516d93dba384ca95fa527e5daa3de9baa26cb037a15629c8b3e202fb8ab05.json",
+    ".runtime/compliance-control/problem-family-dispositions/66226618bc73ee75ce598b0ee0a3b36279f66f15eeb75006f35ade301f2d5271.json",
+    ".runtime/compliance-control/problem-family-dispositions/6744b4c6a9aa00381ffea2b3d229778b0724b073bd46e13f4e73868667eeb44f.json",
+    ".runtime/compliance-control/problem-family-dispositions/68d81766f3661308e84f241eabecc0aafa11c42e1a3f197cf1f11599f9538004.json",
+    ".runtime/compliance-control/problem-family-dispositions/7ac43e5ad330c83a6c2726d23aeb298c333e82551014fb5e8d1a4bbc5cb7e299.json",
+    ".runtime/compliance-control/problem-family-dispositions/7d39d0c9e3b150b0cdd9e4be01a535c69936e864258d0cd39ba5b6420b92256f.json",
+    ".runtime/compliance-control/problem-family-dispositions/8e1e154c38aef9143e11924edfc52f84558ed0aeadaaf1474539e7fa3fb564ea.json",
+    ".runtime/compliance-control/problem-family-dispositions/9476bc0fb64e7f4cceb23df65e33cc983623eb3b8efd3b4b403f0089acfdaa6e.json",
+    ".runtime/compliance-control/problem-family-dispositions/95b13be075a92b5cfa56924eab366be7a630923683305c1936770d0958c62092.json",
+    ".runtime/compliance-control/problem-family-dispositions/965ba40410bfeec2659008c9622807a70ac4b2a9db382a4e9ff0447be13ac271.json",
+    ".runtime/compliance-control/problem-family-dispositions/979923044ac1c80e39c4ef1107313be2066046e7018dedbe11f9db131c9a6356.json",
+    ".runtime/compliance-control/problem-family-dispositions/9e74e3f1cc9a511221c6191f71231c79e9853d66b41b1ce45cf5e6e9b51a423a.json",
+    ".runtime/compliance-control/problem-family-dispositions/a5b855818dcec4836f90de111cf9d2fbee8c8079b95c95f6399c9c256ec4a055.json",
+    ".runtime/compliance-control/problem-family-dispositions/a9905f8fa5630b372d08666a981112e9f020d28327aae817c6778ae2fec50c0f.json",
+    ".runtime/compliance-control/problem-family-dispositions/b01cc43cf9bf7d175e2bed8550c2820826b1bf3b5e338b7d26e2321959056d8c.json",
+    ".runtime/compliance-control/problem-family-dispositions/b0d79e6d7ae83230096452b9694ecbf9cdd760d0bddeb276619b6bccbfd9ad99.json",
+    ".runtime/compliance-control/problem-family-dispositions/b7a157cb555fdde49b0729764c0fe533d4040298f563de536570a1a283c72b9b.json",
+    ".runtime/compliance-control/problem-family-dispositions/be58048b222efb7bbcdb2dc9d6ac211acb307a97ff4c42585e0e220ba9c2975b.json",
+    ".runtime/compliance-control/problem-family-dispositions/c7647d2a363f8058896f84b5eb50931b63bb227afaceba62fe9adaef77396f65.json",
+    ".runtime/compliance-control/problem-family-dispositions/cc043bd6d85b5dffb0f5435d7d168d82d54a379ea39ccbcfb1ba9e9be24ea1e9.json",
+    ".runtime/compliance-control/problem-family-dispositions/d1ffd57621be8de553b23d2e56b87f013ceec72a7898326801036c29fdfb1230.json",
+    ".runtime/compliance-control/problem-family-dispositions/da7fa11a1cb6fa13a0bbef1985cf6e6833b1ee2b54d2d931c0ad69f3060abe49.json",
+    ".runtime/compliance-control/problem-family-dispositions/dcb1e8e70386888b335dc597b07abf732accf310dd5ea2042e593b63ff200d96.json",
+    ".runtime/compliance-control/problem-family-dispositions/e50e152ce4befe2c0e470edb0791bb34c645e91df39b6678161a871857113b9e.json",
+    ".runtime/compliance-control/problem-family-dispositions/ea0ea16bb62377c2f920f4a418f2267473c24f6a3ac9f5f09008699f0ca9b918.json",
+    ".runtime/compliance-control/problem-family-dispositions/f8700be13b2dbf1113e379c02a06a796c2a51a0e26f41538ab8796fd2d97abbd.json",
+    "AGENTS.md",
+    "PLATFORM-BLUEPRINT.md",
+    "apps/backend/catering-business-server/build.gradle.kts",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java",
+    "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+    "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+    "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java",
+    "apps/backend/catering-business-server/modules/store-contract/build.gradle.kts",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRolePageRequestTest.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+    "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java",
+    "apps/backend/catering-business-server/modules/workspace/src/test/java/com/catering/v2s/platform/workspace/api/WorkspaceAdministrationPageRequestTest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrap.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapper.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Brand.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandCreateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandUpdateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompany.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyCreateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyUpdateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStore.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCreateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreUpdateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContract.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCreateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractUpdateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Tenant.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantCreateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantUpdateRequest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntry.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/ContractWireMapper.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/BusinessEntityWireMapper.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/WorkspaceSessionWireMapper.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrapTest.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/contract/OperationsContractControllerScopeAndCandidateTest.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementControllerCandidateScopeTest.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileControllerTest.java",
+    "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+    "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts",
+    "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.test.tsx",
+    "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.test.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+    "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityDetailDrawer.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractDetailDrawer.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.test.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreDetailDrawer.tsx",
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/store-profile/ui/FixedStoreContractDetailDrawer.tsx",
+    "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserDetailDrawer.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+    "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/authentication.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/business-entity-management.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/contract-management.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/invitation-acceptance.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/operationsL2.ts",
+    "apps/frontend/operations-admin/src/tests/l2/organization-hierarchy.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/store-management.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts",
+    "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+    "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+    "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+    "apps/frontend/platform-admin/src/features/audit-history/index.ts",
+    "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+    "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.mjs",
+    "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.tsx",
+    "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+    "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.test.tsx",
+    "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.tsx",
+    "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+    "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.test.tsx",
+    "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.tsx",
+    "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.mjs",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.test.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.test.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.test.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+    "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+    "apps/frontend/platform-admin/src/tests/architecture/platform-administration-boundary.test.mjs",
+    "apps/frontend/platform-admin/src/tests/l2/contract-overview.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/organization-overview.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/platformL2.ts",
+    "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/workspace-overview.spec.ts",
+    "contracts/catalog/admin-catalog.json",
+    "contracts/openapi/edge.openapi.yaml",
+    "contracts/openapi/paths/platform-admin/audit-history.paths.yaml",
+    "contracts/policy/affected-l2-registry.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-design.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-problem-family.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-source-compliance-disposition.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u11-platform-audit-history-ui-ia-baseline.json",
+    "doc/review/platform/2026-07-30-v2s-harness-cost-yield-and-trim-proposal-claude.md",
+    "doc/review/platform/2026-07-31-v2s-governance-harness-trim-problem-family.json",
+    "doc/review/platform/2026-07-31-v2s-governance-harness-trim-review-claude.md",
+    "doc/review/platform/rm1p6-u11-active-package-recovery-problem-family.json",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-delivery-manifest.json",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-design.md",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-implementation-adversarial-review-round1.json",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-implementation-adversarial-review-round2.json",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-implementation-post-l2-adversarial-review-round1.json",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-implementation-post-l2-adversarial-review-round2.json",
+    "doc/review/platform/rm1p6-u11-joint-remote-l2-implementation-post-l2-author-resolution.md",
+    "doc/review/platform/2026-08-01-v2s-rm1p6-u11-joint-l2-implementation-review-request.md",
+    "doc/review/platform/rm1p6-u11-managed-invitation-bootstrap-implementation-adversarial-review-round1-input-checklist.md",
+    "doc/review/platform/rm1p6-u11-managed-invitation-bootstrap-implementation-adversarial-review-round1.json",
+    "doc/review/platform/rm1p6-u11-managed-invitation-bootstrap-implementation-adversarial-review-round2-input-checklist.md",
+    "doc/review/platform/rm1p6-u11-managed-invitation-bootstrap-implementation-adversarial-review-round2.json",
+    "doc/review/platform/rm1p6-u11-rendered-option-problem-family.json",
+    "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+    "libraries/frontend/admin-ui-foundation/src/http/wireRequestBody.ts",
+    "libraries/frontend/admin-ui-foundation/src/index.ts",
+    "project-memory/decisions/incremental-compliance-hook.md",
+    "project-memory/index.json",
+    "project-memory/index.md",
+    "project-memory/operations/dev-command-separation.md",
+    "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+    "project-memory/operations/verification-governance.md",
+    "project-memory/required-inventory.json",
+    "scripts/README.md",
+    "scripts/generate/edge-codegen.mjs",
+    "scripts/test/r5-joint-remote-l2-fixture.mjs",
+    "scripts/test/r5-joint-remote-l2.mjs",
+    "tools/compliance-control/cli.mjs",
+    "tools/project-memory/cli.mjs"
+  ],
+  "fullComplianceScan": "PASS",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "controls": [
+    {
+      "ruleId": "CR05-WC-01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-WC-02",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-HISTORICAL-RECEIPT-RECOVERY",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "dynamicEvidence": [
+    {
+      "runner": "scripts/test/r5-joint-remote-l2.mjs",
+      "suite": "PLATFORM_AND_OPERATIONS_19_SPEC_JOINT_LOCAL_L2",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "runId": "rm1p6-joint-local-l2-1785531940251-78105-88376fed",
+      "reportPath": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785531940251-78105-88376fed/evidence/terminal-report.json",
+      "reportSha256": "b098e5619f905ee8b9378248204f03ce102f0c62d72ac5f7fe98e310c8f45a23",
+      "currentSourceHashes": [
+        {
+          "path": "scripts/test/r5-joint-remote-l2.mjs",
+          "sha256": "b065b1e0a9ef0926a3cfc47785d615292b5a29fcb402038dd53e56122822742e"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
+          "sha256": "9d3766391af184586fda50cb3e66b1349d522e10c1aae96df08464b7a9576f38"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/platformL2.ts",
+          "sha256": "1b5917322a0614fa060ea1543f201ae946bb7cf3bc75e2301a1f8605be4513d2"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+          "sha256": "2bb40fe99cefe559269533eeb2b437f1eac2f9fac26a70cf62deb652a566113e"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+          "sha256": "697214696283613426deadd1c1bc0e144d8e52e77ae2d57c64afd7879cb569a4"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/authentication.spec.ts",
+          "sha256": "c7c92806dc9905d1539fb7fe1df87b242bc77cd03cc562988ee8d82450ea7a30"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+          "sha256": "6f2f2a0c7dfe78d0852c37d7ecf4fcbc34862844158cc83c5ca77b06ada9ce32"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts",
+          "sha256": "f00f1c2953cbc93a76e6746ab467e9c6432490b713c23b381d420288b7396d66"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-overview.spec.ts",
+          "sha256": "bba0fef801ebfd3c080f16c6f88e324373e8c37146b83025abbd1c0ec2869818"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/organization-overview.spec.ts",
+          "sha256": "e334ef2709411e6090a3fc4bcdae9810adb02598a2eb5541ba85509f3614d3f3"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/contract-overview.spec.ts",
+          "sha256": "aaf69563e1434b7e95d646275f881b9d6ddfd125e415dd55c729c5808d6a7dde"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts",
+          "sha256": "44fda8459cf1ffc2491ed88ca75058f4c487f3e03b5045684fa570c0e235d73e"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+          "sha256": "c89354b447f458696a15b8a3dd35441c3004bdaa546bad83fae25c80fb9ad1ce"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.tsx",
+          "sha256": "d1d02bc8173656dc63b8b1904fef8de3bc7bfe00a1617f0819b752b67bdfaff0"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
+          "sha256": "6c0866f4177806db95a56714b8f8b5ccd8611f3d0922bca30579cdd6d5a43f07"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+          "sha256": "854a82272e745e6f348f1ccde1b97d26e49a123786fdeb184fd041cd01c39a8f"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+          "sha256": "b8bae452febcc2dc1955fa621973f8ccfd04c508adafe82fa48dbeb5248af188"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts",
+          "sha256": "4a40e36891d4e08a1fa634149ada6e9698b4f2e99f87509de7b72d92684b0668"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+          "sha256": "73b24962aee5b60af678620ef9c023f7cd2e79d9995e05e14de7801dadca35c4"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.tsx",
+          "sha256": "f33757608ad8168bc78d781b1ed3a671cc0efb2624659a44699e9072c8e77703"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/operationsL2.ts",
+          "sha256": "c8095a3146c11d42fc5f60e7d6359213e4c6bcf7468ce9cb2869998e49077ea8"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/authentication.spec.ts",
+          "sha256": "910ae12b6c9f781d16df348c3f75ddf497b277eaa43057bb24f224daefdacc94"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/invitation-acceptance.spec.ts",
+          "sha256": "9db935722a9cfc1ff563c887b95ca8a407a1f827f84fc58da70d4f9a89726882"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
+          "sha256": "900f48c5a137c2f11f10d2ce4729e986863724fb1018a44af119fc08985ab6b5"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts",
+          "sha256": "30cf0a5b3ac9b73ea7c9f9e8c70aa49cb3e7e1c36775997a2255ca49197d09f7"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/organization-hierarchy.spec.ts",
+          "sha256": "c6e7711ed8aeb7374055f6dfb8ea2bd06270d74f8f7f62b0897fe7387572125d"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/business-entity-management.spec.ts",
+          "sha256": "b3fe4f24f7dedc0aea3070c3f6b5ef60b18a4c16aa90d0607deb39325867d393"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/store-management.spec.ts",
+          "sha256": "f657f559fd0b894ba5a467869f18f5fad96d3167aabfc05c4cf12e184bb3ca92"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/contract-management.spec.ts",
+          "sha256": "ba4f6f182889ca6daff5605adcf3240d6d7d488f9652adf12170a7bb0e21c7ab"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
+          "sha256": "98c91bc774b04f7983c0d4dd8e299ce800b56081bb4d54470346fe6f9ba7612b"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+          "sha256": "2dbffb0a6b80ba8bf8f4346b972b6c01f5ba3b8bc51429fd444a7b502d4cffbf"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts",
+          "sha256": "d5292f3e801eb35d96caa8e53cd744a88ed434b3d1833ade8703c2f3dfaecfda"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+          "sha256": "06af4971cf5818bd901ba3aef02b677be319e859d44af3bd133991efbf271218"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.test.tsx",
+          "sha256": "d61a74b844304859116918ea6a6fc0c1780eccedd47e65d60e1df328fef667ba"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java",
+          "sha256": "d0b600387d932467607c4c890c75e1ce22dd92f2cfb0dd93cb85490cf55ba9e6"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+          "sha256": "f6f275fec080b0c45b9f46f6fc63faf8367a52b25079ff335e2a8c6a0dc2f079"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+          "sha256": "b5d445e09700d965322b2e72814fc54c3cc3a958bb2af009715e2014f4cb1504"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileController.java",
+          "sha256": "6d06d079668edd3fcc776ee74f36fbae4fbac4b217b696fd85e836908664eae1"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java",
+          "sha256": "71fa5de4a81c24b885ed99a652167a69795f0e345783d13ea85d02f6a08e56b6"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+          "sha256": "654e4b3d9600ff582d372998ac5c2d845a8cb62607d41e0d116a5f432e8f3c29"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+          "sha256": "adc32116047a2bb344d62bc4c751d8550f03cbb1f309085084600902f86a0a40"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+          "sha256": "0dcf43bfc03ff9e1aeb93907352b7892a778903c94871a41b5e05c8075d67001"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+          "sha256": "ec7928e6a8c5c0ba84ef7abf182a75dc8df71a7162a335555fa013bbc6889a30"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/http/wireRequestBody.ts",
+          "sha256": "d07e948104e0ae6ff35f386ac53cfad5d8d0015430129558e2f59d31714fc887"
+        }
+      ],
+      "log": {
+        "path": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785531940251-78105-88376fed/evidence/commands/operations_playwright.log",
+        "sha256": "e3d5c9add17d70331631b0cc8065221e0c426810d0cf130d79abf3eaace605fd"
+      }
+    }
+  ],
+  "l2Scope": {
+    "exactSpecCount": 19,
+    "platformSpecCount": 9,
+    "operationsSpecCount": 10,
+    "executionPlane": "LOCAL_APPS_AND_PLAYWRIGHT_REMOTE_NON_PRODUCTION_MIDDLEWARE"
+  },
+  "businessBoundary": "Fresh managed local Spring Boot + two local Vite apps + local Playwright over isolated remote non-production middleware; not UAT and not a Roadmap status change."
+}

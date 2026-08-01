@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-CP-U03",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-source-compliance-disposition.json","beforeSha256":"ABSENT","afterSha256":"9cf2361899a7d1eb615f761def5b7c4aa2d7adf98750cb3ac2cf9a7414cef70c"},
+    {"path":"tools/compliance-control/cli.mjs","beforeSha256":"068d90e59bc81145f13808d03d6457adc658e29ab67a61c124297fe3ca9ad009","afterSha256":"f820a57bc398b6cc9995cd781268dc58609d5c2c383f5af7f9efd0ae24e40369"}
+  ],
+  "incrementalChecks": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-source-compliance-disposition.json","afterSha256":"9cf2361899a7d1eb615f761def5b7c4aa2d7adf98750cb3ac2cf9a7414cef70c","result":"PASS"},
+    {"path":"tools/compliance-control/cli.mjs","afterSha256":"f820a57bc398b6cc9995cd781268dc58609d5c2c383f5af7f9efd0ae24e40369","result":"PASS"}
+  ],
+  "sourceComplianceDisposition": {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-source-compliance-disposition.json","sha256":"9cf2361899a7d1eb615f761def5b7c4aa2d7adf98750cb3ac2cf9a7414cef70c"},
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "businessReason": "CP-U03 only corrects control-plane source-template derivation; it modifies no business behavior.",
+  "cleanup": "PASS",
+  "controls": [
+    {"ruleId":"P6-CP-U03-DYNAMIC_CONTROL_SOURCE_TEMPLATE","state":"ACTIVE_RED_VERIFIED","evidence":"scripts/check/remediation-compliance rm1-control-plane-source-template-self-test: CP-U01 derived anchors PASS; historical CP-U00 anchor mutation red; non-control U01 branch PASS"}
+  ]
+}

@@ -1,0 +1,35 @@
+import {expect, test} from '@playwright/test';
+import {requiredL2Env, signInPlatform, signOutPlatform} from './platformL2';
+
+test('platform administrator locates a real workspace and proves display update owner readback', async ({page}) => {
+  const workspaceName = requiredL2Env('R5_L2_PLATFORM_WORKSPACE_NAME');
+  await signInPlatform(page); await page.goto('/platform/workspaces');
+  await page.getByLabel('集团空间名称').fill(workspaceName); await page.getByTestId('platform-workspace-filter-submit').click();
+  await page.getByRole('button', {name: workspaceName, exact: true}).click();
+  await expect(page.getByText('集团空间详情')).toBeVisible();
+  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText('集团空间编码')).toBeVisible();
+  await page.getByTestId('platform-workspace-edit').click();
+  await expect(page.getByTestId('platform-workspace-edit-submit')).toBeVisible();
+  const name = page.getByTestId('platform-workspace-edit-name');
+  const operationsTitle = page.getByTestId('platform-workspace-edit-operations-title');
+  const notes = page.getByLabel('备注');
+  const currentName = await name.inputValue();
+  const currentOperationsTitle = await operationsTitle.inputValue();
+  const currentNotes = await notes.inputValue();
+  const requestPromise = page.waitForRequest((request) => request.method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+$/.test(new URL(request.url()).pathname));
+  const responsePromise = page.waitForResponse((response) => response.request().method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+$/.test(new URL(response.url()).pathname));
+  await page.getByTestId('platform-workspace-edit-submit').click();
+  const [request, response] = await Promise.all([requestPromise, responsePromise]);
+  expect(response.status()).toBe(200);
+  const body = request.postDataJSON() as {name?: string; operationsTitle?: string; notes?: string | null; logoIntent?: string; expectedVersion?: number};
+  expect(body).toMatchObject({name: currentName, operationsTitle: currentOperationsTitle, notes: currentNotes.trim() || null, logoIntent: 'KEEP'});
+  expect(body.expectedVersion).toBeGreaterThan(0);
+  expect(request.headers()['idempotency-key']).toBeTruthy();
+  const readback = await response.json() as {name?: string; operationsTitle?: string; groupWorkspaceKey?: string; version?: number};
+  expect(readback).toMatchObject({name: currentName, operationsTitle: currentOperationsTitle});
+  expect(readback.groupWorkspaceKey).toBeTruthy();
+  expect(readback.version).toBeGreaterThan(0);
+  await expect(page.getByTestId('platform-workspace-detail-drawer')).toBeVisible();
+  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(currentName, {exact: true})).toBeVisible();
+  await signOutPlatform(page);
+});

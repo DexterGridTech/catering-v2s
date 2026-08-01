@@ -1,0 +1,27 @@
+{
+  "skillUsed": "SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787",
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P0-INDEPENDENT-REVIEW-COUNTEREXAMPLE",
+  "genericProblem": "A future-phase predicate can be misclassified as a current-package failure when its temporal owner and direct red proof are not distinguished from a later aggregate.",
+  "rootCauseClass": "FUTURE_PHASE_DEADLINE_MISATTRIBUTED_TO_CURRENT_PACKAGE",
+  "finiteDenominator": [
+    "tools/verify-gates/verify.mjs#U10-affected-l2",
+    "tools/verify-gates/cli.mjs#affectedL2",
+    "scripts/check/affected-l2 --phase RM1",
+    "scripts/check/affected-l2 --phase RM2",
+    "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md#P-C3"
+  ],
+  "searchedSurfaces": ["tools/verify-gates", "scripts/check", "scripts/verify", "doc/plans/platform", "doc/review/platform"],
+  "searchQueries": ["affected-l2", "deferredUntilPhase", "RM2", "P-C3", "P2-owned aggregate"],
+  "counterexamples": [
+    {"id": "CE-RM1", "result": "Current P0 RM1 production gate passes with the declared legacy DEFERRED set."},
+    {"id": "CE-RM2", "result": "Direct phase RM2 invocation fails with R5_AFFECTED_L2_DEFERRED_EXPIRED."}
+  ],
+  "findings": [
+    {"findingId": "IR-AGGREGATE-PHASE", "classification": "REJECTED_WITH_EVIDENCE", "statement": "P2-owned aggregate defaulting to current RM1 does not invalidate P0's direct RM2-expiry red proof or require P0 scope expansion."}
+  ],
+  "preventionDispositions": [
+    {"findingId": "IR-AGGREGATE-PHASE", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "doc/evidence/platform/rm1/p0/rm1-u01-independent-implementation-review-round-1.md#Candidate aggregate finding rejected"}
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U09",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "P6-1 public authentication and recovery can only be extended safely when its observability and acceptance rules are explicit, memory-routed and mechanically admitted without falsely treating the unfinished U01 business package as a serial predecessor.",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-CP-U09",
+      "title": "P6 observability and acceptance extension admission control",
+      "sourceComplianceDispositionRequired": true,
+      "changeSurfaces": [
+        {"path": "AGENTS.md", "disposition": "update", "target": "repository-wide development and acceptance standard"},
+        {"path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md", "disposition": "create", "target": "Dexter-authorized normative observability and acceptance decision"},
+        {"path": "project-memory/kernel/05-evidence-runtime-and-git.md", "disposition": "update", "target": "routed durable standard anchor"},
+        {"path": "project-memory/required-inventory.json", "disposition": "update", "target": "memory assertion inventory"},
+        {"path": "project-memory/index.json", "disposition": "update", "target": "deterministically derived memory index"},
+        {"path": "project-memory/index.md", "disposition": "update", "target": "deterministically derived memory index"},
+        {"path": "tools/project-memory/cli.mjs", "disposition": "update", "target": "inventory-hash aware deterministic index derivation"},
+        {"path": "tools/compliance-control/cli.mjs", "disposition": "update", "target": "exact predecessor exit-hash admission and red proof"},
+        {"path": "doc/evidence/platform/rm1/p6", "disposition": "update", "target": "CP-U09 authorization, manifest, source disposition, receipts and exit"}
+      ],
+      "forbiddenPseudoFixes": [
+        "treating unfinished RM1P6-U01 as the serial predecessor",
+        "changing U01 baseline, receipt chain or business bytes",
+        "admitting runner, foundation, backend, OpenAPI, generated or migration paths before approved extension detail design names their exact files",
+        "writing project-memory index files without deterministic CLI derivation",
+        "claiming business or dynamic observability PASS from this control-plane package"
+      ],
+      "completion": "CP-U09 records exactly the Dexter-authorized normative/control scope, proves predecessor hash equality red/green, closes its own receipt and source-disposition set, then restores the original RM1P6-U01 active pointer byte-for-byte."
+    }
+  ]
+}

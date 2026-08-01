@@ -1,0 +1,501 @@
+// Generated from accepted R5 edge catalog; do not edit.
+
+import type {BaseQueryFn, EndpointBuilder, FetchArgs, FetchBaseQueryError, FetchBaseQueryMeta} from "@reduxjs/toolkit/query";
+import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest} from "./platform-edge";
+
+type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
+export type PlatformAdminOperationId = keyof FaceOperationContracts;
+export type PlatformAdminRtkWireRequest = <I extends PlatformAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs;
+
+/**
+ * Operation-shaped request constructors for RTK hooks. Consumers supply only
+ * typed path parameters and operation options; catalog id, method and path are
+ * frozen here rather than handwritten in pages.
+ */
+export const platformAdminRtkRequest = {
+    changeCurrentPlatformPassword: (pathParameters: FaceOperationContracts["changeCurrentPlatformPassword"]["path"], options: FaceOperationOptions<"changeCurrentPlatformPassword">): FaceOperationRequest<"changeCurrentPlatformPassword"> => ({
+      operationId: "changeCurrentPlatformPassword",
+      method: "POST",
+      path: "/api/platform/auth/password",
+      pathParameters,
+      ...options,
+    }),
+    completePlatformPasswordRecovery: (pathParameters: FaceOperationContracts["completePlatformPasswordRecovery"]["path"], options: FaceOperationOptions<"completePlatformPasswordRecovery">): FaceOperationRequest<"completePlatformPasswordRecovery"> => ({
+      operationId: "completePlatformPasswordRecovery",
+      method: "POST",
+      path: "/api/platform/auth/password-recovery/complete",
+      pathParameters,
+      ...options,
+    }),
+    createPlatformAdmin: (pathParameters: FaceOperationContracts["createPlatformAdmin"]["path"], options: FaceOperationOptions<"createPlatformAdmin">): FaceOperationRequest<"createPlatformAdmin"> => ({
+      operationId: "createPlatformAdmin",
+      method: "POST",
+      path: "/api/platform/admin-users",
+      pathParameters,
+      ...options,
+    }),
+    createPlatformGroupWorkspace: (pathParameters: FaceOperationContracts["createPlatformGroupWorkspace"]["path"], options: FaceOperationOptions<"createPlatformGroupWorkspace">): FaceOperationRequest<"createPlatformGroupWorkspace"> => ({
+      operationId: "createPlatformGroupWorkspace",
+      method: "POST",
+      path: "/api/platform/group-workspaces",
+      pathParameters,
+      ...options,
+    }),
+    createWorkspaceRole: (pathParameters: FaceOperationContracts["createWorkspaceRole"]["path"], options: FaceOperationOptions<"createWorkspaceRole">): FaceOperationRequest<"createWorkspaceRole"> => ({
+      operationId: "createWorkspaceRole",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
+      pathParameters,
+      ...options,
+    }),
+    getCurrentPlatformSession: (pathParameters: FaceOperationContracts["getCurrentPlatformSession"]["path"], options: FaceOperationOptions<"getCurrentPlatformSession">): FaceOperationRequest<"getCurrentPlatformSession"> => ({
+      operationId: "getCurrentPlatformSession",
+      method: "GET",
+      path: "/api/platform/auth/session",
+      pathParameters,
+      ...options,
+    }),
+    getExtensionDefinition: (pathParameters: FaceOperationContracts["getExtensionDefinition"]["path"], options: FaceOperationOptions<"getExtensionDefinition">): FaceOperationRequest<"getExtensionDefinition"> => ({
+      operationId: "getExtensionDefinition",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+      pathParameters,
+      ...options,
+    }),
+    getExtensionEntityCatalog: (pathParameters: FaceOperationContracts["getExtensionEntityCatalog"]["path"], options: FaceOperationOptions<"getExtensionEntityCatalog">): FaceOperationRequest<"getExtensionEntityCatalog"> => ({
+      operationId: "getExtensionEntityCatalog",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformAdminDetail: (pathParameters: FaceOperationContracts["getPlatformAdminDetail"]["path"], options: FaceOperationOptions<"getPlatformAdminDetail">): FaceOperationRequest<"getPlatformAdminDetail"> => ({
+      operationId: "getPlatformAdminDetail",
+      method: "GET",
+      path: "/api/platform/admin-users/{platformAdminId}",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformAdminPage: (pathParameters: FaceOperationContracts["getPlatformAdminPage"]["path"], options: FaceOperationOptions<"getPlatformAdminPage">): FaceOperationRequest<"getPlatformAdminPage"> => ({
+      operationId: "getPlatformAdminPage",
+      method: "GET",
+      path: "/api/platform/admin-users",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformContractOverviewDetail: (pathParameters: FaceOperationContracts["getPlatformContractOverviewDetail"]["path"], options: FaceOperationOptions<"getPlatformContractOverviewDetail">): FaceOperationRequest<"getPlatformContractOverviewDetail"> => ({
+      operationId: "getPlatformContractOverviewDetail",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformContractOverviewPage: (pathParameters: FaceOperationContracts["getPlatformContractOverviewPage"]["path"], options: FaceOperationOptions<"getPlatformContractOverviewPage">): FaceOperationRequest<"getPlatformContractOverviewPage"> => ({
+      operationId: "getPlatformContractOverviewPage",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformEntityAuditHistory: (pathParameters: FaceOperationContracts["getPlatformEntityAuditHistory"]["path"], options: FaceOperationOptions<"getPlatformEntityAuditHistory">): FaceOperationRequest<"getPlatformEntityAuditHistory"> => ({
+      operationId: "getPlatformEntityAuditHistory",
+      method: "GET",
+      path: "/api/platform/audit-history",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformGroupWorkspaceDetail: (pathParameters: FaceOperationContracts["getPlatformGroupWorkspaceDetail"]["path"], options: FaceOperationOptions<"getPlatformGroupWorkspaceDetail">): FaceOperationRequest<"getPlatformGroupWorkspaceDetail"> => ({
+      operationId: "getPlatformGroupWorkspaceDetail",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformOrganizationHierarchyTree: (pathParameters: FaceOperationContracts["getPlatformOrganizationHierarchyTree"]["path"], options: FaceOperationOptions<"getPlatformOrganizationHierarchyTree">): FaceOperationRequest<"getPlatformOrganizationHierarchyTree"> => ({
+      operationId: "getPlatformOrganizationHierarchyTree",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformOrganizationOverviewDetail: (pathParameters: FaceOperationContracts["getPlatformOrganizationOverviewDetail"]["path"], options: FaceOperationOptions<"getPlatformOrganizationOverviewDetail">): FaceOperationRequest<"getPlatformOrganizationOverviewDetail"> => ({
+      operationId: "getPlatformOrganizationOverviewDetail",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}",
+      pathParameters,
+      ...options,
+    }),
+    getPlatformOrganizationOverviewPage: (pathParameters: FaceOperationContracts["getPlatformOrganizationOverviewPage"]["path"], options: FaceOperationOptions<"getPlatformOrganizationOverviewPage">): FaceOperationRequest<"getPlatformOrganizationOverviewPage"> => ({
+      operationId: "getPlatformOrganizationOverviewPage",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview",
+      pathParameters,
+      ...options,
+    }),
+    getWorkspaceAccount: (pathParameters: FaceOperationContracts["getWorkspaceAccount"]["path"], options: FaceOperationOptions<"getWorkspaceAccount">): FaceOperationRequest<"getWorkspaceAccount"> => ({
+      operationId: "getWorkspaceAccount",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getWorkspaceAccounts: (pathParameters: FaceOperationContracts["getWorkspaceAccounts"]["path"], options: FaceOperationOptions<"getWorkspaceAccounts">): FaceOperationRequest<"getWorkspaceAccounts"> => ({
+      operationId: "getWorkspaceAccounts",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts",
+      pathParameters,
+      ...options,
+    }),
+    getWorkspaceRole: (pathParameters: FaceOperationContracts["getWorkspaceRole"]["path"], options: FaceOperationOptions<"getWorkspaceRole">): FaceOperationRequest<"getWorkspaceRole"> => ({
+      operationId: "getWorkspaceRole",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
+      pathParameters,
+      ...options,
+    }),
+    getWorkspaceRoles: (pathParameters: FaceOperationContracts["getWorkspaceRoles"]["path"], options: FaceOperationOptions<"getWorkspaceRoles">): FaceOperationRequest<"getWorkspaceRoles"> => ({
+      operationId: "getWorkspaceRoles",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
+      pathParameters,
+      ...options,
+    }),
+    initializeCommercialGroup: (pathParameters: FaceOperationContracts["initializeCommercialGroup"]["path"], options: FaceOperationOptions<"initializeCommercialGroup">): FaceOperationRequest<"initializeCommercialGroup"> => ({
+      operationId: "initializeCommercialGroup",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
+      pathParameters,
+      ...options,
+    }),
+    listPlatformGroupWorkspaces: (pathParameters: FaceOperationContracts["listPlatformGroupWorkspaces"]["path"], options: FaceOperationOptions<"listPlatformGroupWorkspaces">): FaceOperationRequest<"listPlatformGroupWorkspaces"> => ({
+      operationId: "listPlatformGroupWorkspaces",
+      method: "GET",
+      path: "/api/platform/group-workspaces",
+      pathParameters,
+      ...options,
+    }),
+    platformLogout: (pathParameters: FaceOperationContracts["platformLogout"]["path"], options: FaceOperationOptions<"platformLogout">): FaceOperationRequest<"platformLogout"> => ({
+      operationId: "platformLogout",
+      method: "POST",
+      path: "/api/platform/auth/logout",
+      pathParameters,
+      ...options,
+    }),
+    platformPasswordLogin: (pathParameters: FaceOperationContracts["platformPasswordLogin"]["path"], options: FaceOperationOptions<"platformPasswordLogin">): FaceOperationRequest<"platformPasswordLogin"> => ({
+      operationId: "platformPasswordLogin",
+      method: "POST",
+      path: "/api/platform/auth/password-login",
+      pathParameters,
+      ...options,
+    }),
+    releasePlatformStagedAsset: (pathParameters: FaceOperationContracts["releasePlatformStagedAsset"]["path"], options: FaceOperationOptions<"releasePlatformStagedAsset">): FaceOperationRequest<"releasePlatformStagedAsset"> => ({
+      operationId: "releasePlatformStagedAsset",
+      method: "POST",
+      path: "/api/platform/assets/staging/{assetRef}/release",
+      pathParameters,
+      ...options,
+    }),
+    replaceExtensionDefinition: (pathParameters: FaceOperationContracts["replaceExtensionDefinition"]["path"], options: FaceOperationOptions<"replaceExtensionDefinition">): FaceOperationRequest<"replaceExtensionDefinition"> => ({
+      operationId: "replaceExtensionDefinition",
+      method: "PUT",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+      pathParameters,
+      ...options,
+    }),
+    requestWorkspaceCredentialReset: (pathParameters: FaceOperationContracts["requestWorkspaceCredentialReset"]["path"], options: FaceOperationOptions<"requestWorkspaceCredentialReset">): FaceOperationRequest<"requestWorkspaceCredentialReset"> => ({
+      operationId: "requestWorkspaceCredentialReset",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
+      pathParameters,
+      ...options,
+    }),
+    resetPlatformAdminCredential: (pathParameters: FaceOperationContracts["resetPlatformAdminCredential"]["path"], options: FaceOperationOptions<"resetPlatformAdminCredential">): FaceOperationRequest<"resetPlatformAdminCredential"> => ({
+      operationId: "resetPlatformAdminCredential",
+      method: "POST",
+      path: "/api/platform/admin-users/{platformAdminId}/credential-reset",
+      pathParameters,
+      ...options,
+    }),
+    revokePlatformWorkspaceAssignment: (pathParameters: FaceOperationContracts["revokePlatformWorkspaceAssignment"]["path"], options: FaceOperationOptions<"revokePlatformWorkspaceAssignment">): FaceOperationRequest<"revokePlatformWorkspaceAssignment"> => ({
+      operationId: "revokePlatformWorkspaceAssignment",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    sendPlatformLoginOtp: (pathParameters: FaceOperationContracts["sendPlatformLoginOtp"]["path"], options: FaceOperationOptions<"sendPlatformLoginOtp">): FaceOperationRequest<"sendPlatformLoginOtp"> => ({
+      operationId: "sendPlatformLoginOtp",
+      method: "POST",
+      path: "/api/platform/auth/login-otp/send",
+      pathParameters,
+      ...options,
+    }),
+    sendPlatformPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["sendPlatformPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"sendPlatformPasswordRecoveryOtp">): FaceOperationRequest<"sendPlatformPasswordRecoveryOtp"> => ({
+      operationId: "sendPlatformPasswordRecoveryOtp",
+      method: "POST",
+      path: "/api/platform/auth/password-recovery/otp/send",
+      pathParameters,
+      ...options,
+    }),
+    stagePlatformAsset: (pathParameters: FaceOperationContracts["stagePlatformAsset"]["path"], options: FaceOperationOptions<"stagePlatformAsset">): FaceOperationRequest<"stagePlatformAsset"> => ({
+      operationId: "stagePlatformAsset",
+      method: "POST",
+      path: "/api/platform/assets/staging",
+      pathParameters,
+      ...options,
+    }),
+    startPlatformPasswordRecovery: (pathParameters: FaceOperationContracts["startPlatformPasswordRecovery"]["path"], options: FaceOperationOptions<"startPlatformPasswordRecovery">): FaceOperationRequest<"startPlatformPasswordRecovery"> => ({
+      operationId: "startPlatformPasswordRecovery",
+      method: "POST",
+      path: "/api/platform/auth/password-recovery/start",
+      pathParameters,
+      ...options,
+    }),
+    transitionPlatformAdminStatus: (pathParameters: FaceOperationContracts["transitionPlatformAdminStatus"]["path"], options: FaceOperationOptions<"transitionPlatformAdminStatus">): FaceOperationRequest<"transitionPlatformAdminStatus"> => ({
+      operationId: "transitionPlatformAdminStatus",
+      method: "POST",
+      path: "/api/platform/admin-users/{platformAdminId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionPlatformGroupWorkspaceStatus: (pathParameters: FaceOperationContracts["transitionPlatformGroupWorkspaceStatus"]["path"], options: FaceOperationOptions<"transitionPlatformGroupWorkspaceStatus">): FaceOperationRequest<"transitionPlatformGroupWorkspaceStatus"> => ({
+      operationId: "transitionPlatformGroupWorkspaceStatus",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionWorkspaceAccountStatus: (pathParameters: FaceOperationContracts["transitionWorkspaceAccountStatus"]["path"], options: FaceOperationOptions<"transitionWorkspaceAccountStatus">): FaceOperationRequest<"transitionWorkspaceAccountStatus"> => ({
+      operationId: "transitionWorkspaceAccountStatus",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionWorkspaceRoleStatus: (pathParameters: FaceOperationContracts["transitionWorkspaceRoleStatus"]["path"], options: FaceOperationOptions<"transitionWorkspaceRoleStatus">): FaceOperationRequest<"transitionWorkspaceRoleStatus"> => ({
+      operationId: "transitionWorkspaceRoleStatus",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
+      pathParameters,
+      ...options,
+    }),
+    updatePlatformAdminProfile: (pathParameters: FaceOperationContracts["updatePlatformAdminProfile"]["path"], options: FaceOperationOptions<"updatePlatformAdminProfile">): FaceOperationRequest<"updatePlatformAdminProfile"> => ({
+      operationId: "updatePlatformAdminProfile",
+      method: "PATCH",
+      path: "/api/platform/admin-users/{platformAdminId}/profile",
+      pathParameters,
+      ...options,
+    }),
+    updatePlatformGroupWorkspaceDisplay: (pathParameters: FaceOperationContracts["updatePlatformGroupWorkspaceDisplay"]["path"], options: FaceOperationOptions<"updatePlatformGroupWorkspaceDisplay">): FaceOperationRequest<"updatePlatformGroupWorkspaceDisplay"> => ({
+      operationId: "updatePlatformGroupWorkspaceDisplay",
+      method: "PATCH",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}",
+      pathParameters,
+      ...options,
+    }),
+    updateWorkspaceRole: (pathParameters: FaceOperationContracts["updateWorkspaceRole"]["path"], options: FaceOperationOptions<"updateWorkspaceRole">): FaceOperationRequest<"updateWorkspaceRole"> => ({
+      operationId: "updateWorkspaceRole",
+      method: "PATCH",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
+      pathParameters,
+      ...options,
+    }),
+    verifyPlatformLoginOtp: (pathParameters: FaceOperationContracts["verifyPlatformLoginOtp"]["path"], options: FaceOperationOptions<"verifyPlatformLoginOtp">): FaceOperationRequest<"verifyPlatformLoginOtp"> => ({
+      operationId: "verifyPlatformLoginOtp",
+      method: "POST",
+      path: "/api/platform/auth/login-otp/verify",
+      pathParameters,
+      ...options,
+    }),
+    verifyPlatformPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["verifyPlatformPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"verifyPlatformPasswordRecoveryOtp">): FaceOperationRequest<"verifyPlatformPasswordRecoveryOtp"> => ({
+      operationId: "verifyPlatformPasswordRecoveryOtp",
+      method: "POST",
+      path: "/api/platform/auth/password-recovery/otp/verify",
+      pathParameters,
+      ...options,
+    })
+} as const;
+
+/**
+ * Operation-shaped RTK definitions generated from the face catalog.  The app
+ * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.
+ */
+export function createPlatformAdminRtkEndpoints(
+  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,
+  toWireRequest: PlatformAdminRtkWireRequest,
+) {
+  return {
+    changeCurrentPlatformPassword: build.mutation<FaceOperationContracts["changeCurrentPlatformPassword"]["response"], FaceOperationRequest<"changeCurrentPlatformPassword">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    completePlatformPasswordRecovery: build.mutation<FaceOperationContracts["completePlatformPasswordRecovery"]["response"], FaceOperationRequest<"completePlatformPasswordRecovery">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createPlatformAdmin: build.mutation<FaceOperationContracts["createPlatformAdmin"]["response"], FaceOperationRequest<"createPlatformAdmin">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createPlatformGroupWorkspace: build.mutation<FaceOperationContracts["createPlatformGroupWorkspace"]["response"], FaceOperationRequest<"createPlatformGroupWorkspace">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createWorkspaceRole: build.mutation<FaceOperationContracts["createWorkspaceRole"]["response"], FaceOperationRequest<"createWorkspaceRole">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getCurrentPlatformSession: build.query<FaceOperationContracts["getCurrentPlatformSession"]["response"], FaceOperationRequest<"getCurrentPlatformSession">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getExtensionDefinition: build.query<FaceOperationContracts["getExtensionDefinition"]["response"], FaceOperationRequest<"getExtensionDefinition">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getExtensionEntityCatalog: build.query<FaceOperationContracts["getExtensionEntityCatalog"]["response"], FaceOperationRequest<"getExtensionEntityCatalog">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformAdminDetail: build.query<FaceOperationContracts["getPlatformAdminDetail"]["response"], FaceOperationRequest<"getPlatformAdminDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformAdminPage: build.query<FaceOperationContracts["getPlatformAdminPage"]["response"], FaceOperationRequest<"getPlatformAdminPage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformContractOverviewDetail: build.query<FaceOperationContracts["getPlatformContractOverviewDetail"]["response"], FaceOperationRequest<"getPlatformContractOverviewDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformContractOverviewPage: build.query<FaceOperationContracts["getPlatformContractOverviewPage"]["response"], FaceOperationRequest<"getPlatformContractOverviewPage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformEntityAuditHistory: build.query<FaceOperationContracts["getPlatformEntityAuditHistory"]["response"], FaceOperationRequest<"getPlatformEntityAuditHistory">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformGroupWorkspaceDetail: build.query<FaceOperationContracts["getPlatformGroupWorkspaceDetail"]["response"], FaceOperationRequest<"getPlatformGroupWorkspaceDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformOrganizationHierarchyTree: build.query<FaceOperationContracts["getPlatformOrganizationHierarchyTree"]["response"], FaceOperationRequest<"getPlatformOrganizationHierarchyTree">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformOrganizationOverviewDetail: build.query<FaceOperationContracts["getPlatformOrganizationOverviewDetail"]["response"], FaceOperationRequest<"getPlatformOrganizationOverviewDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformOrganizationOverviewPage: build.query<FaceOperationContracts["getPlatformOrganizationOverviewPage"]["response"], FaceOperationRequest<"getPlatformOrganizationOverviewPage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getWorkspaceAccount: build.query<FaceOperationContracts["getWorkspaceAccount"]["response"], FaceOperationRequest<"getWorkspaceAccount">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getWorkspaceAccounts: build.query<FaceOperationContracts["getWorkspaceAccounts"]["response"], FaceOperationRequest<"getWorkspaceAccounts">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getWorkspaceRole: build.query<FaceOperationContracts["getWorkspaceRole"]["response"], FaceOperationRequest<"getWorkspaceRole">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getWorkspaceRoles: build.query<FaceOperationContracts["getWorkspaceRoles"]["response"], FaceOperationRequest<"getWorkspaceRoles">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    initializeCommercialGroup: build.mutation<FaceOperationContracts["initializeCommercialGroup"]["response"], FaceOperationRequest<"initializeCommercialGroup">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    listPlatformGroupWorkspaces: build.query<FaceOperationContracts["listPlatformGroupWorkspaces"]["response"], FaceOperationRequest<"listPlatformGroupWorkspaces">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    platformLogout: build.mutation<FaceOperationContracts["platformLogout"]["response"], FaceOperationRequest<"platformLogout">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    platformPasswordLogin: build.mutation<FaceOperationContracts["platformPasswordLogin"]["response"], FaceOperationRequest<"platformPasswordLogin">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    releasePlatformStagedAsset: build.mutation<FaceOperationContracts["releasePlatformStagedAsset"]["response"], FaceOperationRequest<"releasePlatformStagedAsset">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    replaceExtensionDefinition: build.mutation<FaceOperationContracts["replaceExtensionDefinition"]["response"], FaceOperationRequest<"replaceExtensionDefinition">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    requestWorkspaceCredentialReset: build.mutation<FaceOperationContracts["requestWorkspaceCredentialReset"]["response"], FaceOperationRequest<"requestWorkspaceCredentialReset">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    resetPlatformAdminCredential: build.mutation<FaceOperationContracts["resetPlatformAdminCredential"]["response"], FaceOperationRequest<"resetPlatformAdminCredential">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    revokePlatformWorkspaceAssignment: build.mutation<FaceOperationContracts["revokePlatformWorkspaceAssignment"]["response"], FaceOperationRequest<"revokePlatformWorkspaceAssignment">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    sendPlatformLoginOtp: build.mutation<FaceOperationContracts["sendPlatformLoginOtp"]["response"], FaceOperationRequest<"sendPlatformLoginOtp">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    sendPlatformPasswordRecoveryOtp: build.mutation<FaceOperationContracts["sendPlatformPasswordRecoveryOtp"]["response"], FaceOperationRequest<"sendPlatformPasswordRecoveryOtp">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    stagePlatformAsset: build.mutation<FaceOperationContracts["stagePlatformAsset"]["response"], FaceOperationRequest<"stagePlatformAsset">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    startPlatformPasswordRecovery: build.mutation<FaceOperationContracts["startPlatformPasswordRecovery"]["response"], FaceOperationRequest<"startPlatformPasswordRecovery">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionPlatformAdminStatus: build.mutation<FaceOperationContracts["transitionPlatformAdminStatus"]["response"], FaceOperationRequest<"transitionPlatformAdminStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionPlatformGroupWorkspaceStatus: build.mutation<FaceOperationContracts["transitionPlatformGroupWorkspaceStatus"]["response"], FaceOperationRequest<"transitionPlatformGroupWorkspaceStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionWorkspaceAccountStatus: build.mutation<FaceOperationContracts["transitionWorkspaceAccountStatus"]["response"], FaceOperationRequest<"transitionWorkspaceAccountStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    transitionWorkspaceRoleStatus: build.mutation<FaceOperationContracts["transitionWorkspaceRoleStatus"]["response"], FaceOperationRequest<"transitionWorkspaceRoleStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updatePlatformAdminProfile: build.mutation<FaceOperationContracts["updatePlatformAdminProfile"]["response"], FaceOperationRequest<"updatePlatformAdminProfile">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updatePlatformGroupWorkspaceDisplay: build.mutation<FaceOperationContracts["updatePlatformGroupWorkspaceDisplay"]["response"], FaceOperationRequest<"updatePlatformGroupWorkspaceDisplay">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updateWorkspaceRole: build.mutation<FaceOperationContracts["updateWorkspaceRole"]["response"], FaceOperationRequest<"updateWorkspaceRole">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    verifyPlatformLoginOtp: build.mutation<FaceOperationContracts["verifyPlatformLoginOtp"]["response"], FaceOperationRequest<"verifyPlatformLoginOtp">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    verifyPlatformPasswordRecoveryOtp: build.mutation<FaceOperationContracts["verifyPlatformPasswordRecoveryOtp"]["response"], FaceOperationRequest<"verifyPlatformPasswordRecoveryOtp">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    })
+  };
+}

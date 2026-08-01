@@ -1,0 +1,64 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "R3-WHOLE-SCOPE-IMPLEMENTATION-DESIGN",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "GO",
+  "manifestSha256": "3e6369d401e279f3beeeda7650f93062421b6b9bbc12e9484ad5ae5ed8ac9994",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["product-scope", "external-precondition", "owner-transaction", "schema", "contract-face", "ui-user-task", "heritage", "evidence" ]
+  },
+  "expectedBehavior": [
+    "C-01 initializes exactly one independently named and coded commercial group in an existing empty group workspace.",
+    "The implementation uses a deployment-controlled platform access context and never creates an account or workspace as a C-01 side effect.",
+    "Platform-admin follows the accepted list-detail-drawer-readback interaction; operations-admin remains a separate non-business app boundary.",
+    "Gate 0 precedes all business source, and later evidence is proxy-mediated, owner-backed and cleanup-separated."
+  ],
+  "findings": [
+    {
+      "id": "R3-N-001",
+      "severity": "N",
+      "status": "OPEN",
+      "unitIds": ["R3-U02", "R3-U07"],
+      "title": "部署期外部前提必须以可执行且 fail-closed 的 run input 出现",
+      "evidence": "C-01 card §3 declares platform identity/access and existing group workspace as deployment-controlled facts; whole-scope design §1.4 and U02/U07 require a signed context plus explicit run manifest, but no implementation exists yet.",
+      "risk": "If a later runner silently creates a default account/workspace or accepts unverified headers, it would fabricate the approved actor precondition and invalidate C-01 business evidence.",
+      "disposition": "Retain as a Claude review focus and implementation acceptance criterion; do not invent credential UI, seed, root or test-only product route."
+    },
+    {
+      "id": "R3-N-002",
+      "severity": "N",
+      "status": "OPEN",
+      "unitIds": ["R3-U05"],
+      "title": "C-01 前端来源尚未进入 Heritage registry，未来搬运前必须冻结",
+      "evidence": "C-01 interaction §3 marks the three workspace-management sources PENDING_HERITAGE_REGISTRATION; carry-over-first §3-4 requires registry/frozen disposition before implementation carry.",
+      "risk": "Copying or importing unregistered all-v2 source could hide source drift and transfer old contract/auth/scope assumptions.",
+      "disposition": "U05 begins with hash recheck and registry/frozen handling; until then source serves only the already accepted static visual baseline."
+    }
+  ],
+  "unitVerdicts": [
+    {"id": "R3-U01", "verdict": "GO", "findingIds": []},
+    {"id": "R3-U02", "verdict": "GO_WITH_N", "findingIds": ["R3-N-001"]},
+    {"id": "R3-U03", "verdict": "GO", "findingIds": []},
+    {"id": "R3-U04", "verdict": "GO", "findingIds": []},
+    {"id": "R3-U05", "verdict": "GO_WITH_N", "findingIds": ["R3-N-002"]},
+    {"id": "R3-U06", "verdict": "GO", "findingIds": []},
+    {"id": "R3-U07", "verdict": "GO_WITH_N", "findingIds": ["R3-N-001"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The plan begins with the approved system-provider task and preserves the empty-workspace and no-downstream-facts business semantics rather than treating initialization as generic CRUD.",
+    "simplerAlternativeAssessment": "A C-01-only plan would leave core R3 implementation decisions to coding; copying all-v2 or adding operations login would both violate current decisions. A single C-01 plus R3-TECH chain is the smaller complete alternative.",
+    "costFit": "Seven serial units keep the work bounded to one Journey and only the R3 minimum gate set; full R4 verification and all deferred business Journeys remain outside this plan.",
+    "verdict": "REASONABLE"
+  },
+  "conclusion": {
+    "verdict": "GO",
+    "summary": "Whole-R3 detail design is ready for independent Claude review with no M/S finding. Two N items are explicit implementation acceptance constraints, not hidden product scope.",
+    "severityCounts": {"M": 0, "S": 0, "N": 2},
+    "authorizationBoundary": "This review approves only a proposed design packet for Claude/Dexter review. It does not authorize implementation, app/contract/database writes, runtime, seed/reset or Git."
+  }
+}

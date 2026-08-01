@@ -1,0 +1,19 @@
+{
+  "schemaVersion":1,
+  "kind":"source-compliance-disposition",
+  "packageId":"RM1P6-U01-OBSERVABILITY-EXTENSION",
+  "status":"DESIGN_REVIEW_PENDING",
+  "rows":[
+    {"denominator":"PROJECT_MEMORY_ROUTE_EXACT_SET","sourcePath":"project-memory/kernel/05-evidence-runtime-and-git.md","anchor":"OBSERVABILITY_REQUIRED_FOR_ACCEPTANCE,RUN_SCOPED_LOG_READ_REQUIRED,OUT_OF_SCOPE_OBSERVABILITY_REPAIR_NO_EXTRA_AUTH","applicability":"APPLICABLE","missingEntryFails":true},
+    {"denominator":"ORIGINAL_BUSINESS_REQUIREMENT","sourcePath":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md","anchor":"## 3. P6-1：公开入口、认证恢复与品牌事实","applicability":"APPLICABLE","missingEntryFails":true},
+    {"denominator":"FROZEN_LOGGING_STANDARD","sourcePath":"doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md","anchor":"# 长期约束","applicability":"APPLICABLE","missingEntryFails":true},
+    {"denominator":"P6_OWNER_AND_EDGE_SOURCE_SET","sourcePath":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-manifest.json","anchor":"sourceSets.edge + fixedOperationIds","applicability":"APPLICABLE","missingEntryFails":true},
+    {"denominator":"RUNNER_SOURCE_SET","sourcePath":"scripts/test/r5-remote-testcontainers.mjs","anchor":"remote lifecycle and result collection","applicability":"APPLICABLE","missingEntryFails":true},
+    {"denominator":"CONTRACT_ROOT_PROJECTION_SET","sourcePath":"contracts/openapi/edge.openapi.yaml","anchor":"operations workspace user root refs","applicability":"APPLICABLE","missingEntryFails":true},
+    {"denominator":"DUE_STANDARDS_RULE_IDS","sourcePath":"contracts/policy/standards-coverage-matrix.json","anchor":"phase R5","applicability":"APPLICABLE","missingEntryFails":true}
+  ],
+  "notApplicable":[
+    {"denominator":"FRONTEND_UI_IMPLEMENTATION","reason":"No UI, frontend foundation or generated consumer bytes are admitted."},
+    {"denominator":"DATABASE_BUSINESS_MIGRATION","reason":"Diagnostics add no business fact, schema or migration."}
+  ]
+}

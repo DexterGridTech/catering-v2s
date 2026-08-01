@@ -1,0 +1,9 @@
+package com.catering.v2s.organization.api;
+
+public enum OrganizationProblem {
+    COMMERCIAL_GROUP_ALREADY_INITIALIZED,
+    COMMERCIAL_GROUP_NOT_INITIALIZED,
+    COMMERCIAL_GROUP_REQUIRED,
+    IDEMPOTENCY_CONFLICT,
+    VALIDATION_FAILED
+}

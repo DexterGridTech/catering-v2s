@@ -14,9 +14,11 @@ OpenAPI extension `x-consumer-faces` 是 operation 暴露面的单一真相。`p
 
 模块 owner 独占事实写入与最终授权复核。Flyway 是唯一 schema history；DEV start/restart 只做 additive migration，绝不 seed。reset 和 seed 必须是单独、显式、可审计的破坏性动作。
 
+环境执行面固定为三类：**DEV** 在本机启动 Spring Boot 与两个管理端 Web，通过受管 tunnel 使用远端非生产中间件；**当前受管浏览器 L2** 复用本机执行面，但每次必须隔离远端数据库/资产命名空间并分别证明业务与本机/远端 cleanup；**后续 UAT** 仅在获得单独授权后全量远端部署、远端执行。远端 Testcontainers 只是 JVM 与 Docker 同平面的技术验证，不替代任一浏览器 L2 或 UAT。
+
 ## AI-first 与证据
 
-仓内 `AGENTS.md`、五个 project skills、确定性 `project-memory`、只推荐不注入的 hooks，以及 provider-free 的 `rg`/源码回读构成最小执行底座。每个步骤必须有可失败的 clean/red gate、业务与 cleanup 分离的证据，以及明确的授权边界。
+仓内 `AGENTS.md`、`.agents/skills/` 当前目录派生的 project-skill inventory、确定性 `project-memory`、只推荐不注入的 hooks，以及 provider-free 的 `rg`/源码回读构成最小执行底座。每个步骤必须有可失败的 clean/red gate、业务与 cleanup 分离的证据，以及明确的授权边界。
 
 ## Heritage
 

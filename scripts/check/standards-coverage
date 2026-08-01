@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import childProcess from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -281,6 +282,81 @@ function validateCoverage({
   }
   return true;
 }
+
+function activeRefDenominator(matrix) {
+  const refs = new Map();
+  for (const rule of matrix.rules || []) {
+    const enforcement = rule.enforcement;
+    if (!enforcement || enforcement.status !== "ACTIVE" || enforcement.kind === "UNENFORCEABLE_BY_MACHINE") continue;
+    const existing = refs.get(enforcement.ref) || {ref: enforcement.ref, kinds: new Set(), ruleIds: []};
+    existing.kinds.add(enforcement.kind);
+    existing.ruleIds.push(rule.ruleId);
+    refs.set(enforcement.ref, existing);
+  }
+  return [...refs.values()].map((entry) => ({...entry, kinds: [...entry.kinds].sort(), ruleIds: entry.ruleIds.sort()})).sort((left, right) => left.ref.localeCompare(right.ref));
+}
+
+function readExecutionCatalog(root, catalogPath) {
+  const absolute = path.join(root, catalogPath);
+  if (!fs.existsSync(absolute)) fail(`ENFORCEMENT_CATALOG_MISSING:${catalogPath}`);
+  try { return JSON.parse(fs.readFileSync(absolute, "utf8")); } catch { fail(`ENFORCEMENT_CATALOG_INVALID:${catalogPath}`); }
+}
+
+function validateExecutionCatalog({root, matrix, catalogPath = "contracts/policy/standards-enforcement-execution-catalog.json"}) {
+  const catalog = readExecutionCatalog(root, catalogPath);
+  if (catalog.schemaVersion !== 1 || catalog.kind !== "standards-enforcement-execution-catalog" || !Array.isArray(catalog.entries)) fail("ENFORCEMENT_CATALOG_INVALID");
+  const expected = activeRefDenominator(matrix);
+  const byRef = new Map();
+  for (const entry of catalog.entries) {
+    if (!entry || typeof entry.ref !== "string" || byRef.has(entry.ref) || !Array.isArray(entry.command) || entry.command.length === 0 || entry.command.some((part) => typeof part !== "string" || part.length === 0) || !Array.isArray(entry.successMarkers) || entry.successMarkers.length === 0 || entry.successMarkers.some((marker) => typeof marker !== "string" || marker.length === 0) || !Array.isArray(entry.dependencies) || entry.dependencies.length === 0) fail(`ENFORCEMENT_CATALOG_ENTRY_INVALID:${entry?.ref || "UNSET"}`);
+    byRef.set(entry.ref, entry);
+  }
+  const expectedRefs = expected.map((entry) => entry.ref);
+  if (byRef.size !== expectedRefs.length || expectedRefs.some((ref) => !byRef.has(ref))) fail("ENFORCEMENT_CATALOG_SET_MISMATCH");
+  for (const entry of byRef.values()) {
+    const seen = new Set();
+    for (const dependency of entry.dependencies) {
+      if (!dependency || typeof dependency.path !== "string" || typeof dependency.sha256 !== "string" || seen.has(dependency.path)) fail(`ENFORCEMENT_DEPENDENCY_INVALID:${entry.ref}`);
+      seen.add(dependency.path);
+      const absolute = path.join(root, dependency.path);
+      if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile() || sha256(fs.readFileSync(absolute)) !== dependency.sha256) fail(`ENFORCEMENT_DEPENDENCY_HASH_DRIFT:${entry.ref}:${dependency.path}`);
+    }
+  }
+  return {entries: expected.map((entry) => byRef.get(entry.ref))};
+}
+
+function requestedEntries(entries, refs) {
+  if (refs === undefined) return entries;
+  if (!Array.isArray(refs) || refs.length === 0) fail("ENFORCEMENT_REQUESTED_REF_SET_INVALID");
+  const byRef = new Map(entries.map((entry) => [entry.ref, entry]));
+  const selected = [];
+  const seen = new Set();
+  for (const ref of refs) {
+    if (typeof ref !== "string" || ref.length === 0 || seen.has(ref)) fail("ENFORCEMENT_REQUESTED_REF_SET_INVALID");
+    const entry = byRef.get(ref);
+    if (!entry) fail(`ENFORCEMENT_REQUESTED_REF_UNKNOWN:${ref}`);
+    seen.add(ref);
+    selected.push(entry);
+  }
+  return selected;
+}
+
+function executeActive({root, matrix, catalogPath, refs}) {
+  const {entries} = validateExecutionCatalog({root, matrix, catalogPath});
+  const selected = requestedEntries(entries, refs);
+  for (const entry of selected) {
+    const [command, ...args] = entry.command;
+    const executable = command.includes("/") ? path.join(root, command) : command;
+    const result = childProcess.spawnSync(executable, args, {cwd: root, encoding: "utf8", timeout: 120000});
+    const output = `${result.stdout || ""}\n${result.stderr || ""}`;
+    if (result.status !== 0) {
+      process.stderr.write(output);
+      fail(`ENFORCEMENT_EXIT_NONZERO:${entry.ref}`);
+    }
+    for (const marker of entry.successMarkers) if (!output.includes(marker)) fail(`ENFORCEMENT_MARKER_MISSING:${entry.ref}:${marker}`);
+  }
+  return selected.map((entry) => entry.ref);
+}
 function writeFixture(root) {
   fs.mkdirSync(path.join(root, "contracts/policy"), { recursive: true });
   fs.mkdirSync(path.join(root, "doc/plans/platform"), { recursive: true });
@@ -433,6 +509,24 @@ function selfTest() {
     expectFailure("REVIEW_CHECKLIST_REF_MISSING", () =>
       validateCoverage({ root, matrix: missingChecklist, phase: "R2" }),
     );
+
+    const gate = path.join(root, "scripts/check/existing-gate");
+    fs.writeFileSync(gate, "#!/bin/sh\necho FIXTURE_GATE=PASS\n");
+    fs.chmodSync(gate, 0o755);
+    const catalog = {schemaVersion: 1, kind: "standards-enforcement-execution-catalog", entries: [{ref: "scripts/check/existing-gate", command: ["scripts/check/existing-gate"], successMarkers: ["FIXTURE_GATE=PASS"], dependencies: [{path: "scripts/check/existing-gate", sha256: sha256(fs.readFileSync(gate))}]}]};
+    const catalogPath = "contracts/policy/standards-enforcement-execution-catalog.json";
+    fs.writeFileSync(path.join(root, catalogPath), `${JSON.stringify(catalog, null, 2)}\n`);
+    assert.deepEqual(executeActive({root, matrix, catalogPath}), ["scripts/check/existing-gate"]);
+    expectFailure("ENFORCEMENT_REQUESTED_REF_UNKNOWN:scripts/check/unknown-gate", () => executeActive({root, matrix, catalogPath, refs: ["scripts/check/unknown-gate"]}));
+    fs.writeFileSync(gate, "#!/bin/sh\nexit 0\n");
+    expectFailure("ENFORCEMENT_DEPENDENCY_HASH_DRIFT:scripts/check/existing-gate", () => executeActive({root, matrix, catalogPath}));
+    catalog.entries[0].dependencies[0].sha256 = sha256(fs.readFileSync(gate));
+    fs.writeFileSync(path.join(root, catalogPath), `${JSON.stringify(catalog, null, 2)}\n`);
+    expectFailure("ENFORCEMENT_MARKER_MISSING:scripts/check/existing-gate:FIXTURE_GATE=PASS", () => executeActive({root, matrix, catalogPath}));
+    fs.writeFileSync(gate, "#!/bin/sh\nexit 7\n");
+    catalog.entries[0].dependencies[0].sha256 = sha256(fs.readFileSync(gate));
+    fs.writeFileSync(path.join(root, catalogPath), `${JSON.stringify(catalog, null, 2)}\n`);
+    expectFailure("ENFORCEMENT_EXIT_NONZERO:scripts/check/existing-gate", () => executeActive({root, matrix, catalogPath}));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -449,6 +543,14 @@ function optionValue(name, fallback) {
   return process.argv[index + 1];
 }
 
+function optionRefs(name) {
+  const raw = optionValue(name, undefined);
+  if (raw === undefined) return undefined;
+  const refs = raw.split(",");
+  if (refs.some((ref) => ref.length === 0)) fail("ENFORCEMENT_REQUESTED_REF_SET_INVALID");
+  return refs;
+}
+
 if (process.argv.includes("--self-test")) {
   try {
     selfTest();
@@ -458,6 +560,10 @@ if (process.argv.includes("--self-test")) {
     console.log("PLANNED_OVERDUE_RED=PASS");
     console.log("MISSING_ENFORCEMENT_REF_RED=PASS");
     console.log("MISSING_REVIEW_CHECKLIST_RED=PASS");
+    console.log("REFERENCED_EXIT_ZERO_RED=PASS");
+    console.log("REFERENCED_EXIT_NONZERO_RED=PASS");
+    console.log("ENFORCEMENT_DEPENDENCY_DRIFT_RED=PASS");
+    console.log("REQUESTED_REF_UNKNOWN_RED=PASS");
   } catch (error) {
     console.error("STANDARDS_COVERAGE_SELF_TEST=FAIL");
     console.error(`REASON=${error.message}`);
@@ -474,6 +580,11 @@ if (process.argv.includes("--self-test")) {
     const phase = optionValue("--phase", "R2");
     const matrix = readMatrix(root, matrixPath);
     validateCoverage({ root, matrixPath, matrix, phase });
+    if (process.argv.includes("--execute-active")) {
+      const executed = executeActive({root, matrix, catalogPath: optionValue("--execution-catalog", "contracts/policy/standards-enforcement-execution-catalog.json"), refs: optionRefs("--refs")});
+      console.log("ENFORCEMENT_EXECUTION=PASS");
+      console.log(`ENFORCEMENT_REFS=${executed.join(",")}`);
+    }
     console.log("STANDARDS_COVERAGE=PASS");
     console.log(`PHASE=${phase}`);
     console.log(`RULES=${matrix.rules.length}`);

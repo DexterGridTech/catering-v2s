@@ -1,0 +1,1 @@
+Desktop-restart command-event canary

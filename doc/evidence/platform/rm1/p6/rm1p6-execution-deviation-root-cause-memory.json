@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-GOVERNING-SOURCE-RECALL-BEFORE-DIAGNOSIS-20260731",
+  "provenance": {
+    "kind": "USER_REPORTED_PROBLEM_FAMILY",
+    "promptSha256": "4fd4441ad0c9a7bf68a06f1f45a89d8557834fc3111a2cced6c7d19da0581ce7",
+    "semanticBasis": "Dexter required every execution deviation, whether self-found or reported by Dexter, to be root-caused and recorded in project memory before continuing."
+  },
+  "genericProblem": "An execution can drift from repository constraints when the agent responds to a problem from local intuition instead of first reopening AGENTS.md, the routed project memory, and the applicable design/evidence package; correcting the immediate action without recording that retrieval failure does not reduce recurrence.",
+  "rootCauseClass": "GOVERNING_SOURCE_RECALL_BEFORE_DIAGNOSIS_OMISSION",
+  "finiteDenominator": [
+    {
+      "id": "S01",
+      "paths": ["AGENTS.md", "scripts/README.md", ".agents/skills/cs-managed-runtime-execution/SKILL.md"],
+      "selector": "runtime and verification execution-boundary decisions in the RM1 P6-3 task",
+      "finding": "The deviation was not the absence of a remote runner: the repository already had one. Its root cause was acting on the runtime problem from local intuition before reopening AGENTS.md, routed project memory, and the managed-runtime skill/source package; that retrieval omission then led to an invalid local Docker/Colima attempt."
+    },
+    {
+      "id": "S02",
+      "paths": ["apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java", "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreStatus.java"],
+      "selector": "compile proof after controller source change",
+      "finding": "The controller was changed to bind a generated enum but the generated type import was not verified before the first remote L2 attempt."
+    },
+    {
+      "id": "S04",
+      "paths": ["doc/evidence/platform/rm1/p6/rm1p6-u03-final-ui-ia-control-alignment.json", "contracts/policy/affected-l2-registry.json", "scripts/test/r5-remote-testcontainers.mjs"],
+      "selector": "UI control-level IA admission before any P6-3 dynamic proof",
+      "finding": "A backend remote Testcontainers proof was started while the U03 control-level final alignment record remained PENDING; the runner path proves backend behavior and cleanup only, but the execution sequence did not first establish and mechanically distinguish the required UI IA conformance gate."
+    },
+    {
+      "id": "S05",
+      "paths": ["tools/compliance-control/cli.mjs", "scripts/context/recall-memory"],
+      "selector": "shell loops that issue compliance receipts during RM1 P6-3 implementation",
+      "finding": "A local shell variable named PATH overwrote the process command lookup while recording source-read receipts. The intended receipts were not created; no repository byte changed. The root cause was using a reserved execution-environment variable as local loop state instead of an intent-specific variable name."
+    },
+    {
+      "id": "S06",
+      "paths": ["doc/evidence/platform/rm1/p6/rm1p6-u03-package-input.json", "contracts/policy/standards-coverage-matrix.json", "scripts/check/standards-coverage"],
+      "selector": "standards coverage invocation for the active RM1 P6-3 package",
+      "finding": "The check was initially invoked with the Roadmap CURRENT_STEP token RM1-P6-3 rather than the active package's explicit standardsPhase R5. The UNKNOWN_PHASE result was not a standards failure: the root cause was again skipping the governing package input and guessing an execution parameter from the Roadmap label."
+    },
+    {
+      "id": "S07",
+      "paths": ["scripts/README.md", "scripts/test/r5-remote-testcontainers.mjs", "doc/evidence/platform/rm1/p6/rm1p6-u03-package-input.json"],
+      "selector": "backend focused-proof entry for the active P6-3 owner/edge change",
+      "finding": "The first focused-proof command guessed a repository-root ./gradlew wrapper and failed before a test ran. The repository instead declares the remote managed Testcontainers entry in scripts/README.md. The root cause was selecting a conventional local command before reopening the governing script and package verification boundary."
+    }
+  ],
+  "searchedSurfaces": [
+    "AGENTS.md execution and reporting constraints",
+    "scripts/README.md remote managed execution section",
+    ".agents/skills/cs-managed-runtime-execution/SKILL.md",
+    "tools/compliance-control/cli.mjs problem-family disposition validation",
+    "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+    "project-memory/operations/implementation-source-reread-discipline.md"
+  ],
+  "searchQueries": [
+    "rg remote managed runner local Docker Colima scripts/test",
+    "rg EXECUTION_DEVIATION|ROOT_CAUSE|SYSTEMIC_REPAIR project-memory",
+    "rg PROBLEM_FAMILY_DISCOVERY_REQUIRED problem-family-disposition tools/compliance-control/cli.mjs",
+    "read active package input standardsPhase before standards-coverage",
+    "read scripts/README.md and active package before backend focused proof"
+  ],
+  "counterexamples": [
+    {
+      "kind": "REMOTE_MANAGED_RUNNER",
+      "path": "scripts/test/r5-remote-testcontainers.mjs",
+      "reason": "The repository already provides the required remote Docker/Testcontainers execution path; local runtime setup is not a valid substitute."
+    },
+    {
+      "kind": "READ_ONLY_RECOVERY",
+      "path": "project-memory/operations/implementation-source-reread-discipline.md",
+      "reason": "Reading the governing source is necessary but does not itself prove that a deviation was root-caused and persisted for future prevention."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "S01",
+      "status": "CONFIRMED",
+      "genericProblem": "The governing-source recall step was skipped before diagnosing and selecting a runtime path.",
+      "minimalRepair": "When any problem or deviation appears, first reopen AGENTS.md, the routed project-memory hits, the owning design/evidence sources, and the applicable local skill; then identify the violated boundary and root cause, document the finite denominator and counterexamples, and persist the reusable rule in project memory before the next implementation or test action."
+    },
+    {
+      "findingId": "S02",
+      "status": "CONFIRMED",
+      "genericProblem": "A production source change entered remote L2 without a local or focused compile proof for its imported generated symbols.",
+      "minimalRepair": "After each source change, run the smallest available static compile/typecheck proof for the changed production boundary before remote L2; treat compiler output as a first-failure diagnostic and do not proceed while imports or generated symbols are unresolved."
+    },
+    {
+      "findingId": "S03",
+      "status": "CONFIRMED",
+      "genericProblem": "A focused test edit was structurally misplaced and entered remote L2 without compiling the exact test source first.",
+      "minimalRepair": "When a focused proof is changed, reopen the changed test and its owning production source, run the narrowest available test compilation or equivalent parser/typecheck before remote L2, and verify each new fixture variable is scoped to the test that owns it."
+    },
+    {
+      "findingId": "S04",
+      "status": "CONFIRMED",
+      "genericProblem": "A dynamic proof route can be mistaken for the UI L2 gate when control-level UI IA alignment is still pending.",
+      "minimalRepair": "Keep backend owner proof explicitly typed as backend evidence; before any UI-bearing P6-3 L2, require a PASS control-level alignment record for the complete admitted UI denominator and record the distinction in package evidence."
+    },
+    {
+      "findingId": "S05",
+      "status": "CONFIRMED",
+      "genericProblem": "A receipt or verification command can be silently skipped when shell loop state shadows a reserved environment variable.",
+      "minimalRepair": "Use descriptive non-reserved local names such as targetPath; after every receipt loop, require and inspect one PASS line per expected source before treating the write admission as satisfied."
+    },
+    {
+      "findingId": "S06",
+      "status": "CONFIRMED",
+      "genericProblem": "A managed verification can be invoked with a guessed Roadmap token instead of the package-owned parameter that defines its valid vocabulary.",
+      "minimalRepair": "Before any package-required command, reopen its active package input and pass its explicit parameter value; treat an unknown-parameter response as a first-failure diagnostic, then identify the owning source instead of trying additional guessed values."
+    },
+    {
+      "findingId": "S07",
+      "status": "CONFIRMED",
+      "genericProblem": "A build or test can start from a guessed local entrypoint instead of the repository-managed command and its approved verification stage.",
+      "minimalRepair": "Before every managed proof, reopen scripts/README.md, the active package and the applicable local skill; select the declared entrypoint and verify that its phase is currently admitted before invocation."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "S01",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/operations/phase-retrospective-and-systemic-repair.md#EXECUTION_DEVIATION_ROOT_CAUSE_MEMORY_REQUIRED",
+      "reason": "The user-requested discipline becomes a durable execution constraint and requires root-cause memory persistence rather than a one-turn correction."
+    },
+    {
+      "findingId": "S02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "P6 implementation focused-proof checklist: changed production boundary compile before managed L2",
+      "reason": "The remote runner is for managed runtime proof; unresolved generated imports must be caught by the cheaper focused compile gate first."
+    },
+    {
+      "findingId": "S03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "P6 implementation focused-proof checklist: changed focused test compile before managed L2",
+      "reason": "A changed focused test must compile in isolation before any managed runtime evidence is attempted."
+    },
+    {
+      "findingId": "S04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1p6-u03-control-level-ia-admission-problem-family.json#controlComparisonRequired",
+      "reason": "The control-level IA record and backend dynamic evidence remain separate; a backend PASS cannot authorize or substitute for UI L2."
+    },
+    {
+      "findingId": "S05",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/operations/phase-retrospective-and-systemic-repair.md#SHELL_EXECUTION_ENVIRONMENT_NON_SHADOWING",
+      "reason": "The failure is a reusable execution discipline; command output must confirm receipt completion rather than assuming a loop ran."
+    },
+    {
+      "findingId": "S06",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/operations/phase-retrospective-and-systemic-repair.md#PACKAGE_INPUT_PARAMETER_AUTHORITY",
+      "reason": "The active package owns verification parameters that may intentionally differ from Roadmap status vocabulary; this must be recovered before command execution."
+    },
+    {
+      "findingId": "S07",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/operations/phase-retrospective-and-systemic-repair.md#MANAGED_ENTRYPOINT_BEFORE_COMMAND",
+      "reason": "The repository scripts, not common local tool conventions, own the permitted dynamic proof entrypoint and stage."
+    }
+  ]
+}

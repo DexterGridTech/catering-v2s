@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1-U08",
+  "kind": "focused-frontend-recovery-proof",
+  "status": "PASS",
+  "businessPurpose": "P5 restores bounded, repeatable admin read/write recovery behavior: generated RTK endpoint consumers share app-owned session recovery while foundation lifecycle guards prevent stale write completion, a failed candidate read, or a failed remote logout from leaving the user in a misleading or unusable local state.",
+  "execution": [
+    {
+      "command": "yarn --cwd libraries/frontend/admin-ui-foundation test",
+      "result": "PASS",
+      "tests": 7
+    },
+    {
+      "command": "yarn --cwd apps/frontend/platform-admin test",
+      "result": "PASS",
+      "tests": 2
+    },
+    {
+      "command": "yarn --cwd apps/frontend/operations-admin test",
+      "result": "PASS",
+      "tests": 6
+    },
+    {
+      "command": "yarn --cwd apps/frontend/platform-admin typecheck",
+      "result": "PASS"
+    },
+    {
+      "command": "yarn exec eslint \"apps/frontend/*/src/**/*.{ts,tsx}\" \"libraries/frontend/admin-ui-foundation/src/**/*.{ts,tsx}\" --max-warnings=0",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/frontend-architecture",
+      "result": "PASS"
+    },
+    {
+      "command": "node tools/verify-gates/cli.mjs frontend --self-test",
+      "result": "PASS",
+      "redProofs": [
+        "R5_FRONTEND_CANDIDATE_LOADING_FAILURE_STATE_RED",
+        "R5_FRONTEND_PLATFORM_LOGOUT_LOCAL_CLEAR_RED",
+        "R5_FRONTEND_OPERATIONS_LOGOUT_LOCAL_CLEAR_RED"
+      ]
+    },
+    {
+      "command": "scripts/check/foundation-standard-actions",
+      "result": "PASS"
+    },
+    {
+      "command": "node scripts/generate/edge-codegen.mjs --check",
+      "result": "PASS",
+      "files": 221
+    },
+    {
+      "command": "node scripts/generate/edge-codegen.mjs --self-test",
+      "result": "PASS",
+      "redProofs": [
+        "R5_EDGE_RTK_ENDPOINT_MISSING",
+        "R5_EDGE_RTK_REQUEST_HELPER_MISSING",
+        "R5_EDGE_CONTROLLED_WRITE_RECEIPT_HASH_MISMATCH"
+      ]
+    },
+    {
+      "command": "scripts/check/standards-coverage --phase R5",
+      "result": "PASS",
+      "rules": 150
+    }
+  ],
+  "cleanup": "PASS",
+  "currentSourceHashes": [
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+      "sha256": "78bcc9dfd343245d6426a59e232c24893660c7f4f9b83d3b1824edff8b0be03e"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+      "sha256": "c21fb9faf1748aa9ed9d29a75558ae5ac6e12f7fdd25f40cf3819944d3a71cd7"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+      "sha256": "7120362bf76da3aa5f70e12c8e565a9261fd7588f82e9a36da2573ebf3f30e9c"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+      "sha256": "e777d1c982e30976e776be8e201fe1b1bc6eb0916c655e922ce03e3af0e3f513"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts",
+      "sha256": "ff06f66b6716cda042ceba8c33fe9e974604772b513d4c47c9a7f683c260ac0c"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "sha256": "be6010edfe7852d6d89f610552fbe3fb2f8a7b755b0a071660c39014dc2c40d2"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "sha256": "c328b3f2e935d5fd4202ee937783ba52bc7df77a13a2fb2b9439c4700eb257ef"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "sha256": "dfef38b3e3733df59bba00efe79e393d4fd31057a123b20ecd742ded39593ea7"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "sha256": "e2b13f80eecf91194a25facdf430c5ab33957df674ae685110c8780e8018d21e"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "sha256": "3af6cf9be12474590bd7a6fecfa179a6868b70aca6ec776727e5378aaf8c9d33"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "sha256": "6ffa6d6a54e6b9370fc0ffa783d66438e0c243291c3ccda052b943a53540bf72"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "sha256": "d1d85664be4a5a235fed8221fc23b4592c40c3ae3dcc95335877ca5039c22ab4"
+    }
+  ]
+}

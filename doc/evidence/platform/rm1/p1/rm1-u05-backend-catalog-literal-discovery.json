@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "HANDWRITTEN_BACKEND_CATALOG_LITERAL_BYPASS",
+  "genericProblem": "A handwritten backend consumer duplicates catalog capability strings rather than referring to the generated authority constants, causing literal-boundary controls to fail and permitting semantic drift.",
+  "rootCauseClass": "AUTHORITY_BYPASS_IN_HANDWRITTEN_CATALOG_CONSUMER",
+  "finiteDenominator": [
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "selector": "all quoted BC-* capability values",
+      "count": 44
+    }
+  ],
+  "searchedSurfaces": [
+    "libraries/backend/workspace-iam/src/main/java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge",
+    "tools/verify-gates/cli.mjs",
+    "doc/evidence/platform/rm1/p3-c"
+  ],
+  "searchQueries": [
+    "rg -n -S R5_ADMIN_CATALOG_BACKEND_LITERAL|WorkspaceCapabilityRequirementCatalog",
+    "rg -n -S BC-IAM|BC-ORG libraries/backend/workspace-iam/src/main/java",
+    "WorkspaceAuthorizationCatalog.CapabilityKeys exact membership comparison"
+  ],
+  "counterexamples": [
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+      "reason": "Generated authority is allowed to contain the frozen capability values."
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityRequirementCatalog.java",
+      "reason": "Generated adapter is excluded from the handwritten consumer denominator."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "P1-P3-BACKEND-CATALOG-LITERAL",
+      "status": "CONFIRMED",
+      "evidence": "The P1-required frontend architecture gate reports R5_ADMIN_CATALOG_BACKEND_LITERAL against WorkspaceCapabilityRequirementCatalog.java, which contains 44 quoted BC-* values; all 13 distinct values exist in WorkspaceAuthorizationCatalog.CapabilityKeys."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "P1-P3-BACKEND-CATALOG-LITERAL",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/verify-gates/cli.mjs frontend R5_ADMIN_CATALOG_BACKEND_LITERAL and its injected literal self-test",
+      "action": "Keep the gate fail-closed for handwritten consumers and use generated CapabilityKeys references in the finite denominator."
+    }
+  ]
+}

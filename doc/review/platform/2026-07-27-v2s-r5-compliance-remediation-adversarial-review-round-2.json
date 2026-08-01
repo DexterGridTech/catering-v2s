@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "R5-COMPLIANCE-REMEDIATION-DESIGN-20260727",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-adversarial-input-checklist-round-2.md",
+    "sha256": "bfa91413f273739061217b7d89afd2daa75a66f271d146d1f404b50ce64a9ebf"
+  },
+  "blindReviewDeclaration": "Fresh catering-v2s-rooted independent reviewer used a falsification stance and froze findings, severity counts, all unit verdicts, solution-reasonableness judgment, and NO_GO before reading the current-cycle round-1 review or author intake. Those materials were read only afterward for a non-anchoring difference statement.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "e1b332b09cb9c9387ffc59c9541caa191cf8d6959618f315d9b349a74559fa92",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "authorization-and-current-roadmap",
+      "source-to-predicate-determinism",
+      "per-unit-six-denominator-applicability",
+      "contract-and-generated-boundary",
+      "owner-schema-classification",
+      "surface-and-page-key-ownership",
+      "remote-runner-business-and-cleanup",
+      "standards-human-machine-partition",
+      "pending-product-decisions"
+    ]
+  },
+  "inputReadback": {
+    "freshContext": "/Users/dexter/Documents/workspace/idea/catering-v2s",
+    "dynamicBoundary": "No build, DEV, seed/reset, database, browser, or remote dynamic run was executed.",
+    "staticChecks": [
+      "scripts/check/standards-coverage --phase R5 => PASS; RULES=150",
+      "scripts/check/roadmap-program-registry => PASS",
+      "scripts/check/project-memory => PASS",
+      "scripts/check/provider-free-context => FAIL; REASON=skill denominator is not five; exact current denominator is eight and remediation ownership remains R5-CR-U08"
+    ],
+    "recomputedFacts": [
+      "106 unique operationIds = platform-admin 39 + operations-admin 56 + public 11",
+      "32 unique scenarios; 22 surfaces; 25 pageDesignKeys; seven Flyway fact-owner schemas",
+      "OpenAPI refs 1330 = resolved 450 + unresolved 880; unresolved = missing-file 50 + missing-pointer 830; missing-pointer = ProblemResponse 742 + other 88",
+      "standards 150 = B 85 + C 23 + D 42 = machine 46 + human 104",
+      "ten delivery units each declare exactly six denominator rows; CURRENT_MANIFEST_BYTES avoids literal self-hash recursion",
+      "current Roadmap is aligned with the design-only pause; D-1 through D-7 remain pending; CR00 through CR09 are serial",
+      "platform-access is designed as a schema-less facade and U04 owns correcting its registry ownerSchema to null",
+      "the exact remote runner path/hash, host fingerprint, task registry, source snapshot, receipt fields and cleanup contract are specified"
+    ]
+  },
+  "expectedBehavior": [
+    "The accepted manifest resolver and source-to-predicate mapping derive one complete, exact, and fail-closed rule set from authoritative source rows without directory guessing, hardcoded semantic lists, or unmapped rows.",
+    "Each R5-CR-U00 through R5-CR-U09 package receives exactly its applicable project-memory occurrences, approved and forbidden assertions, design criteria, surface/page keys, and standards IDs through canonical machine-resolvable ownership data.",
+    "The 106/32/22/25/7 denominators, strict OpenAPI 1330/880 split, dual-admin boundary, schema-less platform-access facade, 150 human/machine partition, remote business/cleanup contract, and pending Dexter decisions remain unchanged and independently falsifiable.",
+    "The review judges DESIGN only; no design statement, static gate, or review verdict is implementation, runtime, database, seed/reset, or remote-run authorization."
+  ],
+  "findings": [
+    {
+      "id": "R5-CR-DESIGN-R2-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U00",
+        "R5-CR-U01",
+        "R5-CR-U02",
+        "R5-CR-U03",
+        "R5-CR-U04",
+        "R5-CR-U05",
+        "R5-CR-U06",
+        "R5-CR-U07",
+        "R5-CR-U08",
+        "R5-CR-U09"
+      ],
+      "title": "The revised six-denominator model still lacks canonical per-unit applicability and surface ownership data",
+      "evidence": "The design at section 2.2 says project-memory occurrences are matched against each unit's domain/face/owner/impact and surface/pageKey rows are assigned by the carry-over row's owning unit. All ten delivery-unit objects in the reviewed manifest omit domain, face, owner, and impact routing fields, although each PROJECT_MEMORY_ASSERTION_OCCURRENCES row declares applicability=ROUTE_MATCH_UNIT. The authoritative frontend-asset-carryover manifest has 22 surface rows and 25 pageDesignKeys but no R5-CR unit ownership field. U05 and U06 therefore use prose selectors ('owned by UI consistency' versus 'all 22 ... capability closure') and reciprocal OWN_UNIT_SPLIT_WITH declarations that cannot derive an exact row-level partition from the cited source. The mapping set can be complete globally while rules or surfaces are omitted, duplicated, or assigned to the wrong package.",
+      "counterexample": "A CR00 implementation assigns one memory assertion to U05 rather than U06 and treats all 22 surfaces as U06-owned while U05 claims an unspecified UI-consistency subset. Every source rule still has a mapping row, every unit still has six denominator types, and global set equality remains 150/150, yet neither the route nor the U05/U06 split has a canonical source fact that can make the wrong assignment fail.",
+      "risk": "The central root-cause control can produce false-complete package receipts across every unit. In particular, the UI packages cannot prove exact 22/25 ownership, and project-memory obligations can be silently misrouted even though unmapped-row and hash-drift fixtures pass.",
+      "minimalFix": "Within the existing manifest and carry-over mapping boundary, add canonical legal route tuples or explicit applicable memory occurrence IDs for every U00-U09 unit, and add an exact row-ID-to-owning-unit partition for all 22 surfaces and 25 pageDesignKeys. Require set equality, no overlap, no unowned row, no unknown row, and red fixtures for a changed route and a moved/duplicated surface row. Use an unambiguous canonical tuple serialization for rule identity. Do not add a semantic DSL or policy service.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "R5-CR-DESIGN-R2-N-001",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U00",
+        "R5-CR-U01",
+        "R5-CR-U04",
+        "R5-CR-U08",
+        "R5-CR-U09"
+      ],
+      "title": "Round-1 numeric, authorization, schema, partition and remote-runner defects are otherwise closed in the reviewed design bytes",
+      "evidence": "Independent recount reproduced 106/39/56/11, 32, 22/25, seven schemas, 1330/880 with 50/742/88, and 150=46 machine+104 human. The sole current Roadmap now matches the exact design-only pause; U04 names platform-access as schema-less and changes its registry ownerSchema to null; U08 binds the exact remote runner path/hash, explicit host fingerprint, registered task, source snapshot, receipt fields and cleanup failures; non-corpus authorities are explicit.",
+      "risk": "These are confirmations, not implementation proof. Treating them as already implemented would reopen the same false-green problem.",
+      "disposition": "RETAIN_AS_DESIGN_BASELINE_AND_REVERIFY_DURING_IMPLEMENTATION"
+    },
+    {
+      "id": "R5-CR-DESIGN-R2-N-002",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U08"
+      ],
+      "title": "The current provider-free-context gate remains red and must not be presented as current closure",
+      "evidence": "A fresh read-only run failed with 'skill denominator is not five'; the repository has eight project skills. The upstream diagnostic and reviewed U08 change surfaces explicitly assign PLATFORM-BLUEPRINT and verification-inventory alignment to U08, so this is a known current deviation rather than a new design omission.",
+      "risk": "A future receipt could quote the standards or memory PASS results and obscure this independent current red if business and cleanup/state checks are collapsed.",
+      "disposition": "KEEP_RED_VISIBLE_UNTIL_U08_PRODUCTION_PATH_FIX_AND_RED_GREEN_EVIDENCE"
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "R5-CR-U00",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001",
+        "R5-CR-DESIGN-R2-N-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001",
+        "R5-CR-DESIGN-R2-N-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U02",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U03",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U04",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001",
+        "R5-CR-DESIGN-R2-N-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U05",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U06",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U07",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U08",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001",
+        "R5-CR-DESIGN-R2-N-001",
+        "R5-CR-DESIGN-R2-N-002"
+      ]
+    },
+    {
+      "id": "R5-CR-U09",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R2-M-001",
+        "R5-CR-DESIGN-R2-N-001"
+      ]
+    }
+  ],
+  "roundOneDifference": {
+    "readOrder": "AFTER_INDEPENDENT_VERDICT",
+    "reviewPath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-adversarial-review-round-1.json",
+    "intakePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-round-1-intake.md",
+    "assessment": "Round-1 M-001/M-002 were materially repaired by adding the resolver, mapping contract, and ten-by-six denominator declarations, but the repair remains incomplete at the applicability layer identified independently in round 2. Round-1 Roadmap, seven-schema, remote-runner, OpenAPI split, 150 partition, and non-corpus findings are closed in the reviewed design bytes. No round-1 material changed the frozen round-2 severity or verdict."
+  },
+  "solutionReasonableness": {
+    "problemFit": "The remediation direction fits the diagnosed systemic failure: false-green controls must be repaired before contract, owner, UI, DEV, seed and evidence closure. Strict serial packages, one whole-scope implementation review, exact remote receipts and separate business/cleanup are proportionate.",
+    "simplerAlternativeAssessment": "The smallest sufficient repair is to complete the chosen mapping model with canonical per-unit route tuples and one exact surface/page ownership partition. Replacing it with a semantic DSL, policy engine, second Roadmap owner or generalized governance service would add cost without resolving business judgment.",
+    "costFit": "The bounded metadata and red-fixture repair is materially cheaper than allowing ambiguous applicability into ten package receipts and later re-auditing every memory, UI and standards obligation.",
+    "verdict": "DIRECTION_REASONABLE_BUT_FINAL_DESIGN_ROUND_REMAINS_NO_GO"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Final DESIGN adversarial round: NO_GO (M=1, S=0, N=2). Counts, current pause, seven-schema treatment, 150 partition, remote runner contract, D-1 through D-7 blocking, and serial W00-W09 scope are independently confirmed. GO remains blocked because the revised source-derived control has no canonical unit route data and no exact U05/U06 row-level ownership for all 22 surfaces and 25 pageDesignKeys.",
+    "severityCounts": {
+      "M": 1,
+      "S": 0,
+      "N": 2
+    },
+    "authorizationBoundary": "DESIGN review only. This final round is SELF_DECIDED and permits no third Codex adversarial round. It does not authorize implementation, business source, contract, migration, tests, scripts, build, DEV, database, remote runtime, seed/reset, or any dynamic execution."
+  }
+}

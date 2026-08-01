@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-U03-CONTROL-LEVEL-IA-ADMISSION",
+  "provenance": {
+    "kind": "USER_REPORTED_PROBLEM_FAMILY",
+    "promptSha256": "3045191ff7107d140705ba3a53d065f3b1d47832e956aa2807ed7693d8da391b",
+    "semanticBasis": "Dexter required actual control-by-control IA comparison to pass before any L2 run."
+  },
+  "genericProblem": "A UI consumer can have a source vector and a screen-level baseline record but still enter focused or L2 verification without proving every user-visible control, state, cascade, owner boundary and accessibility assertion against its accepted IA.",
+  "rootCauseClass": "SCREEN_LEVEL_ADMISSION_SUBSTITUTED_FOR_CONTROL_LEVEL_CONFORMANCE",
+  "finiteDenominator": [
+    "RM1 P6-3 operations-admin affected-l2 registry surfaces",
+    "IA01-OPERATIONS-LOGIN",
+    "IA05-RECOVERY-VERIFY",
+    "IA05-RECOVERY-PASSWORD",
+    "IA05-RECOVERY-COMPLETE",
+    "the U03 UI-IA implementation baseline and joint L2 runner admission"
+  ],
+  "searchedSurfaces": [
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u03-ui-ia-implementation-baseline.json",
+    "apps/frontend/operations-admin/src/features/authentication/ui",
+    "scripts/test/r5-platform-admin-l2.mjs",
+    "contracts/policy/affected-l2-registry.json"
+  ],
+  "searchQueries": [
+    "rg IA01-OPERATIONS-LOGIN and IA05-RECOVERY in accepted IA sources",
+    "rg LoginFormPage, testId, groupWorkspaceKey, resetGenerationKey in operations consumers",
+    "jq U03 surface and test paths in affected-l2 registry",
+    "rg validateUiIaAdmission and L2 runner admission"
+  ],
+  "counterexamples": [
+    {
+      "kind": "SOURCE_VECTOR_ONLY",
+      "reason": "A five-source prewrite receipt proves only that the prescribed sources were reread; it neither proves the control mapping nor authorizes L2."
+    },
+    {
+      "kind": "TYPECHECK_OR_STATIC_SCAN",
+      "reason": "Compilation and mechanical scans cannot establish user task, control cascade, opaque public boundary, or owner readback semantics."
+    },
+    {
+      "kind": "SCREEN_RECORD_ONLY",
+      "reason": "A nine-dimension screen record is an index, not evidence that every visible component and state satisfies the IA sheet."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "F-P6-U03-CONTROL_LEVEL_IA_BEFORE_L2",
+      "status": "CONFIRMED",
+      "genericProblem": "The current U03 baseline was marked PASS before an explicit per-control implementation comparison was recorded, so it cannot be used as the L2 admission fact.",
+      "minimalRepair": "Keep the existing prewrite baseline as a source-read admission only, add a distinct control-level final-alignment record for every physical consumer, require that record only becomes PASS after all rows pass, and make the joint L2 runner reject any other state."
+    },
+    {
+      "findingId": "F-P6-U03_CONTROL_TEXT_AND_PUBLIC_BOUNDARY",
+      "status": "CONFIRMED",
+      "genericProblem": "Public login/recovery controls can visually resemble their IA while omitting required dynamic page titles, owner-only test-code display, opaque errors, or stale legacy reset entry removal.",
+      "minimalRepair": "For every public/auth consumer, compare exact control copy/shape, source/readback, enablement and reset cascade, loading/error state, session prohibition, testId/accessibility and legacy path absence before focused proof."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "F-P6-U03-CONTROL_LEVEL_IA_BEFORE_L2",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs#validateUiIaAdmission plus scripts/test/r5-platform-admin-l2.mjs admission",
+      "reason": "The existing UI-IA admission and existing joint runner will consume the explicit final baseline status and reject non-PASS."
+    },
+    {
+      "findingId": "F-P6-U03_CONTROL_TEXT_AND_PUBLIC_BOUNDARY",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1p6-u03-control-level-ia-admission-problem-family.json#controlComparisonRequired",
+      "reason": "Control-level semantics require source-and-code comparison; the package exit and independent review must replay the finite rows."
+    }
+  ],
+  "controlComparisonRequired": {
+    "status": "REQUIRED_BEFORE_FOCUSED_PROOF_AND_L2",
+    "rowFields": [
+      "screenId",
+      "consumerPath",
+      "businessTask",
+      "roleScenario",
+      "entryInteractionShape",
+      "controlType",
+      "dataSourceAndCascade",
+      "validationAndError",
+      "permissionAndState",
+      "refreshNavigation",
+      "testIdAndAccessibility",
+      "sourceComparison",
+      "status"
+    ],
+    "l2Admission": "All required rows must be PASS; static/type/focused proof remain distinct from business and cleanup results."
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 2,
+  "kind": "rm1-generated-output-receipt-replay",
+  "packageId": "RM1-U04",
+  "status": "HISTORICAL_CHAIN_RETAINED_WITH_CURRENT_TERMINAL",
+  "reason": "The historical 012/013 replay is retained. A later generator change was repaired through 015/016; this terminal segment, rather than the historical segment, describes the U04 delivered bytes.",
+  "historicalSegment": {
+    "generatorBaseline": {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "sha256": "97a0e770092d1a9980d7790900f0a0fe7dbd8e58bc147d787ae3776c5b0d9284"
+    },
+    "receiptPaths": [
+      ".runtime/compliance-control/hook-events/rm1-u04-generated-baseline-replay-012.pre.json",
+      ".runtime/compliance-control/hook-events/rm1-u04-generated-baseline-replay-012.post.json",
+      ".runtime/compliance-control/hook-events/rm1-u04-generated-authoritative-replay-013.pre.json",
+      ".runtime/compliance-control/hook-events/rm1-u04-generated-authoritative-replay-013.post.json"
+    ],
+    "outputs": [
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeRequest.java", "finalSha256": "f0716ecd6fb101add579faa1c4ae530bd52b35d0b79d6b5da079a3e998e1f655"},
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java", "finalSha256": "2366215e66104c40274ac6ef86144606bf086b39277ba48167bb29f0c74b2f47"},
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationCreateRequest.java", "finalSha256": "b2505072c6a42cc1a7fec736c764c36fb61daba0fa8228bfa308725333d67bf9"},
+      {"path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts", "finalSha256": "1df75cfb5efb64700757ba01f5ef3a150f199b4ca0fa8c0ef2a6798a1b8d3b14"}
+    ]
+  },
+  "terminalSegment": {
+    "packageId": "RM1-U04",
+    "generator": {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "sha256": "3f369faa5700b5905b9632abd822cdee1ddc1dd3797a47db2b551c012b63cdc8"
+    },
+    "receiptPaths": [
+      ".runtime/compliance-control/hook-events/rm1-u04-s1-generated-baseline-replay-015.pre.json",
+      ".runtime/compliance-control/hook-events/rm1-u04-s1-generated-baseline-replay-015.post.json",
+      ".runtime/compliance-control/hook-events/rm1-u04-s1-generated-authoritative-replay-016.pre.json",
+      ".runtime/compliance-control/hook-events/rm1-u04-s1-generated-authoritative-replay-016.post.json"
+    ],
+    "outputs": [
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeRequest.java", "finalSha256": "51496cddd20902cfec24fd23b37112a91625dbce6890cbc889a9eb7e93c1e7f5"},
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java", "finalSha256": "723e4ec4f4fdb943f8c27fc7617da035a480d06efd8f84f67a7b961b1f17e47f"},
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationCreateRequest.java", "finalSha256": "b2505072c6a42cc1a7fec736c764c36fb61daba0fa8228bfa308725333d67bf9", "unchangedAcross015And016": true},
+      {"path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts", "finalSha256": "c09b37ff604bf4fa5781d99579e109181dd2fc3e1e86b8ec35e6d9fdd5ed3c10"}
+    ],
+    "exitBinding": {
+      "path": "doc/evidence/platform/rm1/p3-c/rm1-u04-package-exit.json",
+      "rule": "Each terminal outputs[].finalSha256 equals the same package exit incrementalChecks[].afterSha256."
+    }
+  }
+}

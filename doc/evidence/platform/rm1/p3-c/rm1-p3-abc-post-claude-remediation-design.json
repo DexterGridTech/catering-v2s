@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p3-abc-post-claude-remediation-design",
+  "status": "ACTIVE_IMPLEMENTATION_DESIGN",
+  "scope": "RM1 P3-A+B+C review remediation only; no P1 start, migration, seed, reset, Roadmap-state change, or new Journey.",
+  "businessUserTask": "An operations user selects one owner-confirmed data-node context once, then reads, invites, views detail and revokes users only within that server-owned context.",
+  "dexterStageIntent": "Close P3 as one atomic delivery with truthful current-byte evidence before any next P, without inventing a new authorization model or broad performance work.",
+  "alternatives": [
+    {
+      "id": "KEEP_OPERATION_SCOPE_REF_AND_RESOLVE_BY_ID",
+      "decision": "rejected",
+      "reason": "It duplicates the already owner-confirmed session context on three feature operations, preserves a client-controlled narrowing surface, and leaves the same-feature consumer removal denominator larger."
+    },
+    {
+      "id": "REMOVE_OPERATION_SCOPE_REF_USE_SESSION_CONTEXT",
+      "decision": "selected",
+      "reason": "It preserves the approved context-switch Journey, makes the selected data node server-owned at every feature endpoint, removes the stale detail/action payload residue, and is smaller than adding a second per-operation scope-selection protocol."
+    }
+  ],
+  "confirmedFindingDispositions": [
+    {"findingId": "P3-CLAUDE-M1-STALE-REPLAY-EVIDENCE", "status": "PARTIALLY_CONFIRMED", "action": "Add immutable historical-to-current chain evidence; do not claim a missing receipt edge that 015/016 disproves."},
+    {"findingId": "P3-CLAUDE-M2-DYNAMIC-EVIDENCE-TRUTH", "status": "PARTIALLY_CONFIRMED", "action": "Declare business-verification obligation explicitly, separate dynamic evidence from changed-file receipts, and repair failed-run log/cleanup handling; historical failed-run cause remains UNVERIFIED."},
+    {"findingId": "P3-CLAUDE-S1-AUTHORIZATION-SEMANTICS-EVIDENCE", "status": "CONFIRMED", "action": "Record concrete server-context, descendant exclusion, peer rejection and leaf-identity assertions in package evidence."},
+    {"findingId": "P3-CLAUDE-S2-SELECTED-DESCENDANT-SCOPE", "status": "CONFIRMED", "action": "Remove feature-operation scopeRef and derive the selected data-node scope from authenticated session context; test owner-confirmed descendant selection and peer rejection."},
+    {"findingId": "P3-C-FRONTEND-REMOVED-SCOPE-FIELD-RESIDUE", "status": "CONFIRMED", "action": "Remove scopeRef from every workspace-membership/invitation feature call whose contract no longer accepts it."}
+  ],
+  "changeUnits": [
+    {
+      "id": "P3R-SCOPE",
+      "paths": [
+        "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+        "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml",
+        "scripts/generate/edge-codegen.mjs",
+        "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+        "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
+        "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceInvitationPanel.tsx",
+        "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipService.java",
+        "libraries/backend/organization/src/main/java/com/catering/v2s/organization/api/OrganizationTaskPathLookup.java",
+        "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationTaskPathService.java",
+        "libraries/backend/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipTaskScopeTest.java"
+      ],
+      "ownerBoundary": "workspace-iam reads selected session context; organization resolves only organization-owned task path by id through a public API. No consumer directly reads organization schema.",
+      "failureBehavior": "No selected or stale/peer/disabled data node is typed denied; no feature request may select a scope independently of session context.",
+      "redControls": ["cross-branch context id denied", "selected descendant succeeds only after owner session selection", "removed scopeRef emitted by a feature consumer is a focused contract test failure"]
+    },
+    {
+      "id": "P3R-EVIDENCE",
+      "paths": [
+        "tools/compliance-control/cli.mjs",
+        "scripts/test/r5-remote-testcontainers.mjs",
+        "doc/evidence/platform/rm1/p3-a/rm1-u02-package-exit.json",
+        "doc/evidence/platform/rm1/p3-b/rm1-u03-package-exit.json",
+        "doc/evidence/platform/rm1/p3-c/rm1-u04-package-exit.json",
+        "doc/evidence/platform/rm1/p3-c"
+      ],
+      "ownerBoundary": "Package input declares a businessEvidenceObligation; compliance-control validates declared evidence rather than guessing from changed paths. The managed runner persists failure result/log before cleanup and always attempts cleanup.",
+      "failureBehavior": "A declared business obligation with BLOCKED/FAIL/no current-byte evidence cannot exit PASS; failed remote runs retain sanitized result and independently report cleanup.",
+      "redControls": ["declared business package with NOT_APPLICABLE rejected", "missing current-byte dynamic evidence rejected", "remote failed Gradle fixture preserves log and executes cleanup"]
+    }
+  ],
+  "closureEvidence": {
+    "static": ["openapi contracts", "edge codegen check", "capability/security/backend/affected-L2/standards coverage", "delta receipts", "package exit"],
+    "dynamic": "Run scoped focused workspace-IAM Testcontainers proof against current source hashes through the repaired managed runner; report business and cleanup separately.",
+    "review": "No third independent-subagent round. Current bytes require Claude recheck under the existing P3 external review request after the remediation evidence is complete."
+  }
+}

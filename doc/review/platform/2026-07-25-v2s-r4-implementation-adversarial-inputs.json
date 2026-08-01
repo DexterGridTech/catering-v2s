@@ -1,0 +1,27 @@
+{
+  "kind": "independent-subagent-adversarial-inputs",
+  "reviewCycleId": "R4-W2-IMPLEMENTATION-20260725",
+  "reviewTarget": "IMPLEMENTATION",
+  "blindReview": true,
+  "inputs": [
+    {"path": "AGENTS.md", "sha256": "cdc6e5bfccd34e33210c0b8f611e1fe8b512427cfc87f2d7ab18f250ea8292a1"},
+    {"path": "CLAUDE.md", "sha256": "da3213ab7a75431198ac0d645d7de49b9705b07a27397a2e568d439ea4f66ca1"},
+    {"path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md", "sha256": "3fd7f69528a94f53c5417af7ef87a79dd74d0045ea42f1928e245e7bf863050c"},
+    {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "sha256": "c822ef279c015ff6f7ce2ff697138f754b3eacf53fb8a96323a48b8a6e564965"},
+    {"path": "doc/review/platform/2026-07-25-v2s-r4-design-granularity-manifest.json", "sha256": "3466a34d848d1fff9f0e855b00dfdf0967fd2f473fe00a838e6ce1d6e0128129"},
+    {"path": "doc/decisions/2026-07-25-v2s-r4-design-acceptance-and-implementation-authorization.md", "sha256": "5a8b2ff70ac9dfff14b4b1078aae056fb2e402be45234711fed622af5bb3185b"},
+    {"path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md", "sha256": "95b79f7c74a3f867e9fdfef6b9f0d63d9e51e50cb08abc905056307d9423d508"},
+    {"path": "contracts/policy/standards-coverage-matrix.json", "sha256": "48922d88914c85e2ce3eafe4679a7f7b763ba375946815b69db02b37348c6987"},
+    {"path": "project-memory/index.md", "sha256": "8fbedd001edda5bfff87d2ab1d31580d7f674582ff67a17b2cf19dbb37c260cb"},
+    {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+    {"path": "scripts/verify", "sha256": "92b8a6c99a4a8b811e2c4ff7dcf6db8c88f61800f7f23ecbcf6450cac7897a58"},
+    {"path": "tools/r4-gates/cli.mjs", "sha256": "e3438a2c892793927efc10b437f546a682ed479200448d2d06ccad04864ae526"},
+    {"path": "apps/backend/catering-business-server/src/test/java/r4/database/R4DatabaseBoundariesTest.java", "sha256": "50cca87faa712d369a7475ef2c6a5ab92ee7982c6fc0a2b91acbe8d2b5a669ae"},
+    {"path": "doc/evidence/platform/r4-closure-readiness-evidence.json", "sha256": "16353619eece4567a3107de4236d89ccbbedf2a579d4e56cdef6cfa7f83b9ef4"}
+  ],
+  "requiredReopen": [
+    "all project-memory kernels, then scripts/memory/query six-dimension hits and every hit source",
+    "all current doc/decisions titles, then each R4-relevant decision",
+    "complete R4 implementation surface under scripts/check, tools/r4-gates, contracts/policy, apps/backend/catering-business-server/src/test, and doc/evidence/platform"
+  ]
+}

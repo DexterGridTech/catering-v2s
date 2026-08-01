@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-UI-SURFACE-OWNERSHIP-01",
+  "genericProblem": "A declared UI surface can be contradicted by its own wireframe when it renders sibling shell controls, adjacent pages, or suppressed implementation annotations as though they belonged to that surface.",
+  "rootCauseClass": "surface declaration and visual denominator were reviewed separately rather than as an exact per-screen ownership set; the same pass also failed to verify that every input-bearing surface carried its control-dependency denominator.",
+  "finiteDenominator": [
+    "doc/decisions/templates/ui-interaction-design-template.md",
+    "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md (10 screens)",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md (10 screens)"
+  ],
+  "searchedSurfaces": [
+    "all IA01/IA02 Screen declarations, USER_VISIBLE_COPY fields and ASCII wireframes",
+    "all IA01/IA02 input-bearing surfaces and existing form-control dependency tables",
+    "the reusable UI interaction template and P6 final-design standard"
+  ],
+  "searchQueries": [
+    "^### Screen:|^UI_SURFACE=|^USER_VISIBLE_COPY=",
+    "可使用的功能菜单|当前集团空间.*编码|不显示|\\[用户 v\\]|可查看范围：机构名称",
+    "表单控件依赖图"
+  ],
+  "counterexamples": [
+    "A content page may name its route-level shell in HOST_AND_ENTRY, but its own wireframe cannot draw a sibling Header control as page content.",
+    "A Header control may explain that an owner result refreshes menus, but it cannot render the menu, user avatar, or a separate Header control as part of that one-control wireframe.",
+    "An input with no upstream control is not exempt from a dependency row; the row must explicitly state no dependency and owner revalidation.",
+    "A data-scope selector that is declared as a Header control or Drawer contradicts a verified legacy visual baseline when both v1 and v4 place the entry at the operations shell's side-menu footer; that mismatch must be resolved as a physical-surface correction, without inheriting legacy local authorization state."
+  ],
+  "findings": [
+    {
+      "findingId": "RM1-P6-UI-SURFACE-OWNERSHIP-01",
+      "classification": "CONFIRMED",
+      "evidence": "IA02-OPERATIONS-SHELL-HEADER declared one Header control while its initial wireframe also rendered menu, user-avatar and data-scope siblings; IA02-PLATFORM-WORKSPACE-CONTEXT declared a content empty state while drawing the separate workspace Header control."
+    },
+    {
+      "findingId": "RM1-P6-FORM-DEPENDENCY-DENOMINATOR-02",
+      "classification": "CONFIRMED",
+      "evidence": "The global scan found only two dependency-table anchors although multiple IA01/IA02 input-bearing surfaces were already declared; the template rule was not retroactively audited as an exact screen denominator."
+    },
+    {
+      "findingId": "RM1-P6-INVITATION-TAB-SURFACE-OWNERSHIP-03",
+      "classification": "CONFIRMED",
+      "evidence": "IA01-USER-INVITATION-ACTIONS simultaneously drew an inline create form and row-level resend/cancel while separately declaring a create Drawer, detail Drawer and action Modal for the same tasks; the frozen list-detail-action standard requires the business action to originate from detail, not a list action column."
+    },
+    {
+      "findingId": "RM1-P6-INVITATION-CANDIDATE-SELECTION-CONTRACT-GAP-04",
+      "classification": "PARTIALLY_CONFIRMED",
+      "evidence": "Dexter's accepted Drawer requirement is a searchable appointment-organization choice followed by same-type roles. Current WorkspaceUserService.candidatesForOperations returns only the server-resolved task scope, so it proves owner revalidation but not the required multi-candidate selection. The IA must retain Dexter's required user task and surface the final P6 contract/owner closure rather than falsely claim current bytes already support it."
+    },
+    {
+      "findingId": "RM1-P6-DATA-SCOPE-HERITAGE-PHYSICAL-SURFACE-05",
+      "classification": "CONFIRMED",
+      "evidence": "IA02 initially declared the range entry in the Header and its selection surface as a Drawer. The reopened v1 OperationsShell/DataNodeSwitcherPort and v4 OperationsGlobalWorkScope both place the entry in menuFooterRender; v4 opens a right-bottom Popover, while v1 proves upstream selection clears downstream levels. IA02 now uses a side-footer summary control plus Popover, owner-entry-only cascade, and no inherited local scope authority."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "RM1-P6-UI-SURFACE-OWNERSHIP-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#surface-ownership-self-check"
+    },
+    {
+      "findingId": "RM1-P6-FORM-DEPENDENCY-DENOMINATOR-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#form-control-dependency-denominator"
+    },
+    {
+      "findingId": "RM1-P6-INVITATION-TAB-SURFACE-OWNERSHIP-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md#IA01-USER-INVITATION-ACTIONS"
+    },
+    {
+      "findingId": "RM1-P6-INVITATION-CANDIDATE-SELECTION-CONTRACT-GAP-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md#final-U09-G"
+    },
+    {
+      "findingId": "RM1-P6-DATA-SCOPE-HERITAGE-PHYSICAL-SURFACE-05",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md#v1v4-data-scope-display-baseline"
+    }
+  ]
+}

@@ -1,0 +1,2123 @@
+{
+  "schemaVersion": 1,
+  "kind": "iam-org-governance-manifest",
+  "authority": "P3-A authoritative capability requirement, resolver, owner-recheck and typed Problem source. It is not a UI action catalog.",
+  "operationIdentityKey": [
+    "operationId",
+    "method",
+    "path",
+    "consumerFace"
+  ],
+  "authorizationModes": [
+    "AUTHENTICATED_WORKSPACE",
+    "PUBLIC_PROTOCOL"
+  ],
+  "resolvers": [
+    {
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "inputs": [
+        "authenticatedWorkspaceSession",
+        "serverResolvedResourceTypeAndId",
+        "assignmentNode"
+      ],
+      "outputs": [
+        "ALLOW",
+        "DENY",
+        "firstOwnerQueryPredicate"
+      ],
+      "clientDerivedInputsForbidden": [
+        "pageDesignKey",
+        "actionKey",
+        "URL",
+        "requestBodyTargetType",
+        "clientCapabilityLiteral"
+      ]
+    },
+    {
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "inputs": [
+        "serverValidatedInvitationOrResetToken",
+        "serverResolvedResourceTypeAndId"
+      ],
+      "outputs": [
+        "ALLOW",
+        "DENY",
+        "firstOwnerQueryPredicate"
+      ],
+      "clientDerivedInputsForbidden": [
+        "pageDesignKey",
+        "actionKey",
+        "URL",
+        "clientCapabilityLiteral"
+      ],
+      "authenticatedWorkspaceSessionForbidden": true
+    },
+    {
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "inputs": [
+        "ownerValidatedCredentialOrOtpOrBoundFlow",
+        "serverResolvedResourceTypeAndId"
+      ],
+      "outputs": [
+        "ALLOW",
+        "DENY",
+        "firstOwnerQueryPredicate"
+      ],
+      "clientDerivedInputsForbidden": [
+        "pageDesignKey",
+        "actionKey",
+        "URL",
+        "clientCapabilityLiteral"
+      ],
+      "authenticatedWorkspaceSessionForbidden": true
+    }
+  ],
+  "ownerRechecks": [
+    {
+      "ownerRecheckId": "OWNER_RECHECK_CONTRACT",
+      "ownerModule": "contract",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_EXTENSION",
+      "ownerModule": "extension",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "ownerModule": "organization",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_ASSET",
+      "ownerModule": "platform-asset",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "ownerModule": "platform-iam",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_WORKSPACE",
+      "ownerModule": "platform-workspace",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "ownerModule": "workspace-iam",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
+    }
+  ],
+  "typedProblemMappings": [
+    {
+      "typedProblemMappingId": "PROBLEM_CONTRACT_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "contract",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_EXTENSION_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "extension",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "organization",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_PLATFORM_ASSET_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "platform-asset",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "platform-iam",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_PLATFORM_WORKSPACE_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "platform-workspace",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "workspace-iam",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    }
+  ],
+  "generationTargets": {
+    "serverCatalog": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityRequirementCatalog.java",
+    "typedResolverRegistry": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CapabilityResolverRegistry.java",
+    "workspaceIamCatalog": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+    "operationsCatalog": "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json"
+  },
+  "requirements": [
+    {
+      "requirementId": "REQ_ACCEPT_PUBLIC_INVITATION",
+      "operationIdentity": {
+        "operationId": "acceptPublicInvitation",
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
+        "consumerFace": "public",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_ACCEPT_PUBLIC_INVITATION",
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_ACCEPT_PUBLIC_INVITATION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CANCEL_OPERATIONS_WORKSPACE_GROUP_INVITATION",
+      "operationIdentity": {
+        "operationId": "cancelOperationsWorkspaceGroupInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-GROUP-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CANCEL_OPERATIONS_WORKSPACE_GROUP_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
+    },
+    {
+      "requirementId": "REQ_CANCEL_OPERATIONS_WORKSPACE_REGION_INVITATION",
+      "operationIdentity": {
+        "operationId": "cancelOperationsWorkspaceRegionInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-REGION-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CANCEL_OPERATIONS_WORKSPACE_REGION_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "REGION"
+    },
+    {
+      "requirementId": "REQ_CANCEL_OPERATIONS_WORKSPACE_PROJECT_INVITATION",
+      "operationIdentity": {
+        "operationId": "cancelOperationsWorkspaceProjectInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-PROJECT-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CANCEL_OPERATIONS_WORKSPACE_PROJECT_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "PROJECT"
+    },
+    {
+      "requirementId": "REQ_CANCEL_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION",
+      "operationIdentity": {
+        "operationId": "cancelOperationsWorkspaceHeadCompanyInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-HEAD-COMPANY-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CANCEL_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "HEAD_COMPANY"
+    },
+    {
+      "requirementId": "REQ_CANCEL_OPERATIONS_WORKSPACE_STORE_INVITATION",
+      "operationIdentity": {
+        "operationId": "cancelOperationsWorkspaceStoreInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-STORE-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CANCEL_OPERATIONS_WORKSPACE_STORE_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "STORE"
+    },
+    {
+      "requirementId": "REQ_CHANGE_CURRENT_PLATFORM_PASSWORD",
+      "operationIdentity": {
+        "operationId": "changeCurrentPlatformPassword",
+        "method": "POST",
+        "path": "/api/platform/auth/password",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CHANGE_CURRENT_PLATFORM_PASSWORD",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CHANGE_CURRENT_PLATFORM_PASSWORD",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CHANGE_CURRENT_WORKSPACE_PASSWORD",
+      "operationIdentity": {
+        "operationId": "changeCurrentWorkspacePassword",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CHANGE_CURRENT_WORKSPACE_PASSWORD",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CHANGE_CURRENT_WORKSPACE_PASSWORD",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_COMPLETE_PUBLIC_INVITATION",
+      "operationIdentity": {
+        "operationId": "completePublicInvitation",
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
+        "consumerFace": "public",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_COMPLETE_PUBLIC_INVITATION",
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_COMPLETE_PUBLIC_INVITATION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_COMPLETE_WORKSPACE_PASSWORD_RESET",
+      "operationIdentity": {
+        "operationId": "completeWorkspacePasswordReset",
+        "method": "POST",
+        "path": "/api/public/password-reset/{resetGenerationKey}/complete",
+        "consumerFace": "public",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_COMPLETE_WORKSPACE_PASSWORD_RESET",
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_COMPLETE_WORKSPACE_PASSWORD_RESET",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_CONTRACT",
+      "operationIdentity": {
+        "operationId": "createOperationsContract",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+        "consumerFace": "operations-admin",
+        "ownerModule": "contract"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_OPERATIONS_CONTRACT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "contract",
+      "ownerRecheckId": "OWNER_RECHECK_CONTRACT",
+      "typedProblemMappingId": "PROBLEM_CONTRACT_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_CONTRACT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND",
+      "operationIdentity": {
+        "operationId": "createOperationsOrganizationBrand",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_BRAND",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+      "operationIdentity": {
+        "operationId": "createOperationsOrganizationHeadCompany",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_ORGANIZATION_PROJECT",
+      "operationIdentity": {
+        "operationId": "createOperationsOrganizationProject",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_PROJECT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_ORGANIZATION_PROJECT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_ORGANIZATION_REGION",
+      "operationIdentity": {
+        "operationId": "createOperationsOrganizationRegion",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_REGION",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_ORGANIZATION_REGION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE",
+      "operationIdentity": {
+        "operationId": "createOperationsOrganizationStore",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_STORE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_ORGANIZATION_STORE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_ORGANIZATION_TENANT",
+      "operationIdentity": {
+        "operationId": "createOperationsOrganizationTenant",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_TENANT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_ORGANIZATION_TENANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_WORKSPACE_GROUP_INVITATION",
+      "operationIdentity": {
+        "operationId": "createOperationsWorkspaceGroupInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-GROUP-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_WORKSPACE_GROUP_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_WORKSPACE_REGION_INVITATION",
+      "operationIdentity": {
+        "operationId": "createOperationsWorkspaceRegionInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-REGION-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_WORKSPACE_REGION_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "REGION"
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_WORKSPACE_PROJECT_INVITATION",
+      "operationIdentity": {
+        "operationId": "createOperationsWorkspaceProjectInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-PROJECT-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_WORKSPACE_PROJECT_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "PROJECT"
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION",
+      "operationIdentity": {
+        "operationId": "createOperationsWorkspaceHeadCompanyInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-HEAD-COMPANY-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "HEAD_COMPANY"
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_WORKSPACE_STORE_INVITATION",
+      "operationIdentity": {
+        "operationId": "createOperationsWorkspaceStoreInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-STORE-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_OPERATIONS_WORKSPACE_STORE_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "STORE"
+    },
+    {
+      "requirementId": "REQ_CREATE_PLATFORM_ADMIN",
+      "operationIdentity": {
+        "operationId": "createPlatformAdmin",
+        "method": "POST",
+        "path": "/api/platform/admin-users",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_PLATFORM_ADMIN",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_PLATFORM_ADMIN",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_PLATFORM_GROUP_WORKSPACE",
+      "operationIdentity": {
+        "operationId": "createPlatformGroupWorkspace",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-workspace"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_PLATFORM_GROUP_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-workspace",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_WORKSPACE",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_WORKSPACE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_PLATFORM_GROUP_WORKSPACE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_WORKSPACE_ROLE",
+      "operationIdentity": {
+        "operationId": "createWorkspaceRole",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
+        "consumerFace": "platform-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_CREATE_WORKSPACE_ROLE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_CREATE_WORKSPACE_ROLE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_INITIALIZE_COMMERCIAL_GROUP",
+      "operationIdentity": {
+        "operationId": "initializeCommercialGroup",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
+        "consumerFace": "platform-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_INITIALIZE_COMMERCIAL_GROUP",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_INITIALIZE_COMMERCIAL_GROUP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_INVALIDATE_OPERATIONS_CONTRACT",
+      "operationIdentity": {
+        "operationId": "invalidateOperationsContract",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+        "consumerFace": "operations-admin",
+        "ownerModule": "contract"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_INVALIDATE_OPERATIONS_CONTRACT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "contract",
+      "ownerRecheckId": "OWNER_RECHECK_CONTRACT",
+      "typedProblemMappingId": "PROBLEM_CONTRACT_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_INVALIDATE_OPERATIONS_CONTRACT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_OPERATIONS_WORKSPACE_LOGOUT",
+      "operationIdentity": {
+        "operationId": "operationsWorkspaceLogout",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_OPERATIONS_WORKSPACE_LOGOUT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_OPERATIONS_WORKSPACE_LOGOUT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_OPERATIONS_WORKSPACE_PASSWORD_LOGIN",
+      "operationIdentity": {
+        "operationId": "operationsWorkspacePasswordLogin",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_OPERATIONS_WORKSPACE_PASSWORD_LOGIN",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_OPERATIONS_WORKSPACE_PASSWORD_LOGIN",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_PLATFORM_LOGOUT",
+      "operationIdentity": {
+        "operationId": "platformLogout",
+        "method": "POST",
+        "path": "/api/platform/auth/logout",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_PLATFORM_LOGOUT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_PLATFORM_LOGOUT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_PLATFORM_PASSWORD_LOGIN",
+      "operationIdentity": {
+        "operationId": "platformPasswordLogin",
+        "method": "POST",
+        "path": "/api/platform/auth/password-login",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_PLATFORM_PASSWORD_LOGIN",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_PLATFORM_PASSWORD_LOGIN",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_REISSUE_OPERATIONS_WORKSPACE_GROUP_INVITATION",
+      "operationIdentity": {
+        "operationId": "reissueOperationsWorkspaceGroupInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-GROUP-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REISSUE_OPERATIONS_WORKSPACE_GROUP_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
+    },
+    {
+      "requirementId": "REQ_REISSUE_OPERATIONS_WORKSPACE_REGION_INVITATION",
+      "operationIdentity": {
+        "operationId": "reissueOperationsWorkspaceRegionInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-REGION-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REISSUE_OPERATIONS_WORKSPACE_REGION_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "REGION"
+    },
+    {
+      "requirementId": "REQ_REISSUE_OPERATIONS_WORKSPACE_PROJECT_INVITATION",
+      "operationIdentity": {
+        "operationId": "reissueOperationsWorkspaceProjectInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-PROJECT-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REISSUE_OPERATIONS_WORKSPACE_PROJECT_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "PROJECT"
+    },
+    {
+      "requirementId": "REQ_REISSUE_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION",
+      "operationIdentity": {
+        "operationId": "reissueOperationsWorkspaceHeadCompanyInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-HEAD-COMPANY-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REISSUE_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "HEAD_COMPANY"
+    },
+    {
+      "requirementId": "REQ_REISSUE_OPERATIONS_WORKSPACE_STORE_INVITATION",
+      "operationIdentity": {
+        "operationId": "reissueOperationsWorkspaceStoreInvitation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-STORE-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REISSUE_OPERATIONS_WORKSPACE_STORE_INVITATION",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "STORE"
+    },
+    {
+      "requirementId": "REQ_REPLACE_EXTENSION_DEFINITION",
+      "operationIdentity": {
+        "operationId": "replaceExtensionDefinition",
+        "method": "PUT",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+        "consumerFace": "platform-admin",
+        "ownerModule": "extension"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_REPLACE_EXTENSION_DEFINITION",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "extension",
+      "ownerRecheckId": "OWNER_RECHECK_EXTENSION",
+      "typedProblemMappingId": "PROBLEM_EXTENSION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REPLACE_EXTENSION_DEFINITION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION",
+      "operationIdentity": {
+        "operationId": "addOperationsOrganizationHeadCompanyBrandAuthorization",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-ORG-HEAD-COMPANY-BRAND",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION",
+      "operationIdentity": {
+        "operationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+        "method": "DELETE",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-ORG-HEAD-COMPANY-BRAND",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_REQUEST_WORKSPACE_CREDENTIAL_RESET",
+      "operationIdentity": {
+        "operationId": "requestWorkspaceCredentialReset",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
+        "consumerFace": "platform-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_REQUEST_WORKSPACE_CREDENTIAL_RESET",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REQUEST_WORKSPACE_CREDENTIAL_RESET",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_RESET_PLATFORM_ADMIN_CREDENTIAL",
+      "operationIdentity": {
+        "operationId": "resetPlatformAdminCredential",
+        "method": "POST",
+        "path": "/api/platform/admin-users/{platformAdminId}/credential-reset",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_RESET_PLATFORM_ADMIN_CREDENTIAL",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_RESET_PLATFORM_ADMIN_CREDENTIAL",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_REVOKE_OPERATIONS_WORKSPACE_GROUP_USER_ASSIGNMENT",
+      "operationIdentity": {
+        "operationId": "revokeOperationsWorkspaceGroupUserAssignment",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-GROUP-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REVOKE_OPERATIONS_WORKSPACE_GROUP_USER_ASSIGNMENT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
+    },
+    {
+      "requirementId": "REQ_REVOKE_OPERATIONS_WORKSPACE_REGION_USER_ASSIGNMENT",
+      "operationIdentity": {
+        "operationId": "revokeOperationsWorkspaceRegionUserAssignment",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-REGION-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REVOKE_OPERATIONS_WORKSPACE_REGION_USER_ASSIGNMENT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "REGION"
+    },
+    {
+      "requirementId": "REQ_REVOKE_OPERATIONS_WORKSPACE_PROJECT_USER_ASSIGNMENT",
+      "operationIdentity": {
+        "operationId": "revokeOperationsWorkspaceProjectUserAssignment",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-PROJECT-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REVOKE_OPERATIONS_WORKSPACE_PROJECT_USER_ASSIGNMENT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "PROJECT"
+    },
+    {
+      "requirementId": "REQ_REVOKE_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_ASSIGNMENT",
+      "operationIdentity": {
+        "operationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REVOKE_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_ASSIGNMENT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "HEAD_COMPANY"
+    },
+    {
+      "requirementId": "REQ_REVOKE_OPERATIONS_WORKSPACE_STORE_USER_ASSIGNMENT",
+      "operationIdentity": {
+        "operationId": "revokeOperationsWorkspaceStoreUserAssignment",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-STORE-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REVOKE_OPERATIONS_WORKSPACE_STORE_USER_ASSIGNMENT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "STORE"
+    },
+    {
+      "requirementId": "REQ_REVOKE_PLATFORM_WORKSPACE_ASSIGNMENT",
+      "operationIdentity": {
+        "operationId": "revokePlatformWorkspaceAssignment",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
+        "consumerFace": "platform-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_REVOKE_PLATFORM_WORKSPACE_ASSIGNMENT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REVOKE_PLATFORM_WORKSPACE_ASSIGNMENT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SAVE_PUBLIC_INVITATION_CREDENTIALS",
+      "operationIdentity": {
+        "operationId": "savePublicInvitationCredentials",
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials",
+        "consumerFace": "public",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_SAVE_PUBLIC_INVITATION_CREDENTIALS",
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SAVE_PUBLIC_INVITATION_CREDENTIALS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SELECT_OPERATIONS_WORKSPACE_SESSION_CONTEXT",
+      "operationIdentity": {
+        "operationId": "selectOperationsWorkspaceSessionContext",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_SELECT_OPERATIONS_WORKSPACE_SESSION_CONTEXT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SELECT_OPERATIONS_WORKSPACE_SESSION_CONTEXT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SELECT_OPERATIONS_WORKSPACE_SESSION_DATA_NODE",
+      "operationIdentity": {
+        "operationId": "selectOperationsWorkspaceSessionDataNode",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_SELECT_OPERATIONS_WORKSPACE_SESSION_DATA_NODE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SELECT_OPERATIONS_WORKSPACE_SESSION_DATA_NODE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SEND_OPERATIONS_WORKSPACE_OTP",
+      "operationIdentity": {
+        "operationId": "sendOperationsWorkspaceOtp",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_SEND_OPERATIONS_WORKSPACE_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SEND_OPERATIONS_WORKSPACE_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SEND_PUBLIC_INVITATION_OTP",
+      "operationIdentity": {
+        "operationId": "sendPublicInvitationOtp",
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send",
+        "consumerFace": "public",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_SEND_PUBLIC_INVITATION_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SEND_PUBLIC_INVITATION_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SEND_WORKSPACE_PASSWORD_RESET_OTP",
+      "operationIdentity": {
+        "operationId": "sendWorkspacePasswordResetOtp",
+        "method": "POST",
+        "path": "/api/public/password-reset/{resetGenerationKey}/otp/send",
+        "consumerFace": "public",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_SEND_WORKSPACE_PASSWORD_RESET_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SEND_WORKSPACE_PASSWORD_RESET_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_STAGE_PLATFORM_ASSET",
+      "operationIdentity": {
+        "operationId": "stagePlatformAsset",
+        "method": "POST",
+        "path": "/api/platform/assets/staging",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-asset"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_STAGE_PLATFORM_ASSET",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-asset",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_ASSET",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_ASSET_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_STAGE_PLATFORM_ASSET",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_RELEASE_PLATFORM_STAGED_ASSET",
+      "operationIdentity": {
+        "operationId": "releasePlatformStagedAsset",
+        "method": "POST",
+        "path": "/api/platform/assets/staging/{assetRef}/release",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-asset"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_RELEASE_PLATFORM_STAGED_ASSET",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-asset",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_ASSET",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_ASSET_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_RELEASE_PLATFORM_STAGED_ASSET",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionOperationsOrganizationBrandStatus",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionOperationsOrganizationHeadCompanyStatus",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_OPERATIONS_ORGANIZATION_NODE_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionOperationsOrganizationNodeStatus",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_NODE_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_OPERATIONS_ORGANIZATION_NODE_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_OPERATIONS_ORGANIZATION_STORE_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionOperationsOrganizationStoreStatus",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_STORE_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_OPERATIONS_ORGANIZATION_STORE_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_OPERATIONS_ORGANIZATION_TENANT_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionOperationsOrganizationTenantStatus",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_TENANT_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_OPERATIONS_ORGANIZATION_TENANT_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_PLATFORM_ADMIN_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionPlatformAdminStatus",
+        "method": "POST",
+        "path": "/api/platform/admin-users/{platformAdminId}/status",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_PLATFORM_ADMIN_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_PLATFORM_ADMIN_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_PLATFORM_GROUP_WORKSPACE_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionPlatformGroupWorkspaceStatus",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-workspace"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_PLATFORM_GROUP_WORKSPACE_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-workspace",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_WORKSPACE",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_WORKSPACE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_PLATFORM_GROUP_WORKSPACE_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_WORKSPACE_ACCOUNT_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionWorkspaceAccountStatus",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
+        "consumerFace": "platform-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_WORKSPACE_ACCOUNT_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_WORKSPACE_ACCOUNT_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_WORKSPACE_ROLE_STATUS",
+      "operationIdentity": {
+        "operationId": "transitionWorkspaceRoleStatus",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
+        "consumerFace": "platform-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_TRANSITION_WORKSPACE_ROLE_STATUS",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_TRANSITION_WORKSPACE_ROLE_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_CONTRACT",
+      "operationIdentity": {
+        "operationId": "updateOperationsContract",
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "contract"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_UPDATE_OPERATIONS_CONTRACT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "contract",
+      "ownerRecheckId": "OWNER_RECHECK_CONTRACT",
+      "typedProblemMappingId": "PROBLEM_CONTRACT_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_OPERATIONS_CONTRACT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_ORGANIZATION_BRAND",
+      "operationIdentity": {
+        "operationId": "updateOperationsOrganizationBrand",
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_UPDATE_OPERATIONS_ORGANIZATION_BRAND",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_OPERATIONS_ORGANIZATION_BRAND",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+      "operationIdentity": {
+        "operationId": "updateOperationsOrganizationHeadCompany",
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_UPDATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "ORG_NODE_EDIT",
+      "operationIdentity": {
+        "operationId": "updateOperationsOrganizationNode",
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {
+        "kind": "SERVER_RESOLVED_RESOURCE_TYPE",
+        "resourceTypeCapabilities": {
+          "REGION": "BC-ORG-REGION-EDIT",
+          "PROJECT": "BC-ORG-PROJECT-EDIT"
+        },
+        "unsupportedResourceTypeDecision": "DENY"
+      },
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_ORG_NODE_EDIT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_ORGANIZATION_STORE",
+      "operationIdentity": {
+        "operationId": "updateOperationsOrganizationStore",
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_UPDATE_OPERATIONS_ORGANIZATION_STORE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_OPERATIONS_ORGANIZATION_STORE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_ORGANIZATION_TENANT",
+      "operationIdentity": {
+        "operationId": "updateOperationsOrganizationTenant",
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_UPDATE_OPERATIONS_ORGANIZATION_TENANT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_OPERATIONS_ORGANIZATION_TENANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_PLATFORM_ADMIN_PROFILE",
+      "operationIdentity": {
+        "operationId": "updatePlatformAdminProfile",
+        "method": "PATCH",
+        "path": "/api/platform/admin-users/{platformAdminId}/profile",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_UPDATE_PLATFORM_ADMIN_PROFILE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_PLATFORM_ADMIN_PROFILE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_PLATFORM_GROUP_WORKSPACE_DISPLAY",
+      "operationIdentity": {
+        "operationId": "updatePlatformGroupWorkspaceDisplay",
+        "method": "PATCH",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
+        "consumerFace": "platform-admin",
+        "ownerModule": "platform-workspace"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_UPDATE_PLATFORM_GROUP_WORKSPACE_DISPLAY",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-workspace",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_WORKSPACE",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_WORKSPACE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_PLATFORM_GROUP_WORKSPACE_DISPLAY",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_WORKSPACE_ROLE",
+      "operationIdentity": {
+        "operationId": "updateWorkspaceRole",
+        "method": "PATCH",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
+        "consumerFace": "platform-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "CAP_UPDATE_WORKSPACE_ROLE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_WORKSPACE_ROLE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_VERIFY_OPERATIONS_WORKSPACE_OTP",
+      "operationIdentity": {
+        "operationId": "verifyOperationsWorkspaceOtp",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_VERIFY_OPERATIONS_WORKSPACE_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_VERIFY_OPERATIONS_WORKSPACE_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_VERIFY_PUBLIC_INVITATION_OTP",
+      "operationIdentity": {
+        "operationId": "verifyPublicInvitationOtp",
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
+        "consumerFace": "public",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_VERIFY_PUBLIC_INVITATION_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_VERIFY_PUBLIC_INVITATION_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_VERIFY_WORKSPACE_PASSWORD_RESET_OTP",
+      "operationIdentity": {
+        "operationId": "verifyWorkspacePasswordResetOtp",
+        "method": "POST",
+        "path": "/api/public/password-reset/{resetGenerationKey}/otp/verify",
+        "consumerFace": "public",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_VERIFY_WORKSPACE_PASSWORD_RESET_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_VERIFY_WORKSPACE_PASSWORD_RESET_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_GROUP_INVITATIONS",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceGroupInvitations",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-GROUP-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_GROUP_INVITATIONS",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_GROUP_INVITATION_CANDIDATES",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-GROUP-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_GROUP_INVITATION_CANDIDATES",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceGroupUser",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-GROUP-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER_ACCOUNT",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceGroupUserAccount",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-GROUP-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER_ACCOUNT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_REGION_INVITATIONS",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceRegionInvitations",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-REGION-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_REGION_INVITATIONS",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "REGION"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_REGION_INVITATION_CANDIDATES",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceRegionInvitationCandidates",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-REGION-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_REGION_INVITATION_CANDIDATES",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "REGION"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_REGION_USER",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceRegionUser",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-REGION-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_REGION_USER",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "REGION"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_REGION_USER_ACCOUNT",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceRegionUserAccount",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-REGION-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_REGION_USER_ACCOUNT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "REGION"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_PROJECT_INVITATIONS",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceProjectInvitations",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-PROJECT-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_PROJECT_INVITATIONS",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "PROJECT"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_PROJECT_INVITATION_CANDIDATES",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceProjectInvitationCandidates",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-PROJECT-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_PROJECT_INVITATION_CANDIDATES",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "PROJECT"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_PROJECT_USER",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceProjectUser",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-PROJECT-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_PROJECT_USER",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "PROJECT"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_PROJECT_USER_ACCOUNT",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceProjectUserAccount",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-PROJECT-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_PROJECT_USER_ACCOUNT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "PROJECT"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATIONS",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceHeadCompanyInvitations",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-HEAD-COMPANY-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATIONS",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "HEAD_COMPANY"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION_CANDIDATES",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-HEAD-COMPANY-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION_CANDIDATES",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "HEAD_COMPANY"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceHeadCompanyUser",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "HEAD_COMPANY"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_ACCOUNT",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceHeadCompanyUserAccount",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_ACCOUNT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "HEAD_COMPANY"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_STORE_INVITATIONS",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceStoreInvitations",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-STORE-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_STORE_INVITATIONS",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "STORE"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_STORE_INVITATION_CANDIDATES",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceStoreInvitationCandidates",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-STORE-INVITE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_STORE_INVITATION_CANDIDATES",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "STORE"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_STORE_USER",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceStoreUser",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-STORE-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_STORE_USER",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "STORE"
+    },
+    {
+      "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_STORE_USER_ACCOUNT",
+      "operationIdentity": {
+        "operationId": "getOperationsWorkspaceStoreUserAccount",
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "workspace-iam"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-IAM-STORE-ROLE-REVOKE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_STORE_USER_ACCOUNT",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "STORE"
+    },
+    {
+      "requirementId": "REQ_SEND_PLATFORM_LOGIN_OTP",
+      "operationIdentity": {"operationId": "sendPlatformLoginOtp", "method": "POST", "path": "/api/platform/auth/login-otp/send", "consumerFace": "platform-admin", "ownerModule": "platform-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_SEND_PLATFORM_LOGIN_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SEND_PLATFORM_LOGIN_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_VERIFY_PLATFORM_LOGIN_OTP",
+      "operationIdentity": {"operationId": "verifyPlatformLoginOtp", "method": "POST", "path": "/api/platform/auth/login-otp/verify", "consumerFace": "platform-admin", "ownerModule": "platform-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_VERIFY_PLATFORM_LOGIN_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_VERIFY_PLATFORM_LOGIN_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_START_PLATFORM_PASSWORD_RECOVERY",
+      "operationIdentity": {"operationId": "startPlatformPasswordRecovery", "method": "POST", "path": "/api/platform/auth/password-recovery/start", "consumerFace": "platform-admin", "ownerModule": "platform-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_START_PLATFORM_PASSWORD_RECOVERY",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_START_PLATFORM_PASSWORD_RECOVERY",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SEND_PLATFORM_PASSWORD_RECOVERY_OTP",
+      "operationIdentity": {"operationId": "sendPlatformPasswordRecoveryOtp", "method": "POST", "path": "/api/platform/auth/password-recovery/otp/send", "consumerFace": "platform-admin", "ownerModule": "platform-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_SEND_PLATFORM_PASSWORD_RECOVERY_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SEND_PLATFORM_PASSWORD_RECOVERY_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_VERIFY_PLATFORM_PASSWORD_RECOVERY_OTP",
+      "operationIdentity": {"operationId": "verifyPlatformPasswordRecoveryOtp", "method": "POST", "path": "/api/platform/auth/password-recovery/otp/verify", "consumerFace": "platform-admin", "ownerModule": "platform-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_VERIFY_PLATFORM_PASSWORD_RECOVERY_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_VERIFY_PLATFORM_PASSWORD_RECOVERY_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_COMPLETE_PLATFORM_PASSWORD_RECOVERY",
+      "operationIdentity": {"operationId": "completePlatformPasswordRecovery", "method": "POST", "path": "/api/platform/auth/password-recovery/complete", "consumerFace": "platform-admin", "ownerModule": "platform-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_COMPLETE_PLATFORM_PASSWORD_RECOVERY",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "platform-iam",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_IAM",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_COMPLETE_PLATFORM_PASSWORD_RECOVERY",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_START_OPERATIONS_PASSWORD_RECOVERY",
+      "operationIdentity": {"operationId": "startOperationsPasswordRecovery", "method": "POST", "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start", "consumerFace": "public", "ownerModule": "workspace-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_START_OPERATIONS_PASSWORD_RECOVERY",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_START_OPERATIONS_PASSWORD_RECOVERY",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SEND_OPERATIONS_PASSWORD_RECOVERY_OTP",
+      "operationIdentity": {"operationId": "sendOperationsPasswordRecoveryOtp", "method": "POST", "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send", "consumerFace": "public", "ownerModule": "workspace-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_SEND_OPERATIONS_PASSWORD_RECOVERY_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_SEND_OPERATIONS_PASSWORD_RECOVERY_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_VERIFY_OPERATIONS_PASSWORD_RECOVERY_OTP",
+      "operationIdentity": {"operationId": "verifyOperationsPasswordRecoveryOtp", "method": "POST", "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify", "consumerFace": "public", "ownerModule": "workspace-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_VERIFY_OPERATIONS_PASSWORD_RECOVERY_OTP",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_VERIFY_OPERATIONS_PASSWORD_RECOVERY_OTP",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_COMPLETE_OPERATIONS_PASSWORD_RECOVERY",
+      "operationIdentity": {"operationId": "completeOperationsPasswordRecovery", "method": "POST", "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete", "consumerFace": "public", "ownerModule": "workspace-iam"},
+      "authorizationMode": "PUBLIC_PROTOCOL",
+      "capabilityKey": "CAP_COMPLETE_OPERATIONS_PASSWORD_RECOVERY",
+      "resolverId": "PUBLIC_PROTOCOL_OWNER_FACT",
+      "ownerModule": "workspace-iam",
+      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
+      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_COMPLETE_OPERATIONS_PASSWORD_RECOVERY",
+      "noClientDerivedAuthorization": true
+    }
+  ]
+}

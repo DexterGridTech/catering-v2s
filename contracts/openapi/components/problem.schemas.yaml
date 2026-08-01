@@ -1,0 +1,18 @@
+{
+  "components": {
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": ["code", "title"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": ["INVALID_EDGE_CONTEXT", "GROUP_WORKSPACE_NOT_FOUND", "COMMERCIAL_GROUP_ALREADY_INITIALIZED", "IDEMPOTENCY_CONFLICT", "VALIDATION_FAILED", "UNKNOWN_SUBMISSION_RESULT"]
+          },
+          "title": {"type": "string"},
+          "detail": {"type": "string"}
+        }
+      }
+    }
+  }
+}

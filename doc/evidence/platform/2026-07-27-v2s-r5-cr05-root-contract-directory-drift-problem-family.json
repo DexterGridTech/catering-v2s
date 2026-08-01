@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "CR05-ROOT-CONTRACT-DIRECTORY-DRIFT",
+  "genericProblem": "A contract generator or an ad-hoc preparation step materializes contract-relative directory names at the repository root, leaving empty look-alike roots outside the approved contracts/openapi ownership boundary.",
+  "rootCauseClass": "OUTPUT_BASE_PATH_DRIFT_AND_MISSING_ROOT_ALLOWLIST_CONTROL",
+  "finiteDenominator": [
+    "all repository-root directories",
+    "all empty repository-root directory trees",
+    "both contract-relative top-level families emitted by the accepted edge materializer: components and paths",
+    "all source references to repository-root components/ or paths/"
+  ],
+  "searchedSurfaces": [
+    "components/",
+    "paths/",
+    "contracts/openapi/components/",
+    "contracts/openapi/paths/",
+    "scripts/generate/r5-edge-materialize.mjs",
+    "scripts/generate/edge-codegen.mjs",
+    "tools/code-layout/cli.mjs",
+    "repository-root build and workspace descriptors"
+  ],
+  "searchQueries": [
+    "find components paths -type f -o -type l",
+    "find repository root and depth-two empty directories",
+    "rg repository-root components and paths references outside contracts and documentation",
+    "rg mkdirSync, path.join and path.resolve calls involving components or paths",
+    "compare directory mtimes for same-run sibling creation"
+  ],
+  "counterexamples": [
+    "contracts/openapi/components and contracts/openapi/paths are the approved non-empty contract source roots and must remain.",
+    "tools/r3-frontend-boundaries and tools/r3-gates are unrelated historical empty directories with different ownership and are not deleted by this disposition.",
+    "OpenAPI internal references containing #/components are schema syntax, not filesystem references to repository-root components."
+  ],
+  "findings": [
+    {
+      "findingId": "RD-01",
+      "problem": "Repository-root components contains eight empty owner-like child directories, has no files or symlinks, and has no runtime/build/source reference.",
+      "expected": "Only contracts/openapi/components owns component source directories."
+    },
+    {
+      "findingId": "RD-02",
+      "problem": "Repository-root paths contains three empty face-like child directories created in the same minute as root components and likewise has no files or references.",
+      "expected": "Only contracts/openapi/paths owns path source directories."
+    },
+    {
+      "findingId": "RD-03",
+      "problem": "The existing code-layout control validates selected source and contract children but does not reject unapproved repository-root directories, so both sibling drifts are false green.",
+      "expected": "The existing code-layout control derives or declares the approved root families and rejects repository-root components and paths with a production red mutation."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "RD-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/code-layout/cli.mjs#repository-root-allowlist"
+    },
+    {
+      "findingId": "RD-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/code-layout/cli.mjs#repository-root-allowlist"
+    },
+    {
+      "findingId": "RD-03",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/code-layout/cli.mjs#repository-root-allowlist-red-fixture"
+    }
+  ]
+}

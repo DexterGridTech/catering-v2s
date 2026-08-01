@@ -1,0 +1,274 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "R4-WHOLE-SCOPE-MACHINE-GATES",
+  "mechanicalRefresh": {
+    "reason": "Governance batch evolved the granularity checker after this R4 design cycle was frozen; bindings are refreshed for current-tool validation and do not reset R4-W2-DESIGN-20260725.",
+    "doesNotResetReviewCycle": true
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md",
+    "sha256": "dba50a38dca59ab0d9156df23dab23ede3d842256eb9c541978c288dbca0dddf"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-07-25-v2s-r4-design-authorization.md",
+    "sha256": "2d6715e1aca11a00a7f78da34bae00c441219871198a750066f95b9cd21b2ae5",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "8a2c263686747221f690811e5b6f47d266dd0bb7e85367ea00b693b84ee3a88e"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "SEVERITY_COUNT_MISMATCH",
+      "ROUND_THREE",
+      "MISSING_FINDING_UNIT_LINK",
+      "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE"
+    ]
+  },
+  "candidateJourney": {
+    "id": "R4-TECH",
+    "status": "NOT_A_BUSINESS_JOURNEY",
+    "actor": "Codex/Claude engineering verification consumer",
+    "task": "在 R5 迁移前验证模块、数据库、契约、生成面、边界和退役规则",
+    "pageKey": "R4_TECHNICAL_STEP_NOT_A_UI_PAGE",
+    "ownerReadback": "scripts/verify deterministic evidence report",
+    "mutations": []
+  },
+  "standardsCoverage": {
+    "source": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+    "matrix": "contracts/policy/standards-coverage-matrix.json",
+    "partB": {
+      "B.1": {"ruleIds": ["B.1.N01-B.1.N17"], "designUnits": ["R4-U03", "R4-U07"]},
+      "B.2": {"ruleIds": ["B.2.N01-B.2.N15"], "designUnits": ["R4-U02", "R4-U04"]},
+      "B.3": {"ruleIds": ["B.3.N01-B.3.N12"], "designUnits": ["R4-U02", "R4-U07"]},
+      "B.4": {"ruleIds": ["B.4.N01-B.4.N20"], "designUnits": ["R4-U03", "R4-U05"]},
+      "B.5": {"ruleIds": ["B.5.N01-B.5.N15"], "designUnits": ["R4-U05"], "note": "R4 has no new UI; current accepted R3 UI is regression input and no new Journey is created."},
+      "B.6": {"ruleIds": ["B.6.N01-B.6.N06"], "designUnits": ["R4-U04", "R4-U07"]}
+    },
+    "partC": {
+      "C.1-owner-and-transaction": {"designUnits": ["R4-U02", "R4-U04"], "ruleIds": ["C.TABLE.01-C.TABLE.06"]},
+      "C.2-contract-and-generated-face": {"designUnits": ["R4-U05"], "ruleIds": ["C.TABLE.07-C.TABLE.12"]},
+      "C.3-frontend-foundation-and-test-patterns": {"designUnits": ["R4-U03", "R4-U05"], "ruleIds": ["C.TABLE.13-C.TABLE.19"]},
+      "C.4-run-and-red-fixture-patterns": {"designUnits": ["R4-U06", "R4-U07"], "ruleIds": ["C.TABLE.20-C.TABLE.23"]}
+    },
+    "partD": {
+      "D.1-layout": {"ruleIds": ["D.1.*"], "designUnits": ["R4-U02", "R4-U03"]},
+      "D.2-contract-governance": {"ruleIds": ["D.2.L01-D.2.L04"], "designUnits": ["R4-U05"]},
+      "D.3-gate-discipline": {"ruleIds": ["D.3.L01-D.3.L03"], "designUnits": ["R4-U01", "R4-U07"]},
+      "D.4-document-governance": {"ruleIds": ["D.4.*"], "designUnits": ["R4-U01", "R4-U08"]},
+      "D.5-process-sizing": {"ruleIds": ["D.5.*"], "designUnits": ["R4-U01", "R4-U07", "R4-U08"]},
+      "D.6-version-and-dependency": {"ruleIds": ["D.6.*"], "designUnits": ["R4-U02", "R4-U04", "R4-U05"]},
+      "D.7-AI-first-entry": {"ruleIds": ["D.7.*"], "designUnits": ["R4-U01", "R4-U07"]},
+      "D.8-logging": {"ruleIds": ["D.8.L01-D.8.L03"], "designUnits": ["R4-U06", "R4-U07"]}
+    }
+  },
+  "deliveryUnits": [
+    {
+      "id": "R4-U01",
+      "title": "标准分母、gate catalog 与 phase closure",
+      "approvedAssertions": ["R4 denominator is the standards matrix", "planned enforcement is not claimed active before production wiring", "all 12 ARCHUNIT refs are corrected to the catering-business-server test path during implementation", "R2 standards N-2 enforcement-kind corrections are individually verified before phase activation"],
+      "approvedSources": [
+        {"path": "project-memory/decisions/deterministic-context-only.md", "anchor": "# Deterministic context only", "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"},
+        {"path": "contracts/policy/standards-coverage-matrix.json", "anchor": "\"kind\": \"standards-coverage-matrix\"", "sha256": "72c7e00e45d75b16572adf98554b990f0dc1914e0d94508454b9d8c61a45bd00"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "anchor": "### R4-U01 — 标准分母、gate catalog 与 phase closure"},
+      "currentDeviation": "R4 matrix entries are planned, 12 ARCHUNIT refs still use the pre-layout path, R2 standards N-2 enforcement-kind corrections remain pending, and scripts/verify does not yet own the full R4 gate sequence.",
+      "changeSurfaces": [
+        {"path": "contracts/policy/standards-coverage-matrix.json", "disposition": "update", "target": "phase enforcement status after real implementation"},
+        {"path": "scripts/check/standards-coverage", "disposition": "update", "target": "R4 phase and source denominator validation"},
+        {"path": "contracts/policy/r4-gate-catalog.json", "disposition": "create", "target": "single gate-to-rule catalog"},
+        {"path": "doc/evidence/platform/r4-standards-coverage-evidence.json", "disposition": "create", "target": "fresh rule/hash/evidence receipt"}
+      ],
+      "orderedChain": ["freeze source and matrix hashes", "correct 12 ARCHUNIT refs and classify R2 N-2 enforcement kinds", "bind each rule to gate or checklist", "implement production validators", "run true red mutations", "activate only verified rows"],
+      "dependencyAndSerialBoundaries": ["Must finish before U02-U08 claim R4 standard closure; no status-only matrix edit."],
+      "dataEvolution": {"notApplicableReason": "No business schema or runtime data."},
+      "uiAndTerms": {"notApplicableReason": "R4 is not a UI-bearing Journey.", "termSource": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md#0. 结论、真实任务和边界"},
+      "evidence": {"l1": "rule count, source hash, memory anchor and enforcement destination", "l2": "standards checker self-test and true phase red/green mutation", "l3": "not applicable", "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP", "cleanup": "scratch fixture and report resources removed"},
+      "forbiddenPseudoFixes": ["status-only activation", "fixture-only red proof", "keyword checker for semantic review", "source hash omission", "old ARCHUNIT path", "empty assertion to retain an overbroad ARCHUNIT classification"],
+      "discriminator": {"fixture": "a planned rule without a production gate or explicit checklist must make phase coverage fail"}
+    },
+    {
+      "id": "R4-U02",
+      "title": "后端 ArchUnit、模块依赖与 owner 边界",
+      "approvedAssertions": ["module and owner boundaries are production-tested", "dependency registry imports/FK/task-read edges reconcile"],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.2 领域与模块边界", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"},
+        {"path": "contracts/policy/module-dependency-registry.json", "anchor": "\"kind\": \"module-dependency-registry\"", "sha256": "7428dc2d000066aca10f88be009a56be9967447e19812760c51036e9231cfca4"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "anchor": "### R4-U02 — 后端 ArchUnit、模块依赖与 owner 边界"},
+      "currentDeviation": "The current tree has R3 modules but no complete R4 ArchUnit and three-way reality gate.",
+      "changeSurfaces": [
+        {"path": "apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java", "disposition": "create", "target": "ArchUnit production test"},
+        {"path": "scripts/check/backend-boundaries", "disposition": "create", "target": "native backend boundary entry"},
+        {"path": "tools/verify-gates/backend-boundaries.mjs", "disposition": "create", "target": "shared validator and self-test"},
+        {"path": "apps/backend/terminal-data-server/", "disposition": "retain", "target": "empty TDP placeholder with no runtime/source/wire"}
+      ],
+      "orderedChain": ["lock module registry", "run ArchUnit", "reconcile imports/FK/task-read", "run red mutations", "compile and publish L1/L2 evidence"],
+      "dependencyAndSerialBoundaries": ["Depends on U01 rule bindings; U04/U05 must consume the same owner and dependency facts; no TDP placeholder expansion."],
+      "dataEvolution": {"notApplicableReason": "Gate code adds no business schema or data."},
+      "uiAndTerms": {"notApplicableReason": "Backend architecture gate has no user surface.", "termSource": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md#3. 跨单元数据、事务和前端边界"},
+      "evidence": {"l1": "ArchUnit/import/registry and compile", "l2": "real forbidden-edge and cycle red fixtures", "l3": "backend module boundary only", "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP", "cleanup": "test classpath and temporary outputs removed"},
+      "forbiddenPseudoFixes": ["string-only import scan", "coordinator exception allowlist", "TDP source stub", "registry copied without reality reconciliation"],
+      "discriminator": {"fixture": "a coordinator repository import must fail through the production gate, not only a helper self-test"}
+    },
+    {
+      "id": "R4-U03",
+      "title": "安全边界、consumer face 与两个 admin app 架构",
+      "approvedAssertions": ["edge face is fail-closed", "two admin apps and foundation direction remain independent"],
+      "approvedSources": [
+        {"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### B.1 授权与会话安全", "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"},
+        {"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### B.4 前端架构与状态", "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "anchor": "### R4-U03 — 安全边界、consumer face 与两个 admin app 架构"},
+      "currentDeviation": "R3 has focused boundary checks but the full R4 security and frontend architecture denominator is not active.",
+      "changeSurfaces": [
+        {"path": "scripts/check/security-boundaries", "disposition": "create", "target": "edge/face/security gate"},
+        {"path": "scripts/check/frontend-architecture", "disposition": "create", "target": "two-app and foundation direction gate"},
+        {"path": "tools/verify-gates/security-boundaries.mjs", "disposition": "create", "target": "shared security validator"},
+        {"path": "tools/verify-gates/frontend-architecture.mjs", "disposition": "create", "target": "shared frontend validator"},
+        {"path": "libraries/frontend/admin-ui-foundation/", "disposition": "retain", "target": "copied foundation, wire-agnostic and not yet consumed"}
+      ],
+      "orderedChain": ["read face and app ownership sources", "implement production checks", "mutate edge/app/foundation direction", "run app builds and focused tests"],
+      "dependencyAndSerialBoundaries": ["Depends on U01 and current R3 edge/app sources; U05 consumes face truth; no operations login or new UI Journey."],
+      "dataEvolution": {"notApplicableReason": "No business data or schema."},
+      "uiAndTerms": {"notApplicableReason": "R4 adds no page; current R3 boundary is regression evidence only.", "termSource": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md#0. 结论、真实任务和边界"},
+      "evidence": {"l1": "source/import/face security checks", "l2": "forged edge and reverse-import red fixtures", "l3": "two app builds/routes", "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP", "cleanup": "build/generated/test resources removed"},
+      "forbiddenPseudoFixes": ["frontend hiding as authorization", "manual face allowlist", "foundation dynamic import", "operations login shell"],
+      "discriminator": {"fixture": "foundation importing an app-owned generated type must fail the production architecture run"}
+    },
+    {
+      "id": "R4-U04",
+      "title": "Flyway、schema/FK、SQL/query 与真库负例",
+      "approvedAssertions": ["one database and one Flyway history remain enforced", "real database negatives prove FK/security/CAS/query rules"],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.7 单库、多 schema 与完整性", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"},
+        {"path": "doc/decisions/2026-07-24-v2s-verification-governance.md", "anchor": "## 4. 假绿优先治理", "sha256": "c9632a65f9eac7678a4be919d980894e3f1e71e5e2e1ddce70ea3c7091d829dc"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "anchor": "### R4-U04 — Flyway、schema/FK、SQL/query 与真库负例"},
+      "currentDeviation": "R3 has a bounded migration baseline but no full R4 SQL/query/security/rollback denominator.",
+      "changeSurfaces": [
+        {"path": "scripts/check/database-boundaries", "disposition": "create", "target": "migration/schema/FK gate"},
+        {"path": "scripts/check/database-operation-budget", "disposition": "create", "target": "DB operation budget gate"},
+        {"path": "scripts/check/query-boundaries", "disposition": "create", "target": "SQL shape gate"},
+        {"path": "apps/backend/catering-business-server/src/test/**/database/**", "disposition": "create", "target": "Testcontainers clean/negative tests"},
+        {"path": "tools/verify-gates/database-boundaries.mjs", "disposition": "create", "target": "shared validator"}
+      ],
+      "orderedChain": ["inspect migration and query sources", "run static gate", "run clean Testcontainers migration", "run rollback/security/CAS/budget negatives", "separate cleanup"],
+      "dependencyAndSerialBoundaries": ["Depends on U01/U02; must use the existing business-server database shape and never create DEV seed/reset behavior."],
+      "dataEvolution": {"schemaOwners": ["existing R3 owner schemas only"], "transaction": "test transactions use run-scoped database and owner command boundaries", "forbidden": ["second history", "cross-schema DML", "DEV seed", "runtime database reuse"]},
+      "uiAndTerms": {"notApplicableReason": "Database gate has no user surface.", "termSource": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md#4. 统一 evidence 与验收"},
+      "evidence": {"l1": "migration/FK/SQL/registry", "l2": "Testcontainers and true red negatives", "l3": "not applicable", "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP", "cleanup": "temporary database/container/volume/connection zero"},
+      "forbiddenPseudoFixes": ["mock-only database proof", "DEV database reuse", "query count without SQL evidence", "CAS check-then-write"],
+      "discriminator": {"fixture": "cross-workspace composite FK insertion must fail in a clean temporary PostgreSQL database"}
+    },
+    {
+      "id": "R4-U05",
+      "title": "OpenAPI、生成可达闭包、wire closure 与 UI traceability",
+      "approvedAssertions": ["OpenAPI face and generated slices reconcile exactly", "foundation remains wire-agnostic and current UI traceability is explicit"],
+      "approvedSources": [
+        {"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### B.4 前端架构与状态", "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"},
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.10 边缘、安全面与 OpenAPI face", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "anchor": "### R4-U05 — OpenAPI、生成可达闭包、wire closure 与 UI traceability"},
+      "currentDeviation": "R3 edge generation exists, but the full R4 reachability and traceability denominator is not active.",
+      "changeSurfaces": [
+        {"path": "scripts/check/openapi-contracts", "disposition": "create", "target": "face/route/generated reachability gate"},
+        {"path": "tools/verify-gates/openapi-contracts.mjs", "disposition": "create", "target": "contract production validator"},
+        {"path": "scripts/check/ui-wireframe-traceability", "disposition": "create", "target": "approved UI evidence traceability"},
+        {"path": "scripts/check/business-terminology-traceability", "disposition": "create", "target": "current accepted terminology traceability"},
+        {"path": "contracts/openapi/edge.openapi.yaml", "disposition": "retain", "target": "single wire truth"}
+      ],
+      "orderedChain": ["read contract and accepted UI evidence", "generate target closures", "recompute reachability", "run true drift red fixtures", "compile each target"],
+      "dependencyAndSerialBoundaries": ["Depends on U01/U03; no new operation or UI is introduced by R4; R3 C-01 remains the only approved business Journey."],
+      "dataEvolution": {"notApplicableReason": "Wire and traceability gates do not own business data."},
+      "uiAndTerms": {"notApplicableReason": "No R4 UI; R3 approved UI is only a regression/traceability input.", "termSource": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md#1. R4 目标形态"},
+      "evidence": {"l1": "contract/face/generated/reachability and traceability", "l2": "drift and inaccessible-schema red fixtures", "l3": "two app generated closure builds", "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP", "cleanup": "temporary generation output removed"},
+      "forbiddenPseudoFixes": ["manual allowlist", "shared generated model barrel", "runtime face filtering", "invented R4 screen"],
+      "discriminator": {"fixture": "an operation with an unknown consumer face or an unreachable generated schema must fail production closure"}
+    },
+    {
+      "id": "R4-U06",
+      "title": "日志边界、retirement 与 handoff debt",
+      "approvedAssertions": ["sensitive logging and retirement rules have real failure paths", "handoff check stays a small structural check"],
+      "approvedSources": [
+        {"path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md", "anchor": "# 长期约束", "sha256": "597a87741247b7abf600486087539d614f501e7b53ff031a635f387213b2e03b"},
+        {"path": "project-memory/decisions/deterministic-context-only.md", "anchor": "- `MACHINE_OR_REVIEW_DESTINATION`", "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "anchor": "### R4-U06 — 日志边界、retirement 与 handoff debt"},
+      "currentDeviation": "Existing handoff-debt is small and active, but R4 logging and retirement validators are not implemented.",
+      "changeSurfaces": [
+        {"path": "scripts/check/logging-boundaries", "disposition": "create", "target": "structured logging/secrets gate"},
+        {"path": "scripts/check/retirement", "disposition": "create", "target": "zero-reference/registration/route/symbol gate"},
+        {"path": "tools/verify-gates/logging-boundaries.mjs", "disposition": "create", "target": "logging validator"},
+        {"path": "tools/verify-gates/retirement.mjs", "disposition": "create", "target": "retirement validator"},
+        {"path": "scripts/check/handoff-debt", "disposition": "update", "target": "R4 manifest/evidence fields"}
+      ],
+      "orderedChain": ["reopen frozen logging source", "define replacement denominator", "implement production validators", "run secret/residue red mutations", "write evidence"],
+      "dependencyAndSerialBoundaries": ["Depends on U01 and R3 replacement evidence; no deletion or migration of business assets is done by R4 design or gates."],
+      "dataEvolution": {"notApplicableReason": "These validators do not own database data."},
+      "uiAndTerms": {"notApplicableReason": "No user surface.", "termSource": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md#5. 实施后复核与 deferred"},
+      "evidence": {"l1": "field schema, zero-reference and handoff manifest", "l2": "secret/residue/missing-field red fixtures", "l3": "not applicable", "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP", "cleanup": "scanner scratch roots and reports cleaned"},
+      "forbiddenPseudoFixes": ["grep-only semantic log checker", "deprecated alias as retirement", "second handoff state machine", "silently deleting deferred rows"],
+      "discriminator": {"fixture": "a retired route or secret-bearing log field must fail the production validator"}
+    },
+    {
+      "id": "R4-U07",
+      "title": "scripts/verify 单入口、原生发现与红夹具",
+      "approvedAssertions": ["all R4 gates run through one deterministic entry", "each red fixture reaches the production validator"],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-verification-governance.md", "anchor": "## 6. 效率红线", "sha256": "c9632a65f9eac7678a4be919d980894e3f1e71e5e2e1ddce70ea3c7091d829dc"},
+        {"path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "anchor": "### H.1 现在就做(仅三件 + 一个顺手项)", "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "anchor": "### R4-U07 — `scripts/verify` 单入口、原生发现与红夹具"},
+      "currentDeviation": "No R4 single-entry verify orchestrator or complete production-driven red fixture catalog exists.",
+      "changeSurfaces": [
+        {"path": "scripts/verify", "disposition": "create", "target": "single R4 verification entry"},
+        {"path": "tools/verify-gates/verify.mjs", "disposition": "create", "target": "orchestrator"},
+        {"path": "tools/verify-gates/red-fixtures/", "disposition": "create", "target": "behavior-changing red fixtures"},
+        {"path": "scripts/README.md", "disposition": "update", "target": "verify inputs/outputs and failure protocol"}
+      ],
+      "orderedChain": ["stable gate order", "native test discovery", "clean run", "red mutation run", "first-failure log readback", "minute-scale report"],
+      "dependencyAndSerialBoundaries": ["Runs after U01-U06; it orchestrates existing validators and must not become a second implementation of their rules."],
+      "dataEvolution": {"notApplicableReason": "Orchestration and fixtures use temporary resources only."},
+      "uiAndTerms": {"notApplicableReason": "No browser/UI run is allowed in verify.", "termSource": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md#4. 统一 evidence 与验收"},
+      "evidence": {"l1": "orchestrator ordering, native discovery and compile/test output", "l2": "true red fixture and first-failure diagnosis", "l3": "deterministic affected target selection", "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP", "cleanup": "zero temporary resources and separate cleanup PASS"},
+      "forbiddenPseudoFixes": ["browser run in verify", "DEV DB reuse", "timeout inflation", "fixture not reached by production run"],
+      "discriminator": {"fixture": "mutating a production validator input must make scripts/verify exit nonzero with the owning gate ID"}
+    },
+    {
+      "id": "R4-U08",
+      "title": "受影响 L2 映射、全范围 evidence 与 closure packet",
+      "approvedAssertions": ["affected L2 selection is deterministic", "R4 closure cannot be claimed without separate business and cleanup accounting"],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.12 前端与工程证据", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"},
+        {"path": "doc/plans/platform/2026-07-24-v2s-architecture-action-plan.md", "anchor": "## 5. 开工与完成条件", "sha256": "fda7be83444fe1d598f85322c3190a72609e0028e9f4138b9e46bb93c1c8f603"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "anchor": "### R4-U08 — 受影响 L2 映射、全范围 evidence 与 closure packet"},
+      "currentDeviation": "R3 evidence is complete, but R4 has no deterministic affected-L2 registry or closure schema.",
+      "changeSurfaces": [
+        {"path": "scripts/check/affected-l2", "disposition": "create", "target": "deterministic affected test mapping"},
+        {"path": "contracts/policy/affected-l2-registry.json", "disposition": "create", "target": "stable module/contract to L2 mapping"},
+        {"path": "contracts/policy/r4-evidence.schema.json", "disposition": "create", "target": "five-account evidence schema"},
+        {"path": "doc/evidence/platform/r4-closure-readiness-evidence.json", "disposition": "create", "target": "R4 closure packet"}
+      ],
+      "orderedChain": ["derive changed surfaces", "select affected L2 or all L2", "validate evidence schema", "read back resources and hashes", "prepare closure packet"],
+      "dependencyAndSerialBoundaries": ["Runs after U01-U07; it cannot promote static evidence to business/L2 completion and cannot change Roadmap state by itself."],
+      "dataEvolution": {"notApplicableReason": "Evidence/control-plane artifacts only; no business data."},
+      "uiAndTerms": {"notApplicableReason": "No R4 UI or Journey.", "termSource": "doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md#4. 统一 evidence 与验收"},
+      "evidence": {"l1": "registry/schema and hash validation", "l2": "mapping self-test and evidence schema negative cases", "l3": "fresh selected test set readback", "business": "NOT_APPLICABLE_R4_TECHNICAL_STEP", "cleanup": "no active resources and evidence scratch cleanup"},
+      "forbiddenPseudoFixes": ["manual affected-test choice", "missing business/cleanup fields", "second Roadmap state owner", "static PASS as business PASS"],
+      "discriminator": {"fixture": "an ambiguous changed surface or nonzero active resource must make closure evidence fail"}
+    }
+  ]
+}

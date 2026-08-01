@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-u12-generated-output-continuity-recovery",
+  "packageId": "RM1-U12",
+  "status": "DEXTER_AUTHORIZED_HISTORICAL_CONTINUITY_RECOVERY",
+  "packageGeneratedOutputDenominator": [
+    "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json",
+    "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts"
+  ],
+  "output": {
+    "path": "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json",
+    "lastRecordedSha256": "09f8960999e84022b28a42ec45075c1c7bb8367aca73c2f7984da9e1ee54069c",
+    "currentSha256": "8e187cce9ba93e5e637f5618118b0266477b8827064cce44e661640767c83213"
+  },
+  "predecessorReceiptEdges": [
+    {
+      "packageId": "RM1-U03",
+      "beforeSha256": "20037a51ffd704c8b61921de3d26b4f8d317f8370b39ba508a61b53d28955d3d",
+      "afterSha256": "09f8960999e84022b28a42ec45075c1c7bb8367aca73c2f7984da9e1ee54069c"
+    }
+  ],
+  "generator": {
+    "path": "scripts/generate/edge-codegen.mjs",
+    "sha256": "e44d71776aca8d6981286956627f8ba5f24a01536f9cf64de8cb1b4e908d432f"
+  },
+  "authoritativeInput": {
+    "path": "contracts/registry/iam-org-governance-manifest.json",
+    "sha256": "e7b865a24fdc2af0be7b2b5325b41cfeb924bd06dc92482293e76e06d5c28093"
+  },
+  "replayOutput": {
+    "path": "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json",
+    "finalSha256": "8e187cce9ba93e5e637f5618118b0266477b8827064cce44e661640767c83213"
+  },
+  "classificationPredicate": "A historical generated output continuity recovery binds the latest predecessor receipt edge, current generator and authority-input hashes, and the current reproducible output. It is not a U12 incremental receipt claim. The package generated-output denominator is exact: the backend registry is the historical-continuity member and operations-edge.ts is the ordinary U12 terminal-replay member."
+}

@@ -1,0 +1,90 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "RM1-P6-IMPLEMENTATION-FACING-DESIGN-20260729",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/evidence/platform/rm1/p6/rm1-u09-independent-design-review-round2-input-checklist.md",
+    "sha256": "328249d60d92b0a4c90b013a5ef4c6af4b66be35ee26446dc568e2c26a87f573"
+  },
+  "blindReviewDeclaration": "This fresh independent reviewer formed the current-byte findings and NO_GO verdict from the checklist-bound authorization, IA, memory, roster, foundation and manifest inputs before reading the Round-1 verdict, author intake, or prevention evidence. Those author materials were read only afterwards to compare the proposed remediation with the independently found counterexamples.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "9a590edd67a4ff472c110126d92e9b584b8a11b0a2390d3b1decc596b4d29524",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "business-user-task",
+      "owner-and-contract",
+      "serial-boundary",
+      "ui-physical-surface",
+      "foundation-import-contract",
+      "routed-memory-denominator",
+      "package-exit-evidence"
+    ]
+  },
+  "expectedBehavior": [
+    "P6-1 freezes only contract, owner, edge, additive-data and generated-consumer inputs, proves owner/controller unit behavior before its phase review, and does not implement a UI page.",
+    "P6-2 starts only after P6-1 Dexter and Claude implementation GO; P6-3 starts only after the corresponding P6-2 GO.",
+    "All 22 carry-over surfaces, 25 catalog pageDesignKeys and seven non-catalog surfaces have delivery-unit assignment, accepted IA anchor, generated operation or exact N/A reason, failure/recovery, and exact CARRY/ADAPT/NOT_CARRIED disposition.",
+    "Every UI-bearing physical screen has an exact final consumer path and current admin-ui-foundation import contract, with the two prescribed import-equality red mutations.",
+    "Each delivery unit has an executable, fully specific six-dimension D1 route whose reopened source set equals its package-exit denominator; owner readback, candidate selection, authorization, generation, non-empty incremental receipts and forbidden pseudo-fixes remain independently testable."
+  ],
+  "findings": [
+    {
+      "id": "RM1-P6-DESIGN-R2-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["RM1P6-U02", "RM1P6-U03"],
+      "title": "The roster still merges physical screens with different final paths and foundation imports, so it does not provide the exact screen-level contract required by M-002.",
+      "evidence": "The roster says a row may be a screen set only when it has the same final owner, feature file, operation set and foundation imports, and otherwise rows are separated. Its OPERATIONS-USERS row instead groups IA05 five user pages/detail/revoke with IA01 invitation tab/create/detail/action Modal, names two final consumers, and declares only adminDrawerSurfaceProps, contextScopedQueryArgs, useDetailDrawer, useDrawerFormLifecycle and overlayLock. IA01-USER-INVITATION-CREATE-DRAWER requires useAsyncGenerationGuard in addition to its distinct Drawer host; IA01-USER-INVITATION-ACTION-MODAL requires useSubmissionLifecycle in a Modal; IA05-USER-REVOKE likewise requires useSubmissionLifecycle, while IA05-GROUP-USERS through IA05-STORE-USERS are content pages requiring only contextScopedQueryArgs. These are different physical surfaces, hosts and primitive sets. The roster's own two red mutations can only test its coarsened union, not the missing per-screen import equality.",
+      "risk": "A later implementation can satisfy the aggregate row while omitting async-generation or submission lifecycle from a required Drawer/Modal, or importing a Drawer primitive into a content page merely to match the union. This recreates the precise guessing and duplicate-foundation risk that the final roster was introduced to prevent.",
+      "disposition": "NO_GO until every affected row is split into physical-screen records, or equivalent screen-level subrecords are added, each with one exact final owner/path, IA anchor, generated operation or N/A, recovery, required normalized primitive imports and focused test. Preserve accepted UI tasks; this is a bounded roster correction, not a product redesign. Apply the same counterexample scan to every remaining grouped roster row."
+    },
+    {
+      "id": "RM1-P6-DESIGN-R2-M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["RM1P6-U01"],
+      "title": "U01's D1 route is still non-specific and cannot be executed by the required fail-closed recall entrypoint.",
+      "evidence": "The current manifest declares RM1P6-U01 memoryRoute as design/backend/all/backend/contract/implementation. Running scripts/context/recall-memory with those six values returns PROJECT_MEMORY=FAIL and REASON=unknown or non-specific route: consumerFaces:all. The P6 preparation D1 requires all six-dimension recall hits with reopened source paths, and cs-memory-recall requires six specific route flags; a validator's route-derived source-set comparison cannot replace a route that the mandated recall command rejects. The otherwise comparable specific backend route runs and returns the expected routed records.",
+      "risk": "U01 cannot truthfully produce its required D1 receipt before implementation. A package-exit source set may look mechanically complete while the designated deterministic recovery action fails closed, leaving an invalid handoff route and no reproducible recall proof.",
+      "disposition": "NO_GO until U01 records a permitted specific consumer-face value, recalculates its exact D1 owning-source set from that executable route, and reruns both recall and production granularity validation. Do not weaken recall specificity or substitute the checker for the required D1 action."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "RM1P6-U01",
+      "verdict": "NO_GO",
+      "findingIds": ["RM1-P6-DESIGN-R2-M-002"]
+    },
+    {
+      "id": "RM1P6-U02",
+      "verdict": "NO_GO",
+      "findingIds": ["RM1-P6-DESIGN-R2-M-001"]
+    },
+    {
+      "id": "RM1P6-U03",
+      "verdict": "NO_GO",
+      "findingIds": ["RM1-P6-DESIGN-R2-M-001"]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The owner-first, serial three-phase direction remains appropriate: anonymous recovery and workspace branding require owner truth before rendering, and assignment, scope, candidates and write authorization cannot be reconstructed in a client.",
+    "simplerAlternativeAssessment": "Retain the accepted three phases and correct only the two admission denominators: use an executable U01 D1 route and make the existing roster physical-screen precise. Broadening P6-1 into UI work, changing accepted interaction, or adding a generic screen framework would be larger and would not fix either proof gap.",
+    "costFit": "The corrections are bounded design/manifest work derived from existing accepted IA sheets and current foundation exports. Leaving them unresolved transfers foundation and route decisions into implementation, where the resulting repair cost and evidence ambiguity are materially higher.",
+    "verdict": "REASONABLE_DIRECTION_BLOCKED_BY_TWO_REMAINING_IMPLEMENTATION_FACING_ADMISSION_GAPS"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Round 2 confirms that the Round-1 seven non-catalog assignment remediation closes the 22/25/7 phase denominator. It nevertheless finds two current-byte Major gaps: grouped roster rows still fail exact physical-screen/foundation-import binding, and U01's declared D1 route is rejected as non-specific by the mandatory recall entrypoint. M=2, S=0, N=0. This is the final independent Codex adversarial round for this cycle; no implementation conclusion follows.",
+    "severityCounts": {"M": 2, "S": 0, "N": 0},
+    "authorizationBoundary": "Static independent DESIGN verdict only. It authorizes no source, contract, migration, test, runtime, seed/reset, Roadmap, or repository-control changes. The author may perform bounded design remediation within Dexter's existing design-only authorization and then use the mandated post-remediation/Claude path; product, Journey or UI-task changes remain Dexter decisions."
+  }
+}

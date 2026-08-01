@@ -1,0 +1,26 @@
+{
+  "kind": "independent-subagent-adversarial-review-input-checklist",
+  "reviewCycleId": "R5-REVISED-DESIGN-20260726",
+  "reviewTarget": "DESIGN",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "blindDiscipline": "Fresh reviewer first falsifies the current bytes and forms a final verdict before reading the author intake. The author intake is available only after that verdict for difference reporting; it is not authority.",
+  "mandatoryInputs": {
+    "agents":"AGENTS.md@7df534e31d78cf9cbec390d0b1276abd069336d90f27a168969ae43c9d34315c",
+    "claude":"CLAUDE.md@da3213ab7a75431198ac0d645d7de49b9705b07a27397a2e568d439ea4f66ca1",
+    "roadmap":"doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md@e72e5be965a5f52fd0ea2dea48d0a163879da1636d139191b9af5370ca9de480 CURRENT_*",
+    "authorization":"doc/decisions/2026-07-26-v2s-r5-revised-design-authorization.md@04b22635936bcc0373773277e735f89ecf07c905a5845c7371c5c8f86635a645",
+    "allKernel":["project-memory/kernel/01-workspace-and-roadmap.md@f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63","project-memory/kernel/02-service-shape-and-owner.md@45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032","project-memory/kernel/03-transaction-data-and-dependencies.md@f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44","project-memory/kernel/04-contract-consumer-and-admin.md@1f6d9efbe0208f5b164d12effd4a4c4ab8f2c297b9b000462dc96820c3efa88d","project-memory/kernel/05-evidence-runtime-and-git.md@101a8d9952efff6bd217488c2444616e19af43a75413619055f9b0590e1a20a8","project-memory/kernel/06-heritage-and-change.md@5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c"],
+    "sixDimensionRoutes":["scripts/context/recall-memory --task-kind design --domain admin-ui --consumer-face platform-admin --owner platform --impact architecture --trigger task-start","scripts/context/recall-memory --task-kind design --domain backend --consumer-face operations-admin --owner backend --impact contract --trigger task-start"],
+    "everyRoutedHit":["project-memory/decisions/deterministic-context-only.md@4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20","project-memory/decisions/independent-subagent-adversarial-review.md@891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf","project-memory/decisions/confirmed-business-language-corpus.md@51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503","project-memory/operations/business-corpus-adoption-and-read-policy.md@04d9329413131e369e8c1ea841f172d4c295f953b07b9768a0e597405fd28353","project-memory/operations/business-corpus-parked-domain-intake.md@739473d09701aba15332c6de72f1f1965b7b5048732fd60d3b97c7934febee9e"],
+    "corpus":"Search groupWorkspaceKey, commercial group, organization, tenant, head company, store, role, invitation, contract, item code, operation history, platform-admin, operations-admin; open matching G-01 through G-10 and record G-11/G-12 out of scope.",
+    "reviewedObject":["doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md@0d76887513c2d687b42a3526b0a3ce2438a155dc1e68be564a104e4a94175e73","doc/review/platform/2026-07-26-v2s-r5-revised-design-granularity-manifest.json@ae8b8bdcfa64dfd4aebbf566d3674b06f959950cb27012f82204e7e684c25606"],
+    "upstreamFrozen":["doc/review/platform/2026-07-26-v2s-problem-discovery-and-direction-claude.md@4f1607d8ecaf888f58d06dd07d5f4fb84557357d3fd927ac42edfc2a232fd3af","doc/review/platform/2026-07-26-v2s-extension-and-role-storage-alignment-design-claude.md@e3ac462114a39be45dad682002623d82e147746f4fbcb2a1ae0a1d1f32d8ac61","doc/decisions/2026-07-25-v2s-r5-whole-scope-journey-decision.md@dfa67547e3bda2b8703e8227cd463d65ad8211d09526eeed01c5b45a08e51324","doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md@5ae243d823cca0bd00570bdc351769661ebdcb7b88cfb8cae41b7324e754ab1e","doc/decisions/2026-07-26-v2s-r5-operation-history-journey-decision.md@e280fca4f7b1e662632f06e2c48f7147f65bdfae48940a0aef2972c1da191b77","doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md@9601576cb41ff6c5e52c996d825c190a9becb386bf82e400b4c3249798ec29a9"],
+    "allDecisionTitles":"rg --files doc/decisions -g '*.md' | sort; reopen every relevant decision after reading all titles",
+    "standards":"contracts/policy/standards-coverage-matrix.json@6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5 and scripts/check/standards-coverage --phase R5",
+    "verification":"doc/decisions/2026-07-24-v2s-verification-governance.md@c9632a65f9eac7678a4be919d980894e3f1e71e5e2e1ddce70ea3c7091d829dc"
+  },
+  "targetedFalsification": ["Roadmap CURRENT_* and revised design-only authorization are scheduling-consistent", "all manifest Part C IDs exist and map to actual C.T matrix rules", "granularity validator runs on current manifest/review without weakening its controls", "actor display snapshot and face projection meet the accepted user task without cross-owner identity lookup, new fact owner, new authorization, or sensitive leakage"],
+  "authorMaterialAfterVerdictOnly":"doc/review/platform/2026-07-26-v2s-r5-revised-design-adversarial-round-1-intake.md@b12e208436de6f33811a302d9a4282710c5c30ae594c1cde1ed31d156ef37df5",
+  "expectedReviewOutput":"doc/review/platform/2026-07-26-v2s-r5-revised-design-adversarial-review-round-2.json"
+}

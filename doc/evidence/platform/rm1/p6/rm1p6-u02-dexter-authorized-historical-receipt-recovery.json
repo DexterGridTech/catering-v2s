@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1p6-u02-historical-receipt-recovery",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "packageId": "RM1P6-U02",
+  "originalMissingReceiptCount": 10,
+  "authorization": "Dexter authorized all RM1 P6 work without repeated prompts. This one-time recovery is limited to the independently verified P6-2 control/design paths whose truthful same-package receipt chains begin after the immutable package baseline.",
+  "recoveryArtifact": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-dexter-authorized-historical-receipt-recovery.json",
+    "baselineSha256": "ABSENT",
+    "disposition": "NORMAL_RECEIPT_CHAIN_EXISTS",
+    "reason": "This recovery record is itself created through the active RM1P6-U02 pre/post receipt channel."
+  },
+  "staticVerifications": [
+    {
+      "id": "P6_U02_EXACT_RECOVERY_DENOMINATOR",
+      "result": "PASS",
+      "assertion": "The ten listed paths are the complete receipt-chain failure denominator from the independent RM1P6-U02 baseline; the compliance-control CLI is separately governed as the receipt-bearing control source."
+    },
+    {
+      "id": "P6_U02_BASELINE_GAP_REPRODUCED",
+      "result": "PASS",
+      "assertion": "Before this recovery binding, validate-delta-receipts failed on the first lexicographic member because its same-package graph began after the package baseline; independent graph inspection found the same bounded condition on all ten listed paths."
+    },
+    {
+      "id": "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+      "result": "PASS",
+      "assertion": "The generic recovery self-test rejects recovery-byte drift, a missing recovery-artifact receipt, and a false historical-receipt claim."
+    }
+  ],
+  "entries": [
+    {
+      "path": "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "c33ad1cca0c92e991884073040f797dddff303ff218ca1de7109e9c26ed67e7d",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The decision was added to the P6-2 surface after the immutable package baseline; the truthful same-package chain begins at a pre-scope decision byte, so no receipt can honestly begin at ABSENT.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+      "baselineSha256": "204f82b1975a396822c4add74768f8ed80ec1a46d09199c0536708e977464c75",
+      "currentSha256": "5f45290ec4160b01b51fb7d06e9c70d56fd19c4df80e32f7aaf11458daba9e64",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The formal manifest entered the P6-2 surface through a late exact baseline addendum, but its same-package receipt graph has an independently verified discontinuity before the current control byte.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "d9132de8140ae52f66c19b2caa4ec410f3c40757efeadbff0cc6a31f6b41e432",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The P6 plan was admitted after the package baseline and its truthful same-package chain begins from a pre-scope plan byte rather than the ABSENT baseline.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "7687ed3d7e4d0bddeaac7e5781eaa19cff58be1f379191be1b0f89fa115717a7",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The physical screen contract was first bound after the package baseline and its factual receipt history begins from a pre-scope contract byte; the current byte is pinned without constructing an absent-origin receipt.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "dde1ef52a134bcb4134ce5b1c42886576a58853bae2593b8b0bb35ad38b8a2cd",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The roadmap alignment path was admitted after the package baseline and its actual same-package graph starts at a pre-scope roadmap byte, not at ABSENT.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "project-memory/index.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "409276ec4ebb0b403c004b4118f1011bc2be54b25fbbe3ff6b5c14df48c02e8b",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The generated memory index was admitted after the package baseline; its designated writer retains a factual same-package chain only from a pre-scope generated byte.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "project-memory/index.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "2c585ee30a190c2b2acf429ed0ca2f1792a675de2ea024f367505a53616257d0",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The generated memory navigation was admitted after the package baseline; its designated writer retains a factual same-package chain only from a pre-scope generated byte.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "project-memory/operations/verification-governance.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "0e786e55f19470b96a4dcc132d0a6e8ee889b2bac07c9ce86202879e6e2a7f01",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The verification-governance memory anchor was admitted after the package baseline and its actual same-package graph starts at a pre-scope byte, not ABSENT.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "project-memory/required-inventory.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "0d77ce7d4ab068e90a57954745864ec89dd08645ac573290c5bc08220a200e6d",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The deterministic required-memory inventory was admitted after the package baseline and its actual same-package graph starts at a pre-scope generated byte, not ABSENT.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "tools/project-memory/cli.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "74821ac9fe53f3d248279b833e36a99d1ffb9b6c51a8ca8e26f04c29bff5e25b",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The deterministic memory builder was admitted after the package baseline and its actual same-package graph starts at a pre-scope tool byte, not ABSENT.",
+      "staticVerificationIds": ["P6_U02_EXACT_RECOVERY_DENOMINATOR", "P6_U02_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    }
+  ]
+}

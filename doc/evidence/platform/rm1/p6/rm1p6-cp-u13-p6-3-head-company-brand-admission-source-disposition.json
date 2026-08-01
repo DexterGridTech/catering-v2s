@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-compliance-disposition",
+  "packageId": "RM1P6-CP-U13-P6-3-HEAD-COMPANY-BRAND-ADMISSION",
+  "ruleCount": 2,
+  "applicableCount": 2,
+  "rows": [
+    {
+      "denominator": "CONTROL_PLANE_AUTHORIZATION_AND_SCOPE",
+      "sourcePath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-manifest.json",
+      "sourceSha256": "8ad0fcb30e6d5c6278b951acca65766eed9d1f00e2333e93724410421cc19aae",
+      "anchor": "deliveryUnits[RM1P6-CP-U13-P6-3-HEAD-COMPANY-BRAND-ADMISSION]",
+      "ruleId": "CP:MANIFEST",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "EXACT_CONTROL_SURFACE_AND_RECEIPT_SET",
+      "disposition": "P6-2 exception is removed; P6-3 is the sole declared IA04 corrective design scope."
+    },
+    {
+      "denominator": "CONTROL_PLANE_AUTHORIZATION_AND_SCOPE",
+      "sourcePath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-amendment.md",
+      "sourceSha256": "36d893010c1ffec180a8f9969c76ecfa41151e65962352d4a860f69afecaed78",
+      "anchor": "packageId: RM1P6-CP-U13-P6-3-HEAD-COMPANY-BRAND-ADMISSION",
+      "ruleId": "CP:AMENDMENT",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "NON_BUSINESS_SCOPE_AND_HANDOFF",
+      "disposition": "Dexter authorized only a design-placement correction and a fresh independent design review; no implementation authority is inferred."
+    }
+  ]
+}

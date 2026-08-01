@@ -2,7 +2,7 @@
 title: catering-v2s W0-W4 执行 Roadmap
 status: ACTIVE
 createdAt: 2026-07-24
-updatedAt: 2026-07-24
+updatedAt: 2026-07-30
 programContext: AI_FIRST_FOUNDATION
 roadmapId: v2s-w0-w4-execution
 programId: V2S_W0_W4_EXECUTION
@@ -15,12 +15,60 @@ targetRepository: catering-v2s
 targetRoadmapId: v2s-w0-w4-execution
 targetProgramId: V2S_W0_W4_EXECUTION
 targetStateOwner: doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md
-implementationAuthority: false
+implementationAuthority: true
 r1AuthorizedBy: Dexter
 r1AuthorizedAt: 2026-07-24
 r2ControlPlaneAmendmentAuthorizedBy: Dexter
 r2ControlPlaneAmendmentAuthorizedAt: 2026-07-24
 r2ControlPlaneAmendmentScope: standards-coverage-and-r1-review-resolution-only
+r3DesignAuthorizedBy: Dexter
+r3DesignAuthorizedAt: 2026-07-24
+r3DesignAuthorizationRef: doc/decisions/2026-07-24-v2s-r3-specialized-design-authorization.md
+r3JourneySelectionRef: doc/decisions/2026-07-25-v2s-r3-j02-commercial-group-initialization-selection.md
+r3J02DesignRef: doc/plans/platform/2026-07-25-v2s-r3-j02-commercial-group-initialization-implementation-design.md
+r3J02ManifestRef: doc/review/platform/2026-07-25-v2s-r3-j02-design-granularity-manifest.json
+r3J02ClaudeReviewRequest: doc/review/platform/2026-07-25-v2s-r3-j02-design-review-request.md
+r3C01AcceptanceRef: doc/decisions/2026-07-25-v2s-r3-r6-journey-inventory-acceptance-and-c01-interaction-authorization.md
+r3C01InteractionRef: doc/decisions/2026-07-25-v2s-r3-c01-commercial-group-initialization-interaction.md
+r3FrontendCarryOverFirstRef: doc/decisions/2026-07-25-v2s-frontend-asset-carry-over-first.md
+r3WholeScopeImplementationDesignRef: doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md
+r3WholeScopeManifestRef: doc/review/platform/2026-07-25-v2s-r3-whole-scope-design-granularity-manifest.json
+r3WholeScopeCodexSelfReviewRef: doc/review/platform/2026-07-25-v2s-r3-whole-scope-design-codex-self-review.md
+r3WholeScopeClaudeReviewRequestRef: doc/review/platform/2026-07-25-v2s-r3-whole-scope-design-review-request.md
+r3ImplementationReviewRef: doc/review/platform/2026-07-25-v2s-r3-implementation-review-claude.md
+r3ImplementationNResolutionRef: doc/evidence/platform/r3-implementation-n-resolution-codex.md
+r3ImplementationAcceptanceRef: doc/decisions/2026-07-25-v2s-r3-implementation-acceptance.md
+r3BackendAppLayoutRef: doc/decisions/2026-07-25-v2s-backend-app-layout-and-tdp-placeholder.md
+r3FrontendFoundationConsumptionRef: doc/decisions/2026-07-25-v2s-frontend-foundation-consumption-rule.md
+r3HashEvidenceCheckpointRef: doc/decisions/2026-07-25-v2s-r3-hash-evidence-checkpoint.md
+r4DesignAuthorizedBy: Dexter
+r4DesignAuthorizedAt: 2026-07-25
+r4DesignAuthorizationRef: doc/decisions/2026-07-25-v2s-r4-design-authorization.md
+r4WholeScopeImplementationDesignRef: doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md
+r4WholeScopeManifestRef: doc/review/platform/2026-07-25-v2s-r4-design-granularity-manifest.json
+r4WholeScopeCodexSelfReviewRef: doc/review/platform/2026-07-25-v2s-r4-design-codex-self-review-round-2.md
+r4WholeScopeClaudeReviewRequestRef: doc/review/platform/2026-07-25-v2s-r4-design-review-request.md
+r4DesignReadinessEvidenceRef: doc/evidence/platform/r4-design-readiness-evidence.json
+r5ScopeDecisionRef: doc/decisions/2026-07-25-v2s-r5-scope-and-method-decisions.md
+r5ScopeMethodClaudeReviewRef: doc/review/platform/2026-07-25-v2s-r5-scope-method-and-dev-review-claude.md
+r5ScopeMethodReviewResolutionRef: doc/review/platform/2026-07-25-v2s-r5-scope-method-and-dev-review-resolution.md
+r5WholeScopeDesignAuthorizationRef: doc/decisions/2026-07-25-v2s-r5-whole-scope-design-authorization.md
+r5WholeScopeJourneyDecisionRef: doc/decisions/2026-07-25-v2s-r5-whole-scope-journey-decision.md
+r5WholeScopeInteractionDesignRef: doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md
+r5WholeScopeImplementationDesignRef: doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md
+r5WholeScopeManifestRef: doc/review/platform/2026-07-25-v2s-r5-whole-scope-design-granularity-manifest.json
+r5WholeScopeRound2ReviewRef: doc/review/platform/2026-07-25-v2s-r5-design-adversarial-review-round-2.json
+r5WholeScopeRound2IntakeRef: doc/review/platform/2026-07-25-v2s-r5-design-round-2-finding-intake.md
+r5V2ValueConstraintAuditRef: doc/review/platform/2026-07-25-v2s-r5-v2-value-and-v2s-constraint-audit-codex.md
+r5WholeScopeClaudeReviewRequestRef: doc/review/platform/2026-07-25-v2s-r5-whole-scope-design-review-request.md
+r5WholeScopeDesignFinalAcceptanceRef: doc/decisions/2026-07-26-v2s-r5-whole-scope-design-final-acceptance.md
+r5WholeScopeImplementationAuthorizationRef: doc/decisions/2026-07-26-v2s-r5-whole-scope-implementation-authorization.md
+r5ComplianceRemediationDesignAuthorizationRef: doc/decisions/2026-07-27-v2s-r5-compliance-remediation-design-authorization.md
+r5ComplianceRemediationDelegatedDecisionsRef: doc/decisions/2026-07-27-v2s-r5-compliance-remediation-delegated-decisions.md
+r5ComplianceRemediationImplementationAuthorizationRef: doc/decisions/2026-07-27-v2s-r5-compliance-remediation-implementation-authorization.md
+r5ComplianceRemediationCandidateRoadmapRef: doc/roadmaps/platform/2026-07-27-v2s-r5-compliance-remediation-roadmap.md
+r5ComplianceRemediationDesignRef: doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md
+r5ComplianceRemediationManifestRef: doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json
 gitOwner: Dexter
 serviceShapeAuthority: doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md
 carryoverAuthority: doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md
@@ -30,6 +78,7 @@ claudeReview: doc/review/platform/2026-07-24-v2s-execution-roadmap-review-claude
 reviewResolution: doc/review/platform/2026-07-24-v2s-execution-roadmap-review-resolution.md
 acceptanceDecision: doc/decisions/2026-07-24-v2s-execution-roadmap-r0-acceptance.md
 r1AuthorizationDecision: doc/decisions/2026-07-24-v2s-r1-authorization.md
+r2AcceptanceDecision: doc/decisions/2026-07-24-v2s-r2-acceptance.md
 ---
 
 # catering-v2s W0-W4 执行 Roadmap
@@ -43,30 +92,99 @@ ROADMAP_KIND=SUCCESSOR_EXECUTION
 ROADMAP_OWNER=self
 ROADMAP_REVIEWED=true
 R0_STATUS=GO
-LAST_CLOSED_STEP=R1
-CURRENT_STEP=R2
-CURRENT_STATUS=IN_REVIEW
-CURRENT_NEXT_ACTION=由 fresh v2s-rooted Codex/Claude 会话执行 R2 静态入口验收；不得在本 all-v2-rooted 会话冒充
+LAST_CLOSED_STEP=RM1-P6-2-STATIC
+CURRENT_STEP=RM1-P6-3
+CURRENT_STATUS=RM1_P6_3_IMPLEMENTATION_IN_PROGRESS
+CURRENT_ACTIVITY=运营管理后台与公开业务完成路径；先升级逐目标 prewrite reread receipt，再闭合 owner/edge truth、generated consumer 与 IA04 逐项品牌授权
+CURRENT_NEXT_ACTION=严格执行 RM1 P6-3：先以现有 PreToolUse/receipt 机制证明每一写点的 IA/design reread，随后完成 owner/edge/contract/generated/operations-admin 链和逐屏 IA 对照；全部静态与 focused proof 后执行唯一一次 P6-2/P6-3 联合受管 L2，并分离 business/cleanup 验收与独立 implementation review
 R1_STATUS=GO
+R2_STATUS=GO
 TARGET_STATUS=V2S_HANDOFF_READY
-IMPLEMENTATION_AUTHORITY=false
+IMPLEMENTATION_AUTHORITY=true
 R1_AUTHORIZED=false
 R1_CLOSED=true
 R2_AUTHORIZED=false
-R2_CONTROL_PLANE_AMENDMENT_STATUS=IN_REVIEW
-V2S_WRITE_AUTHORITY=false
+R2_CLOSED=true
+R2_CONTROL_PLANE_AMENDMENT_STATUS=GO
+R3_STATUS=GO
+R3_CLOSED=true
+R3_DESIGN_AUTHORIZED=true
+R3_DESIGN_STATUS=WHOLE_SCOPE_DESIGN_ACCEPTED
+R3_IMPLEMENTATION_FACING_DESIGN_AUTHORIZED=true
+R3_IMPLEMENTATION_AUTHORIZED=false
+W1_AUTHORIZED=false
+R4_DESIGN_AUTHORIZED=true
+R4_DESIGN_STATUS=WHOLE_SCOPE_DESIGN_ACCEPTED
+R4_IMPLEMENTATION_AUTHORIZED=false
+R4_RUNTIME_AUTHORIZED=false
+R4_SEED_RESET_AUTHORIZED=false
+R4_STATUS=GO
+R4_CLOSED=true
+MIGRATION_GATES_READY=true
+R5_DESIGN_AUTHORIZED=true
+R5_DESIGN_STATUS=COMPLIANCE_REMEDIATION_DESIGN_ACCEPTED
+R5_IMPLEMENTATION_AUTHORIZED=true
+R5_RUNTIME_AUTHORIZED=true
+R5_SEED_RESET_AUTHORIZED=true
+V2S_WRITE_AUTHORITY=true
 V2S_SESSION_ENTRY_READY=true
+V2S_FOUNDATION_READY=true
+RM1_P6_2_AUTHORIZED_BY=Dexter
+RM1_P6_2_AUTHORIZED_AT=2026-07-30
+RM1_P6_2_ISOLATED_L2_AUTHORIZED=true
+RM1_P6_2_MINIMAL_SEED_AUTHORIZED=true
+RM1_P6_2_RESET_AUTHORIZED=false
+RM1_P6_3_AUTHORIZED_BY=Dexter
+RM1_P6_3_AUTHORIZED_AT=2026-07-30
+RM1_P6_3_JOINT_L2_AUTHORIZED=true
+RM1_P6_3_MINIMAL_SEED_AUTHORIZED=true
+RM1_P6_3_RESET_AUTHORIZED=false
 GIT_OWNER=Dexter
 ```
 
-本文件是 v2s-native Roadmap 的唯一 active state/authorization owner。R1 已关闭；Dexter 已授权 standards coverage、R1 review resolution 与相应 current-truth 导航这一份有限控制面修订包，现已形成并停在 `IN_REVIEW`。`CURRENT_STEP=R2 / CURRENT_STATUS=IN_REVIEW` 不授予 fresh R2 acceptance、W1、DEV 或业务实现：
+## Current RM1 P6-3 status
+
+Dexter has granted Codex full authority for RM1 P6 work without repeated authorization prompts. The current
+delivery is `RM1-P6-3`; its established U03 operations/public denominator is bound by
+`doc/evidence/platform/rm1/p6/rm1p6-u03-package-input.json`. P6-3 begins with receipt-bound per-target source
+reread admission, then owner/edge/generated/operations-admin implementation. A managed joint P6-2/P6-3 L2 and
+minimal owner-command seed are authorized; reset remains unauthorized. The current block above, not stale R5
+scheduling text, is the execution and authorization truth.
+
+## Historical post-R4 status
+
+Dexter accepted R4 on 2026-07-25. Earlier R5 whole-scope design/implementation authorization is
+superseded for scheduling by `doc/decisions/2026-07-26-v2s-r5-revised-design-authorization.md`:
+Dexter stopped the prior implementation and required a revised implementation-facing design based on
+the problem-discovery direction. The authoritative `CURRENT_*` block immediately above is the sole
+scheduling truth: revised design is in review and implementation/runtime/seed-reset are unauthorized.
+The R4 acceptance record is `doc/decisions/2026-07-25-v2s-r4-implementation-acceptance.md`.
+
+## Historical context (superseded where it conflicts with the current status block)
+
+本文件是 v2s-native Roadmap 的唯一 active state/authorization owner。R1 至 R4 均已关闭，
+`V2S_FOUNDATION_READY=true`、`MIGRATION_GATES_READY=true`。R5 的 32 项 inventory、原子交付
+方法、契约惯例、五类扩展值宿主、合同衍生状态以及完整 DEV/seed 完成条件已由 Codex 裁决，
+Claude 独立评审给出 `GO(0 M / 0 S / 4 N)`，四条 N 已完成 owning-source 同步。此前状态曾为
+`LAST_CLOSED_STEP=R4 / CURRENT_STEP=R5 / CURRENT_STATUS=R5_WHOLE_SCOPE_DESIGN_IN_PROGRESS`，
+并一度有 `R5_IMPLEMENTATION_AUTHORIZED=true`；均已由本 Roadmap 当前状态块及
+`2026-07-26-v2s-r5-revised-design-authorization.md` 取代。后端物理上保留并列的
+`catering-business-server` 与未来 TDP 的 `terminal-data-server`；后者保持无 runtime、
+endpoint、database、migration、generated wire、seed 与业务代码的占位。R3 的 J02/C-02
+历史资产仍不恢复；C-02 如进入 R5，只能按 R5 新范围建立新 Journey。既有历史资产按下列
+回收规则保留：
 
 - 不读取或更新 all-v2 `AI_FIRST_FOUNDATION` 的 `CURRENT_*`，也不继承任何旧程序实现授权；
 - target Registry 只登记 `V2S_W0_W4_EXECUTION`；本文件从 R1 transfer PASS 起承担后续状态真相；
-- R1 输出与 transfer 已关闭，但 R2 尚未由 fresh v2s-rooted session验收，R3/W1 仍受前置阻断；
-- 本次有限修订不把当前 all-v2-rooted 会话冒充为 fresh v2s-rooted acceptance；review 关闭前 `R2_AUTHORIZED=false` 与 `V2S_WRITE_AUTHORITY=false` 保持不变；
+- R2 evidence、自审与 Dexter 接受决定均为 target-native；既有 all-v2-rooted review 没有冒充 fresh discovery；
+- round 1 fresh-context Codex review 给出 `NO_GO(4 M / 2 S / 2 N)`；round 2 定向复核给出 `NO_GO(2 M / 3 S / 3 N)`。作者按 `ADVERSARIAL_FINDING_DIALECTICAL_INTAKE` 逐条重开事实、查一手资料、找反例和比较更小修复，补齐 session schema/失效语义、Gate 0 immutable checkpoint/descendant proof、deterministic browser-forgery contract、Jackson 3 与 migration count；拒绝角色/capability 泛化、checkpoint service、缺 Fetch Metadata 一律拒绝、双 CSRF 和伪造旧 snapshot；
+- 同一 `R3-SPECIALIZED-DESIGN / DESIGN` cycle 已达到两轮硬上限并 `SELF_DECIDED`；换 reviewer/模型/文件/hash/局部修订不得触发第三轮 Codex review，后继只等待 Dexter 裁决与既定 Claude 独立 review；
+- Dexter 已澄清 Codex 可自主维护完成交付所必需的仓内控制面；`scripts/check/implementation-design-granularity` 与 supporting production validator/self-test/red fixtures 已补齐，原 `R3-DESIGN-M-002` 关闭；
+- `R3-J01` 未获接受且已永久保留为历史 `NO_GO`；`R3-J02` 的平台初始化任务输入和历史 design/review 资产均保留，但 Dexter 已暂停其继续设计，统一为 `PENDING_RECOVERY`。不得发送旧 Claude handoff、恢复其 implementation-facing design、把 operations session 当成已闭环登录，或进入 R3/W1；
+- R3-C01 是新的、已接受交互并获详设授权的 Journey，不是 J02 recovery。其 actor 与可初始化空间均为部署期外部受控前提；不画未裁决的凭证/登录方式，不复制 Heritage root，也不创建默认账号或空间。详设不得偷换为实现或代码搬运；
+- `R2_AUTHORIZED=false`、`R3_IMPLEMENTATION_AUTHORIZED=true`、`W1_AUTHORIZED=false` 与 `V2S_WRITE_AUTHORITY=true`；R3 仅按已接受 C-01 与 R3-TECH 范围继续。
 - all-v2 source 只按 Heritage registry 的 path/hash 回读，禁止 writeBack/build/runtime fallback；
-- Git stage、commit、push 始终由 Dexter 负责。
+- 仓库控制边界遵循 `doc/decisions/2026-07-25-v2s-agent-coordination-and-control-boundary.md`，不构成任何开发前置条件。
 
 服务形态、事务、模块 owner、数据访问、迁移、consumer face 与触发条件发生冲突时，始终以冻结 ADR 为准；资产取舍、通用规则与阶段策略以冻结 manifest 为准。本 Roadmap 只拥有执行顺序、阶段状态、验收门和会话切换点，不重新解释业务或架构真相。
 
@@ -104,7 +222,7 @@ Roadmap 完成时必须同时成立：
 - `scripts/verify`、walking skeleton、受影响 L2/L3 分账，互不代证；
 - `start/restart/stop/seed/reset` 五命令分权，start/restart 不 seed，reset 不自动 seed；
 - 所有动态 run 必须受管，business 与 cleanup 分账，cleanup 非 PASS 不验收；
-- 不 stage、commit、push；Git 始终归 Dexter。
+- 仓库控制边界遵循 `doc/decisions/2026-07-25-v2s-agent-coordination-and-control-boundary.md`，不构成任何开发前置条件。
 
 ## 3. 状态模型与更新纪律
 
@@ -137,8 +255,8 @@ Roadmap 完成时必须同时成立：
 |---|---|---|---|---|---|---|
 | 第1步 | R0 | Roadmap 评审与授权边界冻结 | `GO` | Roadmap 获 Dexter/Claude review，未静默扩权 | Dexter + Claude | `ROADMAP_REVIEWED` |
 | 第2步 | R1 | W0 4-7：v2s AI 底座、依赖 registry、HANDOFF、Heritage 切换 | `GO` | v2s 可从仓根恢复身份，all-v2 只读 | Codex + Dexter；边界由 Claude复核 | `V2S_SESSION_ENTRY_READY` |
-| 第3步 | R2 | Fresh v2s-rooted 会话验收与 W0 正式关闭 | `IN_REVIEW` | 新会话无需旧聊天即可接管 R3-R6 | fresh Codex + Dexter | `V2S_FOUNDATION_READY` |
-| 第4步 | R3 | W1：最薄运行骨架与 walking skeleton | `BLOCKED_BY_PREDECESSOR` | 代理→单 app→单库→双 admin 的登录+真实页面闭环 | Codex + Claude | `WALKING_SKELETON_READY` |
+| 第3步 | R2 | Fresh v2s-rooted 会话验收与 W0 正式关闭 | `GO` | 新会话无需旧聊天即可接管 R3-R6 | fresh Codex + Dexter | `V2S_FOUNDATION_READY` |
+| 第4步 | R3 | W1：最薄运行骨架与 walking skeleton | `GO` | C-01 list→detail→initialize→owner readback、单 deployable/单库、双 admin 静态边界与 fresh business/cleanup evidence | Codex + Claude | `WALKING_SKELETON_READY` |
 | 第5步 | R4 | W2：机器门、`scripts/verify` 与 red fixtures | `BLOCKED_BY_PREDECESSOR` | 业务迁移前的模块/DB/contract/retirement 强制面 | Codex + Claude | `MIGRATION_GATES_READY` |
 | 第6步 | R5 | W3：按模块和 Journey 迁移当前批准范围 | `BLOCKED_BY_PREDECESSOR` | 功能逐波迁移、旧拓扑逐波退出、fresh L2/L3 | Codex + Claude；产品语义归 Dexter | `APPROVED_SCOPE_MIGRATED` |
 | 第7步 | R6 | W4：全量复验、移交与 v2s 收口 | `BLOCKED_BY_PREDECESSOR` | 全量证据、零旧路径、HANDOFF 触发审计 | Dexter + Claude | `V2S_HANDOFF_READY` |
@@ -352,11 +470,22 @@ R1 之后，当前 all-v2-rooted 会话不再执行 R2-R6。R2 的 fresh evidenc
 - Dexter 确认可以关闭 all-v2-rooted continuation task；
 - Claude 只在真实 v2s-rooted 客户端可用时提供 discovery/恢复独立证据，不伪造。
 
+### 当前执行记录
+
+```text
+startedAt=2026-07-24
+completedAt=2026-07-24
+targetHash=bb382a2df1bf472d4875f4ac285d8bef0e2dc3087ab0444426ef7448e7d0d340
+reviewRef=doc/review/platform/2026-07-24-v2s-r2-fresh-session-codex-self-review.md;doc/review/platform/2026-07-24-v2s-r2-fresh-session-review-request.md
+evidenceRefs=doc/evidence/platform/2026-07-24-v2s-r2-fresh-session-acceptance.json;doc/decisions/2026-07-24-v2s-r2-acceptance.md
+remainingFindings=N-1_W1_MEMORY_REFINEMENT;N-2_R4_ENFORCEMENT_FIT;N-3_SCOPE_EXPANSION_ONLY
+```
+
 ## 9. R3：W1——最薄运行骨架与 walking skeleton
 
 ### 目标
 
-建立可从零启动的最薄真实链路：标准基础设施反向代理、一个业务 app、一个 PostgreSQL database、多 owner schema、两个独立 admin app，并完成登录加一个真实页面的 walking skeleton。
+建立可从零启动的最薄真实链路：标准基础设施反向代理、一个业务 app、一个 PostgreSQL database、多 owner schema、两个独立 admin app，并由平台侧系统服务提供者完成登录加一个真实页面的 walking skeleton。operations-admin 在 R3 只证明独立 app 架构，不宣称存在运营用户真实登录。
 
 ### 进入条件
 
@@ -376,13 +505,13 @@ R1 之后，当前 all-v2-rooted 会话不再执行 R2-R6。R2 的 fresh evidenc
 5. PostgreSQL 单库多 schema、一份 Flyway history、UTC 毫秒版本；
 6. 标准反向代理配置、覆盖式 trusted headers、`X-Edge-Auth`、直连 app 拒绝；
 7. `start/restart/stop/seed/reset` 五命令分权；
-8. 登录 + 一个真实页面 + owner readback 的 L2 walking skeleton；
+8. 平台侧登录 + 一个真实页面 + owner readback 的 L2 walking skeleton；operations-admin 只保留独立 app 架构边界，不产生或验收运营用户登录主张；
 9. business/cleanup、target hash 和最小运行 handoff。
 
 ### 验收
 
 - 一个业务进程、一个 database、一份 Flyway history；
-- `GATE_0` 的 clean control 与全部 red fixtures 在第一行业务代码前已真实 PASS；证据必须记录先后顺序，禁止用 R4 事后补门追认 R3；
+- `GATE_0` readiness 的 clean control 与全部 red fixtures 在第一行业务代码前已真实 PASS；PASS 后继续 U02，真实 contract/migration 创建后仍必须运行 production conformity，禁止用 R4 事后补门追认 R3；
 - R3 只建立 walking skeleton 所需的最小强制面；R4 仍负责完整 ArchUnit、query、真库安全、reachable wire、retirement、受影响 L2 映射和 `scripts/verify` 收口，二者不得互相代证；
 - start/restart 会应用 additive Flyway migration，但不 seed、不 reset；
 - reset 按 database + asset allowlist 清理，前后 readback 完整，reset 后不 seed；
@@ -390,13 +519,24 @@ R1 之后，当前 all-v2-rooted 会话不再执行 R2-R6。R2 的 fresh evidenc
 - 缺失/错误 edge credential 的 app 直连被拒绝；
 - 两个 admin generated endpoint/type slice 无交叉 import；
 - walking skeleton 真实通过代理访问，不允许测试直连 app；
-- Spring/PG/生成 binding/登录/页面 readback 均为 fresh；
+- Spring/PG/生成 binding/platform-admin 登录/页面 readback 均为 fresh；operations-admin 不以 app 可达、session 壳或 `current-session` 响应冒充运营用户真实登录；
 - dynamic business PASS、cleanup PASS、active resources=0；
 - 完成标记 `WALKING_SKELETON_READY`，不冒充全部功能迁移。
 
 ### Review
 
 Claude 独立核验 owner/transaction/schema/security/contract/generated boundary 与动态 evidence；Dexter 只裁决版本硬阻塞、产品入口或范围变化。
+
+### 当前执行记录
+
+```text
+startedAt=2026-07-24
+completedAt=2026-07-25
+targetHash=hash-checkpoint:f09930720e5d6c2d0a5d9ea412514e3521a0136787de6976373315a6119b7757
+reviewRef=doc/review/platform/2026-07-25-v2s-r3-implementation-review-claude.md;doc/review/platform/2026-07-25-v2s-r3-implementation-codex-self-review-round-2.md;doc/evidence/platform/r3-implementation-n-resolution-codex.md
+evidenceRefs=doc/evidence/platform/r3-gate-0-evidence.json;doc/evidence/platform/r3-u02-skeleton-evidence.json;doc/evidence/platform/r3-u03-contract-codegen-evidence.json;doc/evidence/platform/r3-u04-backend-owner-migration-evidence.json;doc/evidence/platform/r3-u05-u06-frontend-boundary-evidence.json;doc/evidence/platform/r3-u07-testing-walking-skeleton-evidence.json;doc/evidence/platform/r3-closure-readiness-evidence.json
+remainingFindings=NONE
+```
 
 ## 10. R4：W2——机器门、scripts/verify 与 red fixtures
 
@@ -434,11 +574,23 @@ Claude 独立核验 owner/transaction/schema/security/contract/generated boundar
 
 Claude 执行独立 code/evidence review，重点验证门真的调用 production validator、red fixture 真红且没有 consumer graph/第二真相。
 
+### Closure
+
+Dexter 于 2026-07-25 接受 R4 implementation。Claude 的初评 `NO-GO(1 M / 2 S / 2 N)`、
+remediation delta `NO-GO(1 M / 0 S / 2 N)` 与 M-1 SMB readback recheck 已依次收口为
+`GO(0 M / 0 S / 3 N)`；`MIGRATION_GATES_READY=true`。该标记只证明迁移前强制网已就绪，
+不授权 R5 的任何业务迁移、Journey、UI、DEV、seed 或 reset。
+
 ## 11. R5：W3——按模块和 Journey 迁移当前批准范围
 
 ### 目标
 
-以稳定 module/owner 和批准 Journey 为单位迁移当前既定功能；每波同时交付 replacement、旧路径退出和 fresh evidence，不保留多服务兼容双路径。
+以稳定 module/owner 和批准 Journey 为单位迁移当前既定功能；每波同时交付 replacement、旧路径退出和 fresh evidence，不保留多服务兼容双路径。R5 收口还必须交付一套连接 v2s 已批准远端中间件的完整 DEV 环境、丰富且可重建的 seed，以及 Dexter 可直接使用的受管脚本；这不是 R6 或 HANDOFF 欠账。
+
+R5 的原子 review 执行解释以
+`doc/decisions/2026-07-25-v2s-r5-scope-and-method-decisions.md` D-01 为准；完整 DEV/seed
+完成条件以同文件 D-06 为准。A/B/C 与下文“波次”只表示依赖、验证和 evidence 切片，不形成
+独立 review target、verdict 或 closure。
 
 ### 波次原则
 
@@ -460,6 +612,18 @@ Claude 执行独立 code/evidence review，重点验证门真的调用 productio
 7. 旧 service client/proof/projection/polling/MQ/outbox/frontend compensation/test 的零引用退出；
 8. phase retrospective、memory delta、business/cleanup 和 target hash。
 
+### R5 完整 DEV 与 seed 交付
+
+R5 全范围实施包必须在最终 review 前补齐并实际使用：受管 `dev start/restart/stop/reset/seed/check`
+动作、远端依赖 readiness preflight、DEV remote namespace 的 reset allowlist、版本化 `r5-full`
+fixture、dry-run、运行/请求关联日志、阶段耗时、批量 readback 与 cleanup manifest。`start/restart`
+不得 seed，`reset` 不得自动 seed；seed 必须是显式动作。远端依赖只限已经批准的 v2s 拓扑，
+不能借此重新引入 MQ、outbox、Redis、TDP、内部 client 或常态轮询。
+
+`r5-full` 必须覆盖 32 项 inventory 所需的双 admin 身份、空间/集团/组织、IAM 邀请与撤销、
+业务实体、门店启停、合同三种派生状态和五类扩展值宿主，使 Dexter 不手工补数即可测试完整系统。
+它是可审计 DEV fixture，不是默认账号、生产数据或权限绕行手段。
+
 ### 全步验收
 
 - 当前批准模块/Journey inventory 100% 有 disposition 和 evidence；
@@ -468,12 +632,18 @@ Claude 执行独立 code/evidence review，重点验证门真的调用 productio
 - 两个 admin 各自保持任务、状态、文案和 L2/L3 owner；
 - 所有被替换旧路径达到 zero reference/registration/route/generated symbol；
 - 每波 static/DB/dynamic/business/cleanup 分账且 fresh；
+- 从清洁 remote DEV namespace 重建后，完整 DEV 通过受管 start/restart、显式 `r5-full` seed 和
+  双 admin 真实操作/readback；远端依赖、seed readback、business 与 cleanup evidence 均为 fresh；
+- DEV/seed 脚本分别支持 dry-run/readiness、run-scoped 日志、阶段耗时和受限 reset，且不依赖手工
+  改库、旧 seed、默认账号或未受管进程；
 - HANDOFF 未触发欠账不阻断；已触发欠账必须先关闭；
 - 完成标记 `APPROVED_SCOPE_MIGRATED`，不自动等于生产切流。
 
 ### Review
 
-每波先由 Codex 自审与系统性同类扫描；高风险边界交 Claude；Dexter 只处理产品/Journey、新范围、外部协调、破坏性数据和 Git。
+各内部波次持续执行 focused 验证、系统性同类扫描并积累 evidence；R5 完成后仅建立一次
+全范围 DESIGN cycle 和一次全范围 IMPLEMENTATION cycle，各自遵守独立子 agent 对抗审查及
+Claude review 要求。内部波次不得产生独立 handoff、verdict 或 closure。
 
 ## 12. R6：W4——全量复验、移交与 v2s 收口
 

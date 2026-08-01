@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-AUTHORITY-LEDGER-U05",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+      "beforeSha256": "91d482df0b5e73f02b1e6b59ecfca29a589ffd14c9e297d77310d6186e86ca7d",
+      "afterSha256": "6d97e7a09e5b65aec2fd6de0e05016a1a9341fc032860c99177a08fb7dafafa5"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+      "beforeSha256": "7f4a92ae5e1db0c9ab4f78b8a057902c25fb831173201f5cf591813653702e94",
+      "afterSha256": "8e7a3c0b345697b7aa0b1e633711e1f90a2b96a05923382dfdc4435e435ca1bb"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-implementation-amendment.md",
+      "beforeSha256": "a912fe87615259369458158dce7179c1fc250f7ab87e28eaad5312c6af50272c",
+      "afterSha256": "387c0309fa48a7ef6ad7cd81964e60e3e1dc047e3f220ffbc07f45551d44f11a"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-package-input.json",
+      "beforeSha256": "7e5b5a61924798a3cea69312e232ce558917b34602b48e03b19862a5274a545f",
+      "afterSha256": "51fa2f4f87d615319714b8c0216521ead85ab3c5f689b172fb83a7e898b0385a"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-problem-family.json",
+      "beforeSha256": "963be11e8ec22da9f73d1841618ce5dac18099a5b71cdda358c1a5c106274dbc",
+      "afterSha256": "be5fee23d773916e3c760b59a66af0e646d91ef3f2ab4302fa18f07d3d1a4591"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-source-compliance-disposition.json",
+      "beforeSha256": "edb65c6f2c3e33d537ad650680f634a83056ddd5214d9416a3f5a5a9e3c4f3ca",
+      "afterSha256": "919118b973e0f5643bb453fdc081b912277a04a2f2539be44d113dd43d6e8ca2"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-authority-ledger-u05-implementation-adversarial-review-round-2.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e81375edc9553b2c957670f0baf0b4066884e0f960c33d1fadc32ad842f63a99"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-authority-ledger-u05-implementation-adversarial-review.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2fb9c459fe37267eefbb800432d3efaac0b4ab6b0ba0c406ca731b046941eca3"
+    },
+    {
+      "path": "tools/authority-source-ledger/cli.mjs",
+      "beforeSha256": "585cf1c69895ca1cc081b716dae3a432079778e9c11c389429d7d67cc13bdaf7",
+      "afterSha256": "90ab968ac6b6b5f0db3748fd1f2a49c50b423d0e81c6b251757809e11c70d059"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+      "afterSha256": "6d97e7a09e5b65aec2fd6de0e05016a1a9341fc032860c99177a08fb7dafafa5",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+      "afterSha256": "8e7a3c0b345697b7aa0b1e633711e1f90a2b96a05923382dfdc4435e435ca1bb",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-implementation-amendment.md",
+      "afterSha256": "387c0309fa48a7ef6ad7cd81964e60e3e1dc047e3f220ffbc07f45551d44f11a",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-package-input.json",
+      "afterSha256": "51fa2f4f87d615319714b8c0216521ead85ab3c5f689b172fb83a7e898b0385a",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-problem-family.json",
+      "afterSha256": "be5fee23d773916e3c760b59a66af0e646d91ef3f2ab4302fa18f07d3d1a4591",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-source-compliance-disposition.json",
+      "afterSha256": "919118b973e0f5643bb453fdc081b912277a04a2f2539be44d113dd43d6e8ca2",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-authority-ledger-u05-implementation-adversarial-review-round-2.md",
+      "afterSha256": "e81375edc9553b2c957670f0baf0b4066884e0f960c33d1fadc32ad842f63a99",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-authority-ledger-u05-implementation-adversarial-review.md",
+      "afterSha256": "2fb9c459fe37267eefbb800432d3efaac0b4ab6b0ba0c406ca731b046941eca3",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/authority-source-ledger/cli.mjs",
+      "afterSha256": "90ab968ac6b6b5f0db3748fd1f2a49c50b423d0e81c6b251757809e11c70d059",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-source-compliance-disposition.json",
+    "sha256": "919118b973e0f5643bb453fdc081b912277a04a2f2539be44d113dd43d6e8ca2"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "controls": [
+    {
+      "ruleId": "P1-AUTHORITY-SOURCE-LEDGER-SELECTED-ROWS",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "U05-P6-CURRENT-TREE-LEDGER-RECONCILIATION",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "staticEvidence": [
+    {
+      "command": "node tools/authority-source-ledger/cli.mjs check-rows ST-2,ST-8,ST-11",
+      "result": "PASS",
+      "scope": "selected P6-owned rows only"
+    },
+    {
+      "command": "node tools/authority-source-ledger/cli.mjs self-test-rows",
+      "result": "PASS",
+      "includes": "P1_LEDGER_SELECTED_ROW_RED"
+    },
+    {
+      "command": "node tools/authority-source-ledger/cli.mjs check",
+      "result": "FAIL_EXPECTED_EXTERNAL_DEBT",
+      "firstFailure": "P1_LEDGER_ROW_INVALID:ST-3; P1-owned/U04 catalog-control current-shape compatibility debt."
+    },
+    {
+      "command": "node tools/compliance-control/cli.mjs static-scan",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/standards-coverage --phase R5",
+      "result": "PASS",
+      "rules": 150
+    }
+  ],
+  "reviewEvidence": [
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-authority-ledger-u05-implementation-adversarial-review.md",
+      "verdict": "NO_GO",
+      "reviewerKind": "INDEPENDENT_SUBAGENT",
+      "round": 1
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-authority-ledger-u05-implementation-adversarial-review-round-2.md",
+      "verdict": "GO",
+      "reviewerKind": "INDEPENDENT_SUBAGENT",
+      "round": 2
+    }
+  ],
+  "knownExitDebts": [
+    {
+      "id": "P1-ST-3-CATALOG-CONTROL-COMPATIBILITY",
+      "status": "OPEN_EXTERNAL_OWNER_DEBT",
+      "cause": "Full ledger check fails at the P1-owned ST-3 direct closure because its historical catalog-access shape no longer matches the U04 catalog consumer.",
+      "requiredClosure": "P1/U04 owner package updates the direct-closure assertion without restoring obsolete page structure."
+    },
+    {
+      "id": "P5-ST-9-REFRESH-TRACE",
+      "status": "OPEN_EXTERNAL_OWNER_DEBT",
+      "cause": "ST-9 refresh trace is P5-owned and outside U05's P6 current-tree denominator.",
+      "requiredClosure": "P5 successor package revalidates its refresh authority and current trace."
+    },
+    {
+      "id": "P6-2-38-SCREEN-IA-AND-L2",
+      "status": "OPEN_SERIAL_SUCCESSOR_WORK",
+      "cause": "U05 is static ledger-only and does not admit physical-screen alignment or managed runtime.",
+      "requiredClosure": "Complete 38-screen IA/final alignment PASS before managed L2 with separate business and cleanup evidence."
+    }
+  ]
+}

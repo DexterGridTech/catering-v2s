@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-U03-IMPLEMENTATION-ADMISSION-20260730",
+  "genericProblem": "A multi-layer operations implementation can make a UI repair before its owner truth, typed error, generated protocol, or per-change source-read evidence is closed, leaving a visually plausible but unauthorized or unprovable result.",
+  "rootCauseClass": "OWNER_EDGE_UI_ADMISSION_AND_EVIDENCE_ORDER_DRIFT",
+  "finiteDenominator": [
+    "RM1P6-U03 established operations/public delivery unit",
+    "IA04 total-company brand authorization owner/edge/generated/adapter/Drawer chain",
+    "P6-3 prewrite receipt source-vector admission",
+    "operations-admin legacy HeadCompanyManagementPage and static-boundary assertion",
+    "WorkspaceAuthenticationService contextVersion owner invariant",
+    "P1 ST-11 authority ledger successor debt"
+  ],
+  "searchedSurfaces": ["P6-3 implementation design", "IA04", "operations owner and edge", "operations-admin", "compliance-control", "U04 and U06 exits"],
+  "searchQueries": ["listEntities|page(", "HeadCompanyBrandAuthorizationInUseException", "replaceOperationsOrganizationHeadCompanyBrandAuthorizations", "context_version+1", "hookPre|prewrite readback", "ST-11"],
+  "counterexamples": [
+    {"path":"tenant/head-company list branches","reason":"Similar edge-local paging is outside the approved IA04 corrective slice and is not changed by the brand owner query."},
+    {"path":"physical screen roster","reason":"The nonvisual authorization adapter has one Drawer consumer but is not fabricated as a physical screen."},
+    {"path":"known determinate 4xx","reason":"A known typed failure retains owner-confirmed truth and is never replayed."}
+  ],
+  "findings": [
+    {"findingId":"F-P6-U03-PREWRITE-READBACK-EVIDENCE","status":"CONFIRMED","finding":"Existing hook receipts record changed paths and hashes but cannot prove the required IA/design reread occurred after a target's previous write."},
+    {"findingId":"F-P6-U03-BRAND-OWNER-EDGE-TRUTH","status":"CONFIRMED","finding":"Brand candidate paging and typed in-use projection are not owner/edge complete; UI binding must wait for their focused red proofs."},
+    {"findingId":"F-P6-U03-LEGACY-BULK-RESIDUE","status":"CONFIRMED","finding":"U04 regeneration retired the bulk operation while the legacy page and its architecture assertion still require it, causing operations-admin typecheck failure."},
+    {"findingId":"F-P6-U03-CONTEXT-VERSION-PROOF","status":"CONFIRMED","finding":"The owner increments contextVersion on assignment/data-node CAS but has no focused owner-side monotonicity red proof."},
+    {"findingId":"F-P6-U03-IA04-ACCEPTED-BYTE-CONFLICT","status":"CONFIRMED","finding":"IA04 §3 multi-select draft text conflicts with the immediate single-command screen and §12.2 truth and would recreate the retired shape."},
+    {"findingId":"F-P6-U03-PREWRITE-RETIREMENT-ATOMICITY","status":"CONFIRMED","finding":"A same-receipt UI retirement removed the post-state prewrite vector before PostToolUse and delta receipt validation ran, so those checks misclassified an already pre-read deletion as unmapped even though the explicit retired declaration and pre receipt were present."},
+    {"findingId":"F-P6-U03-ST11-BOUNDARY","status":"CONFIRMED","finding":"The historical authority-ledger ST-11 denominator remains an external successor debt and cannot be hidden by U03 static or dynamic results."}
+  ],
+  "preventionDispositions": [
+    {"findingId":"F-P6-U03-PREWRITE-READBACK-EVIDENCE","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"tools/compliance-control/cli.mjs#hookPre and existing hook-events receipts"},
+    {"findingId":"F-P6-U03-BRAND-OWNER-EDGE-TRUTH","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md"},
+    {"findingId":"F-P6-U03-LEGACY-BULK-RESIDUE","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs"},
+    {"findingId":"F-P6-U03-CONTEXT-VERSION-PROOF","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"WorkspaceAuthenticationService focused owner test"},
+    {"findingId":"F-P6-U03-IA04-ACCEPTED-BYTE-CONFLICT","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"IA04 §12.2 plus P6-3 package readback record"},
+    {"findingId":"F-P6-U03-PREWRITE-RETIREMENT-ATOMICITY","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"tools/compliance-control/cli.mjs#hookPost,#validatePrewriteReadbackDeltaReceipts and prewrite-readback-self-test"},
+    {"findingId":"F-P6-U03-ST11-BOUNDARY","preventionDestination":"NOT_APPLICABLE_WITH_REASON","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-exit.json#P1-ST-11-AUTHORITY-LEDGER"}
+  ]
+}

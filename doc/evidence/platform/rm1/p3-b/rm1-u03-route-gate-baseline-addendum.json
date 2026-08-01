@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1-U03",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "entries": [
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "kind": "FILE",
+      "sha256": "8c1246e1246c06995290acc12e5c46a0a0c3506ca6bc84fdec86aed78d7960a1",
+      "purpose": "P3-B starts from the pre-existing hard-coded route cardinality gate, then corrects it to derive the authoritative retire-one/add-two operation denominator."
+    },
+    {
+      "path": "tools/platform-boundary-gates/cli.mjs",
+      "kind": "FILE",
+      "sha256": "fc8d10d75c55969e32217712b03b703796a0da57cf8280eaa84daec69d56e2c1",
+      "purpose": "P3-B starts from the pre-existing hard-coded Flyway single-history inventory gate, then corrects it to derive the ordered current additive migration denominator."
+    },
+    {
+      "path": "tools/code-layout/cli.mjs",
+      "kind": "FILE",
+      "sha256": "5797e90b4e125ef4f3daa39355f3086faa42101268c624a9eb9cbec74969d421",
+      "purpose": "P3-B starts from the pre-existing contract-root classifier, then recognizes the authoritative contracts/registry root while retaining unknown-root rejection."
+    }
+  ]
+}

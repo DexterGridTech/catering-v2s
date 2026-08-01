@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-ROUND-2-REMAINING-DENOMINATOR-GAPS",
+  "genericProblem": "A remediation design can declare a dynamic population or source-owned package-exit denominator while a stale manual count or a summary-only source binding remains in its executable exit contract.",
+  "rootCauseClass": "DESIGN_CLOSURE_DENOMINATOR_DRIFT_AND_OWNING_SOURCE_UNDERBINDING",
+  "finiteDenominator": [
+    "RM1 P3-A/P3-B post-R-24 mutating-operation inventory and P3-B exit assertion",
+    "all 11 RM1 delivery units times all six sourceComplianceDenominators",
+    "U09/U10 UI D5 bindings against plan section 2 accepted Journey/interaction requirement",
+    "implementation-design-granularity source-denominator validation and red fixtures"
+  ],
+  "searchedSurfaces": [
+    "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+    "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+    "tools/implementation-design-granularity/cli.mjs",
+    "project-memory/decisions/incremental-compliance-hook.md",
+    "contracts/policy/frontend-asset-carryover-manifest.json"
+  ],
+  "searchQueries": [
+    "mutating-operation-inventory|post-P3-B|20 个业务写 endpoint",
+    "sourceComplianceDenominators|PROJECT_MEMORY_ASSERTION_OCCURRENCES|OWNED_SURFACE_AND_PAGE_KEYS",
+    "validateUnitSourceCompliance|wrong-owning-source",
+    "R5 carry-over manifest|accepted Journey/interaction"
+  ],
+  "counterexamples": [
+    {
+      "case": "P3-B dynamic snapshot with no fixed completion count",
+      "boundary": "Valid only when every P3-B exit clause consumes the exact post-snapshot set and delta."
+    },
+    {
+      "case": "Non-UI delivery unit D5",
+      "boundary": "May be NOT_APPLICABLE_WITH_REASON when it has no changed UI-bearing surface."
+    },
+    {
+      "case": "A source path is non-empty",
+      "boundary": "It is not evidence that the path is the declared owning denominator or that all members of a routed set are present."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "RM1-M-001",
+      "summary": "P3-B retains a hard-coded 20-write exit despite the required post-R-24 generated snapshot and exact delta."
+    },
+    {
+      "findingId": "RM1-M-003",
+      "summary": "D1 and UI D5 bindings do not yet enumerate their declared owning source sets, and the checker cannot reject a wrong owning source."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "RM1-M-001",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "RM1 P3-A/P3-B post-change mutating-operation inventory and package-exit assertion"
+    },
+    {
+      "findingId": "RM1-M-003",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/implementation-design-granularity/cli.mjs source-denominator validator with wrong-owning-source red fixture"
+    }
+  ]
+}

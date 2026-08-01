@@ -33,7 +33,7 @@
     {
       "id": "JOURNEY_INTERACTION_REVIEW",
       "owner": "Dexter + Claude",
-      "requiredEvidence": "approved Journey/interaction matrix plus task-specific L2 evidence or an explicit justified omission"
+      "requiredEvidence": "For every DESIGN or IMPLEMENTATION adversarial round beginning with the next review cycle: a fresh independent-subagent blind verdict formed before author material, reviewerKind=INDEPENDENT_SUBAGENT, reviewer input checklist path+hash, blind-review declaration, and author dialectical intake with source reopen, primary-source verification where needed, counterexamples, applicability and explicit disposition; implementation reread of the smallest applicable IA/original business item, routed memory and owning sources, detail design/constraints and reusable source remains a recommended review habit, but no prewrite or pointwise record is a machine or package-exit prerequisite; REVIEW_CYCLE_ID plus REVIEW_ROUND 1 or 2 and fixed REVIEW_ROUND_LIMIT 2, with SELF_DECIDED hard stop on round 2; approved Journey/interaction matrix; actor prerequisite-chain readback where identity and required data each declare exactly one source (in-scope produced, established source, or external prerequisite pending Dexter), without silently treating a pending prerequisite as established; every implementation-facing detail design cites its original business requirement/problem and states the business user or owner, current task, and observable success outcome under doc/decisions/2026-07-25-v2s-design-governance-batch-1.md#generic-detailed-design-admission; at least one viable alternative and tradeoff; UI operation-to-user-task proof; for a UI-bearing Journey, a complete interaction artifact meeting doc/decisions/templates/ui-interaction-design-template.md#ui-detailed-design-admission, manifest B.4/B.5 hit mapping with an applicable frozen Heritage asset or explicit N/A reason, Dexter low-fidelity visual review, and when applicable a high-fidelity demo ledger plus DEXTER_HIFI_REVIEW conclusion; when a cs-* adapter was used, a SKILL_USED=<adapter>@<frozen-vendor-sha256> header plus human verification that its phase and output match the adapter; ambiguity attribution and Dexter ruling when product semantics differ; task-specific L2 evidence or an explicit UI NOT_APPLICABLE justification; for every Claude review of design or implementation-facing design, an attached manifest Part B (B.1-B.6), Part C normative-pattern groups, and Part D chapter-level hit map that gives each chapter or Part C group either rule IDs plus design locations or NOT_APPLICABLE plus reason—without this table the review material is incomplete and cannot issue GO/NO-GO"
     },
     {
       "id": "REFERENCE_PATTERN_APPLICABILITY_REVIEW",
@@ -48,7 +48,7 @@
     {
       "id": "DELIVERY_PROCESS_REVIEW",
       "owner": "Dexter + Claude",
-      "requiredEvidence": "finite scope, independent oracle, discriminator, business/cleanup separation and no superseded ceremony"
+      "requiredEvidence": "finite scope and an independently reviewable batch (split any delivery exceeding about 30 minutes of reviewer inspection); from the next review cycle, every DESIGN or IMPLEMENTATION adversarial round is a fresh independent-subagent blind review with reviewerKind=INDEPENDENT_SUBAGENT, explicit mandatory-input checklist path+hash and blind-review declaration before author material, followed by author dialectical finding disposition that rejects unverified scope growth and overdesign; semantic/user-task judgment remains fresh independent review rather than a keyword-style checker; new or expanded machine gates pass the three-question test (recurring error, purely mechanical verdict, lifecycle cost below future rework), drive production, and have a behavior-changing red mutation; maximum two adversarial rounds per cycle/target/approved scope and no reviewer/model/file/hash reset; round-2 SELF_DECIDED closure or direct Dexter escalation; at least one alternative; independent oracle; discriminator; business/cleanup separation; source and real-user-behavior evidence for implementation; minute-scale verify with the weakest low-discrimination gate removed before accepting slowdown; and no superseded ceremony; for every Claude review of design or implementation-facing design, an attached manifest Part B (B.1-B.6), Part C normative-pattern groups, and Part D chapter-level hit map that gives each chapter or Part C group either rule IDs plus design locations or NOT_APPLICABLE plus reason—without this table the review material is incomplete and cannot issue GO/NO-GO"
     },
     {
       "id": "DEPENDENCY_AND_VERSION_DECISION_REVIEW",
@@ -59,6 +59,11 @@
       "id": "CLAUDE_ENTRY_INTENTIONAL_REVIEW",
       "owner": "Dexter + Claude",
       "requiredEvidence": "human-started v2s-rooted review proves CLAUDE.md entry-chain readback; no unverified second hook configuration"
+    },
+    {
+      "id": "R4_BOUNDARY_SEMANTICS_REVIEW",
+      "owner": "Codex + Claude",
+      "requiredEvidence": "fresh independent-subagent implementation adversarial verdict, author finding intake with owning-source reopen, current R4 production validator and red-fixture evidence, and Claude whole-scope implementation review. This checklist owns standards that require architectural, security, logging, retirement, database-query or UI-traceability semantic judgment beyond a one-line mechanical predicate."
     }
   ],
   "rules": [
@@ -74,10 +79,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -94,7 +99,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -110,10 +115,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -128,10 +133,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -146,10 +151,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -164,10 +169,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -182,10 +187,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -200,10 +205,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -218,10 +223,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -236,10 +241,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -254,10 +259,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -272,10 +277,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -290,10 +295,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -308,10 +313,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -326,10 +331,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -345,8 +350,8 @@
       ],
       "enforcement": {
         "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
+        "ref": "scripts/check/logging-boundaries",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -362,10 +367,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/security-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -382,7 +387,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -400,7 +405,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -418,7 +423,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -436,7 +441,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -454,7 +459,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -472,7 +477,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -488,10 +493,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -506,10 +511,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -524,10 +529,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -542,10 +547,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -560,10 +565,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -579,9 +584,9 @@
       ],
       "enforcement": {
         "kind": "GATE",
-        "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "ref": "scripts/check/database-boundaries"
       }
     },
     {
@@ -598,7 +603,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -614,10 +619,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -632,10 +637,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -651,8 +656,8 @@
       ],
       "enforcement": {
         "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
+        "ref": "apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java#BackendModuleBoundariesTest",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -669,8 +674,8 @@
       ],
       "enforcement": {
         "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
+        "ref": "apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java#BackendModuleBoundariesTest",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -686,9 +691,9 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
+        "kind": "GATE",
+        "ref": "scripts/check/backend-boundaries",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -704,10 +709,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -722,9 +727,9 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
+        "kind": "GATE",
+        "ref": "scripts/check/backend-boundaries",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -740,10 +745,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -758,9 +763,9 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
+        "kind": "GATE",
+        "ref": "scripts/check/database-operation-budget",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -776,9 +781,9 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
+        "kind": "GATE",
+        "ref": "scripts/check/database-operation-budget",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -794,9 +799,9 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
+        "kind": "GATE",
+        "ref": "scripts/check/backend-boundaries",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -812,10 +817,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "GATE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "ref": "scripts/check/backend-boundaries"
       }
     },
     {
@@ -830,10 +835,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -848,10 +853,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "ARCHUNIT",
-        "ref": "apps/backend/src/test/java/architecture/BackendModuleBoundariesTest.java#backend-module-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -866,10 +871,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -884,10 +889,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -902,10 +907,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -920,10 +925,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -938,10 +943,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -956,10 +961,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -974,10 +979,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -992,10 +997,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1010,10 +1015,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1028,10 +1033,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1046,10 +1051,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1064,10 +1069,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1082,10 +1087,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1100,10 +1105,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1120,7 +1125,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -1136,10 +1141,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1156,7 +1161,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -1173,8 +1178,8 @@
       ],
       "enforcement": {
         "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
+        "ref": "scripts/check/openapi-contracts",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -1191,8 +1196,8 @@
       ],
       "enforcement": {
         "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
+        "ref": "scripts/check/security-boundaries",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -1209,8 +1214,8 @@
       ],
       "enforcement": {
         "kind": "GATE",
-        "ref": "scripts/check/frontend-architecture",
-        "status": "PLANNED",
+        "ref": "scripts/check/openapi-contracts",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -1226,10 +1231,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "kind": "GATE",
+        "ref": "scripts/check/ui-wireframe-traceability",
         "status": "ACTIVE",
-        "enforcementPhase": "R5",
-        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+        "enforcementPhase": "R4"
       }
     },
     {
@@ -1352,10 +1357,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "kind": "GATE",
+        "ref": "scripts/check/business-terminology-traceability",
         "status": "ACTIVE",
-        "enforcementPhase": "R5",
-        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+        "enforcementPhase": "R4"
       }
     },
     {
@@ -1498,7 +1503,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-operation-budget",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -1514,10 +1519,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-operation-budget",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1534,7 +1539,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-operation-budget",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -1550,10 +1555,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/database-operation-budget",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -1569,8 +1574,8 @@
       ],
       "enforcement": {
         "kind": "GATE",
-        "ref": "scripts/check/database-operation-budget",
-        "status": "PLANNED",
+        "ref": "scripts/check/backend-boundaries",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -1588,7 +1593,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/database-operation-budget",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -2020,7 +2025,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/code-layout",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R3"
       }
     },
@@ -2038,7 +2043,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/code-layout",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R3"
       }
     },
@@ -2056,7 +2061,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/code-layout",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R3"
       }
     },
@@ -2074,7 +2079,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/code-layout",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R3"
       }
     },
@@ -2092,7 +2097,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/openapi-contracts",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -2110,7 +2115,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/openapi-contracts",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -2126,10 +2131,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/openapi-contracts",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -2144,10 +2149,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/openapi-contracts",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -2164,7 +2169,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/verify",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -2182,7 +2187,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/verify",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -2200,7 +2205,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/verify",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -2252,10 +2257,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/roadmap-program-registry",
+        "kind": "UNENFORCEABLE_BY_MACHINE",
         "status": "ACTIVE",
-        "enforcementPhase": "R2"
+        "enforcementPhase": "R2",
+        "reviewChecklistRef": "DOCUMENT_GOVERNANCE_REVIEW"
       }
     },
     {
@@ -2722,7 +2727,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/logging-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     },
@@ -2738,10 +2743,10 @@
         "project-memory/decisions/deterministic-context-only.md#CARRYOVER_STANDARDS_COVERAGE"
       ],
       "enforcement": {
-        "kind": "GATE",
-        "ref": "scripts/check/logging-boundaries",
-        "status": "PLANNED",
-        "enforcementPhase": "R4"
+        "kind": "UNENFORCEABLE_BY_MACHINE",
+        "status": "ACTIVE",
+        "enforcementPhase": "R4",
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW"
       }
     },
     {
@@ -2758,7 +2763,7 @@
       "enforcement": {
         "kind": "GATE",
         "ref": "scripts/check/logging-boundaries",
-        "status": "PLANNED",
+        "status": "ACTIVE",
         "enforcementPhase": "R4"
       }
     }

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U05",
+  "kind": "write-path-ui-consistency-package-input",
+  "predecessor": {
+    "packageId": "R5-CR-U04",
+    "packageExitPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr04-package-exit.json",
+    "packageExitSha256": "ae9ef04bc945644c334e005b37709119ad6533dea3c091649462b54be21c183f",
+    "status": "PASS"
+  },
+  "delegatedDecisions": {
+    "D-1": "independent business surfaces replace the generic operations registry",
+    "D-2": "accepted edit capabilities close in this remediation program rather than being deferred"
+  },
+  "invariants": [
+    "generated typed models determine request and response properties",
+    "all UI work first reuses libraries/frontend/admin-ui-foundation where the capability exists",
+    "platform-admin and operations-admin retain independent shell, router, store, baseApi and theme ownership",
+    "lists do not add an operation column and use accepted ProComponents/detail-interaction patterns",
+    "page-local HTTP, manual request shapes, technical user labels and new page keys are forbidden"
+  ],
+  "verificationBoundary": {
+    "static": "typecheck, architecture checks, locale/paging/source invariants and real red mutation close here",
+    "dynamic": "managed browser behavior remains R5-CR-U08",
+    "business": "NOT_APPLICABLE_STATIC_PACKAGE"
+  },
+  "authorityBoundary": "R5-CR-U05 only. CR06+, DEV, seed/reset and remote runtime are not authorized by this package input."
+}

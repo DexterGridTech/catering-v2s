@@ -1,0 +1,13 @@
+{
+  "components": {
+    "schemas": {
+      "NoBody": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "NoContent": {
+        "type": "null"
+      }
+    }
+  }
+}

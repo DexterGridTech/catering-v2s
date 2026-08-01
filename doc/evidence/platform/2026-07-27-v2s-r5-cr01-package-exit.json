@@ -1,0 +1,2569 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-compliance-remediation-package-exit",
+  "packageId": "R5-CR-U01",
+  "status": "PASS",
+  "serialPredecessor": {
+    "packageId": "R5-CR-U00",
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-package-exit.json"
+  },
+  "actualChangedPaths": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "11b7737971283d03c06f89b31a204b1866a33c59465d322642e277f0da2ff009"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "acfb7c268d6fbf90c61a0e9d99037664790c7733b63784a7986851698d0d4e2c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/AuditChange.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "06238505a475ad9cb56ab52d3518420987916002f73d8952d8c659088783ae8e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/AuditHistoryItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a122976b08493bf91775343b3050a3d0eab09d4899bd490dc26f01a70ef80203"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/AuditHistoryPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "251d2e49767fa9415c812a328a864defa8cec6b5903a7db1f757154f499cc260"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/AuditTarget.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7057397f9616c05fb2ea172d7d9c205cf17cf2cc92e2a62a26da8d3b44d2a413"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Brand.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ef47ac8f6540ccf1a61b4dbf12b659deff715d19dd7c76644485dad76c5b32ab"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d44e7f7811e62952bacec5c5ad9a66193d75b5a061e76934b75be753d6e0a2cd"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fc1768dfc3e6c6af060b0cb0f0812d4678146efb23dedf48b757e52707a2774b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandPageMetadata.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c0ecb9ad48a6f1ac7dcc6732dc22aef0744715f1264a1866d3e1cb8162d80733"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5d412a6ec947a132639112e78fc8287523ab61bc76dee602eb3222cda2503f82"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BusinessEntitySortDirection.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "27dfcc92a0dcb799739b981ce534a6b34bbf523cc50aecdddedc17aef90aec65"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BusinessEntitySortKey.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e8ff4fe51217f08353c63a52cd75e85c134026dd3db9d57fb57286299b3f7e4a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BusinessEntityStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "13183fe000895a7d0c5701df30a2971bb1a01ec2edd5f17b63a16a7b5d750366"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BusinessEntityStatusRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3808fdd14d8bbc76d9b0f3e11953f7d237937ae89c881857538515d47b0ed512"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/CommercialGroupInitializeRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "07e9006b1c7a7be03436a6f24d5f1715ed8da0958e6130738fad563712cff6ae"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/CommercialGroupRoot.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "903a5f336ac622c4d12144ee9906abad0731272537d65c844e45f03db1e869e9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e05ed70114043a5b1cc02b7af33e2ef689d2c7a907dec30a1f9f696f1fe12c17"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewItemContractRef.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8745c7fc6361c05d2ef4708a76a1b57819890e1d558ceb413c93e771839c8367"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewItemStoreRef.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "874bcf7359fa7b4a70963c0ea2643f6d7a00487f58f25e199fd11c0884fb874f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewItemTenantRef.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4a0b4e5d1d6efeeb2c8dea748df47eaf1439b2d05434321ee43e186095333a91"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "92705ad79ebc85b6485439dd4024f3df732405434d391019a70774a0f0ece8f7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewPageFilterOptionsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "98d683b30c7015e701d05545cf4b538d929d23f658dd777fdd0c1e4d6740685c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewPageMetadata.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b3b683d78c8d42f14835ebd23d3ad41b90c9ab7c47acd1d4d0e14b82e0e2c713"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionDefinition.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1467a5e69ff07396abdab6874c5979cb24d25369d4073f42688be7924ed40ccc"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionDefinitionDefinitionsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c96d066e4d4fe1073780002ebf4f2b80442e3dfcf740929a65920d69377b198a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionDefinitionUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b44cdabec4155870381b802914661aa2176b22b84bd738eac02b43049168757f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionDefinitionUpdateRequestDefinitionsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "adffdce526dbdb163a9343117c744a4fe40b1d0cbaf22d71746c7b511ae9e13f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionEntityCatalogPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7fd587c60609c7ac3eb2baaec1c8d142cd05e1383a4f46d0facf3a1f9085500d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionEntityCatalogPageItemsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "65ac9188585f8d25bb8f59b97daac0641e9a8e273b4c542cb60834ffa28ba0b7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionEntityType.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2253845da82f941355cb2dd9bbbf744fb6cc8d6cd4ebf2fcf593b97267f623fd"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a6920083f65dab83f412a595c8dd94a9689894cc504860c5f482e47eb8a8f920"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceCreateResult.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "96c95caeadb1b122bcc7c15eb28dc85f3342461c27958e7256d352cf56d823f2"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceDetail.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "94e809294c4ba2435d1eed7fffe087017855176172ce033461bf8c90f01b6007"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceDetailCommercialGroup.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "794d8a4d11618ec67c06118065e59116718eafdd355bb51d3db7c6d230ed03aa"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceDetailCommercialGroupRoot.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7329c49bf933d5e5d7d6a62fc9210f7442f16875f9819ac9190492326aa03838"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceDisplayUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a5e436ab29749bda84e1ac105ddbed2e8befcbacdcae4a1796deb0d894e65594"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspacePage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4c45f66d3e52df1b424f869efc85331ef462d615f785a99e966c4a5f5d5e49be"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspacePageItemsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f6a55929a39bd16db508feea554ddacf4061f12fba8653b1590a2b9e0d247f8b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspacePageItemsItemCommercialGroup.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e37a2fe4fdbcb09ace4ce6ce45d4101b9b76b126d814991f9fc6b71db9a2e613"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspacePageItemsItemCommercialGroupRoot.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "869d7903af2f51a68b021c524375c6360af3715bcc11f116fff3daf67acfb33c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceSortKey.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "414a999f77e794080c34c65c6e9ca33fc752e61f17b9460bd81dfa723848ecec"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0969d99406a5f13286a6337d59be57f6a0a9a1886be5487f6a6797a1aa983639"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceStatusTransitionRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "69051ce6037c11fc468a5a2235a2a75d1775ec3803f2f22603a882015046b1be"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompany.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5798f4cc52d304ca17bc91007cfae35cd055a960a4331c1e3044936266ca0054"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyAuthorizedBrandsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5d8c8767b09749a17a361157e4393146cea21aba60e680adaa6e88ba6ab3cd7b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "6328134a1b67a18d7e5daf8cb4ee194161f79afad3115760ea82b41496bb21aa"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationResult.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f384633550de6e8cefb2a28940463ee81fb806b96968488949a768e3adb7281b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "089161fe3453093381662741c964bc3246b8b7b8c7b29e9d508f962d7688f612"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "827fd3ee3cdc8cba10cc70e4d3492e2caa8f3a1ba07eecc4f345efe8e7c702ce"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyPageMetadata.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d7e49b2f36a161141d9319689076157dad011f9dbee6a1e2628937c461529c50"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ee14a64b35753daa3137e5538feb9b40cb077fab293fde43a6626e0811927d02"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/LoginRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "40fad676f7da1507dd8182f99031005798909a08c189140e41bb2894be6ed5d7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/NoBody.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "62db5eec05694d15aea1ee9c929879ee8d497fb8f2b715bbb4861360f54a2de1"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationHierarchySnapshot.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "496a0ef167aeef1cac07d697c6720a86ffc278f02e30fcd3cbd1ba30b072ff51"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNode.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "38413903a816b80e7e47bd250bf7bc8abc394c3afe901cca543df3ef13d57ec4"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodeCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "6275f86169d5326d6e0f24856d40a7deca1526dc2356fb2ac1f9718aa4d88e3b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodePhasesItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8cf3cbf3c2ee0e367d415a194ab106f1575f47c387ba8657580894bea4940ac6"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodeStatusTransitionRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c0f80229dc64b67bce6687a0198ce9e1b5b6e39280cb9f9935eced64d39cb742"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodeUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e3d415b361d657590dd8161df73236d084e7f770d7a1124b66c25c06f23b2ead"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodeUpdateRequestPhasesItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "cc492d58ecf55c95ab6eba8bccf0ab74e316eb9f1152f91b72cf7985343e9143"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewCategory.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5a3f164d619f5e89f66a7f3df876f1f01fff847d3447ecf77cb2c3ddd4dc34d9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d2510818556b41d2534e570603b5a4b901f06d7e2f098e50da7127d43325ce1e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemBrand.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "6e765e323aabc081c2404dd6229de023f9255117e72ad29690d4e494c483ed8b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemHeadCompany.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8e664c1dc7a702ff98a73eab2e743ee38aa58c0ee7f1494262bd14933c7f87b6"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemPathItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ac490e47e0b57a3355e43c9fb9847a413c76521c0ce50667ea61561e158793f2"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemProject.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3ea53a425d33a66dd45ff638765779f8052d43e096c64cbdf2736c737715a745"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemTenant.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f22110d94b3402c04c4031d989bee153ba2f491ac9fb961326fa4a5161bee008"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "53969c11850aa4d8a51de1dcacae661b7d615a146cc446fd5d6a7ded5cf3c801"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewPageFilterOptionsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e7862d2b0a31e587b787d26ece76602ee6927f1653504c94be3df78d5581d97a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewPageMetadata.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fd88dd1bad1c821ae556ddb0ad16eef69b42fd1f9ae6a6524893090f53c9bf5e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewSortDirection.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ac462fd3ebc303cd1c90f356f61f089df2e2cd1ffb98ea25dd58dadedf4df880"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewSortKey.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "404135200ea6669fe96b6f1377a45a65964a89efa4259f86c742273362c16a3d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewSource.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "71271d6d3d5de1fe2867571caa4dad3581ef3ad7e5fb74f687527a121f6a8c88"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "14a3fee33e95c3cbb53f62dc0b43a6d351711689542a202b2125d8d794d60262"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewType.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "37700f2bc16c4ce3756f400f8ef74a60599176e0cfc0f28f0c697799a5a68762"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationProjectCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "45a9c9ef9c258fdf6be0fa98fbbf1462a62c1dbeee4c2e3ff5d2d8ce05e39c13"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationProjectCreateRequestPhasesItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "83c218836a2e3eb396eb34b2ab024bcbbb40027e5cacb2e016bb4d4ce9ac87a8"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStore.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ed5f68bceb5a9ca731fc57d070a22dcc00948c295655afee4285e1b0581a3a8d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreBrand.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5a49ab24ad194c9600090655d52408be1f5c158d51c3d08536c6c87f744f8ce7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f0a7306f7001862edccfd7a64ceec7093daad4db11af3a76f8c96921d01b5a63"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageBrandsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "022f519539d58c9cb53645a8617817a3f7b03cc0aa622c685dbc56240a304f3d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageDataScope.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a8d24a8a136a36888b89ad5e2feb8605caef83401fdfa71ea2e70f7f19579940"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageHeadCompaniesItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4b55f6f9135a49ae1045e9981f4965f022007a0d0f8bedf53b5a83f3cf930fef"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageProjectsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1d7cb9d2911de4d21180988d880b72be3746c02cd376a840c26607cc132936e0"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageTenantsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1e6c84ad85671d6171ac9ed8ca979bf155c98754a3e9beb643d08bd8da4af087"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "342094f56210d0429b7c5583dc498ece02d442756d2bb11a44093a34ce14f61b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreHeadCompany.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a396b98a86ce82c7c9e846e1ed9e232f4d609b6838b4195f400336fb04a7c948"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStorePage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7042c31d978c2801a7531d38c7d0f4ead24b19256a8d72e3af9abf96a8000d4c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStorePageMetadata.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7d9961b423627a3a813f5ce02a47bb636f4a5770eb194bed558119ff623672c1"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStorePageMetadataDataScope.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "cef0f3a96d431abb8178e12c8ad05f822cb6c1d01277acd3d706a992ca85a715"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreProject.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "59eddeb00a99fb34554430416ca4e40102835a5046d0d500d655d631821fb89c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreSortDirection.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "545f9c12208b205667580e992e6af4a312ef7d4f854d1a23673ce54047fd8096"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreSortKey.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "89f3e30786855dfe28c031f107617babcc50a943b4d104d24ea11c14fec5f84c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c504eab8dc5823e931a98922275e5ed338534eff0e5609e7987d603fbded5181"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreStatusRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9642fb09f2a997b115eba2f75fc2ac869c5e7ea21a83dc91c1fb54823a28f2b9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreTenant.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "991ff646f7e10d5ba7826505f1700b43ad9ce0414619b88f1baefa33af52de43"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a33375cacf214c551e46003bbe4ff39b02465f9be8198e41f7600768ed40c18f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "10d599c7e0b2849c9b2d5df9ebc019f13e6c8d007433874d09a6ccdc4c0a7288"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminCredentialResetRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3c7f1485141b3ed338657dd5795dd5e7351fae22429144e4bcbb5429514e4edc"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminDetail.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "17046db8b1bd8bcd5c8464837c946b2279e1edd23abcd8e30347d54fdbea80c7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7dd09f26432884cc4662df3b27562f0ac4d1d02dc34dbff13cd01964be8fd6ae"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminPageItemsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ea11785d5eefb5d816e8d4a8f3d4f5d57d590b00691844229eed74fa2507ad4c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminProfileUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d150761e559dac344940898f9d1042815bb11f1ede14509fa82a7ccc54184c3b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminSortKey.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4b855ae3e6240d3f88cf43f7ab236ae16e778345a6efa15b58c9a7fc1807b102"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "542a3f2fdb8cd1e9eb346aa1a351479f0370dd635e0294ddfb0ab232e112c9d8"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminStatusTransitionRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a2042d7fe02dda0ea3e82e459cbe36e924f5a24b20d5ef599a553f660f241bd3"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAssetStageMultipart.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e917b4ba68fa23fba3566d8e38634c26c9f3f9596fdca8ad16176b6ac3b95152"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAssetStagingResult.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bba70c8f98a779c9ef57af9e7006ce20207d903670a51761ef855bc5a2a46274"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAssetUsage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "131a3f4d39cb72789015c8ac2554f1e8629e71bb5233f6918bc99929af62713c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformCurrentPasswordChangeRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "cbb30d2b1bc1064bc9ba367dd92b14cb9a7383c2a7436feee899632fade653d4"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformCurrentPasswordChangeResult.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "86c77949830463237a1bf93f327958e473c78c967d123c2f3e01b75df2ca042e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformSessionView.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "518f9bdd737af87c85982b9af33ec788508838b4e75d9fff7fe1b61c9cc18092"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicAssetReference.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "22e5615d45ac40ef00d7f3778b82d0e5675fa0a5ad6e667fe00a30d43ec5390e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationAcceptIntent.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7a1b2dbf5d00ebebc693e98e068e93a523b92241a26bf5fb619b8999f130d713"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationCompletion.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bf4a2737c19c8d5d1ec96d329eae36db07d03bb42a86adf3586c49239f19df5e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationCredentialRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b54db0cbd2a710f08f8a845488c3dc219c07a10f6f208ff56ddaa1b38cb6603b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationCredentialResponse.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "55cf5296495e2a72e4ccd1b34dd096f911ac77d492c399f4016046275f52736c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationOtpSendRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b8d8f1c02b6d7d887e1dff0f5f8d717617c4d9dd9ee37efac459ce92220ce1b2"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationOtpSendResponse.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c9d4918a3a574d763f857cbae3264f82cd5cdf6660647d8151b0ea9b83d2344e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationOtpVerifyRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "dbfa42d521122745cb6d097500fff8535a1308154ea5e3248179b9f8f2ceee8b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationReadiness.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "47cd858041b9eaed411203ab3f43480aec17e650c2556ecfd2a69bdf82c07658"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationView.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d4caa8a6d444a7d77c4115ae6c86eb8908f87c33532a71af46081d4c14c8635a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ServiceNodeType.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "dbd9761b0c2430ce642498cb01615550f40e2a97dd16c7d48e6312786880038e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/SortDirection.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fdd4a5a8bc5fd63532b8780d48755d4aa7850d1cd1d5a0d864b85c5c427b8ef0"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContract.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bf5d5c4ac48c941d0d342fac6b4a57c16b2ef9f76026eadb1dc317d1d64fb7d6"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCandidatePage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "520a7e86a9cd4289a4f9cecb036b82532827e6ae6ea4bcc612131e8639667183"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCandidatePageMetadata.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "97e9f3672196c348924a18596b93ec68de51d51eb9eea195eb2e5e6f67f1ffc6"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCandidatePageProject.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1c9f6f74f6e4d7abbb33d91b97ad7d90c590c7f084d5bfd5ea53db407bbae607"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fa7f8cb084065f938642d09d071ddc2c9c45a4d5738169dab3aa24d937f7d057"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractInvalidateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ea7987706b2d766848756639583603fc2874e50329a696f4438d812e3815be0d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "70a9d855b1b1a3c75e9bc12f7d84593ebad644ae96bbd05ab666444f23250bcd"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7e910b99e67d1eb844ec58824f5d00dd46d7a09940bbaf6509ff5f58059bda6d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractPageMetadata.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b38473a636617191e5ac0931f476ad37976748969ef60d81ccf07bece4b0da19"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractProject.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f7bb1fc280955097308bb873e632203155e87c02c5ad2100143c70d001bc2ba6"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractSortDirection.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e7d85846614cf8ce6c20187ada0e18ae028ca0cd037a527474246822b455eafb"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractSortKey.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "af26ea0ce609b2f6bbe3530d7d45745f32d02522cbaff24c304c05c1996a9095"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d9857733c2ed93674941a57e73780ad0930363b5de5c483f69e94dc291f91fe9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractStore.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0b1d1193921adb10ab9d7dc35617bad550ec2d3a295bc02c621ffc55bde7fd2b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractStoreCandidate.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9fb98ba663488a18a80804c554d4f42b62876a68ab153ffec8155f46ee6bcb7c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractTenant.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "23e2e316e5832d46224eef965a2b526e1b47e801ec3b166e6867248ed665ae95"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1dfc017c09b2ba2a074d1df391d40359e534170a06f725a2bd2e33697ddcccfa"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Tenant.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a14fced8bb326e3255f43e824e2cd4e93a9baf200b9089097b67892ae29560b3"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "60f928dc50ec79ac6eb5fa2d4d8600f69b6b2fda4d06b33d50cc709e85a297dc"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2ad1579879dec6285f032e81b2eebac2e4cda612e7040495f4b310a2b6fd0070"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantPageMetadata.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b69ff9d450627600214a3742fcf1bc0b1e0063fb976d94c961ef0c5dba65bef4"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3ee7efcf85c7cffd014ebf708985fac9bb395ca2d2f32799ac48a8ffef43395a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccount.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b14c05f66be987341c7d4c7e161131bfd9c5460e4e2439f2cb1b105d638aef93"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountAssignmentsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4948adad2dcd2daeb2d1f40f538368d1bee2b6f14a3e30aa653c9f6853244a9b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountInvitationHistoryItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1fbfab899411e1b4fba7dddb7bd52300547c66be9c4f398474f28bb89015e575"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "055fb07673b92c1362d28db62491c157bf5c19bb1a2286691595ee1965bef775"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "83da00e46f03169b2b7e541db3d66b3e2cf823c49fff7d0e10850e1951864f01"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountStatusTransitionRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7055667648341c8b454699d086b605de962c82e4480d7af661d0c6e43507a75d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAssignmentRevokeRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "de13069159e5aee9d4b68335f055d161e8ba756bae46b54810adb7ab46e88155"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAssignmentRevokeResult.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "31a35e91888db27e525403bf7f7781f56daa3e596feb7ce9dc31832624c02903"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceCredentialResetRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "97da47f0f1f316847e27e7dc9a356f8edb34cd56bda42850214bfc531156b7d8"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceCredentialResetResult.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fa6cdb4d74d9edd815044e6d38a4cc8a959218ce1f61e849233a78efb28cde47"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceCurrentPasswordChangeRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7c95b930cc1a96f24215cdd010d6a434d306d5aeb88f7c2b7fd7443a1ea84f72"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceCurrentPasswordChangeResult.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "117477e18239658b2620ad54c74ebd6be1f0595673d85783a2a4b8628605a97b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitation.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f3f5f18d3ab22e41a0215ea193cb1317c0b2b79962e84ecf03afe9265ec42630"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationCancelRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "711b9b510bc0f28ab2d15d9631122d74c63b6d73a5401b061045af775c66e15f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationCandidatePage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "72887bd775d305f41b8d0433cca6f8ceb53a042a7428c32e6b2f68df09ce0f1f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationCandidatePageOrganizationsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "692caa12cf67d8343607a06db0e8008c9decd3ca0dc29edbf81d0a1dcdfa440b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "6657d6de1fca772fd5ebee40791902464c68a5435ab074f301af0295eb63511f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ba71931ea6acadd225a8cf38ebd7dad814865f49e9659c17cdd48d6bdd34de60"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationPageCriteria.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bc7f70530f181de30851d61e016084ddcf5c4ed833cd9ebd9d3d93234b23ac55"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationReissueRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5f8d530810123c061da989eb149f371a4b92044a0c9bee8ef911cf773413cb51"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationSortKey.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "97c7b0d79387f29b68ac6f1ec4059d59a52407862aa0b570dcbcb4d1109bfea8"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "635921958680a02bc1c2b94b919eb2c72836f10987945adcaf0f5b765efb87ee"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceLoginEntry.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b55d62d1ad85b36eefe488d181f9d47a2ed6e2b6b5f3e8ceb9f99692979f7d8e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMember.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "85f0ae679dd879e71acb9db0585d6ca2cd0536bb4a72e216a2918f1d48c11aec"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMemberAssignmentsItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f53d7149d957733c9fbde23803278296b8324a4ea7c4d5ddcbb01f9cb0c2ad67"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMemberInvitationHistoryItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "10eaba892b90ba70f67a7daf0826a8c756af7c102a351a73528b813c328ab118"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipPage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e0394c68c1e98c3e9e0eebb265d64221721aab083f901bef7b93683b4806579d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c085fab5d814d8ede7f619dd5e7eb0d42d62ba427af3c6dcf56fb66ba5a755be"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeResult.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2e2a07e310125c334e202995ef8dd4c1f040fdb718ed95b0b294074f57a8937c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5802f64aaab70755d89547922840a4db6da2d9c5ca9ac7d1520b32e357aa9a3b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0d87259d3ee9d883ce61df4c683a8f66f76a208233076f5f1e4072eee9159d36"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOrganizationType.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0feb37b3348532c4f7e629820e17341e787beab274ab8397497a2ca311e0f3bd"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOtpSendRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1c13656f4b5af7f7d796e7f68de71d3de6ae703c8f64bf2afaf94d8c6e097d7a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOtpSendResponse.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ad962511df3ca8f760206ece142ec4f775a0bbe45f715a252a985221645928da"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOtpVerifyRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fe46ab0af2ad122e979346dfacd81e5a60bb1b2eaade36e62bc1d085077a3759"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordLoginRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "21b919a2df0997b684510fde3817b98ea59936fae8cc98f4737194d32f61e49c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetCompleteRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a2a91e41b7ce0cb377f1334c5cb43849e8cc46f04a93c13f99c21bc5ec5251b3"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetCompletion.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f494b569c44cbabc54e109c8c56156a00efa1f02a650ee59d26c0f696ce508be"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetOtpSendRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e9ca7c1dc9322afa0db8b8d78f0900c64d26a6ba4ce0397f219a88948006eadc"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetOtpSendResponse.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9022a6473710ea0fbab439fadafefcb1716305df6ad7e8f9772e87a187b334fb"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetOtpVerifyRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "08a29bae3030cc289e893f8bd88d948c736e4176767c2104c510f9ac72090e39"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetReadiness.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7df71b586de8bee55bc4b09424a4ede367a52de84c28d1415f75c47483d7365e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRole.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "cb7a21e54ea8d1b50e45ba2065bb99f809d7894197e7ae4d59a1f06876c43213"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleAuthorizationReplaceRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "74620599d5a256aeb83542521b6bff7e962c5116ba432ceafa39d73173ee859e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleCreateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "368ea633f4fe1da5dea8b840a5a4e889faa4bd1bb5bf5aeca79912365ec4150e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRolePage.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4d796ad9b4bc762123a2508f86c6a044a9072d2ec169e9642c485ddd36198660"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRolePageCapabilityCatalogItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e7d1cef47cf48ae7489d96d1d6ce8243905393804ebb6e9e68fd152736ae8d1b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRolePagePageAccessCatalogItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "04cf6524f7e4dc014c97877b550ef99f1f404cc878a41563b8f22c565f6aa852"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleStatus.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2d748512c73167cbc146697bdeca6ded2e44ec0c41aa5c711b85f51871d146c2"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleStatusTransitionRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "dc89cf3c463b85719039fe43796672225c859c0d796a1a40ea088b6ecb89cbea"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleUpdateRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c086d22aefe7f73170b4b25f2d101412b92bc066801832c684fe7f44402128f9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSelectContextRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "627ff0da748281f89033eb4e8686d6f1ee07201a19c3b66d743ecde07afff2f8"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSelectDataNodeRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5fbd9cc0dde955a17854d4945cdbd8d233a2a7f9341d40b249071674f516ba83"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntry.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "271fe811ba3dc916597dea809726035c6867538a96c4ed750baf5b8077c75d8b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntryCandidatesItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "10629d143cf4092fc00bbb0f3c81fb6d9d54952923fdad285d75a91129e2e433"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntryCandidatesItemNavigationItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b5f558e4d494c070c4eddcfa9c6c8e096fcf1aad8179300935c882556a1a8d94"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntryDataNodeCandidatesItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "917fac7d2c2ff1d0078efcdacf9f7c5938ce0a471c25a60901f96043fd6b6a24"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntrySelected.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bcaefdd7f346d9d668514c2a0780a021283f3ae44538f0654ac360474d381f18"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntrySelectedNavigationItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a447ce7ecf3c2a3bf6c6923fdecd6fb837ce469ea999b19e82f2538ac6b7bb34"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5fae0cecc2bac8e69e564372fee2bb9b437746ca819e848deb99a661c5e8595a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/platform-route-face-registry.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a2ea3cd7d824f13f1f9b1ba4d970d840efd9e0873a860762c4a450afca3ca9bc"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b3d3f69e1719a8c49db633871b79b0eb67f6384dc2d95bf9488ea0e3781ee33b"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "53a9dbc87e2b9dd4be113f3aa1907a5c03e066683fc0ad91482a99b9b1c0ad81"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7a30937b1ba0250e37614a74e3ae8ed45c2a368c06cd3926105095b652331a1e"
+    },
+    {
+      "path": "contracts/openapi/components/extension/extension.schemas.yaml",
+      "beforeSha256": "7b7f60c4f6415f122e609632e02af988e0a496de389a0f6cf8ccb1e69da477f7",
+      "afterSha256": "29c462374efcd9014d352790fdf415c7faf70ba23a073c9984ed76045248ebf5"
+    },
+    {
+      "path": "contracts/openapi/components/organization/commercial-group.schemas.yaml",
+      "beforeSha256": "b5229ca817d02e549e52211ebd11cb04f291632b1a6708451d5187111219212b",
+      "afterSha256": "e4384e61ef96bdb77a91681e9df331ae6679e42caa9b4324a38e3db0e6d61972"
+    },
+    {
+      "path": "contracts/openapi/components/organization/store.schemas.yaml",
+      "beforeSha256": "7ca6b598c7f7eb9b8023995f150cadbdc2e61ea4c612732aaee26364151eda4b",
+      "afterSha256": "5225d3df28a101a3a12b9c1cda0ad099ef7b43dd9501aed0c8f140f87a75c981"
+    },
+    {
+      "path": "contracts/openapi/components/platform-asset/asset.schemas.yaml",
+      "beforeSha256": "60383980579523b5463c679a32de6573d0605424b50a4f5e4bf3d98ab27b2652",
+      "afterSha256": "3b7742629479014d135d5f8aee9b92be644e47dc001461695c994c0ac64f430b"
+    },
+    {
+      "path": "contracts/openapi/components/platform-iam/platform-identity.schemas.yaml",
+      "beforeSha256": "f55cb852e7eabe1b5afbeeb58ec47a446357aa60a3eec960a2a8fdd9c063ee76",
+      "afterSha256": "529abd7a2410a6d172c794d4262750586cca0f4fafafb17074eb58dfad792d37"
+    },
+    {
+      "path": "contracts/openapi/components/platform-workspace/group-workspace.schemas.yaml",
+      "beforeSha256": "9f3e3cb3304185807ec9f799db35e6875be617c8b4dc8d03242f0299d9687f7d",
+      "afterSha256": "caf7f8263b723d974c825b6a42ead96e19f9ab6c165ffe423e6a2e5f2397583e"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "beforeSha256": "b6e81a345e50ea78c733ece7f889b10757e815f4ddb0ef7a7fb2f23ee97ab282",
+      "afterSha256": "779eab5f2e6e725d362ea3aa364b96590ac8dddb451cb316ffb99ec9f8c4a80b"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml",
+      "beforeSha256": "8f225b262251639ef0dd76cb7e2646be89eca194d901db802f0671bfe12c2a6b",
+      "afterSha256": "1fe6aa88d7edcc3ba274224db48fc5a0c61d751565cc1828c9d40ed2fdf917e3"
+    },
+    {
+      "path": "contracts/openapi/edge.openapi.yaml",
+      "beforeSha256": "52101f6b7a07cc2d01941b43d1107ea369e621c4c94b927bb71edbe27cfaba85",
+      "afterSha256": "9f42c755d1b273d0e232e0c7689ee5e53d9ac42ef00ca9730cae982fa9809c59"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/audit-history.paths.yaml",
+      "beforeSha256": "b352a4575128386118d116f92d4b14eef50a0e9b37381207365da0fb17f0e00d",
+      "afterSha256": "3d547252e09af4a641dba707299365fa681a6dc5f7a3da7392182b72be491101"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/brand-management.paths.yaml",
+      "beforeSha256": "a633f4dfb3870c34834ddf125cb45d0b06a81cf11b5e9b30704bbf51f084222f",
+      "afterSha256": "62450cda26b18daf8ed8a466a05a0e92d526fec6b1c78608784aba3cc42b5452"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/business-entity-extension.paths.yaml",
+      "beforeSha256": "c4eaad342354af5a9618a624e805be40f5f186b64f85d26bad0e477ed3df2833",
+      "afterSha256": "82c20114d5d3e90eba907e312b6ed800b763a1f9534868bcf454de527f652d2a"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/contract-management.paths.yaml",
+      "beforeSha256": "98e86e0794d6e3e6e75e177cf3765fce8482e8848e498e78f0c5e83d799dd623",
+      "afterSha256": "a6c7ce067b6c4cc94fda28246e59746d03a5c8b4ac698c62cdf27a606343fa6d"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/head-company-management.paths.yaml",
+      "beforeSha256": "76f4f2a35296a9b8bb48dfc3c186be43ce592bcab12cb5de84d544caeb323fc3",
+      "afterSha256": "1a43043f3796e125992d23c6254ebe3723999e71849bc4dd27a94b9e285bcd00"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/organization-hierarchy.paths.yaml",
+      "beforeSha256": "3afa4d53a5ad7e824c95f4b607dd0e164f56b17e9de205ec24c8317ad4187fc3",
+      "afterSha256": "b7e6c491b7f566181cd180c23d4eee5434d916e5f8e7982f1e55ff8a19139c35"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/store-management.paths.yaml",
+      "beforeSha256": "6653f196089ca7bf08b0c334b065444def6c65d3cfbb50141fa7ded435465696",
+      "afterSha256": "5cafcdcef62d331106844027688ae6fcbf78c11f85793b845daa05ea85164e50"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/store-profile.paths.yaml",
+      "beforeSha256": "a40e75e9c0ebd7e7f04277178f0737e2b9a4658a7e3aee9bc62a882d3dc2d9b7",
+      "afterSha256": "66ed6fafc089f7ee30f6f84a43d3ef59c9d5000e023719ff045f7d092f367331"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/tenant-management.paths.yaml",
+      "beforeSha256": "69c882e621c685224b84825ae318987eb6ca3a9666d09f8ed19c68143fe41742",
+      "afterSha256": "91fd818f9a36e9cf243fb38631d18512ee4c0b22fab9a536fbe08b3a1791965f"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml",
+      "beforeSha256": "1ad0e174e54462a5dc7784884e2a8c92d62b6fa790eab0d110be641dfbf8226d",
+      "afterSha256": "29aadabd535f89d2cd7a21e332722eeca916d4dadfc00419094cd7a665f0ac5e"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-auth.paths.yaml",
+      "beforeSha256": "1164ae489d03ee5788033193f2097f2c7671b26ae619355a475329e32a40aefb",
+      "afterSha256": "8e83f0d2958de3d156dc8d600dad8104b1a1c4a740d42700f99ba4447ac5341c"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-session.paths.yaml",
+      "beforeSha256": "35e619f58d870c4af0c298c54bbc67d84ad8d5d50d053fbb39a033bbb7b0ba4a",
+      "afterSha256": "c9b309b0afb791d319b96835e51821e8ceeb454bb11d49c0ff926ce7b17e70e8"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/audit-history.paths.yaml",
+      "beforeSha256": "d5bb0a13c071d9a8825f3d9b9a68da14074bc17f9f645e10cc3f5d3db12b7941",
+      "afterSha256": "6e1c54b29d4f404eb817d36c5fca3bf2dbb937e6cb46517e6f125cd45997779d"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/commercial-group.paths.yaml",
+      "beforeSha256": "adb0c2e63391dbb2058996cfdee85104400fc78a0fc2633b6b17271f51bc41e9",
+      "afterSha256": "7f75101060b50e77f53958bec584ef1f8adb37496529a5a1e59c5038eeb3e429"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/contract-overview.paths.yaml",
+      "beforeSha256": "5b28b20b64f3aa294c5e1f5cab7dd31b660ff3f20bcad7de4ce27f4437f0c687",
+      "afterSha256": "524e0bbcc32b0e4d7c7e77502f30595061e4b558241c50bb08cab289c5060632"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/extension-definition.paths.yaml",
+      "beforeSha256": "70740e92743d73b6a3bf97401982ada2db84be821ddab8915f9076e13d4b357e",
+      "afterSha256": "eac9ac95c2f90ad484a740ea93b0ee167558459bd78a69531ae10697fa7389fa"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/group-workspace-management.paths.yaml",
+      "beforeSha256": "17eb7d44217556a3e3cbb5fddc358f5e2ed9df43affdf265ca05fdb5e7d7b9fc",
+      "afterSha256": "cf5249a1ef663e0c282088b54be70c8a06ddf265666e48c80b65979e588175b1"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/organization-overview.paths.yaml",
+      "beforeSha256": "2ea18a95fcb4981c4f84772704212f11a9f36a4f003266a9cc6c9dc4aac271de",
+      "afterSha256": "d2bd8039f4d248729763a14d6aec3db4752847284bfcf12b2174301545c1c9d5"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/platform-admin-management.paths.yaml",
+      "beforeSha256": "a45a865da7c02e20dfbfbdef78e5c4e6a03711059bd27e4d70ad77c7d7deacaa",
+      "afterSha256": "050bd94ce22181377833fa7209c3bbe1e87b0d25429edc907ce1416a62ada934"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/platform-auth.paths.yaml",
+      "beforeSha256": "2029769a68256f03b89aabc1dbf83bffa6f6f3676edf2aa058a39a814b77b18b",
+      "afterSha256": "fa8cbc32ea6ea2b312b81e4f72babcd959f1bf4806db976278b649529e493f34"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/role-management.paths.yaml",
+      "beforeSha256": "577d20a5340e03b45c0c50859ae1666d422e8b52625d38dfdb26e2a6b6798920",
+      "afterSha256": "033eb15fc5f3866b6884b8dcbac4769d882443cd68d8ccb3cd5ce22e1677edd7"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml",
+      "beforeSha256": "bb681f49419c1a538c7768c8d6b4b6d8844c67c4edd041b01ef9f42c0a5423d9",
+      "afterSha256": "4c78fc9a62251f724ca5fa62c21ed2c20e42cedd4e979dc9c2cf695da59bf931"
+    },
+    {
+      "path": "contracts/openapi/paths/public/access-recovery.paths.yaml",
+      "beforeSha256": "978ee5fdaf9f6c29a1767419496bca26b3bc6344b23ec7b518196685b489acfd",
+      "afterSha256": "0edd63a63499fbf5928985b2567ed37de807c565f06366b859ed5214cfe4d298"
+    },
+    {
+      "path": "contracts/openapi/paths/public/asset-content.paths.yaml",
+      "beforeSha256": "d833d13844d79542ef1e9649eba176b63761c77af38f3eec7034559cad121bd0",
+      "afterSha256": "80265b8fde9e07f35fbf4bad358ceb2005fbca7d791f0c3346c079dbaf6e388d"
+    },
+    {
+      "path": "contracts/openapi/paths/public/invitation-acceptance.paths.yaml",
+      "beforeSha256": "aaff999d34a2945d2044271d8b2bdb0deee45dfcded1c2c39ce992483540b11e",
+      "afterSha256": "5e6e77b24c323c54f082ac870e3b761550fe22f5a2636aed78d188cb7daf9c4d"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-package-input.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7706caedbc79114d517ab901c43222edfb49db9606c5f9d9f66753b0516cfc7c"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "118855f27e90fb581b9fc245cec2503e164592b5b90084c99448bf0210868cdf"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-static-control-closure.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4c6428f2cbaff16bf2ffd7bc097fabc73b577b4910b86dcc237e9cd77c8ec3db"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-strict-openapi-baseline.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "46a3bde7bb1f78ffd1c53d9cf4c808ff7323493849ef755e9821b21b3710e29a"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "beforeSha256": "ad87b12fcf2fff09721daa7f40d01b6b36432e169742d1fbc71f8ef69a7a1248",
+      "afterSha256": "ad29a9ad85b0a83699280e6305a9150b2ba173dbc59857af3f288b3a3ebe273d"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "beforeSha256": "33a82acb36e8892baa861425d665b7b3b2cf01d6f11a0d365a1b57dab5ad1b34",
+      "afterSha256": "593a29a6fbdd33a8164ec19349460c0a93d16e66b980db7849b6029dbc07ebf5"
+    },
+    {
+      "path": "tools/verify-gates/strict-openapi-resolver.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "59a973cc7c7140e88398bc5eb560d993ea4c80c081d17f0f79fb58192604fc8c"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
+      "afterSha256": "11b7737971283d03c06f89b31a204b1866a33c59465d322642e277f0da2ff009",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
+      "afterSha256": "acfb7c268d6fbf90c61a0e9d99037664790c7733b63784a7986851698d0d4e2c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/AuditChange.java",
+      "afterSha256": "06238505a475ad9cb56ab52d3518420987916002f73d8952d8c659088783ae8e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/AuditHistoryItem.java",
+      "afterSha256": "a122976b08493bf91775343b3050a3d0eab09d4899bd490dc26f01a70ef80203",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/AuditHistoryPage.java",
+      "afterSha256": "251d2e49767fa9415c812a328a864defa8cec6b5903a7db1f757154f499cc260",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/AuditTarget.java",
+      "afterSha256": "7057397f9616c05fb2ea172d7d9c205cf17cf2cc92e2a62a26da8d3b44d2a413",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Brand.java",
+      "afterSha256": "ef47ac8f6540ccf1a61b4dbf12b659deff715d19dd7c76644485dad76c5b32ab",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandCreateRequest.java",
+      "afterSha256": "d44e7f7811e62952bacec5c5ad9a66193d75b5a061e76934b75be753d6e0a2cd",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandPage.java",
+      "afterSha256": "fc1768dfc3e6c6af060b0cb0f0812d4678146efb23dedf48b757e52707a2774b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandPageMetadata.java",
+      "afterSha256": "c0ecb9ad48a6f1ac7dcc6732dc22aef0744715f1264a1866d3e1cb8162d80733",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandUpdateRequest.java",
+      "afterSha256": "5d412a6ec947a132639112e78fc8287523ab61bc76dee602eb3222cda2503f82",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BusinessEntitySortDirection.java",
+      "afterSha256": "27dfcc92a0dcb799739b981ce534a6b34bbf523cc50aecdddedc17aef90aec65",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BusinessEntitySortKey.java",
+      "afterSha256": "e8ff4fe51217f08353c63a52cd75e85c134026dd3db9d57fb57286299b3f7e4a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BusinessEntityStatus.java",
+      "afterSha256": "13183fe000895a7d0c5701df30a2971bb1a01ec2edd5f17b63a16a7b5d750366",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BusinessEntityStatusRequest.java",
+      "afterSha256": "3808fdd14d8bbc76d9b0f3e11953f7d237937ae89c881857538515d47b0ed512",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/CommercialGroupInitializeRequest.java",
+      "afterSha256": "07e9006b1c7a7be03436a6f24d5f1715ed8da0958e6130738fad563712cff6ae",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/CommercialGroupRoot.java",
+      "afterSha256": "903a5f336ac622c4d12144ee9906abad0731272537d65c844e45f03db1e869e9",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewItem.java",
+      "afterSha256": "e05ed70114043a5b1cc02b7af33e2ef689d2c7a907dec30a1f9f696f1fe12c17",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewItemContractRef.java",
+      "afterSha256": "8745c7fc6361c05d2ef4708a76a1b57819890e1d558ceb413c93e771839c8367",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewItemStoreRef.java",
+      "afterSha256": "874bcf7359fa7b4a70963c0ea2643f6d7a00487f58f25e199fd11c0884fb874f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewItemTenantRef.java",
+      "afterSha256": "4a0b4e5d1d6efeeb2c8dea748df47eaf1439b2d05434321ee43e186095333a91",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewPage.java",
+      "afterSha256": "92705ad79ebc85b6485439dd4024f3df732405434d391019a70774a0f0ece8f7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewPageFilterOptionsItem.java",
+      "afterSha256": "98d683b30c7015e701d05545cf4b538d929d23f658dd777fdd0c1e4d6740685c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ContractOverviewPageMetadata.java",
+      "afterSha256": "b3b683d78c8d42f14835ebd23d3ad41b90c9ab7c47acd1d4d0e14b82e0e2c713",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionDefinition.java",
+      "afterSha256": "1467a5e69ff07396abdab6874c5979cb24d25369d4073f42688be7924ed40ccc",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionDefinitionDefinitionsItem.java",
+      "afterSha256": "c96d066e4d4fe1073780002ebf4f2b80442e3dfcf740929a65920d69377b198a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionDefinitionUpdateRequest.java",
+      "afterSha256": "b44cdabec4155870381b802914661aa2176b22b84bd738eac02b43049168757f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionDefinitionUpdateRequestDefinitionsItem.java",
+      "afterSha256": "adffdce526dbdb163a9343117c744a4fe40b1d0cbaf22d71746c7b511ae9e13f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionEntityCatalogPage.java",
+      "afterSha256": "7fd587c60609c7ac3eb2baaec1c8d142cd05e1383a4f46d0facf3a1f9085500d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionEntityCatalogPageItemsItem.java",
+      "afterSha256": "65ac9188585f8d25bb8f59b97daac0641e9a8e273b4c542cb60834ffa28ba0b7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ExtensionEntityType.java",
+      "afterSha256": "2253845da82f941355cb2dd9bbbf744fb6cc8d6cd4ebf2fcf593b97267f623fd",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceCreateRequest.java",
+      "afterSha256": "a6920083f65dab83f412a595c8dd94a9689894cc504860c5f482e47eb8a8f920",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceCreateResult.java",
+      "afterSha256": "96c95caeadb1b122bcc7c15eb28dc85f3342461c27958e7256d352cf56d823f2",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceDetail.java",
+      "afterSha256": "94e809294c4ba2435d1eed7fffe087017855176172ce033461bf8c90f01b6007",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceDetailCommercialGroup.java",
+      "afterSha256": "794d8a4d11618ec67c06118065e59116718eafdd355bb51d3db7c6d230ed03aa",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceDetailCommercialGroupRoot.java",
+      "afterSha256": "7329c49bf933d5e5d7d6a62fc9210f7442f16875f9819ac9190492326aa03838",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceDisplayUpdateRequest.java",
+      "afterSha256": "a5e436ab29749bda84e1ac105ddbed2e8befcbacdcae4a1796deb0d894e65594",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspacePage.java",
+      "afterSha256": "4c45f66d3e52df1b424f869efc85331ef462d615f785a99e966c4a5f5d5e49be",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspacePageItemsItem.java",
+      "afterSha256": "f6a55929a39bd16db508feea554ddacf4061f12fba8653b1590a2b9e0d247f8b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspacePageItemsItemCommercialGroup.java",
+      "afterSha256": "e37a2fe4fdbcb09ace4ce6ce45d4101b9b76b126d814991f9fc6b71db9a2e613",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspacePageItemsItemCommercialGroupRoot.java",
+      "afterSha256": "869d7903af2f51a68b021c524375c6360af3715bcc11f116fff3daf67acfb33c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceSortKey.java",
+      "afterSha256": "414a999f77e794080c34c65c6e9ca33fc752e61f17b9460bd81dfa723848ecec",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceStatus.java",
+      "afterSha256": "0969d99406a5f13286a6337d59be57f6a0a9a1886be5487f6a6797a1aa983639",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/GroupWorkspaceStatusTransitionRequest.java",
+      "afterSha256": "69051ce6037c11fc468a5a2235a2a75d1775ec3803f2f22603a882015046b1be",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompany.java",
+      "afterSha256": "5798f4cc52d304ca17bc91007cfae35cd055a960a4331c1e3044936266ca0054",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyAuthorizedBrandsItem.java",
+      "afterSha256": "5d8c8767b09749a17a361157e4393146cea21aba60e680adaa6e88ba6ab3cd7b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationRequest.java",
+      "afterSha256": "6328134a1b67a18d7e5daf8cb4ee194161f79afad3115760ea82b41496bb21aa",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationResult.java",
+      "afterSha256": "f384633550de6e8cefb2a28940463ee81fb806b96968488949a768e3adb7281b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyCreateRequest.java",
+      "afterSha256": "089161fe3453093381662741c964bc3246b8b7b8c7b29e9d508f962d7688f612",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyPage.java",
+      "afterSha256": "827fd3ee3cdc8cba10cc70e4d3492e2caa8f3a1ba07eecc4f345efe8e7c702ce",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyPageMetadata.java",
+      "afterSha256": "d7e49b2f36a161141d9319689076157dad011f9dbee6a1e2628937c461529c50",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyUpdateRequest.java",
+      "afterSha256": "ee14a64b35753daa3137e5538feb9b40cb077fab293fde43a6626e0811927d02",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/LoginRequest.java",
+      "afterSha256": "40fad676f7da1507dd8182f99031005798909a08c189140e41bb2894be6ed5d7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/NoBody.java",
+      "afterSha256": "62db5eec05694d15aea1ee9c929879ee8d497fb8f2b715bbb4861360f54a2de1",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationHierarchySnapshot.java",
+      "afterSha256": "496a0ef167aeef1cac07d697c6720a86ffc278f02e30fcd3cbd1ba30b072ff51",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNode.java",
+      "afterSha256": "38413903a816b80e7e47bd250bf7bc8abc394c3afe901cca543df3ef13d57ec4",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodeCreateRequest.java",
+      "afterSha256": "6275f86169d5326d6e0f24856d40a7deca1526dc2356fb2ac1f9718aa4d88e3b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodePhasesItem.java",
+      "afterSha256": "8cf3cbf3c2ee0e367d415a194ab106f1575f47c387ba8657580894bea4940ac6",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodeStatusTransitionRequest.java",
+      "afterSha256": "c0f80229dc64b67bce6687a0198ce9e1b5b6e39280cb9f9935eced64d39cb742",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodeUpdateRequest.java",
+      "afterSha256": "e3d415b361d657590dd8161df73236d084e7f770d7a1124b66c25c06f23b2ead",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationNodeUpdateRequestPhasesItem.java",
+      "afterSha256": "cc492d58ecf55c95ab6eba8bccf0ab74e316eb9f1152f91b72cf7985343e9143",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewCategory.java",
+      "afterSha256": "5a3f164d619f5e89f66a7f3df876f1f01fff847d3447ecf77cb2c3ddd4dc34d9",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItem.java",
+      "afterSha256": "d2510818556b41d2534e570603b5a4b901f06d7e2f098e50da7127d43325ce1e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemBrand.java",
+      "afterSha256": "6e765e323aabc081c2404dd6229de023f9255117e72ad29690d4e494c483ed8b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemHeadCompany.java",
+      "afterSha256": "8e664c1dc7a702ff98a73eab2e743ee38aa58c0ee7f1494262bd14933c7f87b6",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemPathItem.java",
+      "afterSha256": "ac490e47e0b57a3355e43c9fb9847a413c76521c0ce50667ea61561e158793f2",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemProject.java",
+      "afterSha256": "3ea53a425d33a66dd45ff638765779f8052d43e096c64cbdf2736c737715a745",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewItemTenant.java",
+      "afterSha256": "f22110d94b3402c04c4031d989bee153ba2f491ac9fb961326fa4a5161bee008",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewPage.java",
+      "afterSha256": "53969c11850aa4d8a51de1dcacae661b7d615a146cc446fd5d6a7ded5cf3c801",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewPageFilterOptionsItem.java",
+      "afterSha256": "e7862d2b0a31e587b787d26ece76602ee6927f1653504c94be3df78d5581d97a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewPageMetadata.java",
+      "afterSha256": "fd88dd1bad1c821ae556ddb0ad16eef69b42fd1f9ae6a6524893090f53c9bf5e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewSortDirection.java",
+      "afterSha256": "ac462fd3ebc303cd1c90f356f61f089df2e2cd1ffb98ea25dd58dadedf4df880",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewSortKey.java",
+      "afterSha256": "404135200ea6669fe96b6f1377a45a65964a89efa4259f86c742273362c16a3d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewSource.java",
+      "afterSha256": "71271d6d3d5de1fe2867571caa4dad3581ef3ad7e5fb74f687527a121f6a8c88",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewStatus.java",
+      "afterSha256": "14a3fee33e95c3cbb53f62dc0b43a6d351711689542a202b2125d8d794d60262",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationOverviewType.java",
+      "afterSha256": "37700f2bc16c4ce3756f400f8ef74a60599176e0cfc0f28f0c697799a5a68762",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationProjectCreateRequest.java",
+      "afterSha256": "45a9c9ef9c258fdf6be0fa98fbbf1462a62c1dbeee4c2e3ff5d2d8ce05e39c13",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationProjectCreateRequestPhasesItem.java",
+      "afterSha256": "83c218836a2e3eb396eb34b2ab024bcbbb40027e5cacb2e016bb4d4ce9ac87a8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStore.java",
+      "afterSha256": "ed5f68bceb5a9ca731fc57d070a22dcc00948c295655afee4285e1b0581a3a8d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreBrand.java",
+      "afterSha256": "5a49ab24ad194c9600090655d52408be1f5c158d51c3d08536c6c87f744f8ce7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePage.java",
+      "afterSha256": "f0a7306f7001862edccfd7a64ceec7093daad4db11af3a76f8c96921d01b5a63",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageBrandsItem.java",
+      "afterSha256": "022f519539d58c9cb53645a8617817a3f7b03cc0aa622c685dbc56240a304f3d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageDataScope.java",
+      "afterSha256": "a8d24a8a136a36888b89ad5e2feb8605caef83401fdfa71ea2e70f7f19579940",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageHeadCompaniesItem.java",
+      "afterSha256": "4b55f6f9135a49ae1045e9981f4965f022007a0d0f8bedf53b5a83f3cf930fef",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageProjectsItem.java",
+      "afterSha256": "1d7cb9d2911de4d21180988d880b72be3746c02cd376a840c26607cc132936e0",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCandidatePageTenantsItem.java",
+      "afterSha256": "1e6c84ad85671d6171ac9ed8ca979bf155c98754a3e9beb643d08bd8da4af087",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCreateRequest.java",
+      "afterSha256": "342094f56210d0429b7c5583dc498ece02d442756d2bb11a44093a34ce14f61b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreHeadCompany.java",
+      "afterSha256": "a396b98a86ce82c7c9e846e1ed9e232f4d609b6838b4195f400336fb04a7c948",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStorePage.java",
+      "afterSha256": "7042c31d978c2801a7531d38c7d0f4ead24b19256a8d72e3af9abf96a8000d4c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStorePageMetadata.java",
+      "afterSha256": "7d9961b423627a3a813f5ce02a47bb636f4a5770eb194bed558119ff623672c1",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStorePageMetadataDataScope.java",
+      "afterSha256": "cef0f3a96d431abb8178e12c8ad05f822cb6c1d01277acd3d706a992ca85a715",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreProject.java",
+      "afterSha256": "59eddeb00a99fb34554430416ca4e40102835a5046d0d500d655d631821fb89c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreSortDirection.java",
+      "afterSha256": "545f9c12208b205667580e992e6af4a312ef7d4f854d1a23673ce54047fd8096",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreSortKey.java",
+      "afterSha256": "89f3e30786855dfe28c031f107617babcc50a943b4d104d24ea11c14fec5f84c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreStatus.java",
+      "afterSha256": "c504eab8dc5823e931a98922275e5ed338534eff0e5609e7987d603fbded5181",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreStatusRequest.java",
+      "afterSha256": "9642fb09f2a997b115eba2f75fc2ac869c5e7ea21a83dc91c1fb54823a28f2b9",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreTenant.java",
+      "afterSha256": "991ff646f7e10d5ba7826505f1700b43ad9ce0414619b88f1baefa33af52de43",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreUpdateRequest.java",
+      "afterSha256": "a33375cacf214c551e46003bbe4ff39b02465f9be8198e41f7600768ed40c18f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminCreateRequest.java",
+      "afterSha256": "10d599c7e0b2849c9b2d5df9ebc019f13e6c8d007433874d09a6ccdc4c0a7288",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminCredentialResetRequest.java",
+      "afterSha256": "3c7f1485141b3ed338657dd5795dd5e7351fae22429144e4bcbb5429514e4edc",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminDetail.java",
+      "afterSha256": "17046db8b1bd8bcd5c8464837c946b2279e1edd23abcd8e30347d54fdbea80c7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminPage.java",
+      "afterSha256": "7dd09f26432884cc4662df3b27562f0ac4d1d02dc34dbff13cd01964be8fd6ae",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminPageItemsItem.java",
+      "afterSha256": "ea11785d5eefb5d816e8d4a8f3d4f5d57d590b00691844229eed74fa2507ad4c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminProfileUpdateRequest.java",
+      "afterSha256": "d150761e559dac344940898f9d1042815bb11f1ede14509fa82a7ccc54184c3b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminSortKey.java",
+      "afterSha256": "4b855ae3e6240d3f88cf43f7ab236ae16e778345a6efa15b58c9a7fc1807b102",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminStatus.java",
+      "afterSha256": "542a3f2fdb8cd1e9eb346aa1a351479f0370dd635e0294ddfb0ab232e112c9d8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAdminStatusTransitionRequest.java",
+      "afterSha256": "a2042d7fe02dda0ea3e82e459cbe36e924f5a24b20d5ef599a553f660f241bd3",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAssetStageMultipart.java",
+      "afterSha256": "e917b4ba68fa23fba3566d8e38634c26c9f3f9596fdca8ad16176b6ac3b95152",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAssetStagingResult.java",
+      "afterSha256": "bba70c8f98a779c9ef57af9e7006ce20207d903670a51761ef855bc5a2a46274",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformAssetUsage.java",
+      "afterSha256": "131a3f4d39cb72789015c8ac2554f1e8629e71bb5233f6918bc99929af62713c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformCurrentPasswordChangeRequest.java",
+      "afterSha256": "cbb30d2b1bc1064bc9ba367dd92b14cb9a7383c2a7436feee899632fade653d4",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformCurrentPasswordChangeResult.java",
+      "afterSha256": "86c77949830463237a1bf93f327958e473c78c967d123c2f3e01b75df2ca042e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformSessionView.java",
+      "afterSha256": "518f9bdd737af87c85982b9af33ec788508838b4e75d9fff7fe1b61c9cc18092",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicAssetReference.java",
+      "afterSha256": "22e5615d45ac40ef00d7f3778b82d0e5675fa0a5ad6e667fe00a30d43ec5390e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationAcceptIntent.java",
+      "afterSha256": "7a1b2dbf5d00ebebc693e98e068e93a523b92241a26bf5fb619b8999f130d713",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationCompletion.java",
+      "afterSha256": "bf4a2737c19c8d5d1ec96d329eae36db07d03bb42a86adf3586c49239f19df5e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationCredentialRequest.java",
+      "afterSha256": "b54db0cbd2a710f08f8a845488c3dc219c07a10f6f208ff56ddaa1b38cb6603b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationCredentialResponse.java",
+      "afterSha256": "55cf5296495e2a72e4ccd1b34dd096f911ac77d492c399f4016046275f52736c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationOtpSendRequest.java",
+      "afterSha256": "b8d8f1c02b6d7d887e1dff0f5f8d717617c4d9dd9ee37efac459ce92220ce1b2",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationOtpSendResponse.java",
+      "afterSha256": "c9d4918a3a574d763f857cbae3264f82cd5cdf6660647d8151b0ea9b83d2344e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationOtpVerifyRequest.java",
+      "afterSha256": "dbfa42d521122745cb6d097500fff8535a1308154ea5e3248179b9f8f2ceee8b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationReadiness.java",
+      "afterSha256": "47cd858041b9eaed411203ab3f43480aec17e650c2556ecfd2a69bdf82c07658",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationView.java",
+      "afterSha256": "d4caa8a6d444a7d77c4115ae6c86eb8908f87c33532a71af46081d4c14c8635a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ServiceNodeType.java",
+      "afterSha256": "dbd9761b0c2430ce642498cb01615550f40e2a97dd16c7d48e6312786880038e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/SortDirection.java",
+      "afterSha256": "fdd4a5a8bc5fd63532b8780d48755d4aa7850d1cd1d5a0d864b85c5c427b8ef0",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContract.java",
+      "afterSha256": "bf5d5c4ac48c941d0d342fac6b4a57c16b2ef9f76026eadb1dc317d1d64fb7d6",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCandidatePage.java",
+      "afterSha256": "520a7e86a9cd4289a4f9cecb036b82532827e6ae6ea4bcc612131e8639667183",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCandidatePageMetadata.java",
+      "afterSha256": "97e9f3672196c348924a18596b93ec68de51d51eb9eea195eb2e5e6f67f1ffc6",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCandidatePageProject.java",
+      "afterSha256": "1c9f6f74f6e4d7abbb33d91b97ad7d90c590c7f084d5bfd5ea53db407bbae607",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCreateRequest.java",
+      "afterSha256": "fa7f8cb084065f938642d09d071ddc2c9c45a4d5738169dab3aa24d937f7d057",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractInvalidateRequest.java",
+      "afterSha256": "ea7987706b2d766848756639583603fc2874e50329a696f4438d812e3815be0d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractItem.java",
+      "afterSha256": "70a9d855b1b1a3c75e9bc12f7d84593ebad644ae96bbd05ab666444f23250bcd",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractPage.java",
+      "afterSha256": "7e910b99e67d1eb844ec58824f5d00dd46d7a09940bbaf6509ff5f58059bda6d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractPageMetadata.java",
+      "afterSha256": "b38473a636617191e5ac0931f476ad37976748969ef60d81ccf07bece4b0da19",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractProject.java",
+      "afterSha256": "f7bb1fc280955097308bb873e632203155e87c02c5ad2100143c70d001bc2ba6",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractSortDirection.java",
+      "afterSha256": "e7d85846614cf8ce6c20187ada0e18ae028ca0cd037a527474246822b455eafb",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractSortKey.java",
+      "afterSha256": "af26ea0ce609b2f6bbe3530d7d45745f32d02522cbaff24c304c05c1996a9095",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractStatus.java",
+      "afterSha256": "d9857733c2ed93674941a57e73780ad0930363b5de5c483f69e94dc291f91fe9",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractStore.java",
+      "afterSha256": "0b1d1193921adb10ab9d7dc35617bad550ec2d3a295bc02c621ffc55bde7fd2b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractStoreCandidate.java",
+      "afterSha256": "9fb98ba663488a18a80804c554d4f42b62876a68ab153ffec8155f46ee6bcb7c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractTenant.java",
+      "afterSha256": "23e2e316e5832d46224eef965a2b526e1b47e801ec3b166e6867248ed665ae95",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractUpdateRequest.java",
+      "afterSha256": "1dfc017c09b2ba2a074d1df391d40359e534170a06f725a2bd2e33697ddcccfa",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Tenant.java",
+      "afterSha256": "a14fced8bb326e3255f43e824e2cd4e93a9baf200b9089097b67892ae29560b3",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantCreateRequest.java",
+      "afterSha256": "60f928dc50ec79ac6eb5fa2d4d8600f69b6b2fda4d06b33d50cc709e85a297dc",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantPage.java",
+      "afterSha256": "2ad1579879dec6285f032e81b2eebac2e4cda612e7040495f4b310a2b6fd0070",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantPageMetadata.java",
+      "afterSha256": "b69ff9d450627600214a3742fcf1bc0b1e0063fb976d94c961ef0c5dba65bef4",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantUpdateRequest.java",
+      "afterSha256": "3ee7efcf85c7cffd014ebf708985fac9bb395ca2d2f32799ac48a8ffef43395a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccount.java",
+      "afterSha256": "b14c05f66be987341c7d4c7e161131bfd9c5460e4e2439f2cb1b105d638aef93",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountAssignmentsItem.java",
+      "afterSha256": "4948adad2dcd2daeb2d1f40f538368d1bee2b6f14a3e30aa653c9f6853244a9b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountInvitationHistoryItem.java",
+      "afterSha256": "1fbfab899411e1b4fba7dddb7bd52300547c66be9c4f398474f28bb89015e575",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountPage.java",
+      "afterSha256": "055fb07673b92c1362d28db62491c157bf5c19bb1a2286691595ee1965bef775",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountStatus.java",
+      "afterSha256": "83da00e46f03169b2b7e541db3d66b3e2cf823c49fff7d0e10850e1951864f01",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountStatusTransitionRequest.java",
+      "afterSha256": "7055667648341c8b454699d086b605de962c82e4480d7af661d0c6e43507a75d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAssignmentRevokeRequest.java",
+      "afterSha256": "de13069159e5aee9d4b68335f055d161e8ba756bae46b54810adb7ab46e88155",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAssignmentRevokeResult.java",
+      "afterSha256": "31a35e91888db27e525403bf7f7781f56daa3e596feb7ce9dc31832624c02903",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceCredentialResetRequest.java",
+      "afterSha256": "97da47f0f1f316847e27e7dc9a356f8edb34cd56bda42850214bfc531156b7d8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceCredentialResetResult.java",
+      "afterSha256": "fa6cdb4d74d9edd815044e6d38a4cc8a959218ce1f61e849233a78efb28cde47",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceCurrentPasswordChangeRequest.java",
+      "afterSha256": "7c95b930cc1a96f24215cdd010d6a434d306d5aeb88f7c2b7fd7443a1ea84f72",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceCurrentPasswordChangeResult.java",
+      "afterSha256": "117477e18239658b2620ad54c74ebd6be1f0595673d85783a2a4b8628605a97b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitation.java",
+      "afterSha256": "f3f5f18d3ab22e41a0215ea193cb1317c0b2b79962e84ecf03afe9265ec42630",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationCancelRequest.java",
+      "afterSha256": "711b9b510bc0f28ab2d15d9631122d74c63b6d73a5401b061045af775c66e15f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationCandidatePage.java",
+      "afterSha256": "72887bd775d305f41b8d0433cca6f8ceb53a042a7428c32e6b2f68df09ce0f1f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationCandidatePageOrganizationsItem.java",
+      "afterSha256": "692caa12cf67d8343607a06db0e8008c9decd3ca0dc29edbf81d0a1dcdfa440b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationCreateRequest.java",
+      "afterSha256": "6657d6de1fca772fd5ebee40791902464c68a5435ab074f301af0295eb63511f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationPage.java",
+      "afterSha256": "ba71931ea6acadd225a8cf38ebd7dad814865f49e9659c17cdd48d6bdd34de60",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationPageCriteria.java",
+      "afterSha256": "bc7f70530f181de30851d61e016084ddcf5c4ed833cd9ebd9d3d93234b23ac55",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationReissueRequest.java",
+      "afterSha256": "5f8d530810123c061da989eb149f371a4b92044a0c9bee8ef911cf773413cb51",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationSortKey.java",
+      "afterSha256": "97c7b0d79387f29b68ac6f1ec4059d59a52407862aa0b570dcbcb4d1109bfea8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceInvitationStatus.java",
+      "afterSha256": "635921958680a02bc1c2b94b919eb2c72836f10987945adcaf0f5b765efb87ee",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceLoginEntry.java",
+      "afterSha256": "b55d62d1ad85b36eefe488d181f9d47a2ed6e2b6b5f3e8ceb9f99692979f7d8e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMember.java",
+      "afterSha256": "85f0ae679dd879e71acb9db0585d6ca2cd0536bb4a72e216a2918f1d48c11aec",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMemberAssignmentsItem.java",
+      "afterSha256": "f53d7149d957733c9fbde23803278296b8324a4ea7c4d5ddcbb01f9cb0c2ad67",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMemberInvitationHistoryItem.java",
+      "afterSha256": "10eaba892b90ba70f67a7daf0826a8c756af7c102a351a73528b813c328ab118",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipPage.java",
+      "afterSha256": "e0394c68c1e98c3e9e0eebb265d64221721aab083f901bef7b93683b4806579d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeRequest.java",
+      "afterSha256": "c085fab5d814d8ede7f619dd5e7eb0d42d62ba427af3c6dcf56fb66ba5a755be",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeResult.java",
+      "afterSha256": "2e2a07e310125c334e202995ef8dd4c1f040fdb718ed95b0b294074f57a8937c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java",
+      "afterSha256": "5802f64aaab70755d89547922840a4db6da2d9c5ca9ac7d1520b32e357aa9a3b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationCreateRequest.java",
+      "afterSha256": "0d87259d3ee9d883ce61df4c683a8f66f76a208233076f5f1e4072eee9159d36",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOrganizationType.java",
+      "afterSha256": "0feb37b3348532c4f7e629820e17341e787beab274ab8397497a2ca311e0f3bd",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOtpSendRequest.java",
+      "afterSha256": "1c13656f4b5af7f7d796e7f68de71d3de6ae703c8f64bf2afaf94d8c6e097d7a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOtpSendResponse.java",
+      "afterSha256": "ad962511df3ca8f760206ece142ec4f775a0bbe45f715a252a985221645928da",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOtpVerifyRequest.java",
+      "afterSha256": "fe46ab0af2ad122e979346dfacd81e5a60bb1b2eaade36e62bc1d085077a3759",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordLoginRequest.java",
+      "afterSha256": "21b919a2df0997b684510fde3817b98ea59936fae8cc98f4737194d32f61e49c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetCompleteRequest.java",
+      "afterSha256": "a2a91e41b7ce0cb377f1334c5cb43849e8cc46f04a93c13f99c21bc5ec5251b3",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetCompletion.java",
+      "afterSha256": "f494b569c44cbabc54e109c8c56156a00efa1f02a650ee59d26c0f696ce508be",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetOtpSendRequest.java",
+      "afterSha256": "e9ca7c1dc9322afa0db8b8d78f0900c64d26a6ba4ce0397f219a88948006eadc",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetOtpSendResponse.java",
+      "afterSha256": "9022a6473710ea0fbab439fadafefcb1716305df6ad7e8f9772e87a187b334fb",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetOtpVerifyRequest.java",
+      "afterSha256": "08a29bae3030cc289e893f8bd88d948c736e4176767c2104c510f9ac72090e39",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspacePasswordResetReadiness.java",
+      "afterSha256": "7df71b586de8bee55bc4b09424a4ede367a52de84c28d1415f75c47483d7365e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRole.java",
+      "afterSha256": "cb7a21e54ea8d1b50e45ba2065bb99f809d7894197e7ae4d59a1f06876c43213",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleAuthorizationReplaceRequest.java",
+      "afterSha256": "74620599d5a256aeb83542521b6bff7e962c5116ba432ceafa39d73173ee859e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleCreateRequest.java",
+      "afterSha256": "368ea633f4fe1da5dea8b840a5a4e889faa4bd1bb5bf5aeca79912365ec4150e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRolePage.java",
+      "afterSha256": "4d796ad9b4bc762123a2508f86c6a044a9072d2ec169e9642c485ddd36198660",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRolePageCapabilityCatalogItem.java",
+      "afterSha256": "e7d1cef47cf48ae7489d96d1d6ce8243905393804ebb6e9e68fd152736ae8d1b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRolePagePageAccessCatalogItem.java",
+      "afterSha256": "04cf6524f7e4dc014c97877b550ef99f1f404cc878a41563b8f22c565f6aa852",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleStatus.java",
+      "afterSha256": "2d748512c73167cbc146697bdeca6ded2e44ec0c41aa5c711b85f51871d146c2",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleStatusTransitionRequest.java",
+      "afterSha256": "dc89cf3c463b85719039fe43796672225c859c0d796a1a40ea088b6ecb89cbea",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceRoleUpdateRequest.java",
+      "afterSha256": "c086d22aefe7f73170b4b25f2d101412b92bc066801832c684fe7f44402128f9",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSelectContextRequest.java",
+      "afterSha256": "627ff0da748281f89033eb4e8686d6f1ee07201a19c3b66d743ecde07afff2f8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSelectDataNodeRequest.java",
+      "afterSha256": "5fbd9cc0dde955a17854d4945cdbd8d233a2a7f9341d40b249071674f516ba83",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntry.java",
+      "afterSha256": "271fe811ba3dc916597dea809726035c6867538a96c4ed750baf5b8077c75d8b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntryCandidatesItem.java",
+      "afterSha256": "10629d143cf4092fc00bbb0f3c81fb6d9d54952923fdad285d75a91129e2e433",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntryCandidatesItemNavigationItem.java",
+      "afterSha256": "b5f558e4d494c070c4eddcfa9c6c8e096fcf1aad8179300935c882556a1a8d94",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntryDataNodeCandidatesItem.java",
+      "afterSha256": "917fac7d2c2ff1d0078efcdacf9f7c5938ce0a471c25a60901f96043fd6b6a24",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntrySelected.java",
+      "afterSha256": "bcaefdd7f346d9d668514c2a0780a021283f3ae44538f0654ac360474d381f18",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntrySelectedNavigationItem.java",
+      "afterSha256": "a447ce7ecf3c2a3bf6c6923fdecd6fb837ce469ea999b19e82f2538ac6b7bb34",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+      "afterSha256": "5fae0cecc2bac8e69e564372fee2bb9b437746ca819e848deb99a661c5e8595a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/platform-route-face-registry.json",
+      "afterSha256": "a2ea3cd7d824f13f1f9b1ba4d970d840efd9e0873a860762c4a450afca3ca9bc",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "afterSha256": "b3d3f69e1719a8c49db633871b79b0eb67f6384dc2d95bf9488ea0e3781ee33b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+      "afterSha256": "53a9dbc87e2b9dd4be113f3aa1907a5c03e066683fc0ad91482a99b9b1c0ad81",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+      "afterSha256": "7a30937b1ba0250e37614a74e3ae8ed45c2a368c06cd3926105095b652331a1e",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/extension/extension.schemas.yaml",
+      "afterSha256": "29c462374efcd9014d352790fdf415c7faf70ba23a073c9984ed76045248ebf5",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/organization/commercial-group.schemas.yaml",
+      "afterSha256": "e4384e61ef96bdb77a91681e9df331ae6679e42caa9b4324a38e3db0e6d61972",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/organization/store.schemas.yaml",
+      "afterSha256": "5225d3df28a101a3a12b9c1cda0ad099ef7b43dd9501aed0c8f140f87a75c981",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/platform-asset/asset.schemas.yaml",
+      "afterSha256": "3b7742629479014d135d5f8aee9b92be644e47dc001461695c994c0ac64f430b",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/platform-iam/platform-identity.schemas.yaml",
+      "afterSha256": "529abd7a2410a6d172c794d4262750586cca0f4fafafb17074eb58dfad792d37",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/platform-workspace/group-workspace.schemas.yaml",
+      "afterSha256": "caf7f8263b723d974c825b6a42ead96e19f9ab6c165ffe423e6a2e5f2397583e",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "afterSha256": "779eab5f2e6e725d362ea3aa364b96590ac8dddb451cb316ffb99ec9f8c4a80b",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml",
+      "afterSha256": "1fe6aa88d7edcc3ba274224db48fc5a0c61d751565cc1828c9d40ed2fdf917e3",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/edge.openapi.yaml",
+      "afterSha256": "9f42c755d1b273d0e232e0c7689ee5e53d9ac42ef00ca9730cae982fa9809c59",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/audit-history.paths.yaml",
+      "afterSha256": "3d547252e09af4a641dba707299365fa681a6dc5f7a3da7392182b72be491101",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/brand-management.paths.yaml",
+      "afterSha256": "62450cda26b18daf8ed8a466a05a0e92d526fec6b1c78608784aba3cc42b5452",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/business-entity-extension.paths.yaml",
+      "afterSha256": "82c20114d5d3e90eba907e312b6ed800b763a1f9534868bcf454de527f652d2a",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/contract-management.paths.yaml",
+      "afterSha256": "a6c7ce067b6c4cc94fda28246e59746d03a5c8b4ac698c62cdf27a606343fa6d",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/head-company-management.paths.yaml",
+      "afterSha256": "1a43043f3796e125992d23c6254ebe3723999e71849bc4dd27a94b9e285bcd00",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/organization-hierarchy.paths.yaml",
+      "afterSha256": "b7e6c491b7f566181cd180c23d4eee5434d916e5f8e7982f1e55ff8a19139c35",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/store-management.paths.yaml",
+      "afterSha256": "5cafcdcef62d331106844027688ae6fcbf78c11f85793b845daa05ea85164e50",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/store-profile.paths.yaml",
+      "afterSha256": "66ed6fafc089f7ee30f6f84a43d3ef59c9d5000e023719ff045f7d092f367331",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/tenant-management.paths.yaml",
+      "afterSha256": "91fd818f9a36e9cf243fb38631d18512ee4c0b22fab9a536fbe08b3a1791965f",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml",
+      "afterSha256": "29aadabd535f89d2cd7a21e332722eeca916d4dadfc00419094cd7a665f0ac5e",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-auth.paths.yaml",
+      "afterSha256": "8e83f0d2958de3d156dc8d600dad8104b1a1c4a740d42700f99ba4447ac5341c",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/workspace-session.paths.yaml",
+      "afterSha256": "c9b309b0afb791d319b96835e51821e8ceeb454bb11d49c0ff926ce7b17e70e8",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/audit-history.paths.yaml",
+      "afterSha256": "6e1c54b29d4f404eb817d36c5fca3bf2dbb937e6cb46517e6f125cd45997779d",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/commercial-group.paths.yaml",
+      "afterSha256": "7f75101060b50e77f53958bec584ef1f8adb37496529a5a1e59c5038eeb3e429",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/contract-overview.paths.yaml",
+      "afterSha256": "524e0bbcc32b0e4d7c7e77502f30595061e4b558241c50bb08cab289c5060632",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/extension-definition.paths.yaml",
+      "afterSha256": "eac9ac95c2f90ad484a740ea93b0ee167558459bd78a69531ae10697fa7389fa",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/group-workspace-management.paths.yaml",
+      "afterSha256": "cf5249a1ef663e0c282088b54be70c8a06ddf265666e48c80b65979e588175b1",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/organization-overview.paths.yaml",
+      "afterSha256": "d2bd8039f4d248729763a14d6aec3db4752847284bfcf12b2174301545c1c9d5",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/platform-admin-management.paths.yaml",
+      "afterSha256": "050bd94ce22181377833fa7209c3bbe1e87b0d25429edc907ce1416a62ada934",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/platform-auth.paths.yaml",
+      "afterSha256": "fa8cbc32ea6ea2b312b81e4f72babcd959f1bf4806db976278b649529e493f34",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/role-management.paths.yaml",
+      "afterSha256": "033eb15fc5f3866b6884b8dcbac4769d882443cd68d8ccb3cd5ce22e1677edd7",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml",
+      "afterSha256": "4c78fc9a62251f724ca5fa62c21ed2c20e42cedd4e979dc9c2cf695da59bf931",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/public/access-recovery.paths.yaml",
+      "afterSha256": "0edd63a63499fbf5928985b2567ed37de807c565f06366b859ed5214cfe4d298",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/public/asset-content.paths.yaml",
+      "afterSha256": "80265b8fde9e07f35fbf4bad358ceb2005fbca7d791f0c3346c079dbaf6e388d",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/public/invitation-acceptance.paths.yaml",
+      "afterSha256": "5e6e77b24c323c54f082ac870e3b761550fe22f5a2636aed78d188cb7daf9c4d",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-package-input.json",
+      "afterSha256": "7706caedbc79114d517ab901c43222edfb49db9606c5f9d9f66753b0516cfc7c",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-source-compliance-disposition.json",
+      "afterSha256": "118855f27e90fb581b9fc245cec2503e164592b5b90084c99448bf0210868cdf",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-static-control-closure.json",
+      "afterSha256": "4c6428f2cbaff16bf2ffd7bc097fabc73b577b4910b86dcc237e9cd77c8ec3db",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-strict-openapi-baseline.json",
+      "afterSha256": "46a3bde7bb1f78ffd1c53d9cf4c808ff7323493849ef755e9821b21b3710e29a",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "afterSha256": "ad29a9ad85b0a83699280e6305a9150b2ba173dbc59857af3f288b3a3ebe273d",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "afterSha256": "593a29a6fbdd33a8164ec19349460c0a93d16e66b980db7849b6029dbc07ebf5",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/strict-openapi-resolver.mjs",
+      "afterSha256": "59a973cc7c7140e88398bc5eb560d993ea4c80c081d17f0f79fb58192604fc8c",
+      "result": "PASS"
+    }
+  ],
+  "controls": [
+    {
+      "ruleId": "STRICT_OPENAPI_URI_POINTER_RESOLUTION",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "TYPED_INLINE_WIRE_GENERATION",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "UNTYPED_MAP_RED_MUTATION",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "GENERATED_ARTIFACT_RECEIPT_CHAIN",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "PACKAGE_SERIAL_PREDECESSOR",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "fullComplianceScan": "PASS",
+  "tests": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-source-compliance-disposition.json",
+    "sha256": "118855f27e90fb581b9fc245cec2503e164592b5b90084c99448bf0210868cdf"
+  },
+  "closureEvidence": {
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-static-control-closure.json",
+    "sha256": "4c6428f2cbaff16bf2ffd7bc097fabc73b577b4910b86dcc237e9cd77c8ec3db"
+  },
+  "authorityBoundary": "CR01 exit only; CR02 may begin only after fresh validator PASS. No DEV, seed/reset, remote or CR07 action is authorized."
+}

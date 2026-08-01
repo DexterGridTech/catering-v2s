@@ -1,0 +1,33 @@
+import {expect, test} from '@playwright/test';
+import {requiredL2Env, selectWorkspace, signInPlatform, signOutPlatform} from './platformL2';
+
+test('platform administrator verifies an account detail and proves credential reset owner readback', async ({page}) => {
+  const name = requiredL2Env('R5_L2_PLATFORM_ACCOUNT_NAME');
+  await signInPlatform(page); await page.goto('/platform/workspace-accounts'); await selectWorkspace(page);
+  await page.getByRole('button', {name, exact: true}).click();
+  await expect(page.getByText('账号详情')).toBeVisible();
+  await expect(page.getByRole('button', {name: '重置登录凭据'})).toBeVisible();
+  await expect(page.getByRole('dialog', {name: '账号详情'}).getByRole('heading', {name: '任职', exact: true})).toBeVisible();
+  await page.getByTestId('workspace-account-reset-credential').click();
+  await expect(page.getByRole('dialog', {name: /确认向/})).toBeVisible();
+  const requestPromise = page.waitForRequest((request) => request.method() === 'POST' && /\/api\/platform\/group-workspaces\/[^/]+\/accounts\/[^/]+\/credential-reset$/.test(new URL(request.url()).pathname));
+  const responsePromise = page.waitForResponse((response) => response.request().method() === 'POST' && /\/api\/platform\/group-workspaces\/[^/]+\/accounts\/[^/]+\/credential-reset$/.test(new URL(response.url()).pathname));
+  const readbackPromise = page.waitForResponse((response) => response.request().method() === 'GET' && /\/api\/platform\/group-workspaces\/[^/]+\/accounts\/[^/]+$/.test(new URL(response.url()).pathname));
+  await page.getByTestId('workspace-account-action-confirm').click();
+  const [request, response, readbackResponse] = await Promise.all([requestPromise, responsePromise, readbackPromise]);
+  expect(response.status()).toBe(200);
+  const body = request.postDataJSON() as {expectedVersion?: number};
+  expect(body.expectedVersion).toBeGreaterThan(0);
+  expect(request.headers()['idempotency-key']).toBeTruthy();
+  const reset = await response.json() as {accountId?: string; loginName?: string; credentialStatus?: string; revision?: number};
+  expect(reset.accountId).toBeTruthy();
+  expect(reset.loginName).toBeTruthy();
+  expect(['SET', 'RESET_PENDING']).toContain(reset.credentialStatus);
+  expect(reset.revision).toBeGreaterThan(0);
+  expect(readbackResponse.status()).toBe(200);
+  const readback = await readbackResponse.json() as {id?: string; loginName?: string; revision?: number};
+  expect(readback).toMatchObject({id: reset.accountId, loginName: reset.loginName});
+  expect(readback.revision).toBeGreaterThan(0);
+  await expect(page.getByTestId('workspace-account-detail-drawer')).toBeVisible();
+  await signOutPlatform(page);
+});

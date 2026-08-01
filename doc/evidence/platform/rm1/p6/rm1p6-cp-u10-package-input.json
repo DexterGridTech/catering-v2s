@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U10",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u10-control-plane-manifest.json",
+  "deliveryManifestSha256": "fbeb27035b3bba477a6fb901b3b18368fb2122fe021b71eb066c4596c94c9332",
+  "unitId": "RM1P6-CP-U10",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/remediation-compliance",
+    "scripts/check/standards-coverage",
+    "scripts/check/implementation-design-granularity"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/remediation-compliance",
+    "scripts/check/implementation-design-granularity"
+  ],
+  "requiredControlRuleIds": [
+    "P6-CP-U10-DESIGN_ADMISSION_SCOPE"
+  ],
+  "businessEvidenceObligation": "CONTROL_PLANE_NOT_APPLICABLE",
+  "serialPredecessor": {
+    "packageId": "RM1-U08",
+    "exitPath": "doc/evidence/platform/rm1/p5/rm1-u08-package-exit.json",
+    "exitSha256": "3271d82b1ce99b646f390edd146693ad22fa4e44d2558920227c590ed55ab2f9"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u10-design-admission-amendment.md",
+    "sha256": "e003c00a3d3d5197bc93e5170dd008b471f328fba0e5bada8a09051735be0faa"
+  },
+  "authorizationBoundary": "Dexter authorized a P6-1 observability-extension design-admission interlude only. CP-U10 may create the enumerated extension design/amendment, exact manifest/source-disposition and independent-review artefacts plus CP evidence. It authorizes no runner, foundation, backend, OpenAPI, generated, migration, frontend, DEV, seed, reset or Roadmap-state implementation bytes."
+}

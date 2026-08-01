@@ -1,0 +1,743 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U06",
+  "status": "PASS",
+  "serialPredecessor": {
+    "packageId": "R5-CR-U05",
+    "packageExitPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr05-package-exit.json",
+    "packageExitSha256": "bad365b1ba3f156e03321059ed571afbdfd2b553188c3fd70abcb90c50d6f1fd"
+  },
+  "actualChangedPaths": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformSessionView.java",
+      "beforeSha256": "518f9bdd737af87c85982b9af33ec788508838b4e75d9fff7fe1b61c9cc18092",
+      "afterSha256": "34abf16e4b4dede46359bf10c0a6119ae7da31f0bae19a675c69b24210d2358c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountAssignmentsItem.java",
+      "beforeSha256": "f4c42c241ff8515f0211a76864496b14d36bae5d3963e0bee69823a33c29e6c0",
+      "afterSha256": "0d9de50d427e6bc778978ff9e993465d2917a2cb75705f84fe2418ec0694275f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeRequest.java",
+      "beforeSha256": "c085fab5d814d8ede7f619dd5e7eb0d42d62ba427af3c6dcf56fb66ba5a755be",
+      "afterSha256": "cf7e73b7d9db37dba0f4fe4b4d2f6dbeb2717675f77b1bfb596113daa9a5c2cc"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java",
+      "beforeSha256": "5802f64aaab70755d89547922840a4db6da2d9c5ca9ac7d1520b32e357aa9a3b",
+      "afterSha256": "933293cb74cf6e9f628c251ea96cfa1c720865ed33ec75208eac70b7bb5032c4"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationCreateRequest.java",
+      "beforeSha256": "53c1b525947de3e267dd27c862124e08768a15565e8b04c6a2afdc417d5e7c14",
+      "afterSha256": "a5ce48bd8b5d057840e56e15124be7402ef62ba9f9bf625a3505262421f946ff"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "beforeSha256": "de5322bfb8da5bc299cec0dbb110de2daedbad0b1d6558ccb1fae7c867947446",
+      "afterSha256": "5a609b2c3426c545243e93dab44c72272bfc6646f2f9c4837f6a90b9d488a754"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceMembershipController.java",
+      "beforeSha256": "84ffd35ae157a30bb104dd88c6bbca20d6a0f97c078f8eff8536dd82213f4f77",
+      "afterSha256": "1f90c10069a913f60f77f10e8cc8a922b574ca039564e18ababf5fd9dc34cef1"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+      "beforeSha256": "1dc63bc0a7c2d6514793b4f9d9114e9a79244e7c596e3c3b4bedb3d30ba78a87",
+      "afterSha256": "c803ee86286881b9d2d91410263691da311c32079b2992b995bac4d6aa5707d1"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
+      "beforeSha256": "d10c21dc3b7112d38779121f1193d463405d73584d529d5980e775258de0c233",
+      "afterSha256": "27213cf0f6748da3c8916058240b7503d7e92389bd19e5b8b7a7bb809bb4d498"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/WorkspaceSessionWireMapper.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0e7c8b59ee7f56ddf3c79f5321985c18b8580840500346600ca4fbe5ca0d2c6f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java",
+      "beforeSha256": "db398ce99e8c7fc8dac104a20ebc513f712fc55ee19e624fe8a4eb9f87b62b7a",
+      "afterSha256": "06361eeb3e82c4d552014869f7b63101d8f5bc983315bcbbf0ca547734b59383"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+      "beforeSha256": "cd3f13a3b0b436973a9997fa07d63506a53ddb43c7eefee699a4526336d22914",
+      "afterSha256": "7aa631e80522bc7c0cc5310ff318b9ef38a00bfd75d2ffb867b8a03ffe5df357"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "beforeSha256": "847219621dc4e07849f3bf8b1abab9d53eb5d0416584ab8b855f744165b6db4f",
+      "afterSha256": "bc68141ae96606f332fdc4af3939da5de76830330299a94327f3d93514948207"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "beforeSha256": "d9a63afca5ec53dca57d3e2d80b6e949e3f9f0d697423da43e59c9b15afa13ec",
+      "afterSha256": "054ce942875b374eb9f69954b9d6f3a7eb946a895ac921ab18e2cd950ae59312"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+      "beforeSha256": "bd7b41bac5f97a6c9fe2041552605c6f2cafa89062451c3954ca963b28108c20",
+      "afterSha256": "c269e7c8b2f12c3f0ea7ce9f53a3f48acf8a28ff2ee58296a27c59985be7d90d"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "beforeSha256": "fafdfd727467db5fa0f6925c2415938bbfcfcf0939e27b9a8b602c92cf248e5d",
+      "afterSha256": "e85521bb0fe8f7e12a4e174dbe278fdf37757f2ab6d968f2d1cc6c1e1ec4e07f"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+      "beforeSha256": "116259a6c3ca96491af2597058e24e9565ca4bddeb523865b0edc38249c33d5d",
+      "afterSha256": "dac5db6122106dfd806e62c4f954334e5dd5050f023e25569d2ff19e32c8dc86"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "beforeSha256": "78509987b6ea8e5e9dc6a9906c650d0bc54010b1e69620ab76ea80333728380f",
+      "afterSha256": "68449e4b875af8f43001577a1e121091e713c9a214b472bef7620d7c30475fc5"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+      "beforeSha256": "8b2165f00962d48f34e8213b135ec9dc28abfffeb51d94dd46df430ffc9a6bda",
+      "afterSha256": "b52f84eac445b51763f2e7abca1178ed72d1b60025906f2eda4a4f2cb6b7765e"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "beforeSha256": "190c6e681635f2e64629a773902b9ebb798b1cd9a3def1d98b7f4ffcbccdeb4d",
+      "afterSha256": "205b166e84735c589631f2755ee02b0d505dede4c5d8fff2446c6eb7b8343b3f"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleHomeBootstrapPage.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e6f19fa0488d9d9f5cbb290486a35fd424636cd91a52129380e393ff5d2ec51b"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "beforeSha256": "04f04de087f30e7bfb8db9b211dface719a363d81cdabee46068809f81af10f6",
+      "afterSha256": "ac870eb8d315ef4cf17b447d086b84bef7169fcd969b71545a69f3b9eca45364"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "92930ddea0f564632101b9edf6b84eeb2373124bb265036934297ea6fbe6cfb6"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+      "beforeSha256": "008f4cdcf319a56ac380a33716929390dccddeaef91afd5a8aeb23ee3a62e352",
+      "afterSha256": "e92ca6be6d54d3ee4abb2991bc80e057ac99cf17e626c619def8f315b940ca83"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx",
+      "beforeSha256": "02018ae3be35d5a0d9b04f199ab0eb62d64b4fd04dc29ca41a282bc5aed01285",
+      "afterSha256": "e07484a239f17d3e1dee796fe3636115279365a5d090da3c9bc9fe722faf5bb7"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "537bbb4d00b663776ab0cc6bf50d80415a6d4de09f93baa221e67a44e45ebe2a"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/RoleAssignmentSelector.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a5e9499af5f5522d4ee175f4f9fa0c4b85654557c6bc05a2e9a87be96358f9d2"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceInvitationPanel.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b0d0ad26d67d73f50662e573a80aaaf202946aada8a6c87bc8c531af1b723a19"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
+      "beforeSha256": "fd035a43c81cc64a3f60f54a1ac4323563281d297dcd1511368ffcedd9461c52",
+      "afterSha256": "b1ace443b02e8d2f1273f27c7079d1754fbf112f356ee54c1f1c8751167d245b"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs",
+      "beforeSha256": "b448f404b9da1c310abfc37954547b307226a9e0b6b6ed553de18d6db2abf23d",
+      "afterSha256": "654773aa762c17cadc2280d9f2804f7e0cdb08e924f44bebfc23659482d9bb73"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "beforeSha256": "20f513847d0fc76b5b9d0b18e19e76caf2ecc12800c46a0b374d6cc06933dbe3",
+      "afterSha256": "535579f6d643f41eac9cfe28b3f2e4eeac5ee6e814a1c25e8c79f5f121a03064"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+      "beforeSha256": "8c66d2977c8b5bb63d064fcf59ca660eb300c2f6eafa277ece2bca9d669c2781",
+      "afterSha256": "ded6489a83821a6369ca37de690a9fb91d9141aa207f9cafe24813bc44562c8a"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+      "beforeSha256": "0c5285f19f9874f9dad967fbe0963ec0544cbb5bde9f4c2a98c176305df9f512",
+      "afterSha256": "fa1fa3901c78a28250ef9c6829275e1d49cd5d7f34ad76cfa41141c4ba6f51e3"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+      "beforeSha256": "b3589640bb669e25c47c1887f008e152b3a5724b87e08250fea3e2b2a96757a8",
+      "afterSha256": "0e67f7870c251d185330379b935a44c0d9e1e6f20e4c3a8965dae372e1b7e93d"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d7ea8a4129a908a5f62fc6713ad7a4e3f2422f594e451024344f69b645f41b74"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "beforeSha256": "c1772db24a986873ab16bf3b377ee02f980a82aed71e6021a996cc0a0a317b27",
+      "afterSha256": "71fa4e7d2a5c81543af26c11630a1352eabb7f7b2ab04c185b80fd77b63811e3"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "beforeSha256": "b9b59d8b8ea56dbebac5887f00cb61c026b4e8e751eab46c4c9570299630117f",
+      "afterSha256": "b1cdddda5ca85154f1c7e40fa9d1fdb60ccb78531e6b49e00b4d21cf3824fc9c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "beforeSha256": "b75111b599c5ac1a97ed60ab2d1748d278a1a5bc6a9c6d8f28722fd9abed2691",
+      "afterSha256": "ea24f584fc6b6250e6f4416cfbbd1f4862225a898c2f1b34bd03f1bb582a2e9a"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "beforeSha256": "0f7302d4ae1c4b6e9b7717dc3a459594b09e6d66325a16736c099f4bc6ffbb45",
+      "afterSha256": "4cca83a5171fe68bd01ec2f881978246987fee75ba969c75d2c4bb9f75e65088"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "beforeSha256": "e31782812fd643ed7474c61397a90d9e8f50f9a4a964e831c167b657edc8a7d0",
+      "afterSha256": "1dc48d6ad44495161ddf258fcbaa1670e0a77e271cf38b70971892eb7937d132"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "beforeSha256": "aa35b893a53a347dcdb134802292d07c7fd8edea24fb6dc928d1281a98e435da",
+      "afterSha256": "fee571d1898598834663ddfd6b5c9e2f0c88d9c8f5f44f7469d9264e0b4e0e5c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "beforeSha256": "dc971d7bffb3dd834c682354a4ea5414b8571fe1d0d5a8ec3c3dbc96177d81be",
+      "afterSha256": "411482b8f50e91aea961d0d718983059e796b0f49bb3a591f9d703c5e69d8455"
+    },
+    {
+      "path": "contracts/openapi/components/platform-iam/platform-identity.schemas.yaml",
+      "beforeSha256": "529abd7a2410a6d172c794d4262750586cca0f4fafafb17074eb58dfad792d37",
+      "afterSha256": "9df970d898689103e4d69c80c8e669d7a1878662c0ecb3a4839e6f7f021f1670"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "beforeSha256": "66928db55fdee46561b8a73a5cdd91ae498594b3072c864f0b4d683e55d61b37",
+      "afterSha256": "cb8dba0799f39483d6bcdadd332ef1094aaeb57c6182e0fa7ba7f4d2be7ec0ee"
+    },
+    {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "beforeSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+      "afterSha256": "c3b42d0f9f851ffd2dbbca2bbf5f184aeb410683ae1f61d77d9c1ad257658af0"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "beforeSha256": "eaa4f02226b53d1fb0aa8a5e730fb5043c391068b70d4b0569c9def5d95cd077",
+      "afterSha256": "55121bcb9b5b577ba940d7b3cd82fef7717d8509cc33a91fe95745f78411bcfd"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json",
+      "beforeSha256": "7692bd0817a75aefb3a2dd9d2b3ca58c943734e61c8bc35918a1a414fcb290f3",
+      "afterSha256": "abe69538ed2307dd5045ef20f817e2036c77cc9055f5ec693d083ef3a5c29d10"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-cr06-static-v2-comparison.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "aee743af8c4f8a96e11f7cc3eeca43f096a2932662305d4828fb728ce6cea318"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-platform-assignment-revision-contract-correction.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "cebb7b7b5f1d2845d1b411ea9e4c8d77bdcd0dd48413aaf49682246c3fa95e2b"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-platform-password-version-scope-baseline-addendum.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9dbb934656d2a2dc4baab696a4912a7f825e9aa6c7f3a1e8e1534cd7f8464cf4"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-r15-owner-scope-baseline-addendum.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "70d1d87d02fd156553054e6a15150fc6ad845438465987fefbe25a0621f80b5d"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-r15-selected-session-problem-family.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5640204e58d60445c117f5bdd27ca0d2754ddee433450730ec19e36e1cfd5995"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ffca4a4f0ad08afe350c6405bdde104c4748f5166acdc4d31646ca05bbd50bc4"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-static-surface-and-page-key-closure.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ec8c306fd633c20ff9dd262cfa51fba6b0eb7cc6c59454c0e9ade761a1317093"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-workspace-iam-context-version-contract-correction.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a83d5d5a9569ffca3aa99207a57cb4bcc06f87f208491e02b5ced0c2d49b3af9"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-write-capability-closure-problem-family.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "478c3b297497c7d53e336989a292a7c6a1b24d71d5a8d4e40fcf1d16caeb37ea"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/api/OrganizationVisibilityLookup.java",
+      "beforeSha256": "116028030be735d7d0f68ca49c654449e547b9c485d00fa265a1083517e343f3",
+      "afterSha256": "ef811ac5cbed4eed724c8aa7c1e19aaa60c38250a2e66411fc193941fe199379"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java",
+      "beforeSha256": "dc2a47c6f54d15041fec640bfe209654863029b5b9f17d2ef1e6390c53679a5b",
+      "afterSha256": "5744b98e6feb4ca5d6b156c9aad4018941d72952915f80b7b791ce5ef9048f0e"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/api/PlatformSessionReadback.java",
+      "beforeSha256": "84fe2b54b2c7b7bb5e0e5abeb31ebb4a1c0c94cede9d1275e2f18710ad75ff5a",
+      "afterSha256": "135a97003ecdd9b72f064767ad1887c2d12975cbc86d58d07ea78b73e8a57c17"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "beforeSha256": "11affc8ed5fe0b5d86bc567f4ec481691034e3005432928a230f0d5468d39cef",
+      "afterSha256": "2ec3c771aa3b985fa303a45ef218f7c6fb591eb544bc1e020f92a726765b6cfd"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceSessionEntryReadback.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d543cea858db7b1604792c63b4fd0af5d8087162e8c6475218e3791b010eaa8c"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+      "beforeSha256": "d3428791523fe03174f15330e7783fca627f16e94f02b8dc527a77a1fc13e449",
+      "afterSha256": "1590fd5f28b5e943086a0b9c9c15f1b0d5349a3cb8e00e9a11f73afd226646de"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "17fa167872f32614919d76654d39af4b62640341420b0dddcca0ee171e39538c",
+      "afterSha256": "0d05b7c0b5c878369700b1d858bad5b2582be728d2e088a548fb3386ee3851f5"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformSessionView.java",
+      "afterSha256": "34abf16e4b4dede46359bf10c0a6119ae7da31f0bae19a675c69b24210d2358c",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceAccountAssignmentsItem.java",
+      "afterSha256": "0d9de50d427e6bc778978ff9e993465d2917a2cb75705f84fe2418ec0694275f",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceMembershipRevokeRequest.java",
+      "afterSha256": "cf7e73b7d9db37dba0f4fe4b4d2f6dbeb2717675f77b1bfb596113daa9a5c2cc",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java",
+      "afterSha256": "933293cb74cf6e9f628c251ea96cfa1c720865ed33ec75208eac70b7bb5032c4",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationCreateRequest.java",
+      "afterSha256": "a5ce48bd8b5d057840e56e15124be7402ef62ba9f9bf625a3505262421f946ff",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "afterSha256": "5a609b2c3426c545243e93dab44c72272bfc6646f2f9c4837f6a90b9d488a754",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceMembershipController.java",
+      "afterSha256": "1f90c10069a913f60f77f10e8cc8a922b574ca039564e18ababf5fd9dc34cef1",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+      "afterSha256": "c803ee86286881b9d2d91410263691da311c32079b2992b995bac4d6aa5707d1",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
+      "afterSha256": "27213cf0f6748da3c8916058240b7503d7e92389bd19e5b8b7a7bb809bb4d498",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/WorkspaceSessionWireMapper.java",
+      "afterSha256": "0e7c8b59ee7f56ddf3c79f5321985c18b8580840500346600ca4fbe5ca0d2c6f",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java",
+      "afterSha256": "06361eeb3e82c4d552014869f7b63101d8f5bc983315bcbbf0ca547734b59383",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+      "afterSha256": "7aa631e80522bc7c0cc5310ff318b9ef38a00bfd75d2ffb867b8a03ffe5df357",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "afterSha256": "bc68141ae96606f332fdc4af3939da5de76830330299a94327f3d93514948207",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "afterSha256": "054ce942875b374eb9f69954b9d6f3a7eb946a895ac921ab18e2cd950ae59312",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+      "afterSha256": "c269e7c8b2f12c3f0ea7ce9f53a3f48acf8a28ff2ee58296a27c59985be7d90d",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "afterSha256": "e85521bb0fe8f7e12a4e174dbe278fdf37757f2ab6d968f2d1cc6c1e1ec4e07f",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+      "afterSha256": "dac5db6122106dfd806e62c4f954334e5dd5050f023e25569d2ff19e32c8dc86",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "afterSha256": "68449e4b875af8f43001577a1e121091e713c9a214b472bef7620d7c30475fc5",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+      "afterSha256": "b52f84eac445b51763f2e7abca1178ed72d1b60025906f2eda4a4f2cb6b7765e",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "afterSha256": "205b166e84735c589631f2755ee02b0d505dede4c5d8fff2446c6eb7b8343b3f",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleHomeBootstrapPage.tsx",
+      "afterSha256": "e6f19fa0488d9d9f5cbb290486a35fd424636cd91a52129380e393ff5d2ec51b",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "afterSha256": "ac870eb8d315ef4cf17b447d086b84bef7169fcd969b71545a69f3b9eca45364",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "afterSha256": "92930ddea0f564632101b9edf6b84eeb2373124bb265036934297ea6fbe6cfb6",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+      "afterSha256": "e92ca6be6d54d3ee4abb2991bc80e057ac99cf17e626c619def8f315b940ca83",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx",
+      "afterSha256": "e07484a239f17d3e1dee796fe3636115279365a5d090da3c9bc9fe722faf5bb7",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx",
+      "afterSha256": "537bbb4d00b663776ab0cc6bf50d80415a6d4de09f93baa221e67a44e45ebe2a",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/RoleAssignmentSelector.tsx",
+      "afterSha256": "a5e9499af5f5522d4ee175f4f9fa0c4b85654557c6bc05a2e9a87be96358f9d2",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceInvitationPanel.tsx",
+      "afterSha256": "b0d0ad26d67d73f50662e573a80aaaf202946aada8a6c87bc8c531af1b723a19",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
+      "afterSha256": "b1ace443b02e8d2f1273f27c7079d1754fbf112f356ee54c1f1c8751167d245b",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs",
+      "afterSha256": "654773aa762c17cadc2280d9f2804f7e0cdb08e924f44bebfc23659482d9bb73",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "afterSha256": "535579f6d643f41eac9cfe28b3f2e4eeac5ee6e814a1c25e8c79f5f121a03064",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+      "afterSha256": "ded6489a83821a6369ca37de690a9fb91d9141aa207f9cafe24813bc44562c8a",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+      "afterSha256": "fa1fa3901c78a28250ef9c6829275e1d49cd5d7f34ad76cfa41141c4ba6f51e3",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+      "afterSha256": "0e67f7870c251d185330379b935a44c0d9e1e6f20e4c3a8965dae372e1b7e93d",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.tsx",
+      "afterSha256": "d7ea8a4129a908a5f62fc6713ad7a4e3f2422f594e451024344f69b645f41b74",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "afterSha256": "71fa4e7d2a5c81543af26c11630a1352eabb7f7b2ab04c185b80fd77b63811e3",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "afterSha256": "b1cdddda5ca85154f1c7e40fa9d1fdb60ccb78531e6b49e00b4d21cf3824fc9c",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "afterSha256": "ea24f584fc6b6250e6f4416cfbbd1f4862225a898c2f1b34bd03f1bb582a2e9a",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "afterSha256": "4cca83a5171fe68bd01ec2f881978246987fee75ba969c75d2c4bb9f75e65088",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "afterSha256": "1dc48d6ad44495161ddf258fcbaa1670e0a77e271cf38b70971892eb7937d132",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "afterSha256": "fee571d1898598834663ddfd6b5c9e2f0c88d9c8f5f44f7469d9264e0b4e0e5c",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "afterSha256": "411482b8f50e91aea961d0d718983059e796b0f49bb3a591f9d703c5e69d8455",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "contracts/openapi/components/platform-iam/platform-identity.schemas.yaml",
+      "afterSha256": "9df970d898689103e4d69c80c8e669d7a1878662c0ecb3a4839e6f7f021f1670",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "afterSha256": "cb8dba0799f39483d6bcdadd332ef1094aaeb57c6182e0fa7ba7f4d2be7ec0ee",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "afterSha256": "c3b42d0f9f851ffd2dbbca2bbf5f184aeb410683ae1f61d77d9c1ad257658af0",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "afterSha256": "55121bcb9b5b577ba940d7b3cd82fef7717d8509cc33a91fe95745f78411bcfd",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json",
+      "afterSha256": "abe69538ed2307dd5045ef20f817e2036c77cc9055f5ec693d083ef3a5c29d10",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-cr06-static-v2-comparison.md",
+      "afterSha256": "aee743af8c4f8a96e11f7cc3eeca43f096a2932662305d4828fb728ce6cea318",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-platform-assignment-revision-contract-correction.json",
+      "afterSha256": "cebb7b7b5f1d2845d1b411ea9e4c8d77bdcd0dd48413aaf49682246c3fa95e2b",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-platform-password-version-scope-baseline-addendum.json",
+      "afterSha256": "9dbb934656d2a2dc4baab696a4912a7f825e9aa6c7f3a1e8e1534cd7f8464cf4",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-r15-owner-scope-baseline-addendum.json",
+      "afterSha256": "70d1d87d02fd156553054e6a15150fc6ad845438465987fefbe25a0621f80b5d",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-r15-selected-session-problem-family.json",
+      "afterSha256": "5640204e58d60445c117f5bdd27ca0d2754ddee433450730ec19e36e1cfd5995",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-source-compliance-disposition.json",
+      "afterSha256": "ffca4a4f0ad08afe350c6405bdde104c4748f5166acdc4d31646ca05bbd50bc4",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-static-surface-and-page-key-closure.json",
+      "afterSha256": "ec8c306fd633c20ff9dd262cfa51fba6b0eb7cc6c59454c0e9ade761a1317093",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-workspace-iam-context-version-contract-correction.json",
+      "afterSha256": "a83d5d5a9569ffca3aa99207a57cb4bcc06f87f208491e02b5ced0c2d49b3af9",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-write-capability-closure-problem-family.json",
+      "afterSha256": "478c3b297497c7d53e336989a292a7c6a1b24d71d5a8d4e40fcf1d16caeb37ea",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/api/OrganizationVisibilityLookup.java",
+      "afterSha256": "ef811ac5cbed4eed724c8aa7c1e19aaa60c38250a2e66411fc193941fe199379",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java",
+      "afterSha256": "5744b98e6feb4ca5d6b156c9aad4018941d72952915f80b7b791ce5ef9048f0e",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/api/PlatformSessionReadback.java",
+      "afterSha256": "135a97003ecdd9b72f064767ad1887c2d12975cbc86d58d07ea78b73e8a57c17",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "afterSha256": "2ec3c771aa3b985fa303a45ef218f7c6fb591eb544bc1e020f92a726765b6cfd",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceSessionEntryReadback.java",
+      "afterSha256": "d543cea858db7b1604792c63b4fd0af5d8087162e8c6475218e3791b010eaa8c",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+      "afterSha256": "1590fd5f28b5e943086a0b9c9c15f1b0d5349a3cb8e00e9a11f73afd226646de",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "0d05b7c0b5c878369700b1d858bad5b2582be728d2e088a548fb3386ee3851f5",
+      "result": "PASS",
+      "check": "CR06 static source, frozen-design, generated-operation consumer, and package-receipt conformance"
+    }
+  ],
+  "controls": [
+    {
+      "ruleId": "CR06_GENERATED_OPERATION_CONSUMER_CLOSURE",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR06_FROZEN_CONTEXT_VERSION_CONSUMPTION",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR06_STATIC_SURFACE_PAGE_KEY_CLOSURE",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR06_DYNAMIC_L2_DEV_SEED",
+      "state": "OUT_OF_SCOPE_THIS_PACKAGE"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-source-compliance-disposition.json",
+    "sha256": "ffca4a4f0ad08afe350c6405bdde104c4748f5166acdc4d31646ca05bbd50bc4"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "dynamicDeferrals": [
+    "Browser L2, DEV, remote middleware, Testcontainers, reset, and seed are intentionally deferred to CR08.",
+    "No DEV, seed, reset, Docker, or remote runner was started by CR06."
+  ],
+  "evidence": [
+    "doc/evidence/platform/2026-07-27-v2s-r5-cr06-static-surface-and-page-key-closure.json",
+    "doc/evidence/platform/2026-07-27-v2s-r5-cr03-cr06-static-v2-comparison.md",
+    "doc/evidence/platform/2026-07-27-v2s-r5-cr06-r15-owner-scope-baseline-addendum.json",
+    "doc/evidence/platform/2026-07-27-v2s-r5-cr06-workspace-iam-context-version-contract-correction.json",
+    "doc/evidence/platform/2026-07-27-v2s-r5-cr06-write-capability-closure-problem-family.json"
+  ]
+}

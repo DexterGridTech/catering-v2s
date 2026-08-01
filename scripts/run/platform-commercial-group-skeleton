@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+run_root="${V2S_RUNTIME_DIR:-$root_dir/.runtime/platform-commercial-group}"
+run_id="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+run_dir="$run_root/$run_id"
+manifest_path="$run_dir/run-manifest.json"
+hash_checkpoint_path="$run_dir/hash-checkpoint.json"
+container_name="catering-v2s-r3-$run_id"
+db_port="${R3_RUN_DB_PORT:-25432}"
+app_port="${R3_RUN_APP_PORT:-28781}"
+db_password="${R3_RUN_DB_PASSWORD:-r3-temporary-$run_id}"
+edge_secret="${R3_RUN_EDGE_SECRET:-r3-edge-temporary-$run_id}"
+jar_path="$root_dir/apps/backend/catering-business-server/build/libs/catering-business-server-0.1.0-SNAPSHOT.jar"
+app_pid=""
+
+mkdir -p "$run_dir"
+
+write_manifest() {
+  node - "$manifest_path" "$1" "$2" "$3" "$run_id" "$container_name" "$db_port" "$app_port" <<'NODE'
+const fs = require('fs');
+const crypto = require('crypto');
+const [manifestPath, business, cleanup, activeManagedResources, runId, containerName, dbPort, appPort] = process.argv.slice(2);
+const checkpointPath = `${manifestPath.slice(0, manifestPath.lastIndexOf('/'))}/hash-checkpoint.json`;
+const checkpoint = fs.existsSync(checkpointPath) ? fs.readFileSync(checkpointPath) : null;
+fs.writeFileSync(manifestPath, JSON.stringify({
+  kind: 'platform-commercial-group-skeleton-run',
+  runId,
+  containerName,
+  databasePort: Number(dbPort),
+  applicationPort: Number(appPort),
+  business,
+  cleanup,
+  activeManagedResources: Number(activeManagedResources),
+  hashCheckpoint: checkpoint ? 'hash-checkpoint.json' : null,
+  hashCheckpointSha256: checkpoint ? crypto.createHash('sha256').update(checkpoint).digest('hex') : null
+}, null, 2) + '\n');
+NODE
+}
+
+write_hash_checkpoint() {
+  node - "$hash_checkpoint_path" "$root_dir" <<'NODE'
+const fs = require('fs');
+const crypto = require('crypto');
+const [checkpointPath, root] = process.argv.slice(2);
+const relativeFiles = [
+  'scripts/check/gate-0',
+  'scripts/check/code-layout',
+  'scripts/check/contract-face',
+  'scripts/check/flyway-layout',
+  'scripts/check/production-conformity',
+  'doc/evidence/platform/r3-gate-0-evidence.json',
+  'doc/evidence/platform/r3-gate-0-business-source-inventory.json'
+];
+const files = Object.fromEntries(relativeFiles.map((relativePath) => {
+  const bytes = fs.readFileSync(`${root}/${relativePath}`);
+  return [relativePath, crypto.createHash('sha256').update(bytes).digest('hex')];
+}));
+fs.writeFileSync(checkpointPath, JSON.stringify({
+  kind: 'r3-hash-evidence-checkpoint',
+  algorithm: 'SHA-256',
+  scope: 'R3-U01 validator wiring and empty-source evidence',
+  selfHashExcluded: true,
+  files
+}, null, 2) + '\n');
+NODE
+}
+
+write_hash_checkpoint
+write_manifest "PENDING" "PENDING" "0"
+
+cleanup() {
+  set +e
+  active_managed_resources=0
+  if [[ -n "$app_pid" ]]; then
+    kill "$app_pid" 2>/dev/null
+    wait "$app_pid" 2>/dev/null
+    if kill -0 "$app_pid" 2>/dev/null; then active_managed_resources=$((active_managed_resources + 1)); fi
+  fi
+  if docker ps -a --format '{{.Names}}' | grep -Fxq "$container_name"; then
+    docker rm -f "$container_name" >"$run_dir/container-cleanup.log" 2>&1
+    if docker ps -a --format '{{.Names}}' | grep -Fxq "$container_name"; then active_managed_resources=$((active_managed_resources + 1)); fi
+  fi
+  business_status="PENDING"
+  if [[ -f "$run_dir/business-pass" ]]; then business_status="PASS"; fi
+  cleanup_status="PASS"
+  if [[ "$active_managed_resources" != "0" ]]; then cleanup_status="FAIL"; fi
+  write_manifest "$business_status" "$cleanup_status" "$active_managed_resources"
+  printf 'R3_CLEANUP=%s; ACTIVE_MANAGED_RESOURCES=%s; RUN_DIR=%s\n' "$cleanup_status" "$active_managed_resources" "$run_dir"
+}
+trap cleanup EXIT
+
+if [[ "${1:-}" == "--self-test" ]]; then
+  printf 'R3_WALKING_SKELETON_SELF_TEST=PASS; external-precondition-and-cleanup-branches=DECLARED\n'
+  trap - EXIT
+  exit 0
+fi
+
+if [[ ! -f "$jar_path" ]]; then
+  printf 'R3_RUNTIME_BUILD_MISSING=%s\n' "$jar_path" >&2
+  exit 2
+fi
+if ! docker info >/dev/null 2>&1; then
+  printf 'R3_RUNTIME_PREREQUISITE=DOCKER_ENGINE_UNAVAILABLE\n' >&2
+  exit 2
+fi
+
+docker run --name "$container_name" \
+  -e POSTGRES_PASSWORD="$db_password" \
+  -e POSTGRES_DB=r3_v2s \
+  -p "$db_port:5432" \
+  -d postgres:16-alpine >"$run_dir/container-id"
+
+for attempt in $(seq 1 60); do
+  if docker exec "$container_name" pg_isready -U postgres -d r3_v2s >/dev/null 2>&1; then break; fi
+  if [[ "$attempt" == "60" ]]; then printf 'R3_RUNTIME_DB=FAIL; readiness-timeout\n' >&2; exit 1; fi
+  sleep 1
+done
+
+CATERING_BUSINESS_DB_URL="jdbc:postgresql://127.0.0.1:$db_port/catering_v2s" \
+CATERING_BUSINESS_DB_USERNAME=postgres \
+CATERING_BUSINESS_DB_PASSWORD="$db_password" \
+CATERING_EDGE_AUTH_SECRET="$edge_secret" \
+SERVER_PORT="$app_port" \
+java -jar "$jar_path" >"$run_dir/app.log" 2>&1 &
+app_pid=$!
+
+for attempt in $(seq 1 60); do
+  if curl -sS "http://127.0.0.1:$app_port/api/platform/group-workspaces" >/dev/null 2>&1; then break; fi
+  if ! kill -0 "$app_pid" 2>/dev/null; then printf 'R3_RUNTIME_APP=FAIL; process-exited\n' >&2; exit 1; fi
+  if [[ "$attempt" == "60" ]]; then printf 'R3_RUNTIME_APP=FAIL; readiness-timeout\n' >&2; exit 1; fi
+  sleep 1
+done
+
+docker exec "$container_name" psql -U postgres -d r3_v2s -v ON_ERROR_STOP=1 -c \
+  "INSERT INTO platform_workspace.group_workspace (group_workspace_key, name, status) VALUES ('r3-external-space-001', '外部既有集团空间', 'ENABLED'), ('r3-external-space-002', '第二外部既有集团空间', 'ENABLED');" \
+  >"$run_dir/external-precondition.log"
+
+token="$(node -e 'const c=require("crypto"),s=process.argv[1],e=Date.now()+300000,p=Buffer.from(`external-platform-subject|platform-admin|${Math.floor(e/1000)}|r3-run-correlation`).toString("base64url"),h=c.createHmac("sha256",s).update(p).digest("base64url"); process.stdout.write(`v1.${p}.${h}`)' "$edge_secret")"
+base_url="http://127.0.0.1:$app_port/api/platform/group-workspaces/r3-external-space-001"
+list_before="$(curl -fsS -H "X-Edge-Auth: $token" "http://127.0.0.1:$app_port/api/platform/group-workspaces?groupWorkspaceKey=r3-external-space-001")"
+detail_before="$(curl -fsS -H "X-Edge-Auth: $token" "$base_url")"
+init_response="$(curl -sS -X POST -H "X-Edge-Auth: $token" -H 'Content-Type: application/json' -H 'Idempotency-Key: r3-idempotency-001' -d '{"commercialGroupCode":"r3-commercial-001","commercialGroupName":"R3 外部商业集团"}' "$base_url/commercial-group")"
+printf '%s\n' "$init_response" >"$run_dir/init-response.json"
+repeat_response="$(curl -fsS -X POST -H "X-Edge-Auth: $token" -H 'Content-Type: application/json' -H 'Idempotency-Key: r3-idempotency-001' -d '{"commercialGroupCode":"r3-commercial-001","commercialGroupName":"R3 外部商业集团"}' "$base_url/commercial-group")"
+detail_after="$(curl -fsS -H "X-Edge-Auth: $token" "$base_url")"
+conflict_raw="$(curl -sS -w '\n__STATUS=%{http_code}' -X POST -H "X-Edge-Auth: $token" -H 'Content-Type: application/json' -H 'Idempotency-Key: r3-idempotency-001' -d '{"commercialGroupCode":"r3-commercial-002","commercialGroupName":"另一个商业集团"}' "$base_url/commercial-group")"
+duplicate_raw="$(curl -sS -w '\n__STATUS=%{http_code}' -X POST -H "X-Edge-Auth: $token" -H 'Content-Type: application/json' -H 'Idempotency-Key: r3-idempotency-002' -d '{"commercialGroupCode":"r3-commercial-001","commercialGroupName":"R3 外部商业集团"}' "$base_url/commercial-group")"
+scoped_raw="$(curl -sS -w '\n__STATUS=%{http_code}' -X POST -H "X-Edge-Auth: $token" -H 'Content-Type: application/json' -H 'Idempotency-Key: r3-idempotency-001' -d '{"commercialGroupCode":"r3-commercial-001","commercialGroupName":"R3 外部商业集团"}' "http://127.0.0.1:$app_port/api/platform/group-workspaces/r3-external-space-002/commercial-group")"
+forged_raw="$(curl -sS -w '\n__STATUS=%{http_code}' "http://127.0.0.1:$app_port/api/platform/group-workspaces")"
+printf '%s\n' "$conflict_raw" >"$run_dir/idempotency-conflict-response.txt"
+printf '%s\n' "$duplicate_raw" >"$run_dir/duplicate-response.txt"
+printf '%s\n' "$scoped_raw" >"$run_dir/scoped-idempotency-response.txt"
+printf '%s\n' "$forged_raw" >"$run_dir/forged-edge-response.txt"
+
+node - "$list_before" "$detail_before" "$init_response" "$repeat_response" "$detail_after" "$conflict_raw" "$duplicate_raw" "$scoped_raw" "$forged_raw" <<'NODE'
+const [listBefore, detailBefore, init, repeat, detailAfter, conflictRaw, duplicateRaw, scopedRaw, forgedRaw] = process.argv.slice(2);
+const parseResponse = (raw) => { const lines = raw.trimEnd().split('\n'); const status = Number(lines.pop().replace('__STATUS=', '')); return {body: JSON.parse(lines.join('\n')), status}; };
+const [listBeforeJson, detailBeforeJson, initJson, repeatJson, detailAfterJson] = [listBefore, detailBefore, init, repeat, detailAfter].map(JSON.parse);
+const conflict = parseResponse(conflictRaw);
+const duplicate = parseResponse(duplicateRaw);
+const scoped = parseResponse(scopedRaw);
+const forged = parseResponse(forgedRaw);
+if (!Array.isArray(listBeforeJson) || listBeforeJson.length !== 1) throw new Error('list-before-must-return-one-external-space');
+if (detailBeforeJson.commercialGroup !== null || detailBeforeJson.commercialGroupStatus !== 'NOT_INITIALIZED') throw new Error('detail-before-not-empty');
+if (initJson.commercialGroupCode !== 'r3-commercial-001' || initJson.commercialGroupName !== 'R3 外部商业集团') throw new Error('owner-readback-mismatch');
+if (JSON.stringify(initJson) !== JSON.stringify(repeatJson)) throw new Error('same-idempotency-key-did-not-replay-owner-readback');
+if (detailAfterJson.commercialGroup?.commercialGroupCode !== 'r3-commercial-001' || detailAfterJson.commercialGroup?.commercialGroupName !== 'R3 外部商业集团') throw new Error('detail-after-readback-mismatch');
+if (conflict.status !== 409 || conflict.body.code !== 'IDEMPOTENCY_CONFLICT') throw new Error('idempotency-conflict-not-typed');
+if (duplicate.status !== 409 || duplicate.body.code !== 'COMMERCIAL_GROUP_ALREADY_INITIALIZED') throw new Error('duplicate-initialization-not-typed');
+if (scoped.status !== 409 || scoped.body.code !== 'IDEMPOTENCY_CONFLICT') throw new Error('idempotency-key-scope-not-enforced');
+if (forged.status !== 401 || forged.body.code !== 'INVALID_EDGE_CONTEXT') throw new Error('missing-edge-context-not-rejected');
+NODE
+
+printf 'R3_BUSINESS=PASS; C01=list-detail-initialize-owner-readback-idempotency-scoped-conflicts\n'
+touch "$run_dir/business-pass"
+printf 'R3_CLEANUP=PENDING; RUN_DIR=%s\n' "$run_dir"

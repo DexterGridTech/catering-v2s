@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-U03",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+  "deliveryManifestSha256": "d31653528ba5f0b9da4262daea14975eb2cdb02e80408c15a1aeb1aa1c7645d8",
+  "unitId": "RM1P6-U03",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/openapi-contracts", "scripts/check/edge-codegen", "scripts/check/frontend-architecture", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/openapi-contracts", "scripts/check/edge-codegen", "scripts/check/frontend-architecture", "scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["P6-U03-PREWRITE-READBACK", "P6-U03-OWNER-EDGE-TRUTH", "P6-U03-NO-LEGACY-BULK", "P6-U03-CONTEXT-VERSION-MONOTONIC"],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_DYNAMIC_HIERARCHY_AND_CAPABILITY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-UI-IA-CONFORMANCE-U06",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-package-exit.json",
+    "exitSha256": "896fd5a4272322112f6a436aca67fddd0c5bab4aacb61e322fea64468df0b3dd"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u03-implementation-amendment.md",
+    "sha256": "9a90700174de23b645e64e588311895558f26c6fcd97e986a5b35aae022ffb28"
+  },
+  "authorizationBoundary": "Dexter authorizes all established RM1 P6-3 implementation under the approved U03 denominator. P6-3 begins by making the existing receipt mechanism prove per-target prewrite reread, then closes operations/public owner-edge-generation truth, including authenticated session-entry shell branding and the IA04 typed brand-authorization corrective slice, before broader consumer UI. The combined P6-2/P6-3 L2 is mandatory after implementation with separate business and cleanup conclusions; reset remains unauthorized."
+}

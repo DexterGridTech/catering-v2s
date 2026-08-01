@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p6-2-final-independent-review-finding-disposition",
+  "reviewPath": "doc/review/platform/2026-07-30-v2s-rm1-p6-2-implementation-adversarial-review.md",
+  "reviewCycleId": "RM1-P6-2-IMPLEMENTATION-20260730",
+  "reviewRound": 2,
+  "dispositions": [
+    {
+      "findingId": "F-02",
+      "reviewClassification": "CONFIRMED",
+      "authorClassification": "REOPENED_BY_DEXTER_SCOPE_CORRECTION",
+      "reason": "Dexter explicitly superseded the historical RM2 defer: P6-2 and P6-3 must complete business-scope L2 tests. The corrected registry now binds the exact P6-2 platform L2 denominator and requires non-empty real-browser managed-run evidence with separate business and cleanup results. This prior RM2-defer disposition is no longer a closure and cannot support a package exit.",
+      "owningSources": [
+        "contracts/policy/affected-l2-registry.json#/phaseBusinessL2Obligations",
+        "doc/evidence/platform/rm1/p6/rm1p6-u02-package-input.json#/businessEvidenceObligation",
+        "doc/evidence/platform/rm1/p6/rm1p6-u02-implementation-amendment.md#Required proof and exclusions"
+      ],
+      "counterexamplesReopened": [
+        "apps/frontend/platform-admin/playwright.config.ts requires R5_L2_PLATFORM_BASE_URL",
+        "the former P6-2 target files were absent because of the now-superseded RM2 defer"
+      ],
+      "prevention": "The registry carries finite P6-2 and P6-3 surface/test denominators. Any package exit for either unit must bind managed browser L2 business and cleanup evidence for its exact denominator; a legacy-defer row cannot override a later Dexter scope correction."
+    },
+    {
+      "findingId": "F-04",
+      "reviewClassification": "CONFIRMED",
+      "authorClassification": "CLOSED_BY_PACKAGE_EXIT",
+      "reason": "The package was correctly ACTIVE_NOT_EXIT during review. This disposition is closed only by the subsequent exact changed-file/receipt package-exit validator, never by partial green checks."
+    }
+  ]
+}

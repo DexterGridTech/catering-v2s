@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-u08-historical-receipt-recovery",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "packageId": "RM1-U08",
+  "originalMissingReceiptCount": 5,
+  "authorization": "Dexter granted Codex full RM1 implementation authority. This one-time recovery is limited to the P5 dependency files and S1 prevention gate added after its package baseline, plus the Claude P5 review artifact supplied outside the Codex hook channel before its review path was admitted to the package surface.",
+  "recoveryArtifact": {
+    "path": "doc/evidence/platform/rm1/p5/rm1-u08-dexter-authorized-historical-receipt-recovery.json",
+    "baselineSha256": "ABSENT",
+    "disposition": "NORMAL_RECEIPT_CHAIN_EXISTS",
+    "reason": "This recovery record is itself captured by the active RM1-U08 pre/post receipt channel."
+  },
+  "staticVerifications": [
+    {
+      "id": "P5_APPROVED_DEPENDENCY_SURFACE",
+      "result": "PASS",
+      "assertion": "RM1-U08 manifest explicitly admits package.json and yarn.lock only for eslint-plugin-react-hooks coverage."
+    },
+    {
+      "id": "P5_BASELINE_GAP_REPRODUCED",
+      "result": "PASS",
+      "assertion": "validate-delta-receipts produced INCREMENTAL_RECEIPT_CHAIN_MISSING:package.json before this recovery configuration was admitted."
+    },
+    {
+      "id": "P5_EXTERNAL_CLAUDE_REVIEW_ARTIFACT",
+      "result": "PASS",
+      "assertion": "The Claude review is a Dexter-supplied implementation-review input, its SHA-256 is pinned below, and its path was explicitly added to the P5 manifest before any Codex remediation source edit."
+    },
+    {
+      "id": "P5_S1_PREVENTION_GATE_SURFACE",
+      "result": "PASS",
+      "assertion": "tools/verify-gates/cli.mjs was explicitly added to the P5 manifest before the S1 source edit; its first tracked byte has no package-baseline pre-receipt and is pinned below."
+    },
+    {
+      "id": "HISTORICAL_RECOVERY_CONTROL_SELF_TEST",
+      "result": "PASS",
+      "assertion": "The generic recovery control rejects hash drift, a missing artifact receipt, and a false missing-receipt claim."
+    }
+  ],
+  "entries": [
+    {
+      "path": "package.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "525b0f4f837bb8cbf75fbea9811ff5235d12342950273fe10b28f5ae50abb201",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "P5 added the hooks lint plugin before package.json was included in the package baseline. The only truthful same-package receipt begins at the pre-scope package byte, while the current byte is pinned here.",
+      "staticVerificationIds": ["P5_APPROVED_DEPENDENCY_SURFACE", "P5_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "yarn.lock",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "011ab7148e165f0c8d053095e03cc8c12d1b9445a31a194e7ff31f1a028ec9bf",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The package-manager resolution followed the same late-surface correction as package.json, so no truthful RM1-U08 pre receipt starts at the ABSENT baseline. The resolved current byte is pinned here.",
+      "staticVerificationIds": ["P5_APPROVED_DEPENDENCY_SURFACE", "P5_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "fe675190bc3c6671de8f34c77f2f0e4d19cf6505cb71511f54d795c4100298fd",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The P5 manifest was added to the allowed surface only to declare the receipt-recovery control after its baseline had been created. The factual receipt begins at the pre-scope manifest byte, so the ABSENT baseline cannot be represented as a normal receipt edge.",
+      "staticVerificationIds": ["P5_APPROVED_DEPENDENCY_SURFACE", "P5_BASELINE_GAP_REPRODUCED", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-claude.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "71ba0e82bd2a03d4026d9da5d61cb6ed1e46c4cc8d46bedfd0aae4425c511c69",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "Dexter supplied the Claude P5 NO-GO review before this externally authored review path was added to the active P5 surface. Reconstructing a Codex pre/post receipt would be false; the exact review byte and its user-authorized provenance are pinned instead.",
+      "staticVerificationIds": ["P5_EXTERNAL_CLAUDE_REVIEW_ARTIFACT", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "d1d85664be4a5a235fed8221fc23b4592c40c3ae3dcc95335877ca5039c22ab4",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "reason": "The S1 prevention gate was admitted to the P5 manifest only after the package baseline. Its exact initial gate byte is pinned; no pre-scope RM1-U08 receipt can truthfully start from ABSENT.",
+      "staticVerificationIds": ["P5_S1_PREVENTION_GATE_SURFACE", "HISTORICAL_RECOVERY_CONTROL_SELF_TEST"]
+    }
+  ]
+}

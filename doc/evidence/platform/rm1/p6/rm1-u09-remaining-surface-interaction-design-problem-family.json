@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-REMAINING-SURFACE-STRICT-INTERACTION-DESIGN-20260729",
+  "genericProblem": "A frozen surface/pageDesignKey ledger can retain broadly accepted R5 interaction baselines without the later per-screen business-source, surface, dependency, ownership, Heritage and foundation declarations, letting a future implementation infer user work from old code rather than a reviewed interaction design.",
+  "rootCauseClass": "The original R5 whole-scope interaction artifact grouped several independent pages and actions into shared wireframes before the stricter per-screen interaction admission standard was introduced.",
+  "finiteDenominator": [
+    "22 surface / 25 pageDesignKey ledger in P6 section 10",
+    "IA-01 covered surfaces 1, 11 and 12",
+    "IA-02 covered surfaces 2, 4 and 14",
+    "remaining surfaces 3, 5-10, 13, 15-22"
+  ],
+  "searchedSurfaces": [
+    "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md section 10",
+    "doc/decisions/2026-07-25-v2s-r5-whole-scope-journey-decision.md",
+    "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md",
+    "contracts/policy/frontend-asset-carryover-manifest.json",
+    "the corresponding all-v2 platform-admin and operations-admin feature pages"
+  ],
+  "searchQueries": [
+    "R5_CANDIDATE_BASELINE_NEEDS_STRICT_IA_DECISION",
+    "PARTIAL_IA_DRAFT_PLUS_R5_BASELINE",
+    "RETAIN_ROUTE_BOOTSTRAP_ONLY",
+    "D02-S02|D02-S03|D02-S04|D02-S07|D03-S01|D04-S01|D04-S03|D04-S10|D04-S11|D04-S12"
+  ],
+  "counterexamples": [
+    "IA-01 and IA-02 already meet the current admission standard and are not rewritten as part of this remaining-surface design task.",
+    "The five HOME routes are retain-only entry/bootstrap surfaces, not a mandate to invent dashboards or additional business operations.",
+    "A Heritage counterpart supplies a static baseline, not an implementation authorization or a substitute for the current business source."
+  ],
+  "findings": [
+    {
+      "findingId": "P6-REMAINING-SURFACE-STRICT-IA-01",
+      "classification": "CONFIRMED",
+      "evidence": "Sixteen remaining ledger surfaces were marked R5 candidate, partial, or retain-only rather than carrying current per-screen interaction admissions; the direct Dexter instruction requires their complete strict interaction design before confirmation."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "P6-REMAINING-SURFACE-STRICT-IA-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md#10-22-surface-25-pagedesignkey-交互总台账dexter-指令2026-07-29"
+    }
+  ]
+}

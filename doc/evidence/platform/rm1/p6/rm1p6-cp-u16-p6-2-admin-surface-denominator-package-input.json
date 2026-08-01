@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-manifest.json",
+  "deliveryManifestSha256": "9e68cea0088ef856517394eb5ec602bdfcc918c58c8a815cf0fe891b04427ce8",
+  "unitId": "RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage", "scripts/check/implementation-design-granularity", "scripts/check/remediation-compliance"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance", "scripts/check/implementation-design-granularity"],
+  "requiredControlRuleIds": ["P6-CP-U16-ADMIN-SURFACE-DENOMINATOR"],
+  "businessEvidenceObligation": "NOT_REQUIRED_CONTROL_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U15-P6-3-BRAND-OWNER-EDGE-TRUTH",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-package-exit.json",
+    "exitSha256": "7a23dab473c0c0f3587b7b8e303d0ff3e644b773200fa45e301aaa8a2438dcac"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-amendment.md",
+    "sha256": "f4b33f682e4128729dea55e11a3a3d73c52cde95cfff62734e378c527bd77504"
+  },
+  "authorizationBoundary": "Dexter authorized P6-2 implementation after P6-1 GO. This design-only control correction aligns the administrator surface denominator and does not authorize production or advance P6-3."
+}

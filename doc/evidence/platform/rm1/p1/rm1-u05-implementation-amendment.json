@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p1-implementation-amendment",
+  "status": "ACTIVE_IMPLEMENTATION_DESIGN",
+  "scope": "RM1-P1 exact seven-ID authority ledger and direct closure of ST-3/ST-4/ST-8, plus the P1-required frontend architecture control's confirmed P3-originated handwritten backend catalog-literal repair and final-round evidence/surface controls; no P5/P6 consumer closure, Journey, API, database, runtime, seed or reset.",
+  "businessUserTask": "No new end-user task is introduced. P1 removes conflicting implementation-level sources for an already approved platform page title, platform menu order, and frontend layout/test registry truth.",
+  "dexterStageIntent": "Replace unsafe occurrence-count reasoning with one authority source plus mechanically traceable consumers, while limiting change to the three P1-owned ST items.",
+  "alternatives": [
+    {
+      "id": "LEDGER_ONLY",
+      "decision": "rejected",
+      "reason": "It would document ST-3/ST-4/ST-8 while leaving their known conflicting consumers live, contradicting the approved direct-closure assignment."
+    },
+    {
+      "id": "COUNT_LITERAL_OCCURRENCES",
+      "decision": "rejected",
+      "reason": "Generated and legal consumers make occurrence counts unable to distinguish one authority from valid projections."
+    },
+    {
+      "id": "AUTHORITY_LEDGER_PLUS_DIRECT_P1_FIXES",
+      "decision": "selected",
+      "reason": "It closes only P1-owned truth conflicts and gives P5/P6 a single ledger for their still-unimplemented consumers without inventing generic runtime machinery."
+    }
+  ],
+  "confirmedFindingDispositions": [
+    {
+      "findingId": "P1-SURFACE-MATERIALIZATION-GAP",
+      "status": "CONFIRMED",
+      "action": "Align RM1-U05 change surfaces to the already-approved ST-3/ST-4/ST-8 direct closures and create the absent ledger path."
+    },
+    {
+      "findingId": "P1-ST8-DERIVATION-CONTROL-GAP",
+      "status": "CONFIRMED",
+      "action": "Validate every affected-L2 frontend path against the carry-over targetPath-derived directory set; reject stale literal registry paths."
+    },
+    {
+      "findingId": "P1-P3-BACKEND-CATALOG-LITERAL",
+      "status": "CONFIRMED",
+      "action": "Repair the finite handwritten capability-literal denominator by referencing generated WorkspaceAuthorizationCatalog.CapabilityKeys; preserve the existing literal-boundary gate and red mutation."
+    },
+    {
+      "findingId": "P1-REVIEW-M01-OWNED-UI-SOURCE-DENOMINATOR",
+      "status": "CONFIRMED",
+      "action": "Declare the two changed platform UI sources applicable and require package-exit owned-surface trace evidence; retaining their no-new-Journey boundary does not make the sources non-UI."
+    },
+    {
+      "findingId": "P1-REVIEW-S01-LEDGER-AUTHORITY-RELATION",
+      "status": "CONFIRMED",
+      "action": "Bind every ledger row to an exact authority kind/path/selector/current hash and an exact relation kind/path or an explicit NONE reason."
+    },
+    {
+      "findingId": "P1-REVIEW-R2-M01-GRANULARITY_CURRENT_BYTES",
+      "status": "CONFIRMED",
+      "action": "Mark every already-materialized U05 surface as update, preserving the historical design review files rather than rewriting their closed cycle."
+    },
+    {
+      "findingId": "P1-REVIEW-R2-M02-OWNED_SURFACE_TRACE",
+      "status": "CONFIRMED",
+      "action": "Bind the applicable D5 denominator to a structured package-exit trace for PLATFORM-WORKSPACE-OVERVIEW and its catalog-projection support source."
+    },
+    {
+      "findingId": "P1-REVIEW-R2-M03-APPROVED_SURFACE_ALLOWLIST",
+      "status": "CONFIRMED",
+      "action": "Require the active package allowlist to equal the active RM1 unit's declared changeSurface set; explicitly declare the confirmed generator and problem-disposition repairs."
+    },
+    {
+      "findingId": "P1-REVIEW-R2-S01-RELATION_EXACTNESS",
+      "status": "CONFIRMED",
+      "action": "Require generator relation selectors and NONE reasons exactly, with no arbitrary relation fields."
+    }
+  ],
+  "changeUnits": [
+    {
+      "id": "P1-LEDGER",
+      "paths": [
+        "doc/evidence/platform/rm1/p1/authority-ledger.json",
+        "tools/authority-source-ledger/cli.mjs",
+        "scripts/check/authority-source-ledger"
+      ],
+      "failureBehavior": "Any missing/extra ST ID, authority path, consumer trace or generator relation fails with a named reason.",
+      "redControls": [
+        "missing ledger ID",
+        "unowned consumer",
+        "hard-coded denominator"
+      ]
+    },
+    {
+      "id": "P1-DIRECT-CLOSURE",
+      "paths": [
+        "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx",
+        "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+        "contracts/policy/affected-l2-registry.json",
+        "tools/verify-gates/cli.mjs"
+      ],
+      "failureBehavior": "Platform title and menu order derive from catalog; affected-L2 layout paths derive from the actual frontend tree.",
+      "redControls": [
+        "hard-coded title",
+        "object insertion order",
+        "stale layout path",
+        "registry path not derived from carry-over targetPath"
+      ]
+    },
+    {
+      "id": "P1-REQUIRED-GATE-REPAIR",
+      "paths": [
+        "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java"
+      ],
+      "failureBehavior": "Every BC-* capability reference in the handwritten requirement catalog resolves through generated CapabilityKeys; no exception or gate suppression is introduced.",
+      "redControls": [
+        "existing R5_ADMIN_CATALOG_BACKEND_LITERAL injected literal mutation",
+        "all finite-denominator BC-* literal scan"
+      ]
+    },
+    {
+      "id": "P1-REVIEW-ROUND1-REMEDIATION",
+      "paths": [
+        "tools/authority-source-ledger/cli.mjs",
+        "tools/compliance-control/cli.mjs"
+      ],
+      "failureBehavior": "An applicable UI source denominator cannot be reported as a non-UI exemption, and a ledger authority/relation row cannot be redirected to an arbitrary existing file.",
+      "redControls": [
+        "ledger authority path/hash/selector mutation",
+        "source disposition applicability transition"
+      ]
+    },
+    {
+      "id": "P1-REVIEW-ROUND2-REMEDIATION",
+      "paths": [
+        "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+        ".runtime/compliance-control/active-package.json",
+        "tools/compliance-control/cli.mjs",
+        "tools/authority-source-ledger/cli.mjs"
+      ],
+      "failureBehavior": "A materialized surface cannot be declared create, the active allowlist cannot exceed the approved unit surfaces, an applicable D5 row requires a structured target/support trace, and a relation cannot be descriptive-only.",
+      "redControls": [
+        "existing create surface",
+        "active allowlist extra surface",
+        "missing owned-surface trace",
+        "generator relation selector mutation"
+      ]
+    }
+  ],
+  "authorizationBoundary": "Dexter authorized RM1 next-P implementation after P3 Claude GO and explicitly authorized this P3-originated gate repair. This amendment is bounded to P1 closure and does not close ST-2/ST-6/ST-9/ST-11 or authorize P2/P4/P5/P6/P3-D/P7/P8."
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-u12-generated-output-terminal-replay",
+  "packageId": "RM1-U12",
+  "status": "PASS",
+  "terminalSegment": {
+    "packageId": "RM1-U12",
+    "generator": {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "sha256": "e44d71776aca8d6981286956627f8ba5f24a01536f9cf64de8cb1b4e908d432f"
+    },
+    "verification": {
+      "command": "node scripts/generate/edge-codegen.mjs --check",
+      "result": "PASS",
+      "files": 218
+    },
+    "outputs": [
+      {
+        "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+        "finalSha256": "437e13a68e407cd24dfd2a9bd68042bc7a44d7aaf0d8f4eb4949649ef4eb405a"
+      }
+    ],
+    "exitBinding": {
+      "path": "doc/evidence/platform/rm1/p3-c/rm1-u12-package-exit.json",
+      "rule": "Each terminal outputs[].finalSha256 equals the same package exit incrementalChecks[].afterSha256."
+    }
+  }
+}

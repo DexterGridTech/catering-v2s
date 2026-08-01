@@ -1,0 +1,69 @@
+import {createApi} from '@reduxjs/toolkit/query/react';
+import type {FetchArgs} from '@reduxjs/toolkit/query';
+import {createObservedBaseQuery, createRefreshSignal, createSafeLogger, serializeJsonOrMultipartBody} from '@catering-v2s/admin-ui-foundation';
+import {createOperationsAdminRtkEndpoints} from './generated/operations-edge.rtk';
+import {createPublicRtkEndpoints} from './generated/public-edge.rtk';
+import type {FaceOperationContracts as OperationsFaceOperationContracts, FaceOperationRequest as OperationsFaceOperationRequest} from './generated/operations-edge';
+import type {FaceOperationContracts as PublicFaceOperationContracts, FaceOperationRequest as PublicFaceOperationRequest} from './generated/public-edge';
+
+const logger = createSafeLogger({service: 'operations-admin', enabled: import.meta.env.DEV});
+const activeControllers = new Set<AbortController>();
+let unauthorizedRecovery: (() => void | Promise<void>) | undefined;
+export const operationsRefreshSignal = createRefreshSignal();
+
+export function registerOperationsUnauthorizedRecovery(recovery: () => void | Promise<void>) {
+  unauthorizedRecovery = recovery;
+  return () => { if (unauthorizedRecovery === recovery) unauthorizedRecovery = undefined; };
+}
+
+export function abortOperationsRequests() {
+  for (const controller of activeControllers) controller.abort();
+  activeControllers.clear();
+}
+
+function toWireRequest(request: {path: string; pathParameters: object; method: string; query?: object; headers?: Readonly<Record<string, string>>; body?: unknown}): FetchArgs {
+  const path = expandPath(request.path, request.pathParameters);
+  const query = new URLSearchParams(
+    Object.entries(request.query ?? {})
+      .filter(([, value]) => value !== undefined && value !== null)
+      .map(([name, value]) => [name, String(value)]),
+  );
+  const headers = new Headers(request.headers);
+  headers.set('Accept', 'application/json');
+  return {
+    url: query.size === 0 ? path : `${path}?${query.toString()}`,
+    method: request.method.toUpperCase(),
+    headers,
+    body: serializeJsonOrMultipartBody(request.body, headers),
+  };
+}
+
+const toOperationsWireRequest = <I extends keyof OperationsFaceOperationContracts>(request: OperationsFaceOperationRequest<I>) => toWireRequest(request);
+const toPublicWireRequest = <I extends keyof PublicFaceOperationContracts>(request: PublicFaceOperationRequest<I>) => toWireRequest(request);
+
+/** Operations and public generated slices share one app-owned, cookie-only RTK substrate. */
+export const operationsApi = createApi({
+  reducerPath: 'operationsApi',
+  baseQuery: createObservedBaseQuery({
+    baseUrl: '/',
+    credentials: 'include',
+    logger,
+    onUnauthorized: async () => { await unauthorizedRecovery?.(); },
+    registerAbortController: (controller) => {
+      activeControllers.add(controller);
+      return () => activeControllers.delete(controller);
+    },
+  }),
+  tagTypes: ['wire'],
+  endpoints: (build) => ({
+    ...createOperationsAdminRtkEndpoints(build, toOperationsWireRequest),
+    ...createPublicRtkEndpoints(build, toPublicWireRequest),
+  }),
+});
+
+function expandPath(template: string, pathParameters: object): string {
+  let unresolved = template;
+  for (const [name, value] of Object.entries(pathParameters)) unresolved = unresolved.replace(`{${name}}`, encodeURIComponent(String(value)));
+  if (/\{[^}]+\}/.test(unresolved)) throw new Error(`OPERATIONS_EDGE_PATH_PARAMETER_MISSING:${template}`);
+  return unresolved;
+}

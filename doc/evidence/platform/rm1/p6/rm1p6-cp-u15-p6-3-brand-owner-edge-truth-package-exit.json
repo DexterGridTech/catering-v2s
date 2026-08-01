@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-CP-U15-P6-3-BRAND-OWNER-EDGE-TRUTH",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","beforeSha256":"8843df654103286942c6537b7802c6565ea14ef3cbb191936f01bfdc432d9ff0","afterSha256":"bfd4ed5fcb6397711734b5f0678e5139165cf378bc56e57e0178eff812b82d0a"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","beforeSha256":"fb276e2cab8396f0253327c490cc8bfa235d171494dfabc8e9f3fef5aabc580a","afterSha256":"ce924a69cf1420ca6762e64715e523eeb70074be2fb5f5fffb99bdd23825e867"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md","beforeSha256":"ccc98937f09b86bfe302aeb1b2e04e853f842aef96abd48a2b637c02de478f51","afterSha256":"64544813361245fa18cb71a8570d5d53c3761f18774ec274a620c209d9babfe4"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-amendment.md","beforeSha256":"ABSENT","afterSha256":"a460c1b8fbb5c486fe95268ffbed91f4633b17c1200fb5927935c601c25bb0e6"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-manifest.json","beforeSha256":"ABSENT","afterSha256":"adf517178b3a1da3596ee06903f8f59aceeb94925ed20c88a1fd3ca0d00d1a76"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-package-input.json","beforeSha256":"ABSENT","afterSha256":"9ed2eb1739f2a879e59a362668769a9943dcc9c27910760b82ba7b9ca70487e5"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-source-disposition.json","beforeSha256":"ABSENT","afterSha256":"d6094c0cb2113f286fff5a64259a92970925a793bb486c08d2bb6665d55adcc3"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u15-brand-owner-edge-truth-problem-family.json","beforeSha256":"ABSENT","afterSha256":"69de49b9163a8aa3c5f21a45b0855b5ec8746142459c513ef02ba94a3ec0bf5d"},
+    {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md","beforeSha256":"40fb733fb69e118ed3df2490d32ff8f74cb2d1ae94f57fdceb7bd20e6590fa30","afterSha256":"a8f95f69f4243f7f90eb4c988cd63cde8c7340d118f40ab61dbec22d030425a6"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-3-brand-owner-edge-truth-design-adversarial-review.md","beforeSha256":"ABSENT","afterSha256":"3c2ea1c2718991f8ce8b9621b739a9cdbdaba3cd16aafdbddb13e7374e5993f0"}
+  ],
+  "incrementalChecks": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","afterSha256":"bfd4ed5fcb6397711734b5f0678e5139165cf378bc56e57e0178eff812b82d0a","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","afterSha256":"ce924a69cf1420ca6762e64715e523eeb70074be2fb5f5fffb99bdd23825e867","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md","afterSha256":"64544813361245fa18cb71a8570d5d53c3761f18774ec274a620c209d9babfe4","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-amendment.md","afterSha256":"a460c1b8fbb5c486fe95268ffbed91f4633b17c1200fb5927935c601c25bb0e6","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-manifest.json","afterSha256":"adf517178b3a1da3596ee06903f8f59aceeb94925ed20c88a1fd3ca0d00d1a76","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-package-input.json","afterSha256":"9ed2eb1739f2a879e59a362668769a9943dcc9c27910760b82ba7b9ca70487e5","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-source-disposition.json","afterSha256":"d6094c0cb2113f286fff5a64259a92970925a793bb486c08d2bb6665d55adcc3","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u15-brand-owner-edge-truth-problem-family.json","afterSha256":"69de49b9163a8aa3c5f21a45b0855b5ec8746142459c513ef02ba94a3ec0bf5d","result":"PASS"},
+    {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md","afterSha256":"a8f95f69f4243f7f90eb4c988cd63cde8c7340d118f40ab61dbec22d030425a6","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-3-brand-owner-edge-truth-design-adversarial-review.md","afterSha256":"3c2ea1c2718991f8ce8b9621b739a9cdbdaba3cd16aafdbddb13e7374e5993f0","result":"PASS"}
+  ],
+  "sourceComplianceDisposition": {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-source-disposition.json","sha256":"d6094c0cb2113f286fff5a64259a92970925a793bb486c08d2bb6665d55adcc3"},
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "controls": [
+    {"ruleId":"CR05-WC-01","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"CR05-WC-02","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"CR05-HISTORICAL-RECEIPT-RECOVERY","state":"ACTIVE_RED_VERIFIED"}
+  ]
+}

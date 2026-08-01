@@ -1,0 +1,136 @@
+{
+  "paths": {
+    "/api/platform/audit-history": {
+      "get": {
+        "operationId": "getPlatformEntityAuditHistory",
+        "tags": [
+          "platform-workspace"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-workspace",
+        "x-scenario-ids": [],
+        "x-page-key": "AUDIT-HISTORY-MODAL",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "GROUP_WORKSPACE",
+                "PLATFORM_ADMIN",
+                "WORKSPACE_ROLE",
+                "WORKSPACE_ACCOUNT",
+                "EXTENSION_DEFINITION",
+                "STORE_CONTRACT"
+              ]
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/common/common.schemas.yaml#/components/schemas/AuditHistoryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    }
+  }
+,  "components": {
+    "responses": {
+      "ProblemResponse": {
+        "description": "Problem response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U01",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "P6-1 makes both management-console login and access recovery public protocols. The current IAM registry incorrectly represents anonymous password and OTP login as authenticated workspace work, while the R5 operation and typed-error ledgers omit the new platform and operations recovery surface. This metadata-only control package makes the frozen public-protocol rule mechanically reviewable before the U01 contract and generated-surface work continues.",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-CP-U01",
+      "title": "P6 public authentication and recovery metadata admission",
+      "sourceComplianceDispositionRequired": true,
+      "changeSurfaces": [
+        {
+          "path": "contracts/registry/iam-org-governance-manifest.json",
+          "disposition": "update",
+          "target": "correct anonymous login authorization modes, add the exact P6 public protocol requirements, and distinguish token-bearing from owner-fact public resolvers"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+          "disposition": "update",
+          "target": "add the exact P6 public login and recovery operations to the R5 edge catalog"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-catalog.json",
+          "disposition": "update",
+          "target": "admit the actual recovery typed-code selections through the R5 error ledger"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6",
+          "disposition": "update",
+          "target": "control-plane package input, source disposition, receipts and exit evidence"
+        }
+      ],
+      "forbiddenPseudoFixes": [
+        "derive public authorization from a page key, session assignment or client selected workspace",
+        "use the invitation/reset-token resolver for credential, OTP or bound-flow protocols that have no token input",
+        "change authenticated current-password operations to public protocol",
+        "add operation records without their corresponding IAM registry requirement",
+        "replace the owner-thrown WORKSPACE_IAM_GRANT_INVALID typed code with a generic failure",
+        "modify U01 business, OpenAPI, generated, backend or frontend source bytes"
+      ],
+      "completion": "All anonymous login and P6 recovery operations have exact registry/catalog/error-ledger representation; every metadata write has a receipt; static public-protocol invariants and this control package exit pass before U01 is restored."
+    }
+  ]
+}

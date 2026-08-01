@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "dexter-authorized-rm1-u03-implementation-amendment",
+  "packageId": "RM1-U03",
+  "status": "ACTIVE_NOT_EXIT",
+  "authorization": "Dexter explicitly authorized the complete RM1 implementation and, on 2026-07-28, confirmed the P3-B R-24 per-operation requirement mapping and non-leaking readback/conflict projection.",
+  "frozenDesignBinding": {
+    "plan": {
+      "path": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+      "sha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c",
+      "anchor": "### RM1-P3-B｜写端点、R-24 单项授权、receipt 与 FK"
+    },
+    "manifest": {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "sha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3",
+      "unitId": "RM1-U03"
+    }
+  },
+  "decisions": {
+    "r24OperationIdentityAndCapabilityMapping": {
+      "classification": "DEXTER_DECISION",
+      "rule": "R-24 has one REQ per POST/DELETE operation. Both REQs map through the authoritative registry to the existing BC-ORG-HEAD-COMPANY-BRAND business capability; BC is not substituted into x-required-capability."
+    },
+    "r24ReadbackAndConflictProjection": {
+      "classification": "DEXTER_DECISION",
+      "rule": "Readback excludes referencingStoreCount. A remove conflict returns at most 20 actor-visible blocker {id,code,name} entries or the same generic typed conflict, without totals, hasAdditional, canRevoke, hidden-reference indicators, or raw persistence detail."
+    },
+    "uiBoundary": {
+      "classification": "FROZEN_DESIGN_BOUNDARY",
+      "rule": "P3-B changes generated consumer contract surfaces only. The current multi-select P3-D page is not reinterpreted as approved single-action UI and its behavior remains deferred to accepted RM1-IA-03."
+    }
+  },
+  "actualChangeSurfaceCorrection": {
+    "reason": "The frozen manifest names the R-24 OpenAPI path, organization owner and edge app, but P3-B's approved receipt-first protocol, generator-derived per-operation requirement mapping, additive composite FK, cross-owner public commands, typed problem conversion and generated consumer artifacts require their existing owning source roots. The correction makes these already-approved dependencies enumerable without adding a Journey or UI behavior.",
+    "surfaces": [
+      {"path": "tools/compliance-control/cli.mjs", "disposition": "update", "purpose": "package-aware actual-change and receipt evidence"},
+      {"path": "tools/capability-invariants/cli.mjs", "disposition": "update", "purpose": "per-operation requirement-to-business-capability exact mapping and P3-B safety assertions"},
+      {"path": "tools/verify-gates/cli.mjs", "disposition": "update", "purpose": "derive route-operation denominator from the authoritative generated registry after authorized retire-one/add-two contract evolution"},
+      {"path": "tools/platform-boundary-gates/cli.mjs", "disposition": "update", "purpose": "derive Flyway single-history denominator from the ordered current migration inventory after the authorized additive migration"},
+      {"path": "tools/code-layout/cli.mjs", "disposition": "update", "purpose": "classify the existing authoritative contracts/registry root while retaining red rejection for unknown contract roots"},
+      {"path": "scripts/check/capability-invariants", "disposition": "update", "purpose": "P3-B checker entrypoint"},
+      {"path": "scripts/generate/edge-codegen.mjs", "disposition": "update", "purpose": "authoritative generation of R-24 routes, catalogs and typed consumer adapters"},
+      {"path": "contracts/openapi", "disposition": "update", "purpose": "retire PUT and define POST/DELETE operation contracts and typed problems"},
+      {"path": "contracts/registry/iam-org-governance-manifest.json", "disposition": "update", "purpose": "map the two operation requirements to the existing business capability"},
+      {"path": "libraries/backend/{organization,workspace-iam,platform-workspace,extension,platform-asset}", "disposition": "update", "purpose": "receipt-first owner commands, FK/reference invariants, asset and invitation security boundaries"},
+      {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge", "disposition": "update", "purpose": "edge command adaptation and closed typed problem projection"},
+      {"path": "apps/backend/catering-business-server/src/main/resources", "disposition": "create", "purpose": "additive P3-B migration only; no executed migration rewrite"},
+      {"path": "apps/backend/catering-business-server/src/test/java", "disposition": "update", "purpose": "focused replay, concurrency, FK, security and typed-problem proofs"},
+      {"path": "apps/frontend/{platform-admin,operations-admin}/src/app/api/generated", "disposition": "update", "purpose": "generated adapter contract only; no P3-D interaction change"},
+      {"path": "doc/evidence/platform/rm1/p3-b", "disposition": "create", "purpose": "binding, dispositions, focused proof and package exit evidence"}
+    ]
+  },
+  "exitRules": [
+    "RM1-U03 starts from a successor baseline after the RM1-U02 exit and retains its own non-empty actual changed-path receipt set",
+    "all P3-B mutations use authoritative per-operation requirement mapping and never use a client literal or business capability value as a requirement ID",
+    "the receipt identity change covers every current owner sharing organization.organization_command_receipt before the R-24 command changes it",
+    "R-24 backend contract, owner command, additive migration, generated adapter and focused negative/concurrency proof close before P3-C",
+    "no P3-D UI behavior is implemented or claimed by P3-B"
+  ]
+}

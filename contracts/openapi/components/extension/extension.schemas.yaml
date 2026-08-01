@@ -1,0 +1,224 @@
+{
+  "components": {
+    "schemas": {
+      "ExtensionDefinition": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groupWorkspaceKey",
+          "entityType",
+          "definitions",
+          "revision",
+          "updatedAt"
+        ],
+        "properties": {
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "entityType": {
+            "$ref": "#/components/schemas/ExtensionEntityType"
+          },
+          "definitions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "label",
+                "type",
+                "required",
+                "options"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "pattern": "^[a-z][a-zA-Z0-9_]*$"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "TEXT",
+                    "NUMBER",
+                    "DATE",
+                    "BOOLEAN",
+                    "SELECT"
+                  ]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 120
+                  }
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ENABLED",
+                    "DISABLED"
+                  ]
+                },
+                "displayOrder": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "displaySuffix": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20
+                }
+              }
+            }
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+          }
+        }
+      },
+      "ExtensionDefinitionUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "definitions",
+          "expectedVersion"
+        ],
+        "properties": {
+          "definitions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "label",
+                "type",
+                "required",
+                "options"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "pattern": "^[a-z][a-zA-Z0-9_]*$"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "TEXT",
+                    "NUMBER",
+                    "DATE",
+                    "BOOLEAN",
+                    "SELECT"
+                  ]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 120
+                  }
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ENABLED",
+                    "DISABLED"
+                  ]
+                },
+                "displayOrder": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "displaySuffix": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20
+                }
+              }
+            }
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "ExtensionEntityCatalogPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "entityType",
+                "displayName",
+                "configuredFieldCount",
+                "updatedAt"
+              ],
+              "properties": {
+                "entityType": {
+                  "$ref": "#/components/schemas/ExtensionEntityType"
+                },
+                "displayName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "configuredFieldCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "updatedAt": {
+                  "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ExtensionEntityType": {
+        "type": "string",
+        "enum": [
+          "BRAND",
+          "TENANT",
+          "HEAD_COMPANY",
+          "STORE",
+          "CONTRACT"
+        ]
+      }
+    }
+  }
+}

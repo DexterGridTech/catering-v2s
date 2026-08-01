@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p2-implementation-amendment",
+  "status": "ACTIVE_IMPLEMENTATION_DESIGN",
+  "scope": "RM1 P2 current-byte rename denominator freeze, Membership-to-User technical rename, app-contained single-deployable backend module layout, pure operations routing type-contract relocation, and bounded relocation-safety verification of the six affected module Testcontainers suites. No user-task, API behavior, data shape or migration change.",
+  "businessUserTask": "No end-user operation changes: existing platform and operations user-management behavior remains identical while its technical names and source layout are made consistent with the approved single-deployable architecture.",
+  "dexterStageIntent": "Remove legacy membership/layout drift only after a reproducible current-byte denominator is frozen; prefer one bounded relocation over aliases, compatibility wrappers or behavior changes.",
+  "alternatives": [
+    {
+      "id": "LEAVE_LEGACY_NAMES_AND_ROOTS",
+      "decision": "rejected",
+      "reason": "It leaves two architectural vocabularies and makes owner/layout controls silently lose coverage after later moves."
+    },
+    {
+      "id": "COMPATIBILITY_ALIASES",
+      "decision": "rejected",
+      "reason": "Aliases preserve the eight-form denominator and conceal incomplete relocation."
+    },
+    {
+      "id": "FREEZE_THEN_SINGLE_RENAME_AND_RELOCATION",
+      "decision": "selected",
+      "reason": "It makes the finite current tree and exclusions reviewable before changing behavior-neutral technical names."
+    }
+  ],
+  "authorizationBoundary": "Dexter authorized P2 after P1 Claude GO and authorized RM1 implementation completion. P2 may perform the approved rename/layout work, static evidence, and only six focused existing managed Testcontainers module suites through scripts/test/r5-remote-testcontainers.mjs. This does not authorize P4-P8, user-interaction changes, DEV, seed, reset, additive migration or any persistent environment change; each suite must retain log and cleanup evidence."
+}

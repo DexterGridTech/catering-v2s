@@ -1,0 +1,593 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-cr05-historical-receipt-recovery",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "packageId": "R5-CR-U05",
+  "authority": "Dexter accepted one explicit CR05 historical receipt recovery, locked to the original 43 missing receipt transitions. This record does not claim that the hook triggered at the historical write time.",
+  "originalMissingReceiptCount": 43,
+  "denominator": {
+    "source": "/tmp/cr05-receipt-coverage.json (captured original receipt-gap scan)",
+    "originalDeltaCount": 132,
+    "originalCoveredCount": 89,
+    "originalMissingCount": 43,
+    "grouping": {
+      "apps/frontend/operations-admin": 16,
+      "apps/frontend/platform-admin": 14,
+      "contracts/openapi/components": 3,
+      "contracts/openapi/edge.openapi.yaml": 1,
+      "contracts/openapi/paths": 1,
+      "contracts/policy/source-compliance-predicate-map.json": 1,
+      "doc/evidence/platform": 2,
+      "doc/review/platform": 1,
+      "libraries/backend/workspace-iam": 1,
+      "project-memory/index.json": 1,
+      "project-memory/index.md": 1,
+      "yarn.lock": 1
+    }
+  },
+  "staticVerifications": [
+    {
+      "id": "OPENAPI_CONTRACTS",
+      "command": "scripts/check/openapi-contracts",
+      "result": "PASS",
+      "observed": "R5_OPENAPI_CONTRACTS=PASS"
+    },
+    {
+      "id": "EDGE_CODEGEN",
+      "command": "scripts/check/edge-codegen",
+      "result": "PASS",
+      "observed": "R5_EDGE_CODEGEN_CHECK=PASS; FILES=212"
+    },
+    {
+      "id": "FRONTEND_TYPECHECK_AND_BUILD",
+      "command": "yarn workspace @catering-v2s/operations-admin typecheck && yarn workspace @catering-v2s/platform-admin typecheck && yarn workspace @catering-v2s/operations-admin build && yarn workspace @catering-v2s/platform-admin build",
+      "result": "PASS",
+      "observed": "both typechecks and production builds PASS"
+    },
+    {
+      "id": "FRONTEND_ARCHITECTURE",
+      "command": "scripts/check/frontend-architecture && scripts/check/admin-boundaries && scripts/check/code-layout",
+      "result": "PASS",
+      "observed": "all production static controls PASS"
+    },
+    {
+      "id": "BACKEND_COMPILE",
+      "command": "gradle :apps:backend:catering-business-server:compileJava",
+      "result": "PASS",
+      "observed": "BUILD SUCCESSFUL; 11 actionable tasks"
+    },
+    {
+      "id": "SOURCE_COMPLIANCE_MAPPING",
+      "command": "node tools/compliance-control/cli.mjs validate-source-map",
+      "result": "PASS",
+      "observed": "REMEDIATION_COMPLIANCE_MAPPING=PASS; RULES=146; MACHINE_ROWS=8"
+    },
+    {
+      "id": "PROJECT_MEMORY",
+      "command": "scripts/check/project-memory",
+      "result": "PASS",
+      "observed": "PROJECT_MEMORY_CHECK=PASS"
+    },
+    {
+      "id": "PACKAGE_SOURCE_AND_DESIGN_SCAN",
+      "command": "scripts/check/standards-coverage --phase R5",
+      "result": "PASS",
+      "observed": "standards coverage production scan PASS before recovery evidence admission"
+    }
+  ],
+  "entries": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "baselineSha256": "f61e854685d9a345a0ce70a7178b6257682c9c26ddaebcf91642ad2855b65397",
+      "currentSha256": "847219621dc4e07849f3bf8b1abab9d53eb5d0416584ab8b855f744165b6db4f",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "baselineSha256": "b3d3f69e1719a8c49db633871b79b0eb67f6384dc2d95bf9488ea0e3781ee33b",
+      "currentSha256": "d9a63afca5ec53dca57d3e2d80b6e949e3f9f0d697423da43e59c9b15afa13ec",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+      "baselineSha256": "53a9dbc87e2b9dd4be113f3aa1907a5c03e066683fc0ad91482a99b9b1c0ad81",
+      "currentSha256": "36b4f64b80d6326a2b2dfdc59cb289b6e39f50ce24ad9df680a8cfe15a8e25fd",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "a84595e8734191d54fe1a1953de169b3a0091ae9125f80af62db185a3fb0cb69",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/access-recovery/ui/PublicPasswordRecoveryEntry.tsx",
+      "baselineSha256": "2780e461c4562f74954b7f5f20def29e9b1be25f661426d4a6c2fbfa588a4801",
+      "currentSha256": "bb91d87f0b7fd115c400e6c03e6e99d5c346ea62f327c21f215846c861bc8e73",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+      "baselineSha256": "42948ea36c9686bdad40903315c9d084a78617268e8059c11d2f3b27cac11e4b",
+      "currentSha256": "ed3152568ae6440d6dca0f5b3a39b3b7fbf06aae96e3168ab134cd3b86dc6e03",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "baselineSha256": "73abc3c22eb90fdf41de11639f54445a480c3da8bddd96c233dac244c3f9f165",
+      "currentSha256": "fafdfd727467db5fa0f6925c2415938bbfcfcf0939e27b9a8b602c92cf248e5d",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "116259a6c3ca96491af2597058e24e9565ca4bddeb523865b0edc38249c33d5d",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "78509987b6ea8e5e9dc6a9906c650d0bc54010b1e69620ab76ea80333728380f",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "8b2165f00962d48f34e8213b135ec9dc28abfffeb51d94dd46df430ffc9a6bda",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "baselineSha256": "b9dca70b4dbb7d1cd096f602c97a7d5e8f9a324ace86b7d5d799c9169ff658f5",
+      "currentSha256": "43949b5df6d4f43bdcabd3feaca3c51c57eec5d4cda7eed5c909abd14ee820f3",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "190c6e681635f2e64629a773902b9ebb798b1cd9a3def1d98b7f4ffcbccdeb4d",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "04f04de087f30e7bfb8db9b211dface719a363d81cdabee46068809f81af10f6",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "008f4cdcf319a56ac380a33716929390dccddeaef91afd5a8aeb23ee3a62e352",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx",
+      "baselineSha256": "c990d6d388da8ef4bb5c7e428ad32be0445e1a0ad595f7c6d34ca3448190910e",
+      "currentSha256": "02018ae3be35d5a0d9b04f199ab0eb62d64b4fd04dc29ca41a282bc5aed01285",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "fd035a43c81cc64a3f60f54a1ac4323563281d297dcd1511368ffcedd9461c52",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "baselineSha256": "ba818980314d614c0d500c5447458957c65f3412fcc03508cea0b832c2d170d8",
+      "currentSha256": "20f513847d0fc76b5b9d0b18e19e76caf2ecc12800c46a0b374d6cc06933dbe3",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+      "baselineSha256": "7a30937b1ba0250e37614a74e3ae8ed45c2a368c06cd3926105095b652331a1e",
+      "currentSha256": "b3589640bb669e25c47c1887f008e152b3a5724b87e08250fea3e2b2a96757a8",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "4c47b0c73025585b9d356feb1ea0f909c923d125fa5b05d23ad6e3ebd17f3694",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "baselineSha256": "b1743bd615824e3c4e72baba51530686ed63b41666641a2b9d2b863885c6521f",
+      "currentSha256": "ef90bcc3cf094179e9e3a49e1456bfc4742fdb3011200e994a4286b4a06f281d",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+      "baselineSha256": "488250adb3a41134134ca740048ec84c344ff24226ee81d43fdc3b03b40627d8",
+      "currentSha256": "deda023aa6e0d2cf9480bd5545b078fb6168149bce9503868683118bf397c99c",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "baselineSha256": "5d10332580f5bb2056693ae84c3a1c5a008ec5cc437bb177446fecfa182367a6",
+      "currentSha256": "6a225b44348302321da7b90b2b3f0737941885d1fc7bb4fcb1301b88c0169600",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "baselineSha256": "21ea8af85a615ef986a0aced518f9ede5b0e555b4d31c4571f661e91fa1c901f",
+      "currentSha256": "c1772db24a986873ab16bf3b377ee02f980a82aed71e6021a996cc0a0a317b27",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "baselineSha256": "35c9ee114826d25136d8601ffbc8cb2bf434f036260bc8901b6595aacda96740",
+      "currentSha256": "46bcbbb18017931cb78bf2586b0b4943a28a268fc07712e6524c936bad02536d",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "baselineSha256": "03ea3a55c00d1eda6b3b5ce8ffb352a69e9319364914c23ac9d71d9e586c5b1c",
+      "currentSha256": "b9b59d8b8ea56dbebac5887f00cb61c026b4e8e751eab46c4c9570299630117f",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "baselineSha256": "55482135def9f1f0eeb6339631e6af894d75443c4dc9fc63be935422717ff103",
+      "currentSha256": "b75111b599c5ac1a97ed60ab2d1748d278a1a5bc6a9c6d8f28722fd9abed2691",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "baselineSha256": "d4b7405d9e699f4c739513a7a615bc918a99be14667a776b026f7d319888ad0c",
+      "currentSha256": "0f7302d4ae1c4b6e9b7717dc3a459594b09e6d66325a16736c099f4bc6ffbb45",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "baselineSha256": "09aac4f84138aa9af903fce1a6ae8a79b63d387af59e6bb3987e8c027dc2d915",
+      "currentSha256": "e31782812fd643ed7474c61397a90d9e8f50f9a4a964e831c167b657edc8a7d0",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "baselineSha256": "731bb2933ada2f532514f6429d6511796b0726560dc101ef3937b2ce9fe299be",
+      "currentSha256": "7e5da4e69f9664e5ed35219ee45d3988333eea1458cae0b2f46f49f32a26fd94",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "baselineSha256": "810ed31d2b9ef7a0b1817141fcb427d4d8ee559f33aed7627d88cd3c8a353512",
+      "currentSha256": "aa35b893a53a347dcdb134802292d07c7fd8edea24fb6dc928d1281a98e435da",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD",
+        "FRONTEND_ARCHITECTURE"
+      ],
+      "reason": "CR05 approved typed-client and UI correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "contracts/openapi/components/organization/store.schemas.yaml",
+      "baselineSha256": "5225d3df28a101a3a12b9c1cda0ad099ef7b43dd9501aed0c8f140f87a75c981",
+      "currentSha256": "992ebd0d90509fc435276b5142f3c3b00347865b5ec8d16d2b277a5720686363",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "OPENAPI_CONTRACTS",
+        "EDGE_CODEGEN"
+      ],
+      "reason": "CR05 approved contract correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "baselineSha256": "b6e81a345e50ea78c733ece7f889b10757e815f4ddb0ef7a7fb2f23ee97ab282",
+      "currentSha256": "66928db55fdee46561b8a73a5cdd91ae498594b3072c864f0b4d683e55d61b37",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "OPENAPI_CONTRACTS",
+        "EDGE_CODEGEN"
+      ],
+      "reason": "CR05 approved contract correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml",
+      "baselineSha256": "8f225b262251639ef0dd76cb7e2646be89eca194d901db802f0671bfe12c2a6b",
+      "currentSha256": "66cd63b42c041c931387c6ca6e0c0607b9ce7cadc0fef29c68c56a6e846a046a",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "OPENAPI_CONTRACTS",
+        "EDGE_CODEGEN"
+      ],
+      "reason": "CR05 approved contract correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "contracts/openapi/edge.openapi.yaml",
+      "baselineSha256": "9f42c755d1b273d0e232e0c7689ee5e53d9ac42ef00ca9730cae982fa9809c59",
+      "currentSha256": "f8e87c2cb4e282cbd551c1ac38c4d13ead88c9fda4eb39493d12d09aaf800135",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "OPENAPI_CONTRACTS",
+        "EDGE_CODEGEN"
+      ],
+      "reason": "CR05 approved contract correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "contracts/openapi/paths/platform-admin/role-management.paths.yaml",
+      "baselineSha256": "033eb15fc5f3866b6884b8dcbac4769d882443cd68d8ccb3cd5ce22e1677edd7",
+      "currentSha256": "a224be63e990bfba651f6486d6c0bdd67edbe3ad998b663bd29f8afc3234519e",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "OPENAPI_CONTRACTS",
+        "EDGE_CODEGEN"
+      ],
+      "reason": "CR05 approved contract correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "baselineSha256": "d87470ad3b7b41dcf89391a3af4563e837b6719f51d36ee53e6c65f78ffc4f6b",
+      "currentSha256": "1cb3a5cab92aa2c36ca9f0ee2a5a0405af0693dbd12ed8d51469b0d959bd966f",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "SOURCE_COMPLIANCE_MAPPING"
+      ],
+      "reason": "The mapping was mechanically rebased for the corrected compliance control, but the original CR05 baseline-to-current transition lacks a contemporaneous client command snapshot."
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr05-owner-scope-baseline-addendum.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "240106abccd09e999717de695030d1561d1a4412a5f1e3c3a07a758ecfeffc9b",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "PACKAGE_SOURCE_AND_DESIGN_SCAN"
+      ],
+      "reason": "The approved CR05 evidence or design transition predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr05-source-compliance-disposition.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "d54a3c9d8968f7040973ca4c394cf69949d6148bad970dfef4ee6c39c539e0a7",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "PACKAGE_SOURCE_AND_DESIGN_SCAN"
+      ],
+      "reason": "The approved CR05 evidence or design transition predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "baselineSha256": "8a94ba7beb63b947a75ce9f1396baa9a1a3762c77f4f3878320c29d9abaae32c",
+      "currentSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "PACKAGE_SOURCE_AND_DESIGN_SCAN"
+      ],
+      "reason": "The approved CR05 evidence or design transition predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "8ccf35cb8493704368e9941562e8c1df20476f86c789f691614ebd8f6d40aa43",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "BACKEND_COMPILE"
+      ],
+      "reason": "CR05 approved authorization-catalog correction predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "project-memory/index.json",
+      "baselineSha256": "84e9f7aa55f196ecc4c796ac7f348429b9ef23bf3cc0e238a5cba32ca49b0db6",
+      "currentSha256": "ab8289d2a7980ccda8a0eeeccd0983b9640cf2a5198c1f60c2b4054bc5de8269",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "PROJECT_MEMORY"
+      ],
+      "reason": "The CR05 memory index regeneration predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "project-memory/index.md",
+      "baselineSha256": "2c07f2e747f147ed18d0bad7af8aedfa58cc7a1c7ea391e7512dd855ada9f708",
+      "currentSha256": "7b23fa36286900f8d83e892cbc826796d5504fa3406da723456dde52bffbb650",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "PROJECT_MEMORY"
+      ],
+      "reason": "The CR05 memory index regeneration predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    },
+    {
+      "path": "yarn.lock",
+      "baselineSha256": "6a39cb09190ad24f8792fcff8433bb54d872948b22b47dc383d848a8082a1a05",
+      "currentSha256": "b01cd297ab0dc13f65ed92200fa06ff1489c7729f1a85d33caf16bf78839ae72",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": [
+        "FRONTEND_TYPECHECK_AND_BUILD"
+      ],
+      "reason": "The deterministic dependency-lock transition predated recognition of the Desktop functions.exec command event, so no contemporaneous command snapshot exists."
+    }
+  ],
+  "nonClaims": [
+    "No entry asserts that PreToolUse or PostToolUse ran at the historical write time.",
+    "No entry converts a historical recovery into a normal hook receipt.",
+    "Future command writes remain subject to the corrected functions.exec event recognition and a fresh client canary."
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U08",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "fe675190bc3c6671de8f34c77f2f0e4d19cf6505cb71511f54d795c4100298fd",
+  "unitId": "RM1-U08",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/frontend-architecture",
+    "scripts/check/foundation-standard-actions"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/frontend-architecture",
+    "scripts/check/foundation-standard-actions"
+  ],
+  "requiredControlRuleIds": [
+    "P-E4",
+    "P-Q2",
+    "P-Q3",
+    "P-Q4",
+    "P-Q9",
+    "P-R1",
+    "P-R2",
+    "P-R3",
+    "P-R4",
+    "P-R5",
+    "P-R6",
+    "P-X3",
+    "ST-9"
+  ],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_SOURCE_AND_FOCUSED_FRONTEND_RECOVERY_PROOF",
+  "serialPredecessor": {
+    "packageId": "RM1-U07",
+    "exitPath": "doc/evidence/platform/rm1/p4/rm1-u07-package-exit.json",
+    "exitSha256": "fc4872e54b8b0284d4eed2d2a7857b2c038957828dbbf09ed58c33bba7906cb0"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p5/rm1-u08-implementation-amendment.md",
+    "sha256": "b98e86228f9b6dd7e32310b82ed3c7ec338d1a4dc4a3e624cd9dde5711e94d60"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 P5 after P4 Claude round-2 GO. This package is restricted to approved frontend reliability and consistency work: foundation-first lifecycle/async/error primitives, app-owned RTK/session/401 recovery, page retention and write-readback convergence, lint coverage, focused source and test evidence. It excludes new Journey/UI semantics, backend/contracts/data, DEV, seed and reset."
+}

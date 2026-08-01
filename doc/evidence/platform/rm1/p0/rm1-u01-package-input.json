@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U01",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3",
+  "unitId": "RM1-U01",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/database-operation-budget",
+    "scripts/check/frontend-architecture",
+    "scripts/check/logging-boundaries",
+    "scripts/check/security-boundaries"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/affected-l2"
+  ],
+  "historicalPromptIntakeRecovery": {
+    "path": "doc/evidence/platform/rm1/p0/rm1-u01-pre-admission-linkage-recovery.json",
+    "sha256": "f632715887f3bb6b369b7bc4356fbad35de908b9177f0caf2b52ecbbfd555cec"
+  },
+  "serialPredecessor": {
+    "packageId": "R5-CR-U06",
+    "exitPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-package-exit.json"
+  },
+  "historicalDesignBindingImmutable": true,
+  "historicalDesign": {
+    "planPath": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+    "planSha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c",
+    "manifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+    "manifestSha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3"
+  },
+  "requiredControlRuleIds": [
+    "P-C1",
+    "P-C2",
+    "P-C3",
+    "P-C5",
+    "P-X2",
+    "P-X5",
+    "P-X6",
+    "ST-7"
+  ],
+  "authorizationBoundary": "Dexter authorized the whole RM1 implementation. This input authorizes only RM1-U01 P0 execution and does not create an exit or authorize a successor package."
+}

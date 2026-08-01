@@ -1,0 +1,997 @@
+{
+  "schemaVersion": 1,
+  "kind": "ui-ia-implementation-baseline",
+  "packageId": "RM1P6-U03",
+  "status": "PASS",
+  "scope": "P6-3 approved operations/public prewrite consumer baseline for login, public invitation and recovery, authenticated shell/context, IA04 head-company brand authorization, IA05 user/invitation/password/home surfaces, and their admitted physical consumers only; this is not final UI conformance or business evidence.",
+  "sourceBindings": [
+    {
+      "path": "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+      "sha256": "7e2ae73f810b8a7ad75a8f0a8800f873b5ea0c9f582648b8002d5258f6bb3a67"
+    },
+    {
+      "path": "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+      "sha256": "8d3821c8deaa5a7c0fa460e570b96247842d305daf387d6c59298d2fea442813"
+    },
+    {
+      "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+      "sha256": "1cdc8034723f6630a86851cd5fcc058fc84d7969636499cce6fac3b31c4b49a5"
+    },
+    {
+      "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+      "sha256": "7f2a8f2447eb7b0e40f2556b5f4361e68197e74713c5f5220e8dace7742ad960"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+      "sha256": "7687ed3d7e4d0bddeaac7e5781eaa19cff58be1f379191be1b0f89fa115717a7"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+      "sha256": "6d728e051c2464b2de1f7361b8257a92ec4dfb838da4b26b77eba81b163b089f"
+    },
+    {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "sha256": "32fd89d32b95f4386376a454f5d1fdec3cf0b3b519eb671e0a2f167531882a72"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md",
+      "sha256": "a8f95f69f4243f7f90eb4c988cd63cde8c7340d118f40ab61dbec22d030425a6"
+    }
+  ],
+  "consumerBindings": [
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "screenIds": [
+        "IA01-OPERATIONS-LOGIN"
+      ],
+      "businessTask": "运营用户从已定位的集团空间入口读取 owner-approved 品牌信息后，使用密码或本人手机号验证码登录，或进入同一空间的公开自助恢复。",
+      "actorAndScenario": "未认证的商场或店铺运营用户，从所属集团空间的 operations route 进入。",
+      "entryAndSurface": "独立 LoginFormPage；路由参数只定位 owner login entry，不显示也不输入集团空间编码。",
+      "controlType": "owner branding header、密码/验证码 Tabs、凭据字段、发送/提交按钮与忘记密码链接。",
+      "dataSourceAndCascade": "getOperationsWorkspaceLoginEntry 提供名称、运营标题、批准 logoUrl、状态；路由/entry 变化清除秘密与 OTP 状态。",
+      "validationAndError": "入口 loading/not-found/disabled/failed 分离；登录失败保留非秘密字段并清除秘密；未知结果先读取 owner entry。",
+      "stateAndPermission": "URL 和 login entry 都不授权；workspace-IAM 在密码或 OTP operation 中重新核验凭据和会话。",
+      "navigationAndRefresh": "成功 owner session entry 后进入任职选择或 shell；忘记密码只进入相同 groupWorkspaceKey 的公开恢复。",
+      "accessibilityAndTestId": "LoginFormPage 语义 label 与 operations-login-* 稳定 test-id。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "screenIds": [
+        "IA02-OPERATIONS-AUTHENTICATED-SHELL",
+        "IA02-OPERATIONS-DATA-SCOPE-SIDER-TRIGGER"
+      ],
+      "businessTask": "已认证运营用户在 owner-confirmed 任职与数据范围下导航、切换上下文、修改本人密码或退出。",
+      "actorAndScenario": "已通过 workspace-IAM 登录并取得 session entry 的运营用户。",
+      "entryAndSurface": "operations shell、role/data-scope selector 和已品牌化公开 route host；不把公开入口混入已登录 session。",
+      "controlType": "catalog 菜单、数据范围入口、用户菜单、Drawer host、受 contextVersion 控制的内容边界。",
+      "dataSourceAndCascade": "WorkspaceSessionEntry 是唯一 assignment/data-node truth；每次 owner contextVersion 变化重置页面局部视图与 query cache generation。",
+      "validationAndError": "loading、无可用任职、未授权 route 与 session 失效分别处理；页面不从 assignment/pageKey 推导 scope 或 authority。",
+      "stateAndPermission": "assignment/data node 仅作为 owner-validated query context；identityKey 保持 DORMANT，不被 session assignment 占用。",
+      "navigationAndRefresh": "登录/切换后的 owner entry 决定可访问首页；contextVersion 改变 remount content，退出清除 transport state。",
+      "accessibilityAndTestId": "shell/selector/route host 使用稳定 test-id 与可访问菜单、按钮、状态文案。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleContextSelector.tsx",
+      "screenIds": [
+        "IA02-OPERATIONS-SHELL-HEADER",
+        "IA02-OPERATIONS-INITIAL-ROLE-SELECTION"
+      ],
+      "businessTask": "运营用户首次选择本次任职，或在已进入 shell 后直接切换到另一项 owner-approved 任职并进入其首页。",
+      "actorAndScenario": "已认证且由 workspace-IAM 返回 WorkspaceSessionEntry 的运营用户；首次 mode=SELECT 与 confirmed shell 使用不同表面。",
+      "entryAndSurface": "首次为独立内容页；shell 为 Header 顶部单选 Select；候选少于两个时不制造二次操作。",
+      "controlType": "可用任职 Select、进入运营管理后台按钮、当前任职 Select、空态、统一失败提示。",
+      "dataSourceAndCascade": "候选、当前选中、首页和准入均来自 entry；成功 owner entry 替换旧菜单、范围、局部页面状态与 contextVersion generation。",
+      "validationAndError": "首次需选择才可进入；header 选项即时提交；失败回到最后确认 entry，不显示 assignment ref、version 或 raw Problem。",
+      "stateAndPermission": "只显示 owner candidates；submit/loading 或 dirty guard 禁重复；owner 重验 candidate、contextVersion 和 page access。",
+      "navigationAndRefresh": "首次/切换成功一律导航 owner entry 的首个可访问首页；不保留旧页推断新任职权限。",
+      "accessibilityAndTestId": "Select、进入、header context 与空/失败状态均有稳定 operations-role-context test-id 与 Form label。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx",
+      "screenIds": [
+        "IA02-OPERATIONS-DATA-SCOPE"
+      ],
+      "businessTask": "已选任职的运营用户在当前功能页声明的层级内选择可查看范围，而不改变任职或页面准入。",
+      "actorAndScenario": "已认证、已选任职，且当前 catalog page 的 requiredDataNodeType 不是 NONE 的运营用户。",
+      "entryAndSurface": "左侧菜单底部摘要入口打开 right-bottom Popover；按 page 所需最终层级展示 owner-backed 大区、项目、门店选择器。",
+      "controlType": "范围摘要按钮、Popover 标题/说明、可搜索大区/项目/门店 Select、空态、失败提示。",
+      "dataSourceAndCascade": "候选只由 entry.dataNodeCandidates 提供；大区变更清项目/门店，项目变更清门店；最终层级选择即 owner submit 并以完整 entry 替换。",
+      "validationAndError": "无 required type 不展示入口；未选上游禁用下游并使用 IA placeholder；失败保留最后确认范围和 Popover，不显示 dataNodeRef/type/version 或 raw Problem。",
+      "stateAndPermission": "只提交当前页要求层级的 owner candidate；pending/overlay/dirty guard 禁重复；owner 重验 candidate、层级、contextVersion 与范围。",
+      "navigationAndRefresh": "成功关闭 Popover，以新 contextVersion 重新挂载范围相关页面读取；不改变任职、菜单或 page access。",
+      "accessibilityAndTestId": "摘要、Popover 和每级 Select 使用稳定 operations-data-scope test-id、visible label 与 search semantics。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+      "screenIds": [
+        "IA05-RECOVERY-VERIFY"
+      ],
+      "businessTask": "无法登录的运营用户在已品牌化入口验证登录名、本人手机号和验证码。",
+      "actorAndScenario": "未认证运营用户；groupWorkspaceKey 只由路由定位，不能额外输入或选择。",
+      "entryAndSurface": "从该空间 LoginFormPage 的忘记密码链接进入的公开独立验证页。",
+      "controlType": "品牌 header、步骤、登录名/手机号/验证码、发送、下一步和返回登录。",
+      "dataSourceAndCascade": "owner login entry/start recovery readback 提供品牌；登录名或手机号变化清空验证码和发送状态。",
+      "validationAndError": "统一反枚举提示；验证码失败清空验证码而保留非敏感输入；不显示 flow/grant/诊断。",
+      "stateAndPermission": "public flow 不创建 session；workspace-IAM 重新核验账号、手机号、OTP、flow、状态和限频。",
+      "navigationAndRefresh": "验证成功仅进入设置密码；返回同一空间登录；未知结果按 owner flow readback 处理。",
+      "accessibilityAndTestId": "字段、步骤、发送/下一步/返回有稳定 test-id 与 label。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.tsx",
+      "screenIds": [
+        "IA05-RECOVERY-PASSWORD"
+      ],
+      "businessTask": "已完成本人验证的公开运营用户设置新密码。",
+      "actorAndScenario": "同一 owner recovery flow 内已验证 OTP 的未认证用户。",
+      "entryAndSurface": "验证成功后的公开独立设置密码页。",
+      "controlType": "品牌 header、步骤、新密码/确认新密码、上一步和提交。",
+      "dataSourceAndCascade": "同一 owner-approved recovery branding 与 cookie-bound completion grant；新密码变更重验确认。",
+      "validationAndError": "不一致不可提交；离开、失败或成功清除秘密；不显示 grant 或 session。",
+      "stateAndPermission": "workspace-IAM complete operation 重新核验 flow、grant、账号状态、密码规则与一次性使用。",
+      "navigationAndRefresh": "完成后只到公开完成页；上一步不伪造完成资格。",
+      "accessibilityAndTestId": "密码字段和步骤/导航按钮有稳定 test-id 与 label。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryCompletePage.tsx",
+      "screenIds": [
+        "IA05-RECOVERY-COMPLETE"
+      ],
+      "businessTask": "公开恢复完成后明确返回同一运营登录入口。",
+      "actorAndScenario": "刚通过 owner 完成密码恢复的未认证运营用户。",
+      "entryAndSurface": "公开恢复完成页，不进入 operations shell。",
+      "controlType": "品牌 header、完成说明和返回登录按钮。",
+      "dataSourceAndCascade": "仅消费 owner-approved branding；没有可编辑或可推导 session 数据。",
+      "validationAndError": "缺失或失效 flow 显示安全恢复状态，不冒充成功。",
+      "stateAndPermission": "完成不创建 session，其他会话失效为 owner 结果而不展示细节。",
+      "navigationAndRefresh": "返回同一 groupWorkspaceKey 的已品牌化登录页。",
+      "accessibilityAndTestId": "语义完成消息和返回登录按钮使用稳定 test-id。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "screenIds": [
+        "IA01-PUBLIC-INVITATION"
+      ],
+      "businessTask": "受邀人在匿名公开链接中读取 owner invitation view，核对任职事实并选择同意或退出。",
+      "actorAndScenario": "收到运营任职邀请的未认证个人；URL 仅定位 owner invitation，绝不建立运营 session。",
+      "entryAndSurface": "公开邀请独立页面的 owner-backed 邀请详情步骤，四步都保持同一品牌区。",
+      "controlType": "品牌 header、步骤、任职机构、角色、脱敏手机号、有效期、同意与退出。",
+      "dataSourceAndCascade": "getPublicInvitationView 是唯一可见事实来源；route/token 变化重新读取并清除 grant、OTP、秘密草稿和局部 stage。",
+      "validationAndError": "失效、拒绝和读取失败使用安全业务提示；不显示 raw problem、token、账号匹配或内部标识。",
+      "stateAndPermission": "accept command 由 invitation owner 复核有效期和状态，页面不自行创建任职或 session。",
+      "navigationAndRefresh": "同意后只进入当前 invitation 的 OTP step；刷新重建 owner view；退出回同 groupWorkspaceKey 登录。",
+      "accessibilityAndTestId": "品牌、邀请事实、同意和退出均有语义标签与稳定 public-invitation test-id。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationOtpStep.tsx",
+      "screenIds": [
+        "IA01-PUBLIC-INVITATION-OTP"
+      ],
+      "businessTask": "已同意邀请的受邀人以本人手机号与 OTP 证明可接受该邀请。",
+      "actorAndScenario": "当前匿名 invitation owner flow 内的受邀人；没有 authenticated shell/session。",
+      "entryAndSurface": "公开邀请页面的独立 OTP step，承接 invitation entry 的 owner view 与同一品牌 header。",
+      "controlType": "手机号、验证码、发送、验证继续、返回、owner returned test OTP 提示。",
+      "dataSourceAndCascade": "手机号为用户输入；改变手机号清验证码、发送状态和 debug code；send 成功后仅启用当前手机号的验证。",
+      "validationAndError": "格式通过才发送；验证失败清验证码并保留非敏感手机号；不枚举邀请或手机号匹配，也不显示 raw problem。",
+      "stateAndPermission": "pending/overlay lock 禁重复；owner 重验 invitation、手机号、OTP、有效期和下一步 readiness。",
+      "navigationAndRefresh": "验证成功由 owner nextStep 决定 credentials 或 completion；返回恢复 invitation detail。",
+      "accessibilityAndTestId": "输入、发送、继续、返回和 test OTP 提示有稳定 public-invitation test-id 与 label。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationCredentialsStep.tsx",
+      "screenIds": [
+        "IA01-PUBLIC-INVITATION-CREDENTIALS"
+      ],
+      "businessTask": "在 owner readiness 要求时补齐姓名、登录名和密码，再继续同一公开邀请流程。",
+      "actorAndScenario": "已完成邀请 OTP、仍处于匿名 invitation flow 的受邀人。",
+      "entryAndSurface": "公开邀请页面的独立 credentials step，仅在 owner nextStep 要求资料时出现。",
+      "controlType": "姓名、登录名、Password、返回和保存继续。",
+      "dataSourceAndCascade": "所有字段由用户输入；离开、授权失效、失败或成功清密码；不由页面推导 readiness 或 account existence。",
+      "validationAndError": "本地必填/格式、密码长度；提交失败保留非敏感字段且清密码；不显示 verification grant 或 raw problem。",
+      "stateAndPermission": "pending/overlay lock 禁重复；owner 原子重验 readiness、grant、字段、唯一性和密码规则。",
+      "navigationAndRefresh": "save 后只遵守 owner nextStep；返回 OTP 不伪造验证资格。",
+      "accessibilityAndTestId": "三项字段、保存、返回有稳定 public-invitation test-id 与 Password 语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationCompleteStep.tsx",
+      "screenIds": [
+        "IA01-PUBLIC-INVITATION-COMPLETE"
+      ],
+      "businessTask": "确认加入并在完成后返回同一运营管理后台登录入口。",
+      "actorAndScenario": "已准备完成 invitation owner flow 的匿名受邀人；完成前不创建 session。",
+      "entryAndSurface": "公开邀请页面的独立 final step，保留同一 owner branding 与步骤。",
+      "controlType": "完成说明、返回、完成加入。",
+      "dataSourceAndCascade": "品牌和完成 readiness 来自 owner view/nextStep；没有 token、grant、session 或 client-derived role truth。",
+      "validationAndError": "完成失败展示安全业务提示，不冒充成功，不显示 raw problem 或内部状态。",
+      "stateAndPermission": "pending/overlay lock 禁重复；owner complete 是唯一创建任职的命令。",
+      "navigationAndRefresh": "owner complete 成功后只到同 groupWorkspaceKey 登录，不进入 authenticated shell。",
+      "accessibilityAndTestId": "完成和返回操作有稳定 public-invitation test-id 与语义结果。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "screenIds": [
+        "IA04-STORE-PAGE"
+      ],
+      "businessTask": "在门店固定目标中按名称、编码、项目或状态定位门店，并从名称链接进入 owner detail 或发起新建。",
+      "actorAndScenario": "具有门店维护资格的运营管理后台管理员，在门店独立内容页中维护门店主数据。",
+      "entryAndSurface": "门店管理内容页；标题、新建按钮、筛选区和名称链接列表处于同一固定页面，不新增操作列。",
+      "controlType": "门店名称/编码/项目/状态筛选、查询/重置、新建门店按钮，以及门店名称链接列表与分页。",
+      "dataSourceAndCascade": "organization store list/candidates/create/detail/update/status generated operation 是唯一事实来源；项目切换清页码并重查，名称链接先开 owner detail。",
+      "validationAndError": "筛选失败、列表空态和详情失败分开处理；不做浏览器本地门店过滤，不暴露 raw Problem 或内部主数据标识。",
+      "stateAndPermission": "页面只消费 owner-confirmed capability、固定 page target 和上下文；筛选、新建、详情、编辑与状态变更均由 owner 重验范围、对象和版本。",
+      "navigationAndRefresh": "查询/重置只影响当前门店列表；名称链接进入 detail Drawer；写后以 owner readback 刷新当前列表和详情。",
+      "accessibilityAndTestId": "标题、新建、筛选控件、查询/重置和名称链接具有稳定 test-id 与可访问标签。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "screenIds": [
+        "IA04-CONTRACT-PAGE"
+      ],
+      "businessTask": "先定位项目，再按合同编号、门店、分期、经营租户、状态和日期定位合同，并从编号链接进入 owner detail 或发起新建。",
+      "actorAndScenario": "具有合同维护资格的运营管理后台管理员，在门店合同独立内容页中维护合同主数据。",
+      "entryAndSurface": "门店合同管理内容页；标题、新建按钮、筛选区和合同编号链接列表处于同一固定页面，不新增操作列。",
+      "controlType": "项目/合同编号/门店/分期/经营租户/状态/起止日期筛选、查询/重置、新建合同按钮，以及合同编号链接列表与分页。",
+      "dataSourceAndCascade": "contract list/candidates/create/detail/update/invalidate generated operation 是唯一事实来源；未选项目不发列表请求，改项目清门店和页码后重取候选。",
+      "validationAndError": "筛选失败、列表空态和详情失败分开处理；不在浏览器拼接合同事实，不暴露 raw Problem 或内部标识。",
+      "stateAndPermission": "页面只消费 owner-confirmed capability、固定 page target 和上下文；筛选、新建、详情、编辑与失效均由 owner 重验项目范围、对象和版本。",
+      "navigationAndRefresh": "查询/重置只影响当前合同列表；合同编号链接进入 detail Drawer；写后以 owner readback 刷新当前列表和详情。",
+      "accessibilityAndTestId": "标题、新建、项目与筛选控件、查询/重置和合同编号链接具有稳定 test-id 与可访问标签。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/HeadCompanyBrandAuthorizationDrawer.tsx",
+      "screenIds": [
+        "IA04-HEAD-COMPANY-BRANDS"
+      ],
+      "businessTask": "查看 owner-confirmed 当前授权品牌、搜索一个 enabled 候选并即时添加，或逐行即时移除。",
+      "actorAndScenario": "从已选总公司详情进入且持有总公司品牌授权 capability 的运营管理后台管理员。",
+      "entryAndSurface": "总公司 detail 的 catalog action 打开 fixed-footer Drawer；不是列表操作列、不是第二管理页。",
+      "controlType": "searchable Select、一个添加按钮、当前授权行及每行一个移除按钮、关闭按钮。",
+      "dataSourceAndCascade": "总公司 latest owner detail；owner-bounded enabled brand candidate search；每次写后重新读取 owner detail。",
+      "validationAndError": "没有候选不可添加；known in-use 409 只显示固定安全文案并保留该行；未知结果先 owner membership readback，必要时同 key 最多重放一次。",
+      "stateAndPermission": "页面不推导 membership/permission；add/remove 均由 owner 重验总公司、品牌、引用关系与 command receipt。",
+      "navigationAndRefresh": "204 后以 generated detail readback 替换可见授权真相；关闭回总公司详情。",
+      "accessibilityAndTestId": "候选、添加和每行移除均有稳定 test-id，Select 提供候选品牌 aria-label。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+      "screenIds": [
+        "IA05-GROUP-USERS",
+        "IA05-REGION-USERS",
+        "IA05-PROJECT-USERS",
+        "IA05-HEAD-COMPANY-USERS",
+        "IA05-STORE-USERS"
+      ],
+      "businessTask": "在当前固定目标中按筛选条件查找一条任职用户，并从姓名入口进入详情核对或后续撤销。",
+      "actorAndScenario": "具有对应节点用户管理资格的运营用户，在集团/大区/项目/总公司/门店用户菜单下管理当前目标内的任职用户。",
+      "entryAndSurface": "用户管理内容页中的“用户”Tab；目标类型由 pageDesignKey 绑定的 generated operation/capability 固定，不由 assignment、URL 或页面字符串推导。",
+      "controlType": "姓名/手机号/业务角色/状态筛选、查询/重置按钮、姓名链接列表，以及分页内容表面。",
+      "dataSourceAndCascade": "五组 target-specific user page/detail/revoke operation 是唯一数据来源；筛选条件和分页随 owner query arg 生效，target 切换或 contextVersion 变化清空局部状态并重读。",
+      "validationAndError": "列表 loading/empty/error 与详情失败分开；筛选不在浏览器本地拼接用户事实，失败不暴露 raw Problem 或内部任职标识。",
+      "stateAndPermission": "页面只消费 owner-confirmed target、scope 和 capability；用户列表、详情和撤销均由 owner 重新校验当前目标、任职状态、revision 与上下文版本。",
+      "navigationAndRefresh": "查询/重置只影响当前 target 的列表；点击姓名打开独立详情 Drawer；撤销成功后以 owner readback 刷新详情与列表，不新增第二用户管理页。",
+      "accessibilityAndTestId": "筛选控件、查询/重置、姓名链接、列表根和分页具备稳定 test-id 与可访问表单/表格语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserDetailDrawer.tsx",
+      "screenIds": [
+        "IA05-USER-DETAIL"
+      ],
+      "businessTask": "在撤销前核对用户、任职机构和业务角色，并从独立详情面决定是否进入撤销确认。",
+      "actorAndScenario": "具有当前目标用户管理资格的运营用户，从五类用户页的姓名链接进入。",
+      "entryAndSurface": "独立 Detail Drawer；标题必须是“<集团/大区/项目/总公司/门店>用户任职详情”，不是通用成员详情或行内展开。",
+      "controlType": "只读事实字段、稳定详情布局、撤销任职按钮和操作历史入口。",
+      "dataSourceAndCascade": "只消费对应 target-specific user detail readback；Drawer 不凭列表残留字段补齐任职事实，撤销按钮只基于当前详情 readback 可见。",
+      "validationAndError": "详情失败保持当前列表不变；不显示内部 assignment id、service node id 或 raw owner detail；只有 owner readback 可执行时才展示撤销入口。",
+      "stateAndPermission": "详情不授予新权限；撤销入口仍以 capability 和 owner 当前状态共同决定，overlay/dirty lock 防止并发关闭或重复打开。",
+      "navigationAndRefresh": "关闭回当前用户列表；点击撤销只打开独立确认 Modal，不在 Drawer 内直接执行 mutation。",
+      "accessibilityAndTestId": "Drawer 根、字段标签、撤销按钮和历史入口具备稳定 test-id 与 Drawer/Button 语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserRevokeModal.tsx",
+      "screenIds": [
+        "IA05-USER-REVOKE"
+      ],
+      "businessTask": "明确确认撤销某人在当前任职机构上的一条任职，避免误操作。",
+      "actorAndScenario": "具有当前目标用户管理资格的运营用户，从用户任职详情 Drawer 的“撤销任职”进入。",
+      "entryAndSurface": "独立确认 Modal；不是 detail 中的行内小按钮直接提交。",
+      "controlType": "确认文案、影响说明、取消/确认按钮与受控提交态。",
+      "dataSourceAndCascade": "确认文案和 expectedVersion 只来自当前详情中被选中的 assignment readback；提交调用对应 target-specific revoke operation，成功后回写最新 owner user detail。",
+      "validationAndError": "已撤销/版本冲突/上下文漂移都由 owner 重验并安全失败；失败保留详情上下文，不显示内部 capability 或 assignment 标识。",
+      "stateAndPermission": "Modal 不从页面推导目标；撤销始终由 owner 对 assignment、目标范围、revision、actor 和 contextVersion 二次确认。",
+      "navigationAndRefresh": "确认成功后关闭 Modal、刷新详情并让列表同步最新 readback；取消只关闭 Modal，不改变当前详情。",
+      "accessibilityAndTestId": "Modal 根、确认/取消按钮和确认文案具备稳定 test-id 与对话框语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
+      "screenIds": [
+        "IA01-USER-INVITATION-ACTIONS"
+      ],
+      "businessTask": "在当前固定目标下查找、查看并进入发出邀请/取消邀请/重新发送邀请的后续表面。",
+      "actorAndScenario": "具有当前机构用户管理权限的运营用户，在五类用户管理内容页的“邀请”Tab 中管理任职邀请。",
+      "entryAndSurface": "用户管理内容页中的独立“邀请”Tab；列表只承载筛选、详情入口和发出邀请入口，不承载行内 mutation。",
+      "controlType": "邀请手机号/任职机构/业务角色/状态/有效期筛选、查询/重置、发出邀请按钮，以及邀请手机号链接列表。",
+      "dataSourceAndCascade": "五组 target-specific invitation page/candidate/detail/action operations 是唯一真相；target 由 capability 绑定，筛选/分页/候选都通过 generated query arg 进入 owner。",
+      "validationAndError": "列表 loading/empty/error 与详情/创建错误分开；不在浏览器本地拼邀请状态、有效期或候选事实，不以内联 mutation 替代 detail→modal 链。",
+      "stateAndPermission": "Tab 不从 assignment/pageKey 推导 target 或 authority；发出邀请、取消和重发都由 owner 当前 readback、capability 和 contextVersion 再次确认。",
+      "navigationAndRefresh": "查询/重置只影响当前 target 的邀请列表；发出邀请打开独立 Create Drawer；邀请手机号打开独立详情 Drawer；动作只经详情再开确认 Modal。",
+      "accessibilityAndTestId": "Tab root、筛选控件、查询/重置、发出邀请按钮、邀请手机号链接和列表根具备稳定 test-id 与可访问表格/表单语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationCreateDrawer.tsx",
+      "screenIds": [
+        "IA01-USER-INVITATION-CREATE-DRAWER"
+      ],
+      "businessTask": "填写邀请手机号、任职机构和业务角色，发出一项任职邀请。",
+      "actorAndScenario": "具有当前机构用户管理权限的运营用户，从邀请 Tab 的“发出邀请”进入。",
+      "entryAndSurface": "独立 Create Drawer；不是列表内嵌表单，也不是复用详情 Drawer。",
+      "controlType": "手机号输入、可搜索任职机构 Select、依赖机构的业务角色多选、取消/发出邀请按钮。",
+      "dataSourceAndCascade": "机构候选与角色候选来自对应 target-specific invitation candidates read；选择或清空机构时立即清空角色；提交时把选中的机构真实绑定到 owner scopeRef。",
+      "validationAndError": "未选机构前角色显示“请先选择任职机构”；候选读取失败或为空分开处理；提交失败只保留非敏感输入并显示固定失败提示，不伪造本地全量角色搜索。",
+      "stateAndPermission": "Drawer 不从页面 key、当前任职或 URL 猜 target；候选读取和 create command 都由 owner 重新校验目标类型、机构 ref、角色 id 与 contextVersion。",
+      "navigationAndRefresh": "创建成功后关闭 Create Drawer 并打开 owner readback 的邀请详情 Drawer；关闭或目标切换清空草稿与候选状态。",
+      "accessibilityAndTestId": "Drawer 根、手机号/机构/角色控件和取消/提交按钮具备稳定 test-id、aria-label 与 searchable Select 语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx",
+      "screenIds": [
+        "IA01-USER-INVITATION-DETAIL-DRAWER"
+      ],
+      "businessTask": "查看一项邀请的状态、有效期、邀请链接和是否仍可执行取消/重新发送。",
+      "actorAndScenario": "具有当前机构用户管理权限的运营用户，从邀请列表的邀请手机号链接进入。",
+      "entryAndSurface": "独立 Detail Drawer；标题固定为“邀请详情”，不是带手机号后缀的二次命名。",
+      "controlType": "只读邀请事实、邀请链接复制区，以及条件性展示的取消邀请/重新发送入口。",
+      "dataSourceAndCascade": "只消费 owner invitation detail/readback 事实；可执行动作由当前详情状态决定，不从列表行状态猜测。",
+      "validationAndError": "只读详情失败不改变当前列表；不展示 invitation id、raw token、revision 或 raw Problem detail；不可执行时只保留只读事实。",
+      "stateAndPermission": "动作按钮显示与否仍由 owner readback 和 capability 共同决定；详情本身不创建本地 mutation 真相。",
+      "navigationAndRefresh": "关闭回邀请 Tab；点击取消/重新发送只打开独立确认 Modal，动作成功后以 owner readback 刷新当前详情与列表。",
+      "accessibilityAndTestId": "Drawer 根、字段标签、复制入口、取消/重新发送按钮具备稳定 test-id 与 Drawer/Button 语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationActionModal.tsx",
+      "screenIds": [
+        "IA01-USER-INVITATION-ACTION-MODAL"
+      ],
+      "businessTask": "明确确认取消邀请或重新发送邀请，避免对尚未完成的邀请误操作。",
+      "actorAndScenario": "具有当前机构用户管理权限的运营用户，从邀请详情 Drawer 的动作按钮进入。",
+      "entryAndSurface": "独立确认 Modal；取消与重发都由详情面再打开，不使用 `Modal.confirm` 即席实现。",
+      "controlType": "条件标题、固定影响说明、返回/确认按钮和受控提交态。",
+      "dataSourceAndCascade": "动作种类、expectedVersion 和当前邀请事实来自详情 readback；提交调用对应 target-specific cancel/reissue operation，成功后回写最新邀请详情。",
+      "validationAndError": "已取消/已完成/版本冲突/上下文漂移都由 owner 重验并安全失败；未知结果不在浏览器重放一组新事实。",
+      "stateAndPermission": "Modal 不自行推导 target 或 invitation status；动作执行始终由 owner 对 invitation、version、actor 和 contextVersion 二次确认。",
+      "navigationAndRefresh": "确认成功后关闭 Modal、刷新详情与列表；返回只关闭 Modal，不重置当前详情。",
+      "accessibilityAndTestId": "Modal 根、返回/确认按钮和标题/说明具备稳定 test-id 与对话框语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleHomeBootstrapPage.tsx",
+      "screenIds": [
+        "IA05-HOME-GROUP",
+        "IA05-HOME-REGION",
+        "IA05-HOME-PROJECT",
+        "IA05-HOME-HEAD-COMPANY",
+        "IA05-HOME-STORE"
+      ],
+      "businessTask": "登录或切换任职后只承接 navigation owner 已批准的 HOME 路由与内容出口，不新增 dashboard、数据卡片或新的业务读取。",
+      "actorAndScenario": "已完成对应节点任职选择的运营用户；Shell、route 和 context 已由 IA02 处理，HOME 只渲染内容出口。",
+      "entryAndSurface": "operations-admin HOME-* page 的内容页 consumer；不重复绘制 Shell、不再次展示首页标题或技术上下文。",
+      "controlType": "content outlet 占位、稳定 test-id，以及仅依赖 pageDesignKey 的 route bootstrap。",
+      "dataSourceAndCascade": "只消费路由注入的 pageDesignKey 与 queryContext，不新增业务 query/command，也不展示 groupWorkspaceKey 或 scopeRef 事实。",
+      "validationAndError": "缺少 pageDesignKey 时安全空态；不引入 dashboard loading/error/retry 协议。",
+      "stateAndPermission": "页面准入仍由 owner navigation readback 决定；HOME 页面不重新实现任职、范围或 capability 逻辑。",
+      "navigationAndRefresh": "role switch 只改变 catalog target；HOME 内容自身不触发新的 owner 导航或业务刷新。",
+      "accessibilityAndTestId": "每个 HOME 页有稳定 role-home-* test-id；不增加额外首页标题、描述卡片或技术字段。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordChangeDrawer.tsx",
+      "screenIds": [
+        "IA05-PASSWORD-DRAWER"
+      ],
+      "businessTask": "已登录运营用户在本人会话内修改当前密码，并在成功后进入重新登录结果面。",
+      "actorAndScenario": "authenticated shell 内通过用户菜单进入的运营用户；只修改本人密码，不进入公开恢复链。",
+      "entryAndSurface": "shell 用户菜单打开的独立 Drawer；不展示会话版本、账号事实或任何秘密回显。",
+      "controlType": "当前密码/新密码/确认新密码、取消、保存、统一安全失败提示（不暴露 owner detail 或 correlation）。",
+      "dataSourceAndCascade": "三个秘密仅来自当前输入；关闭、成功或失败都清空秘密；成功由 parent 打开结果面。",
+      "validationAndError": "确认新密码依赖新密码；owner 重验当前密码、密码规则与预期 session version；失败不暴露 raw detail。",
+      "stateAndPermission": "只调用 changeCurrentWorkspacePassword；pending/overlay lock/drawer dirty guard 禁重复与越权关闭。",
+      "navigationAndRefresh": "成功不直接停留在 drawer，而是进入重新登录结果面；不得复用 public recovery 流程。",
+      "accessibilityAndTestId": "三个密码字段、取消/保存按钮和 drawer root 具有稳定 test-id 与 password autocomplete 语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordChangeResult.tsx",
+      "screenIds": [
+        "IA05-PASSWORD-RESULT"
+      ],
+      "businessTask": "在密码修改成功后明确提示用户使用新密码重新登录继续运营工作。",
+      "actorAndScenario": "刚完成本人改密的已登录运营用户；结果面只承接成功事实，不提供继续留在旧会话的路径。",
+      "entryAndSurface": "由 password drawer 成功后打开的独立结果 Modal。",
+      "controlType": "标题“修改成功”、说明“密码已修改，请使用新密码重新登录。”和“重新登录”按钮。",
+      "dataSourceAndCascade": "只消费成功结果状态；不展示 owner 返回的内部会话/撤销细节。",
+      "validationAndError": "结果面无业务输入；关闭方式受控，只允许重新登录动作完成收口，不提供留在旧会话的关闭路径。",
+      "stateAndPermission": "其他会话失效属于 owner 结果；页面不复用 public recovery 或 local storage state。",
+      "navigationAndRefresh": "点击“重新登录”后退出当前会话并返回所属运营登录页。",
+      "accessibilityAndTestId": "Modal root 和重新登录按钮具有稳定 test-id 与可访问按钮语义。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "screenIds": [
+        "IA04-ORG-TREE"
+      ],
+      "businessTask": "在当前可见组织范围内查看并定位集团、大区或项目，核对详情并从详情上下文发起组织维护。",
+      "actorAndScenario": "具有组织维护权限的运营管理后台用户，在已确认任职和数据范围下维护集团、大区与项目三层组织结构。",
+      "entryAndSurface": "组织架构内容页；从组织架构菜单进入，页面左侧为组织树、右侧为只读详情和上下文动作，不新增列表操作列。",
+      "controlType": "组织树、加载/空态/失败状态、只读详情面板、新建入口、编辑入口和状态确认 Modal。",
+      "dataSourceAndCascade": "organization hierarchy owner readback 是组织树和详情的唯一事实来源；集团→大区→项目保持三层级，选中大区才允许新建项目，详情动作沿当前节点上下文级联。",
+      "validationAndError": "树和详情的加载、无结果、失败分别呈现；owner 校验节点类型、当前可见范围、版本和状态，不向界面暴露内部类型或范围令牌。",
+      "stateAndPermission": "页面只显示当前 assignment/data scope 可见节点；创建、编辑和启停均由 organization owner 重验 capability、节点归属、状态和 expectedVersion。",
+      "navigationAndRefresh": "树节点选择更新右侧详情；新建/编辑/启停完成后以 owner readback 刷新树和详情；状态变更必须先经确认 Modal，取消不产生写入。",
+      "accessibilityAndTestId": "组织树、节点选择、详情、新建、编辑、状态确认/取消/确认按钮使用稳定 organization-structure test-id 和可访问标签。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/organization-structure/ui/RegionCreateDrawer.tsx",
+      "screenIds": ["IA04-REGION-CREATE"],
+      "businessTask": "在商业集团的固定归属下新建一个大区。",
+      "actorAndScenario": "具有大区创建 capability、已进入组织架构且可见商业集团的运营用户。",
+      "entryAndSurface": "从组织树内容页的“新建大区”进入的固定 footer Drawer；不允许选择内部节点类型或父标识。",
+      "controlType": "所属集团只读 Input、大区名称/编码 Input、备注 TextArea、取消/创建按钮。",
+      "dataSourceAndCascade": "商业集团来自 hierarchy owner readback；创建 command 固定为 createOperationsOrganizationRegion。",
+      "validationAndError": "名称/编码必填，失败保留安全草稿并显示 command 失败；owner 复核归属、唯一性和 capability。",
+      "stateAndPermission": "仅 region-create capability 显示入口；提交生命周期禁用重复提交并使用每个业务意图独立 idempotency key。",
+      "navigationAndRefresh": "成功后以 owner-created readback 选中该大区并刷新树；取消不产生写入。",
+      "accessibilityAndTestId": "Drawer footer 创建按钮使用 operations-region-create-submit test-id，所属集团为可读只读控件。",
+      "controlDimensions": ["business-task","actor-and-scenario","entry-and-surface","control-type","data-source-and-cascade","validation-and-error","state-and-permission","navigation-and-refresh","accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/organization-structure/ui/ProjectCreateDrawer.tsx",
+      "screenIds": ["IA04-PROJECT-CREATE"],
+      "businessTask": "在当前选定大区下新建项目，并维护项目内分期名称的有序集合。",
+      "actorAndScenario": "具有项目创建 capability 且已在组织树选择大区的运营用户。",
+      "entryAndSurface": "仅从大区详情上下文的“新建项目”进入；固定 footer Drawer，不允许选择父级或内部类型。",
+      "controlType": "所属大区只读 Input、项目名称/编码 Input、备注 TextArea、分期动态输入列表及添加/删除/排序控件、取消/创建按钮。",
+      "dataSourceAndCascade": "大区来自 hierarchy owner readback；项目分期只属于当前项目并按视觉顺序提交。",
+      "validationAndError": "名称/编码必填；每个已添加分期非空且唯一，允许零项；失败保留草稿，owner 复核父级、类型、唯一性和分期顺序。",
+      "stateAndPermission": "仅 project-create capability 且当前节点为大区时显示入口；提交生命周期防重，idempotency key 按业务意图更新。",
+      "navigationAndRefresh": "创建成功后以 owner readback 选中项目并刷新树；上级变更时不能保留旧 Drawer。",
+      "accessibilityAndTestId": "分期行有 aria-label 与 operations-project-phase-* test-id，提交按钮使用 operations-project-create-submit。",
+      "controlDimensions": ["business-task","actor-and-scenario","entry-and-surface","control-type","data-source-and-cascade","validation-and-error","state-and-permission","navigation-and-refresh","accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationEditDrawer.tsx",
+      "screenIds": ["IA04-ORG-EDIT"],
+      "businessTask": "从已关闭的组织详情上下文编辑大区或项目允许修改的资料。",
+      "actorAndScenario": "具有相应大区或项目编辑 capability 的运营用户。",
+      "entryAndSurface": "详情动作关闭详情面板后打开固定 footer 编辑 Drawer；不是树行尾操作列。",
+      "controlType": "固定归属只读 Input、名称/编码 Input、备注 TextArea；项目额外有可排序的项目分期动态输入列表和取消/保存。",
+      "dataSourceAndCascade": "最新 hierarchy owner readback 提供对象、父级、分期和 expectedVersion；大区提交 parentId=null/phases=[]，项目原样回传固定父级。",
+      "validationAndError": "名称/编码必填，项目分期非空且唯一但可为零项；冲突或拒绝保留安全草稿并回到 owner 事实。",
+      "stateAndPermission": "编辑能力按 node type 显示；提交中禁止关闭/重复写，owner 复核对象类型、固定归属、版本与状态。",
+      "navigationAndRefresh": "保存后以 owner readback 重新选择并刷新组织树；不会在 detail 与 edit surface 并存。",
+      "accessibilityAndTestId": "保存动作使用 operations-organization-edit-submit test-id，项目分期控件提供稳定 test-id 和标签。",
+      "controlDimensions": ["business-task","actor-and-scenario","entry-and-surface","control-type","data-source-and-cascade","validation-and-error","state-and-permission","navigation-and-refresh","accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStatusModal.tsx",
+      "screenIds": ["IA04-ORG-STATUS"],
+      "businessTask": "明确确认当前大区或项目的启用/停用，而不混入其他业务资料。",
+      "actorAndScenario": "具有对应节点 status capability，且已从组织详情上下文发起状态操作的运营用户。",
+      "entryAndSurface": "详情关闭后打开的确认 Modal；取消/确认是唯一写前入口。",
+      "controlType": "目标名称和启用/停用确认文案、影响说明、取消与确认按钮。",
+      "dataSourceAndCascade": "目标对象、当前状态和 expectedVersion 来自最新 hierarchy owner readback；目标状态由当前状态确定。",
+      "validationAndError": "Modal 不接收自由业务字段；owner 重验对象、权限、版本和状态，失败回到 owner-confirmed 事实。",
+      "stateAndPermission": "useOverlayLock 与提交状态阻止竞态关闭和重复 command；取消绝不产生写入。",
+      "navigationAndRefresh": "成功后用 transition owner readback 更新右侧详情并刷新树。",
+      "accessibilityAndTestId": "Modal、取消和确认分别使用 operations-organization-status-modal/cancel/confirm test-id。",
+      "controlDimensions": ["business-task","actor-and-scenario","entry-and-surface","control-type","data-source-and-cascade","validation-and-error","state-and-permission","navigation-and-refresh","accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+      "screenIds": ["IA04-BRAND-PAGE", "IA04-TENANT-PAGE", "IA04-HEAD-COMPANY-PAGE"],
+      "businessTask": "分别管理品牌、经营租户和总公司主数据，不以实体类型作为用户可切换或可提交的事实。",
+      "actorAndScenario": "具有当前固定 pageDesignKey 对应 capability 的运营用户，在已确认的集团空间上下文内进入独立管理页。",
+      "entryAndSurface": "三个 catalog pageDesignKey 共同使用一个 physical page consumer；每次 route 固定一种实体工作流，名称链接打开独立详情。",
+      "controlType": "catalog 页面标题、新建、名称/状态筛选、查询/重置、名称链接、实体特定列和分页；没有操作列。",
+      "dataSourceAndCascade": "每类列表均用其 generated RTK query 的 owner-paged items/total；筛选、页码和 contextVersion 共同构成 query arg。",
+      "validationAndError": "名称和状态仅作筛选输入；加载、空态和失败分离，页面不显示 raw Problem 或内部标识。",
+      "stateAndPermission": "创建/编辑/状态/总公司品牌授权入口仅由各实体 capability 决定；pageKey 不推导 authority。",
+      "navigationAndRefresh": "名称链接先获取 owner detail；写后由 owner readback 更新详情并使当前 owner-paged list 刷新。",
+      "accessibilityAndTestId": "三个固定表面各有稳定 operations-business-entity test-id、可访问筛选 label 和名称 Button 语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+      "screenIds": ["IA04-BRAND-PAGE", "IA04-TENANT-PAGE", "IA04-HEAD-COMPANY-PAGE"],
+      "businessTask": "将三个获批的经营实体 pageDesignKey 固定分派给同一物理页面，而不让用户选择或提交实体类型。",
+      "actorAndScenario": "具备当前 pageDesignKey 页面准入的运营用户从菜单进入对应独立实体工作流。",
+      "entryAndSurface": "三个固定路由各自进入 BusinessEntityManagementPage，页面内由路由已固定的 key 决定工作流。",
+      "controlType": "路由注册与固定 pageKey wrapper；不增加页面控件、菜单或操作列。",
+      "dataSourceAndCascade": "只有批准的 catalog pageDesignKey 能进入对应 owner-paged list；路由不推导 owner 数据、权限或实体关系。",
+      "validationAndError": "不存在用户可写字段；未知或未批准 pageKey 仍由既有 registry/callback 拒绝。",
+      "stateAndPermission": "页面准入仍由 catalog 和 session capability 决定，route key 仅选择固定业务形态而不扩大 authority。",
+      "navigationAndRefresh": "保留三条既有 route segment；每个 route 只渲染其固定实体工作流，列表刷新由生成 RTK tag 处理。",
+      "accessibilityAndTestId": "页面 UI 的稳定 test-id 由目标 physical page 提供；registry 不单独产生视觉控件。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityDetailDrawer.tsx",
+      "screenIds": ["IA04-BUSINESS-DETAIL"],
+      "businessTask": "查看 owner-confirmed 品牌、经营租户或总公司资料，并在关闭详情后进入获批后续动作。",
+      "actorAndScenario": "从对应实体名称链接进入的运营用户。",
+      "entryAndSurface": "独立 detail Drawer；编辑、状态和总公司经营品牌均先关闭详情。",
+      "controlType": "类型对应详情字段、启用定义字段、编辑、启用/停用和仅总公司的经营品牌入口。",
+      "dataSourceAndCascade": "所有详情、definition 和动作版本取 owner readback；缺失定义值显示业务占位。",
+      "validationAndError": "detail 读取失败安全呈现；不显示 id、revision、scope 或 raw Problem。",
+      "stateAndPermission": "按钮由实体 capability 控制；detail 的关闭/overlay 约束不与下一个独立表面并存。",
+      "navigationAndRefresh": "后续写成功由 owner readback 重新打开详情并刷新所属列表。",
+      "accessibilityAndTestId": "Drawer 根、详情字段和动作入口有稳定 operations-business-entity-detail test-id 与语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityCreateDrawer.tsx",
+      "screenIds": ["IA04-BUSINESS-CREATE"],
+      "businessTask": "从固定实体入口创建品牌、经营租户或总公司资料。",
+      "actorAndScenario": "具有对应 create capability 的运营用户。",
+      "entryAndSurface": "对应内容页的新建按钮打开独立 Drawer；实体类型由入口固定且不显示为表单控件。",
+      "controlType": "编码、名称、实体特定字段、备注、按定义顺序插入的启用扩展字段、取消和创建。",
+      "dataSourceAndCascade": "实体固定配置与 owner definition readback 决定字段、标签、必填和控件；用户输入只形成当前实体 command。",
+      "validationAndError": "本地必填和 definition 规则先行，owner 重验唯一性、资格和 definition revision；失败不泄露 raw detail。",
+      "stateAndPermission": "drawer lifecycle、overlay lock 和每个 intent 的 idempotency key 禁止重复或竞争关闭。",
+      "navigationAndRefresh": "创建成功将 owner readback 交回 page/detail 并刷新当前列表；取消无写入。",
+      "accessibilityAndTestId": "字段标签和创建按钮有稳定 operations-business-entity-create test-id 与可访问语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityEditDrawer.tsx",
+      "screenIds": ["IA04-BUSINESS-EDIT"],
+      "businessTask": "编辑 owner 允许修改的实体资料并保留实体类型、版本和内部标识在技术边界内。",
+      "actorAndScenario": "具有对应 edit capability、已关闭详情的运营用户。",
+      "entryAndSurface": "详情关闭后打开的独立编辑 Drawer。",
+      "controlType": "实体特定字段、按定义顺序插入的启用扩展字段、取消和保存。",
+      "dataSourceAndCascade": "初值、extension values、definition revision 和 expectedVersion 来自 latest owner readback。",
+      "validationAndError": "本地/definition 校验与 owner CAS 重验并存；失败保留安全草稿而不显示 raw Problem。",
+      "stateAndPermission": "drawer lifecycle、overlay lock 和 intent idempotency 防重复；实体 type 不作为用户输入。",
+      "navigationAndRefresh": "保存成功以后 owner readback 重新打开详情并刷新列表。",
+      "accessibilityAndTestId": "编辑字段、取消/保存按钮有稳定 operations-business-entity-edit test-id 与可访问标签。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityStatusModal.tsx",
+      "screenIds": ["IA04-BUSINESS-STATUS"],
+      "businessTask": "在改变当前实体可用状态前确认正确对象与动作。",
+      "actorAndScenario": "具有对应 status capability、已从关闭详情进入确认的运营用户。",
+      "entryAndSurface": "独立确认 Modal，包含对象名称、取消和确认。",
+      "controlType": "启用/停用确认标题、取消与确认按钮。",
+      "dataSourceAndCascade": "目标名称、状态和 expectedVersion 来自 owner detail readback，目标状态仅由当前状态反转。",
+      "validationAndError": "取消不写入；owner 重验对象、版本、资格和状态，失败不暴露内部状态。",
+      "stateAndPermission": "overlay lock 与 submitting 禁止重复、关闭或键盘竞态。",
+      "navigationAndRefresh": "确认成功用 owner transition readback 更新 detail 并刷新列表。",
+      "accessibilityAndTestId": "Modal、取消和确认使用稳定 operations-business-entity-status test-id 与对话框语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/organization-structure/ui/ProjectPhaseFieldList.tsx",
+      "screenIds": ["IA04-PROJECT-CREATE","IA04-ORG-EDIT"],
+      "businessTask": "在项目创建或编辑中维护同一项目内的分期名称集合。",
+      "actorAndScenario": "已进入项目 create/edit Drawer 的组织维护用户。",
+      "entryAndSurface": "项目表单内的受控动态字段，不构成独立页面或组织节点。",
+      "controlType": "项目分期名称 Input、添加、删除、上移和下移按钮。",
+      "dataSourceAndCascade": "项目 edit 初值来自 latest owner readback；提交以视觉顺序形成 phases[]，不把分期建模为日期或独立组织。",
+      "validationAndError": "每个已添加名称必填且唯一，允许空集合；错误定位在该字段列表。",
+      "stateAndPermission": "仅受其宿主 create/edit capability 与 submission lifecycle 控制；不引入独立 command。",
+      "navigationAndRefresh": "仅更新宿主表单草稿，成功后由宿主 owner readback 更新详情和树。",
+      "accessibilityAndTestId": "每行输入有 aria-label，添加/删除/排序控件使用 operations-project-phase-* test-id。",
+      "controlDimensions": ["business-task","actor-and-scenario","entry-and-surface","control-type","data-source-and-cascade","validation-and-error","state-and-permission","navigation-and-refresh","accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreDetailDrawer.tsx",
+      "screenIds": ["IA04-STORE-DETAIL"],
+      "businessTask": "查看 owner-confirmed 门店资料，并在关闭详情后进入编辑或状态变更。",
+      "actorAndScenario": "从门店名称链接进入、具备相应 capability 的运营管理后台用户。",
+      "entryAndSurface": "独立门店详情 Drawer；编辑和状态动作先关闭详情层。",
+      "controlType": "门店核心字段、启用扩展字段、编辑和启用/停用入口。",
+      "dataSourceAndCascade": "详情与定义只来自 generated owner detail/read query；缺失定义值使用业务占位。",
+      "validationAndError": "详情失败安全呈现，不显示 raw Problem、内部 id、版本或范围。",
+      "stateAndPermission": "动作仅由 owner-confirmed capability 启用；详情关闭与下一个 overlay 不并存。",
+      "navigationAndRefresh": "后续写成功以 owner readback 重开详情并刷新所属列表。",
+      "accessibilityAndTestId": "Drawer、字段和后续动作有稳定 operations-store-detail test-id 与语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreCreateDrawer.tsx",
+      "screenIds": ["IA04-STORE-CREATE"],
+      "businessTask": "从门店固定入口创建门店主数据。",
+      "actorAndScenario": "具有门店 create capability 的运营管理后台用户。",
+      "entryAndSurface": "门店页新建按钮打开的独立 Drawer。",
+      "controlType": "项目、品牌、经营租户、总公司、编码、名称、备注、定义扩展字段、取消和创建。",
+      "dataSourceAndCascade": "候选与定义来自 generated owner query；项目/品牌变更清空经营租户和总公司，经营租户变更清空总公司。",
+      "validationAndError": "本地必填与定义规则先行，owner 重验资格、唯一性、范围和 definition revision；失败不泄露 raw detail。",
+      "stateAndPermission": "drawer lifecycle、overlay lock 与 intent idempotency 防止重复提交和竞争关闭。",
+      "navigationAndRefresh": "创建成功交回 owner readback 并刷新当前门店列表；取消不写入。",
+      "accessibilityAndTestId": "字段、级联 Select、取消和创建有稳定 operations-store-create test-id 与可访问标签。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreEditDrawer.tsx",
+      "screenIds": ["IA04-STORE-EDIT"],
+      "businessTask": "编辑 owner 允许修改的门店资料。",
+      "actorAndScenario": "具有门店 edit capability 且已关闭详情的运营管理后台用户。",
+      "entryAndSurface": "门店详情关闭后打开的独立编辑 Drawer。",
+      "controlType": "固定项目/品牌/经营租户/编码，只读；名称、总公司、备注、扩展字段、取消和保存。",
+      "dataSourceAndCascade": "初值、候选、定义、extension values 与 expectedVersion 来自 latest owner readback。",
+      "validationAndError": "本地/definition 校验与 owner CAS 重验并存；失败保留安全草稿而不显示 raw Problem。",
+      "stateAndPermission": "只提交 owner 允许字段，drawer lifecycle、overlay lock 与 idempotency 防重复。",
+      "navigationAndRefresh": "保存后以 owner readback 重开详情并刷新当前列表。",
+      "accessibilityAndTestId": "只读字段、可编辑字段、取消和保存有稳定 operations-store-edit test-id 与可访问标签。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreStatusModal.tsx",
+      "screenIds": ["IA04-STORE-STATUS"],
+      "businessTask": "在改变门店主数据状态前确认正确对象与动作。",
+      "actorAndScenario": "具有门店 status capability 且已从关闭详情进入确认的运营管理后台用户。",
+      "entryAndSurface": "独立确认 Modal，包含对象名称、取消与确认。",
+      "controlType": "启用/停用确认标题、取消与确认按钮。",
+      "dataSourceAndCascade": "目标名称、当前状态和 expectedVersion 来自 owner detail readback，目标状态仅由当前状态反转。",
+      "validationAndError": "取消不写入；owner 重验对象、版本、资格和状态，失败不暴露内部状态。",
+      "stateAndPermission": "仅修改主数据可用状态；overlay lock 与 submitting 禁止重复、关闭或键盘竞态。",
+      "navigationAndRefresh": "确认成功用 owner transition readback 更新详情并刷新列表。",
+      "accessibilityAndTestId": "Modal、取消和确认使用稳定 operations-store-status test-id 与对话框语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractDetailDrawer.tsx",
+      "screenIds": ["IA04-CONTRACT-DETAIL"],
+      "businessTask": "查看 owner-confirmed 门店合同资料，并在关闭详情后进入编辑或作废。",
+      "actorAndScenario": "从合同编号链接进入、具备相应 capability 的运营管理后台用户。",
+      "entryAndSurface": "独立合同详情 Drawer；编辑和作废动作先关闭详情层。",
+      "controlType": "合同核心字段、商品项、启用扩展字段、编辑和作废入口。",
+      "dataSourceAndCascade": "详情与定义只来自 generated owner detail/read query；不在浏览器推导合同事实。",
+      "validationAndError": "详情读取失败安全呈现，不显示 raw Problem、内部 id、版本或范围。",
+      "stateAndPermission": "动作仅由 owner-confirmed capability 启用，已作废合同不提供不允许的写入口。",
+      "navigationAndRefresh": "后续写成功以 owner readback 重开详情并刷新所属列表。",
+      "accessibilityAndTestId": "Drawer、合同字段、商品项和动作有稳定 operations-contract-detail test-id 与语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractCreateDrawer.tsx",
+      "screenIds": ["IA04-CONTRACT-CREATE"],
+      "businessTask": "在页面已选项目范围内创建门店合同。",
+      "actorAndScenario": "具有合同 create capability 的运营管理后台用户。",
+      "entryAndSurface": "合同页新建按钮打开的独立 Drawer，项目范围由页面固定而非表单推断。",
+      "controlType": "门店、分期、经营租户、合同编号、日期、商品项、备注、定义扩展字段、取消和创建。",
+      "dataSourceAndCascade": "候选与定义来自 generated owner query；门店候选返回经营租户，切换门店清空分期和经营租户；商品项至少一条且商品编码唯一。",
+      "validationAndError": "本地必填/日期/商品项与 definition 规则先行，owner 重验项目范围、对象资格、唯一性和 revision；失败安全呈现。",
+      "stateAndPermission": "项目范围不可由浏览器自行推导，drawer lifecycle、overlay lock 与 intent idempotency 防重复。",
+      "navigationAndRefresh": "创建成功以 owner readback 刷新当前合同列表和详情；取消不写入。",
+      "accessibilityAndTestId": "字段、商品项、取消和创建有稳定 operations-contract-create test-id 与可访问标签。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractEditDrawer.tsx",
+      "screenIds": ["IA04-CONTRACT-EDIT"],
+      "businessTask": "编辑 owner 允许修改的门店合同资料。",
+      "actorAndScenario": "具有合同 edit capability 且已关闭详情的运营管理后台用户。",
+      "entryAndSurface": "合同详情关闭后打开的独立编辑 Drawer。",
+      "controlType": "只读门店、经营租户和合同编号；分期、日期、商品项、备注、扩展字段、取消和保存。",
+      "dataSourceAndCascade": "初值、definition revision、extension values 与 expectedVersion 来自 latest owner readback。",
+      "validationAndError": "本地/definition/商品项校验与 owner CAS 重验并存；冲突和失败安全呈现且保留草稿。",
+      "stateAndPermission": "只提交 owner 允许字段，drawer lifecycle、overlay lock 与 idempotency 防重复。",
+      "navigationAndRefresh": "保存成功以后 owner readback 重新打开详情并刷新列表。",
+      "accessibilityAndTestId": "只读字段、编辑字段、商品项、取消和保存有稳定 operations-contract-edit test-id 与可访问标签。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractInvalidateModal.tsx",
+      "screenIds": ["IA04-CONTRACT-INVALIDATE"],
+      "businessTask": "在作废门店合同前确认正确对象，并保留可追溯历史。",
+      "actorAndScenario": "具有合同 invalidate capability 且已从关闭详情进入确认的运营管理后台用户。",
+      "entryAndSurface": "独立确认 Modal，明确为作废合同而非删除。",
+      "controlType": "作废确认标题、取消和确认按钮。",
+      "dataSourceAndCascade": "合同编号、当前状态和 expectedVersion 来自 owner detail readback，作废由 generated owner command 执行。",
+      "validationAndError": "取消不写入；owner 重验对象、版本、资格和状态，失败不显示 raw Problem。",
+      "stateAndPermission": "作废不是删除；overlay lock 与 submitting 禁止重复、关闭或键盘竞态。",
+      "navigationAndRefresh": "确认成功以 owner readback 更新详情和列表，历史合同仍可被读取。",
+      "accessibilityAndTestId": "Modal、取消和确认有稳定 operations-contract-invalidate test-id 与对话框语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "screenIds": ["IA04-STORE-PROFILE", "IA04-STORE-PROFILE-CONTRACT"],
+      "businessTask": "门店运营用户只读核对本人门店主数据，并按 owner BusinessDate 所定义的当前、待生效、历史、已作废四态查看本门店合同。",
+      "actorAndScenario": "已在门店任职、进入运营管理后台门店资料菜单的门店运营用户。",
+      "entryAndSurface": "内容页；门店资料后以合同 Tab 承载四个只读状态子 Tab，不产生创建、编辑或作废入口。",
+      "controlType": "owner readback Descriptions、合同 Tab/四个状态子 Tab、合同编号链接、只读列和 owner pagination。",
+      "dataSourceAndCascade": "门店资料与每个合同状态页均由 generated query 获取；切换状态重置页码并以 state query arg 重新请求，禁止浏览器日期切片或本地过滤。",
+      "validationAndError": "loading、empty、query failure 分开呈现；不显示内部标识、版本、任职、范围或 raw Problem。",
+      "stateAndPermission": "contextScopedQueryArgs 传递 owner-confirmed expectedContextVersion；contract owner 重新核验当前门店任职与四态 BusinessDate predicate。",
+      "navigationAndRefresh": "点击合同编号仅打开只读详情 Drawer；contextVersion 或状态页变化由 query arg 驱动 owner refresh，不实施 mutation。",
+      "accessibilityAndTestId": "页、合同 Tab、每个状态 Tab、编号链接、表格、empty/error 使用稳定 operations-store-profile-* test-id 与可访问 Tab/Table 语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    },
+    {
+      "consumerPath": "apps/frontend/operations-admin/src/features/store-profile/ui/FixedStoreContractDetailDrawer.tsx",
+      "screenIds": ["IA04-STORE-PROFILE-CONTRACT"],
+      "businessTask": "门店运营用户从本人门店的合同编号链接只读核对一份 owner-confirmed 合同。",
+      "actorAndScenario": "已在门店任职且从门店资料合同列表选择一个合同编号的门店运营用户。",
+      "entryAndSurface": "Store Profile 内容页上的编号链接打开独立只读 Drawer；没有编辑、作废或审计操作入口。",
+      "controlType": "合同编号、项目分期、经营租户、起止日期、状态及 owner detail readback 字段的只读 Drawer。",
+      "dataSourceAndCascade": "选中项只传递稳定 target；Drawer 使用 generated contract detail query 取得 latest owner readback，关闭即清空 target。",
+      "validationAndError": "详情读取失败安全呈现且保持可关闭，不显示 raw Problem、内部 id、版本或范围。",
+      "stateAndPermission": "contract owner 在 detail read 内重新核验门店任职、合同归属和 contextVersion；无写 capability 或写控件。",
+      "navigationAndRefresh": "关闭返回原状态 Tab；contextVersion 变化使 detail query 使用新 owner context，不以本地缓存推断合同事实。",
+      "accessibilityAndTestId": "Drawer、关闭、只读字段和失败态使用稳定 operations-store-profile-contract-detail-* test-id 与 Drawer 语义。",
+      "controlDimensions": ["business-task", "actor-and-scenario", "entry-and-surface", "control-type", "data-source-and-cascade", "validation-and-error", "state-and-permission", "navigation-and-refresh", "accessibility-and-test-id"]
+    }
+  ]
+}

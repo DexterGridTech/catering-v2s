@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-u01-p0-control-evidence",
+  "packageId": "RM1-U01",
+  "status": "ACTIVE_RED_VERIFIED",
+  "execution": {
+    "runner": "scripts/run/rm1-p0-standards-execution",
+    "runnerSha256": "f76f9dd74b754afb4b6a0240c9d33ed0b00a30c68575f9cea11612059b380a10",
+    "successfulManifest": {
+      "path": ".runtime/managed-runs/rm1-p0-standards-20260728T070240Z-809/manifest.json",
+      "sha256": "e10a221750061630b2563dcb52ce76a13410933f84c59699ece9c60e247cac1f",
+      "business": "NOT_APPLICABLE",
+      "standardsExecution": "PASS",
+      "cleanup": "PASS"
+    },
+    "phaseStructureAssertion": "scripts/check/standards-coverage --phase R5 passes before the P0 exact execution subset is selected."
+  },
+  "controls": [
+    {"ruleId": "P-C1", "assertion": "frontend architecture production gate passes and its self-test reports R4_FRONTEND_SELF_TEST=PASS."},
+    {"ruleId": "P-C2", "assertion": "standards coverage validates the whole ACTIVE catalog before executing exactly the P0 set; its self-test reports REQUESTED_REF_UNKNOWN_RED=PASS, REFERENCED_EXIT_ZERO_RED=PASS, REFERENCED_EXIT_NONZERO_RED=PASS, and ENFORCEMENT_DEPENDENCY_DRIFT_RED=PASS."},
+    {"ruleId": "P-C3", "assertion": "affected L2 production gate is PASS only at RM1 with exactly 18 pre-existing legacy targets DEFERRED to RM2; selected current changes and RM2 expiry red-fail, while the self-test independently proves missing-target and empty-stub detection without writing any production target path."},
+    {"ruleId": "P-C5", "assertion": "frontend architecture self-test reports R4_FRONTEND_SELF_TEST=PASS for the registry-reachability control."},
+    {"ruleId": "P-X2", "assertion": "logging boundary production gate passes and its self-test reports R4_LOGGING_SELF_TEST=PASS for embedded-secret detection."},
+    {"ruleId": "P-X5", "assertion": "security boundary production gate passes and its self-test reports R4_SECURITY_SELF_TEST=PASS for configured object-prefix enforcement."},
+    {"ruleId": "P-X6", "assertion": "database-operation-budget production gate passes and its self-test reports R4_BUDGET_SELF_TEST=PASS, replacing a pseudo lock regex with the real budget control."},
+    {"ruleId": "ST-7", "assertion": "compliance-control exact package binding self-test reports RM1_P0_STANDARDS_REF_MISSING_RED=PASS, RM1_P0_STANDARDS_REF_EXTRA_RED=PASS, and RM1_P0_REF_KIND_SUBSTITUTION_RED=PASS; historical intake recovery self-test reports RM1_P0_HISTORICAL_INTAKE_OMISSION_RED=PASS and RM1_P0_HISTORICAL_INTAKE_EXTRA_RED=PASS; receipt validation reports INCREMENTAL_RECEIPT_COVERAGE=PASS."}
+  ],
+  "firstFailureGeneralization": {
+    "failure": "The first exact P0 runner attempt failed before control execution because a shell-array option was unsupported by the executed shell.",
+    "rootCauseClass": "RUNNER_SHELL_DIALECT_ASSUMPTION",
+    "finiteDenominator": ["scripts/run/rm1-p0-standards-execution"],
+    "searchedSurfaces": ["scripts/run/rm1-p0-standards-execution", "scripts/run"],
+    "counterexampleBoundary": "The Node standards executor and every invoked checker remained valid; only the runner's split-list loop used the non-portable option.",
+    "repair": "Use POSIX-compatible newline streaming through while/read loops after package-input validation, not shell-specific array parsing.",
+    "prevention": "The runner is syntax-checked with bash -n and the successful managed manifest proves both control execution and cleanup; its exact ref lists are independently fail-closed by tools/compliance-control/cli.mjs."
+  },
+  "claudeNoGoGeneralization": {
+    "failure": "A runner, self-test fixture, and package exit can describe different control outcomes and thereby manufacture a false package PASS.",
+    "rootCauseClass": "CONTROL_EXECUTION_AND_EVIDENCE_SPLIT_BRAIN",
+    "finiteDenominator": ["scripts/run/rm1-p0-standards-execution", "tools/verify-gates/cli.mjs#affectedL2", "tools/compliance-control/cli.mjs#validateRM1P0ProductionStatus", "contracts/policy/affected-l2-registry.json"],
+    "counterexampleBoundary": "The four P0 standards references remain independently PASS; P3-A and P4 red-only skeletons are still not P0 completion claims.",
+    "repair": "Capture every production ref independently, require exact zero-status set equality in the package exit, use standardsExecution rather than business for harness state, and test affected-L2 only through an isolated scratch fixture.",
+    "prevention": "The runner's first-failure fixture, affected-L2 missing/empty/expiry red fixtures, and controlRefStatus manifest-to-exit equality are mandatory P0 controls."
+  },
+  "historicalIntakeGeneralization": {
+    "failure": "Package exit treated every repository prompt hash as if it were attributable to the active package, although legacy receipts did not bind prompt hashes to source changes.",
+    "rootCauseClass": "GLOBAL_HASH_QUEUE_WITHOUT_PACKAGE_ADMISSION_LINKAGE",
+    "finiteDenominator": "The exact 34 SHA-256 values in rm1-u01-pre-admission-linkage-recovery.json, bound by RM1-U01 input and tools/compliance-control/cli.mjs.",
+    "counterexampleBoundary": "Every unlisted intake, the current intake pointer, and any listed intake with a disposition still undergo full disposition/evidence validation.",
+    "prevention": "The P0 validator fails closed on inventory omission, addition, duplicate, path/hash drift, malformed envelope, missing current disposition, or an unlisted missing disposition; it never classifies the listed historical hashes as non-problems."
+  },
+  "scopeBoundary": "The P0 exact runner does not claim a full R5 aggregate: scripts/verify remains deferred because its P2-owned Flyway denominator is outside the serial P0 package."
+}

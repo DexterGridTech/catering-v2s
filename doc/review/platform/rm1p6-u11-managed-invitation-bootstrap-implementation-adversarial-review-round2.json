@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-implementation-adversarial-review",
+  "reviewCycleId": "RM1P6-U11-MANAGED-INVITATION-BOOTSTRAP",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/rm1p6-u11-managed-invitation-bootstrap-implementation-adversarial-review-round2-input-checklist.md",
+    "sha256": "aea4402f1739bb42eebaf022110b57ec4d1601080528bbbd4c1a634eafcc19c6"
+  },
+  "blindReview": true,
+  "blindReviewDeclaration": "Fresh independent reviewer first formed the current-source static-to-L2 verdict by attempting to falsify the two Round-1 repairs, then read Round-1 material; static and focused-test success were not substituted for L2, business, or cleanup evidence.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "roundFinalDecision": "SELF_DECIDED",
+  "scope": "RM1 P6-3 U11 managed replacement for seven joint-fixture consumers of the retired platform invitation HTTP face: current source-disposition currency, private output protection, and no HTTP/OpenAPI/controller/direct-SQL regression.",
+  "verdict": "GO",
+  "l2Admission": "GO_STATIC_TO_L2_ONLY",
+  "severityCounts": {"M": 0, "S": 0, "N": 3},
+  "findings": [
+    {
+      "id": "N-01",
+      "severity": "N",
+      "status": "REJECTED_WITH_EVIDENCE",
+      "title": "Round-1 stale source-disposition blocker is repaired",
+      "evidence": "Current disposition has `ruleCount=32`, 32 applicable rows and 32 unique rule IDs. Independent per-row SHA-256 recomputation produced no drift, including current delivery-manifest `f0daf308…` and amendment `15823d98…` bindings.",
+      "counterexample": "The prior stale bytes cannot be inferred closed from receipt/static results; this conclusion depends on the current 32-row source-hash recomputation."
+    },
+    {
+      "id": "N-02",
+      "severity": "N",
+      "status": "REJECTED_WITH_EVIDENCE",
+      "title": "Private-output proof now covers owner-only mode and overwrite refusal",
+      "evidence": "`ManagedInvitationBootstrapTest` asserts output POSIX mode exactly `rw-------` after write and separately verifies a pre-existing run-scoped output makes `Input.from` throw. The fresh root focused Gradle invocation passed.",
+      "counterexample": "This focused proof does not assert dynamic fixture cleanup or provide L2/business/cleanup evidence; those remain the managed runner's later responsibility."
+    },
+    {
+      "id": "N-03",
+      "severity": "N",
+      "status": "REJECTED_WITH_EVIDENCE",
+      "title": "No retired platform HTTP resurrection or fixture backdoor was introduced",
+      "evidence": "Bootstrap source is non-web and only invokes `requireEnabled` then `WorkspaceInvitationService.create` with one explicit target intent; source scan found no controller/OpenAPI/JDBC/SQL APIs. Root OpenAPI has zero retired platform-invitation pointers. Seven effective U11 fixture consumers use the managed bootstrap and continue through retained public flow; the sole legacy platform fixture consumer is explicitly disclosed outside the U11 joint denominator.",
+      "counterexample": "Retained operations target-specific and public invitation routes are approved IA01 counterexamples, not platform face restoration."
+    }
+  ],
+  "independentControls": [
+    {"command": "scripts/check/standards-coverage --phase R5", "result": "STANDARDS_COVERAGE=PASS; RULES=150"},
+    {"command": "scripts/check/openapi-contracts", "result": "R5_OPENAPI_CONTRACTS=PASS"},
+    {"command": "node tools/compliance-control/cli.mjs static-scan", "result": "REMEDIATION_COMPLIANCE=PASS; RULES=32; MODE=RM1_STATIC_ADMISSION"},
+    {"command": "node tools/compliance-control/cli.mjs validate-delta-receipts", "result": "INCREMENTAL_RECEIPT_COVERAGE=PASS; PACKAGE_ID=RM1P6-JOINT-REMOTE-L2-U11"},
+    {"command": "gradle --project-dir . :apps:backend:catering-business-server:test --tests com.catering.v2s.app.bootstrap.ManagedInvitationBootstrapTest --rerun-tasks --no-daemon", "result": "BUILD SUCCESSFUL; focused bootstrap test PASS"}
+  ],
+  "finalDecision": "GO_STATIC_TO_L2_ONLY (M=0 / S=0 / N=3). This is round 2 of 2 and no third adversarial round is allowed. The reviewed repairs and static implementation boundary pass; no L2 execution, business PASS, cleanup PASS, runtime start, seed/reset, platform invitation HTTP restoration, direct business SQL, or remote application/browser execution is authorized by this review.",
+  "authorizationBoundary": "Static-to-L2 admission only. The managed U11 runner must still produce its separately authorized, isolated local-execution/remote-middleware L2 evidence with distinct business and cleanup PASS before any completion claim."
+}

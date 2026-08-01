@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-UI-IA-CONFORMANCE-U06",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+  "deliveryManifestSha256": "9c68c72a1b24776c7c7348c9ae98233fb54458d59fa43f881b1eaa92af5a91d9",
+  "unitId": "RM1P6-UI-IA-CONFORMANCE-U06",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["U06-38-SCREEN-SOURCE-TO-IA-CONFORMANCE", "U06-CATALOG-PAGE-TITLE-SINGLE-TRUTH", "U06-OWNER-READBACK-NO-CLIENT-DERIVATION"],
+  "businessEvidenceObligation": "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+  "serialPredecessor": {
+    "packageId": "RM1P6-AUTHORITY-LEDGER-U05",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-package-exit.json",
+    "exitSha256": "5582e05a33a2e1f779210c23aa980eadecfcff134b2f493c147e105bf1bd5b0c"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-implementation-amendment.md",
+    "sha256": "e5e2aa8e2924eb047b2e15f6350832612fa5700d9ccd6d3344f41b1b45df8325"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 P6 implementation. U06 permits only the listed platform-admin 38-screen IA/owner/catalog conformance repair and focused static proof. Dexter's 2026-07-30 sequence decision defers all P6-2 L2 execution until P6-3 implementation is complete, then requires one combined P6-2/P6-3 managed L2 with separate business and cleanup verdicts. It excludes P6-3 production behavior and all unbound surfaces."
+}

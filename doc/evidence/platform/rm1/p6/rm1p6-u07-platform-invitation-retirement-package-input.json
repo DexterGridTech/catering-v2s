@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-PLATFORM-INVITATION-RETIREMENT-U07",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-manifest.json",
+  "deliveryManifestSha256": "b982f034a66cdb1f50f66b519a7cacb289ccb85f806cacd84d28279c00d41095",
+  "unitId": "RM1P6-PLATFORM-INVITATION-RETIREMENT-U07",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/edge-codegen", "scripts/check/frontend-architecture", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/edge-codegen", "scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["U07-PLATFORM-INVITATION-FACE-CLOSURE", "U07-IA03-HASH-BOUND-REFREEZE", "U07-RETAINED-COUNTEREXAMPLE-PROOF"],
+  "businessEvidenceObligation": "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+  "serialPredecessor": {
+    "packageId": "RM1P6-UI-IA-CONFORMANCE-U06",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-package-exit.json",
+    "exitSha256": "896fd5a4272322112f6a436aca67fddd0c5bab4aacb61e322fea64468df0b3dd"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u07-platform-invitation-retirement-implementation-amendment.md",
+    "sha256": "41aa55e7a46694d88dd04d26a729dd4d028b9dab37cfc524ae415e054b23435d"
+  },
+  "authorizationBoundary": "Dexter authorized P6-3 implementation and root-cause repair. U07 admits only the exact static platform invitation retirement denominator. It excludes fixture/bootstrap implementation, DEV, seed, reset, remote dynamic execution, business PASS and cleanup PASS until a later remote managed-L2 package is independently designed and admitted."
+}

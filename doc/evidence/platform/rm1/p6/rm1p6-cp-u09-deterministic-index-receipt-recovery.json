@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1p6-cp-u09-deterministic-index-receipt-recovery",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "packageId": "RM1P6-CP-U09",
+  "authorization": "Dexter required RM1P6-CP-U09 to retain strict hook, exact path return, active-pointer readback and validation while landing the deterministic observability standard.",
+  "originalMissingReceiptCount": 2,
+  "recoveryArtifact": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u09-deterministic-index-receipt-recovery.json",
+    "baselineSha256": "ABSENT",
+    "disposition": "NORMAL_RECEIPT_CHAIN_EXISTS",
+    "reason": "This artifact narrowly records the two derived index bytes that were regenerated before the new deterministic writer could issue their first hook receipts."
+  },
+  "rootCause": "The old project-memory build wrote deterministic index files directly, so a correct regeneration after CP-U09's baseline had no same-package pre/post edge. CP-U09 now makes future changed index writes invoke the bounded deterministic-index pre/post writer; this recovery is only for the already-produced bytes.",
+  "staticVerifications": [
+    {"id":"DERIVED_INDEX_CURRENT_BYTE_CHECK","result":"PASS","command":"node tools/project-memory/cli.mjs build --check"},
+    {"id":"EXACT_TWO_PATH_RECOVERY_RED","result":"PASS","command":"node tools/compliance-control/cli.mjs rm1p6-cp-u09-deterministic-index-recovery-self-test"},
+    {"id":"FUTURE_BOUNDED_WRITER_RED","result":"PASS","command":"node tools/compliance-control/cli.mjs deterministic-index-write-self-test"}
+  ],
+  "entries": [
+    {
+      "path": "project-memory/index.json",
+      "baselineSha256": "ab8289d2a7980ccda8a0eeeccd0983b9640cf2a5198c1f60c2b4054bc5de8269",
+      "currentSha256": "5d2382aa8ed67d4387167874b04738b2f39003d1f885329eeae429d559acf22b",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": ["DERIVED_INDEX_CURRENT_BYTE_CHECK","EXACT_TWO_PATH_RECOVERY_RED","FUTURE_BOUNDED_WRITER_RED"],
+      "reason": "The index is a deterministic projection of the current approved inventory and memory bytes; `build --check` proves the final byte, while the new writer forbids a future partial output set."
+    },
+    {
+      "path": "project-memory/index.md",
+      "baselineSha256": "7b23fa36286900f8d83e892cbc826796d5504fa3406da723456dde52bffbb650",
+      "currentSha256": "db1c079656221a38bf77cca0272b5b01c25660d8c563c49088b6f5256231568b",
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT",
+      "staticVerificationIds": ["DERIVED_INDEX_CURRENT_BYTE_CHECK","EXACT_TWO_PATH_RECOVERY_RED","FUTURE_BOUNDED_WRITER_RED"],
+      "reason": "The index is a deterministic projection of the current approved inventory and memory bytes; `build --check` proves the final byte, while the new writer forbids a future partial output set."
+    }
+  ]
+}

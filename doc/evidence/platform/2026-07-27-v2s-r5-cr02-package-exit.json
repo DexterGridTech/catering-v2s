@@ -1,0 +1,364 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U02",
+  "status": "PASS",
+  "serialPredecessor": {
+    "packageId": "R5-CR-U01",
+    "packageExitPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-package-exit.json",
+    "packageExitSha256": "07ae17db523215f2f97d757ce329841434a5d63d07a5e15bf4d5342a286bcffd"
+  },
+  "actualChangedPaths": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "beforeSha256": "ae1e76cee92df026dcfcda80549f476a6de4849e16d1321f5e5456716c2d4b3f",
+      "afterSha256": "f61e854685d9a345a0ce70a7178b6257682c9c26ddaebcf91642ad2855b65397"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts",
+      "beforeSha256": "c1e075999cf29e034bc8ff1fa9e39ef76fbd17f81902f2c7946379ba4b5db852",
+      "afterSha256": "7c736655ad2fe8208f33241df40eb7a9284f953df4e7e314d330dada2d22635e"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/access-recovery/ui/PublicPasswordRecoveryEntry.tsx",
+      "beforeSha256": "07d94ca47fb858842047fb9eb96c02c56da42c5f6be9ee71c891f869e6f7ba74",
+      "afterSha256": "2780e461c4562f74954b7f5f20def29e9b1be25f661426d4a6c2fbfa588a4801"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+      "beforeSha256": "3566144f665e40ce1e337c99b503e6b36f45f1dab174aedc267f5432046bc5e5",
+      "afterSha256": "42948ea36c9686bdad40903315c9d084a78617268e8059c11d2f3b27cac11e4b"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "beforeSha256": "3f58d9d522db78dffad58213bfe49517ccc2fdb38aaf4ee6e730e05cd9a86212",
+      "afterSha256": "73abc3c22eb90fdf41de11639f54445a480c3da8bddd96c233dac244c3f9f165"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "beforeSha256": "7f59391492ef53d9125912be7b2d8c6d7e0d7fccd5951d8aefc275ee48249276",
+      "afterSha256": "b9dca70b4dbb7d1cd096f602c97a7d5e8f9a324ace86b7d5d799c9169ff658f5"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/operations-page-registry/ui/OperationsPageRegistry.tsx",
+      "beforeSha256": "e4accc498802a88a5970bb67bf4877dcc3c1887acd6463491e2256f6f5a2de20",
+      "afterSha256": "08ce85a6bf6b9a16815c433c1903b2b7ba6bdbcc6b6b251b3f72961a9ea48b04"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx",
+      "beforeSha256": "1ae2cdd7c655b4450a1926097d5c7a2e38de85fc307857e0513387f1f9be4e87",
+      "afterSha256": "c990d6d388da8ef4bb5c7e428ad32be0445e1a0ad595f7c6d34ca3448190910e"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/public-entry-boundary.test.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "558ce08a8c9fcf430eaf3ebcda9a547e7d6820cfb929053e198d1d14d71f9c70"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5a85ccb219c46967a0aedc8d8f3612f9b2b2cd64e4314d38e917f23434963c5a"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e78f25cad594f764a48b879a8a4057a3be4e85ed165aefc772c2f3e4f0f0527c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "beforeSha256": "5406eab66d7c84fc2a05366142fbce10b504e902b374ed9e5ee2efb51c2f7b79",
+      "afterSha256": "ba818980314d614c0d500c5447458957c65f3412fcc03508cea0b832c2d170d8"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+      "beforeSha256": "e71c76afdc0747b2bba11f5b9fa0ab91328d445fba2b688ff9776d32634a718c",
+      "afterSha256": "f5e6d036a50da5fdfc872c570b9657fc41a126ccf4c8eb4ea707e416dc467d6c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "beforeSha256": "a4d2280d165ca4aa1cdfaab939702d5f44c234c648f7bef05104fb111359cd28",
+      "afterSha256": "b1743bd615824e3c4e72baba51530686ed63b41666641a2b9d2b863885c6521f"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+      "beforeSha256": "73e49ee6a96b5529ddc9309e4a2f29e7b31039cf94d064abdbbd346f54caedd3",
+      "afterSha256": "488250adb3a41134134ca740048ec84c344ff24226ee81d43fdc3b03b40627d8"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "beforeSha256": "6510346f4daef740477320fa509dde0dbe59d01aa33e817e9128c1f6e6a49fc8",
+      "afterSha256": "5d10332580f5bb2056693ae84c3a1c5a008ec5cc437bb177446fecfa182367a6"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "beforeSha256": "0be59e09ad63e8f383c5cbc10696472f09bb3814ce9ebd4cf52f2a5f8e065f35",
+      "afterSha256": "21ea8af85a615ef986a0aced518f9ede5b0e555b4d31c4571f661e91fa1c901f"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "beforeSha256": "d439658225a8f73e7c04f64327030a6be0559ff5a527490a24573dcec695b3b4",
+      "afterSha256": "35c9ee114826d25136d8601ffbc8cb2bf434f036260bc8901b6595aacda96740"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "beforeSha256": "2a9e9502b011b6a25a72fb19fb8f381376a16af426033802a07d1e55af1c9edc",
+      "afterSha256": "03ea3a55c00d1eda6b3b5ce8ffb352a69e9319364914c23ac9d71d9e586c5b1c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "beforeSha256": "aaeecdf7d1e3c2615080186e00c61e5cbda1fe1b0c9a4c87e825dba9cd25ebf5",
+      "afterSha256": "55482135def9f1f0eeb6339631e6af894d75443c4dc9fc63be935422717ff103"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "beforeSha256": "e419cffd76eaf4567a0d57e2f6aa85fc2ed4a68a82422364d347e0041d827612",
+      "afterSha256": "d4b7405d9e699f4c739513a7a615bc918a99be14667a776b026f7d319888ad0c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "beforeSha256": "f85f685ae0626f14573a9027fade6093fb1d484b4d5ca7e9525304c688bda8e3",
+      "afterSha256": "3b4032ef40266cdd0bad585232309cbdaa7ed06140a3679e13f26e37165b60bf"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "beforeSha256": "f7ed660aa6435a90be7bfb8ea9fa9012e74b8be429bcb2dae14791912894c5e1",
+      "afterSha256": "731bb2933ada2f532514f6429d6511796b0726560dc101ef3937b2ce9fe299be"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "beforeSha256": "eaedac2b292bef97847b3af0be012da9a1fea1254364e8407f423650ace60619",
+      "afterSha256": "810ed31d2b9ef7a0b1817141fcb427d4d8ee559f33aed7627d88cd3c8a353512"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0d360aa3d45e461af36bd79b465957ed5411366d83c6ac5e06197dc10711129b"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-package-input.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "21c8444f8498be6dabcde52913b183a0655708139344920fa041d1dfefb772e8"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-red-mutation.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "cc0fe5612ea591c76738e2d4d67cfde55ca511b9c3e1e18f06c0902b8ed82739"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8f3b799aca619ec1999d46b18d919ecb0119c3c62984c3da972e11c4b554f2fd"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-static-control-closure.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9e78061b86637c87a2b870c2e6873f85074af9936913ca4f1495a9aefda4b29b"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "afterSha256": "f61e854685d9a345a0ce70a7178b6257682c9c26ddaebcf91642ad2855b65397",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts",
+      "afterSha256": "7c736655ad2fe8208f33241df40eb7a9284f953df4e7e314d330dada2d22635e",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/access-recovery/ui/PublicPasswordRecoveryEntry.tsx",
+      "afterSha256": "2780e461c4562f74954b7f5f20def29e9b1be25f661426d4a6c2fbfa588a4801",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+      "afterSha256": "42948ea36c9686bdad40903315c9d084a78617268e8059c11d2f3b27cac11e4b",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "afterSha256": "73abc3c22eb90fdf41de11639f54445a480c3da8bddd96c233dac244c3f9f165",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "afterSha256": "b9dca70b4dbb7d1cd096f602c97a7d5e8f9a324ace86b7d5d799c9169ff658f5",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/operations-page-registry/ui/OperationsPageRegistry.tsx",
+      "afterSha256": "08ce85a6bf6b9a16815c433c1903b2b7ba6bdbcc6b6b251b3f72961a9ea48b04",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx",
+      "afterSha256": "c990d6d388da8ef4bb5c7e428ad32be0445e1a0ad595f7c6d34ca3448190910e",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/public-entry-boundary.test.mjs",
+      "afterSha256": "558ce08a8c9fcf430eaf3ebcda9a547e7d6820cfb929053e198d1d14d71f9c70",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs",
+      "afterSha256": "5a85ccb219c46967a0aedc8d8f3612f9b2b2cd64e4314d38e917f23434963c5a",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
+      "afterSha256": "e78f25cad594f764a48b879a8a4057a3be4e85ed165aefc772c2f3e4f0f0527c",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "afterSha256": "ba818980314d614c0d500c5447458957c65f3412fcc03508cea0b832c2d170d8",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+      "afterSha256": "f5e6d036a50da5fdfc872c570b9657fc41a126ccf4c8eb4ea707e416dc467d6c",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "afterSha256": "b1743bd615824e3c4e72baba51530686ed63b41666641a2b9d2b863885c6521f",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+      "afterSha256": "488250adb3a41134134ca740048ec84c344ff24226ee81d43fdc3b03b40627d8",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "afterSha256": "5d10332580f5bb2056693ae84c3a1c5a008ec5cc437bb177446fecfa182367a6",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "afterSha256": "21ea8af85a615ef986a0aced518f9ede5b0e555b4d31c4571f661e91fa1c901f",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "afterSha256": "35c9ee114826d25136d8601ffbc8cb2bf434f036260bc8901b6595aacda96740",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "afterSha256": "03ea3a55c00d1eda6b3b5ce8ffb352a69e9319364914c23ac9d71d9e586c5b1c",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "afterSha256": "55482135def9f1f0eeb6339631e6af894d75443c4dc9fc63be935422717ff103",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "afterSha256": "d4b7405d9e699f4c739513a7a615bc918a99be14667a776b026f7d319888ad0c",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "afterSha256": "3b4032ef40266cdd0bad585232309cbdaa7ed06140a3679e13f26e37165b60bf",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "afterSha256": "731bb2933ada2f532514f6429d6511796b0726560dc101ef3937b2ce9fe299be",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "afterSha256": "810ed31d2b9ef7a0b1817141fcb427d4d8ee559f33aed7627d88cd3c8a353512",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "afterSha256": "0d360aa3d45e461af36bd79b465957ed5411366d83c6ac5e06197dc10711129b",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-package-input.json",
+      "afterSha256": "21c8444f8498be6dabcde52913b183a0655708139344920fa041d1dfefb772e8",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-red-mutation.json",
+      "afterSha256": "cc0fe5612ea591c76738e2d4d67cfde55ca511b9c3e1e18f06c0902b8ed82739",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-source-compliance-disposition.json",
+      "afterSha256": "8f3b799aca619ec1999d46b18d919ecb0119c3c62984c3da972e11c4b554f2fd",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-static-control-closure.json",
+      "afterSha256": "9e78061b86637c87a2b870c2e6873f85074af9936913ca4f1495a9aefda4b29b",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    }
+  ],
+  "controls": [
+    {
+      "ruleId": "R5-CR-U02-GENERATED_ENDPOINT_FACADE",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redEvidence": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-red-mutation.json#R5_CR02_ARCHITECTURE_RED=PASS"
+    },
+    {
+      "ruleId": "R5-CR-U02-FEATURE_RAW_HTTP_LITERAL",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redEvidence": "three scratchpad feature /api/ literal mutations failed the architecture tests with the exact no-raw-path invariant"
+    },
+    {
+      "ruleId": "R5-CR-U02-FRONTEND_STATIC_BOUNDARY",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redEvidence": "platform and operations architecture suites fresh PASS after red proof"
+    }
+  ],
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-source-compliance-disposition.json",
+    "sha256": "8f3b799aca619ec1999d46b18d919ecb0119c3c62984c3da972e11c4b554f2fd"
+  },
+  "closureEvidence": {
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-static-control-closure.json",
+    "sha256": "9e78061b86637c87a2b870c2e6873f85074af9936913ca4f1495a9aefda4b29b"
+  },
+  "completionSummary": "CR02 removes feature-level raw HTTP path literals from the migrated platform, operations and public flows, centralizes generated endpoint resolution in face-local facades, and closes the static boundary with actual red mutations.",
+  "authorityBoundary": "CR02 exit only. CR03 may begin only after fresh package-exit validator PASS. No DEV, seed/reset, remote, dynamic verification, CR07 or CR08 action is authorized."
+}
+

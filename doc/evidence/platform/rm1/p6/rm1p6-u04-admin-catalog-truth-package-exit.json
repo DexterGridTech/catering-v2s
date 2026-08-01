@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-ADMIN-CATALOG-TRUTH-U04",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java","beforeSha256":"8ccf35cb8493704368e9941562e8c1df20476f86c789f691614ebd8f6d40aa43","afterSha256":"dff6f635684bf5e2d95938ae0dfd3b51c6d1d1a259d6d246719a2d00f96a9576"},
+    {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java","beforeSha256":"125dac9e95e4c86b9030cb67282ccf13fbf017547b8e39d3fa89d00036c4b76b","afterSha256":"66efa01f8387d003aa4b301535884c392ab5306240d05163f944289f2161b44c"},
+    {"path":"apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts","beforeSha256":"a84595e8734191d54fe1a1953de169b3a0091ae9125f80af62db185a3fb0cb69","afterSha256":"2262cdcc6dd9d3091614145fd5b40fc87d054035153db897ca840aa8dc0b3015"},
+    {"path":"apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts","beforeSha256":"4c47b0c73025585b9d356feb1ea0f909c923d125fa5b05d23ad6e3ebd17f3694","afterSha256":"ddcd3d146663a51f491219548d6579ee4a34734a5af261c8aa6032a8d7f4dffb"},
+    {"path":"contracts/catalog/admin-catalog.json","beforeSha256":"5cf60243f4173eed3f06fd680358b7b1fde5a4cee4246bfb394d45fe0e99589f","afterSha256":"ce13179496deb134e8f017dbce9582c36915f2bada371c8aa437ffbe7389e190"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","beforeSha256":"4bd9fd4db37754f7373a94c4b56021cc33a4d6fb4f4f93a62418550f15b15c23","afterSha256":"bd3badbb4aa0be02d215ec50ad19e95713d357b3cec49070f996c4219418744f"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-implementation-amendment.md","beforeSha256":"d20f7bd482941bad72bb77bffb06d1f5f5394af610bd0042498e71221e6efc27","afterSha256":"86341d2bef4f576a00224cdc8c5f624fe390e1252e7850411fd33ceee39614f2"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-input.json","beforeSha256":"1b5d6179d7d1a7d8c6cc9d14b21ac6c5a0fed74d665f183bfe94e73f7d122695","afterSha256":"537291c0163ebb196833518e371e57563988397027085ba04e6b0d25d1773d92"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-problem-family.json","beforeSha256":"314ca2a9c441d06ff9ab6c2007ebdc730873fb61b048a441893d1eea374a1b05","afterSha256":"5085ee29a9f64aafcc8666058fddd63275c229ec79d5fed5ddb8cd6ae51ef523"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-source-compliance-disposition.json","beforeSha256":"6070a0d0d4eeb5ed515be3192d40bcf1384ca8821c049a4d9a9b1a4d9523d59d","afterSha256":"c069daf055f35b2c62506707d331d92628ccf767311a4faa7f3ccce12ff1b3e0"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-admin-catalog-truth-implementation-adversarial-review-round-2.md","beforeSha256":"ABSENT","afterSha256":"58a27eb5430c3ba7bd5bfb58307d3c113492be34080688832c97a6aee6cfa842"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-admin-catalog-truth-implementation-adversarial-review.md","beforeSha256":"ABSENT","afterSha256":"07521745cfc3b64a130289969eed3ea549fec1a2ae8bde28a4c7ae0c35261f43"},
+    {"path":"scripts/generate/edge-codegen.mjs","beforeSha256":"be6010edfe7852d6d89f610552fbe3fb2f8a7b755b0a071660c39014dc2c40d2","afterSha256":"7ea0598e8724ee796f892b1c22ceb37d93f95796cc7f79e3c5492b09b5e1fce1"},
+    {"path":"tools/authority-source-ledger/cli.mjs","beforeSha256":"b5c7f74fea6c00476f32649dc9cb913a9422ba7c09830026291bef1327a6e985","afterSha256":"585cf1c69895ca1cc081b716dae3a432079778e9c11c389429d7d67cc13bdaf7"},
+    {"path":"tools/capability-invariants/cli.mjs","beforeSha256":"858bb4e5e6364008d9dc08a035e5477a7f0ee05942cd4f9c05542296b0993b67","afterSha256":"b8aa74a87168271686c60138574afa91c3be65f86a31f8a25559446dd3db6ce8"}
+  ],
+  "incrementalChecks": [
+    {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java","afterSha256":"dff6f635684bf5e2d95938ae0dfd3b51c6d1d1a259d6d246719a2d00f96a9576","result":"PASS"},
+    {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java","afterSha256":"66efa01f8387d003aa4b301535884c392ab5306240d05163f944289f2161b44c","result":"PASS"},
+    {"path":"apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts","afterSha256":"2262cdcc6dd9d3091614145fd5b40fc87d054035153db897ca840aa8dc0b3015","result":"PASS"},
+    {"path":"apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts","afterSha256":"ddcd3d146663a51f491219548d6579ee4a34734a5af261c8aa6032a8d7f4dffb","result":"PASS"},
+    {"path":"contracts/catalog/admin-catalog.json","afterSha256":"ce13179496deb134e8f017dbce9582c36915f2bada371c8aa437ffbe7389e190","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","afterSha256":"bd3badbb4aa0be02d215ec50ad19e95713d357b3cec49070f996c4219418744f","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-implementation-amendment.md","afterSha256":"86341d2bef4f576a00224cdc8c5f624fe390e1252e7850411fd33ceee39614f2","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-input.json","afterSha256":"537291c0163ebb196833518e371e57563988397027085ba04e6b0d25d1773d92","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-problem-family.json","afterSha256":"5085ee29a9f64aafcc8666058fddd63275c229ec79d5fed5ddb8cd6ae51ef523","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-source-compliance-disposition.json","afterSha256":"c069daf055f35b2c62506707d331d92628ccf767311a4faa7f3ccce12ff1b3e0","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-admin-catalog-truth-implementation-adversarial-review-round-2.md","afterSha256":"58a27eb5430c3ba7bd5bfb58307d3c113492be34080688832c97a6aee6cfa842","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-admin-catalog-truth-implementation-adversarial-review.md","afterSha256":"07521745cfc3b64a130289969eed3ea549fec1a2ae8bde28a4c7ae0c35261f43","result":"PASS"},
+    {"path":"scripts/generate/edge-codegen.mjs","afterSha256":"7ea0598e8724ee796f892b1c22ceb37d93f95796cc7f79e3c5492b09b5e1fce1","result":"PASS"},
+    {"path":"tools/authority-source-ledger/cli.mjs","afterSha256":"585cf1c69895ca1cc081b716dae3a432079778e9c11c389429d7d67cc13bdaf7","result":"PASS"},
+    {"path":"tools/capability-invariants/cli.mjs","afterSha256":"b8aa74a87168271686c60138574afa91c3be65f86a31f8a25559446dd3db6ce8","result":"PASS"}
+  ],
+  "sourceComplianceDisposition":{"path":"doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-source-compliance-disposition.json","sha256":"c069daf055f35b2c62506707d331d92628ccf767311a4faa7f3ccce12ff1b3e0"},
+  "fullComplianceScan":"PASS",
+  "business":"NOT_APPLICABLE",
+  "cleanup":"NOT_APPLICABLE",
+  "controls":[
+    {"ruleId":"CR05-WC-01","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"CR05-WC-02","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"CR05-HISTORICAL-RECEIPT-RECOVERY","state":"ACTIVE_RED_VERIFIED"}
+  ],
+  "reviewEvidence":[
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-admin-catalog-truth-implementation-adversarial-review-round-2.md","verdict":"GO","reviewerKind":"INDEPENDENT_SUBAGENT","round":2},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1p6-admin-catalog-truth-u04-implementation-review-claude.md","verdict":"GO","findings":"M=0/S=1/N=2","scope":"static implementation-source only"}
+  ],
+  "knownExitDebts":[
+    {"id":"U04-S1-P6-3-LEGACY-CONSUMER","status":"OPEN_SUCCESSOR_PACKAGE","cause":"U04 regeneration retired replaceOperationsOrganizationHeadCompanyBrandAuthorizations while the P6-3 legacy HeadCompanyManagementPage has two residual calls.","requiredClosure":"P6-3 authorized IA/package receipt removes the Page/collection-replace Drawer and runs operations-admin typecheck; do not restore the retired bulk operation."},
+    {"id":"P1-ST-11-AUTHORITY-LEDGER","status":"OPEN_SUCCESSOR_PACKAGE","cause":"authority-source-ledger check remains FAIL at ST-11.","requiredClosure":"A correctly baselined successor package repairs the ledger; this U04 PASS does not imply ledger PASS."}
+  ],
+  "staticEvidence":[
+    {"command":"node scripts/generate/edge-codegen.mjs --self-test","result":"PASS","includes":"R5_ADMIN_CATALOG_ROLE_HOME_RUNTIME_CARDINALITY_RED"},
+    {"command":"node scripts/generate/edge-codegen.mjs --check","result":"PASS","files":243},
+    {"command":"gradle :apps:backend:catering-business-server:modules:workspace-iam:compileJava --no-daemon","result":"PASS"},
+    {"command":"yarn --cwd apps/frontend/platform-admin typecheck","result":"PASS"},
+    {"command":"yarn --cwd apps/frontend/operations-admin test","result":"PASS","scope":"architecture tests only"},
+    {"command":"yarn --cwd apps/frontend/operations-admin typecheck","result":"FAIL_EXPECTED_SUCCESSOR_DEBT","firstFailure":"HeadCompanyManagementPage.tsx:216,239 call a U04-retired operation; this is not a PASS and is not a business result."},
+    {"command":"node tools/authority-source-ledger/cli.mjs check","result":"FAIL_EXPECTED_SUCCESSOR_DEBT","firstFailure":"P1_LEDGER_ROW_INVALID:ST-11"}
+  ]
+}

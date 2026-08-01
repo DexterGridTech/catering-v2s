@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+export V2S_RUNTIME_DIR="${V2S_RUNTIME_DIR:-$root_dir/.runtime/r5}"
+exec node "$root_dir/scripts/dev/r5-dev-runner.mjs" stop

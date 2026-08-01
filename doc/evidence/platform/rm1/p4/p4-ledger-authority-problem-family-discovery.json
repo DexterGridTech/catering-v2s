@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "P4_LEDGER_EXECUTION_AUTHORITY",
+  "genericProblem": "A reviewable performance ledger can drift from its executable SQL budget assertions when IDs, identities, budgets, or cases are manually duplicated.",
+  "rootCauseClass": "DUPLICATED_PERFORMANCE_CONTRACT_WITHOUT_EXECUTABLE_AUTHORITY_BINDING",
+  "finiteDenominator": [
+    "26 canonical ledger rows",
+    "all declared budget cases",
+    "WorkspaceInvitationService public invitation-list callers"
+  ],
+  "searchedSurfaces": [
+    "doc/evidence/platform/rm1/p4/canonical-performance-ledger.json",
+    "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+    "tools/performance/canonical-ledger-scanner.mjs",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/src/main/java"
+  ],
+  "searchQueries": [
+    "canonical-performance-ledger",
+    "assertFixed(",
+    "managementList(",
+    "managementListForOperations(",
+    "authorizedBrandAuthorizations"
+  ],
+  "counterexamples": [
+    "The P4 test currently executes 26 real production call paths and its generic 100-store N+1 fixture proves the JDBC counter observes repeated statements.",
+    "managementList and managementListForOperations have zero production callers after controllers moved to managementPage APIs."
+  ],
+  "findings": [
+    {
+      "findingId": "P4-M1-LEDGER_BUDGET_DIVERGENCE",
+      "status": "CONFIRMED",
+      "evidence": "O5 has ledger <=4 versus test <=5; all budgets and IDs are independently hard-coded; M9 identity also drifts."
+    },
+    {
+      "findingId": "P4-S1-ROW_BUDGET_RED_PROOF",
+      "status": "CONFIRMED",
+      "evidence": "One generic N+1 red validates the meter but does not make every row budget tight."
+    },
+    {
+      "findingId": "P4-N1-ZERO_CALLER_UNBOUNDED_INVITATION_API",
+      "status": "CONFIRMED",
+      "evidence": "managementList and managementListForOperations retain full materialization with zero production callers."
+    },
+    {
+      "findingId": "P4-N2-NONNUMERIC_BUDGETS",
+      "status": "CONFIRMED",
+      "evidence": "M13, S3, S6 and R8 use prose budget values not mechanically comparable to execution."
+    },
+    {
+      "findingId": "P4-N3-DUPLICATE_CALL_CASES",
+      "status": "PARTIALLY_CONFIRMED",
+      "evidence": "Some pair lambdas repeat a bounded 100-scale call; they do not prove scale invariance but exact case contracts still prove statement shape."
+    },
+    {
+      "findingId": "P4-N4-REVIEWER_NO_RERUN",
+      "status": "NOT_A_PRODUCT_DEFECT",
+      "evidence": "Reviewer did not rerun; remediation requires a fresh managed run on final bytes."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "P4-M1-LEDGER_BUDGET_DIVERGENCE",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/performance/canonical-ledger-scanner.mjs plus P4SqlOperationBudgetTest ledger parser"
+    },
+    {
+      "findingId": "P4-S1-ROW_BUDGET_RED_PROOF",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "P4SqlOperationBudgetTest exact case equality plus ledger-binding red"
+    },
+    {
+      "findingId": "P4-N1-ZERO_CALLER_UNBOUNDED_INVITATION_API",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "WorkspaceInvitationService removes zero-caller unbounded APIs"
+    },
+    {
+      "findingId": "P4-N2-NONNUMERIC_BUDGETS",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "canonical-ledger-scanner structured EXACT_SQL_STATEMENTS validation"
+    },
+    {
+      "findingId": "P4-N3-DUPLICATE_CALL_CASES",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "P4 review distinguishes repeatability from scale-variance evidence"
+    },
+    {
+      "findingId": "P4-N4-REVIEWER_NO_RERUN",
+      "preventionDestination": "NOT_APPLICABLE_WITH_REASON",
+      "owningSourceOrControl": "Final U07 managed Testcontainers evidence is the required rerun"
+    }
+  ]
+}

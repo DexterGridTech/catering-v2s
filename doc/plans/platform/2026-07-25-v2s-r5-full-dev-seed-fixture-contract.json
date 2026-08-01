@@ -1,0 +1,382 @@
+{
+  "kind": "r5-full-dev-seed-fixture-contract",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "reviewCycleId": "R5-W3-DESIGN-20260725",
+  "reviewTarget": "DESIGN",
+  "implementationAuthority": false,
+  "profile": {
+    "id": "r5-full",
+    "version": 1,
+    "namespaceSource": "V2S_DEV_NAMESPACE",
+    "requiredNamespacePattern": "^v2s-dev-[a-z0-9-]{3,32}$",
+    "databaseUrlSource": "V2S_DEV_DATABASE_URL",
+    "databaseAdminUrlSource": "V2S_DEV_DATABASE_ADMIN_URL",
+    "assetRootSource": "V2S_DEV_ASSET_ROOT",
+    "remoteHostSource": "V2S_DEV_REMOTE_HOST",
+    "credentialSources": [
+      "V2S_SEED_PLATFORM_ROOT_PASSWORD",
+      "V2S_SEED_PLATFORM_SUPPORT_PASSWORD",
+      "V2S_SEED_PLATFORM_DISABLED_PASSWORD",
+      "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD",
+      "V2S_SEED_OPERATIONS_DISABLED_PASSWORD",
+      "V2S_SEED_OTP_FIXED_VALUE"
+    ],
+    "forbiddenPersistedValues": [
+      "plaintext password",
+      "plaintext OTP",
+      "session token",
+      "invitation token",
+      "reset generation key",
+      "remote credential"
+    ],
+    "middleware": {
+      "postgresql": "REQUIRED_REMOTE",
+      "assetStorageRoot": "REQUIRED_REMOTE_ALLOWLISTED",
+      "redis": "FORBIDDEN",
+      "mq": "FORBIDDEN",
+      "tdp": "FORBIDDEN"
+    },
+    "resetAllowlist": {
+      "allowlistId": "r5-dev-remote-v1",
+      "remoteHost": {
+        "exactValueSource": "V2S_DEV_REMOTE_HOST",
+        "immutableBindingSource": "V2S_DEV_REMOTE_HOST_SHA256",
+        "rule": "sha256(exactValueSource bytes) must equal immutableBindingSource before any connection or reset"
+      },
+      "database": {
+        "urlSource": "V2S_DEV_DATABASE_URL",
+        "adminUrlSource": "V2S_DEV_DATABASE_ADMIN_URL",
+        "databaseNameDerivation": "'catering_v2s_dev_' + replace('-', '_', V2S_DEV_NAMESPACE without leading 'v2s-dev-')",
+        "databaseNamePattern": "^catering_v2s_dev_[a-z0-9_]{3,32}$",
+        "namespaceIsolation": "ONE_DATABASE_PER_NAMESPACE",
+        "fixedOwnerSchemas": ["platform_iam", "platform_workspace", "platform_asset", "organization", "extension", "workspace_iam", "contract"],
+        "flywayHistorySchema": "public",
+        "resetTarget": "the exact derived database, including public Flyway history and all seven fixed owner schemas",
+        "forbiddenSchemas": ["information_schema", "pg_catalog"],
+        "rule": "connected database name and database URL database name must both equal databaseNameDerivation; reset may recreate only that exact database"
+      },
+      "assetStorage": {
+        "rootSource": "V2S_DEV_ASSET_ROOT",
+        "exactSuffixDerivation": "/catering-v2s/dev/<V2S_DEV_NAMESPACE>/",
+        "namespaceKeyPrefix": "<V2S_DEV_ASSET_ROOT>/catering-v2s/dev/<V2S_DEV_NAMESPACE>/"
+      },
+      "negativeMatrix": [
+        "remote host bytes do not match V2S_DEV_REMOTE_HOST_SHA256",
+        "connected database name differs from databaseNameDerivation",
+        "database name does not match ^catering_v2s_dev_[a-z0-9_]{3,32}$",
+        "owner schema set differs from the seven fixed schemas after migration",
+        "public Flyway history is missing after rebuild",
+        "asset key is outside <V2S_DEV_ASSET_ROOT>/catering-v2s/dev/<V2S_DEV_NAMESPACE>/",
+        "database URL or asset root embeds a production-like environment marker"
+      ]
+    }
+  },
+  "bootstrapBoundary": {
+    "directSqlAllowedOnlyFor": "first platform identity plus credential hash and bootstrap audit receipt",
+    "stableLogin": "root",
+    "displayName": "Root",
+    "passwordSource": "V2S_SEED_PLATFORM_ROOT_PASSWORD",
+    "forbidden": [
+      "operations account or assignment",
+      "business fact",
+      "runtime auto-seed",
+      "start/restart invoking seed"
+    ]
+  },
+  "secretBindings": [
+    {"fixtureRef": "pa-bootstrap", "secretRef": "V2S_SEED_PLATFORM_ROOT_PASSWORD", "purpose": "DEV_PLATFORM_ROOT_LOGIN"},
+    {"fixtureRef": "pa-support", "secretRef": "V2S_SEED_PLATFORM_SUPPORT_PASSWORD", "purpose": "DEV_PLATFORM_SUPPORT_LOGIN"},
+    {"fixtureRef": "pa-disabled", "secretRef": "V2S_SEED_PLATFORM_DISABLED_PASSWORD", "purpose": "DEV_PLATFORM_DISABLED_LOGIN_NEGATIVE"},
+    {"fixtureRef": "account-single-role", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_OPERATIONS_SINGLE_ROLE_LOGIN"},
+    {"fixtureRef": "account-multi-role", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_OPERATIONS_MULTI_ROLE_LOGIN"},
+    {"fixtureRef": "account-no-role", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_OPERATIONS_NO_ROLE_NEGATIVE"},
+    {"fixtureRef": "account-disabled", "secretRef": "V2S_SEED_OPERATIONS_DISABLED_PASSWORD", "purpose": "DEV_OPERATIONS_DISABLED_ACCOUNT_NEGATIVE"},
+    {"fixtureRef": "account-reset", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_OPERATIONS_PASSWORD_RESET"},
+    {"fixtureRef": "account-invite-existing", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_INVITATION_EXISTING_ACCOUNT"},
+    {"fixtureRef": "inv-pending", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_ACCEPTANCE_OTP"},
+    {"fixtureRef": "inv-accepted", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_ACCEPTANCE_OTP"},
+    {"fixtureRef": "inv-verified", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_ACCEPTANCE_OTP"},
+    {"fixtureRef": "inv-ready", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "INVITATION_CREDENTIAL_COMPLETION"},
+    {"fixtureRef": "inv-reissued", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_REISSUE_OTP"},
+    {"fixtureRef": "account-reset-otp", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "PASSWORD_RESET_OTP"}
+  ],
+  "controlledClock": {
+    "clockId": "r5-business-clock-v1",
+    "timeProvider": "platform-foundation/time.TimeProvider",
+    "businessDateProvider": "contract/application.BusinessDateProvider",
+    "zoneId": "Asia/Shanghai",
+    "fixedInstantEpochMillis": 1784908800000,
+    "fixedInstantIso": "2026-07-25T00:00:00+08:00",
+    "businessDate": "2026-07-25",
+    "activationConditions": [
+      "V2S_DEV_NAMESPACE matches requiredNamespacePattern",
+      "active seed profile is exactly r5-full",
+      "runtime environment marker is explicitly non-production"
+    ],
+    "rule": "all seed creation timestamps and contract derived-state reads use this clock; system wall clock and system default zone are forbidden; missing any activation condition fails closed"
+  },
+  "devFixedOtpIssuer": {
+    "channel": "DEV_FIXED_OTP_ISSUER",
+    "secretSource": "V2S_SEED_OTP_FIXED_VALUE",
+    "stores": "hash only",
+    "activationConditions": [
+      "V2S_DEV_NAMESPACE matches requiredNamespacePattern",
+      "active seed profile is exactly r5-full",
+      "runtime environment marker is explicitly non-production"
+    ],
+    "defaultProfileExpectation": "fixed OTP is rejected and no issuer bean is present",
+    "rule": "all three conditions are mandatory; this channel only supplies purpose-bound OTP issuance and never bypasses verification, expiry, attempt limits or grant state"
+  },
+  "authorizationCatalogRefs": {
+    "pageAccessKeys": {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "anchor": "pageDesignKeySurfaceCrosswalk"
+    },
+    "actionCapabilityKeys": {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "anchor": "policy.actionCapabilityCatalog.activeKeys",
+      "rule": "read/page access is never stored as an action capability; seed keys must be members of the 34-key mutation catalog"
+    }
+  },
+  "stableFixtures": {
+    "platformAdmins": [
+      {"key": "pa-bootstrap", "login": "root", "builtIn": true, "status": "ENABLED", "channel": "DEV_BOOTSTRAP_SQL"},
+      {"key": "pa-support", "login": "r5-support", "status": "ENABLED", "channel": "createPlatformAdmin"},
+      {"key": "pa-disabled", "login": "r5-disabled", "status": "DISABLED", "channel": "createPlatformAdmin+transitionPlatformAdminStatus"}
+    ],
+    "groupWorkspaces": [
+      {"key": "gw-aurora", "groupWorkspaceKey": "aurora", "name": "极光商业集团空间", "status": "ENABLED", "commercialGroup": "cg-aurora", "logo": "asset-aurora"},
+      {"key": "gw-boreal", "groupWorkspaceKey": "boreal", "name": "北境商业集团空间", "status": "DISABLED", "commercialGroup": "cg-boreal", "logo": "asset-boreal"},
+      {"key": "gw-cinder", "groupWorkspaceKey": "cinder", "name": "星火待初始化空间", "status": "ENABLED", "commercialGroup": null, "logo": null}
+    ],
+    "assets": [
+      {"key": "asset-aurora", "usage": "GROUP_WORKSPACE_LOGO", "workspace": "gw-aurora", "status": "ACTIVE", "contentFixture": "fixtures/assets/aurora-logo.png"},
+      {"key": "asset-boreal", "usage": "GROUP_WORKSPACE_LOGO", "workspace": "gw-boreal", "status": "ACTIVE", "contentFixture": "fixtures/assets/boreal-logo.png"},
+      {"key": "asset-staged", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "STAGED", "contentFixture": "fixtures/assets/staged-logo.png"},
+      {"key": "asset-expired", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "CLEANUP_PENDING", "contentFixture": "fixtures/assets/expired-logo.png"}
+    ],
+    "extensionDefinitions": [
+      {"key": "ext-brand", "workspace": "gw-aurora", "hostType": "BRAND", "fields": ["brandLevel", "brandOrigin"]},
+      {"key": "ext-tenant", "workspace": "gw-aurora", "hostType": "TENANT", "fields": ["industryCode"]},
+      {"key": "ext-head-company", "workspace": "gw-aurora", "hostType": "HEAD_COMPANY", "fields": ["registrationRegion"]},
+      {"key": "ext-store", "workspace": "gw-aurora", "hostType": "STORE", "fields": ["floorLabel", "openingHours"]},
+      {"key": "ext-contract", "workspace": "gw-aurora", "hostType": "CONTRACT", "fields": ["settlementMode"]}
+    ],
+    "organization": {
+      "commercialGroups": [
+        {"key": "cg-aurora", "workspace": "gw-aurora", "code": "AURORA-GROUP", "name": "极光商业集团"},
+        {"key": "cg-boreal", "workspace": "gw-boreal", "code": "BOREAL-GROUP", "name": "北境商业集团"}
+      ],
+      "regions": [
+        {"key": "region-east", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "EAST", "name": "东区", "status": "ENABLED"},
+        {"key": "region-west", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "WEST", "name": "西区", "status": "ENABLED"}
+      ],
+      "projects": [
+        {"key": "project-river", "parent": "region-east", "code": "RIVER", "name": "河畔项目", "status": "ENABLED", "phases": ["一期", "二期"]},
+        {"key": "project-hill", "parent": "region-east", "code": "HILL", "name": "山景项目", "status": "ENABLED", "phases": ["首开区"]},
+        {"key": "project-lake", "parent": "region-west", "code": "LAKE", "name": "湖滨项目", "status": "DISABLED", "phases": ["A区", "B区"]}
+      ],
+      "brands": [
+        {"key": "brand-tea", "code": "TEA", "name": "茶里", "status": "ENABLED"},
+        {"key": "brand-bake", "code": "BAKE", "name": "麦香", "status": "ENABLED"},
+        {"key": "brand-disabled", "code": "OLD", "name": "旧品牌", "status": "DISABLED"}
+      ],
+      "tenants": [
+        {"key": "tenant-a", "code": "TEN-A", "name": "极光餐饮一号", "status": "ENABLED"},
+        {"key": "tenant-b", "code": "TEN-B", "name": "极光餐饮二号", "status": "ENABLED"},
+        {"key": "tenant-disabled", "code": "TEN-X", "name": "停用经营主体", "status": "DISABLED"}
+      ],
+      "headCompanies": [
+        {"key": "hc-a", "code": "HC-A", "name": "极光餐饮总公司", "status": "ENABLED"},
+        {"key": "hc-b", "code": "HC-B", "name": "北辰餐饮总公司", "status": "ENABLED"},
+        {"key": "hc-disabled", "code": "HC-X", "name": "停用总公司", "status": "DISABLED"}
+      ],
+      "brandAuthorizations": [
+        {"headCompany": "hc-a", "brand": "brand-tea"},
+        {"headCompany": "hc-a", "brand": "brand-bake"},
+        {"headCompany": "hc-b", "brand": "brand-bake"},
+        {"headCompany": "hc-disabled", "brand": "brand-tea"}
+      ],
+      "stores": [
+        {"key": "store-operating", "code": "S-OP", "name": "河畔茶里店", "project": "project-river", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED"},
+        {"key": "store-preparing", "code": "S-PRE", "name": "河畔麦香筹备店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "ENABLED"},
+        {"key": "store-not-operating", "code": "S-NO", "name": "山景无合同店", "project": "project-hill", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED"},
+        {"key": "store-disabled", "code": "S-DIS", "name": "山景停用店", "project": "project-hill", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "DISABLED"},
+        {"key": "store-history", "code": "S-HIS", "name": "河畔历史合同店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-b", "status": "ENABLED"}
+      ]
+    },
+    "workspaceIam": {
+      "roles": [
+        {"key": "role-group", "serviceNodeType": "GROUP", "pageAccessKeys": ["PG-IAM-GROUP-USERS"], "actionCapabilityKeys": ["BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-GROUP-INVITE"], "visibleDataNodePolicy": "GROUP_SUBTREE"},
+        {"key": "role-region", "serviceNodeType": "REGION", "pageAccessKeys": ["PG-IAM-REGION-USERS"], "actionCapabilityKeys": ["BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-REGION-INVITE"], "visibleDataNodePolicy": "REGION_SUBTREE"},
+        {"key": "role-project", "serviceNodeType": "PROJECT", "pageAccessKeys": ["PG-IAM-PROJECT-USERS"], "actionCapabilityKeys": ["BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-PROJECT-INVITE"], "visibleDataNodePolicy": "PROJECT"},
+        {"key": "role-head-company", "serviceNodeType": "HEAD_COMPANY", "pageAccessKeys": ["PG-IAM-HEAD-COMPANY-USERS"], "actionCapabilityKeys": ["BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-INVITE"], "visibleDataNodePolicy": "HEAD_COMPANY"},
+        {"key": "role-store", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE"], "visibleDataNodePolicy": "STORE"}
+      ],
+      "accounts": [
+        {"key": "account-single-role", "mobile": "13800000001", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
+        {"key": "account-multi-role", "mobile": "13800000002", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
+        {"key": "account-no-role", "mobile": "13800000003", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
+        {"key": "account-disabled", "mobile": "13800000004", "status": "DISABLED", "credentialSource": "V2S_SEED_OPERATIONS_DISABLED_PASSWORD"},
+        {"key": "account-reset", "mobile": "13800000005", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
+        {"key": "account-invite-existing", "mobile": "13800000006", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"}
+      ],
+      "assignments": [
+        {"key": "asg-single-store", "account": "account-single-role", "role": "role-store", "node": "store-operating", "visibleDataNode": "store-operating", "sourceInvitation": "inv-completed-single"},
+        {"key": "asg-multi-group", "account": "account-multi-role", "role": "role-group", "node": "cg-aurora", "visibleDataNode": "cg-aurora", "sourceInvitation": "inv-completed-multi-a"},
+        {"key": "asg-multi-project", "account": "account-multi-role", "role": "role-project", "node": "project-river", "visibleDataNode": "project-river", "sourceInvitation": "inv-completed-multi-b"},
+        {"key": "asg-multi-store", "account": "account-multi-role", "role": "role-store", "node": "store-preparing", "visibleDataNode": "store-preparing", "sourceInvitation": "inv-completed-multi-c"},
+        {"key": "asg-disabled-store", "account": "account-reset", "role": "role-store", "node": "store-disabled", "visibleDataNode": "store-disabled", "sourceInvitation": "inv-completed-disabled-store"},
+        {"key": "asg-head-company", "account": "account-invite-existing", "role": "role-head-company", "node": "hc-a", "visibleDataNode": "hc-a", "sourceInvitation": "inv-completed-existing"},
+        {"key": "asg-revoked", "account": "account-invite-existing", "role": "role-region", "node": "region-west", "visibleDataNode": "region-west", "sourceInvitation": "inv-completed-revoked", "status": "REVOKED"}
+      ],
+      "invitationStates": [
+        {"key": "inv-pending", "status": "PENDING"},
+        {"key": "inv-accepted", "status": "ACCEPT_INTENT_RECORDED"},
+        {"key": "inv-verified", "status": "MOBILE_VERIFIED"},
+        {"key": "inv-ready", "status": "CREDENTIAL_READY"},
+        {"key": "inv-completed-single", "status": "COMPLETED"},
+        {"key": "inv-completed-multi-a", "status": "COMPLETED"},
+        {"key": "inv-completed-multi-b", "status": "COMPLETED"},
+        {"key": "inv-completed-multi-c", "status": "COMPLETED"},
+        {"key": "inv-completed-disabled-store", "status": "COMPLETED", "fixturePurpose": "EXISTING_ASSIGNMENT_THAT_BECOMES_NON_ENTERABLE"},
+        {"key": "inv-completed-existing", "status": "COMPLETED"},
+        {"key": "inv-completed-revoked", "status": "COMPLETED"},
+        {"key": "inv-cancelled", "status": "CANCELLED"},
+        {"key": "inv-expired", "status": "EXPIRED"},
+        {"key": "inv-reissued", "status": "PENDING", "supersedes": "inv-cancelled"}
+      ],
+      "passwordResetStates": [
+        {"key": "account-reset-otp", "account": "account-reset", "status": "OTP_ISSUED", "purpose": "PASSWORD_RESET_OTP"}
+      ]
+    },
+    "contracts": [
+      {"key": "contract-current-a", "contractNo": "R5-CUR-001", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-01", "effectiveTo": "2026-08-31", "phaseNameSnapshot": "一期", "items": [{"code": "SKU-TEA-01", "name": "招牌茶饮"}]},
+      {"key": "contract-current-b", "contractNo": "R5-CUR-002", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-25", "effectiveTo": null, "items": [{"code": "SKU-TEA-02", "name": "季节茶饮"}]},
+      {"key": "contract-future", "contractNo": "R5-FUT-001", "store": "store-preparing", "status": "ACTIVE", "effectiveFrom": "2026-08-01", "effectiveTo": "2026-12-31", "items": [{"code": "SKU-BAKE-01", "name": "招牌面包"}]},
+      {"key": "contract-invalid", "contractNo": "R5-INV-001", "store": "store-history", "status": "INVALID", "effectiveFrom": "2026-05-01", "effectiveTo": "2026-06-30", "items": [{"code": "SKU-HIS-01", "name": "历史商品"}]},
+      {"key": "contract-ended", "contractNo": "R5-END-001", "store": "store-history", "status": "ACTIVE", "effectiveFrom": "2026-01-01", "effectiveTo": "2026-07-24", "items": [{"code": "SKU-HIS-02", "name": "到期商品"}]}
+    ]
+  },
+  "expectedCounts": {
+    "platformAdmins": 3,
+    "groupWorkspaces": 3,
+    "activeAssets": 2,
+    "stagedOrCleanupAssets": 2,
+    "extensionDefinitions": 5,
+    "commercialGroups": 2,
+    "regions": 2,
+    "projects": 3,
+    "projectPhases": 5,
+    "brands": 3,
+    "tenants": 3,
+    "headCompanies": 3,
+    "brandAuthorizations": 4,
+    "stores": 5,
+    "roles": 5,
+    "accounts": 6,
+    "assignments": 7,
+    "invitationStateFixtures": 14,
+    "passwordResetStateFixtures": 1,
+    "contracts": 5
+  },
+  "seedStages": [
+    {"id": "bootstrap", "channel": "DEV_BOOTSTRAP_SQL", "idempotencyKeyPrefix": "r5-v1-bootstrap", "readback": ["pa-bootstrap", "bootstrap audit receipt"]},
+    {"id": "platform", "channel": "REAL_PLATFORM_COMMANDS", "idempotencyKeyPrefix": "r5-v1-platform", "readback": ["platformAdmins", "groupWorkspaces", "assets"]},
+    {"id": "extension", "channel": "REAL_PLATFORM_COMMANDS", "idempotencyKeyPrefix": "r5-v1-extension", "readback": ["five definitions and versions"]},
+    {"id": "organization", "channel": "REAL_OPERATIONS_COMMANDS", "idempotencyKeyPrefix": "r5-v1-organization", "readback": ["hierarchy", "entities", "stores"]},
+    {"id": "access", "channel": "REAL_INVITATION_PUBLIC_CHAIN_PLUS_DEV_FIXED_OTP_ISSUER", "idempotencyKeyPrefix": "r5-v1-access", "readback": ["roles with independent page/action/data dimensions", "accounts", "14 invitations", "7 assignments"]},
+    {"id": "contract", "channel": "REAL_OPERATIONS_COMMANDS", "idempotencyKeyPrefix": "r5-v1-contract", "readback": ["five contracts", "OPERATING", "PREPARING", "NOT_OPERATING"]},
+    {"id": "negatives", "channel": "REAL_COMMANDS_OR_TERMINAL_FIXTURE", "idempotencyKeyPrefix": "r5-v1-negative", "readback": ["disabled", "stale", "denied", "cancelled", "expired", "revoked"]}
+  ],
+  "scenarioPrerequisitePolicy": {
+    "denominator": 32,
+    "mappingSource": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json#operations[*].scenarioIds",
+    "rule": "every scenario must resolve at least one positive fixture and every declared denied/stale/disabled branch must resolve one negative fixture before mutation; scenarioNegativeFixtureSemantics may narrow a fixture to a non-filtering/non-blocking assertion"
+  },
+  "scenarioNegativeFixtureSemantics": {
+    "D03-S01.store-disabled": "contract candidate remains visible with storeStatus=DISABLED; disabled status alone must not filter the candidate or reject contract creation",
+    "D03-S02.store-disabled": "contract detail/update support exposes storeStatus=DISABLED without rewriting or invalidating the contract fact"
+  },
+  "scenarioPrerequisites": [
+    {"scenarioId": "D01-S01", "positiveFixtureRefs": ["pa-bootstrap"], "negativeFixtureRefs": ["pa-disabled"]},
+    {"scenarioId": "D01-S02", "positiveFixtureRefs": ["gw-cinder", "asset-staged"], "negativeFixtureRefs": ["asset-expired"]},
+    {"scenarioId": "D01-S03", "positiveFixtureRefs": ["gw-aurora", "asset-staged"], "negativeFixtureRefs": ["gw-boreal"]},
+    {"scenarioId": "D01-S04", "positiveFixtureRefs": ["gw-aurora"], "negativeFixtureRefs": ["gw-boreal"]},
+    {"scenarioId": "D01-S05", "positiveFixtureRefs": ["gw-cinder", "cg-aurora"], "negativeFixtureRefs": ["gw-aurora"]},
+    {"scenarioId": "D01-S06", "positiveFixtureRefs": ["gw-aurora"], "negativeFixtureRefs": ["gw-boreal"]},
+    {"scenarioId": "D01-S07O", "positiveFixtureRefs": ["ext-brand", "ext-tenant", "ext-head-company", "ext-store", "ext-contract"], "negativeFixtureRefs": ["gw-boreal"]},
+    {"scenarioId": "D01-S07P", "positiveFixtureRefs": ["ext-brand", "ext-tenant", "ext-head-company", "ext-store", "ext-contract"], "negativeFixtureRefs": ["gw-boreal"]},
+    {"scenarioId": "D02-S01", "positiveFixtureRefs": ["gw-aurora", "cg-aurora"], "negativeFixtureRefs": ["gw-cinder"]},
+    {"scenarioId": "D02-S02", "positiveFixtureRefs": ["region-east", "region-west", "project-river", "project-hill"], "negativeFixtureRefs": ["project-lake"]},
+    {"scenarioId": "D02-S03", "positiveFixtureRefs": ["brand-tea", "tenant-a", "hc-a"], "negativeFixtureRefs": ["brand-disabled", "tenant-disabled", "hc-disabled"]},
+    {"scenarioId": "D02-S04", "positiveFixtureRefs": ["store-operating", "store-preparing"], "negativeFixtureRefs": ["store-disabled", "project-lake"]},
+    {"scenarioId": "D02-S06", "positiveFixtureRefs": ["cg-aurora", "region-east", "project-river", "store-operating"], "negativeFixtureRefs": ["gw-cinder"]},
+    {"scenarioId": "D02-S07", "positiveFixtureRefs": ["store-operating", "contract-current-a"], "negativeFixtureRefs": ["store-disabled"]},
+    {"scenarioId": "D03-S01", "positiveFixtureRefs": ["store-operating", "contract-current-a"], "negativeFixtureRefs": ["store-disabled"]},
+    {"scenarioId": "D03-S02", "positiveFixtureRefs": ["store-operating", "ext-contract"], "negativeFixtureRefs": ["store-disabled"]},
+    {"scenarioId": "D03-S03", "positiveFixtureRefs": ["contract-current-a", "contract-current-b"], "negativeFixtureRefs": ["contract-invalid"]},
+    {"scenarioId": "D03-S04", "positiveFixtureRefs": ["contract-current-a", "contract-future", "contract-ended"], "negativeFixtureRefs": ["contract-invalid"]},
+    {"scenarioId": "D03-S06", "positiveFixtureRefs": ["contract-current-a", "contract-future", "contract-ended"], "negativeFixtureRefs": ["gw-cinder"]},
+    {"scenarioId": "D04-S01", "positiveFixtureRefs": ["role-group", "role-region", "role-project", "role-head-company", "role-store"], "negativeFixtureRefs": ["project-lake"]},
+    {"scenarioId": "D04-S02", "positiveFixtureRefs": ["role-project"], "negativeFixtureRefs": ["project-lake"]},
+    {"scenarioId": "D04-S03", "positiveFixtureRefs": ["account-single-role", "asg-single-store"], "negativeFixtureRefs": ["account-disabled", "asg-revoked"]},
+    {"scenarioId": "D04-S04", "positiveFixtureRefs": ["account-multi-role", "asg-multi-group", "asg-multi-project"], "negativeFixtureRefs": ["asg-revoked"]},
+    {"scenarioId": "D04-S05O", "positiveFixtureRefs": ["inv-pending", "role-store", "store-operating"], "negativeFixtureRefs": ["inv-cancelled", "store-disabled"]},
+    {"scenarioId": "D04-S05P", "positiveFixtureRefs": ["inv-pending", "role-project", "project-river"], "negativeFixtureRefs": ["inv-expired", "project-lake"]},
+    {"scenarioId": "D04-S06", "positiveFixtureRefs": ["inv-accepted", "inv-verified", "inv-ready"], "negativeFixtureRefs": ["inv-cancelled", "inv-expired"]},
+    {"scenarioId": "D04-S08", "positiveFixtureRefs": ["account-single-role", "account-multi-role"], "negativeFixtureRefs": ["account-no-role", "account-disabled"]},
+    {"scenarioId": "D04-S09", "positiveFixtureRefs": ["account-multi-role", "asg-multi-project", "asg-multi-store"], "negativeFixtureRefs": ["asg-disabled-store", "asg-revoked"]},
+    {"scenarioId": "D04-S10", "positiveFixtureRefs": ["account-reset", "account-reset-otp"], "negativeFixtureRefs": ["account-disabled", "inv-expired"]},
+    {"scenarioId": "D04-S11", "positiveFixtureRefs": ["pa-support"], "negativeFixtureRefs": ["pa-disabled"]},
+    {"scenarioId": "D04-S12O", "positiveFixtureRefs": ["account-single-role", "asg-single-store"], "negativeFixtureRefs": ["account-disabled", "asg-revoked"]},
+    {"scenarioId": "D04-S12P", "positiveFixtureRefs": ["pa-bootstrap", "pa-support"], "negativeFixtureRefs": ["pa-disabled"]}
+  ],
+  "businessPassPredicates": [
+    "all expectedCounts equal owner readbacks",
+    "all 32 scenario prerequisite sets resolve without manual data",
+    "all assignments cite completed invitation owner facts",
+    "store contract states read OPERATING/PREPARING/NOT_OPERATING as designed",
+    "second identical seed replays stable readbacks",
+    "changed fixture payload with same key fails SEED_PROFILE_DRIFT",
+    "dry-run planned count equals each stage receipt count and final owner readback count",
+    "role page access, action capability, assignment and visible data node are read back as four independent dimensions",
+    "an unknown extension field sample fails with the typed extension validation problem",
+    "default profile rejects fixed OTP and fixed clock activation"
+  ],
+  "cleanupPassPredicates": [
+    "managed backend and both app process manifests report zero live owned processes",
+    "database reset affects only the exact derived namespace database and rebuilds public Flyway history plus seven fixed owner schemas",
+    "asset reset deletes only keys under the exact namespace root",
+    "temporary upload keys and CLEANUP_PENDING fixtures reach zero after cleanup run",
+    "browser contexts, temporary cookies, OTP grants and sessions created by acceptance are revoked",
+    "business PASS and cleanup PASS are recorded separately"
+  ],
+  "resetFailClosedPredicates": [
+    "missing or malformed namespace",
+    "database host or exact derived database not in explicit DEV allowlist",
+    "resolved asset key is outside the exact <V2S_DEV_ASSET_ROOT>/catering-v2s/dev/<V2S_DEV_NAMESPACE>/ prefix",
+    "credential source missing",
+    "production-like hostname or namespace",
+    "fixture profile/version mismatch"
+  ],
+  "stageCountReconciliation": {
+    "dryRun": "emit planned create/replay/terminal counts per stage without writes",
+    "execution": "each stage receipt records attempted, created, replayed, rejected and ownerReadbackCount",
+    "closure": "planned total equals execution terminal total and owner readback total; mismatch fails SEED_COUNT_DRIFT"
+  },
+  "evidenceLedgers": {
+    "L1": "domain/unit and deterministic fixture validation",
+    "L2": "owner/application/integration plus generated adapter behavior",
+    "L3": "remote PostgreSQL, managed scripts and two-app browser behavior",
+    "business": "32 scenario outcomes and owner readbacks",
+    "cleanup": "process, database namespace, asset, browser/session and temporary grant cleanup"
+  },
+  "unknownExtensionNegativeFixture": {
+    "host": "store-operating",
+    "fieldKey": "undeclaredR5Field",
+    "value": "must-not-persist",
+    "expectedErrorCode": "EXTENSION_DEFINITION_INVALID"
+  }
+}

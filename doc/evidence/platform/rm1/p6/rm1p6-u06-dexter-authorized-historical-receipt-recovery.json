@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1p6-u06-historical-receipt-recovery",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "packageId": "RM1P6-UI-IA-CONFORMANCE-U06",
+  "originalMissingReceiptCount": 17,
+  "authorization": "Dexter authorized all RM1 P6 implementation and directed Codex to permanently repair the hook/control issue. This one-time recovery is limited to the 17 independently verified U06 baseline-excluded or disconnected receipt paths and cannot certify any future write.",
+  "recoveryArtifact": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-dexter-authorized-historical-receipt-recovery.json",
+    "baselineSha256": "ABSENT",
+    "disposition": "NORMAL_RECEIPT_CHAIN_EXISTS",
+    "reason": "This recovery record itself is created through the ordinary U06 pre/post hook chain."
+  },
+  "staticVerifications": [
+    { "id": "EXACT_PATH_SET", "result": "PASS" },
+    { "id": "BASELINE_TO_CURRENT_HASHES", "result": "PASS" },
+    { "id": "NO_FABRICATED_RECEIPTS", "result": "PASS" },
+    { "id": "FUTURE_WRITES_REMAIN_HOOK_BOUND", "result": "PASS" }
+  ],
+  "entries": [
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "543814ce7c0d4c180c71d84b1a2cacb18d20146fd95590065c25fe2f3914c998",
+      "reason": "The source predates the U06 baseline and its truthful receipt chain begins in the prior U02 package; the U06 focused lint correction has an ordinary U06 receipt only from that later byte.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": ".agents/skills/cs-memory-recall/SKILL.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "d9e4b8ca8b7ee5bdbe41037338fe3815ae024ce61c42bcb62e6684d8e4648b0f",
+      "reason": "The U06 baseline excludes the later bounded source-reread discipline skill update.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "AGENTS.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "82564a7b8eb617958c6f93c8cbdf69c980ad856f9d53ab774f91f1439fd56c2f",
+      "reason": "The U06 baseline excludes Dexter's later bounded-preparation and pointwise reread direction.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "21ca767d649ffd6e8d9f587b2b5d354f907fbed866c75bdf24a13046e293e4eb",
+      "reason": "The source predated U06 and its truthful same-package chain cannot begin at ABSENT.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "d87197d6b02e5110cc6830f81deb85eca5bf04e77c7caa6f626c801a5a12eecb",
+      "reason": "The generated policy map entered after the immutable U06 baseline without client receipts.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "149d4d99be3d57cca6665148011d9faf3a87c7062dddb5285f305c80ebe4c9ac",
+      "reason": "The generated policy map entered after the immutable U06 baseline without client receipts.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "7f59478c3b52aeef571f44a1b8e5e11ab2ddf8038d480fa1d7ac837901fdca70",
+      "reason": "The generated standards denominator entered after the immutable U06 baseline without client receipts.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "108ba9050ed256c6e41a3e53e3af4c761706c4dc8fe697de9540fc649f5af6d3",
+      "reason": "The later reviewer prompt discipline is baseline-excluded and has no client receipt chain.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+      "baselineSha256": "d7fc1e98a41185a9b2a0ed7433e6704a47a99e604ba24a2c5f788cd06b8cc2d6",
+      "currentSha256": "9c68c72a1b24776c7c7348c9ae98233fb54458d59fa43f881b1eaa92af5a91d9",
+      "reason": "The U06 implementation manifest has a valid later scope but no baseline-origin receipt path.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "doc/review/platform/independent-subagent-adversarial-review-input-checklist-template.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "0ef12f041bae6b4411bb4b4b3f15f2860796b31f3dab5894738fdd17441b63fe",
+      "reason": "The later reviewer checklist discipline is baseline-excluded and has no client receipt chain.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "project-memory/index.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "852dba3421467ac712185c9f20f607e5b629fa07c0ef021a20cfb0931be5e003",
+      "reason": "The deterministic memory index was regenerated after the immutable U06 baseline without receipts.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "project-memory/index.md",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "a619f39092f8548c923784aa8f632884572504f04d2dc31906b4c7646137466a",
+      "reason": "The deterministic memory index was regenerated after the immutable U06 baseline without receipts.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "project-memory/required-inventory.json",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "reason": "The deterministic required-memory inventory entered after the baseline without client receipts.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "c2b341880427c02c04f37263291d0475437eed65a7aa3c41d2531ac4ade52e6b",
+      "reason": "The U06 L2 fixture existed outside the immutable baseline and lacks a baseline-origin receipt chain.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "edce2d2552e16842e484c62f50f77b6c0f3ee35a0e2a7f0b5625f8d08b3f00ed",
+      "reason": "The U06 L2 runner existed outside the immutable baseline and lacks a baseline-origin receipt chain.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "tools/project-memory/cli.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "a2732e25bdb4cb66692bff32f580869ab0f76dfbd88617cd08b590803ac379e7",
+      "reason": "The deterministic index generator entered after the baseline without a U06 client receipt chain.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "baselineSha256": "ABSENT",
+      "currentSha256": "2ca8da43ac93dc1835b6286a803dd42f3a92843c08ec3a31d19fefe3a58cb479",
+      "reason": "The control source predates the U06 baseline; its current U06 chain starts from a later control byte and cannot truthfully claim an ABSENT baseline-origin receipt.",
+      "staticVerificationIds": ["EXACT_PATH_SET", "BASELINE_TO_CURRENT_HASHES", "NO_FABRICATED_RECEIPTS"],
+      "disposition": "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY",
+      "hookReceiptClaim": "NOT_RECORDED_BY_CLIENT"
+    }
+  ]
+}

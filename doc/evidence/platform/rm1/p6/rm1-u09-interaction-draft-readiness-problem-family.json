@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1-U09-PREPARATION",
+  "status": "PREPARED_FOR_DEXTER_INTERACTION_ACCEPTANCE",
+  "implementationAuthority": false,
+  "findingSet": [
+    {
+      "id": "RM1-P6-DETAIL-DESIGN-PREREQUISITE-01",
+      "classification": "CONFIRMED",
+      "rootCause": "The U09 whole-scope plan and manifest named UI changes but lacked the required accepted interaction artifacts, exact change surfaces, state/recovery design, and final package denominators.",
+      "finiteSearchSurface": [
+        "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md#RM1-P6",
+        "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json#RM1-U09",
+        "doc/decisions/templates/ui-interaction-design-template.md"
+      ],
+      "counterexample": "An accepted R5 baseline is a visual input, not an accepted RM1 amendment or implementation-facing P6 detail design.",
+      "prevention": "IA-01 and IA-02 must be accepted and hash-bound before a final exact-path P6 detail design can enter independent DESIGN review."
+    },
+    {
+      "id": "RM1-P6-IA-CANONICAL-PATH-01",
+      "classification": "CONFIRMED",
+      "rootCause": "P6 plan §7.1 and current U09 manifest name different IA filenames.",
+      "finiteSearchSurface": [
+        "RM1 plan §7.1 amendment table",
+        "U09 OWNED_SURFACE_AND_PAGE_KEYS owningSourceSet"
+      ],
+      "counterexample": "Creating a third filename would make the governing artifact set less deterministic.",
+      "prevention": "Use the current manifest paths for drafts; final re-freeze reconciles all references to the accepted canonical paths."
+    },
+    {
+      "id": "RM1-P6-ST2-CONSUMER-DENOMINATOR-01",
+      "classification": "CONFIRMED",
+      "rootCause": "The P1 typed-problem consumer ledger retains renamed/moved paths without a current-tree reconciliation.",
+      "finiteSearchSurface": [
+        "P1 authority ledger",
+        "both frontend apps' non-generated typed-problem renderer consumers"
+      ],
+      "counterexample": "A type import that does not render errorCode/detail is not automatically a consumer migration target.",
+      "prevention": "Final U09-A creates current renderer-to-ledger exact-set evidence and a real stale-path red mutation."
+    },
+    {
+      "id": "RM1-P6-UI-SURFACE-AND-LANGUAGE-STANDARD-01",
+      "classification": "CONFIRMED",
+      "rootCause": "A document-level consumer-face declaration and component-oriented wording did not force every user-facing surface to disclose its backend, physical interaction form, actor, business scenario, user goal, or user language.",
+      "finiteSearchSurface": [
+        "doc/decisions/templates/ui-interaction-design-template.md",
+        "RM1 IA-01 screens",
+        "RM1 IA-02 screens"
+      ],
+      "counterexample": "A technical field may be required in the contract matrix but must not become a user-visible label such as node, target, owner, capability, session, or error code.",
+      "prevention": "Every screen now requires CONSUMER_FACE, UI_SURFACE, HOST_AND_ENTRY, ACTOR, BUSINESS_SCENARIO, BUSINESS_GOAL, USER_VISIBLE_COPY, and TECHNICAL_BOUNDARY; both management-backend login pages require Ant Design ProComponents LoginFormPage."
+    },
+    {
+      "id": "RM1-P6-OPERATIONS-LOGIN-ROUTE-BRAND-BASELINE-01",
+      "classification": "CONFIRMED",
+      "rootCause": "The prepared IA inferred the operations login surface from the current v2s Card + Form implementation and therefore exposed the route locator as a user input, instead of starting from the operation user's task and the v4 route-resolved entry-brand baseline.",
+      "finiteSearchSurface": [
+        "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md#IA01-OPERATIONS-LOGIN",
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+        "contracts/openapi/paths/operations-admin/workspace-auth.paths.yaml#/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsWorkspaceLoginEntryController.java",
+        "/Users/dexter/Documents/workspace/idea/catering-server-v4/frontend/apps/catering-operations-admin/src/pages/Login.tsx@b95fb172f3131641a361652625c71c66b46f4bb8efd6cdee288d181c8010f737"
+      ],
+      "counterexample": "The platform login has no group-workspace route and must not acquire an entry brand; the public invitation URL is not an operations-admin login surface and must not be converted into LoginFormPage.",
+      "prevention": "Every final operations-admin login design and implementation must consume the existing anonymous getOperationsWorkspaceLoginEntry readback before presenting LoginFormPage: URL locator stays non-visible, workspaceName and operationsTitle form the brand, disabled/not-found/read failure are distinct user states, logo reference never leaks, and final authentication remains owner-verified through the existing password or OTP operation."
+    },
+    {
+      "id": "RM1-P6-OPERATIONS-LOGIN-LOGO-READBACK-01",
+      "classification": "CONFIRMED",
+      "rootCause": "The interaction draft treated logoAssetRef as though it were already displayable. The existing anonymous login-entry contract exposes only that ref and the controller always returns null, while the platform workspace owner already proves that a client must consume a gateway-approved logoUrl rather than derive one.",
+      "finiteSearchSurface": [
+        "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md#IA01-OPERATIONS-LOGIN",
+        "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml#WorkspaceLoginEntry",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsWorkspaceLoginEntryController.java",
+        "contracts/openapi/components/platform-workspace/group-workspace.schemas.yaml#GroupWorkspaceDetail",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#logoUrl"
+      ],
+      "counterexample": "The platform login is not scoped to one group workspace and must retain its own platform mark; an unconfigured logo or an approved image-load failure may use the unified default mark, but this is not a substitute when a group workspace Logo is configured.",
+      "prevention": "Final P6 treats login-entry logoUrl as a contract-owner-page-test closure: owner resolves the approved public asset URL; generated client carries it; LoginFormPage.logo displays the group workspace Logo; client never derives a URL from asset ref; focused tests prove configured logo, no-logo fallback, and failed-image fallback."
+    },
+    {
+      "id": "RM1-P6-PUBLIC-INVITATION-OPERATIONS-BRAND-READBACK-01",
+      "classification": "CONFIRMED",
+      "rootCause": "The draft labeled public invitation only by its anonymous protocol and therefore omitted its operations-admin affiliation and group-workspace brand. PublicInvitationView has no workspaceName or logoUrl, and its controller maps operationsTitle to null, so the existing page cannot truthfully show the required name or Logo.",
+      "finiteSearchSurface": [
+        "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md#IA01-PUBLIC-INVITATION",
+        "contracts/openapi/paths/public/invitation-acceptance.paths.yaml",
+        "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml#PublicInvitationView",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+        "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx"
+      ],
+      "counterexample": "Public invitation remains a public, token-scoped protocol and must not create or recover an operations-admin session; platform-admin does not own this journey or its group-workspace branding.",
+      "prevention": "Final P6 adds workspaceName, operationsTitle and owner-approved logoUrl to PublicInvitationView, carries them through codegen, and uses one operations-admin-affiliated public brand header across invitation detail, OTP, credentials and completion. Tests cover configured Logo/name, no-logo fallback, four-step brand retention, and the invariant that no public action creates an authenticated session."
+    },
+    {
+      "id": "RM1-P6-FORM-CONTROL-DEPENDENCY-01",
+      "classification": "CONFIRMED",
+      "rootCause": "Existing low-fidelity forms listed fields but did not disclose their dependency order, option source, clearing behavior or owner revalidation, allowing the invitation role control to appear independently selectable before an appointment organization was chosen.",
+      "finiteSearchSurface": [
+        "doc/decisions/templates/ui-interaction-design-template.md",
+        "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md",
+        "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md#IA01-USER-INVITATION-CREATE-DRAWER",
+        "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml#WorkspaceInvitationCandidatePage",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java"
+      ],
+      "counterexample": "A simple independent text field has no upstream dependency but still needs an explicit no-dependency row; a candidate list displayed by the client is not an authorization decision and cannot replace command-owner validation.",
+      "prevention": "Every form wireframe must carry the standard form-control dependency table. The invitation Drawer proves the required shape: searchable owner-returned organization choice first; then same-type owner-returned role choice; clear roles on organization change; disabled loading/empty/failure states; owner revalidates the submitted organization and roles."
+    },
+    {
+      "id": "RM1-P6-PLATFORM-WORKSPACE-ORIGINAL-SOURCE-AND-ACTION-DENOMINATOR-01",
+      "classification": "CONFIRMED",
+      "rootCause": "The IA02 platform-workspace draft inferred a generic selected-workspace flow instead of reopening the all-v2 management page, detail Drawer, overview page, shell, L2 tests and the formal UI standard. It consequently invented row actions and overview navigation actions that the inherited interaction does not permit.",
+      "finiteSearchSurface": [
+        "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md#IA02-PLATFORM-WORKSPACE-*",
+        "/Users/dexter/Documents/workspace/idea/catering-all-v2/doc/platform/admin-consumer-chrome-standard.md#2.4",
+        "/Users/dexter/Documents/workspace/idea/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+        "/Users/dexter/Documents/workspace/idea/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+        "/Users/dexter/Documents/workspace/idea/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-overview/ui/WorkspaceOverviewPage.tsx",
+        "/Users/dexter/Documents/workspace/idea/catering-all-v2/apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+        "doc/decisions/2026-07-25-v2s-r5-whole-scope-journey-decision.md#D01-S02-D01-S06"
+      ],
+      "counterexample": "The v2 management table has no action column: its business-name link opens the detail Drawer, and only the Drawer exposes the contextual edit, status and initialization actions. The overview is read-only except refresh/retry and its no-selection Result has no navigation button.",
+      "prevention": "Before any IA is shown for acceptance, reopen the original user task, formal UI standard, corresponding all-v2 page source and L2 evidence. Maintain one visible-operation denominator: every button, link, Select or menu action names its approved Journey step, physical surface and genuine owner path. A source conflict is labeled DEXTER_DECISION_REQUIRED rather than silently selected."
+    }
+  ],
+  "setEqualityRequiredBeforeFinalP6Design": true,
+  "draftArtifacts": [
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+    "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md"
+  ]
+}

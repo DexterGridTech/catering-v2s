@@ -1,0 +1,974 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-UI-IA-CONFORMANCE-U06",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": ".agents/skills/cs-memory-recall/SKILL.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d9e4b8ca8b7ee5bdbe41037338fe3815ae024ce61c42bcb62e6684d8e4648b0f"
+    },
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "beforeSha256": "b23e3d8c4071fa37f0d0e8edb910ba092184b96bd26cdeae2d7f9bcfd56e7a57",
+      "afterSha256": "b6e575a3a884242e44e54fb794ff08019f91e8b2733a9416830cec62e493f2ee"
+    },
+    {
+      "path": "AGENTS.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "82564a7b8eb617958c6f93c8cbdf69c980ad856f9d53ab774f91f1439fd56c2f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+      "beforeSha256": "b54b4eab90aee69572ff8d60f6bd9181598a623e9c2a0ecab79c70bb077c9f48",
+      "afterSha256": "d7c4a121300c6325d8c50186662a853caddfbcb1ef9ca1595fb042dce63331b0"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityCommandReceiptService.java",
+      "beforeSha256": "ec8815f5f4fb0ea72b887df217d402a6a62bf768f719d46f7e29e6f0cd657132",
+      "afterSha256": "31af4172a65d43ef61f12ac8080afe2ec5eae07010f22b9bd87c14d117a1464d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+      "beforeSha256": "24a10443da298c7755635ae219f89fec3715fe4e8d432609734ec5f70833a9b5",
+      "afterSha256": "0824b81871fe23796f9b71813dea846f3654da5fa74b4b42a894f90ffec18e16"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandReceiptService.java",
+      "beforeSha256": "747a0eba590e03faec975720f7dba1c77ac7910c5483a8512a2730110728aae7",
+      "afterSha256": "344412f2d4cef5585ecd34e89d16ddd77ee59ba4c93e893765c938c2ce4ec1e8"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java",
+      "beforeSha256": "7036895f0afd6534f37b38d30ffa9d1d9161f0ded39899e6cb84d7157e2120ac",
+      "afterSha256": "23059d6998be2ccea370823881dc118b4b7d98b637ce4e85d23378e2a714c71c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+      "beforeSha256": "c86a4e96dbeb6d76bff055415d1e13e25698ca97d37e86491630d73fa91016e7",
+      "afterSha256": "147c6f7d27327aa9de6722ddf50ebea05622250a3b9f605c48726cc21b39484b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+      "beforeSha256": "00a759459262e48a3a6046e7a59a6cc7e41af27bef43ec2ba716ba2103e11d58",
+      "afterSha256": "fd2522357605b22a9ec1359800b94f34a51fbb52025eeafea6f38e1adee0352f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspacePlatformAccountPageRequestTest.java",
+      "beforeSha256": "32d080638806d050a9bc4f7b531e3f6b14b7c305e0b71aea266421bcb4b0b4fe",
+      "afterSha256": "49d2f110a43a0e561bcf6908dc8d8065256909d158307498bf4a005f2060a06a"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "462141392bd4befa8a5b8ce89f3e843a1c7f0f480097aeeaa3e9e1c0ea422f39"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+      "beforeSha256": "ddcd3d146663a51f491219548d6579ee4a34734a5af261c8aa6032a8d7f4dffb",
+      "afterSha256": "4509163441d2a65a2c900b0fcfad5e8aba81e5bf07464019155db96dfa674162"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "eec2eb7e2b6ad4291d2935e2110e72ba0e06edc7cae06f0b44c225a354b37e3f"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "beforeSha256": "bf412256b859a04131e1670675d5930659b2f050d957872a2c8909914d0d29ca",
+      "afterSha256": "1febad6fbe4189f69cc1a123249f78741ef84f10a49db5bd8758609eb7f1f5d8"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b26b0ff6c4b805edfae394f548fc3b9fdef48a0b88921a3500300ca3c2b27edd"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0cd86d0bfff7ca7e22d7c97839e98af26ee7aab91ddf6a62e6b481d54516d108"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeResult.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a5b5481cc981092b24d1daf4f066c96ce99747f6b05fa059e561b4b83fc2e215"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeResult.tsx",
+      "beforeSha256": "b3ca60112a7f8fa335a0ed19e2b4674e54a117abb8b2b14999cd3debb3766efd",
+      "afterSha256": "6e0ce28afce5fa84d1405abc41649afcbf3fc3aeba091f829e3c33221f39d87c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "72ed3b1c9ca77c2e782477ac4210d8ea2955afd1073cdd59610b31428a093bf7"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "93664235424fb64cb4e3dd4d84dba0915144d07aba31b95843cc3908a1a73795"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "68ef3e48b7873af12d725335953cbe8df68ad59a373f5ec621d425e451053b0f"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionEditDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e3227f5c3cbb4e1cc49b730c68cacab129164c5de335da13f208a2bc0fb1847f"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionSaveModal.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "11912f240347595b7c3bb269e928ce7917da7c389f8ae7fbc8af0112ccf23c14"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionSaveModal.tsx",
+      "beforeSha256": "5e31fcdcc79ca1e738ae8086382aa4731eac759f743132aab1b43f866bd51d68",
+      "afterSha256": "108687866d46c7d8fcaf0d43310f41fbd825bffed925b06eb77ca5def8387dbc"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "863d41f9e673d667ed0a62629d4b31091b245e3a73028d5d24ea8eda4102d43d"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "beforeSha256": "a48aa6a4e33f31e1410ad663acb1c0f9c530457767ada4396d3c137a853a1bb3",
+      "afterSha256": "1deb5894be7859f3ddd825e0cffc996658bc8b1976d791eec1614ce4d7148444"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b2b798495e504136e21d90961a50b33ea35aa2cea171b7074e38f604937b87e3"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewDetailDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0c1381eece406881b6d81d87139daa147515cb68ac7f16d2f1c18c37e5ba7c32"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "25cd6ce186642927874109250d354b818f5e19ee5153d3d4fe9f744464f45f3a"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "beforeSha256": "ac71cf6f25f6487db3bbed3927ffca2443fa6f775877fde6a30ae7efc64f4f1a",
+      "afterSha256": "1f207b076326fc22236e6e9ef5529f4a583d50ff6c961bc492f635780a4c3d16"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCreateDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "f6ef667bb4d0d1d509e1a6794b60d9569d2362bb52fea9b92f1e92f9e0cb7e96"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCredentialDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7563649e98ca43cd63153632bc499e37b5ea0e4e21166045129e3dfbaed13457"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bbd867ff624de1c8b4ac7a0a0550763110d91c682e4e1f39424c42aa0878803f"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorEditDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "6272374bc8ea45a46a7c505173b02f1163580168f6c1f638d3fb6ed011e7e90f"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "644c6286e597b8bc4d0b2c70c893fa12aa9b0b47264e568cfa01af537cb952eb"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "543814ce7c0d4c180c71d84b1a2cacb18d20146fd95590065c25fe2f3914c998"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "33fc20e45ede2734072df85b1a37c9137eb3e3b9d2e1dbda0adeb7c5bb21a4f0"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "beforeSha256": "73d4d94d1e5743198b94c4c50eb3cbd278852a564bfd362b0f3fba406a82bc4a",
+      "afterSha256": "639f48dcecb77f12b0c3f4d45e9f7085d346a35b7bafe9bb14a7a8a2f630570b"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "642e8a05180a9146bbfd66a04c2d16d092571ce4c3363cb2033529a8d8a4d0f2"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "beforeSha256": "60da2902ab2da3a76f4100ffbf261b542ab2961b13bdf39769b9b355f20a20b0",
+      "afterSha256": "8fe3d46bb3c25ad866971abe19eae016f7e6ed8a2949e2eec88efb91072a5884"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3b965bd730bce2fca090bd336e416fe97aef52117cad3684e272fb50caa258c0"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleCreateDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "6453ed0a7923b3d285f04c19caf2d45963440ff603a62f824bd661a0544e1598"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "65ebd3b995a29347162e317f5b26e7b3166e764b1b786d49249e6668d599ce3a"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleEditDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bc1c41fdd224b3d55e0ec5e4e84d21c31e4fedab096be8a6a16315b4362b360b"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolePermissionFields.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b8e17f9c9b62d83ffa33f8041bc817a260dbea65ca22626a15154e72fafd32f4"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleStatusModal.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e440e50f91b83ceedf6dcd22cdb64186cbfe387c0056977cd314aace26bd7d28"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "111cc843d025be5136e1280fb826c23c075a6aa046c616150ef4426f199b333e"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "beforeSha256": "e223667d23d7689380896738130b8ff074d0d2790abb2ab6701c44127e247eae",
+      "afterSha256": "e0535f110205fb9f2fd2e2ce262812173b3f23847ed38392f70210edc6d79533"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountActionModal.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "cc0a4e1df60656639fff3b32c0be165f30656dc5bd6094da932dc1776522887a"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c72e36ffb138fec29c25cf50183855abcab776046c1df7350259a88a1cc0eabc"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "21ca767d649ffd6e8d9f587b2b5d354f907fbed866c75bdf24a13046e293e4eb"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1f42b1f64ec934555cc0ba140aaa71697ffd979c8ee5c1012801b229ed962750"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceCreateDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2d3bc3eabf83fce769d44b3d82bc70bb5c34208722d82c576c47f64cf9949be2"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "37ac152b3e3df585cce5ef0669e40adb0e1079edaf925a96dc49619eb5cf2be3"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceEditDrawer.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fab9f7350029523ab39fb08014df157e98360ea9826267139b50810b2aa4d7b8"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceEditDrawer.tsx",
+      "beforeSha256": "939f84627a54aa6711a0aaf524b459c0c0e79f6e572e1accc8c637f02a370670",
+      "afterSha256": "166a931491929bd31f05fba20da9277752a49caeec747a7a1c21d539c710091a"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8ebb7e8e48114097041414518eef0c0f80dc5d4462e9078443f763522e299c28"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "beforeSha256": "ed70e10b9872fe405662feaed26f8fe234a81ce26945187751c72e505f8b923b",
+      "afterSha256": "20b3675caf56d3667bf018e8a749921c5e5d76bea93ffdb43b522850adcb2bf7"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceStatusModal.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "97310b3c4eece63e1a6eedd00c8a192df6bb0ba54e58d2d5f4e7af0fc6157553"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceStatusModal.tsx",
+      "beforeSha256": "06f40ba68a296230c11645dd4fc8b38e1ed78993f5ebd8106cf807123231795f",
+      "afterSha256": "580270ece5359a325a67d4083b31a9ce0b48903ada987c56dd426ff21310f212"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "beforeSha256": "1f3964eeeeb2f50062f5b117393d123a5154b34eb7ca316b5e8433d9e13bd7d8",
+      "afterSha256": "503bb5d0c9b7393f7cddc1cade7bc9f487a4a5e5d07b80f4fc0e27345e65ad3d"
+    },
+    {
+      "path": "contracts/catalog/admin-catalog.json",
+      "beforeSha256": "ce13179496deb134e8f017dbce9582c36915f2bada371c8aa437ffbe7389e190",
+      "afterSha256": "649e116e8f37664276330f4b3602d8a445a95b7f10d031cb3ce66a34c84bb922"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "beforeSha256": "f7b915d27f234f928ab7d0c6fd009b76b10a90a033578269dd4a2e33084b80ff",
+      "afterSha256": "bfcf47da72cb44a23f1c7eab49096379db8904e26722a54440bf8d16b74b6417"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d87197d6b02e5110cc6830f81deb85eca5bf04e77c7caa6f626c801a5a12eecb"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "149d4d99be3d57cca6665148011d9faf3a87c7062dddb5285f305c80ebe4c9ac"
+    },
+    {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7f59478c3b52aeef571f44a1b8e5e11ab2ddf8038d480fa1d7ac837901fdca70"
+    },
+    {
+      "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "108ba9050ed256c6e41a3e53e3af4c761706c4dc8fe697de9540fc649f5af6d3"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+      "beforeSha256": "d7fc1e98a41185a9b2a0ed7433e6704a47a99e604ba24a2c5f788cd06b8cc2d6",
+      "afterSha256": "9c68c72a1b24776c7c7348c9ae98233fb54458d59fa43f881b1eaa92af5a91d9"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-dexter-authorized-historical-receipt-recovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "335df66844867d7f33314175a7734cfae5eac300cfaf1a0137c8246204713ebd"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2ffa952c58ba2cb714b1c636e82a76d4493f58a9ae17c03f6008f111067f21e9"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "50b8ab51ad8604fa138e1d1772e7f8de41ebd4678ecfd485ade1eb2a6f782174"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-implementation-amendment.md",
+      "beforeSha256": "6bc75c4a388164ee1da29779039bdaac6f92f39ca289659c84aa958c3dbc116d",
+      "afterSha256": "e5e2aa8e2924eb047b2e15f6350832612fa5700d9ccd6d3344f41b1b45df8325"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-package-input.json",
+      "beforeSha256": "346f93c13a5311b21d484a3b92ab04b542a366e140db9c68b41237899e09fcb3",
+      "afterSha256": "c2549ed2c8ac9267b401ce2455b557e4c8c8713d1167716816423698d477b195"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-problem-family.json",
+      "beforeSha256": "fd0d5e058acb0b2da899b8f978bb37c85b6932469d48b264241274f6ebead7be",
+      "afterSha256": "18ffb80355833d893b9458b58e189c185220bb30c5948be380bab470e40fdc1a"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-source-compliance-disposition.json",
+      "beforeSha256": "76c7c429462332ba3d3f3436705a1b3e61e2c0f05037201c5980f47cf702d246",
+      "afterSha256": "e041af3244346917bec9d9ba7dfb4dca53744aab230867dfe5bdbea6cca80f6d"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-implementation-adversarial-review.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8cd9caaaf32d89e0145d42ee1abf978c70857aeb2bdba3ed3284309b00e08c04"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review-input-checklist.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "94bb9db94b593cb09d9664e48255fe03822ea184a1fac33f5cef118ba3700462"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review-round-2.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "df610985e54e92cfd541cb81a562b6238c658c3eaaa21ddf9f787dbd776eebf2"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ed7c606fc93b67fcbb82e79706c2b82586f849db6dfd463c3809e78bad65d44c"
+    },
+    {
+      "path": "doc/review/platform/independent-subagent-adversarial-review-input-checklist-template.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0ef12f041bae6b4411bb4b4b3f15f2860796b31f3dab5894738fdd17441b63fe"
+    },
+    {
+      "path": "project-memory/index.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "852dba3421467ac712185c9f20f607e5b629fa07c0ef021a20cfb0931be5e003"
+    },
+    {
+      "path": "project-memory/index.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a619f39092f8548c923784aa8f632884572504f04d2dc31906b4c7646137466a"
+    },
+    {
+      "path": "project-memory/operations/implementation-source-reread-discipline.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "82bcb60c31a1779c03a2e0bdec84efc35d5b3de1145016b677591dc0c679a8e8"
+    },
+    {
+      "path": "project-memory/required-inventory.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260"
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c2b341880427c02c04f37263291d0475437eed65a7aa3c41d2531ac4ade52e6b"
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "edce2d2552e16842e484c62f50f77b6c0f3ee35a0e2a7f0b5625f8d08b3f00ed"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2ca8da43ac93dc1835b6286a803dd42f3a92843c08ec3a31d19fefe3a58cb479"
+    },
+    {
+      "path": "tools/project-memory/cli.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a2732e25bdb4cb66692bff32f580869ab0f76dfbd88617cd08b590803ac379e7"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": ".agents/skills/cs-memory-recall/SKILL.md",
+      "afterSha256": "d9e4b8ca8b7ee5bdbe41037338fe3815ae024ce61c42bcb62e6684d8e4648b0f",
+      "result": "PASS"
+    },
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "afterSha256": "b6e575a3a884242e44e54fb794ff08019f91e8b2733a9416830cec62e493f2ee",
+      "result": "PASS"
+    },
+    {
+      "path": "AGENTS.md",
+      "afterSha256": "82564a7b8eb617958c6f93c8cbdf69c980ad856f9d53ab774f91f1439fd56c2f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+      "afterSha256": "d7c4a121300c6325d8c50186662a853caddfbcb1ef9ca1595fb042dce63331b0",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityCommandReceiptService.java",
+      "afterSha256": "31af4172a65d43ef61f12ac8080afe2ec5eae07010f22b9bd87c14d117a1464d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+      "afterSha256": "0824b81871fe23796f9b71813dea846f3654da5fa74b4b42a894f90ffec18e16",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandReceiptService.java",
+      "afterSha256": "344412f2d4cef5585ecd34e89d16ddd77ee59ba4c93e893765c938c2ce4ec1e8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java",
+      "afterSha256": "23059d6998be2ccea370823881dc118b4b7d98b637ce4e85d23378e2a714c71c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+      "afterSha256": "147c6f7d27327aa9de6722ddf50ebea05622250a3b9f605c48726cc21b39484b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+      "afterSha256": "fd2522357605b22a9ec1359800b94f34a51fbb52025eeafea6f38e1adee0352f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspacePlatformAccountPageRequestTest.java",
+      "afterSha256": "49d2f110a43a0e561bcf6908dc8d8065256909d158307498bf4a005f2060a06a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.test.tsx",
+      "afterSha256": "462141392bd4befa8a5b8ce89f3e843a1c7f0f480097aeeaa3e9e1c0ea422f39",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+      "afterSha256": "4509163441d2a65a2c900b0fcfad5e8aba81e5bf07464019155db96dfa674162",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.test.tsx",
+      "afterSha256": "eec2eb7e2b6ad4291d2935e2110e72ba0e06edc7cae06f0b44c225a354b37e3f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "afterSha256": "1febad6fbe4189f69cc1a123249f78741ef84f10a49db5bd8758609eb7f1f5d8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.test.tsx",
+      "afterSha256": "b26b0ff6c4b805edfae394f548fc3b9fdef48a0b88921a3500300ca3c2b27edd",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.test.tsx",
+      "afterSha256": "0cd86d0bfff7ca7e22d7c97839e98af26ee7aab91ddf6a62e6b481d54516d108",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeResult.test.tsx",
+      "afterSha256": "a5b5481cc981092b24d1daf4f066c96ce99747f6b05fa059e561b4b83fc2e215",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeResult.tsx",
+      "afterSha256": "6e0ce28afce5fa84d1405abc41649afcbf3fc3aeba091f829e3c33221f39d87c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.test.tsx",
+      "afterSha256": "72ed3b1c9ca77c2e782477ac4210d8ea2955afd1073cdd59610b31428a093bf7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.test.tsx",
+      "afterSha256": "93664235424fb64cb4e3dd4d84dba0915144d07aba31b95843cc3908a1a73795",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.test.tsx",
+      "afterSha256": "68ef3e48b7873af12d725335953cbe8df68ad59a373f5ec621d425e451053b0f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionEditDrawer.test.tsx",
+      "afterSha256": "e3227f5c3cbb4e1cc49b730c68cacab129164c5de335da13f208a2bc0fb1847f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionSaveModal.test.tsx",
+      "afterSha256": "11912f240347595b7c3bb269e928ce7917da7c389f8ae7fbc8af0112ccf23c14",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionSaveModal.tsx",
+      "afterSha256": "108687866d46c7d8fcaf0d43310f41fbd825bffed925b06eb77ca5def8387dbc",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.tsx",
+      "afterSha256": "863d41f9e673d667ed0a62629d4b31091b245e3a73028d5d24ea8eda4102d43d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "afterSha256": "1deb5894be7859f3ddd825e0cffc996658bc8b1976d791eec1614ce4d7148444",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.test.tsx",
+      "afterSha256": "b2b798495e504136e21d90961a50b33ea35aa2cea171b7074e38f604937b87e3",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewDetailDrawer.test.tsx",
+      "afterSha256": "0c1381eece406881b6d81d87139daa147515cb68ac7f16d2f1c18c37e5ba7c32",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.test.tsx",
+      "afterSha256": "25cd6ce186642927874109250d354b818f5e19ee5153d3d4fe9f744464f45f3a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "afterSha256": "1f207b076326fc22236e6e9ef5529f4a583d50ff6c961bc492f635780a4c3d16",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCreateDrawer.test.tsx",
+      "afterSha256": "f6ef667bb4d0d1d509e1a6794b60d9569d2362bb52fea9b92f1e92f9e0cb7e96",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCredentialDrawer.test.tsx",
+      "afterSha256": "7563649e98ca43cd63153632bc499e37b5ea0e4e21166045129e3dfbaed13457",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.test.tsx",
+      "afterSha256": "bbd867ff624de1c8b4ac7a0a0550763110d91c682e4e1f39424c42aa0878803f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorEditDrawer.test.tsx",
+      "afterSha256": "6272374bc8ea45a46a7c505173b02f1163580168f6c1f638d3fb6ed011e7e90f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.test.tsx",
+      "afterSha256": "644c6286e597b8bc4d0b2c70c893fa12aa9b0b47264e568cfa01af537cb952eb",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.tsx",
+      "afterSha256": "543814ce7c0d4c180c71d84b1a2cacb18d20146fd95590065c25fe2f3914c998",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.test.tsx",
+      "afterSha256": "33fc20e45ede2734072df85b1a37c9137eb3e3b9d2e1dbda0adeb7c5bb21a4f0",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "afterSha256": "639f48dcecb77f12b0c3f4d45e9f7085d346a35b7bafe9bb14a7a8a2f630570b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.test.tsx",
+      "afterSha256": "642e8a05180a9146bbfd66a04c2d16d092571ce4c3363cb2033529a8d8a4d0f2",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "afterSha256": "8fe3d46bb3c25ad866971abe19eae016f7e6ed8a2949e2eec88efb91072a5884",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx",
+      "afterSha256": "3b965bd730bce2fca090bd336e416fe97aef52117cad3684e272fb50caa258c0",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleCreateDrawer.test.tsx",
+      "afterSha256": "6453ed0a7923b3d285f04c19caf2d45963440ff603a62f824bd661a0544e1598",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.test.tsx",
+      "afterSha256": "65ebd3b995a29347162e317f5b26e7b3166e764b1b786d49249e6668d599ce3a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleEditDrawer.test.tsx",
+      "afterSha256": "bc1c41fdd224b3d55e0ec5e4e84d21c31e4fedab096be8a6a16315b4362b360b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolePermissionFields.test.tsx",
+      "afterSha256": "b8e17f9c9b62d83ffa33f8041bc817a260dbea65ca22626a15154e72fafd32f4",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleStatusModal.test.tsx",
+      "afterSha256": "e440e50f91b83ceedf6dcd22cdb64186cbfe387c0056977cd314aace26bd7d28",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.test.tsx",
+      "afterSha256": "111cc843d025be5136e1280fb826c23c075a6aa046c616150ef4426f199b333e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "afterSha256": "e0535f110205fb9f2fd2e2ce262812173b3f23847ed38392f70210edc6d79533",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountActionModal.test.tsx",
+      "afterSha256": "cc0a4e1df60656639fff3b32c0be165f30656dc5bd6094da932dc1776522887a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.test.tsx",
+      "afterSha256": "c72e36ffb138fec29c25cf50183855abcab776046c1df7350259a88a1cc0eabc",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+      "afterSha256": "21ca767d649ffd6e8d9f587b2b5d354f907fbed866c75bdf24a13046e293e4eb",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.test.tsx",
+      "afterSha256": "1f42b1f64ec934555cc0ba140aaa71697ffd979c8ee5c1012801b229ed962750",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceCreateDrawer.test.tsx",
+      "afterSha256": "2d3bc3eabf83fce769d44b3d82bc70bb5c34208722d82c576c47f64cf9949be2",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.test.tsx",
+      "afterSha256": "37ac152b3e3df585cce5ef0669e40adb0e1079edaf925a96dc49619eb5cf2be3",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceEditDrawer.test.tsx",
+      "afterSha256": "fab9f7350029523ab39fb08014df157e98360ea9826267139b50810b2aa4d7b8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceEditDrawer.tsx",
+      "afterSha256": "166a931491929bd31f05fba20da9277752a49caeec747a7a1c21d539c710091a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.test.tsx",
+      "afterSha256": "8ebb7e8e48114097041414518eef0c0f80dc5d4462e9078443f763522e299c28",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "afterSha256": "20b3675caf56d3667bf018e8a749921c5e5d76bea93ffdb43b522850adcb2bf7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceStatusModal.test.tsx",
+      "afterSha256": "97310b3c4eece63e1a6eedd00c8a192df6bb0ba54e58d2d5f4e7af0fc6157553",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceStatusModal.tsx",
+      "afterSha256": "580270ece5359a325a67d4083b31a9ce0b48903ada987c56dd426ff21310f212",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "afterSha256": "503bb5d0c9b7393f7cddc1cade7bc9f487a4a5e5d07b80f4fc0e27345e65ad3d",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/catalog/admin-catalog.json",
+      "afterSha256": "649e116e8f37664276330f4b3602d8a445a95b7f10d031cb3ce66a34c84bb922",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "afterSha256": "bfcf47da72cb44a23f1c7eab49096379db8904e26722a54440bf8d16b74b6417",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "afterSha256": "d87197d6b02e5110cc6830f81deb85eca5bf04e77c7caa6f626c801a5a12eecb",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "afterSha256": "149d4d99be3d57cca6665148011d9faf3a87c7062dddb5285f305c80ebe4c9ac",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "afterSha256": "7f59478c3b52aeef571f44a1b8e5e11ab2ddf8038d480fa1d7ac837901fdca70",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+      "afterSha256": "108ba9050ed256c6e41a3e53e3af4c761706c4dc8fe697de9540fc649f5af6d3",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+      "afterSha256": "9c68c72a1b24776c7c7348c9ae98233fb54458d59fa43f881b1eaa92af5a91d9",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-dexter-authorized-historical-receipt-recovery.json",
+      "afterSha256": "335df66844867d7f33314175a7734cfae5eac300cfaf1a0137c8246204713ebd",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
+      "afterSha256": "2ffa952c58ba2cb714b1c636e82a76d4493f58a9ae17c03f6008f111067f21e9",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
+      "afterSha256": "50b8ab51ad8604fa138e1d1772e7f8de41ebd4678ecfd485ade1eb2a6f782174",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-implementation-amendment.md",
+      "afterSha256": "e5e2aa8e2924eb047b2e15f6350832612fa5700d9ccd6d3344f41b1b45df8325",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-package-input.json",
+      "afterSha256": "c2549ed2c8ac9267b401ce2455b557e4c8c8713d1167716816423698d477b195",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-problem-family.json",
+      "afterSha256": "18ffb80355833d893b9458b58e189c185220bb30c5948be380bab470e40fdc1a",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-source-compliance-disposition.json",
+      "afterSha256": "e041af3244346917bec9d9ba7dfb4dca53744aab230867dfe5bdbea6cca80f6d",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-implementation-adversarial-review.md",
+      "afterSha256": "8cd9caaaf32d89e0145d42ee1abf978c70857aeb2bdba3ed3284309b00e08c04",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review-input-checklist.md",
+      "afterSha256": "94bb9db94b593cb09d9664e48255fe03822ea184a1fac33f5cef118ba3700462",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review-round-2.md",
+      "afterSha256": "df610985e54e92cfd541cb81a562b6238c658c3eaaa21ddf9f787dbd776eebf2",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review.md",
+      "afterSha256": "ed7c606fc93b67fcbb82e79706c2b82586f849db6dfd463c3809e78bad65d44c",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/independent-subagent-adversarial-review-input-checklist-template.md",
+      "afterSha256": "0ef12f041bae6b4411bb4b4b3f15f2860796b31f3dab5894738fdd17441b63fe",
+      "result": "PASS"
+    },
+    {
+      "path": "project-memory/index.json",
+      "afterSha256": "852dba3421467ac712185c9f20f607e5b629fa07c0ef021a20cfb0931be5e003",
+      "result": "PASS"
+    },
+    {
+      "path": "project-memory/index.md",
+      "afterSha256": "a619f39092f8548c923784aa8f632884572504f04d2dc31906b4c7646137466a",
+      "result": "PASS"
+    },
+    {
+      "path": "project-memory/operations/implementation-source-reread-discipline.md",
+      "afterSha256": "82bcb60c31a1779c03a2e0bdec84efc35d5b3de1145016b677591dc0c679a8e8",
+      "result": "PASS"
+    },
+    {
+      "path": "project-memory/required-inventory.json",
+      "afterSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+      "afterSha256": "c2b341880427c02c04f37263291d0475437eed65a7aa3c41d2531ac4ade52e6b",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2.mjs",
+      "afterSha256": "edce2d2552e16842e484c62f50f77b6c0f3ee35a0e2a7f0b5625f8d08b3f00ed",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "2ca8da43ac93dc1835b6286a803dd42f3a92843c08ec3a31d19fefe3a58cb479",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/project-memory/cli.mjs",
+      "afterSha256": "a2732e25bdb4cb66692bff32f580869ab0f76dfbd88617cd08b590803ac379e7",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-source-compliance-disposition.json",
+    "sha256": "e041af3244346917bec9d9ba7dfb4dca53744aab230867dfe5bdbea6cca80f6d"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "controls": [
+    {
+      "ruleId": "CR05-WC-01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-WC-02",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-HISTORICAL-RECEIPT-RECOVERY",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "U06-38-SCREEN-SOURCE-TO-IA-CONFORMANCE",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "businessReason": "Dexter’s sequence decision defers the P6-2 business denominator to one managed P6-2/P6-3 L2 after P6-3 implementation; this static exit closes neither business behavior nor runtime cleanup.",
+  "deferredBusinessEvidenceObligation": "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+  "reviewEvidence": [
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review.md",
+      "reviewerKind": "INDEPENDENT_SUBAGENT",
+      "round": 1,
+      "verdict": "NO_GO",
+      "disposition": "AUTHOR_INTAKE_COMPLETE"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-implementation-adversarial-review.md",
+      "reviewerKind": "AUTHOR_INTAKE",
+      "round": 1,
+      "verdict": "ROUND_2_REVIEWED"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review-round-2.md",
+      "reviewerKind": "INDEPENDENT_SUBAGENT",
+      "round": 2,
+      "verdict": "NO_GO",
+      "finding": "irrecoverable historical pointwise prewrite/post-proof record absence"
+    }
+  ],
+  "dexterAcceptedHistoricalException": {
+    "findingId": "F-U06-POINTWISE-REREAD-APPLICATION-RECURRENCE",
+    "decision": "STATIC_GO_ONE_TIME_NON_PRECEDENT",
+    "disciplineStatus": "MISSING_NOT_SATISFIED",
+    "appliesOnlyTo": "historical 18-point status-modal/generated-operation-id remediation batch",
+    "doesNotChange": [
+      "business=NOT_APPLICABLE",
+      "cleanup=NOT_APPLICABLE",
+      "joint managed P6-2/P6-3 L2",
+      "P6-3 per-change readback requirement"
+    ],
+    "durableProblemFamilyPath": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-problem-family.json"
+  },
+  "p6_3StartObligationsSource": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-problem-family.json",
+    "ids": [
+      "P6-3-PREWRITE-RECEIPT-READBACK",
+      "GAP-BRAND-CANDIDATE-OWNER-PAGINATION",
+      "GAP-BRAND-IN-USE-TYPED-PROJECTION",
+      "P6-3-RETIRED-BULK-CONSUMER-REMOVAL",
+      "P6-3-RTK-CONTEXT-OWNER-INVARIANT",
+      "P6-3-IA04-ACCEPTED-BYTE-CONFLICT",
+      "P1-ST-11-AUTHORITY-LEDGER"
+    ]
+  },
+  "knownExitObligation": "Dexter has accepted this P6-2 static delivery GO only. Business and cleanup remain NOT_APPLICABLE. P6-3 completion must precede one joint managed P6-2/P6-3 L2 with separate business and cleanup PASS; this exit neither executes nor claims that L2, authorizes P6-3 implementation, DEV, seed/reset, or changes Roadmap state."
+}

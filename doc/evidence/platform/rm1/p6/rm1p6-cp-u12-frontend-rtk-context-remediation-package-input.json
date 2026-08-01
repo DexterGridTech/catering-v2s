@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U12-FRONTEND-RTK-CONTEXT-REMEDIATION",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-manifest.json",
+  "deliveryManifestSha256": "0614953dbbd34cb318211d62800a69a082381e95d6f1e7394f253a7fd55baf4e",
+  "unitId": "RM1P6-CP-U12-FRONTEND-RTK-CONTEXT-REMEDIATION",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/standards-coverage",
+    "scripts/check/frontend-architecture",
+    "scripts/check/remediation-compliance"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/remediation-compliance",
+    "scripts/check/frontend-architecture"
+  ],
+  "requiredControlRuleIds": [
+    "P6-CP-U12-RTK-SUBSTRATE-AND-CONTEXT-VIEW-RESET"
+  ],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_SOURCE_AND_FOCUSED_FRONTEND_RECOVERY_PROOF",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U11",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u11-package-exit.json",
+    "exitSha256": "b5d0cac50b59ac56557f0b55cae699fc66c9b3b02ff9491b7b8754cb8c38422b"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-amendment.md",
+    "sha256": "4c746f6826ea7e2593543a0cb1dce857e785ba441aed782f756a86855c8af318"
+  },
+  "authorizationBoundary": "Dexter authorized this independent corrective package after the P6 frontend RTK conformance review. It corrects RTK design contracts and one shared operations local-view reset boundary only. It neither closes nor advances the unfinished P6-1 package, and it starts no future P6-2/P6-3 UI delivery."
+}

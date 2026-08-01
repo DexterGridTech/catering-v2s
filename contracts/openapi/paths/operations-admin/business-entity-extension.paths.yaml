@@ -1,0 +1,117 @@
+{
+  "paths": {
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition": {
+      "get": {
+        "operationId": "getOperationsOrganizationBusinessEntityExtensionDefinition",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "D02-S03",
+          "D01-S07O"
+        ],
+        "x-page-key": "OPERATIONS-BUSINESS-ENTITY",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "expectedContextVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BRAND",
+                "TENANT",
+                "HEAD_COMPANY"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/extension/extension.schemas.yaml#/components/schemas/ExtensionDefinition"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    }
+  }
+,  "components": {
+    "responses": {
+      "ProblemResponse": {
+        "description": "Problem response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    }
+  }
+}

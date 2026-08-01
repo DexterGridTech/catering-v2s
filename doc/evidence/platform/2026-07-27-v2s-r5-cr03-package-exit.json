@@ -1,0 +1,480 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U03",
+  "status": "PASS",
+  "serialPredecessor": {
+    "packageId": "R5-CR-U02",
+    "packageExitPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr02-package-exit.json",
+    "packageExitSha256": "60a622f938120caa751da70013527750a5e4399134fbf944e39a4b048e312b85"
+  },
+  "actualChangedPaths": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/extension/ExtensionDefinitionWireMapper.java",
+      "beforeSha256": "c6f557d0ba4d51fc0037a29fea45e09ecd4522155717091a376b9e8d69ca6067",
+      "afterSha256": "db0c5af1bf59ca974ebf5cebe2c8223d4dcee8ee382e517809529debcb2b7e0c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java",
+      "beforeSha256": "b2444ae18b48dec80c0cd80554921d2bb258efe23f37bf9a9550cc4d6b18e822",
+      "afterSha256": "8820c3a1dcc97e1a10104687314a0892f7fcf7c770db87dc7915df9e271c1fc5"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "beforeSha256": "e1d67a8ee8704d2de12266ae184af74c3d58fee2094d5d1c115c007e18a51f21",
+      "afterSha256": "20e5065342bd90582807b2a72423d24edb56eab2010b19b66925a97c27832688"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryController.java",
+      "beforeSha256": "d078f22222c4b302c0d7eacfcebfc1718ee75640c41e17c5bb389ba68eccc437",
+      "afterSha256": "e396743073d1005787956e64afb8578a34b3bdb015173d27c1fb3ce85d0c598a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceMembershipController.java",
+      "beforeSha256": "c83ec86e62a07327ca2a143077d6c2ff95c75168bce1eff6e8c7d51339ada8d0",
+      "afterSha256": "3248979b70a4bccaaea751e3e774adbb5f71b212f4c7740a4c35a5ae4f546f53"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/ContractWireMapper.java",
+      "beforeSha256": "2b166447db39ca724cdd9d1a8d74f822bdf3c28cab590ff46342f65626241eb8",
+      "afterSha256": "b6dc7be2d49a2563888fb9318de8090711d91e22db19046aa0acdd41aa0492b9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/BusinessEntityWireMapper.java",
+      "beforeSha256": "32c0da5fee00c8e61778c96baf085545e2075dd38c6e3fc665337d5489d2b867",
+      "afterSha256": "bad9e35d0ef55749c5baf17538f36f2896ad9e90734ef4b9fab62d9f471e7f14"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+      "beforeSha256": "94b2c5560f32598deb2d5acd47c3638da0f87567bd835c61bdd83cc619f7be54",
+      "afterSha256": "1dc63bc0a7c2d6514793b4f9d9114e9a79244e7c596e3c3b4bedb3d30ba78a87"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+      "beforeSha256": "a374e936a82d2e1da7fccddcd9b7c4931e0f1b3124998fa0a9478b2c62d4ca41",
+      "afterSha256": "36d5fdc2bee4969901b3f70af9b718bd5884a07c92f55d58c70c98116113bd3d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java",
+      "beforeSha256": "e239d6a000e0eb963973e3c97ddfff9c884e9accbbf13060a8208c8f36da1ba5",
+      "afterSha256": "7cf8568b1df4667ce797c60832f11853ed3677f32514351e3fd022b796f5d4ce"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OrganizationHierarchyWireMapper.java",
+      "beforeSha256": "5da04037065acf155bfe7aa9a2dd2d7dbb852715ea23487924ffd100a843d67a",
+      "afterSha256": "a6e72b07d35ee4d59fae82d0547a7a1d7eb41fd4007f43e1e2f3a863a055a074"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/StoreWireMapper.java",
+      "beforeSha256": "f7014e903166713326a2db264c2991706866d210c4171b31418a1e9aa4df4922",
+      "afterSha256": "25f0ffe6cb093c6240537875c84bb4900c3d680e65bbb1e04d34a186203de790"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+      "beforeSha256": "f21a5f30895894a5d038cc0c1e3ce379d191b9773dcfe8ebc72f19a453c76a32",
+      "afterSha256": "18cbd247ff7bb696f194437c1c57d6645ff24fdee9e8fa613200da918d5e0e3e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java",
+      "beforeSha256": "8caab5bc8f2a2e8ae7e2dd69814327747f7e214eac19c0c408b406a4f54b3dec",
+      "afterSha256": "745d84aa5f1f70c2ed378578c097c2d54c977da759c02d6ad458e2ba945a6d19"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+      "beforeSha256": "bf7f94515d3e49011db30b325ebbe10330a4225c271076db3d3c29d51bfc6cbb",
+      "afterSha256": "a0b4bb9e3ec32c39d0f660baba7df7f79611814f1ed7373bfc736103c6ae6dd4"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+      "beforeSha256": "cba58bcf7ea3dcb4eb12037b94e782ea002239edab35caedeed68983679fc887",
+      "afterSha256": "0a84ac663cc1a2491e2377c31c9ca82bc43c32aa2227cc35f6e6b066640f4eb9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationCandidateController.java",
+      "beforeSha256": "17359d31a209264e00b381431f3df16265c39922d694f55b1e4e54eec5cedfa5",
+      "afterSha256": "df23a3f07213a919c0502fec3750d8f8ebf67c8a7f852e6ad9e404ec832f0400"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+      "beforeSha256": "d8097c43f9e62ef08046a02c5530294af25d4491d1dcf6ad12216a1a35da301b",
+      "afterSha256": "c1916bb103f072a65cc253f6407275320b41cc4286b89bb8e35e99d5a134a7a6"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java",
+      "beforeSha256": "39a5424ccfb15cf03f400c090009d823869a3f29875b0e1ceeeb7cff2ce77527",
+      "afterSha256": "e827a31397ec90e0048352316af7d55ad445cf3753167306c544c841705aabeb"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java",
+      "beforeSha256": "fb1b6bd718589b84a70fc41535da10e4d931bdec1f0b1534ab80ae4d6497f995",
+      "afterSha256": "1940544345a7906e1f9f6b7af1d9823a144ffcb6cffc1c6f5a17386fbb418f9d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationPageWireMapper.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a6c54e1344e3e46f48964e3a4127afce6cc0c1eb934049fe5fdff5647c4d5f63"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "df52a64bf0ba07c2e7ac125000c6a0ed06f4c0e1089675a5269e11f5a3bd602d"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "beforeSha256": "3b4032ef40266cdd0bad585232309cbdaa7ed06140a3679e13f26e37165b60bf",
+      "afterSha256": "09aac4f84138aa9af903fce1a6ae8a79b63d387af59e6bb3987e8c027dc2d915"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "beforeSha256": "9228d40bfc8bef32df100149b5587bc1552d526674a4b8c33f96c110d8265bc4",
+      "afterSha256": "736978aba5a33d772f24da39935a310025efe60266a2be5ababa30af77c3614e"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json",
+      "beforeSha256": "895c70e74ec120f00aa396a97fd83745df385e2f09d7f5771cd55c29cf2f5632",
+      "afterSha256": "eae1384802fdfd14210eae10fbd6a8cd6c47b89f114e8a8dc03a805cf13d9f78"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-owner-scope-baseline-addendum.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bc7ab7a426a3da6d5304f7719364fffaf87fdb8d12e5804a51bfddaa3db2803c"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-package-input.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5d3160e8992f7b372c361a898f73f4eafd7ee6e17e4d63f3fd7ace67d365dbc7"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-red-mutation.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1e1f47217b1712845d74f37985e985872ff8fc6a160ed863658e23e1dad6b51b"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-security-scope-reconciliation.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3598ebdb39ca97fa3f697b2dc5becaf389461afd8516e125d5ab367be2df7270"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c6779a9f9d475310a76aa6d04700282884b61672a5c0c200f950118e1a85caa5"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-static-control-closure.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fd4813dfb63192f999a55cc80354e6f8fa8bb2be72ec874650182dfb21729aa2"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "beforeSha256": "dc35558d81030cbbfa5ef2addb0239b7a1b154249bcea3fcd0aac4100fa35360",
+      "afterSha256": "11affc8ed5fe0b5d86bc567f4ec481691034e3005432928a230f0d5468d39cef"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuditAuthorizationService.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "8331c6a69e91e693d79cdf14d745471c76b9e91134e4ab2f1a920a2a64dc79d9"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamCommandReceiptService.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "65b53b60f1dfe875da7b137acf83eedc12113f8cf012fd90507da98aa0c65519"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+      "beforeSha256": "0c882807c0bd635c113d7bf0b4082064f83bf09015849b420e745c685409b7ed",
+      "afterSha256": "6727af073cdbc178aa474a13184cf5f1d010f6ce6cebcce3f944721122fdfc23"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java",
+      "beforeSha256": "952eca591fa5af12ece59471e17f4a64d7d94b8a75dd00d5f697ee8ee2238d3f",
+      "afterSha256": "0661e328fca23ee0cfddce7e5b44b97184855f90208fcf0d724d1676a97f4a75"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "2d21e80a74727579e0e4455d0f82d2cda4b397a35d11bce657860a9326425cd4",
+      "afterSha256": "63a2ffaa947b9b3c8656606c34c487562af0b692cbbb6837ec6727bd03a76b7e"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/extension/ExtensionDefinitionWireMapper.java",
+      "afterSha256": "db0c5af1bf59ca974ebf5cebe2c8223d4dcee8ee382e517809529debcb2b7e0c",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java",
+      "afterSha256": "8820c3a1dcc97e1a10104687314a0892f7fcf7c770db87dc7915df9e271c1fc5",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "afterSha256": "20e5065342bd90582807b2a72423d24edb56eab2010b19b66925a97c27832688",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryController.java",
+      "afterSha256": "e396743073d1005787956e64afb8578a34b3bdb015173d27c1fb3ce85d0c598a",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceMembershipController.java",
+      "afterSha256": "3248979b70a4bccaaea751e3e774adbb5f71b212f4c7740a4c35a5ae4f546f53",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/ContractWireMapper.java",
+      "afterSha256": "b6dc7be2d49a2563888fb9318de8090711d91e22db19046aa0acdd41aa0492b9",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/BusinessEntityWireMapper.java",
+      "afterSha256": "bad9e35d0ef55749c5baf17538f36f2896ad9e90734ef4b9fab62d9f471e7f14",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+      "afterSha256": "1dc63bc0a7c2d6514793b4f9d9114e9a79244e7c596e3c3b4bedb3d30ba78a87",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+      "afterSha256": "36d5fdc2bee4969901b3f70af9b718bd5884a07c92f55d58c70c98116113bd3d",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java",
+      "afterSha256": "7cf8568b1df4667ce797c60832f11853ed3677f32514351e3fd022b796f5d4ce",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OrganizationHierarchyWireMapper.java",
+      "afterSha256": "a6e72b07d35ee4d59fae82d0547a7a1d7eb41fd4007f43e1e2f3a863a055a074",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/StoreWireMapper.java",
+      "afterSha256": "25f0ffe6cb093c6240537875c84bb4900c3d680e65bbb1e04d34a186203de790",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+      "afterSha256": "18cbd247ff7bb696f194437c1c57d6645ff24fdee9e8fa613200da918d5e0e3e",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java",
+      "afterSha256": "745d84aa5f1f70c2ed378578c097c2d54c977da759c02d6ad458e2ba945a6d19",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+      "afterSha256": "a0b4bb9e3ec32c39d0f660baba7df7f79611814f1ed7373bfc736103c6ae6dd4",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+      "afterSha256": "0a84ac663cc1a2491e2377c31c9ca82bc43c32aa2227cc35f6e6b066640f4eb9",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationCandidateController.java",
+      "afterSha256": "df23a3f07213a919c0502fec3750d8f8ebf67c8a7f852e6ad9e404ec832f0400",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+      "afterSha256": "c1916bb103f072a65cc253f6407275320b41cc4286b89bb8e35e99d5a134a7a6",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java",
+      "afterSha256": "e827a31397ec90e0048352316af7d55ad445cf3753167306c544c841705aabeb",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java",
+      "afterSha256": "1940544345a7906e1f9f6b7af1d9823a144ffcb6cffc1c6f5a17386fbb418f9d",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationPageWireMapper.java",
+      "afterSha256": "a6c54e1344e3e46f48964e3a4127afce6cc0c1eb934049fe5fdff5647c4d5f63",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+      "afterSha256": "df52a64bf0ba07c2e7ac125000c6a0ed06f4c0e1089675a5269e11f5a3bd602d",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "afterSha256": "09aac4f84138aa9af903fce1a6ae8a79b63d387af59e6bb3987e8c027dc2d915",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "afterSha256": "736978aba5a33d772f24da39935a310025efe60266a2be5ababa30af77c3614e",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json",
+      "afterSha256": "eae1384802fdfd14210eae10fbd6a8cd6c47b89f114e8a8dc03a805cf13d9f78",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-owner-scope-baseline-addendum.json",
+      "afterSha256": "bc7ab7a426a3da6d5304f7719364fffaf87fdb8d12e5804a51bfddaa3db2803c",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-package-input.json",
+      "afterSha256": "5d3160e8992f7b372c361a898f73f4eafd7ee6e17e4d63f3fd7ace67d365dbc7",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-red-mutation.json",
+      "afterSha256": "1e1f47217b1712845d74f37985e985872ff8fc6a160ed863658e23e1dad6b51b",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-security-scope-reconciliation.json",
+      "afterSha256": "3598ebdb39ca97fa3f697b2dc5becaf389461afd8516e125d5ab367be2df7270",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-source-compliance-disposition.json",
+      "afterSha256": "c6779a9f9d475310a76aa6d04700282884b61672a5c0c200f950118e1a85caa5",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-static-control-closure.json",
+      "afterSha256": "fd4813dfb63192f999a55cc80354e6f8fa8bb2be72ec874650182dfb21729aa2",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "afterSha256": "11affc8ed5fe0b5d86bc567f4ec481691034e3005432928a230f0d5468d39cef",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuditAuthorizationService.java",
+      "afterSha256": "8331c6a69e91e693d79cdf14d745471c76b9e91134e4ab2f1a920a2a64dc79d9",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamCommandReceiptService.java",
+      "afterSha256": "65b53b60f1dfe875da7b137acf83eedc12113f8cf012fd90507da98aa0c65519",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+      "afterSha256": "6727af073cdbc178aa474a13184cf5f1d010f6ce6cebcce3f944721122fdfc23",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java",
+      "afterSha256": "0661e328fca23ee0cfddce7e5b44b97184855f90208fcf0d724d1676a97f4a75",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "63a2ffaa947b9b3c8656606c34c487562af0b692cbbb6837ec6727bd03a76b7e",
+      "result": "PASS",
+      "check": "file-level static source/design/memory conformance recorded through compliant hook receipt chain"
+    }
+  ],
+  "controls": [
+    {
+      "ruleId": "SRC-40ecc74808715e19648725dd8aefd7dd48444bf37d17da83930020cdfcdcd6c5",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-4df854a03b629b85513f1d3a4df3b5b4b786e0d25e901562846bd1b1fd663654",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-525552f78fbdc57396121666e48bed8658f64a84108316aa24107c0c08d9675a",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-7beb5cc4291f57646bda99ad027094749401ae1ff8aa875360e28ddc98952a01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-87cc11475841b0383bcf243eb228260efe9717015e0984b87e869de7e8e281cc",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-8b499c81355a3aeb099889e47d35921561b7a3140e45792432d6f5d696fc78dc",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-ba445cdfc3ccbd37d14e6dc52ab16e75cc6c902a8aca7229d3ce0d76a2524165",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-bc6623aeb736917732e269992d648b639cd3e38d7648bc5200ec3e4ccf577d27",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-da4416ff5acb4fad0fcad092a42a7b5b5ee2052a9d1e244af30a29dfec954b30",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "SRC-fa94f1fac81d1bd9d5534bb66feabc14596e9e89aac6a7dafcf9e9e5a6be95ff",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "fullComplianceScan": "PASS",
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-source-compliance-disposition.json",
+    "sha256": "c6779a9f9d475310a76aa6d04700282884b61672a5c0c200f950118e1a85caa5"
+  },
+  "focusedEvidence": [
+    "doc/evidence/platform/2026-07-27-v2s-r5-cr03-red-mutation.json",
+    "doc/evidence/platform/2026-07-27-v2s-r5-cr03-static-control-closure.json",
+    "doc/evidence/platform/2026-07-27-v2s-r5-cr03-security-scope-reconciliation.json"
+  ],
+  "compile": {
+    "command": "gradle :apps:backend:catering-business-server:compileJava --no-daemon",
+    "result": "BUILD SUCCESSFUL"
+  },
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "authorityBoundary": "CR03 static implementation closure only. No DEV, seed/reset, remote runtime or CR04+ is authorized by this evidence."
+}

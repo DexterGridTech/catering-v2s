@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-implementation-adversarial-review",
+  "reviewCycleId": "RM1P6-U11-MANAGED-INVITATION-BOOTSTRAP",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/rm1p6-u11-managed-invitation-bootstrap-implementation-adversarial-review-round1-input-checklist.md",
+    "sha256": "9822e38936cb1694ca4757ba0ac1f54dc407b7383ea28d23197daeb2551f6981"
+  },
+  "blindReview": true,
+  "blindReviewDeclaration": "Fresh independent reviewer first tried to falsify implementation and formed this verdict before reading author self-review or finding disposition; general preparation/static results/later L2 did not substitute for pointwise source reread.",
+  "authorMaterialReadAfterIndependentVerdict": false,
+  "scope": "RM1 P6-3 U11 managed replacement for seven joint-fixture consumers of the retired platform invitation HTTP face; root OpenAPI ref closure and non-web owner bootstrap only.",
+  "verdict": "NO_GO",
+  "l2Admission": "NO_GO",
+  "findings": [
+    {
+      "id": "M-01",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "title": "Current source-compliance disposition is stale and cannot support package exit",
+      "evidence": "`rm1p6-u11-joint-remote-l2-source-compliance-disposition.json` records delivery-manifest sourceSha256 `fd11b99d…` and amendment sourceSha256 `a11325b3…`; fresh hashes are `f0daf308…` and `15823d98…`. The U11 package is still ACTIVE_NOT_EXIT, so static-scan/receipt green does not repair this exact source-disposition drift.",
+      "impact": "The required package-exit source denominator would describe superseded bytes; L2 must not be admitted on it.",
+      "minimalRepair": "Regenerate the existing disposition from the current manifest/amendment, then prove it equals the current rule set. Do not alter the retirement or bootstrap behavior to compensate.",
+      "counterexample": "The affected-L2 registry row currently hashes correctly, and incremental receipt coverage passing does not prove source-disposition currency."
+    },
+    {
+      "id": "S-01",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "title": "Focused bootstrap proof omits mandatory private-output assertions",
+      "evidence": "`ManagedInvitationBootstrapTest` proves owner calls and parses the token, but does not assert the written file has owner-only mode, rejects unsafe/existing output in a focused test, or proves no managed private output remains after fixture handoff. Source attempts POSIX 0600 and fixture deletes the temporary output, but the required secret boundary is not independently asserted.",
+      "impact": "The code shape is plausible, but the stated 0600/short-lived token contract has no focused negative/positive proof before L2.",
+      "minimalRepair": "Extend the existing focused test (and, if needed, fixture-focused static proof) to assert `0600`, output refusal and handoff deletion; retain the current owner-only implementation and avoid new infrastructure.",
+      "counterexample": "The runner's final `PRIVATE_ENV_REMOVED` action covers `private.env`, not the bootstrap's transient `.managed-invitation-*.json` path, which is expected to be deleted in the fixture finally block."
+    },
+    {
+      "id": "N-01",
+      "severity": "N",
+      "status": "REJECTED_WITH_EVIDENCE",
+      "title": "No platform invitation HTTP resurrection or direct-SQL bootstrap found",
+      "evidence": "Root OpenAPI no longer references the four retired platform invitation pointers; source scan finds no new platform invitation controller. `ManagedInvitationBootstrap` is `WebApplicationType.NONE`, calls `requireEnabled` then owner `WorkspaceInvitationService.create`, and has no Spring edge annotation/JDBC/SQL access. The owner service independently checks role and enterable target.",
+      "counterexample": "Target-specific operations HTTP invitation routes and the public invitation route remain intentionally retained by IA01."
+    },
+    {
+      "id": "N-02",
+      "severity": "N",
+      "status": "REJECTED_WITH_EVIDENCE",
+      "title": "Seven current joint-fixture consumers no longer call the retired platform route",
+      "evidence": "The seven joint phases now call `createManagedInvitation` and then the retained public invitation lifecycle. The sole remaining old route call is `scripts/test/r5-platform-admin-l2-fixture-seed.mjs`, which the U11 problem family explicitly records as an out-of-package, non-joint-L2 legacy consumer.",
+      "counterexample": "That legacy source is not silently accepted as a capability restoration and must remain an explicit later cleanup obligation."
+    }
+  ],
+  "independentControls": [
+    {"command": "scripts/check/openapi-contracts", "result": "R5_OPENAPI_CONTRACTS=PASS"},
+    {"command": "node tools/compliance-control/cli.mjs validate-delta-receipts", "result": "INCREMENTAL_RECEIPT_COVERAGE=PASS; CHANGED=77; RECOVERED=33"},
+    {"command": "node tools/compliance-control/cli.mjs static-scan", "result": "REMEDIATION_COMPLIANCE=PASS; RULES=32"},
+    {"command": "scripts/check/standards-coverage --phase R5", "result": "STANDARDS_COVERAGE=PASS; RULES=150"},
+    {"command": "gradle --project-dir apps/backend/catering-business-server test --tests com.catering.v2s.app.bootstrap.ManagedInvitationBootstrapTest --no-daemon", "result": "UNSUITABLE_FOCUSED_COMMAND: aggregate child test tasks inherit the filter and fail as no-tests-found; this is not a source failure and must be replaced by the repository-approved focused task before closure."}
+  ],
+  "requiredFollowUp": "Repair M-01 and S-01 only, then request Round 2 under this same cycle. Round 2 must re-open current source/disposition and execute a repository-correct focused bootstrap proof; it is the final permitted adversarial round.",
+  "authorizationBoundary": "This review authorizes neither L2 nor business/cleanup PASS. It does not permit restoring the platform invitation HTTP face, direct business SQL, remote application/browser runtime, seed beyond the existing managed fixture, reset, or roadmap-state changes."
+}

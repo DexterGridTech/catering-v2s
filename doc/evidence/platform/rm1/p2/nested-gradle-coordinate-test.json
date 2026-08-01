@@ -1,0 +1,24 @@
+{
+  "artifact": "RM1-P2-NESTED-GRADLE-COORDINATE-TEST",
+  "status": "PASS",
+  "purpose": "Prove the required nested module coordinate before relocating any production module.",
+  "command": "gradle --offline --no-daemon --project-dir doc/evidence/platform/rm1/p2/nested-gradle-coordinate-test projects",
+  "coordinate": ":apps:backend:catering-business-server:modules:foundation",
+  "sourceProjectDir": "libraries/backend/platform-foundation",
+  "firstAttempt": {
+    "status": "EXPECTED_CONFIGURATION_FAILURE",
+    "reason": "Gradle requires the intermediate nested project directories to exist."
+  },
+  "result": {
+    "status": "BUILD_SUCCESSFUL",
+    "observedHierarchy": [
+      ":apps",
+      ":apps:backend",
+      ":apps:backend:catering-business-server",
+      ":apps:backend:catering-business-server:modules",
+      ":apps:backend:catering-business-server:modules:foundation"
+    ]
+  },
+  "cleanup": "PASS: Gradle-generated build output was moved out of the repository after the experiment.",
+  "selection": "P2 uses the nested coordinate form; no sibling-module fallback is permitted."
+}

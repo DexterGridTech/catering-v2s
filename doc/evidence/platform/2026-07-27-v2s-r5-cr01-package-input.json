@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-compliance-remediation-package-input",
+  "packageId": "R5-CR-U01",
+  "status": "ACTIVE_NOT_EXIT",
+  "serialPredecessor": {
+    "packageId": "R5-CR-U00",
+    "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-package-exit.json",
+    "sha256": "0d27bf3bfe3f501a6b75de9e4333ee0cdc843d9bcbc619998cf5b578531c2dda",
+    "validated": "PACKAGE_EXIT=PASS"
+  },
+  "baseline": {
+    "path": ".runtime/compliance-control/package-baseline-R5-CR-U01.json",
+    "sha256": "56d8cd429eea6091cad0cdf19ec52fe2c00c20b7a82da7a721afea4a82a0c2a8"
+  },
+  "frozenInputs": {
+    "manifest": {
+      "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "sha256": "e05265666c82c40398b0c991e285cda6a56183807196ce65e85364df334dea0d"
+    },
+    "plan": {
+      "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+      "sha256": "56a6fcaf8e42d80de04693940624f27071fcc2303b18b6826805637c07ed68ab"
+    },
+    "standardsMatrix": {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "sha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5"
+    },
+    "memoryInventory": {
+      "path": "project-memory/required-inventory.json",
+      "sha256": "effadedc820a70f565da8eceb6aee43d07472a0fd9e5e7cb9fd9bb8df4eebbf3"
+    }
+  },
+  "completionOracle": "All OpenAPI $ref values resolve under standard YAML URI and JSON Pointer rules; generated business boundary has zero untyped map; 106/39/56/11 and all frozen HTTP paths, operationIds and error codes remain exact.",
+  "authorityBoundary": "CR01 only. No operation semantic change, runtime, DEV, reset, seed, or CR02 implementation is authorized by this input."
+}

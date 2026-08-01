@@ -1,0 +1,19 @@
+{
+  "kind": "source-compliance-disposition",
+  "unitId": "RM1P6-FORMAL-GRANULARITY-U01",
+  "status": "POST_REMEDIATION_V1_AWAITING_CLAUDE_RECHECK",
+  "implementationAuthority": false,
+  "denominatorDisposition": {
+    "PROJECT_MEMORY_ASSERTION_OCCURRENCES": "APPLICABLE: exact dynamic six-dimensional route is bound in the formal manifest.",
+    "APPROVED_ASSERTIONS": "APPLICABLE: business purpose and Dexter intent use one unique md: selector and must be source-reopened by the existing production checker.",
+    "FORBIDDEN_PSEUDO_FIXES": "APPLICABLE: forbidden substitutes use one unique md: selector and must be source-reopened by the existing production checker.",
+    "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": "APPLICABLE: future production proof uses one unique md: selector and must be source-reopened by the existing production checker.",
+    "OWNED_SURFACE_AND_PAGE_KEYS": "APPLICABLE_NO_UI_SCOPE: concrete json:/surfaces and json:/pageDesignKeySurfaceCrosswalk selectors prove no page or UI artifact is silently omitted.",
+    "DUE_STANDARDS_RULE_IDS": "APPLICABLE: json:/rules in the R5 standards matrix is hash-bound and must be source-reopened by the existing production checker."
+  },
+  "nonApplicable": {
+    "ui": "No UI surface is designed or changed by this control-plane unit.",
+    "persistence": "No migration, seed or reset behavior is designed or changed by this control-plane unit.",
+    "dynamicRun": "No dynamic environment is authorized in CP-U11; future managed-run cleanup is independently required."
+  }
+}

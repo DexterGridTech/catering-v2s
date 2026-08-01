@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","beforeSha256":"bfd4ed5fcb6397711734b5f0678e5139165cf378bc56e57e0178eff812b82d0a","afterSha256":"4f6e108b7241fee586b00408e256bdcb24e29bcc291dcc150e96f90c60efee4e"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","beforeSha256":"ce924a69cf1420ca6762e64715e523eeb70074be2fb5f5fffb99bdd23825e867","afterSha256":"204f82b1975a396822c4add74768f8ed80ec1a46d09199c0536708e977464c75"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md","beforeSha256":"a5afc814aa1e3380837511f8fdde7dd78358a3e30f345ff511c7d484388fc563","afterSha256":"29204acbbc30f6b4be35008a3016f8772ffe1aa006c844260a45cb607fc9acf4"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-2-admin-surface-denominator-design-adversarial-review.md","beforeSha256":"ABSENT","afterSha256":"09eba8b9548eb92e1f1c06028331b7ce15f06b81ed623af9df7256b0b582cf1d"}
+  ],
+  "incrementalChecks": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","afterSha256":"4f6e108b7241fee586b00408e256bdcb24e29bcc291dcc150e96f90c60efee4e","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","afterSha256":"204f82b1975a396822c4add74768f8ed80ec1a46d09199c0536708e977464c75","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md","afterSha256":"29204acbbc30f6b4be35008a3016f8772ffe1aa006c844260a45cb607fc9acf4","result":"PASS"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-2-admin-surface-denominator-design-adversarial-review.md","afterSha256":"09eba8b9548eb92e1f1c06028331b7ce15f06b81ed623af9df7256b0b582cf1d","result":"PASS"}
+  ],
+  "sourceComplianceDisposition":{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-source-disposition.json","sha256":"cae54c02b15a6631d39b3e2379ed5caf7c283118835bc8f018b9baaa86509922"},
+  "fullComplianceScan":"PASS",
+  "business":"NOT_APPLICABLE",
+  "businessReason":"Control-only correction of the implementation-facing UI denominator; no production or user-visible byte changes are authorized in this package.",
+  "cleanup":"PASS",
+  "controls":[
+    {"ruleId":"CR05-WC-01","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"CR05-WC-02","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"CR05-HISTORICAL-RECEIPT-RECOVERY","state":"ACTIVE_RED_VERIFIED"}
+  ]
+}

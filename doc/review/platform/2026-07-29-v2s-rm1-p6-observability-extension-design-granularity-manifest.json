@@ -1,0 +1,33 @@
+{
+  "schemaVersion":1,
+  "kind":"implementation-facing-design-granularity-manifest",
+  "status":"R1_REMEDIATED_AWAITING_FINAL_INDEPENDENT_REVIEW",
+  "reviewCycleId":"RM1-P6-U01-OBSERVABILITY-EXTENSION-DESIGN-20260729",
+  "reviewRound":1,
+  "reviewRoundLimit":2,
+  "reviewerKindRequired":"INDEPENDENT_SUBAGENT",
+  "blindReviewRequired":true,
+  "implementationAuthority":false,
+  "design":{"path":"doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md","sha256":"42540c01a04b902c04a5ef6f1d058ae1cc0b0399f305ba6e29dbcc14939202e7"},
+  "businessSources":[
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md","anchor":"## 3. P6-1：公开入口、认证恢复与品牌事实"},
+    {"path":"doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md","anchor":"## 4. 当前立即适用的 P6-1 闭环"},
+    {"path":"doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md","anchor":"# 长期约束"}
+  ],
+  "deliveryUnits":[{
+    "id":"RM1P6-U01-OBSERVABILITY-EXTENSION",
+    "approvedAssertions":["OBSERVABILITY_REQUIRED_FOR_ACCEPTANCE","RUN_SCOPED_LOG_READ_REQUIRED","OUT_OF_SCOPE_OBSERVABILITY_REPAIR_NO_EXTRA_AUTH","RM1-P6-1-OWNER-FIRST","RM1-P6-1-UNIT-TESTS-BEFORE-REVIEW"],
+    "sourceComplianceDenominators":["PROJECT_MEMORY_ROUTE_EXACT_SET","ORIGINAL_BUSINESS_REQUIREMENT","FROZEN_LOGGING_STANDARD","P6_OWNER_AND_EDGE_SOURCE_SET","RUNNER_SOURCE_SET","CONTRACT_ROOT_PROJECTION_SET","DUE_STANDARDS_RULE_IDS"],
+    "changeSurfaces":[
+      {"path":"scripts/test/r5-remote-testcontainers.mjs","disposition":"update","target":"managed heartbeat/log/PID lifecycle"},
+      {"path":"apps/backend/catering-business-server/modules/foundation","disposition":"update","target":"typed safe diagnostic recorder"},
+      {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java","disposition":"update","target":"register interceptor"},
+      {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge","disposition":"update","target":"fixed P6 operation registry, safe context and Problem marker"},
+      {"path":"apps/backend/catering-business-server/src/test","disposition":"update","target":"foundation/edge/Problem diagnostic tests"},
+      {"path":"contracts/openapi/edge.openapi.yaml","disposition":"update","target":"target-specific workspace-user root projection"},
+      {"path":"tools/capability-invariants/cli.mjs","disposition":"update","target":"35 path/40 operation equality validator"}
+    ],
+    "forbiddenPseudoFixes":["controller/service local logger","MDC/manual JSON/raw request logger","secret or account-existence logging","longer wait/timeout/retry for missing logs","port/name process kill","public auth behavior change","logging away stale root projection","manual generated wire"],
+    "reviewObligations":["R2 fresh independent reviewer reopens business, standard and all owning sources then seeks counterexamples","verify exact 22-operation set, secret rejection, servlet error-dispatch exactly-one-terminal, atomic remote control record/reconnect/reaper, and production-path 35/40 invariant","maximum two rounds; round 2 declares ROUND_FINAL_DECISION=SELF_DECIDED"]
+  }]
+}

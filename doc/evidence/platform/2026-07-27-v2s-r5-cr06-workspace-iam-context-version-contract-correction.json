@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-contract-correction",
+  "authority": "Dexter delegated implementation decisions to Codex; CR06 requires real stale-context protection for every workspace-IAM write path.",
+  "problemFamilyId": "CR06-FROZEN_WRITE_OPERATION_UNREACHABLE",
+  "scope": ["WorkspaceMembershipRevokeRequest", "WorkspaceOperationsInvitationActionRequest", "WorkspaceOperationsInvitationCreateRequest"],
+  "correction": "Add required expectedContextVersion:int64 to these three existing request schemas, regenerate existing wire clients, and make the four existing edge commands compare it to the session before owner dispatch.",
+  "invariants": ["No operationId, HTTP path, consumer face, owner, error code, transaction or migration changes.", "No server-derived or null substitute for the client-held expected context version.", "No new business capability."],
+  "completionEvidence": ["generated types require expectedContextVersion", "edge passes body.expectedContextVersion to existing authorization", "workspace-IAM UI supplies queryContext.expectedContextVersion"]
+}

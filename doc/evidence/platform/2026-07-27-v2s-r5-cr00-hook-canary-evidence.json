@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U00",
+  "kind": "codex-client-hook-invocation-canary",
+  "status": "PASS",
+  "client": {
+    "binary": "/opt/homebrew/bin/codex",
+    "version": "0.145.0",
+    "feature": "hooks"
+  },
+  "bindings": {
+    "hooksJsonSha256": "6f8b2a2e0d90d9839e617b1171bbd0d69bb27691afd9a0fceff08b98140f4dc9",
+    "preHookSha256": "cf5840cdc09311472de60870a85a292590b3629f892c6777cf18fa8d6e4f091a",
+    "postHookSha256": "a9a9cbeb1c1360bb561aa345db83e1ce965697b5af6e750a1ab8276de9655c43",
+    "controlCliSha256": "0d05b7c0b5c878369700b1d858bad5b2582be728d2e088a548fb3386ee3851f5"
+  },
+  "positiveCanary": {
+    "method": "fresh scratchpad; real Codex agent apply_patch; no direct hook invocation",
+    "createdPath": "canary.txt",
+    "beforeSha256": "ABSENT",
+    "afterSha256": "7146326676ec4a9c43ff6da7e439b0fd003d9ad4066addebdcb953ac74bd39be",
+    "invocationId": "exec-d4e96064-942d-45d6-94e2-430284b464c0",
+    "preReceiptSha256": "9559a5b3f352d739aa68d397eff061db4fb7d0c598cbb477e96d8dbd072e258f",
+    "postReceiptSha256": "c963bac8bae0aa9ac099cf10473edd024ab2dcc6a9ca1a1136458e57e6107a68",
+    "postReceiptAssertion": "HOOK_INVOCATION_RECEIPT=PASS:canary.txt"
+  },
+  "negativeCanary": {
+    "mutation": "delete PostToolUse registration in an independent scratchpad copy",
+    "realAgentWriteStillCreated": "canary.txt",
+    "packageAdmissionAssertion": "HOOK_INVOCATION_RECEIPT_MISSING:canary.txt",
+    "assertionExitCode": 2
+  },
+  "rebindCanary": {
+    "reason": "The package baseline is now isolated per package and later packages verify the immediate predecessor exit; this rebind uses the current Desktop Codex client and current control CLI bytes.",
+    "method": "real Desktop apply_patch in the repository, followed by control assertion; the temporary probe was deleted through the same hook path.",
+    "createdPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr01-hook-rebind-canary.txt",
+    "beforeSha256": "ABSENT",
+    "afterSha256": "b6a1fa94cb0fb39c05823be01404e5f4c23d53de2ca46c37e99708d626a59b61",
+    "invocationId": "exec-314130de-a81f-43e4-9abc-be0af3defe62",
+    "postReceiptAssertion": "HOOK_INVOCATION_RECEIPT=PASS:doc/evidence/platform/2026-07-27-v2s-r5-cr01-hook-rebind-canary.txt",
+    "cleanup": "PASS"
+  },
+  "cr03ControlRebind": {
+    "reason": "CR03 owner-scope baseline addendum is enforced by the same existing control entry; the rebind proves the current control bytes are invoked by the real Desktop hook path.",
+    "createdPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-hook-control-rebind-canary.txt",
+    "beforeSha256": "ABSENT",
+    "afterSha256": "508909e0a273b2a1e58c13de553d8876ef953d44d9db489b3819e618e198cc69",
+    "invocationId": "exec-b758e7bd-8112-4d45-95eb-707de9dfd616",
+    "postReceiptAssertion": "HOOK_INVOCATION_RECEIPT=PASS:doc/evidence/platform/2026-07-27-v2s-r5-cr03-hook-control-rebind-canary.txt",
+    "cleanup": "PASS"
+  },
+  "cr03DerivedOutputExclusionRebind": {
+    "reason": "Package delta enumeration now excludes reproducible build, dist, node_modules and .gradle output on both baseline and current sides; source-byte changes remain receipt-bound.",
+    "method": "real Desktop apply_patch through the configured PreToolUse and PostToolUse hook chain",
+    "createdPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr03-derived-output-exclusion-hook-canary.txt",
+    "beforeSha256": "ABSENT",
+    "afterSha256": "9805bd30c32f623b165914f253d524871c6e2719d0a49599ef2b68ee6f42967c",
+    "invocationId": "call_M56O4MYVplAlZoaV7aYFXGzp",
+    "cleanup": "PASS"
+  },
+  "cr04ControlRebind": {
+    "reason": "CR04 admits the module dependency registry checker through an immutable baseline addendum enforced by the existing compliance control; this proves the current control bytes are reached by the real Desktop hook path.",
+    "method": "real Desktop apply_patch through the configured PreToolUse and PostToolUse hook chain, followed by the production assert-invocation entry",
+    "createdPath": "doc/evidence/platform/2026-07-27-v2s-r5-cr04-hook-control-rebind-canary.txt",
+    "beforeSha256": "ABSENT",
+    "afterSha256": "0f6ed1b9c490fff018215f3d19e6b3a5666aedb5d788b5898fcb92d1a2088d75",
+    "invocationId": "call_4zlpzFwDl49YfbL7UhNgqHK3",
+    "postReceiptAssertion": "HOOK_INVOCATION_RECEIPT=PASS:doc/evidence/platform/2026-07-27-v2s-r5-cr04-hook-control-rebind-canary.txt",
+    "cleanup": "PASS"
+  },
+  "cr05PatchChannelRebind": {
+    "reason": "Dexter authorized the CR05 patch-channel control after the 0.145.0 command-event canary remained absent. The real patch event is the only claimed client write capability.",
+    "method": "real Desktop apply_patch through configured PreToolUse and PostToolUse, followed by the production receipt-chain reconciliation",
+    "createdPath": "tools/compliance-control/cli.mjs",
+    "invocationAssertion": "HOOK_INVOCATION_RECEIPT=PASS:tools/compliance-control/cli.mjs",
+    "reconciliation": "WRITE_CHANNEL_RECONCILIATION=PASS",
+    "commandEventClaim": "NOT_CLAIMED"
+  },
+  "cleanup": {
+    "scratchpads": [
+      "/tmp/v2s-cr00-hook-good-exit.brIxGS",
+      "/tmp/v2s-cr00-hook-bad-exit.evcF6Y"
+    ],
+    "status": "PASS"
+  }
+}

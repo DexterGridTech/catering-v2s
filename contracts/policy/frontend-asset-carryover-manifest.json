@@ -1,0 +1,502 @@
+{
+  "kind": "frontend-asset-carryover-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "reviewCycleId": "R5-W3-DESIGN-20260725",
+  "reviewTarget": "DESIGN",
+  "implementationAuthority": false,
+  "heritageRoot": "../catering-all-v2",
+  "targetRoot": ".",
+  "policy": {
+    "sourceUse": "READ_ONLY_HASH_BOUND_STATIC_BASELINE",
+    "runtimeOrBuildFallback": "FORBIDDEN",
+    "generatedWire": "REGENERATE_FROM_V2S_EDGE_OPENAPI_PER_FACE",
+    "foundationFirst": true,
+    "duplicateLocalMechanics": "FORBIDDEN_WHEN_FOUNDATION_PRIMITIVE_EXISTS",
+    "wireframeConfirmation": "DEXTER_ACCEPTED_V2_BASELINE_NO_FURTHER_CONFIRMATION",
+    "homeContent": "CARRY_ROUTE_AND_BOOTSTRAP_ONLY_NO_NEW_DASHBOARD",
+    "allowedSurfaceDispositions": ["ADAPT", "CARRY_ROUTE_BOOTSTRAP_ONLY"],
+    "plainCarry": "FORBIDDEN_BECAUSE_ALL_WIRE_IS_REGENERATED_AND_GROUP_WORKSPACE_KEY_CHANGES",
+    "sourceInventory": {
+      "enumeration": "find both app src roots -type f with suffix .ts or .tsx; sort by repo-relative path; aggregate bytes are '<path>\\t<sha256>\\n'",
+      "allTsTsx": {"count": 180, "sha256": "a9c6b190854bfb4fb5c70ded6664095d483e48a68a49e82d9406cec3650c8a3f"},
+      "runtime": {"count": 135, "sha256": "95f2d8b9bd020e6b1c61c129d742f180d41a0da4685f30cd6ebbc842badaa8a6"},
+      "handwrittenRuntime": {"count": 133, "sha256": "64d4165885cf5ef2acc6c52ee51c450ca15c5d7472afd10b771aa864982f637a"},
+      "generatedWire": {"count": 2, "sha256": "01e000c6dfececd9fb6597b5d8b2ab7c7379e233daea38207946c8a09e482326", "disposition": "NOT_CARRIED_REGENERATE"},
+      "tests": {"count": 45, "sha256": "3ad17002b617ead141f274a1a3d77e3c7e98982187bb1b91de4285a5af836408", "disposition": "REFERENCE_ONLY_REWRITE_FOR_V2S_EVIDENCE"},
+      "ownership": "feature/** belongs to the matching surface; app shell/routing/state/layout/theme/feedback/forms/automation belongs to APP_SHARED_ADAPT; generated wire and generated catalogs follow their explicit dispositions; tests are reference evidence, not copied proof",
+      "unclassifiedRuntimeFilesAllowed": 0
+    },
+    "appScaffoldInventory": {
+      "enumeration": "vite.config.ts and playwright.config.ts under both Heritage admin app roots; these four files are outside the 180-file src denominator",
+      "files": [
+        {"path": "apps/frontend/platform-admin/vite.config.ts", "sha256": "60a644552ef59b43185263ebc275ca6fe3187603da649fd8ac946f79a4f31569", "disposition": "ADAPT_APP_SCAFFOLD"},
+        {"path": "apps/frontend/platform-admin/playwright.config.ts", "sha256": "d507b5fa2563fbab669ef6947f67199d60fec4cd33e13c147ea8a59d294b09a6", "disposition": "ADAPT_APP_SCAFFOLD"},
+        {"path": "apps/frontend/operations-admin/vite.config.ts", "sha256": "ffc94fe0e4f28ccfc06962c1f3727915715475b0ea8742b297858d52b045911b", "disposition": "ADAPT_APP_SCAFFOLD"},
+        {"path": "apps/frontend/operations-admin/playwright.config.ts", "sha256": "f1ac61a75b6cf854a57f9c701201dd2791eb8ec0af4a95d098bae4a5c322ee57", "disposition": "ADAPT_APP_SCAFFOLD"}
+      ],
+      "count": 4,
+      "runtimeOrBuildFallback": "FORBIDDEN"
+    },
+    "generatedCatalog": {
+      "heritageFiles": [
+        {"path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts", "sha256": "078036274dccce8aeb78a772ec82dd764fdd1e36bb1955d8d604f13b10299dd5"},
+        {"path": "apps/frontend/platform-admin/src/app/catalog/generatedPresentationCatalog.ts", "sha256": "93c4a2b5fe525c20dcbd9c3b8a1f9ed342dee7373d40c0ad484f5260938ad7a9"},
+        {"path": "apps/frontend/platform-admin/src/app/catalog/generatedProblemSemantics.ts", "sha256": "bd7d3bb8f7113f72758e3386a45688a17e43d7a647e2a37f48400d1d7343cf02"},
+        {"path": "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts", "sha256": "a6d5e747c4f06db8965995a13f3e9c91f30f37a21c60763554ffa3c333a6ab3c"},
+        {"path": "apps/frontend/operations-admin/src/app/catalog/generatedPresentationCatalog.ts", "sha256": "93c4a2b5fe525c20dcbd9c3b8a1f9ed342dee7373d40c0ad484f5260938ad7a9"},
+        {"path": "apps/frontend/operations-admin/src/app/catalog/generatedProblemSemantics.ts", "sha256": "4101bf26b18c99789d3cb246481a50f12aa2b45f7a2aeada44a805c186ebec86"}
+      ],
+      "disposition": "NOT_CARRIED_REGENERATE",
+      "v2sSources": [
+        "contracts/openapi/edge.openapi.yaml",
+        "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+        "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-catalog.json",
+        "this manifest surfaces and textAssertions"
+      ],
+      "targetGenerator": "scripts/generate/edge-codegen.mjs plus deterministic frontend catalog emitters",
+      "rule": "no generated catalog bytes or pageDesignKey/error vocabulary may be copied from v2"
+    },
+    "foundationPrimitiveNormalization": {
+      "useOverlayLock": "overlayLock",
+      "rule": "v2Consumed uses normalized primitive names; source symbol spellings are preserved only in this alias table"
+    },
+    "actionCapabilityCatalog": {
+      "heritageSource": {
+        "path": "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts",
+        "sha256": "a6d5e747c4f06db8965995a13f3e9c91f30f37a21c60763554ffa3c333a6ab3c"
+      },
+      "activeKeys": [
+        "BC-ORG-GROUP-EDIT", "BC-ORG-GROUP-STATUS",
+        "BC-ORG-REGION-CREATE", "BC-ORG-REGION-EDIT", "BC-ORG-REGION-STATUS",
+        "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-EDIT", "BC-ORG-PROJECT-STATUS",
+        "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-EDIT", "BC-ORG-BRAND-STATUS",
+        "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-EDIT", "BC-ORG-TENANT-STATUS",
+        "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-EDIT", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-HEAD-COMPANY-BRAND",
+        "BC-ORG-STORE-CREATE", "BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS",
+        "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-STORE-ROLE-REVOKE",
+        "BC-IAM-GROUP-INVITE", "BC-IAM-REGION-INVITE", "BC-IAM-PROJECT-INVITE", "BC-IAM-HEAD-COMPANY-INVITE", "BC-IAM-STORE-INVITE",
+        "BC-CONTRACT-CREATE", "BC-CONTRACT-EDIT", "BC-CONTRACT-INVALIDATE"
+      ],
+      "count": 34,
+      "rule": "page access grants read entry; only these action keys grant mutations, and neither set implies the other"
+    },
+    "drawerLifecycleAdaptation": {
+      "v2OperationsGap": "operations wrapper only supplies dirtyGuardTestIds and has no safe logger",
+      "r5Required": "both app-local thin wrappers delegate to foundation and inject idempotencyKey:true plus onDiagnosticEvent to an app-local safe logger",
+      "localWrapperAllowed": "parameter injection only; reimplementation of lifecycle, overlay, retry or state machine is forbidden"
+    },
+    "foundationRequiredAdaptations": [
+      {
+        "path": "libraries/frontend/admin-ui-foundation/src/list/contextScopedQueryArgs.ts",
+        "change": "ContextScopedQueryContext.workspaceKey -> groupWorkspaceKey; ContextScopedQueryResult Pick<C,'workspaceKey'> -> Pick<C,'groupWorkspaceKey'>; result literal workspaceKey/context.workspaceKey -> groupWorkspaceKey/context.groupWorkspaceKey; no alias or overload"
+      },
+      {
+        "path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+        "change": "replace workspaceKey expectation with groupWorkspaceKey-only expectation"
+      }
+    ],
+    "namedAdaptations": [
+      {
+        "id": "PLATFORM_AUTH_FOUNDATION_ADAPT",
+        "reason": "v2 PlatformLoginPage directly consumed no foundation primitive",
+        "required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"],
+        "proof": "imports plus login/session/error/overlay L2; this is an explicit R5 adaptation, not claimed carry-over"
+      }
+    ]
+  },
+  "foundationConsumptionBySurface": {
+    "PLATFORM-AUTH": {"v2Consumed": [], "r5Required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"]},
+    "PLATFORM-WORKSPACES": {"v2Consumed": ["useDetailDrawer", "overlayLock"], "r5Required": ["useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "contextScopedQueryArgs", "testId"]},
+    "PLATFORM-ADMIN-USERS": {"v2Consumed": ["useDetailDrawer", "overlayLock"], "r5Required": ["useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "PLATFORM-WORKSPACE-OVERVIEW": {"v2Consumed": [], "r5Required": ["contextScopedQueryArgs", "useDetailDrawer", "testId"]},
+    "PLATFORM-ORGANIZATION-OVERVIEW": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock", "contextScopedQueryArgs", "testId"]},
+    "PLATFORM-CONTRACT-OVERVIEW": {"v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock", "contextScopedQueryArgs", "testId"]},
+    "PLATFORM-ROLES": {"v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "PLATFORM-WORKSPACE-ACCOUNTS": {"v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "PLATFORM-EXTENSION-FIELDS": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "PLATFORM-PASSWORD": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-AUTH": {"v2Consumed": [], "r5Required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"]},
+    "PUBLIC-INVITATION": {"v2Consumed": [], "r5Required": ["overlayLock", "platformHttpProtocol", "testId"]},
+    "PUBLIC-ACCESS-RECOVERY": {"v2Consumed": [], "r5Required": ["overlayLock", "platformHttpProtocol", "testId"]},
+    "OPERATIONS-SHELL": {"v2Consumed": ["contextScopedQueryArgs", "overlayLock"], "r5Required": ["contextScopedQueryArgs", "overlayLock", "observedBaseQuery", "testId"]},
+    "OPERATIONS-ORG-STRUCTURE": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-BUSINESS-ENTITIES": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-STORES": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-CONTRACTS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-USERS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-STORE-PROFILE": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "testId"]},
+    "OPERATIONS-PASSWORD": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {"v2Consumed": [], "r5Required": ["contextScopedQueryArgs", "testId"]}
+  },
+  "notCarriedAssets": [
+    {"symbol": "useCheckOperationsPageEntryGuardMutation", "sourcePath": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsContextShell.tsx", "sourceSha256": "ac41148c6a40d0abde90611e6c06a718738634dd5f9dcdab170b1667dc257be6", "reason": "UX navigation cannot become authorization proof", "replacedBy": "owner-confirmed session navigation plus authorization on every task endpoint"},
+    {"symbol": "getWorkspaceRoleCandidates", "sourcePath": "apps/frontend/operations-admin/src/app/api/generated/operationsEdgeApi.ts", "sourceSha256": "8de6cd210505fbbab2d3b1d49533302bb216fad21898135463882011da7e40f6", "reason": "unused duplicate catalog endpoint", "replacedBy": "getWorkspaceRoles read model catalog"},
+    {"symbol": "logoBindGrant", "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceFormDrawer.tsx", "sourceSha256": "445800766f658d74954d608f0f213748a20fbff039b2b36927b6796d5db9204f", "reason": "client must not carry owner bind capability", "replacedBy": "logoAssetRef and REQUIRED owner claim"},
+    {"symbol": "transient-404-logo-retry", "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceLogoImage.tsx", "sourceSha256": "7043170f302f77dffd73902a09b061a1d54aca4a59fc3031cfa733649e6c6357", "reason": "same-deployable owner result is immediately readable", "replacedBy": "direct public asset content read"},
+    {"symbol": "direct-assignment-add-edit", "sourcePath": "apps/frontend/operations-admin/src/features/user-management/ui/UserManagementPage.tsx", "sourceSha256": "c811961086741b0da5a53f8a38dcc4ef7d7df9a3589be466bb95ea58e7f44265", "reason": "new assignment is invitation-only", "replacedBy": "invitation create/accept chain; existing assignment may only be revoked"},
+    {"symbol": "heritage-generated-platform-wire", "sourcePath": "apps/frontend/platform-admin/src/app/api/generated/platformEdgeApi.ts", "sourceSha256": "7e0200272b1f95fe216e3ecf7000579682087d0f1ace20ef6bd20789c4077c8b", "reason": "wire must match v2s edge", "replacedBy": "regenerate platform-admin slice"},
+    {"symbol": "heritage-generated-operations-wire", "sourcePath": "apps/frontend/operations-admin/src/app/api/generated/operationsEdgeApi.ts", "sourceSha256": "8de6cd210505fbbab2d3b1d49533302bb216fad21898135463882011da7e40f6", "reason": "wire must match v2s edge", "replacedBy": "regenerate operations-admin and public slices"}
+  ],
+  "browserRoutePolicy": {
+    "operationsBrowserRoutes": "all authenticated operations routes carry /operations/:groupWorkspaceKey; this is a browser context locator, never authorization",
+    "apiRoutes": "remain the operation catalog paths under /api/operations/group-workspaces/{groupWorkspaceKey}; browser route adaptation never renames an API path",
+    "pageDesignKeys": "stable approved keys are retained unless this manifest explicitly lists a rename",
+    "explicitRenames": [
+      {
+        "heritageBrowserRoute": "/operations/organization/store-contracts",
+        "r5BrowserRoute": "/operations/:groupWorkspaceKey/contracts",
+        "pageDesignKey": "PG-CONTRACT-STORE-MANAGE",
+        "reason": "move from organization route segment to the contract task boundary while preserving the approved page key"
+      }
+    ]
+  },
+  "textAssertionsBySurface": {
+    "PLATFORM-AUTH": {"required": ["登录平台后台"], "forbidden": ["默认管理员", "root账号"]},
+    "PLATFORM-WORKSPACES": {"required": ["集团空间", "初始化商业集团"], "forbidden": ["商户空间", "默认集团"]},
+    "PLATFORM-ADMIN-USERS": {"required": ["平台管理员", "凭据恢复"], "forbidden": ["运营角色", "代设新密码"]},
+    "PLATFORM-WORKSPACE-OVERVIEW": {"required": ["集团空间概览"], "forbidden": ["投影诊断", "同步状态"]},
+    "PLATFORM-ORGANIZATION-OVERVIEW": {"required": ["组织概览"], "forbidden": ["组织诊断", "商户"]},
+    "PLATFORM-CONTRACT-OVERVIEW": {"required": ["合同概览", "货号名称"], "forbidden": ["合同诊断", "仅货号"]},
+    "PLATFORM-ROLES": {"required": ["页面准入", "可执行动作"], "forbidden": ["页面即权限", "候选角色接口"]},
+    "PLATFORM-WORKSPACE-ACCOUNTS": {"required": ["账号详情", "撤销任职"], "forbidden": ["直接新增任职", "直接编辑任职"]},
+    "PLATFORM-EXTENSION-FIELDS": {"required": ["扩展字段"], "forbidden": ["商业集团扩展值", "项目扩展值"]},
+    "PLATFORM-PASSWORD": {"required": ["修改密码", "当前密码"], "forbidden": ["修改他人密码", "显示明文"]},
+    "OPERATIONS-AUTH": {"required": ["登录运营后台"], "forbidden": ["当前身份", "查看范围"]},
+    "PUBLIC-INVITATION": {"required": ["接受邀请", "手机验证"], "forbidden": ["直接新增任职", "默认密码"]},
+    "PUBLIC-ACCESS-RECOVERY": {"required": ["找回密码", "手机验证"], "forbidden": ["管理员代设", "显示验证码"]},
+    "OPERATIONS-SHELL": {"required": ["当前角色", "数据范围"], "forbidden": ["当前身份", "查看范围"]},
+    "OPERATIONS-ORG-STRUCTURE": {"required": ["商业集团", "大区", "项目"], "forbidden": ["总公司节点", "门店节点"]},
+    "OPERATIONS-BUSINESS-ENTITIES": {"required": ["品牌", "经营主体", "总公司"], "forbidden": ["商户", "外部同步"]},
+    "OPERATIONS-STORES": {"required": ["门店", "经营状态"], "forbidden": ["商户", "合同状态等于启停", "已停业"]},
+    "OPERATIONS-CONTRACTS": {"required": ["合同", "货号名称"], "forbidden": ["仅货号", "停用门店不可签约", "分期编码"]},
+    "OPERATIONS-USERS": {"required": ["邀请成员", "撤销任职"], "forbidden": ["直接新增任职", "直接编辑任职"]},
+    "OPERATIONS-STORE-PROFILE": {"required": ["门店资料", "合同"], "forbidden": ["编辑门店", "编辑合同", "已停业"]},
+    "OPERATIONS-PASSWORD": {"required": ["修改密码", "当前密码"], "forbidden": ["修改他人密码", "显示明文"]},
+    "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {"required": ["当前角色"], "forbidden": ["经营指标", "新建业务", "诊断"]}
+  },
+  "pageDesignKeySurfaceCrosswalk": {
+    "byPageDesignKey": {
+      "PLATFORM-WORKSPACES": "PLATFORM-WORKSPACES",
+      "PLATFORM-ADMIN-USERS": "PLATFORM-ADMIN-USERS",
+      "PLATFORM-WORKSPACE-OVERVIEW": "PLATFORM-WORKSPACE-OVERVIEW",
+      "PLATFORM-ORGANIZATION-OVERVIEW": "PLATFORM-ORGANIZATION-OVERVIEW",
+      "PLATFORM-CONTRACT-OVERVIEW": "PLATFORM-CONTRACT-OVERVIEW",
+      "PLATFORM-ROLES": "PLATFORM-ROLES",
+      "PLATFORM-WORKSPACE-ACCOUNTS": "PLATFORM-WORKSPACE-ACCOUNTS",
+      "PLATFORM-EXTENSION-FIELDS": "PLATFORM-EXTENSION-FIELDS",
+      "PG-ORG-STRUCTURE": "OPERATIONS-ORG-STRUCTURE",
+      "PG-ORG-BRAND": "OPERATIONS-BUSINESS-ENTITIES",
+      "PG-ORG-TENANT": "OPERATIONS-BUSINESS-ENTITIES",
+      "PG-ORG-HEAD-COMPANY": "OPERATIONS-BUSINESS-ENTITIES",
+      "PG-ORG-STORE-MANAGE": "OPERATIONS-STORES",
+      "PG-CONTRACT-STORE-MANAGE": "OPERATIONS-CONTRACTS",
+      "PG-IAM-GROUP-USERS": "OPERATIONS-USERS",
+      "PG-IAM-REGION-USERS": "OPERATIONS-USERS",
+      "PG-IAM-PROJECT-USERS": "OPERATIONS-USERS",
+      "PG-IAM-HEAD-COMPANY-USERS": "OPERATIONS-USERS",
+      "PG-IAM-STORE-USERS": "OPERATIONS-USERS",
+      "PG-STORE-PROFILE": "OPERATIONS-STORE-PROFILE",
+      "HOME-GROUP": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
+      "HOME-REGION": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
+      "HOME-PROJECT": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
+      "HOME-HEAD-COMPANY": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
+      "HOME-STORE": "OPERATIONS-FIVE-HOME-BOOTSTRAPS"
+    },
+    "bySurface": {
+      "PLATFORM-WORKSPACES": ["PLATFORM-WORKSPACES"],
+      "PLATFORM-ADMIN-USERS": ["PLATFORM-ADMIN-USERS"],
+      "PLATFORM-WORKSPACE-OVERVIEW": ["PLATFORM-WORKSPACE-OVERVIEW"],
+      "PLATFORM-ORGANIZATION-OVERVIEW": ["PLATFORM-ORGANIZATION-OVERVIEW"],
+      "PLATFORM-CONTRACT-OVERVIEW": ["PLATFORM-CONTRACT-OVERVIEW"],
+      "PLATFORM-ROLES": ["PLATFORM-ROLES"],
+      "PLATFORM-WORKSPACE-ACCOUNTS": ["PLATFORM-WORKSPACE-ACCOUNTS"],
+      "PLATFORM-EXTENSION-FIELDS": ["PLATFORM-EXTENSION-FIELDS"],
+      "OPERATIONS-ORG-STRUCTURE": ["PG-ORG-STRUCTURE"],
+      "OPERATIONS-BUSINESS-ENTITIES": ["PG-ORG-BRAND", "PG-ORG-TENANT", "PG-ORG-HEAD-COMPANY"],
+      "OPERATIONS-STORES": ["PG-ORG-STORE-MANAGE"],
+      "OPERATIONS-CONTRACTS": ["PG-CONTRACT-STORE-MANAGE"],
+      "OPERATIONS-USERS": ["PG-IAM-GROUP-USERS", "PG-IAM-REGION-USERS", "PG-IAM-PROJECT-USERS", "PG-IAM-HEAD-COMPANY-USERS", "PG-IAM-STORE-USERS"],
+      "OPERATIONS-STORE-PROFILE": ["PG-STORE-PROFILE"],
+      "OPERATIONS-FIVE-HOME-BOOTSTRAPS": ["HOME-GROUP", "HOME-REGION", "HOME-PROJECT", "HOME-HEAD-COMPANY", "HOME-STORE"]
+    },
+    "nonCatalogSurfaces": {
+      "PLATFORM-AUTH": "authentication route outside admin page catalog",
+      "PLATFORM-PASSWORD": "shell drawer, not a routable page",
+      "OPERATIONS-AUTH": "authentication route outside role page catalog",
+      "PUBLIC-INVITATION": "public flow outside role page catalog",
+      "PUBLIC-ACCESS-RECOVERY": "public flow outside role page catalog",
+      "OPERATIONS-SHELL": "context shell, not a role page",
+      "OPERATIONS-PASSWORD": "shell drawer, not a routable page"
+    },
+    "closure": "byPageDesignKey and bySurface must be exact inverses; nonCatalogSurfaces completes all 22 surfaces"
+  },
+  "surfaces": [
+    {
+      "id": "PLATFORM-AUTH",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "sourceSha256": "83aa1c365ab84df20d37a1256d445b8b0a8775223b0721c19d51878a91aa8a2b",
+      "targetPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "route": "/platform/login",
+      "generatedSlice": "platform-admin/platform-auth",
+      "focusedEvidence": "platform-auth-login-session-password-logout"
+    },
+    {
+      "id": "PLATFORM-WORKSPACES",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "sourceSha256": "0af9be8c884de227c28b875f4e41626f6a20d932b43e4ab6064289e7cbfe63dc",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "route": "/platform/workspaces",
+      "generatedSlice": "platform-admin/platform-workspace+platform-asset+organization",
+      "focusedEvidence": "workspace-list-create-detail-edit-status-logo-commercial-group"
+    },
+    {
+      "id": "PLATFORM-ADMIN-USERS",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/platform-admin-governance/ui/PlatformAdminGovernancePage.tsx",
+      "sourceSha256": "c0a872918f604834f56fa3b45e92b59ef3f6cffb310bb3c29f47c732768188cd",
+      "targetPath": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "route": "/platform/admin-users",
+      "generatedSlice": "platform-admin/platform-iam",
+      "focusedEvidence": "platform-admin-list-create-detail-profile-status-reset"
+    },
+    {
+      "id": "PLATFORM-WORKSPACE-OVERVIEW",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/workspace-overview/ui/WorkspaceOverviewPage.tsx",
+      "sourceSha256": "cb1de9be62db383895141c9014f4b363906f967be0d32a3b4c2e596bae1f8d4f",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "route": "/platform/workspace-overview",
+      "generatedSlice": "platform-admin/platform-workspace-overview",
+      "focusedEvidence": "workspace-overview-owner-task-read-no-projection"
+    },
+    {
+      "id": "PLATFORM-ORGANIZATION-OVERVIEW",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/organization-overview/ui/OrganizationOverviewPage.tsx",
+      "sourceSha256": "72f5ab9beb8f9eb58b1f44effcaaad924d7fcd2dba00e96b93ad21b43c408829",
+      "targetPath": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "route": "/platform/organization-overview",
+      "generatedSlice": "platform-admin/organization",
+      "focusedEvidence": "organization-overview-search-detail"
+    },
+    {
+      "id": "PLATFORM-CONTRACT-OVERVIEW",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/contract-overview/ui/ContractOverviewPage.tsx",
+      "sourceSha256": "932784738052ab15f1733900b6d47e29718e0334b8f3e0a32fac8b76f363dfe0",
+      "targetPath": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "route": "/platform/contract-overview",
+      "generatedSlice": "platform-admin/contract",
+      "focusedEvidence": "contract-overview-filter-item-pair-detail"
+    },
+    {
+      "id": "PLATFORM-ROLES",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/role-management/ui/RoleManagementPage.tsx",
+      "sourceSha256": "45111b3d93310ffdbe7a3700822bf76a3d0630ac3917b21ede091996dea7efe0",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "route": "/platform/roles",
+      "generatedSlice": "platform-admin/workspace-iam-role",
+      "focusedEvidence": "role-list-detail-page-access-capability-status-no-candidates-endpoint"
+    },
+    {
+      "id": "PLATFORM-WORKSPACE-ACCOUNTS",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/workspace-account-management/ui/WorkspaceAccountManagementPage.tsx",
+      "sourceSha256": "f91df607180aebc2354e7e811c9abcb316121f24bc121b711314280cb207011e",
+      "targetPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "route": "/platform/workspace-accounts",
+      "generatedSlice": "platform-admin/workspace-iam-account-invitation",
+      "focusedEvidence": "account-detail-status-reset-assignment-revoke-invitation"
+    },
+    {
+      "id": "PLATFORM-EXTENSION-FIELDS",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/extension-field-management/ui/ExtensionFieldManagementPage.tsx",
+      "sourceSha256": "4d23ecd15dcfe641c38c3292076c1ebb452f309fb36a4e1d59c9729ee554cc4e",
+      "targetPath": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "route": "/platform/extension-fields",
+      "generatedSlice": "platform-admin/extension",
+      "focusedEvidence": "five-host-definition-catalog-detail-replace-cas"
+    },
+    {
+      "id": "PLATFORM-PASSWORD",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.tsx",
+      "sourceSha256": "7f628b6e14e5b4965d59db9282b6e3aa78a85cf851b823e2f182f381c143dc57",
+      "targetPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.tsx",
+      "route": "DRAWER@/platform",
+      "generatedSlice": "platform-admin/platform-auth",
+      "focusedEvidence": "platform-current-password-change-secret-clear-and-other-session-revoke"
+    },
+    {
+      "id": "OPERATIONS-AUTH",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/authentication/ui/WorkspaceLoginPage.tsx",
+      "sourceSha256": "d04db79096a1f474aac00b0de3f67e07a9848dd38c388a06b2a2f3daf28a3f0f",
+      "targetPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+      "route": "/operations/:groupWorkspaceKey/login",
+      "generatedSlice": "operations-admin/workspace-iam-auth",
+      "focusedEvidence": "keyed-login-single-multi-no-role-disabled"
+    },
+    {
+      "id": "PUBLIC-INVITATION",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/InvitationAcceptancePage.tsx",
+      "sourceSha256": "0a9973f2c8f4f94cf76f5c82b61fc2987e13205e364ca0e30f97d74016c5cafd",
+      "targetPath": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "route": "/operations/invitations/:groupWorkspaceKey/:invitationToken",
+      "generatedSlice": "operations-admin/public-invitation",
+      "focusedEvidence": "invitation-view-accept-otp-credential-complete-recovery"
+    },
+    {
+      "id": "PUBLIC-ACCESS-RECOVERY",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/access-recovery/ui/AccessRecoveryPage.tsx",
+      "sourceSha256": "2c7d8ecde8aeb446734a2606e563260a58195a01b4a05731b99236361d1e6bd6",
+      "targetPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+      "physicalConsumerPaths": [
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.tsx",
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryCompletePage.tsx"
+      ],
+      "route": "/operations/:groupWorkspaceKey/password-recovery",
+      "physicalRoutes": [
+        "/operations/:groupWorkspaceKey/password-recovery",
+        "/operations/:groupWorkspaceKey/password-recovery/password",
+        "/operations/:groupWorkspaceKey/password-recovery/complete"
+      ],
+      "generatedSlice": "operations-admin/public-password-recovery",
+      "focusedEvidence": "operations-password-recovery-verify-password-complete-secret-clearing"
+    },
+    {
+      "id": "OPERATIONS-SHELL",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsContextShell.tsx",
+      "sourceSha256": "ac41148c6a40d0abde90611e6c06a718738634dd5f9dcdab170b1667dc257be6",
+      "targetPath": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "route": "/operations/:groupWorkspaceKey",
+      "generatedSlice": "operations-admin/workspace-iam-session-navigation",
+      "focusedEvidence": "context-role-data-node-tabs-cache-late-response"
+    },
+    {
+      "id": "OPERATIONS-PASSWORD",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx",
+      "sourceSha256": "eeaf97cdbe180f5855ac68932c62e22caa8615cdb51861db797faa0243fa0432",
+      "targetPath": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordChangeDrawer.tsx",
+      "route": "DRAWER@/operations/:groupWorkspaceKey",
+      "generatedSlice": "operations-admin/workspace-iam-session",
+      "focusedEvidence": "operations-current-password-change-secret-clear-and-other-session-revoke"
+    },
+    {
+      "id": "OPERATIONS-ORG-STRUCTURE",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/organization-hierarchy/ui/OrganizationHierarchyPage.tsx",
+      "sourceSha256": "116c878d01954e1642df7a6c2b5b7fc4524cefd0da7aa01e3b83c942e96d2626",
+      "targetPath": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "route": "/operations/:groupWorkspaceKey/organization/structure",
+      "generatedSlice": "operations-admin/organization-hierarchy",
+      "focusedEvidence": "group-region-project-phase-tree"
+    },
+    {
+      "id": "OPERATIONS-BUSINESS-ENTITIES",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+      "sourceSha256": "ce3ff54d22af79f5e973c42cfa8040199b1feb4d11f0dae03464fc417340276f",
+      "targetPath": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+      "route": "/operations/:groupWorkspaceKey/organization/{brands|tenants|head-companies}",
+      "generatedSlice": "operations-admin/organization-entities+extension-read",
+      "focusedEvidence": "brand-tenant-head-company-auth-extension-fields"
+    },
+    {
+      "id": "OPERATIONS-STORES",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "sourceSha256": "4a4d270aefd097cd6f842327439c56180af396c63c642300997fb553e5d292a5",
+      "targetPath": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "route": "/operations/:groupWorkspaceKey/organization/stores",
+      "generatedSlice": "operations-admin/organization-store+extension-read",
+      "focusedEvidence": "store-list-candidates-create-detail-update-status"
+    },
+    {
+      "id": "OPERATIONS-CONTRACTS",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "sourceSha256": "7bd2bd086555904ba4a33c9350a7af8fb28a220f2bff5b1e54efacffc5a6c3e3",
+      "targetPath": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "route": "/operations/:groupWorkspaceKey/contracts",
+      "generatedSlice": "operations-admin/contract",
+      "focusedEvidence": "contract-list-create-detail-update-invalidate-item-pair"
+    },
+    {
+      "id": "OPERATIONS-USERS",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/user-management/ui/UserManagementPage.tsx",
+      "sourceSha256": "c811961086741b0da5a53f8a38dcc4ef7d7df9a3589be466bb95ea58e7f44265",
+      "targetPath": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+      "route": "/operations/:groupWorkspaceKey/access/{group|region|project|head-company|store}-users",
+      "generatedSlice": "operations-admin/workspace-iam-user-invitation",
+      "focusedEvidence": "five-user-pages-user-invitation-revoke-no-direct-add"
+    },
+    {
+      "id": "OPERATIONS-STORE-PROFILE",
+      "disposition": "ADAPT",
+      "sourcePath": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "sourceSha256": "24511b42b2f589c6034a16ae12abacd4e41c2cea7915cf949fd63e5673c1e3c9",
+      "targetPath": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "route": "/operations/:groupWorkspaceKey/store/profile",
+      "generatedSlice": "operations-admin/organization-store-profile+contract-read",
+      "focusedEvidence": "fixed-store-profile-contracts-three-state"
+    },
+    {
+      "id": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
+      "disposition": "CARRY_ROUTE_BOOTSTRAP_ONLY",
+      "sourcePath": "apps/frontend/operations-admin/src/app/OperationsAdminSeed.tsx",
+      "sourceSha256": "535e7b1d7c1550f45491a3f49a96af0399d71d1450a83caf0a908028c9d93cb9",
+      "sourceFiles": [
+        {"path": "apps/frontend/operations-admin/src/app/OperationsAdminSeed.tsx", "sha256": "535e7b1d7c1550f45491a3f49a96af0399d71d1450a83caf0a908028c9d93cb9"},
+        {"path": "apps/frontend/operations-admin/src/app/routing/router.tsx", "sha256": "de71fbe603f865170a5e8c3eff8ddd63319bc18c08918bd14b6f3f5d7e33481e"},
+        {"path": "apps/frontend/operations-admin/src/app/routing/pageRegistry.ts", "sha256": "cc4a57b85ef84fe9eb6ec71a6cdc1fbd3776915dac26866e26ed72312a9464fd"},
+        {"path": "apps/frontend/operations-admin/src/app/routing/approvedPageDesignKeys.ts", "sha256": "4f3272519ee95185bbe6aa8c8db9898d5ec04abe4417c85b25c648037ed26398"}
+      ],
+      "targetPath": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleHomeBootstrapPage.tsx",
+      "route": "/operations/:groupWorkspaceKey/home/{group|region|project|head-company|store}",
+      "generatedSlice": "operations-admin/workspace-iam-session-navigation",
+      "focusedEvidence": "five-routes-render-bootstrap-only-no-dashboard-no-new-operation"
+    }
+  ],
+  "closure": {
+    "surfaceCount": 22,
+    "platformFeatureSurfaces": 10,
+    "operationsAndPublicFeatureSurfaces": 11,
+    "operationsShellAndAuthSurfaces": 3,
+    "operationsBusinessFeatureSurfaces": 6,
+    "publicFeatureSurfaces": 2,
+    "homeBootstrapSurface": 1,
+    "handwrittenRuntimeSourceFiles": 133,
+    "generatedWireFilesNotCarried": 2,
+    "referenceTestFiles": 45,
+    "notCarriedAssetCount": 7,
+    "requiredChecks": [
+      "every surface sourcePath/sourceFiles hash and the 180-file aggregate inventory hash match Heritage before copy",
+      "every targetPath is app-owned and imports no Heritage runtime/build path",
+      "every generatedSlice contains only operations whose x-consumer-faces names that app",
+      "every foundationConsumptionBySurface.r5Required entry resolves to libraries/frontend/admin-ui-foundation or an explicitly allowed thin app injection wrapper",
+      "surfaces contain no foundationPrimitives shadow column; foundationConsumptionBySurface is the only per-surface foundation truth",
+      "foundationRequiredAdaptations are complete before the first app surface consumes contextScopedQueryArgs",
+      "no app-local reimplementation of Drawer lifecycle, overlay lock, HTTP protocol, observability or testId primitive",
+      "both app thin Drawer wrappers inject idempotencyKey:true and onDiagnosticEvent into foundation lifecycle",
+      "focusedEvidence names a real affected L2 browser task for each of 22 surfaces",
+      "each surface L2 asserts at least one required text and zero occurrences of every forbidden text",
+      "all seven notCarriedAssets have zero target runtime/generated references",
+      "two wire files and six generated catalogs are regenerated from v2s sources and never copied",
+      "all six generated Heritage catalog hashes and all four app scaffold config hashes match before disposition",
+      "five home routes add no content or edge operation",
+      "pageDesignKey to surface and surface to pageDesignKey mappings are both total and unique except the explicit five-home grouped surface"
+    ]
+  }
+}

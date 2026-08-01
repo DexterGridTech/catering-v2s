@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p1-static-verification",
+  "packageId": "RM1-U05",
+  "status": "PASS",
+  "business": "NOT_APPLICABLE",
+  "businessReason": "P1 changes catalog authority projection and static compliance controls only; it introduces no new user journey, API behavior, database mutation, DEV run, seed or reset.",
+  "checks": [
+    {
+      "command": "scripts/check/authority-source-ledger",
+      "result": "PASS",
+      "assertion": "The exact seven-ID ledger, direct P1 closures, deferred P5/P6 ownership, authority kind/path/selector/hash and mechanically traceable consumers are coherent."
+    },
+    {
+      "command": "node tools/authority-source-ledger/cli.mjs self-test",
+      "result": "PASS",
+      "assertion": "Missing ledger ID, hard-coded title, a missing consumer, an authority-path mutation and a generator-relation selector mutation all produce a real red failure."
+    },
+    {
+      "command": "scripts/check/affected-l2 && node tools/verify-gates/cli.mjs affected-l2 --self-test",
+      "result": "PASS",
+      "assertion": "All 22 frontend layout paths derive from carry-over targetPath directories; stale derivation mutation is red."
+    },
+    {
+      "command": "node scripts/generate/edge-codegen.mjs --check && node scripts/generate/edge-codegen.mjs --self-test",
+      "result": "PASS",
+      "assertion": "The generated capability requirement catalog matches the corrected generator and codegen drift mutation remains red."
+    },
+    {
+      "command": "scripts/check/frontend-architecture && scripts/check/capability-invariants",
+      "result": "PASS",
+      "assertion": "No handwritten backend BC-* literal remains in the finite consumer denominator; capability mappings remain valid."
+    },
+    {
+      "command": "D5 owned-surface package-exit trace",
+      "result": "PASS",
+      "assertion": "The package exit structurally binds PLATFORM-WORKSPACE-OVERVIEW, its carry-over target WorkspaceAdministrationPage.tsx and the catalog-projection support source pageRegistry.tsx to current receipt hashes. Deleting the trace in an isolated static copy fails RM1_U05_OWNED_SURFACE_TRACE_INVALID. P1 adds no Journey, route, action, request or user interaction."
+    },
+    {
+      "command": "RM1 approved-surface equality",
+      "result": "PASS",
+      "assertion": "The active package allowlist is an exact set match for RM1-U05 changeSurfaces; injecting an undeclared surface in an isolated static copy fails RM1_ALLOWED_SURFACE_MANIFEST_DRIFT:RM1-U05."
+    },
+    {
+      "command": "scripts/check/standards-coverage --phase R5 && node tools/compliance-control/cli.mjs static-scan",
+      "result": "PASS",
+      "assertion": "R5 standards coverage and RM1 static admission are closed."
+    }
+  ],
+  "cleanup": "NOT_APPLICABLE",
+  "cleanupReason": "No managed dynamic environment or scratch runtime resource was created."
+}

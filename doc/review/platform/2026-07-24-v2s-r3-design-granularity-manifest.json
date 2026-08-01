@@ -1,0 +1,605 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "R3-SPECIALIZED-DESIGN",
+  "design": {
+    "path": "doc/plans/platform/2026-07-24-v2s-r3-walking-skeleton-implementation-design.md",
+    "sha256": "253045ba543a2ea319aeadb7e1c5fc785df4d81afc4563c2c9ca9bb5f57c8dbd"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-07-24-v2s-r3-specialized-design-authorization.md",
+    "sha256": "f912ce7942646d0aca5ce7ab045734286c1c7dc4f3ff03a6047de6f7a4cc7d99",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "d3327cda417bb9bf67a91110f88f1f2658a1dd11ba61460dd09aedc88f849a91"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "SEVERITY_COUNT_MISMATCH",
+      "ROUND_THREE",
+      "MISSING_FINDING_UNIT_LINK"
+    ]
+  },
+  "independentReview": {
+    "path": "doc/review/platform/2026-07-24-v2s-r3-design-independent-codex-review.md",
+    "sha256": "91bef03d7db0b15e26732a0e4ffc78467f9bbf6bf4c3e4d985f9485ae98bbb49",
+    "independence": "FRESH_CONTEXT_READ_ONLY_REVIEWER"
+  },
+  "independentReviewResolution": {
+    "path": "doc/review/platform/2026-07-24-v2s-r3-design-independent-review-resolution.md",
+    "sha256": "dd618ce63695f4465eadcdc39e289e67b54060039e90d2bf0814409ead61da76"
+  },
+  "revisedDesignIndependentVerification": {
+    "path": "doc/review/platform/2026-07-24-v2s-r3-revised-design-independent-verification.md",
+    "sha256": "71813494e28b1211acd52d7e476504569dced1627fa37cdad2a2149dc9c8f568",
+    "independence": "FRESH_CONTEXT_READ_ONLY_REVIEWER",
+    "reviewRound": 2,
+    "reviewRoundLimit": 2
+  },
+  "revisedDesignVerificationResolution": {
+    "path": "doc/review/platform/2026-07-24-v2s-r3-revised-design-verification-resolution.md",
+    "sha256": "f83009d1abd5684e7cda9af42664eecced90ef41806853939a338a6483dc8bd7"
+  },
+  "candidateJourney": {
+    "id": "R3-J01",
+    "status": "DEXTER_ACCEPTANCE_REQUIRED_BEFORE_IMPLEMENTATION",
+    "actor": "platform principal",
+    "task": "sign in, find a known workspace by exact workspaceKey, and confirm its registration status and read-only facts",
+    "pageKey": "PLATFORM_WORKSPACE_REGISTRATION_CHECK",
+    "ownerReadback": "platform-workspace",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "R3-U01",
+      "title": "GATE_0 and version freeze",
+      "approvedAssertions": [
+        "all four D.1 layout rules become real production gates before the first business source line",
+        "Gate 0 proves validator readiness and an empty business-source inventory; real contract/generated and Flyway artifacts pass production conformity after their owning units create them",
+        "walking-skeleton contract and Flyway validators have shared-core self-tests and external discriminating red fixtures",
+        "version fallback creates one new decision and never a silent dual compatibility line"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 9. R3：W1——最薄运行骨架与 walking skeleton",
+          "sha256": "88888ae442cacb254eef812772dc77f0a6f5249445d12b52e1f8e1492256c9ab"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.1 目录与布局",
+          "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-24-v2s-r3-walking-skeleton-implementation-design.md",
+        "anchor": "## 5. GATE_0 readiness 与 production conformity"
+      },
+      "currentDeviation": "standards coverage fails at PLANNED_ENFORCEMENT_OVERDUE:D.1.L01 and no R3 gate implementation exists",
+      "changeSurfaces": [
+        {
+          "path": "contracts/policy/walking-skeleton-denominator.json",
+          "disposition": "create",
+          "target": "closed R3 operation, module, migration and evidence denominator"
+        },
+        {
+          "path": "scripts/check/code-layout",
+          "disposition": "create",
+          "target": "complete D.1 production validator and self-test"
+        },
+        {
+          "path": "scripts/check/walking-skeleton-contracts",
+          "disposition": "create",
+          "target": "eight-operation face and generated closure validator"
+        },
+        {
+          "path": "scripts/check/flyway-layout",
+          "disposition": "create",
+          "target": "one-history and UTC-millisecond migration validator"
+        },
+        {
+          "path": "scripts/check/gate-0",
+          "disposition": "create",
+          "target": "ordered pre-business readiness aggregate with exact empty inventory and Dexter-owned Git baseline oracle"
+        },
+        {
+          "path": "scripts/check/r3-production-conformity",
+          "disposition": "create",
+          "target": "post-U02/U03 production-tree contract, generated and migration conformity"
+        },
+        {
+          "path": "contracts/policy/standards-coverage-matrix.json",
+          "disposition": "update-after-real-enforcement-only",
+          "target": "D.1.L01-L04 ACTIVE; D.2 and D.3 remain R4"
+        }
+      ],
+      "orderedChain": [
+        "freeze denominator",
+        "implement production validators",
+        "run shared-core self-tests",
+        "run external red fixtures",
+        "run GATE_0_READINESS while the exact business-source inventory is empty",
+        "hard-stop after readiness PASS and have Dexter create the immutable Gate 0 checkpoint commit",
+        "read-only verify checkpoint tree/evidence hashes and record the full commit SHA",
+        "require every U02-U05 and closure target commit to descend from the checkpoint",
+        "run production conformity after U02 and U03 create real artifacts"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "R3-U01 is a hard serial section before R3-U02 through R3-U05 business source"
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "the gate unit creates no database or migration"
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "the gate unit creates no UI",
+        "termSource": "frozen D.1-D.3"
+      },
+      "evidence": {
+        "l1": "clean, self-test and mutation output for every gate",
+        "l2": "not yet; business source forbidden",
+        "l3": "not applicable",
+        "business": "Gate 0 readiness evidence proves an empty business-source inventory; a Dexter-owned immutable checkpoint binds that state, and descendant proof plus production conformity proves later real artifacts",
+        "cleanup": "scratch mutations removed"
+      },
+      "forbiddenPseudoFixes": [
+        "mark planned enforcement ACTIVE before the referenced gate exists",
+        "run helper self-test without production run wiring",
+        "backdate or rewrite the first-business timestamp"
+      ],
+      "discriminator": {
+        "fixture": "a plausible root shared directory, one operations client importing a platform generated type, and a second Flyway history each fail for distinct reasons"
+      }
+    },
+    {
+      "id": "R3-U02",
+      "title": "Build, OpenAPI and generated face closure",
+      "approvedAssertions": [
+        "one OpenAPI document and x-consumer-faces are the only operation exposure truth",
+        "each HttpOnly-cookie admin has an app-local current-session bootstrap operation for refresh recovery",
+        "current-session responses contain only each app guard's minimum principal/workspace fields; missing, expired, revoked and cross-face sessions are indistinguishable 401 while network or 5xx remains unavailable rather than signed-out",
+        "server and both admin targets receive only reachable operation and schema closures",
+        "generated repetition across app targets is accepted while cross-app or shared-wire imports are rejected"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.10 边缘、安全面与 OpenAPI face",
+          "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-24-v2s-r3-walking-skeleton-implementation-design.md",
+        "anchor": "## 3. edge OpenAPI 与生成闭包"
+      },
+      "currentDeviation": "no build, OpenAPI, generator or application target exists",
+      "changeSurfaces": [
+        {
+          "path": "contracts/openapi/edge.openapi.json",
+          "disposition": "create",
+          "target": "exact eight-operation wire truth including two current-session bootstrap operations"
+        },
+        {
+          "path": "tools/openapi-face/cli.mjs",
+          "disposition": "create",
+          "target": "server registry and two app-owned generated slices"
+        },
+        {
+          "path": "apps/platform-admin/src/app/api/generated/",
+          "disposition": "create",
+          "target": "five platform operations and reachable types only"
+        },
+        {
+          "path": "apps/operations-admin/src/app/api/generated/",
+          "disposition": "create",
+          "target": "three operations-admin operations and reachable types only"
+        }
+      ],
+      "orderedChain": [
+        "freeze exact dependency versions",
+        "author OpenAPI",
+        "generate server binding and route faces",
+        "generate target slices",
+        "byte and reachability check",
+        "compile and typecheck consumers"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "OpenAPI precedes every generated target; generated outputs never become input truth"
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "wire generation does not mutate business data"
+      },
+      "uiAndTerms": {
+        "pageKey": "PLATFORM_WORKSPACE_REGISTRATION_CHECK",
+        "termSource": "contracts/catalog/pages.json"
+      },
+      "evidence": {
+        "l1": "generator count, byte, face and reachability checks",
+        "l2": "both app production consumers compile and platform journey consumes its own generated hooks",
+        "l3": "not applicable",
+        "business": "server=8 platform=5 operations=3; both apps restore valid sessions after refresh, reject missing/expired/revoked/cross-face as 401 and keep network/5xx distinct",
+        "cleanup": "temporary generation directory removed"
+      },
+      "forbiddenPseudoFixes": [
+        "frontend allowlist",
+        "runtime face filter",
+        "global generated model package",
+        "foundation re-export of wire types"
+      ],
+      "discriminator": {
+        "fixture": "a valid-looking extra platform endpoint in the operations slice and an unreachable schema both fail"
+      }
+    },
+    {
+      "id": "R3-U03",
+      "title": "Backend owners, transaction, schema and edge security",
+      "approvedAssertions": [
+        "one stateless backend deployable owns three modules and one PostgreSQL database with three owner schemas and one Flyway history",
+        "operations login calls platform-workspace judgment through its public API in the same REQUIRED transaction",
+        "expected denial commits only sanitized failure counters/security audit while creating no session or success audit",
+        "direct backend traffic, spoofed edge/forwarded headers, cross-origin unsafe requests and form login fail closed",
+        "per-face canonical origins come only from validated server configuration; filter order is edge credential then browser-forgery then session/auth, with exact Origin and conditional Fetch Metadata fallback and no CORS allow headers"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.1 部署拓扑",
+          "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"
+        },
+        {
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.3 跨模块原子写",
+          "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"
+        },
+        {
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.7 单库、多 schema 与完整性",
+          "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-24-v2s-r3-walking-skeleton-implementation-design.md",
+        "anchor": "## 2. 冻结边界与模块"
+      },
+      "currentDeviation": "no backend, database, module or edge runtime exists",
+      "changeSurfaces": [
+        {
+          "path": "apps/backend/",
+          "disposition": "create",
+          "target": "single Boot application with edge and three owner packages"
+        },
+        {
+          "path": "apps/backend/src/main/resources/db/migration/",
+          "disposition": "create",
+          "target": "module directories aggregated into public.flyway_schema_history"
+        },
+        {
+          "path": "contracts/policy/module-dependency-registry.json",
+          "disposition": "update",
+          "target": "three modules, one COMMAND and one SCHEMA_FK edge"
+        },
+        {
+          "path": "infra/reverse-proxy/nginx.conf.template",
+          "disposition": "create",
+          "target": "only public ingress with overwrite-only trusted headers and canonical origin input"
+        }
+      ],
+      "orderedChain": [
+        "migration layout",
+        "owner modules",
+        "public APIs",
+        "edge filter",
+        "OpenAPI adapters",
+        "focused transaction and security tests"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "operations-identity may depend on platform-workspace.api but never its domain, repository or schema DML"
+      ],
+      "dataEvolution": {
+        "schemas": [
+          "platform_identity",
+          "platform_workspace",
+          "operations_identity"
+        ],
+        "history": "public.flyway_schema_history",
+        "rollback": "failed login or workspace judgment creates no session and no success audit"
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "backend unit exposes wire but owns no frontend labels",
+        "termSource": "edge OpenAPI and page catalog"
+      },
+      "evidence": {
+        "l1": "compile, module import, dependency graph, Flyway, typed-denial bookkeeping, canonical-origin/filter-order/conditional-fetch-metadata/content-type/OPTIONS/CORS-header and security focused tests",
+        "l2": "proxy-only login and readback",
+        "l3": "not applicable",
+        "business": "one process, one database, one history and owner-consistent rows",
+        "cleanup": "container and run manifest stopped"
+      },
+      "forbiddenPseudoFixes": [
+        "JPA or hidden repository traversal",
+        "cross-schema DML",
+        "REQUIRES_NEW",
+        "event listener business writes",
+        "internal HTTP client"
+      ],
+      "discriminator": {
+        "fixture": "a correct password for an inactive workspace rolls back operations session creation; the same backend path without the edge credential is rejected"
+      }
+    },
+    {
+      "id": "R3-U04",
+      "title": "Independent admin apps and candidate page",
+      "approvedAssertions": [
+        "platform-admin and operations-admin own separate shell, router, store, session, baseApi, generated slice, labels and L2",
+        "R3-J01 is one platform page for exact workspaceKey lookup and separate read-only detail confirmation",
+        "both apps restore their own HttpOnly-cookie session after refresh",
+        "operations-admin has a real login consumer but no fake business page or empty feature scaffold"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### B.4 前端架构与状态",
+          "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### B.5 交互与信息架构(PAUX 沉淀)",
+          "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-24-v2s-r3-walking-skeleton-implementation-design.md",
+        "anchor": "## 4. 页面与 read model"
+      },
+      "currentDeviation": "both admin apps are absent and the proposed Journey is not yet Dexter-approved",
+      "changeSurfaces": [
+        {
+          "path": "apps/platform-admin/",
+          "disposition": "create",
+          "target": "independent platform application and workspace-registration-check feature"
+        },
+        {
+          "path": "apps/operations-admin/",
+          "disposition": "create",
+          "target": "independent operations application and session feature only"
+        }
+      ],
+      "orderedChain": [
+        "Dexter accepts page entry",
+        "freeze frontend versions",
+        "create app kernels separately",
+        "bind app-owned generated slices",
+        "implement platform list and detail",
+        "run architecture and L2"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "neither app imports the other; no shared package is created in R3"
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "the platform page is read-only and operations UI only opens or closes its own session"
+      },
+      "uiAndTerms": {
+        "pageKey": "PLATFORM_WORKSPACE_REGISTRATION_CHECK",
+        "listShape": "exact workspaceKey lookup returning zero or one result without an action column",
+        "detailShape": "read-only bordered Descriptions in a right Drawer",
+        "termSource": "future contracts/catalog/pages.json after Dexter acceptance"
+      },
+      "evidence": {
+        "l1": "lint, typecheck and cross-app restricted-import tests",
+        "l2": "platform login, refresh recovery, exact lookup, detail, failure states and operations login/refresh recovery",
+        "l3": "not applicable",
+        "business": "owner readback matches seeded platform_workspace fact",
+        "cleanup": "browser contexts and managed run closed"
+      },
+      "forbiddenPseudoFixes": [
+        "shared shell or baseApi",
+        "disabled form as detail",
+        "operation column",
+        "static mock data",
+        "health or /me page as the real page"
+      ],
+      "discriminator": {
+        "fixture": "an operations import of platform store or generated model fails while intentional mechanical duplication remains valid"
+      }
+    },
+    {
+      "id": "R3-U05",
+      "title": "Managed runtime, five DEV commands and dynamic evidence",
+      "approvedAssertions": [
+        "start and restart migrate but never seed or reset",
+        "seed and reset are explicit separate destructive or data-writing actions",
+        "business and cleanup are independent and R3 cannot complete unless cleanup passes with zero active resources"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.12 前端与工程证据",
+          "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-24-v2s-r3-walking-skeleton-implementation-design.md",
+        "anchor": "## 7. DEV、seed/reset 与 evidence"
+      },
+      "currentDeviation": "no managed runtime or DEV command exists and dynamic execution is not authorized",
+      "changeSurfaces": [
+        {
+          "path": "scripts/dev/",
+          "disposition": "create-after-implementation-authorization",
+          "target": "start restart stop seed reset"
+        },
+        {
+          "path": "scripts/runtime/run-managed",
+          "disposition": "create-after-implementation-authorization",
+          "target": "run-scoped manifests and identity-based cleanup"
+        },
+        {
+          "path": "scripts/test/run-r3-walking-skeleton",
+          "disposition": "create-after-implementation-authorization",
+          "target": "proxy-only business and cleanup evidence"
+        }
+      ],
+      "orderedChain": [
+        "create managed manifest",
+        "start fresh resources",
+        "migrate",
+        "explicit seed",
+        "run proxy-only assertions",
+        "stop by manifest",
+        "read back zero resources"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "no dynamic action occurs before implementation authorization and GATE_0"
+      ],
+      "dataEvolution": {
+        "seed": "owner-specific dev fixture loaders only",
+        "reset": "allowlisted database and asset targets with before/after counts and no automatic seed"
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "runtime owns no business labels",
+        "termSource": "R3-J01 L2"
+      },
+      "evidence": {
+        "l1": "runner and command self-tests",
+        "l2": "fresh proxy-only walking skeleton",
+        "l3": "not applicable",
+        "business": "separate PASS field",
+        "cleanup": "separate PASS field and active resources zero"
+      },
+      "forbiddenPseudoFixes": [
+        "kill by port",
+        "implicit seed on start or restart",
+        "reuse DEV database in tests",
+        "infer cleanup from process exit",
+        "extend timeout instead of diagnose"
+      ],
+      "discriminator": {
+        "fixture": "business PASS plus one surviving resource yields overall NO_GO and cleanup FAIL"
+      }
+    },
+    {
+      "id": "R3-U06",
+      "title": "Review and closure boundary",
+      "approvedAssertions": [
+        "design review does not authorize implementation",
+        "Codex design and post-code implementation self-reviews independently apply the same user-task, Dexter-intent, alternatives and UI reasonableness standard",
+        "independent reviewer findings are dialectically verified and may not expand scope without source evidence and cost-fit review",
+        "Codex adversarial review stops after at most two rounds for the same cycle, target and approved scope; round two is SELF_DECIDED and reviewer/model/file/hash changes do not reset it",
+        "R3 GO requires Claude review, Dexter entry acceptance, implementation authorization, GATE_0 ordering, fresh dynamic evidence and cleanup",
+        "Heritage remains read-only and topology-inapplicable patterns are not copied"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/decisions/2026-07-24-v2s-r3-specialized-design-authorization.md",
+          "anchor": "## 3. 明确不授权",
+          "sha256": "f912ce7942646d0aca5ce7ab045734286c1c7dc4f3ff03a6047de6f7a4cc7d99"
+        },
+        {
+          "path": "doc/decisions/2026-07-24-v2s-r3-specialized-design-authorization.md",
+          "anchor": "## 5. Codex 控制面维护权澄清",
+          "sha256": "f912ce7942646d0aca5ce7ab045734286c1c7dc4f3ff03a6047de6f7a4cc7d99"
+        },
+        {
+          "path": "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
+          "anchor": "## 8. Codex 对抗审查最多两轮",
+          "sha256": "b59f8cca27331075da5d1eaf5e3331e0f99dc7af1599c79f468ce3f91e49383f"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-24-v2s-r3-walking-skeleton-implementation-design.md",
+        "anchor": "## 11. 设计期已知红灯"
+      },
+      "currentDeviation": "implementation-design-granularity now exists and passes production/self-test/red controls; R3-J01 remains Dexter-unaccepted and implementation authority remains false",
+      "changeSurfaces": [
+        {
+          "path": "scripts/check/implementation-design-granularity",
+          "disposition": "retain",
+          "target": "production wrapper invoked by claude-review-handoff"
+        },
+        {
+          "path": "tools/implementation-design-granularity/cli.mjs",
+          "disposition": "retain",
+          "target": "hash, anchor, delivery-unit, finding, verdict and review-round production validator with shared-core red fixtures"
+        },
+        {
+          "path": "scripts/check/codex-self-review",
+          "disposition": "retain-and-run-for-design-and-future-implementation",
+          "target": "reject closure-only Codex self-review and require source/user-behavior evidence for implementation"
+        },
+        {
+          "path": "doc/review/platform/2026-07-24-v2s-r3-design-review-request.md",
+          "disposition": "create",
+          "target": "implementation-facing design handoff with honest blocked gate"
+        },
+        {
+          "path": "doc/review/platform/2026-07-24-v2s-r3-design-independent-review-resolution.md",
+          "disposition": "create",
+          "target": "finding-by-finding source verification, counterexample, minimal-fix and residual-risk record"
+        },
+        {
+          "path": "doc/review/platform/2026-07-24-v2s-r3-revised-design-independent-verification.md",
+          "disposition": "create",
+          "target": "second and final fresh-context Codex verification for the R3 DESIGN review cycle"
+        },
+        {
+          "path": "doc/review/platform/2026-07-24-v2s-r3-revised-design-verification-resolution.md",
+          "disposition": "create",
+          "target": "dialectical resolution and Codex self-decision after the hard two-round limit"
+        },
+        {
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "disposition": "update",
+          "target": "design status only; never WALKING_SKELETON_READY"
+        },
+        {
+          "path": "doc/heritage/registry.json",
+          "disposition": "retain",
+          "target": "no source expansion or write-back"
+        }
+      ],
+      "orderedChain": [
+        "Codex adversarial round 1 and dialectical finding resolution",
+        "Codex targeted round 2 and SELF_DECIDED hard stop",
+        "Dexter accepts entry and implementation scope",
+        "independent Claude review",
+        "future implementation",
+        "fresh evidence and R3 closure"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Claude GO and Dexter implementation authorization are serial predecessors of every implementation unit"
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "review writes no business data"
+      },
+      "uiAndTerms": {
+        "requiresDexterDecision": "R3-J01 product entry",
+        "termSource": "candidate Journey section"
+      },
+      "evidence": {
+        "l1": "review packet hashes and static checks",
+        "l2": "future implementation evidence only",
+        "l3": "not applicable",
+        "business": "design scope and blockers are honest",
+        "cleanup": "no dynamic resources"
+      },
+      "forbiddenPseudoFixes": [
+        "omit REVIEW_KIND to bypass the missing gate",
+        "call the same-session author review independent",
+        "mark R3 IN_REVIEW while mandatory handoff gate cannot run"
+      ],
+      "discriminator": {
+        "fixture": "removing the Journey acceptance blocker or changing implementationAuthority to true invalidates the packet"
+      }
+    }
+  ]
+}

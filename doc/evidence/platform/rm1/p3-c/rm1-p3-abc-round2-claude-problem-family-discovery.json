@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P3-ABC-ROUND2-GENERATED-TRUTH-AND-RESOLVER-DISCLOSURE-20260728",
+  "genericProblem": "Generated capability artifacts and their authority source can drift outside a package evidence denominator, while resolver wiring state and receipt classification semantics are not explicitly disclosed.",
+  "rootCauseClass": "GENERATED_DENOMINATOR_AND_AUTHORITY_CATALOG_DIVERGENCE",
+  "finiteDenominator": [
+    "edge-codegen declared output targets",
+    "all five user-management targets times eight operations",
+    "admin-catalog userManagementActionBindings",
+    "WorkspaceCapabilityScopeResolver production callers",
+    "RM1-U12 recovery entries and package-scoped receipt graph"
+  ],
+  "searchedSurfaces": [
+    "scripts/generate/edge-codegen.mjs",
+    "tools/capability-invariants/cli.mjs",
+    "contracts/catalog/admin-catalog.json",
+    "contracts/registry/iam-org-governance-manifest.json",
+    "apps/backend/catering-business-server/src/main/resources/generated",
+    "libraries/backend/workspace-iam",
+    "doc/evidence/platform/rm1/p3-c",
+    ".runtime/compliance-control/hook-events"
+  ],
+  "searchQueries": [
+    "capability-operation-registry.json",
+    "BC-IAM-HEAD_COMPANY",
+    "BC-IAM-HEAD-COMPANY",
+    "WorkspaceCapabilityScopeResolver",
+    "REPLAYED_RECEIPT_CHAIN_EXISTS",
+    "DEXTER_AUTHORIZED_HISTORICAL_RECOVERY"
+  ],
+  "counterexamples": [
+    {
+      "id": "M2_RUNTIME_BOUNDARY",
+      "case": "Current P3 request path uses WorkspaceAuthorizationCatalog, not the unconnected generated resolver; runtime authorization remains correct."
+    },
+    {
+      "id": "S2_CONTROL_BOUNDARY",
+      "case": "Control evaluates same-package transitive receipt reachability, not a cross-package single direct post edge."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "M1_GENERATED_OUTPUT_DENOMINATOR",
+      "classification": "CONFIRMED"
+    },
+    {
+      "findingId": "M2_AUTHORITY_CAPABILITY_DRIFT",
+      "classification": "CONFIRMED"
+    },
+    {
+      "findingId": "S1_RESOLVER_WIRING_DISCLOSURE",
+      "classification": "CONFIRMED"
+    },
+    {
+      "findingId": "S2_RECEIPT_CLASSIFICATION_DISCLOSURE",
+      "classification": "PARTIALLY_CONFIRMED"
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "M1_GENERATED_OUTPUT_DENOMINATOR",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs generated output denominator and omission red mutation"
+    },
+    {
+      "findingId": "M2_AUTHORITY_CAPABILITY_DRIFT",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/capability-invariants/cli.mjs authority catalog equality and HEAD_COMPANY red mutation"
+    },
+    {
+      "findingId": "S1_RESOLVER_WIRING_DISCLOSURE",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "RM1-U12 package exit componentWiringStatus"
+    },
+    {
+      "findingId": "S2_RECEIPT_CLASSIFICATION_DISCLOSURE",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs explicit receipt classification predicate and red mutation"
+    }
+  ]
+}

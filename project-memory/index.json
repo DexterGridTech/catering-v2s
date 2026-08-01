@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "project-memory-index",
-  "denominatorSha256": "691762577b832efb329e0cfd2f49a0bc67cd4bb9712ab5e3ff5634748815e51f",
+  "denominatorSha256": "d73db88cb3b3e7afe3cf53424b3a793ca433ce30ab0f1a372d10335cf08a1758",
   "entries": [
     {
       "id": "kernel.workspace-roadmap",
@@ -59,7 +59,7 @@
         "doc/decisions/2026-07-24-v2s-r1-authorization.md",
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
       ],
-      "sha256": "29bcf583ae6d606efdbdde3591afc5fccf0bfdfc7d18ca28892672667f1b792a"
+      "sha256": "f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63"
     },
     {
       "id": "kernel.service-owner",
@@ -203,7 +203,14 @@
       "assertions": [
         "X_CONSUMER_FACES_ONLY",
         "TWO_ADMIN_APPS",
-        "OWNER_RECHECKS_COMMAND"
+        "OWNER_RECHECKS_COMMAND",
+        "SOLUTION_REASONABLENESS_FIRST",
+        "UI_USER_TASK_VALIDATION",
+        "AMBIGUITY_REQUIRES_DEXTER",
+        "IMPLEMENTATION_CODE_REVIEW_SAME_STANDARD",
+        "ADVERSARIAL_FINDING_DIALECTICAL_INTAKE",
+        "INDEPENDENT_SUBAGENT_ADVERSARIAL_REVIEW",
+        "CODEX_ADVERSARIAL_REVIEW_MAX_TWO_ROUNDS"
       ],
       "assertionSources": [
         {
@@ -220,13 +227,50 @@
           "assertionKey": "OWNER_RECHECKS_COMMAND",
           "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
           "anchor": "### 3.6 授权与事务线性化"
+        },
+        {
+          "assertionKey": "SOLUTION_REASONABLENESS_FIRST",
+          "path": "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
+          "anchor": "## 1. 强制原则"
+        },
+        {
+          "assertionKey": "UI_USER_TASK_VALIDATION",
+          "path": "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
+          "anchor": "## 3. UI 与交互特别规则"
+        },
+        {
+          "assertionKey": "AMBIGUITY_REQUIRES_DEXTER",
+          "path": "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
+          "anchor": "## 4. 歧义与求证"
+        },
+        {
+          "assertionKey": "IMPLEMENTATION_CODE_REVIEW_SAME_STANDARD",
+          "path": "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
+          "anchor": "## 6. 实施后代码对抗自审"
+        },
+        {
+          "assertionKey": "ADVERSARIAL_FINDING_DIALECTICAL_INTAKE",
+          "path": "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
+          "anchor": "## 7. 对抗审查结果接收门"
+        },
+        {
+          "assertionKey": "INDEPENDENT_SUBAGENT_ADVERSARIAL_REVIEW",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        },
+        {
+          "assertionKey": "CODEX_ADVERSARIAL_REVIEW_MAX_TWO_ROUNDS",
+          "path": "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
+          "anchor": "## 10. 2026-07-25 独立子 agent 修订"
         }
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+        "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
+        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
       ],
-      "sha256": "6f74c55aac19d6ce4df3711b702a98d65f11bed2aa33983e912106346548efc6"
+      "sha256": "1f6d9efbe0208f5b164d12effd4a4c4ab8f2c297b9b000462dc96820c3efa88d"
     },
     {
       "id": "kernel.evidence-runtime",
@@ -256,13 +300,16 @@
         "LOG_FIRST_RETRY",
         "BUSINESS_CLEANUP_SEPARATE",
         "DEV_START_NO_SEED",
-        "NO_GIT_WRITE"
+        "NO_GIT_WRITE",
+        "OBSERVABILITY_REQUIRED_FOR_ACCEPTANCE",
+        "RUN_SCOPED_LOG_READ_REQUIRED",
+        "OUT_OF_SCOPE_OBSERVABILITY_REPAIR_NO_EXTRA_AUTH"
       ],
       "assertionSources": [
         {
           "assertionKey": "LOG_FIRST_RETRY",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### D.8 日志与诊断"
+          "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
+          "anchor": "# 长期约束"
         },
         {
           "assertionKey": "BUSINESS_CLEANUP_SEPARATE",
@@ -278,14 +325,31 @@
           "assertionKey": "NO_GIT_WRITE",
           "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
           "anchor": "## 2. 不可突破的全程红线"
+        },
+        {
+          "assertionKey": "OBSERVABILITY_REQUIRED_FOR_ACCEPTANCE",
+          "path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+          "anchor": "## 2. 强制执行规则"
+        },
+        {
+          "assertionKey": "RUN_SCOPED_LOG_READ_REQUIRED",
+          "path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+          "anchor": "## 2. 强制执行规则"
+        },
+        {
+          "assertionKey": "OUT_OF_SCOPE_OBSERVABILITY_REPAIR_NO_EXTRA_AUTH",
+          "path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+          "anchor": "## 1. 裁决"
         }
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+        "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+        "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
       ],
-      "sha256": "37296dcc602e6173b41bab26246e00cba4a37541ff33935917468d73578a81d0"
+      "sha256": "d0d75e547400145ef7e764d735bc86e2fdaa5ea8a0b19ace213170b527d65a05"
     },
     {
       "id": "kernel.heritage-change",
@@ -435,6 +499,77 @@
       "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"
     },
     {
+      "id": "decisions.independent-subagent-adversarial-review",
+      "path": "project-memory/decisions/independent-subagent-adversarial-review.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "product"
+        ],
+        "impacts": [
+          "governance",
+          "evidence",
+          "architecture",
+          "contract",
+          "database"
+        ],
+        "triggers": [
+          "task-start",
+          "review",
+          "implementation"
+        ]
+      },
+      "assertions": [
+        "INDEPENDENT_SUBAGENT_REQUIRED",
+        "BLIND_REVIEW_FIRST",
+        "AUTHOR_INTAKE_ONLY",
+        "SUBAGENT_INPUT_CHECKLIST_REQUIRED"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "INDEPENDENT_SUBAGENT_REQUIRED",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        },
+        {
+          "assertionKey": "BLIND_REVIEW_FIRST",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        },
+        {
+          "assertionKey": "AUTHOR_INTAKE_ONLY",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        },
+        {
+          "assertionKey": "SUBAGENT_INPUT_CHECKLIST_REQUIRED",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
+      ],
+      "sha256": "891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf"
+    },
+    {
       "id": "decisions.distributed-topology-is-not-current",
       "path": "project-memory/decisions/distributed-topology-is-not-current.md",
       "layer": "routed",
@@ -492,6 +627,166 @@
       "sha256": "c578afa258d1a7cb610aa87f8a80f5693f0477cfebd0795c8a5c863633c7664e"
     },
     {
+      "id": "operations.claude-review-handoff-standard",
+      "path": "project-memory/operations/claude-review-handoff-standard.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design",
+          "implementation"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "platform",
+          "product"
+        ],
+        "impacts": [
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "assertions": [
+        "CLAUDE_HANDOFF_COPYABLE_SELF_CONTAINED",
+        "CLAUDE_HANDOFF_RELATIVE_PATHS_ONLY",
+        "CLAUDE_HANDOFF_EXPLICIT_AUTHORITY_BOUNDARY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CLAUDE_HANDOFF_COPYABLE_SELF_CONTAINED",
+          "path": "CLAUDE.md",
+          "anchor": "## 给 Dexter 的 Claude 评审交接（强制）"
+        },
+        {
+          "assertionKey": "CLAUDE_HANDOFF_RELATIVE_PATHS_ONLY",
+          "path": "CLAUDE.md",
+          "anchor": "## 给 Dexter 的 Claude 评审交接（强制）"
+        },
+        {
+          "assertionKey": "CLAUDE_HANDOFF_EXPLICIT_AUTHORITY_BOUNDARY",
+          "path": "doc/platform/claude-review-handoff-template.md",
+          "anchor": "## 可直接复制给 Claude 的话术"
+        }
+      ],
+      "sourceRefs": [
+        "CLAUDE.md",
+        "doc/platform/claude-review-handoff-template.md"
+      ],
+      "sha256": "35ee335e19c74ac3bdcd1e93281d60e2f36c5a4a9bf23ccf0759a43f9ab1137f"
+    },
+    {
+      "id": "operations.verification-governance",
+      "path": "project-memory/operations/verification-governance.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "contract",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "runtime"
+        ]
+      },
+      "assertions": [
+        "MACHINE_GATES_MECHANICAL_ONLY",
+        "SEMANTIC_QUALITY_INDEPENDENT_REVIEW",
+        "DEXTER_OWNS_INTENT_AND_SEVERITY",
+        "GATE_ADMISSION_THREE_QUESTIONS",
+        "PRODUCTION_RED_MUTATION_REQUIRED",
+        "CONTROL_RETIREMENT_AFTER_FIVE_PACKAGES",
+        "SMALL_BATCH_FREEZE_REVIEW",
+        "VERIFY_MINUTE_BUDGET",
+        "UI_INTERACTION_CONFORMANCE_BEFORE_L2"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "MACHINE_GATES_MECHANICAL_ONLY",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "### 2.1 机器门只作机械判定"
+        },
+        {
+          "assertionKey": "SEMANTIC_QUALITY_INDEPENDENT_REVIEW",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "### 2.2 语义质量靠独立对抗审查"
+        },
+        {
+          "assertionKey": "DEXTER_OWNS_INTENT_AND_SEVERITY",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "### 2.3 意图与取舍归 Dexter"
+        },
+        {
+          "assertionKey": "GATE_ADMISSION_THREE_QUESTIONS",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "## 3. 建门三问"
+        },
+        {
+          "assertionKey": "PRODUCTION_RED_MUTATION_REQUIRED",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "## 4. 假绿优先治理"
+        },
+        {
+          "assertionKey": "SMALL_BATCH_FREEZE_REVIEW",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "## 5. 小批量与独立性"
+        },
+        {
+          "assertionKey": "VERIFY_MINUTE_BUDGET",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "## 6. 效率红线"
+        },
+        {
+          "assertionKey": "CONTROL_RETIREMENT_AFTER_FIVE_PACKAGES",
+          "path": "project-memory/operations/verification-governance.md",
+          "anchor": "# Verification governance"
+        },
+        {
+          "assertionKey": "UI_INTERACTION_CONFORMANCE_BEFORE_L2",
+          "path": "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
+          "anchor": "### 3.2 UI 实施与 L2 前的交互符合性准入"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-verification-governance.md",
+        "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
+        "project-memory/operations/verification-governance.md"
+      ],
+      "sha256": "e424bf923f1368381b26ef0e22a379a5cdd7bc8b7de887cc2c4e78250f2e0f18"
+    },
+    {
       "id": "operations.dev-command-separation",
       "path": "project-memory/operations/dev-command-separation.md",
       "layer": "routed",
@@ -523,7 +818,11 @@
       "assertions": [
         "START_RESTART_MIGRATE",
         "START_RESTART_NO_SEED",
-        "RESET_SEPARATE_DESTRUCTIVE"
+        "RESET_SEPARATE_DESTRUCTIVE",
+        "LOCAL_EXECUTION_REMOTE_MIDDLEWARE",
+        "CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP",
+        "UAT_ALL_REMOTE_EXECUTION",
+        "REMOTE_TESTCONTAINERS_NOT_BROWSER_L2"
       ],
       "assertionSources": [
         {
@@ -540,12 +839,33 @@
           "assertionKey": "RESET_SEPARATE_DESTRUCTIVE",
           "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
           "anchor": "### H.1 现在就做(仅三件 + 一个顺手项)"
+        },
+        {
+          "assertionKey": "LOCAL_EXECUTION_REMOTE_MIDDLEWARE",
+          "path": "AGENTS.md",
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+        },
+        {
+          "assertionKey": "CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP",
+          "path": "AGENTS.md",
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+        },
+        {
+          "assertionKey": "UAT_ALL_REMOTE_EXECUTION",
+          "path": "AGENTS.md",
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+        },
+        {
+          "assertionKey": "REMOTE_TESTCONTAINERS_NOT_BROWSER_L2",
+          "path": "AGENTS.md",
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
         }
       ],
       "sourceRefs": [
+        "AGENTS.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
       ],
-      "sha256": "aa11398ca191776e93073d54c7d6a2d5d93c69636494e5f0598ee38f341ccfe1"
+      "sha256": "781fea669dbbf59af2ab6740abb8dcfd89abd42bf92ab909983a04b5505917e9"
     },
     {
       "id": "operations.roadmap-control-transfer",
@@ -645,8 +965,8 @@
       "assertionSources": [
         {
           "assertionKey": "READ_FIRST_FAILURE_LOG",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### D.8 日志与诊断"
+          "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
+          "anchor": "# 长期约束"
         },
         {
           "assertionKey": "SECOND_RETRY_REQUIRES_DIAGNOSIS",
@@ -660,9 +980,377 @@
         }
       ],
       "sourceRefs": [
+        "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
       ],
-      "sha256": "48b5e1dbc06937033ca14f7aceedbb8deadde2422eb92d3d382e2dbd83177f24"
+      "sha256": "044df40abd43efb5948e6457b29f770b7798252c614e53eae1a7a92c40e9e909"
+    },
+    {
+      "id": "decisions.confirmed-business-language-corpus",
+      "path": "project-memory/decisions/confirmed-business-language-corpus.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BUSINESS_CORPUS_G01_G12_ACCEPTED",
+        "BUSINESS_CORPUS_READ_POLICY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BUSINESS_CORPUS_G01_G12_ACCEPTED",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 已接受集合与内容基准"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_READ_POLICY",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 使用纪律"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
+      ],
+      "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"
+    },
+    {
+      "id": "operations.business-corpus-adoption-and-read-policy",
+      "path": "project-memory/operations/business-corpus-adoption-and-read-policy.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BUSINESS_CORPUS_MEMORY_PROMOTION_AUTHORIZED",
+        "BUSINESS_CORPUS_READ_POLICY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BUSINESS_CORPUS_MEMORY_PROMOTION_AUTHORIZED",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 裁决"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_READ_POLICY",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 使用纪律"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
+      ],
+      "sha256": "04d9329413131e369e8c1ea841f172d4c295f953b07b9768a0e597405fd28353"
+    },
+    {
+      "id": "operations.phase-retrospective-and-systemic-repair",
+      "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "contract",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "evidence",
+          "governance",
+          "cleanup"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "SYSTEMIC_REPAIR_BEFORE_NEXT_PHASE",
+        "PHASE_RETROSPECTIVE_FINITE_DENOMINATOR",
+        "PHASE_RETROSPECTIVE_R4_GATE_PENDING",
+        "IDENTIFIED_FINDING_GENERALIZATION_REQUIRED",
+        "IDENTIFIED_FINDING_PREVENTION_DESTINATION_REQUIRED",
+        "USER_REPORTED_PROBLEM_FAMILY_DISCOVERY_REQUIRED",
+        "PROBLEM_FAMILY_DENOMINATOR_BEFORE_FIX",
+        "ENVIRONMENT_TOPOLOGY_MUST_COME_FROM_GOVERNING_SOURCE",
+        "RETIRED_CONSUMER_REQUIRES_RETAINED_CAPABILITY_DENOMINATOR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "SYSTEMIC_REPAIR_BEFORE_NEXT_PHASE",
+          "path": "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
+          "anchor": "## 缺口补齐与未来接线"
+        },
+        {
+          "assertionKey": "PHASE_RETROSPECTIVE_FINITE_DENOMINATOR",
+          "path": "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
+          "anchor": "## 缺口补齐与未来接线"
+        },
+        {
+          "assertionKey": "PHASE_RETROSPECTIVE_R4_GATE_PENDING",
+          "path": "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
+          "anchor": "## 缺口补齐与未来接线"
+        },
+        {
+          "assertionKey": "IDENTIFIED_FINDING_GENERALIZATION_REQUIRED",
+          "path": "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
+          "anchor": "## 1. 强制原则"
+        },
+        {
+          "assertionKey": "IDENTIFIED_FINDING_PREVENTION_DESTINATION_REQUIRED",
+          "path": "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
+          "anchor": "## 2. 防再犯落点"
+        },
+        {
+          "assertionKey": "USER_REPORTED_PROBLEM_FAMILY_DISCOVERY_REQUIRED",
+          "path": "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
+          "anchor": "## 1. 强制原则"
+        },
+        {
+          "assertionKey": "PROBLEM_FAMILY_DENOMINATOR_BEFORE_FIX",
+          "path": "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
+          "anchor": "## 1. 强制原则"
+        },
+        {
+          "assertionKey": "ENVIRONMENT_TOPOLOGY_MUST_COME_FROM_GOVERNING_SOURCE",
+          "path": "AGENTS.md",
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+        },
+        {
+          "assertionKey": "RETIRED_CONSUMER_REQUIRES_RETAINED_CAPABILITY_DENOMINATOR",
+          "path": "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
+          "anchor": "## 7. Face / owner 对齐矩阵"
+        }
+      ],
+      "sourceRefs": [
+        "AGENTS.md",
+        "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
+        "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
+        "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md"
+      ],
+      "sha256": "c1e49af3972b2eb3a2ee8d846871337f02bf81575d78781365012e9b430b981d"
+    },
+    {
+      "id": "operations.business-corpus-parked-domain-intake",
+      "path": "project-memory/operations/business-corpus-parked-domain-intake.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "task-start",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BUSINESS_CORPUS_GRILL_ONLY_BY_DEXTER_PROGRESS",
+        "BUSINESS_CORPUS_G01_G12_ACCEPTED"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BUSINESS_CORPUS_GRILL_ONLY_BY_DEXTER_PROGRESS",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 后续 grill"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_G01_G12_ACCEPTED",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 已接受集合与内容基准"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
+      ],
+      "sha256": "739473d09701aba15332c6de72f1f1965b7b5048732fd60d3b97c7934febee9e"
+    },
+    {
+      "id": "decisions.incremental-compliance-hook",
+      "path": "project-memory/decisions/incremental-compliance-hook.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "contract",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "evidence",
+          "governance",
+          "memory"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "INCREMENTAL_COMPLIANCE_HOOK_NO_CONTEXT_INJECTION",
+        "CODEX_MUTATION_HOOK_CONTRACT_UNVERIFIED",
+        "PACKAGE_EXIT_CHANGED_PATH_LIST_ONLY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "INCREMENTAL_COMPLIANCE_HOOK_NO_CONTEXT_INJECTION",
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 2.3 hook 形状"
+        },
+        {
+          "assertionKey": "CODEX_MUTATION_HOOK_CONTRACT_UNVERIFIED",
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 2.3 hook 形状"
+        },
+        {
+          "assertionKey": "PACKAGE_EXIT_CHANGED_PATH_LIST_ONLY",
+          "path": "project-memory/decisions/incremental-compliance-hook.md",
+          "anchor": "## Assertions"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "project-memory/decisions/incremental-compliance-hook.md"
+      ],
+      "sha256": "a75469c7eb945b35f06d95cead2e11c368cc4a47dca851f32652556546985f81"
+    },
+    {
+      "id": "operations.implementation-source-reread-discipline",
+      "path": "project-memory/operations/implementation-source-reread-discipline.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "contract",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "governance",
+          "evidence",
+          "architecture"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 5. 2026-07-30 逐点实施与复核纪律"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
+      ],
+      "sha256": "6944ae47f0e059a52e75096b17620a3c43852e52a9b44e69737554ac646293ce"
     }
   ]
 }

@@ -1,0 +1,100 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "RM1-P6-U01-FORMAL-GRANULARITY-BINDING-DESIGN-20260730",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round1-input-checklist.md",
+    "sha256": "29fa8aed29b5055df80833108757d3d7f8c6d438d0645188565aa17966e97c2e"
+  },
+  "blindReviewDeclaration": "This fresh independent reviewer reopened the required checker, manifest, source contracts and six-dimensional memory route to falsify the formal binding before consulting any author finding intake or disposition; no author intake exists for this cycle. Historical observability-extension reviews were not used as evidence for this material new scope.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "d6989767633fec594546421e5c70c30f05191b3b17f0eeeec25fbf179da57926",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "formal-gate-soundness",
+      "source-denominator-binding",
+      "no-ui-scope",
+      "implementation-authority-boundary",
+      "future-production-proof"
+    ]
+  },
+  "expectedBehavior": [
+    "The production checker recomputes the D1 six-dimensional project-memory exact set and rejects an omission, addition, hash mismatch or selector mismatch.",
+    "For every D2-D6 source denominator, the production checker reopens every owning source, recomputes its hash, and rejects a missing, stale, non-unique or invalid declared anchor or selector rather than only checking field shape.",
+    "The no-UI denominator binds real carry-over-manifest locations for surfaces and page keys/crosswalks; a selector naming an absent field is rejected.",
+    "Formal admission remains design-only and does not authorize the runner, backend foundation, edge, OpenAPI, generated output, UI, migration, DEV, seed/reset or Roadmap mutation.",
+    "Future observability proof remains production-path based: the fixed 22-operation terminal/secret-safe control, remote durable control-record/heartbeat/log-read/PID-reaping control, and root-to-target projection control are not discharged by source-string or scanner-only checks."
+  ],
+  "findings": [
+    {
+      "id": "RM1-P6-U01-DESIGN-R1-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "RM1P6-FORMAL-GRANULARITY-U01"
+      ],
+      "title": "The production granularity checker does not bind or validate the declared D2-D6 owning sources",
+      "evidence": "`tools/implementation-design-granularity/cli.mjs` validates D1 through `validateD1OwningSourceSet` (including recomputation from `project-memory/index.json`), but `validateUnitSourceCompliance` only requires D2-D6 to have non-empty strings, a 64-character hash-shaped value and a non-empty owningSourceSet. It never passes those D2-D6 entries to `readBoundFile` or `requireUniqueAnchor`. Therefore a stale hash, nonexistent source path, duplicate/missing anchor, or arbitrary owning-source list for APPROVED_ASSERTIONS, FORBIDDEN_PSEUDO_FIXES, DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA, OWNED_SURFACE_AND_PAGE_KEYS or DUE_STANDARDS_RULE_IDS can pass the claimed production gate. The current manifest's D1 exact set itself independently recomputed to the declared 12 routed sources; this finding is a checker implementation gap, not a claim that those current D1 bytes are wrong.",
+      "risk": "The formal-binding delivery exists specifically to make all six package-exit denominators source-bound and fail closed before implementation. Leaving five denominators as unchecked metadata permits the same unexamined manifest/prose substitution that this cycle is intended to prevent, while producing a misleading production-checker PASS.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO: extend the existing production checker, not a relaxed side checker, to hash-bind and reopen each D2-D6 source/owning-source entry and to mechanically validate its declared anchor or structured selector. Add production-path red fixtures for stale hash, missing file, invalid/non-unique selector and owning-source mismatch; then submit the changed design/manifest for the allowed targeted round 2."
+    },
+    {
+      "id": "RM1-P6-U01-DESIGN-R1-M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "RM1P6-FORMAL-GRANULARITY-U01"
+      ],
+      "title": "The current no-UI denominator names a non-existent pageDesignKeys selector",
+      "evidence": "The manifest's OWNED_SURFACE_AND_PAGE_KEYS binding declares selector `surfaces and pageDesignKeys` for `contracts/policy/frontend-asset-carryover-manifest.json`. Current bytes contain top-level `surfaces`, but no top-level `pageDesignKeys`; page-key ownership is represented under `pageDesignKeySurfaceCrosswalk` (`byPageDesignKey`, `bySurface`, `nonCatalogSurfaces`). The declared selector therefore cannot uniquely reopen the required source scope. Current source hashes for the six manifest denominator entries were independently recomputed and match their declarations, but this current selector is not a valid exact no-UI binding.",
+      "risk": "A no-UI assertion without an exact surface/page-key denominator can silently omit a UI-bearing impact or later reclassify one as no-UI. That invalidates the design's stated no-UI boundary and its promise that the carry-over source is used as a real denominator rather than decorative metadata.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO: replace the ambiguous selector with the exact existing structured selectors that establish the no-UI claim (at minimum `surfaces` plus the applicable `pageDesignKeySurfaceCrosswalk` locations), and make the strengthened production checker reject the absent/ambiguous selector through a real red fixture."
+    },
+    {
+      "id": "RM1-P6-U01-DESIGN-R1-M-003",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "RM1P6-FORMAL-GRANULARITY-U01"
+      ],
+      "title": "The current approved-source anchor is not unique and the formal checker correctly rejects the manifest",
+      "evidence": "Running `scripts/check/implementation-design-granularity --manifest doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-manifest.json --review doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round1.json` fails with `UNIT_SOURCE_RM1P6-FORMAL-GRANULARITY-U01_1_ANCHOR_NOT_UNIQUE:2`. The unit's only `approvedSources[0].anchor` is `## 1. Business purpose, Dexter intent and scope`; it occurs once as the design heading and again verbatim in the D2 explanatory text in `## 2.2 Exact source denominator`.",
+      "risk": "The formal checker cannot select one authoritative approved-assertion source. The manifest consequently fails before the intended six-denominator review can be admitted, precisely recreating the admission failure this formal-binding cycle was meant to resolve.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO: use a unique, semantically stable anchor (or revise the duplicated prose while preserving the approved assertion meaning), update the bound manifest hash only through the governed remediation path, and rerun the production checker before targeted round 2."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "RM1P6-FORMAL-GRANULARITY-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "RM1-P6-U01-DESIGN-R1-M-001",
+        "RM1-P6-U01-DESIGN-R1-M-002",
+        "RM1-P6-U01-DESIGN-R1-M-003"
+      ]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "Binding the accepted observability extension to the existing production granularity gate is the right bounded problem: it protects the implementation operator from proceeding on a descriptive artifact the repository cannot validate, without changing the authentication/recovery product behavior or owner boundaries.",
+    "simplerAlternativeAssessment": "A prose-only checklist or a second relaxed checker is smaller in immediate code size but fails the stated objective because it either remains unvalidated or changes governance into a bypass. The proportionate remedy is to complete the existing checker’s already-established source-binding pattern for all six declared denominators and correct the present no-UI selector.",
+    "costFit": "The missing work is finite and mechanical: structured source reopening/hash/selector validation plus focused red fixtures in the existing checker. It is cheaper than allowing each implementation package to discover that five declared denominators were never formally bound, and it does not require a telemetry platform, runtime execution, new product behavior or a new policy engine.",
+    "verdict": "DIRECTION_REASONABLE_BUT_NO_GO_UNTIL_THE_EXISTING_PRODUCTION_GATE_BINDS_ALL_SIX_DENOMINATORS_AND_THE_CURRENT_NO_UI_SELECTOR_IS_EXACT"
+  },
+  "verdict": "NO_GO",
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Round 1 independently confirms that the current manifest has a correct D1 routed-source exact set and matching current source hashes, and that its design-only boundary and future production-path proof direction are reasonable. It nevertheless cannot be accepted as formal granularity-gate binding: the production checker verifies only D1 while D2-D6 remain unchecked metadata; the current no-UI source selector names an absent `pageDesignKeys` field; and the current approved-source anchor is duplicated, causing the actual production checker to fail. These three M findings block formal admission. No implementation, dynamic execution or authority change follows from this verdict.",
+    "authorizationBoundary": "DESIGN review only. This independent verdict authorizes no source, contract, generated-output, UI, database, migration, build, remote runner, DEV, seed/reset, Roadmap or repository-control action. The author may perform governed finding intake and submit only the permitted targeted round 2 after a bounded remediation; this reviewer does not implement the remedy.",
+    "severityCounts": {
+      "M": 3,
+      "S": 0,
+      "N": 0
+    }
+  }
+}

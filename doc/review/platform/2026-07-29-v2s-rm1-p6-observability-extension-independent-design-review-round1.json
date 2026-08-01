@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-adversarial-design-review",
+  "reviewTarget": "DESIGN",
+  "REVIEW_CYCLE_ID": "RM1-P6-U01-OBSERVABILITY-EXTENSION-DESIGN-20260729",
+  "reviewCycleId": "RM1-P6-U01-OBSERVABILITY-EXTENSION-DESIGN-20260729",
+  "REVIEW_ROUND": 1,
+  "reviewRound": 1,
+  "REVIEW_ROUND_LIMIT": 2,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "verdict": "NO_GO",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-independent-design-review-round1-input-checklist.md",
+    "sha256": "64a1d5071206a539436bb3b2d53e459813b98fa6c1de959ff11e8f15b1af7aaa"
+  },
+  "blindReviewStatement": "Fresh independent reviewer reopened the checklist inputs and owning sources with a falsification stance, fixed the findings and NO_GO before reading any author self-review, author intake, or prior verdict for this cycle. No such author material was read.",
+  "authorMaterialReadAfterIndependentVerdict": false,
+  "reviewedInputs": [
+    {"path": "doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md", "sha256": "422da37eab081f70c471c105e900774f35ac0d5f25efeb7f9251b6f86c32ce6a", "read": true},
+    {"path": "doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-manifest.json", "sha256": "70e98658bb2096b3870c80794b0747d07f02a7de3813bcd267421e420e3ce81c", "read": true},
+    {"path": "doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-source-disposition.json", "sha256": "b029296bd6f12e79de3e1f576caf93e8fc14f67f166b5c61e863f5aee88a63b4", "read": true},
+    {"path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md", "sha256": "c9a58db37b73885d36373334cce63b64f39d174effec16b82e420d13b374d024", "read": true},
+    {"path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md", "sha256": "597a87741247b7abf600486087539d614f501e7b53ff031a635f387213b2e03b", "read": true},
+    {"path": "scripts/test/r5-remote-testcontainers.mjs", "sha256": "e7ca2ff05523426645b70455ac482d1977bf21eef611824546123f47c1ec2560", "read": true},
+    {"path": "contracts/openapi/edge.openapi.yaml", "sha256": "8d22dcaa647ab039dc8ce2f29cd66b4759c5ebad948c19e834a39599358ec608", "read": true},
+    {"path": "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml", "sha256": "acb4a2d356d950d5fba6d511959795012efa8f3e1964b75bd0ae19419bf6a9d3", "read": true},
+    {"path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json", "sha256": "aeb0c56ef21bc3ba7731923954d16f7e6c358aeb7dcbac287ebaed09f56cb820", "read": true},
+    {"path": "tools/capability-invariants/cli.mjs", "sha256": "377432cc1799a70d003b3919b589ee4f4920c0f820165590e673b1429419bf01", "read": true}
+  ],
+  "independentReadback": {
+    "operationIds": "All 18 fixed IDs occur exactly once in the generated route registry and exactly once across parsed OpenAPI path documents.",
+    "rawRequestSurface": "EdgeRequestContext currently materializes every header, every cookie, URI and remote address; the P6 controllers also accept direct @RequestHeader and @CookieValue values, while ContractProblemAdvice accepts HttpServletRequest and reads X-Correlation-Id and request URI.",
+    "terminalSurface": "The current edge contains the global ContractProblemAdvice and controller-local compatibility handlers. The design names a request-state/afterCompletion direction, but does not bind error-dispatch/async state identity or the complete handler/advice denominator to an executable test.",
+    "runnerSurface": "Current r5 runner blocks on synchronous SSH, collects only after Gradle returns, and its passing self-test is source.includes/source.indexOf string inspection rather than lifecycle execution.",
+    "projection": "The operations edge root has exactly seven legacy generic refs; the workspace-access target document has 35 user-management paths and 40 operations. Existing capability validation checks the target document operation set but does not inspect the edge-root ref set.",
+    "checks": [
+      "scripts/test/r5-remote-testcontainers.mjs --self-test => PASS, but only source-string mutations",
+      "node tools/capability-invariants/cli.mjs --self-test => PASS, including target-document exact-set mutation but no edge-root ref mutation",
+      "scripts/check/standards-coverage --phase R5 => PASS; current Roadmap phase is R5, not an implementation authorization for this design-only review",
+      "node scripts/generate/edge-codegen.mjs --self-test => FAIL with R5_EDGE_CONTROLLED_WRITE_UNAUTHORIZED_OUTPUT for an existing generated frontend output; no attribution to this design is made"
+    ]
+  },
+  "findings": [
+    {
+      "id": "RM1-P6-U01-OBS-DESIGN-R1-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "title": "The fixed 18-operation denominator omits sensitive public invitation operations inside its own source set",
+      "owningSource": [
+        "doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md#2.2",
+        "doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-manifest.json#sourceSets.edge",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+        "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md#2"
+      ],
+      "evidence": "The 18 IDs themselves are real and unique. However, the manifest declares PublicInvitationController in the edge source set, while the fixed list contains only getPublicInvitationView, sendPublicInvitationOtp and verifyPublicInvitationOtp. The same controller exposes public accept, credentials, complete and completion routes. In particular credentials accepts a password and verification grant, and complete advances the public credential flow. The accepted observability decision applies to every credential, public-entry and other security-sensitive operation; no bounded exemption or later owner is declared.",
+      "counterexample": "An implementation instruments all listed 18 routes and passes its exact-set test. A caller then reaches POST /api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials with an invalid or replayed verification grant: there is no fixed operation, start event, outcome/phase or terminal event for that security-sensitive public execution even though the source-set and standard claim universal coverage.",
+      "scope": "P6-1 public invitation controller surface only; this does not require changing invitation business semantics, wire, owner truth or adding unrelated app-wide logging.",
+      "recommendation": "Before GO, either extend the exact operation registry and its start/terminal/secret tests to every security-sensitive PublicInvitationController operation, or remove those routes from this package's source set and record a named serial owner plus an explicit, standard-compatible exemption. The smaller sufficient repair is the former if the controller remains in scope. Make the generated registry/contract-to-annotation mapping an exact-set test so a newly added covered public route cannot silently bypass the recorder.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "RM1-P6-U01-OBS-DESIGN-R1-M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "title": "The remote-runner state machine cannot safely recover an SSH drop because it does not persist a verifiable remote control record",
+      "owningSource": [
+        "doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md#3",
+        "scripts/test/r5-remote-testcontainers.mjs",
+        "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md#长期约束",
+        "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md#2"
+      ],
+      "evidence": "The design requires setsid, PID, process-group and start-time identity, but does not specify an atomically persisted remote record containing the runId, PID, PGID, process-start identity, command hash and log/phase locations before the local SSH transport may fail. It also does not define reconnect/readback behavior. The present runner waits synchronously for remote SSH and only knows the result after command return. Therefore a dropped transport can leave the local runner with a known scratch path but no trusted process identity from which to prove it may signal or reap a surviving process.",
+      "counterexample": "The remote launcher starts Gradle and SSH disconnects before the PID/PGID response reaches local. The remote process survives. A later process reuses the original PID. A cleanup implementation based on a remembered PID, process name or scratch path can kill an unrelated process; an implementation that refuses to act leaks the Gradle/process group. Neither outcome meets the stated PID-reaped and cleanup-PASS contract.",
+      "scope": "Only the R5 remote Testcontainers runner's SSH-drop/no-progress/PID-reuse/reap path; no remote execution is authorized or requested by this finding.",
+      "recommendation": "Specify one bounded remote control record written atomically before detaching: runId, remote root, pid, pgid, boot/start identity, command hash, phase and log path. On SSH loss, reconnect only through the known root, re-read and validate every identity against the live process before tail, TERM/KILL or reap; identity absence/mismatch is cleanup FAIL and ENVIRONMENT_BOUNDARY, never name/port/PID-only cleanup. Add fixture-driven lifecycle tests for SSH loss before acknowledgment, no-log progress, PID reuse, Gradle-success/cleanup-failure and reap success.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "RM1-P6-U01-OBS-DESIGN-R1-M-003",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "title": "The proposed red-mutation claim is not bound to production validators for terminal, runner or root-projection behavior",
+      "owningSource": [
+        "doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md#4",
+        "scripts/test/r5-remote-testcontainers.mjs#validateFailureLifecycleSource",
+        "tools/capability-invariants/cli.mjs#validateP3CAccessContract",
+        "project-memory/operations/verification-governance.md#PRODUCTION_RED_MUTATION_REQUIRED"
+      ],
+      "evidence": "The design lists seven future red mutations but does not name an executable production validator/test and fixture for each. The current runner self-test passes by checking source.includes/source.indexOf literals; it does not execute a runner lifecycle, heartbeat, SSH loss or reaper identity. The capability invariant's P3-C exact-set validator reads only workspace-access.paths.yaml. It can reject a missing target operation but cannot see deletion of an edge-root target ref or reintroduction of one of the seven legacy root refs. There is likewise no stated test denominator for one terminal event across success, global Problem, controller-local Problem and unhandled/error dispatch.",
+      "counterexample": "A change deletes one of the 35 new edge-root refs while leaving the target path document's 40 operations untouched, or restores one old generic root. The existing capability self-test remains green. Separately, a runner preserves the expected source literals but performs a synchronous remote wait or records two terminal events on an error dispatch; the existing string-based self-test can still pass.",
+      "scope": "Machine-checkable observability/projection invariants only. This does not ask for a semantic policy engine or a gate for product judgment.",
+      "recommendation": "Name and implement small production-path validators/tests: (1) a root-projection exact-set validator that jointly reads edge root and target document and has missing-target/legacy-root red fixtures; (2) a fixture-driven runner state parser/lifecycle test, not source text inspection; and (3) integration tests asserting exactly one terminal event for success, global advice, controller-local advice and unhandled/error dispatch. Retain manual review for privacy and user-task semantics. Each red mutation must execute the same validator/test path used in package exit.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "RM1-P6-U01-OBS-DESIGN-R1-N-001",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "title": "The stated 18-operation and 7/35/40 numerical baselines are reproducible, but are not closure evidence",
+      "owningSource": [
+        "doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-manifest.json",
+        "contracts/openapi/edge.openapi.yaml",
+        "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml",
+        "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      ],
+      "evidence": "Independent recount found all 18 listed IDs exactly once in both generated registry and parsed contract documents, seven operations-admin legacy generic root refs, and 35 target paths with 40 operations. These confirm the proposed baseline rather than its future replacement or runtime behavior.",
+      "counterexample": "A future implementation can retain all current numbers while leaving a raw-request recorder bypass, omitting a terminal event, or never reading a run-scoped log; numerical equality alone would still hold.",
+      "scope": "Baseline accounting only.",
+      "recommendation": "Keep these counts as exact pre/post denominators, but do not cite them as safety, runtime or cleanup PASS. Re-run them through the new joint projection and recorder tests after implementation.",
+      "disposition": "RETAIN_AS_BASELINE"
+    }
+  ],
+  "severityCounts": {"M": 3, "S": 0, "N": 1},
+  "solutionReasonableness": {
+    "problemFit": "A typed foundation recorder plus a fixed edge-operation registry is a proportionate direction: it preserves owner truth and avoids service-level raw-request logging. A managed remote runner is also the correct problem boundary for the diagnosed synchronous-SSH blind spot.",
+    "simplerAlternativeAssessment": "The required repairs are bounded metadata and focused tests: an exact public operation denominator, one persisted remote control record, and three small production-path controls. A broad telemetry platform, audit substitution, generic outbox or controller-local logging would add cost without closing the identified failures.",
+    "verdict": "DIRECTION_REASONABLE_BUT_DESIGN_IS_NO_GO"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Independent R1 DESIGN review is NO_GO (M=3, S=0, N=1). The 18 operation IDs and 7/35/40 baseline are real, but the design leaves security-sensitive invitation routes outside its fixed denominator, cannot safely recover remote SSH loss without durable verified identity, and offers red mutations not yet tied to production behavior validators. No implementation or runtime work is authorized by this artifact.",
+    "authorizationBoundary": "DESIGN review only. This artifact does not authorize implementation, contract or source changes, generated-wire changes, runner execution, remote access, build, DEV, database, migration, seed/reset, Roadmap updates, or any repository-control action."
+  }
+}

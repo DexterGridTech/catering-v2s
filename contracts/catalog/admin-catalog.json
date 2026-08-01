@@ -1,0 +1,1414 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-admin-catalog",
+  "authority": "V2S_ADMIN_PAGE_AND_ACTION_SEMANTICS",
+  "sourcePolicy": {
+    "pageKeyDenominator": "contracts/policy/frontend-asset-carryover-manifest.json#/pageDesignKeySurfaceCrosswalk/byPageDesignKey",
+    "actionKeyDenominator": "contracts/policy/frontend-asset-carryover-manifest.json#/policy/actionCapabilityCatalog/activeKeys",
+    "operationBindings": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json#/operations",
+    "heritageShapeReference": "../catering-all-v2/contracts/catalog/admin-catalog.yaml",
+    "runtimeOrBuildFallback": "FORBIDDEN"
+  },
+  "nodes": [
+    {
+      "key": "NAV-WORKBENCH",
+      "kind": "NAVIGATION_GROUP",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "工作台"
+      },
+      "navigation": {
+        "order": 100
+      }
+    },
+    {
+      "key": "NAV-ACCESS",
+      "kind": "NAVIGATION_GROUP",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "用户与权限"
+      },
+      "navigation": {
+        "order": 200
+      }
+    },
+    {
+      "key": "NAV-ORGANIZATION",
+      "kind": "NAVIGATION_GROUP",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "组织管理"
+      },
+      "navigation": {
+        "order": 300
+      }
+    },
+    {
+      "key": "NAV-STORE-OPERATIONS",
+      "kind": "NAVIGATION_GROUP",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "门店经营"
+      },
+      "navigation": {
+        "order": 400
+      }
+    },
+    {
+      "key": "ORGANIZATION_MANAGEMENT",
+      "kind": "ACTION_GROUP",
+      "display": {
+        "label": "组织管理"
+      },
+      "actionGroup": {
+        "order": 100
+      }
+    },
+    {
+      "key": "STORE_MANAGEMENT",
+      "kind": "ACTION_GROUP",
+      "display": {
+        "label": "门店管理"
+      },
+      "actionGroup": {
+        "order": 200
+      }
+    },
+    {
+      "key": "USER_MANAGEMENT",
+      "kind": "ACTION_GROUP",
+      "display": {
+        "label": "用户管理"
+      },
+      "actionGroup": {
+        "order": 300
+      }
+    },
+    {
+      "key": "STORE_CONTRACT_MANAGEMENT",
+      "kind": "ACTION_GROUP",
+      "display": {
+        "label": "门店合同"
+      },
+      "actionGroup": {
+        "order": 400
+      }
+    },
+    {
+      "key": "PLATFORM-WORKSPACES",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "集团空间管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "GLOBAL_OR_OPTIONAL",
+      "navigation": {
+        "order": 10,
+        "iconKey": "WORKSPACE"
+      }
+    },
+    {
+      "key": "PLATFORM-ADMIN-USERS",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "运维管理员管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "GLOBAL_OR_OPTIONAL",
+      "navigation": {
+        "order": 20,
+        "iconKey": "ADMIN_USER"
+      }
+    },
+    {
+      "key": "PLATFORM-WORKSPACE-OVERVIEW",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "集团空间概览"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "REQUIRED",
+      "navigation": {
+        "order": 30,
+        "iconKey": "OVERVIEW"
+      }
+    },
+    {
+      "key": "PLATFORM-ORGANIZATION-OVERVIEW",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "组织概览"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "REQUIRED",
+      "navigation": {
+        "order": 40,
+        "iconKey": "ORGANIZATION"
+      }
+    },
+    {
+      "key": "PLATFORM-CONTRACT-OVERVIEW",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "合同概览"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "REQUIRED",
+      "navigation": {
+        "order": 50,
+        "iconKey": "CONTRACT"
+      }
+    },
+    {
+      "key": "PLATFORM-ROLES",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "业务角色管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "REQUIRED",
+      "navigation": {
+        "order": 60,
+        "iconKey": "ROLE"
+      }
+    },
+    {
+      "key": "PLATFORM-WORKSPACE-ACCOUNTS",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "空间账号"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "REQUIRED",
+      "navigation": {
+        "order": 70,
+        "iconKey": "ACCOUNT"
+      }
+    },
+    {
+      "key": "PLATFORM-EXTENSION-FIELDS",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "扩展字段"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "REQUIRED",
+      "navigation": {
+        "order": 80,
+        "iconKey": "EXTENSION"
+      }
+    },
+    {
+      "key": "HOME-GROUP",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "集团首页"
+      },
+      "page": {
+        "kind": "ROLE_HOME",
+        "roleHomeForNodeType": "GROUP"
+      },
+      "navigation": {
+        "groupKey": "NAV-WORKBENCH",
+        "order": 10
+      },
+      "experience": {
+        "pageDescription": "查看当前集团的工作台内容。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "节点首页",
+          "集团工作节点"
+        ]
+      }
+    },
+    {
+      "key": "HOME-REGION",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "大区首页"
+      },
+      "page": {
+        "kind": "ROLE_HOME",
+        "roleHomeForNodeType": "REGION"
+      },
+      "navigation": {
+        "groupKey": "NAV-WORKBENCH",
+        "order": 20
+      },
+      "experience": {
+        "pageDescription": "查看当前大区的工作台内容。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "节点首页",
+          "大区工作节点"
+        ]
+      }
+    },
+    {
+      "key": "HOME-PROJECT",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "项目首页"
+      },
+      "page": {
+        "kind": "ROLE_HOME",
+        "roleHomeForNodeType": "PROJECT"
+      },
+      "navigation": {
+        "groupKey": "NAV-WORKBENCH",
+        "order": 30
+      },
+      "experience": {
+        "pageDescription": "查看当前项目的工作台内容。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "节点首页",
+          "项目工作节点"
+        ]
+      }
+    },
+    {
+      "key": "HOME-HEAD-COMPANY",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "总公司首页"
+      },
+      "page": {
+        "kind": "ROLE_HOME",
+        "roleHomeForNodeType": "HEAD_COMPANY"
+      },
+      "navigation": {
+        "groupKey": "NAV-WORKBENCH",
+        "order": 40
+      },
+      "experience": {
+        "pageDescription": "查看当前总公司的工作台内容。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "节点首页",
+          "总公司工作节点"
+        ]
+      }
+    },
+    {
+      "key": "HOME-STORE",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "门店首页"
+      },
+      "page": {
+        "kind": "ROLE_HOME",
+        "roleHomeForNodeType": "STORE"
+      },
+      "navigation": {
+        "groupKey": "NAV-WORKBENCH",
+        "order": 50
+      },
+      "experience": {
+        "pageDescription": "查看当前门店的工作台内容。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "节点首页",
+          "门店工作节点"
+        ]
+      }
+    },
+    {
+      "key": "PG-ORG-STRUCTURE",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "组织架构"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ORGANIZATION",
+        "order": 100
+      },
+      "experience": {
+        "pageDescription": "查看集团、大区和项目的组织架构及其详情。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "组织节点",
+          "组织树权限"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "requiredDataNodeType": "NONE"
+      }
+    },
+    {
+      "key": "PG-ORG-BRAND",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "品牌管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ORGANIZATION",
+        "order": 110
+      },
+      "experience": {
+        "pageDescription": "查看和维护当前集团的品牌。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "品牌节点",
+          "品牌权限"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "requiredDataNodeType": "NONE"
+      }
+    },
+    {
+      "key": "PG-ORG-TENANT",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "经营租户管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ORGANIZATION",
+        "order": 120
+      },
+      "experience": {
+        "pageDescription": "查看和维护当前集团的经营租户。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "租户节点",
+          "租户权限"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "requiredDataNodeType": "NONE"
+      }
+    },
+    {
+      "key": "PG-ORG-HEAD-COMPANY",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "总公司管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ORGANIZATION",
+        "order": 130
+      },
+      "experience": {
+        "pageDescription": "查看和维护当前集团的总公司。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "总公司节点",
+          "总公司权限"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "requiredDataNodeType": "NONE"
+      }
+    },
+    {
+      "key": "PG-ORG-STORE-MANAGE",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "门店管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ORGANIZATION",
+        "order": 140
+      },
+      "experience": {
+        "pageDescription": "按所选大区、项目或门店查看和维护门店。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": [
+          "大区",
+          "项目",
+          "门店"
+        ],
+        "forbiddenAlternatives": [
+          "门店节点",
+          "门店范围"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "requiredDataNodeType": "STORE"
+      }
+    },
+    {
+      "key": "PG-CONTRACT-STORE-MANAGE",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "门店合同"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ORGANIZATION",
+        "order": 150
+      },
+      "experience": {
+        "pageDescription": "按所选大区、项目或门店查看和维护门店合同。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": [
+          "大区",
+          "项目",
+          "门店"
+        ],
+        "forbiddenAlternatives": [
+          "合同节点",
+          "合同范围"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "requiredDataNodeType": "PROJECT"
+      }
+    },
+    {
+      "key": "PG-IAM-GROUP-USERS",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "集团用户管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ACCESS",
+        "order": 200
+      },
+      "experience": {
+        "pageDescription": "查看集团用户和集团邀请。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "集团成员管理",
+          "集团节点用户"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "requiredDataNodeType": "NONE",
+        "userManagementTargetOrganizationType": "GROUP"
+      }
+    },
+    {
+      "key": "PG-IAM-REGION-USERS",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "大区用户管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ACCESS",
+        "order": 210
+      },
+      "experience": {
+        "pageDescription": "按所选大区查看大区用户和大区邀请。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": [
+          "大区"
+        ],
+        "forbiddenAlternatives": [
+          "大区成员管理",
+          "大区节点用户"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION"
+        ],
+        "requiredDataNodeType": "REGION",
+        "userManagementTargetOrganizationType": "REGION"
+      }
+    },
+    {
+      "key": "PG-IAM-PROJECT-USERS",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "项目用户管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ACCESS",
+        "order": 220
+      },
+      "experience": {
+        "pageDescription": "按所选大区或项目查看项目用户和项目邀请。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": [
+          "大区",
+          "项目"
+        ],
+        "forbiddenAlternatives": [
+          "项目成员管理",
+          "门店用户管理",
+          "项目节点用户"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "requiredDataNodeType": "PROJECT",
+        "userManagementTargetOrganizationType": "PROJECT"
+      }
+    },
+    {
+      "key": "PG-IAM-HEAD-COMPANY-USERS",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "总公司用户管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ACCESS",
+        "order": 230
+      },
+      "experience": {
+        "pageDescription": "查看总公司用户和总公司邀请。",
+        "dataNodeCascaderLabel": null,
+        "noDataNodePrompt": null,
+        "noCandidatePrompt": null,
+        "cascadeLevelLabels": [],
+        "forbiddenAlternatives": [
+          "总公司成员管理",
+          "总公司节点用户"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "HEAD_COMPANY"
+        ],
+        "requiredDataNodeType": "NONE",
+        "userManagementTargetOrganizationType": "HEAD_COMPANY"
+      }
+    },
+    {
+      "key": "PG-IAM-STORE-USERS",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "门店用户管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-ACCESS",
+        "order": 240
+      },
+      "experience": {
+        "pageDescription": "按所选大区、项目或门店查看门店用户和门店邀请。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": [
+          "大区",
+          "项目",
+          "门店"
+        ],
+        "forbiddenAlternatives": [
+          "门店成员管理",
+          "门店节点用户"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT",
+          "STORE"
+        ],
+        "requiredDataNodeType": "STORE",
+        "userManagementTargetOrganizationType": "STORE"
+      }
+    },
+    {
+      "key": "PG-STORE-PROFILE",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "门店资料"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-STORE-OPERATIONS",
+        "order": 300
+      },
+      "experience": {
+        "pageDescription": "查看门店基本资料和合同信息。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": [
+          "大区",
+          "项目",
+          "门店"
+        ],
+        "forbiddenAlternatives": [
+          "门店档案节点",
+          "门店配置"
+        ]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "STORE"
+        ],
+        "requiredDataNodeType": "STORE"
+      }
+    },
+    {
+      "key": "BC-ORG-GROUP-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑集团资料"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STRUCTURE",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "GROUP_VISIBLE"
+      }
+    },
+    {
+      "key": "BC-ORG-GROUP-STATUS",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "启停集团"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STRUCTURE",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "GROUP_VISIBLE"
+      }
+    },
+    {
+      "key": "BC-ORG-REGION-CREATE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "新建大区"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STRUCTURE",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "GROUP_VISIBLE"
+      }
+    },
+    {
+      "key": "BC-ORG-REGION-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑大区"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STRUCTURE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION"
+        ],
+        "scopeApplicability": "VISIBLE_REGION"
+      }
+    },
+    {
+      "key": "BC-ORG-REGION-STATUS",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "启停大区"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STRUCTURE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION"
+        ],
+        "scopeApplicability": "VISIBLE_REGION"
+      }
+    },
+    {
+      "key": "BC-ORG-PROJECT-CREATE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "新建项目"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STRUCTURE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION"
+        ],
+        "scopeApplicability": "VISIBLE_REGION"
+      }
+    },
+    {
+      "key": "BC-ORG-PROJECT-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑项目"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STRUCTURE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "VISIBLE_PROJECT"
+      }
+    },
+    {
+      "key": "BC-ORG-PROJECT-STATUS",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "启停项目"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STRUCTURE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "VISIBLE_PROJECT"
+      }
+    },
+    {
+      "key": "BC-ORG-BRAND-CREATE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "新建品牌"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-BRAND",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-BRAND-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑品牌"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-BRAND",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-BRAND-STATUS",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "启停品牌"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-BRAND",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-TENANT-CREATE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "新建经营租户"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-TENANT",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-TENANT-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑经营租户"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-TENANT",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-TENANT-STATUS",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "启停经营租户"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-TENANT",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-HEAD-COMPANY-CREATE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "新建总公司"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-HEAD-COMPANY",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-HEAD-COMPANY-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑总公司"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-HEAD-COMPANY",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-HEAD-COMPANY-STATUS",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "启停总公司"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-HEAD-COMPANY",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-HEAD-COMPANY-BRAND",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "维护总公司品牌授权"
+      },
+      "action": {
+        "groupKey": "ORGANIZATION_MANAGEMENT",
+        "targetPageKey": "PG-ORG-HEAD-COMPANY",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE"
+      }
+    },
+    {
+      "key": "BC-ORG-STORE-CREATE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "新建门店"
+      },
+      "action": {
+        "groupKey": "STORE_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STORE-MANAGE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
+    },
+    {
+      "key": "BC-ORG-STORE-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑门店"
+      },
+      "action": {
+        "groupKey": "STORE_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STORE-MANAGE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
+    },
+    {
+      "key": "BC-ORG-STORE-STATUS",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "启停门店"
+      },
+      "action": {
+        "groupKey": "STORE_MANAGEMENT",
+        "targetPageKey": "PG-ORG-STORE-MANAGE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
+    },
+    {
+      "key": "BC-IAM-GROUP-ROLE-REVOKE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "撤销集团用户运营角色"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-GROUP-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE",
+        "userManagement": {
+          "targetOrganizationType": "GROUP",
+          "purpose": "ROLE_REVOKE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-REGION-ROLE-REVOKE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "撤销大区用户运营角色"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-REGION-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION"
+        ],
+        "scopeApplicability": "SELECTED_REGION_SCOPE",
+        "userManagement": {
+          "targetOrganizationType": "REGION",
+          "purpose": "ROLE_REVOKE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-PROJECT-ROLE-REVOKE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "撤销项目用户运营角色"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-PROJECT-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE",
+        "userManagement": {
+          "targetOrganizationType": "PROJECT",
+          "purpose": "ROLE_REVOKE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "撤销总公司用户运营角色"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-HEAD-COMPANY-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "HEAD_COMPANY"
+        ],
+        "scopeApplicability": "NONE",
+        "userManagement": {
+          "targetOrganizationType": "HEAD_COMPANY",
+          "purpose": "ROLE_REVOKE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-STORE-ROLE-REVOKE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "撤销门店用户运营角色"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-STORE-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT",
+          "STORE"
+        ],
+        "scopeApplicability": "SELECTED_STORE_SCOPE",
+        "userManagement": {
+          "targetOrganizationType": "STORE",
+          "purpose": "ROLE_REVOKE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-GROUP-INVITE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "管理集团用户邀请"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-GROUP-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP"
+        ],
+        "scopeApplicability": "NONE",
+        "userManagement": {
+          "targetOrganizationType": "GROUP",
+          "purpose": "INVITE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-REGION-INVITE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "管理大区用户邀请"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-REGION-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION"
+        ],
+        "scopeApplicability": "SELECTED_REGION_SCOPE",
+        "userManagement": {
+          "targetOrganizationType": "REGION",
+          "purpose": "INVITE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-PROJECT-INVITE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "管理项目用户邀请"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-PROJECT-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE",
+        "userManagement": {
+          "targetOrganizationType": "PROJECT",
+          "purpose": "INVITE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-HEAD-COMPANY-INVITE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "管理总公司用户邀请"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-HEAD-COMPANY-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "HEAD_COMPANY"
+        ],
+        "scopeApplicability": "HEAD_COMPANY_TARGET",
+        "userManagement": {
+          "targetOrganizationType": "HEAD_COMPANY",
+          "purpose": "INVITE"
+        }
+      }
+    },
+    {
+      "key": "BC-IAM-STORE-INVITE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "管理门店用户邀请"
+      },
+      "action": {
+        "groupKey": "USER_MANAGEMENT",
+        "targetPageKey": "PG-IAM-STORE-USERS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT",
+          "STORE"
+        ],
+        "scopeApplicability": "SELECTED_STORE_SCOPE",
+        "userManagement": {
+          "targetOrganizationType": "STORE",
+          "purpose": "INVITE"
+        }
+      }
+    },
+    {
+      "key": "BC-CONTRACT-CREATE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "新建门店合同"
+      },
+      "action": {
+        "groupKey": "STORE_CONTRACT_MANAGEMENT",
+        "targetPageKey": "PG-CONTRACT-STORE-MANAGE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
+    },
+    {
+      "key": "BC-CONTRACT-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑门店合同"
+      },
+      "action": {
+        "groupKey": "STORE_CONTRACT_MANAGEMENT",
+        "targetPageKey": "PG-CONTRACT-STORE-MANAGE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
+    },
+    {
+      "key": "BC-CONTRACT-INVALIDATE",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "设置门店合同失效"
+      },
+      "action": {
+        "groupKey": "STORE_CONTRACT_MANAGEMENT",
+        "targetPageKey": "PG-CONTRACT-STORE-MANAGE",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "REGION",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
+    }
+  ]
+}

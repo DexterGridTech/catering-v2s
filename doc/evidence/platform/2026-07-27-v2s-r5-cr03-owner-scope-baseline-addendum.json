@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "R5-CR-U03",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "authority": "CR03 reconciliation adopts the Claude-reviewed minimum: platform-iam is the only owner addition; the platform-admin page is a CR02_ESCAPE field-name alignment. The plan, manifest, source-derived mapping and existing control entry are added because the original baseline omitted the correction's own authoritative sources; this is a one-time correction bootstrap, not a baseline reset.",
+  "entries": [
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "kind": "FILE",
+      "sha256": "dc35558d81030cbbfa5ef2addb0239b7a1b154249bcea3fcd0aac4100fa35360"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "kind": "FILE",
+      "sha256": "3b4032ef40266cdd0bad585232309cbdaa7ed06140a3679e13f26e37165b60bf"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+      "kind": "FILE",
+      "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+    },
+    {
+      "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+      "kind": "FILE",
+      "sha256": "01fb14b27c922311a627eadc390d397385a03580df4601a5d63a576b0867eef3"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "kind": "FILE",
+      "sha256": "2d21e80a74727579e0e4455d0f82d2cda4b397a35d11bce657860a9326425cd4"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "kind": "FILE",
+      "sha256": "9228d40bfc8bef32df100149b5587bc1552d526674a4b8c33f96c110d8265bc4"
+    }
+  ],
+  "redProof": {
+    "productionEntry": "node tools/compliance-control/cli.mjs validate-delta-receipts",
+    "mutation": "replace one addendum entry path with a path outside the active change surface",
+    "expectedReason": "PACKAGE_BASELINE_ADDENDUM_OUT_OF_SURFACE:<path>",
+    "status": "PASS",
+    "actualResult": "A structurally complete scratch repository with the first entry changed to outside/owner.java failed through the production validate-delta-receipts entry with PACKAGE_BASELINE_ADDENDUM_OUT_OF_SURFACE:outside/owner.java."
+  },
+  "boundary": "This addendum freezes only correction-owned paths absent from the original U03 baseline. It is not a baseline reset, does not include extension/platform-asset/platform-workspace, and does not turn any pre-existing U03 baseline path into baseline."
+}

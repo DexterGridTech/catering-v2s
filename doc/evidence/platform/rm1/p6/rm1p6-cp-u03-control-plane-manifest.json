@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U03",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "The generic RM1 control-plane source-disposition template hardcodes CP-U00 anchors. That allows a subsequent control package to mechanically pass while naming a different package's manifest unit and amendment heading. The template must derive its anchors from the active package binding so an exit proves its own scope rather than a historical control package.",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-CP-U03",
+      "title": "P6 generic control-plane source-template correction",
+      "sourceComplianceDispositionRequired": true,
+      "changeSurfaces": [
+        {"path":"tools/compliance-control/cli.mjs","disposition":"update","target":"derive control-plane source anchors from the active binding and provide focused red/green proof"},
+        {"path":"doc/evidence/platform/rm1/p6","disposition":"update","target":"control-plane input, disposition, receipts and exit evidence"}
+      ],
+      "forbiddenPseudoFixes": [
+        "hardcode CP-U01 or any future control package identifier",
+        "weaken package-exit source-disposition equality",
+        "reuse a CP-U00 anchor in a later package's source disposition",
+        "modify registry, contract, generated, owner, frontend or database bytes"
+      ],
+      "completion": "A dynamic source-template reports CP-U01's own anchors, a non-control U01 still follows its six-dimension source path, the CP-U03 red mutation fails, and the control package exits with exact receipts."
+    }
+  ]
+}

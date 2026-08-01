@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-BRAND-OWNER-EDGE-TRUTH",
+  "genericProblem": "An implementation-facing design can describe an owner-to-edge-to-wire property as current fact when the public contract exposes parameters but the owner has not closed filtering, paging, typed failure projection, or a nonvisual consumer contract.",
+  "rootCauseClass": "OWNER_EDGE_CHAIN_COMPLETENESS_CONFLATION",
+  "finiteDenominator": [
+    "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md#IA04-HEAD-COMPANY-BRANDS",
+    "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md#P6-3-corrective-slice",
+    "doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json#correctiveSlice",
+    "contracts/openapi/paths/operations-admin/brand-management.paths.yaml",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java",
+    "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+    "apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs"
+  ],
+  "searchedSurfaces": ["doc/evidence/platform/rm1/p6", "doc/plans/platform", "contracts/openapi/paths/operations-admin", "organization owner", "operations edge", "operations frontend"],
+  "searchQueries": ["getOperationsOrganizationBrands|listEntities|page(", "HeadCompanyBrandAuthorizationInUseException|ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE|PLATFORM_COMMON_VERSION_CONFLICT", "replaceOperationsOrganizationHeadCompanyBrandAuthorizations|brand authorizations|bulk|replace", "HeadCompanyBrandAuthorizationActionAdapter|application/.*Adapter"],
+  "counterexamples": [
+    {"path":"BusinessEntityService#requireEntities","reason":"A bounded task read over caller-supplied identifiers is intentionally not a general owner pagination implementation."},
+    {"path":"rm1-u09-physical-screen-import-contracts.md","reason":"Its denominator is physical screens; a nonvisual adapter must not be fabricated as a screen row."},
+    {"path":"head-company-management.paths.yaml","reason":"A declared error code is necessary but does not prove that the currently thrown owner subclass reaches it through edge advice."}
+  ],
+  "findings": [
+    {"findingId":"PF-BRAND-CHAIN-01","status":"CONFIRMED","finding":"The candidate-search contract declares filters and paging, but the owner returns an unfiltered List and the edge performs filter/sort/page/total locally; current bytes are GAP-BRAND-CANDIDATE-OWNER-PAGINATION, not server pagination."},
+    {"findingId":"PF-BRAND-CHAIN-02","status":"CONFIRMED","finding":"The owner throws HeadCompanyBrandAuthorizationInUseException and OpenAPI declares its safe code, but ContractProblemAdvice handles the superclass through generic fallback; explicit typed mapping remains a future P6-3 obligation."},
+    {"findingId":"PF-BRAND-CHAIN-03","status":"CONFIRMED","finding":"The retired collection-replace path has the finite denominator HeadCompanyManagementPage and static-boundary.test.mjs; the former wording was too vague."},
+    {"findingId":"PF-BRAND-CHAIN-04","status":"CONFIRMED","finding":"HeadCompanyBrandAuthorizationActionAdapter is nonvisual and needs an explicit consumer/import contract in roster and granularity manifest, not a false physical-screen import row."}
+  ],
+  "preventionDispositions": [
+    {"findingId":"PF-BRAND-CHAIN-01","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","reason":"Every claimed current owner-edge-wire property names evidence at every required layer; otherwise record GAP and future obligation."},
+    {"findingId":"PF-BRAND-CHAIN-02","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md","reason":"A declared code is not projection proof until the actual thrown exception has explicit edge mapping and a focused red mapping test."},
+    {"findingId":"PF-BRAND-CHAIN-03","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs","reason":"The future receipt removes the exact retired page and turns the exact stale assertion into an absence assertion."},
+    {"findingId":"PF-BRAND-CHAIN-04","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","reason":"Screen-only physical contracts remain screen-only; each nonvisual module records unique consumer, permitted protocol boundary and focused test separately."}
+  ]
+}

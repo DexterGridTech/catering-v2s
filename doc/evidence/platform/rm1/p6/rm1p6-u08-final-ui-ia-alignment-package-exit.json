@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-UI-IA-FINAL-ALIGNMENT-U08",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "beforeSha256": "30adcf23ad38e4b3887696d03f65f614f3ccab6269f1c9e1eac7a39c449211b2",
+      "afterSha256": "9ad7575565dc0c9d6a90227a2e7ebea094d268931711293f541a43f24a8efa9b"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractDetailDrawer.tsx",
+      "beforeSha256": "4d6e370abb53fa1264afe8e79a56c84fe1092521577c7d258a2fa4b8f42861a0",
+      "afterSha256": "a1dd3062fc2d10e5b73a6ed21f361b7d0f8905d437b64e96c346bb493999f51f"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.test.tsx",
+      "beforeSha256": "440ca356e036171946e2fe0e626fe9b503d2d304ad86088144d5657493485399",
+      "afterSha256": "1fd29f43200a2714ce978f7b3555a515fb3fa57de7d5f538050b9c13362cdb8b"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c3193ea23b13f039b5403a9a51085a876a696b0fa5e4d3a30d7be034ec83e327"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-problem-family.json",
+      "beforeSha256": "64a78da70328ba8c3ef69e92892450e02756ae7fc4e9b5bb4d78851c032c0080",
+      "afterSha256": "c3a4545748bf735ff4167e852ac6d922a9db0a1bce968d932d78aa162fdcdefa"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-source-compliance-disposition.json",
+      "beforeSha256": "b3f431cc5f34dde5524092f6b3936b746ceb2eea4a1902471e8af24db9d35dd1",
+      "afterSha256": "f544879b44f283ecf77fffb1f581833e6fce9862684aae46760d15e4ef0f86ab"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-prewrite-baseline.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "aaa1cbe54f365e17ad365ca5d46b86968c6c89954ae762eaf4474a92b4e9a23b"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "afterSha256": "9ad7575565dc0c9d6a90227a2e7ebea094d268931711293f541a43f24a8efa9b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractDetailDrawer.tsx",
+      "afterSha256": "a1dd3062fc2d10e5b73a6ed21f361b7d0f8905d437b64e96c346bb493999f51f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.test.tsx",
+      "afterSha256": "1fd29f43200a2714ce978f7b3555a515fb3fa57de7d5f538050b9c13362cdb8b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.test.tsx",
+      "afterSha256": "c3193ea23b13f039b5403a9a51085a876a696b0fa5e4d3a30d7be034ec83e327",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-problem-family.json",
+      "afterSha256": "c3a4545748bf735ff4167e852ac6d922a9db0a1bce968d932d78aa162fdcdefa",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-source-compliance-disposition.json",
+      "afterSha256": "f544879b44f283ecf77fffb1f581833e6fce9862684aae46760d15e4ef0f86ab",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-prewrite-baseline.json",
+      "afterSha256": "aaa1cbe54f365e17ad365ca5d46b86968c6c89954ae762eaf4474a92b4e9a23b",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-source-compliance-disposition.json",
+    "sha256": "f544879b44f283ecf77fffb1f581833e6fce9862684aae46760d15e4ef0f86ab"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "controls": [
+    {
+      "ruleId": "CR05-WC-01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-WC-02",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-HISTORICAL-RECEIPT-RECOVERY",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "deferredBusinessEvidenceObligation": "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+  "staticScopeConclusion": "U08 closes only the concrete contract-detail stable-identifier correction and its current focused static proof. It does not claim final 38-screen or 56-control alignment, business PASS, cleanup PASS, or joint L2 readiness."
+}

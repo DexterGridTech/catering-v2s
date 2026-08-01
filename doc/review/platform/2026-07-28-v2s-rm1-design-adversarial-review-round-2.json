@@ -1,0 +1,85 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "RM1-WHOLE-SCOPE-DESIGN-2026-07-28",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-28-v2s-rm1-design-input-checklist.json",
+    "sha256": "1910dbb3618c7ae193a12d7f4133002fe8b59f65b32271af51789fc9812215ff"
+  },
+  "blindReviewDeclaration": "Fresh v2s-rooted review reopened the complete input checklist, all kernels and routed memory hits, corpus entries G-01/G-03/G-05/G-06/G-10, current RM1 and upstream R5 sources before reading round 1. It independently attempted to falsify all five claimed closures; round-1 material was read only after that source-first verdict work.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "9f910c6decfc2b470ed352b9a752afe5872734abf7cdfe8a5549967cbafa2c45",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["post-change-operation-denominator", "package-exit-owning-source", "receipt-fk-linearization", "performance-scanner-contract", "ui-amendment-refreeze"]
+  },
+  "expectedBehavior": [
+    "P3-B consumes only the dynamically derived post-R-24 operation inventory and exact delta, never a hand-written write count.",
+    "Every package-exit denominator binds its actual owning source; D1 is the complete routed-memory hit set and D5 includes the accepted Journey and interaction sources for UI units.",
+    "R-24 receipt acquisition, duplicate-key recovery, request-hash comparison, FK translation and hidden-reference projection remain one REQUIRED command protocol.",
+    "P4 derives a canonical call-path ledger from fixed roots, identity, classifications and exclusions before consumers optimize it.",
+    "P6/P3-D remain blocked until required interaction artifacts are accepted, hash-bound into the affected design/manifest unit, and reviewed in the newly triggered allowed cycle."
+  ],
+  "closureAssessments": [
+    {"round1FindingId":"RM1-M-001","status":"CONFIRMED","evidence":"Plan §1.3 requires a generated post-P3-B snapshot and exact delta, but P3-B exit still states `20 个业务写 endpoint`."},
+    {"round1FindingId":"RM1-M-002","status":"REJECTED_WITH_EVIDENCE","evidence":"P3-B now specifies REQUIRED receipt acquisition, insert-race re-read/hash handling, terminal receipt behavior, FK/reference protection, typed conversion and concurrent red fixtures."},
+    {"round1FindingId":"RM1-M-003","status":"CONFIRMED","evidence":"D1 binds only incremental-compliance-hook.md although plan §2 defines D1 as every routed project-memory hit; the checker accepts any non-empty sourcePath/selector. UI D5 also omits accepted Journey/interaction sources."},
+    {"round1FindingId":"RM1-S-001","status":"REJECTED_WITH_EVIDENCE","evidence":"P4-A now fixes roots, query-boundary identity, classifications, constrained exclusions, ledger schema and production-path insertion red proof."},
+    {"round1FindingId":"RM1-S-002","status":"REJECTED_WITH_EVIDENCE","evidence":"Plan §7.1 gives RM1-IA-01 through RM1-IA-03, block conditions, required artifact contents, Dexter acceptance, path/hash/unique-anchor re-freeze and follow-up review."}
+  ],
+  "findings": [
+    {
+      "id": "RM1-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["RM1-U02", "RM1-U03"],
+      "title": "P3-B still hard-codes an incompatible 20-write exit denominator",
+      "evidence": "Plan §1.3 requires the generated post-P3-B snapshot and exact delta, while RM1-P3-B exit still requires `20 个业务写 endpoint`.",
+      "risk": "The post-R-24 PUT retirement plus POST/DELETE additions can be falsely closed against an obsolete count rather than one exact inventory and owner binding.",
+      "disposition": "Keep NO_GO. Replace the P3-B fixed-count exit with the post-snapshot exact set and bind each changed entry to P3-A template, P3-B delta ownership and its red fixture."
+    },
+    {
+      "id": "RM1-M-003",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["RM1-U01", "RM1-U02", "RM1-U03", "RM1-U04", "RM1-U05", "RM1-U06", "RM1-U07", "RM1-U08", "RM1-U09", "RM1-U10", "RM1-U11"],
+      "title": "Six denominator fields are not yet bound to all real owning sources",
+      "evidence": "Manifest D1 sourcePath is only project-memory/decisions/incremental-compliance-hook.md, contrary to plan §2 D1 `project-memory 路由命中原文`; validator validateUnitSourceCompliance accepts any non-empty path/selector. U09/U10 D5 names only frontend-asset-carryover-manifest.json although plan §2 requires accepted Journey/interaction sources.",
+      "risk": "A package can mechanically pass while omitting a routed assertion or the approved user/interaction source that governs its changed surface.",
+      "disposition": "Keep NO_GO. Declare and mechanically validate the complete D1 routed-hit denominator and D5 UI owning-source set per applicable unit, with wrong-owning-source red mutations before a successor review cycle."
+    }
+  ],
+  "unitVerdicts": [
+    {"id":"RM1-U01","verdict":"NO_GO","findingIds":["RM1-M-003"]},
+    {"id":"RM1-U02","verdict":"NO_GO","findingIds":["RM1-M-001","RM1-M-003"]},
+    {"id":"RM1-U03","verdict":"NO_GO","findingIds":["RM1-M-001","RM1-M-003"]},
+    {"id":"RM1-U04","verdict":"NO_GO","findingIds":["RM1-M-003"]},
+    {"id":"RM1-U05","verdict":"NO_GO","findingIds":["RM1-M-003"]},
+    {"id":"RM1-U06","verdict":"NO_GO","findingIds":["RM1-M-003"]},
+    {"id":"RM1-U07","verdict":"NO_GO","findingIds":["RM1-M-003"]},
+    {"id":"RM1-U08","verdict":"NO_GO","findingIds":["RM1-M-003"]},
+    {"id":"RM1-U09","verdict":"NO_GO","findingIds":["RM1-M-003"]},
+    {"id":"RM1-U10","verdict":"NO_GO","findingIds":["RM1-M-003"]},
+    {"id":"RM1-U11","verdict":"NO_GO","findingIds":["RM1-M-003"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "RM1 remains a proportionate remediation design: preserving a single deployable and serial package exits is preferable to adding infrastructure or new business scope.",
+    "simplerAlternativeAssessment": "The smallest safe repair is to make the already-chosen dynamic inventory and six-source contract exact; a parallel governance framework or generic workflow engine is unnecessary.",
+    "costFit": "Two source-level design corrections are low-cost relative to permitting an obsolete operation count and self-referential source denominators into implementation.",
+    "verdict": "UNREASONABLE_UNTIL_M-001_AND_M-003_ARE_CLOSED"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "M=2, S=0, N=0. M-002, S-001 and S-002 are closed by the current design, but M-001 and M-003 remain independently confirmed; all RM1-U01 through RM1-U11 therefore remain NO_GO.",
+    "severityCounts": {"M":2,"S":0,"N":0},
+    "authorizationBoundary": "This round-2 DESIGN verdict is final for this cycle and grants no implementation, contract, migration, test, script, runtime, seed/reset, dynamic-environment or Roadmap-current-state authority. A future fix requires the governing remediation process and a new review cycle only when its trigger is authorized."
+  }
+}

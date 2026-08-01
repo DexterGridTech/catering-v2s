@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-CP-U09",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {"path":"AGENTS.md","beforeSha256":"f179f36d8aade8e4cb01def3637aef3a41dc031f79720c4fa13c1a58e3384414","afterSha256":"e4e3c9af4fb0dc46ce5403edadb6704d1d4a60dea186efc9cbe22dd62fddb347"},
+    {"path":"doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md","beforeSha256":"ABSENT","afterSha256":"c9a58db37b73885d36373334cce63b64f39d174effec16b82e420d13b374d024"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u09-deterministic-index-receipt-recovery.json","beforeSha256":"ABSENT","afterSha256":"521f9969a833fc7c8c299c6d866972cab4e6d8699118b07f16e12acbdee711a6"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u09-source-compliance-disposition.json","beforeSha256":"ABSENT","afterSha256":"f0b27aa38f759136f2ffb61cce2d7193a9867e4c3bb67a544df46f151a451e46"},
+    {"path":"project-memory/index.json","beforeSha256":"ab8289d2a7980ccda8a0eeeccd0983b9640cf2a5198c1f60c2b4054bc5de8269","afterSha256":"5d2382aa8ed67d4387167874b04738b2f39003d1f885329eeae429d559acf22b"},
+    {"path":"project-memory/index.md","beforeSha256":"7b23fa36286900f8d83e892cbc826796d5504fa3406da723456dde52bffbb650","afterSha256":"db1c079656221a38bf77cca0272b5b01c25660d8c563c49088b6f5256231568b"},
+    {"path":"project-memory/kernel/05-evidence-runtime-and-git.md","beforeSha256":"101a8d9952efff6bd217488c2444616e19af43a75413619055f9b0590e1a20a8","afterSha256":"d0d75e547400145ef7e764d735bc86e2fdaa5ea8a0b19ace213170b527d65a05"},
+    {"path":"project-memory/required-inventory.json","beforeSha256":"676a7ec8d68cb3ecfa7fd273f1f716d073221c2abb8ef306e6a2198f15ad5694","afterSha256":"689eb0b248332347840780fdca1f38f2bd6cfc6771557bdd7f8e4e133a20707b"},
+    {"path":"tools/compliance-control/cli.mjs","beforeSha256":"9cf6a129ee112de7b1dd7487de87f0684d613b4108c3f9f2e391983e5682e678","afterSha256":"e8214081af3278be79ffcee7ffca9933222df401369879514c1d160a75913ada"},
+    {"path":"tools/project-memory/cli.mjs","beforeSha256":"efc10915942cd5bb34773636bb9b4be435536717af4893fba4b33969b4f47ca5","afterSha256":"384c6377356b4b8b11ca6de35f82b4b4c170591d6501774cc3b678b40b955f50"}
+  ],
+  "incrementalChecks": [
+    {"path":"AGENTS.md","afterSha256":"e4e3c9af4fb0dc46ce5403edadb6704d1d4a60dea186efc9cbe22dd62fddb347","result":"PASS"},
+    {"path":"doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md","afterSha256":"c9a58db37b73885d36373334cce63b64f39d174effec16b82e420d13b374d024","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u09-deterministic-index-receipt-recovery.json","afterSha256":"521f9969a833fc7c8c299c6d866972cab4e6d8699118b07f16e12acbdee711a6","result":"PASS"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u09-source-compliance-disposition.json","afterSha256":"f0b27aa38f759136f2ffb61cce2d7193a9867e4c3bb67a544df46f151a451e46","result":"PASS"},
+    {"path":"project-memory/index.json","afterSha256":"5d2382aa8ed67d4387167874b04738b2f39003d1f885329eeae429d559acf22b","result":"PASS"},
+    {"path":"project-memory/index.md","afterSha256":"db1c079656221a38bf77cca0272b5b01c25660d8c563c49088b6f5256231568b","result":"PASS"},
+    {"path":"project-memory/kernel/05-evidence-runtime-and-git.md","afterSha256":"d0d75e547400145ef7e764d735bc86e2fdaa5ea8a0b19ace213170b527d65a05","result":"PASS"},
+    {"path":"project-memory/required-inventory.json","afterSha256":"689eb0b248332347840780fdca1f38f2bd6cfc6771557bdd7f8e4e133a20707b","result":"PASS"},
+    {"path":"tools/compliance-control/cli.mjs","afterSha256":"e8214081af3278be79ffcee7ffca9933222df401369879514c1d160a75913ada","result":"PASS"},
+    {"path":"tools/project-memory/cli.mjs","afterSha256":"384c6377356b4b8b11ca6de35f82b4b4c170591d6501774cc3b678b40b955f50","result":"PASS"}
+  ],
+  "sourceComplianceDisposition":{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u09-source-compliance-disposition.json","sha256":"f0b27aa38f759136f2ffb61cce2d7193a9867e4c3bb67a544df46f151a451e46"},
+  "fullComplianceScan":"PASS",
+  "business":"NOT_APPLICABLE",
+  "businessReason":"NOT_APPLICABLE_WITH_REASON: CP-U09 only admits Dexter-authorized cross-cutting observability and acceptance rules, memory routing, a bounded derived-index writer and predecessor-hash control. It does not implement or verify a P6-1 public authentication/recovery behavior.",
+  "cleanup":"PASS",
+  "controls":[
+    {"ruleId":"P6-CP-U09-PREDECESSOR_HASH_BINDING","state":"ACTIVE_RED_VERIFIED","evidence":"tools/compliance-control/cli.mjs rm1-predecessor-hash-self-test"},
+    {"ruleId":"P6-CP-U09-CONTROL_PLANE_SOURCE_DENOMINATOR","state":"ACTIVE_RED_VERIFIED","evidence":"tools/compliance-control/cli.mjs rm1-control-plane-source-template-self-test"},
+    {"ruleId":"P6-CP-U09-DETERMINISTIC_INDEX_WRITE_CHANNEL","state":"ACTIVE_RED_VERIFIED","evidence":"deterministic-index-write-self-test; rm1p6-cp-u09-deterministic-index-recovery-self-test"}
+  ]
+}

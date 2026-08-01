@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-IA-FOUNDATION-AND-ADMISSION-20260729",
+  "genericProblem": "An interaction artifact can describe a valid user task while omitting the concrete shared frontend primitive that must realize its shared behavior, or while relying on a waived visual-baseline requirement without a durable waiver record.",
+  "rootCauseClass": "The IA template carried user-task, surface, copy and technical-boundary declarations but did not turn the RM1 plan's per-artifact foundation binding and the visual-baseline exception into explicit screen-level admission fields.",
+  "finiteDenominator": [
+    "doc/decisions/templates/ui-interaction-design-template.md",
+    "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md (10 screens)",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md (13 implementation screens plus one rejected source candidate)",
+    "libraries/frontend/admin-ui-foundation/src/index.ts",
+    "tools/verify-gates/cli.mjs#frontend"
+  ],
+  "searchedSurfaces": [
+    "the initial 24 IA01/IA02 candidate-inclusive Screen declarations; after Dexter's selector decision, 23 implementation screens plus one rejected-source record",
+    "the template's declaration, counterpart and ownership rosters",
+    "the P6 final-design admission standard and RM1 plan UI-amendment contract",
+    "the public admin-ui-foundation export barrel and current frontend architecture gate"
+  ],
+  "searchQueries": [
+    "^### Screen:|^CONSUMER_FACE=|foundation|FOUNDATION_PRIMITIVE",
+    "EXACT_COUNTERPART|PARTIAL_COUNTERPART|静态基线 / 摹本|DEXTER_WAIVED",
+    "useDrawerFormLifecycle|adminDrawerSurfaceProps|useSubmissionLifecycle|useDetailDrawer|contextScopedQueryArgs|useAsyncGenerationGuard|useOverlayLock|testId",
+    "function frontend\\(|R5_FRONTEND_"
+  ],
+  "counterexamples": [
+    "A page whose only shared behavior is its test locator may bind testId; it must not invent a Drawer or query-context primitive merely to avoid NONE_WITH_REASON.",
+    "A Drawer that collects mutable form data must bind useDrawerFormLifecycle and adminDrawerSurfaceProps; a read-only Drawer must not claim that form lifecycle as a false requirement.",
+    "An implementation-file import check cannot be evaluated from a pre-implementation IA alone when no exact delivery path exists; it becomes mandatory once final P6 binds screen to actual path and must then have a real red mutation.",
+    "A Dexter-waived static counterpart is not equivalent to a missing counterpart: the waiver date, scope and alternate review evidence must be declared so a later review can distinguish the two."
+  ],
+  "findings": [
+    {
+      "findingId": "RM1-P6-FOUNDATION-PRIMITIVE-BINDING-01",
+      "classification": "CONFIRMED",
+      "evidence": "RM1 plan §7 lines 380-400 requires each IA amendment to bind a foundation primitive, while the template and the initial 24 candidate-inclusive IA declarations lacked a concrete admin-ui-foundation export. index.ts exports the applicable shared lifecycle, Drawer surface, overlay, query-context and automation primitives."
+    },
+    {
+      "findingId": "RM1-P6-FOUNDATION-IMPORT-GATE-TIMING-02",
+      "classification": "PARTIALLY_CONFIRMED",
+      "evidence": "The current frontend gate enforces architecture-wide properties but contains no IA screen-to-implementation path manifest, so it cannot honestly prove declared-import equality at the IA stage. Final P6 must bind exact delivery paths, then add the import equality control and a local reimplementation red mutation before implementation closure."
+    },
+    {
+      "findingId": "RM1-P6-STATIC-COUNTERPART-WAIVER-03",
+      "classification": "CONFIRMED",
+      "evidence": "The template requires static counterparts for EXACT/PARTIAL rows; Dexter explicitly waived drawing copied mockups for this IA review. IA02 recorded R5 anchors but not the waiver/equivalent evidence, making the exceptional admission indistinguishable from an omission."
+    },
+    {
+      "findingId": "RM1-P6-SURFACE-ROSTER-PENDING-STATE-04",
+      "classification": "CONFIRMED",
+      "evidence": "The template allowed only PASS/REVISE while IA02 initially used REVISE_PENDING_DEXTER for the Header-versus-side-footer workspace selector source conflict. Dexter decided the side-footer on 2026-07-29; the Header candidate is now retained only as rejected-source evidence, not as a screen or pending roster row."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "RM1-P6-FOUNDATION-PRIMITIVE-BINDING-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#foundation-primitive-declaration"
+    },
+    {
+      "findingId": "RM1-P6-FOUNDATION-IMPORT-GATE-TIMING-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md#final-p6-foundation-import-equality"
+    },
+    {
+      "findingId": "RM1-P6-STATIC-COUNTERPART-WAIVER-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#counterpart-waiver-record"
+    },
+    {
+      "findingId": "RM1-P6-SURFACE-ROSTER-PENDING-STATE-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#surface-ownership-self-check"
+    }
+  ]
+}

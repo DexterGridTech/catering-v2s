@@ -1,0 +1,257 @@
+{
+  "components": {
+    "schemas": {
+      "OrganizationHierarchySnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groupWorkspaceKey",
+          "commercialGroup",
+          "items"
+        ],
+        "properties": {
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "commercialGroup": {
+            "$ref": "./commercial-group.schemas.yaml#/components/schemas/CommercialGroupRoot"
+          },
+          "items": {
+            "type": "array",
+            "description": "Authorized REGION and PROJECT nodes only; the group is represented exactly once by commercialGroup.",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationNode"
+            }
+          }
+        }
+      },
+      "OrganizationNode": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "nodeType",
+          "parentId",
+          "code",
+          "name",
+          "status",
+          "phases",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "nodeType": {
+            "type": "string",
+            "enum": [
+              "GROUP",
+              "REGION",
+              "PROJECT"
+            ]
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "phases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              }
+            }
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OrganizationNodeCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          }
+        }
+      },
+      "OrganizationNodeStatusTransitionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetStatus",
+          "expectedVersion"
+        ],
+        "properties": {
+          "targetStatus": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "OrganizationNodeUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name",
+          "parentId",
+          "phases",
+          "expectedVersion"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "phases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              }
+            }
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "OrganizationProjectCreateRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrganizationNodeCreateRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "phases": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

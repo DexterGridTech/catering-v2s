@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U04",
+  "kind": "owner-boundary-source-fact-red-mutation",
+  "status": "PASS",
+  "execution": {
+    "location": "isolated scratchpad copy under the authorized backend surface",
+    "mode": "static source-fact validation; no DEV, database, seed or remote runtime",
+    "cleanResult": "PASS",
+    "cleanup": "PASS"
+  },
+  "cases": [
+    {
+      "mutation": "inject SELECT id FROM workspace_iam.workspace_account into organization owner source without a declared TASK_READ edge",
+      "productionEntry": "scripts/check/module-dependency-registry",
+      "result": "RED",
+      "exitCode": 1,
+      "reason": "SOURCE_TASK_READ_UNDECLARED:libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java:workspace_iam.workspace_account"
+    }
+  ],
+  "assertion": "R5_CR04_OWNER_SOURCE_FACT_RED=PASS",
+  "authorityBoundary": "Static red proof only. Fresh migration and Testcontainers proof remain owned by CR08."
+}

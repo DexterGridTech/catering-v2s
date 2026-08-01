@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U01",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u01-control-plane-manifest.json",
+  "deliveryManifestSha256": "44be09f29df9e40ba7440fb71100bf6625115a3a3da672f3e317d81b1ad990ce",
+  "unitId": "RM1P6-CP-U01",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/remediation-compliance",
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/remediation-compliance"
+  ],
+  "requiredControlRuleIds": [
+    "P6-CP-U01-PUBLIC_PROTOCOL_METADATA"
+  ],
+  "businessEvidenceObligation": "CONTROL_PLANE_NOT_APPLICABLE",
+  "serialPredecessor": {
+    "packageId": "RM1-U08",
+    "exitPath": "doc/evidence/platform/rm1/p5/rm1-u08-package-exit.json",
+    "exitSha256": "3271d82b1ce99b646f390edd146693ad22fa4e44d2558920227c590ed55ab2f9"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u01-control-plane-amendment.md",
+    "sha256": "651d3d4ac037ff2507435db6aae367bc1f3a1ae7d95d281c12ed609cf02cf411"
+  },
+  "authorizationBoundary": "Dexter authorized a separate non-business RM1 P6 control-plane package. It may only align the IAM governance registry, R5 operation catalog, R5 typed-error ledger and exact evidence for public login/recovery; it may not alter U01 business, contract, generated, backend, frontend, database, baseline or historical receipt bytes."
+  ,"predecessorEvidenceBaselineAddendum":{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u01-cp-u03-scope-baseline-addendum.json","entries":[{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-control-plane-amendment.md","kind":"FILE","sha256":"4c473457e5c711ae20eea2f495d5214a05862af408e97cdb8d22703d97116306"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-control-plane-manifest.json","kind":"FILE","sha256":"4b06021acd4a760b9c5bb19be775b8fdc2c7b6ad04292ca0b941aef6e1b2f75a"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-package-exit.json","kind":"FILE","sha256":"54c123f042475ed4e4be1ea1c627d539f124764a719c506d26e0bfb1d2446ab5"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-package-input.json","kind":"FILE","sha256":"61ed70bd892512140fb818a57ac8e50a0a27545447da6b09899c1ff933ba22b1"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-source-compliance-disposition.json","kind":"FILE","sha256":"9cf2361899a7d1eb615f761def5b7c4aa2d7adf98750cb3ac2cf9a7414cef70c"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u04-control-plane-amendment.md","kind":"FILE","sha256":"d11919c7a1ef025987d7aa44d33993b563ed8b9d30b7a4946d8a255dea7bfb89"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u04-control-plane-manifest.json","kind":"FILE","sha256":"bfeaec3209c67af6a23943f7716ac4c96e1b8f51da57015250c035c0e259685b"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u04-package-exit.json","kind":"FILE","sha256":"730b68ac7ffcf71bfd4e8d630f55a70b44aaed2e30823fcc2e83807323ebc426"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u04-package-input.json","kind":"FILE","sha256":"09dc38254cf6b26656527da62da191058be7ccc8d118f57832ec4fe7bea3b444"},{"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u04-source-compliance-disposition.json","kind":"FILE","sha256":"47261001999b143b7d474167fe0281de9b4af47d174307e63b795d57761ba530"}]}
+}

@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1P6-U02",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "authority": "Dexter authorized P6-2 implementation. The initial implementation package baseline correctly froze the three approved production roots, but the main granularity manifest was admitted as an exact implementation-control surface afterwards in order to bind package metadata, receipts and exit to that same formal denominator. This one-time addendum freezes the real pre-change manifest byte from its desktop hook receipt; it is not a baseline reset and does not add a business capability.",
+  "entries": [
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+      "kind": "FILE",
+      "sha256": "204f82b1975a396822c4add74768f8ed80ec1a46d09199c0536708e977464c75"
+    },
+    {
+      "path": "contracts/policy/affected-l2-registry.json",
+      "kind": "FILE",
+      "sha256": "818ddf7c834e8f7b7d0d31ee67a9178620d28a03c2ea5e6563eb33ba24d28602"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "kind": "FILE",
+      "sha256": "dbe18bdd02d4926734a39a3705c5de06fb4629cacd009f74f360785f74e02b30"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.rtk.ts",
+      "kind": "FILE",
+      "sha256": "d5400d962f269f2b6d3e1ca05d4b1e300616edf3419058b51bc2cfdc007db8a3"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "kind": "FILE",
+      "sha256": "fe4753acabc089c8d3c2eb7b0b61e597cad31c5f7b60da664b7383ca2c2ec896"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.rtk.ts",
+      "kind": "FILE",
+      "sha256": "7e9d5474a823a534b27ad85b3d1b19397057b00f46eb41a3b910b16463c2bcf7"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+      "kind": "FILE",
+      "sha256": "399a50224a98919be0f9f04d409fbea6ad7b485322384d02635675372134feda"
+    },
+    {
+      "path": "contracts/registry/iam-org-governance-manifest.json",
+      "kind": "FILE",
+      "sha256": "c09c1e06af03883dd4ddc5d2aaa80d1a315ef03c125bdffcce9a98ac6510ebc7"
+    },
+    {
+      "path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+      "kind": "FILE",
+      "sha256": "ce4679a64c9679dce25d81baeca23c5b0a1d00a4cabb11858c7779202fc549c7"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+      "kind": "FILE",
+      "sha256": "7245edfadf808d51d2b9adf7e6550cbc2bf07732ba02ba3dfabc965135dae6b8"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json",
+      "kind": "FILE",
+      "sha256": "6e5d9c4b4f5a35cc7d70046fd274861661ed9b199dfc60c7b8c5414b3f0edf14"
+    },
+    {
+      "path": "scripts/generate/r5-edge-materialize.mjs",
+      "kind": "FILE",
+      "sha256": "34cf9b2b622884c9e2272923e3b17914361c0f0825dcab847078436c82a4994b"
+    },
+    {
+      "path": "scripts/dev/r5-dev-runner.mjs",
+      "kind": "FILE",
+      "sha256": "c4f97ca2930ff48cf82074fd5fe19c16bbce746587db22e072c90cff9c0bc37a"
+    },
+    {
+      "path": "scripts/dev/r5-seed-bootstrap.mjs",
+      "kind": "FILE",
+      "sha256": "245cf218456dc849ad0baa691307c25f0f5aa26135a8794f6ad739ad652b2dc9"
+    }
+  ],
+  "receiptEvidence": {
+    "path": ".runtime/compliance-control/hook-events/exec-c6c577cd-8eb2-42a7-a948-ce4c58453a13.post.json",
+    "beforeSha256": "204f82b1975a396822c4add74768f8ed80ec1a46d09199c0536708e977464c75",
+    "afterSha256": "31e25efc40f79a319701ea7744f9436e1dc23e036c1407d85087ad6c76be6585"
+  },
+  "redProof": {
+    "productionEntry": "node tools/compliance-control/cli.mjs validate-delta-receipts",
+    "mutation": "replace the addendum entry with a path outside the active P6-2 change surface",
+    "expectedReason": "PACKAGE_BASELINE_ADDENDUM_OUT_OF_SURFACE:<path>",
+    "status": "PASS",
+    "actualResult": "Production validate-delta-receipts failed with PACKAGE_BASELINE_ADDENDUM_OUT_OF_SURFACE:outside/owner.java after the entry path was mutated, then the exact manifest path was restored through the governed write channel.",
+    "cleanup": "PASS"
+  },
+  "additionalReceiptEvidence": {
+    "path": ".runtime/compliance-control/hook-events/edge-codegen-rm1-u08-rtk-replay-001.post.json",
+    "beforeSha256": "2f37c261cc4e13b75485ff1132ab5d98383a38d9e8a2f5c978216cd97cd5596e",
+    "afterSha256": "d5400d962f269f2b6d3e1ca05d4b1e300616edf3419058b51bc2cfdc007db8a3"
+  },
+  "boundary": "The addendum covers only the exact pre-change byte of the implementation granularity manifest, affected-L2 registry, and the pre-existing operations generated RTK byte required when P6-2 admitted those control surfaces. It neither absorbs metadata files created under the package baseline nor permits uncontrolled baseline recreation, source removal, contract, owner, edge, generated or frontend behavior outside P6-2."
+}

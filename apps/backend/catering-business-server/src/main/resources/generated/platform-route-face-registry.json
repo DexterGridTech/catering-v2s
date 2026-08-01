@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "contracts/openapi/edge.openapi.yaml",
+  "operations": [
+    {
+      "operationId": "listPlatformGroupWorkspaces",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces",
+      "consumerFaces": [
+        "platform-admin"
+      ]
+    },
+    {
+      "operationId": "getPlatformGroupWorkspaceDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
+      "consumerFaces": [
+        "platform-admin"
+      ]
+    },
+    {
+      "operationId": "initializeCommercialGroup",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
+      "consumerFaces": [
+        "platform-admin"
+      ]
+    }
+  ],
+  "problemCodes": [
+    "INVALID_EDGE_CONTEXT",
+    "GROUP_WORKSPACE_NOT_FOUND",
+    "COMMERCIAL_GROUP_ALREADY_INITIALIZED",
+    "IDEMPOTENCY_CONFLICT",
+    "VALIDATION_FAILED",
+    "UNKNOWN_SUBMISSION_RESULT"
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-CLAUDE-ROUND2-EXTENSION-LEDGER-OTP-20260729",
+  "genericProblem": "A static interaction design can inherit owner assumptions, an action count, or a security negative rule without reopening all same-root sources and later product decisions; the result can be an impossible write path, an unauditable denominator, or a silently contradicted security control.",
+  "rootCauseClass": "The prior design treated extension rule revision as a universal request fact, action rows as endpoint one-to-one, and an unconditional no-code OTP rule as immutable after Dexter changed the environment-scoped requirement.",
+  "finiteDenominator": [
+    "five extension host types x create/update = 10 request/edge/owner paths",
+    "six extension write screens plus six read screens",
+    "78 app/edge write endpoints",
+    "56 P6 business action rows",
+    "five OTP display screens and four conflicting frozen rule locations"
+  ],
+  "searchedSurfaces": [
+    "BusinessEntityService, ContractCommandService, five host create/update callers and Store create request",
+    "all operations extension-definition contracts/controllers and all-v2 dynamic-field baseline",
+    "app/edge Post/Patch/Put/Delete mappings, IA action screens and P6 action ledger",
+    "P6 preparation, IA01, IA05, RM1 plan, current OTP owner/configuration sources"
+  ],
+  "searchQueries": [
+    "extensionValues|extensionRuleRevision|expectedExtensionRuleRevision|validateValues|replaceValues",
+    "getOperations.*ExtensionDefinition|OperationsOrganizationExtensionController",
+    "@PostMapping|@PatchMapping|@PutMapping|@DeleteMapping",
+    "P-N1|testCode|debugVerificationCode|验证码"
+  ],
+  "counterexamples": [
+    "K04 is a retained authenticated administrator recovery chain; X09-X11 remain the old public completion flow.",
+    "S04 and S05 are two business surfaces sharing one endpoint, so business-row and endpoint denominators differ.",
+    "Production omits a debug field even when DEV/UAT explicitly enable it; omitted is not an empty string.",
+    "No enabled definition produces no dynamic field; it does not justify inventing a visible grouping label."
+  ],
+  "findings": [
+    {
+      "findingId": "RM1-P6-ENTITY-EXTENSION-REQUEST-REVISION-01",
+      "classification": "CONFIRMED",
+      "evidence": "Store create lacks a revision request fact but its edge caller supplies 0L to a strict owner comparison; other host requests still carry rule revision. Dexter requires every entity extension request revision and owner CAS to be removed while validation and read-only provenance remain."
+    },
+    {
+      "findingId": "RM1-P6-EXTENSION-DEFINITION-AND-USE-CLOSURE-02",
+      "classification": "CONFIRMED",
+      "evidence": "Three existing operationIds cover all five host types, but twelve IA screens lacked dynamic-field positions; current wires already return extension values."
+    },
+    {
+      "findingId": "RM1-P6-ACTION-LEDGER-ENDPOINT-COVERAGE-03",
+      "classification": "CONFIRMED",
+      "evidence": "78 endpoints equal 59 endpoints represented by 56 business rows plus 11 existing exclusions plus 8 unclassified authentication/session endpoints. Dexter retains the 56 business denominator and K04/X09-X11."
+    },
+    {
+      "findingId": "RM1-P6-OTP-DEBUG-CODE-EXPOSURE-04",
+      "classification": "DEXTER_DECISION",
+      "evidence": "Dexter explicitly requires DEV and UAT code display. Existing P-N1 and plan red controls prohibit every response code, so a named amendment and conditional red control are required; v4's session-derived unconditional code is rejected."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "RM1-P6-ENTITY-EXTENSION-REQUEST-REVISION-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#1.2.1"
+    },
+    {
+      "findingId": "RM1-P6-EXTENSION-DEFINITION-AND-USE-CLOSURE-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#1.1"
+    },
+    {
+      "findingId": "RM1-P6-ACTION-LEDGER-ENDPOINT-COVERAGE-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p6/rm1-u09-form-command-variant-ledger.md#4"
+    },
+    {
+      "findingId": "RM1-P6-OTP-DEBUG-CODE-EXPOSURE-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md#RM1-P6-OTP-DEBUG-CODE-EXPOSURE-01"
+    }
+  ]
+}

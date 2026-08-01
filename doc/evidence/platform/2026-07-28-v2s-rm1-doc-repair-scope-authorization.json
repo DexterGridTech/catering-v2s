@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "dexter-authorized-document-only-scope",
+  "scopeId": "RM1-DOC-REPAIR",
+  "authorization": "Dexter explicit authorization in the active conversation",
+  "predecessorPackageId": "R5-CR-U06",
+  "predecessorConfigSha256": "4ef5a814c3cf23d7e1fe35a2359aed0fbe7cf8e1999d5f7e4c8dea73e113c25c",
+  "allowedChangeSurfaces": [
+    "doc/roadmaps/platform/2026-07-28-v2s-rm1-restructure-and-remediation-roadmap-claude.md",
+    "doc/review/platform/2026-07-28-v2s-r6-problem-inventory-claude.md",
+    "doc/evidence/platform"
+  ],
+  "forbidden": [
+    "implementation source",
+    "contract source",
+    "migration",
+    "test source",
+    "build",
+    "DEV",
+    "seed/reset",
+    "dynamic verification"
+  ],
+  "packageExitClaim": "NOT_APPLICABLE_DOCUMENT_REPAIR"
+}

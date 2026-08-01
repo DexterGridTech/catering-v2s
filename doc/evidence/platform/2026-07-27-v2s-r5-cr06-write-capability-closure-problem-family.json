@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "CR06-FROZEN_WRITE_OPERATION_UNREACHABLE",
+  "genericProblem": "A frozen write operation can exist in the owner, edge, and generated client while users have no approved UI path that invokes it, or while the edge ignores the frozen client concurrency context.",
+  "rootCauseClass": "GENERATED_WRITE_CONTRACT_NOT_CONSUMED_OR_ENFORCED",
+  "finiteDenominator": [
+    {"owner":"organization", "operations":["update brand", "update tenant", "update head company", "replace head-company brand authorizations", "update organization node", "update store"]},
+    {"owner":"contract", "operations":["update store contract"]},
+    {"owner":"workspace-iam", "operations":["create invitation", "cancel invitation", "reissue invitation", "revoke assignment"]},
+    {"owner":"platform-iam", "operations":["update platform-admin profile", "reset platform-admin credential"]},
+    {"owner":"platform-workspace", "operations":["update workspace display"]},
+    {"owner":"extension", "operations":["replace extension definition"]},
+    {"owner":"platform-asset", "operations":["stage static group-workspace logo"]},
+    {"owner":"platform workspace IAM", "operations":["create invitation", "revoke assignment"]}
+  ],
+  "searchedSurfaces": [
+    "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+    "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+    "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+    "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+    "apps/frontend/platform-admin/src/app/api/PlatformApi.ts"
+  ],
+  "searchQueries": ["updateOperations", "replaceOperationsHeadCompanyBrandAuthorizations", "createOperationsWorkspaceInvitation", "cancelOperationsWorkspaceInvitation", "reissueOperationsWorkspaceInvitation", "revokeOperationsWorkspaceMembershipAssignment", "updatePlatformAdminProfile", "resetPlatformAdminCredential", "updatePlatformGroupWorkspaceDisplay", "replaceExtensionDefinition", "stagePlatformAsset", "createWorkspaceInvitation", "revokePlatformWorkspaceAssignment", "expectedContextVersion", "Blob", "FormData"],
+  "counterexamples": [
+    {"case":"existing status/invalidate commands", "evidence":"Five organization status transitions and contract invalidation already reach generated clients; the family concerns the remaining frozen write set, not all writes."},
+    {"case":"read-only surfaces", "evidence":"Store profile, overview and bootstrap routes have explicit non-edit behavior and must not receive synthetic write controls."}
+  ],
+  "findings": [
+    {"findingId":"CR06-WRITE-01", "genericProblem":"Every approved editable capability needs a generated-client consumer, capability-gated Drawer lifecycle, owner readback refresh, focused static assertion and L2 locator."},
+    {"findingId":"CR06-WRITE-02", "genericProblem":"Frozen expectedContextVersion fields must be checked at the edge before every affected owner command; server-derived or null context values do not prove stale-context protection."},
+    {"findingId":"CR06-WRITE-03", "genericProblem":"A generated multipart command is unreachable if the shared generated-client bridge serializes every body as JSON; the bridge must derive encoding from the generated request shape without hard-coding a feature route."}
+  ],
+  "preventionDispositions": [
+    {"findingId":"CR06-WRITE-01", "preventionDestination":"EXISTING_MACHINE_CONTROL", "owningSourceOrControl":"CR06 closure ledger plus frontend static-boundary focused source assertions"},
+    {"findingId":"CR06-WRITE-02", "preventionDestination":"EXISTING_MACHINE_CONTROL", "owningSourceOrControl":"edge request shape assertions and CR06 static package scan"},
+    {"findingId":"CR06-WRITE-03", "preventionDestination":"EXISTING_MACHINE_CONTROL", "owningSourceOrControl":"platform transport focused static assertion plus CR06 generated-client consumer ledger"}
+  ]
+}

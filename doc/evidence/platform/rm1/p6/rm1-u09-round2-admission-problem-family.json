@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-PHYSICAL-SCREEN-AND-RECALL-ROUTE-ADMISSION-20260729",
+  "genericProblem": "A surface-level UI map or a non-specific memory route can make a design look complete while preventing exact foundation import proof or deterministic context recovery.",
+  "rootCauseClass": "IMPLEMENTATION_FACING_GRANULARITY_MISMATCH",
+  "finiteDenominator": ["all physical screens nested in accepted P6 surfaces", "all U01 six-dimension memory route values"],
+  "searchedSurfaces": ["IA01", "IA05", "contracts/policy/frontend-asset-carryover-manifest.json", "scripts/context/recall-memory", "project-memory/index.json", "rm1-u09-final-ui-surface-roster.md"],
+  "searchQueries": ["useAsyncGenerationGuard", "useSubmissionLifecycle", "consumerFace=all", "non-specific route"],
+  "counterexamples": ["A content page and an invitation action Modal cannot share a union primitive contract.", "The granularity checker can derive a source set for `all` even though recall-memory rejects that route."],
+  "findings": [
+    {"findingId":"RM1-P6-DESIGN-R2-M-001","genericProblem":"Grouped physical screens had different host/import contracts.","rootCauseClass":"PHYSICAL_SCREEN_DENOMINATOR_OMISSION","applicability":"CONFIRMED for all grouped rows after scan","evidence":"Round-2 independent review and physical-screen roster.","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"manifest-backed frontend architecture import equality plus physical-screen roster"},
+    {"findingId":"RM1-P6-DESIGN-R2-M-002","genericProblem":"D1 route used a non-specific consumer face unsupported by recall-memory.","rootCauseClass":"NON_EXECUTABLE_MEMORY_ROUTE","applicability":"CONFIRMED for U01","evidence":"recall-memory fail for consumerFace=all and pass for platform-admin.","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"scripts/context/recall-memory fail-closed route vocabulary"}
+  ],
+  "preventionDispositions": [
+    {"findingId":"RM1-P6-DESIGN-R2-M-001","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"manifest-backed frontend architecture import equality plus physical-screen roster"},
+    {"findingId":"RM1-P6-DESIGN-R2-M-002","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"scripts/context/recall-memory fail-closed route vocabulary"}
+  ]
+}

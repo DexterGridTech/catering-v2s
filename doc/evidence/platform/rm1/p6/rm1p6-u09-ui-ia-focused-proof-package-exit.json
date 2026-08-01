@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-UI-IA-FOCUSED-PROOF-U09",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/routing/pageRegistry.test.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "47aa0db96168485e5e1f3f79a164173a0ab8ca41cfa68371c9f545ec45e50b5b"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.test.tsx",
+      "beforeSha256": "9721676414016eb60c125b995f65ce3eed2baf5ddb9764ecc4ba01e324a0f238",
+      "afterSha256": "5cdff725aa9ae47bc704b005466c2f0b80b2a9abffedb12db8edaa04e842ded6"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u09-ui-ia-focused-proof-control-alignment.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "31a953a637802b8ecb91e512aba90d92d3b97a4b18edd854608dd5e9ce2b3d74"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u09-ui-ia-focused-proof-source-compliance-disposition.json",
+      "beforeSha256": "589a44bb74639c1e3620c53371abf2f247c1ddb7a633fe7627a5bc2c19211e36",
+      "afterSha256": "21673b9ad2e736ceb81d3ad8873f1861f932db6dedaf11821ae9a6035c5daac3"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/routing/pageRegistry.test.tsx",
+      "afterSha256": "47aa0db96168485e5e1f3f79a164173a0ab8ca41cfa68371c9f545ec45e50b5b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.test.tsx",
+      "afterSha256": "5cdff725aa9ae47bc704b005466c2f0b80b2a9abffedb12db8edaa04e842ded6",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u09-ui-ia-focused-proof-control-alignment.json",
+      "afterSha256": "31a953a637802b8ecb91e512aba90d92d3b97a4b18edd854608dd5e9ce2b3d74",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u09-ui-ia-focused-proof-source-compliance-disposition.json",
+      "afterSha256": "21673b9ad2e736ceb81d3ad8873f1861f932db6dedaf11821ae9a6035c5daac3",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u09-ui-ia-focused-proof-source-compliance-disposition.json",
+    "sha256": "21673b9ad2e736ceb81d3ad8873f1861f932db6dedaf11821ae9a6035c5daac3"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "controls": [
+    {
+      "ruleId": "CR05-WC-01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-WC-02",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-HISTORICAL-RECEIPT-RECOVERY",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "deferredBusinessEvidenceObligation": "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+  "staticScopeConclusion": "U09 resolves only the two owned focused-proof gaps. It does not complete the remaining full current-byte P6-2/P6-3 control alignment and does not authorize joint L2."
+}

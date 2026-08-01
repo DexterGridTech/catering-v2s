@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-ADMIN-CATALOG-TRUTH-U04",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+  "deliveryManifestSha256": "bd3badbb4aa0be02d215ec50ad19e95713d357b3cec49070f996c4219418744f",
+  "unitId": "RM1P6-ADMIN-CATALOG-TRUTH-U04",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/edge-codegen", "scripts/check/frontend-architecture", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/edge-codegen", "scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["U04-SINGLE-NODE-TRUTH", "U04-STATIC-OWNER-BOUNDARY", "U04-NO-OPERATIONS-TSX", "U04-RED-MUTATIONS"],
+  "businessEvidenceObligation": "NOT_REQUIRED_CONTROL_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-package-exit.json",
+    "exitSha256": "b23d83dd9ca5e1f4fa183693f12036263af0c6a79d4478a1ccd7cc9f4e3d840f"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-implementation-amendment.md",
+    "sha256": "86341d2bef4f576a00224cdc8c5f624fe390e1252e7850411fd33ceee39614f2"
+  },
+  "authorizationBoundary": "Dexter authorized this exact successor package on 2026-07-30 after the catalog truth-model DESIGN GO. It permits only static catalog/generator/generated-output/backend role-home migration and static proof. It excludes operations .tsx behavior, P6-3 implementation, DEV, seed, reset, L2 and any dynamic business PASS."
+}

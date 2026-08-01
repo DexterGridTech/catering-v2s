@@ -1,0 +1,419 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-r2-fresh-session-acceptance",
+  "status": "EVIDENCE_READY_PENDING_DEXTER_ACCEPTANCE",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R2",
+  "createdAt": "2026-07-24T10:36:00.616Z",
+  "session": {
+    "freshV2sRooted": true,
+    "threadId": "019f93ab-6edc-7e62-87d5-804e3570741b",
+    "projectRoot": "/Users/dexter/Documents/workspace/idea/catering-v2s",
+    "gitTopLevel": "/Users/dexter/Documents/workspace/idea/catering-v2s",
+    "allV2CurrentStateUsed": false,
+    "globalMemoryUsed": false,
+    "oldChatSummaryUsedAsTruth": false
+  },
+  "authorization": {
+    "authorizedBy": "Dexter",
+    "authorizationText": "授权",
+    "authorizedScope": "R2 fresh static entry acceptance, goal, target-native evidence, Codex self-review and Claude/Dexter review handoff",
+    "excluded": [
+      "R3",
+      "W1",
+      "business runtime",
+      "apps",
+      "OpenAPI",
+      "migration",
+      "DEV",
+      "seed",
+      "reset",
+      "database",
+      "Git stage",
+      "Git commit",
+      "Git push",
+      "Git branch",
+      "Git worktree"
+    ]
+  },
+  "goal": {
+    "statusAtEvidenceCapture": "ACTIVE",
+    "objective": "完成 catering-v2s 的 fresh v2s-rooted R2 静态入口验收，形成 target-native acceptance evidence、Codex 独立自审与 Claude/Dexter review handoff；保持 Roadmap 为 R2 IN_REVIEW，且不进入 R3/W1、不执行 DEV、seed/reset、数据库或 Git 写操作。"
+  },
+  "lifecycleEvidence": {
+    "sessionStart": {
+      "command": "printf '{}' | scripts/hooks/session-start",
+      "exitCode": 0,
+      "raw": [
+        "STATUS=PASS",
+        "CONTEXT_MODE=DETERMINISTIC_ONLY",
+        "ENTRY_1=AGENTS.md",
+        "ENTRY_2=PLATFORM-BLUEPRINT.md",
+        "ENTRY_3=doc/platform/roadmap-program-registry.json",
+        "ENTRY_4=selected Roadmap CURRENT_*",
+        "ENTRY_5=project-memory/index.md",
+        "ENTRY_6=scripts/README.md"
+      ]
+    },
+    "prompt": {
+      "command": "printf '{\"prompt\":\"授权\"}' | scripts/hooks/prompt-route",
+      "exitCode": 0,
+      "raw": [
+        "STATUS=PASS",
+        "RECOMMENDED_SKILL=NONE",
+        "CONTEXT_QUERY_PERFORMED=false"
+      ],
+      "sourceOrCodeInjected": false
+    },
+    "recall": {
+      "command": "scripts/context/recall-memory --task-kind review --domain platform --consumer-face backend --owner platform --impact governance --trigger task-start",
+      "exitCode": 0,
+      "route": {
+        "taskKinds": "review",
+        "domains": "platform",
+        "consumerFaces": "backend",
+        "owners": "platform",
+        "impacts": "governance",
+        "triggers": "task-start"
+      },
+      "returnedRefs": 7
+    },
+    "stop": {
+      "command": "printf '{\"sessionId\":\"019f93ab-6edc-7e62-87d5-804e3570741b\"}' | scripts/hooks/stop",
+      "exitCode": 0,
+      "raw": [
+        "STATUS=PASS"
+      ],
+      "currentRootMarkerPresent": false,
+      "redControlReceipt": {
+        "STOP_NO_MARKER": "PASS",
+        "STOP_NONE_AND_CLEAN": "PASS",
+        "STOP_INVALID_INPUT_RED": "PASS",
+        "STOP_ACTIVE_GOAL_RED": "PASS",
+        "STOP_CLEANUP_RED": "PASS"
+      },
+      "interpretation": "Direct Stop passed because no repository-local session marker or managed run exists. The production lifecycle checker independently proved malformed input, active goal, non-stopped managed run and cleanup failure controls."
+    }
+  },
+  "programAndRoadmap": {
+    "registryPath": "doc/platform/roadmap-program-registry.json",
+    "registryPrograms": 1,
+    "selectedProgramId": "V2S_W0_W4_EXECUTION",
+    "roadmapId": "v2s-w0-w4-execution",
+    "roadmapPath": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+    "stateOwnerPath": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+    "authorizationOwnerPath": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+    "lastClosedStep": "R1",
+    "currentStep": "R2",
+    "currentStatus": "IN_REVIEW",
+    "r2AuthorizedInRoadmap": false,
+    "v2sWriteAuthority": false,
+    "r3AndW1": "BLOCKED",
+    "gitOwner": "Dexter",
+    "roadmapStateModified": false,
+    "v2sFoundationReadyWritten": false
+  },
+  "memoryReceipt": {
+    "indexPath": "project-memory/index.md",
+    "indexIsNormativeAssertion": false,
+    "sourceReopenCompleted": true,
+    "refs": [
+      {
+        "id": "kernel.workspace-roadmap",
+        "path": "project-memory/kernel/01-workspace-and-roadmap.md",
+        "sha256": "29bcf583ae6d606efdbdde3591afc5fccf0bfdfc7d18ca28892672667f1b792a"
+      },
+      {
+        "id": "kernel.service-owner",
+        "path": "project-memory/kernel/02-service-shape-and-owner.md",
+        "sha256": "45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032"
+      },
+      {
+        "id": "kernel.transaction-data",
+        "path": "project-memory/kernel/03-transaction-data-and-dependencies.md",
+        "sha256": "f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44"
+      },
+      {
+        "id": "kernel.contract-admin",
+        "path": "project-memory/kernel/04-contract-consumer-and-admin.md",
+        "sha256": "6f74c55aac19d6ce4df3711b702a98d65f11bed2aa33983e912106346548efc6"
+      },
+      {
+        "id": "kernel.evidence-runtime",
+        "path": "project-memory/kernel/05-evidence-runtime-and-git.md",
+        "sha256": "37296dcc602e6173b41bab26246e00cba4a37541ff33935917468d73578a81d0"
+      },
+      {
+        "id": "kernel.heritage-change",
+        "path": "project-memory/kernel/06-heritage-and-change.md",
+        "sha256": "5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c"
+      },
+      {
+        "id": "decisions.deterministic-context-only",
+        "path": "project-memory/decisions/deterministic-context-only.md",
+        "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"
+      }
+    ],
+    "sourceRefs": [
+      {
+        "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+        "sha256": "a2216874062892229424cc9f8c2bc478d110795b4876433782c6d22a2e78b615",
+        "owningAnchorsReopened": [
+          "# catering-v2s Roadmap R1 实施授权"
+        ]
+      },
+      {
+        "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+        "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568",
+        "owningAnchorsReopened": [
+          "### 3.1 部署拓扑",
+          "### 3.2 领域与模块边界",
+          "### 3.3 跨模块原子写",
+          "### 3.5 任务型读取",
+          "### 3.6 授权与事务线性化",
+          "### 3.7 单库、多 schema 与完整性",
+          "### 3.10 边缘、安全面与 OpenAPI face",
+          "### 3.12 前端与工程证据"
+        ]
+      },
+      {
+        "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+        "sha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69",
+        "owningAnchorsReopened": [
+          "## Part B. 通用设计要求(去场景化沉淀)",
+          "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)",
+          "### D.8 日志与诊断",
+          "## Part G. 跨域同步的前端补偿清单——v2s 一律不再做",
+          "### H.2 本阶段明确不做"
+        ]
+      },
+      {
+        "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+        "sha256": "a36fc88b0c151fdae719365b11925941a20e7de771b970f8e6eb11b03ac50392",
+        "owningAnchorsReopened": [
+          "## 0. Roadmap 身份与当前状态",
+          "## 2. 不可突破的全程红线",
+          "### 7.2 旧仓只读策略",
+          "## 8. R2：Fresh v2s-rooted 会话验收与 W0 正式关闭",
+          "## 10. R4：W2——机器门、scripts/verify 与 red fixtures"
+        ]
+      }
+    ]
+  },
+  "serviceShapeReadback": {
+    "businessDeployables": 1,
+    "database": "one PostgreSQL database",
+    "schemas": "multiple owner schemas",
+    "flywayHistories": 1,
+    "moduleOwnerSovereignty": true,
+    "crossModuleWrite": "target module public command API in the same REQUIRED transaction",
+    "crossSchemaRead": "explicit task-oriented SELECT/JOIN only; no write, lock, transaction or FK authority inferred",
+    "initiallyAbsent": [
+      "MQ",
+      "general outbox",
+      "TDP",
+      "internal OpenAPI client",
+      "normal polling"
+    ],
+    "httpExposureTruth": "x-consumer-faces",
+    "adminApps": [
+      "platform-admin",
+      "operations-admin"
+    ],
+    "adminAppsIndependent": true,
+    "devStartRestartSeeds": false,
+    "heritageReadOnly": true,
+    "heritageRuntimeOrBuildFallback": false
+  },
+  "standardsCoverage": {
+    "matrixPath": "contracts/policy/standards-coverage-matrix.json",
+    "checkerPath": "scripts/check/standards-coverage",
+    "phaseCommand": "scripts/check/standards-coverage --phase R2",
+    "phaseRaw": [
+      "STANDARDS_COVERAGE=PASS",
+      "PHASE=R2",
+      "RULES=150"
+    ],
+    "selfTestCommand": "scripts/check/standards-coverage --self-test",
+    "selfTestRaw": [
+      "STANDARDS_COVERAGE_SELF_TEST=PASS",
+      "MISSING_RULE_RED=PASS",
+      "MISSING_MEMORY_RED=PASS",
+      "PLANNED_OVERDUE_RED=PASS",
+      "MISSING_ENFORCEMENT_REF_RED=PASS",
+      "MISSING_REVIEW_CHECKLIST_RED=PASS"
+    ],
+    "independentParser": {
+      "partBNumbered": 85,
+      "partCTableRows": 23,
+      "partDBullets": 30,
+      "partDTableRows": 12,
+      "total": 150,
+      "sourceUnitHashMismatches": 0
+    },
+    "classification": {
+      "ACTIVE": 66,
+      "PLANNED": 84,
+      "GATE": 78,
+      "ARCHUNIT": 12,
+      "NEGATIVE_FIXTURE": 1,
+      "UNENFORCEABLE_BY_MACHINE": 59,
+      "reviewChecklists": 6
+    },
+    "denominatorScope": "manifest Part B-D only",
+    "generatedIndexUsedAsAssertion": false
+  },
+  "checks": [
+    {
+      "command": "scripts/context/agent-context health",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/standards-coverage --phase R2",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/standards-coverage --self-test",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/project-memory",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/agent-lifecycle",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/provider-free-context",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/foundation-standard-actions",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/roadmap-program-registry",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/roadmap-control-plane-transfer",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/roadmap-control-plane-transfer --self-test",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/handoff-debt",
+      "result": "PASS"
+    },
+    {
+      "command": "scripts/check/heritage-registry",
+      "result": "PASS"
+    }
+  ],
+  "hashes": {
+    "roadmap": "a36fc88b0c151fdae719365b11925941a20e7de771b970f8e6eb11b03ac50392",
+    "standardsMatrix": "358dc6bea08b6094ce7bf633bf68ffcbb4dab777c895f87627b7b5d9b4a18ce9",
+    "standardsChecker": "683c696bd042e4ca865e859e82a42bace74f4bbccd499e38d42921b2c8606238",
+    "r1ReviewResolution": "ddcadc5f8c85d04de7b10cb2dfbcdd1a55d07efe7aac8790b79eec81c5d6c7ee",
+    "claudeStandardsReview": "2232f51129cb526c13081e76c222ed823fba06e13d7f1491d74ea791626c062f",
+    "r1ImplementationClosure": "e1bcbf43c8c6a0b475e14169ebc0e0dcc1248e54bbefc8097a384ed1ae1add91",
+    "r1PostTransferClosure": "8093559204490c147aa9cf8ff0828c9441428f85b53b8ca0dafe03e86f4d5b21",
+    "transferReceipt": "61bf4f4729efbb5bfbd8d5cbea1c43987503067c306deaf28a34ce7e350cefda",
+    "adoptedRoadmapSnapshot": "7ed6fc31be727dd64483b6bc4b051c306fd93417272b8287e108ba00e42c6e76",
+    "heritageRegistry": "1e613d23ea432efa394c6617c748901179fe80f74581f4b869923614b488286a",
+    "activeRegistry": "f3e232d2a1c39ed6bb196911e7c85a73429a5871a3fe8f7e16d2cfa0403f12a8",
+    "sourceRoadmap": "a76b245cc4afe9a978989bb93b9024ef651a33aad6089d7f4d0a2f20fc0d71b5"
+  },
+  "heritageAndTransfer": {
+    "sourceRepository": "catering-all-v2",
+    "sourceRole": "READ_ONLY_HERITAGE",
+    "sourceWriteBack": false,
+    "runtimeFallback": false,
+    "buildFallback": false,
+    "selectedAssetsChecked": 13,
+    "selectedAssetHashMismatches": 0,
+    "transferContinuity": "PASS",
+    "uniqueCurrentOwner": "PASS"
+  },
+  "claudeFreshClient": {
+    "status": "UNVERIFIED_CLIENT_UNAVAILABLE",
+    "reason": "No callable fresh Claude client is available in this Codex session.",
+    "existingStandardsReviewUsedAsFreshDiscoveryEvidence": false,
+    "preExistingHookCompatibilityRereviewUsedAsFreshDiscoveryEvidence": false
+  },
+  "gitReadback": {
+    "handoffExpectedHead": "5b083504f6687ca6be832171c79a4e1234078937",
+    "observedBranch": "main",
+    "observedHead": "331984e8147e435e1ac7029f66fe38ff9cc8214e",
+    "observedOriginMain": "331984e8147e435e1ac7029f66fe38ff9cc8214e",
+    "expectedHeadIsDirectParent": true,
+    "commitsAheadOfExpected": 1,
+    "observedCommitAuthor": "dextergridtech <dexter.gridtech@gmail.com>",
+    "observedCommitSubject": "0724",
+    "interpretation": "Dexter committed and pushed the R1/R2 delivery tree after the handoff baseline was written. The control-plane and immutable hashes required by this acceptance remain exact.",
+    "stagedFiles": 0,
+    "preExistingDirtyPaths": [
+      {
+        "path": "doc/evidence/platform/2026-07-24-v2s-hooks-config-compatibility-post-no-go-closure.json",
+        "status": "MODIFIED"
+      },
+      {
+        "path": "doc/review/platform/2026-07-24-v2s-hooks-config-compatibility-review-request.md",
+        "status": "MODIFIED"
+      },
+      {
+        "path": "doc/review/platform/2026-07-24-v2s-hooks-config-compatibility-rereview-claude.md",
+        "status": "UNTRACKED"
+      }
+    ],
+    "codexGitWriteExecuted": false
+  },
+  "executionBoundary": {
+    "appsFiles": 0,
+    "migrationFiles": 0,
+    "devSeedResetActions": 0,
+    "managedRunManifests": 0,
+    "activeManagedResources": 0,
+    "devStarted": false,
+    "seedExecuted": false,
+    "resetExecuted": false,
+    "databaseTouched": false,
+    "heritageWritten": false,
+    "r3OrW1Entered": false
+  },
+  "deferredNotes": [
+    {
+      "id": "N-1",
+      "subject": "memoryRefs are routing-grade shared anchors",
+      "owner": "W1 implementation and review",
+      "duePhase": "W1",
+      "currentDisposition": "DEFERRED_NON_BLOCKING"
+    },
+    {
+      "id": "N-2",
+      "subject": "selected enforcement classifications require semantic fit correction",
+      "owner": "R4 implementation and review",
+      "duePhase": "R4",
+      "currentDisposition": "DEFERRED_NON_BLOCKING"
+    },
+    {
+      "id": "N-3",
+      "subject": "coverage denominator excludes manifest Part 0/A/E/F/G/H",
+      "owner": "Dexter for any scope expansion",
+      "duePhase": "ONLY_IF_SCOPE_EXPANDS",
+      "currentDisposition": "DEFERRED_NON_BLOCKING_DEFAULT_EXCLUSION"
+    }
+  ],
+  "results": {
+    "business": "PASS",
+    "businessScope": "R2_STATIC_ENTRY_ACCEPTANCE_ONLY",
+    "cleanup": "PASS",
+    "activeManagedResources": 0,
+    "acceptanceState": "EVIDENCE_READY_PENDING_CODEX_SELF_REVIEW_AND_DEXTER_ACCEPTANCE",
+    "roadmapGoWritten": false,
+    "v2sFoundationReadyWritten": false
+  }
+}

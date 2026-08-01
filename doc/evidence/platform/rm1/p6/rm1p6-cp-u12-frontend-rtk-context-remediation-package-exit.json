@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-CP-U12-FRONTEND-RTK-CONTEXT-REMEDIATION",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "beforeSha256": "6ffa6d6a54e6b9370fc0ffa783d66438e0c243291c3ccda052b943a53540bf72",
+      "afterSha256": "53fe9b722ad85521be6443db0ed095164e88264bbb7b9228cf2ce699ea0a140a"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/operations-context-view-reset.test.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b9ac47c56965ec8d680ca0dccb45618a7f0da1f040f632799a22e5936440283c"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+      "beforeSha256": "214ddb4c272a4ec3be3eb76f2b29012a73c65c58cae14f90aacc9faf1b944f2e",
+      "afterSha256": "b4eff56dbf9a1a51fb1034f6478c4f88d52c6628133346e6197347f8ff55b2a8"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+      "beforeSha256": "019039e0f6499bad02c0ca2a087b4dc0985b410e844e43a277473f16e8a1084e",
+      "afterSha256": "a5afc814aa1e3380837511f8fdde7dd78358a3e30f345ff511c7d484388fc563"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-rtk-substrate-and-context-generation-problem-family.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "db1d447e2b3221a5d2bdc42970b1437b774feca80ce12b4e1d055f63e331dd14"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-focused-proof.log",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a5ba391beaf6be18989a3269c9db20784ae2806a69a582c65367ddd667c6a1cb"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-amendment.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "4c746f6826ea7e2593543a0cb1dce857e785ba441aed782f756a86855c8af318"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-manifest.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0614953dbbd34cb318211d62800a69a082381e95d6f1e7394f253a7fd55baf4e"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-package-input.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2f752ae36acfc385df693c2c1fa12ba185594518215cc958ffbf2f9d41382008"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-source-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "80172a47c62059c62fd5e6262b7833e6d8f5380e234d406913d983ac4a5404af"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "afterSha256": "53fe9b722ad85521be6443db0ed095164e88264bbb7b9228cf2ce699ea0a140a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/tests/architecture/operations-context-view-reset.test.mjs",
+      "afterSha256": "b9ac47c56965ec8d680ca0dccb45618a7f0da1f040f632799a22e5936440283c",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+      "afterSha256": "b4eff56dbf9a1a51fb1034f6478c4f88d52c6628133346e6197347f8ff55b2a8",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+      "afterSha256": "a5afc814aa1e3380837511f8fdde7dd78358a3e30f345ff511c7d484388fc563",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-rtk-substrate-and-context-generation-problem-family.json",
+      "afterSha256": "db1d447e2b3221a5d2bdc42970b1437b774feca80ce12b4e1d055f63e331dd14",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-focused-proof.log",
+      "afterSha256": "a5ba391beaf6be18989a3269c9db20784ae2806a69a582c65367ddd667c6a1cb",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-amendment.md",
+      "afterSha256": "4c746f6826ea7e2593543a0cb1dce857e785ba441aed782f756a86855c8af318",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-manifest.json",
+      "afterSha256": "0614953dbbd34cb318211d62800a69a082381e95d6f1e7394f253a7fd55baf4e",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-package-input.json",
+      "afterSha256": "2f752ae36acfc385df693c2c1fa12ba185594518215cc958ffbf2f9d41382008",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-source-disposition.json",
+      "afterSha256": "80172a47c62059c62fd5e6262b7833e6d8f5380e234d406913d983ac4a5404af",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "afterSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-source-disposition.json",
+    "sha256": "80172a47c62059c62fd5e6262b7833e6d8f5380e234d406913d983ac4a5404af"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "focusedFrontendEvidence": [
+    {
+      "runner": "node --test",
+      "suite": "apps/frontend/operations-admin/src/tests/architecture/operations-context-view-reset.test.mjs",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+          "sha256": "53fe9b722ad85521be6443db0ed095164e88264bbb7b9228cf2ce699ea0a140a"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/architecture/operations-context-view-reset.test.mjs",
+          "sha256": "b9ac47c56965ec8d680ca0dccb45618a7f0da1f040f632799a22e5936440283c"
+        }
+      ],
+      "log": {
+        "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-focused-proof.log",
+        "sha256": "a5ba391beaf6be18989a3269c9db20784ae2806a69a582c65367ddd667c6a1cb"
+      }
+    }
+  ],
+  "validationLimitations": [
+    {
+      "check": "yarn typecheck",
+      "status": "FAIL_PREEXISTING_OUT_OF_SCOPE",
+      "evidence": "HeadCompanyManagementPage calls a retired generated operation; the finite same-root scan identifies the page and its stale architecture assertion as P3-owned corrective work, excluded from this P6 RTK-context package."
+    }
+  ],
+  "controls": [
+    {
+      "ruleId": "P6-CP-U12-RTK-SUBSTRATE-AND-CONTEXT-VIEW-RESET",
+      "state": "ACTIVE_RED_VERIFIED",
+      "redProof": "operations-context-view-reset.test.mjs removes key={session.contextVersion} and is rejected"
+    }
+  ]
+}

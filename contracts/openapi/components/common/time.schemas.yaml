@@ -1,0 +1,9 @@
+{
+  "components": {
+    "schemas": {
+      "EpochMillis": {
+        "type": "integer"
+      }
+    }
+  }
+}

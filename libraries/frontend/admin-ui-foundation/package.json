@@ -1,0 +1,33 @@
+{
+  "name": "@catering-v2s/admin-ui-foundation",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./behavior": "./src/behavior/index.ts",
+    "./automation": "./src/automation/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "../../../node_modules/.bin/vitest run src --maxWorkers=1"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": "2.12.0",
+    "antd": "6.5.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-redux": "9.3.0",
+    "react-router": "7.18.1"
+  },
+  "devDependencies": {
+    "@reduxjs/toolkit": "2.12.0",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.17",
+    "antd": "6.5.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-redux": "9.3.0",
+    "typescript": "6.0.3"
+  }
+}

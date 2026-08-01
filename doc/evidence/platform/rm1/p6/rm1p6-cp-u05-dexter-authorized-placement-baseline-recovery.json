@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1p6-cp-u05-exact-missing-package-baseline-recovery",
+  "status": "DEXTER_AUTHORIZED_ONE_TIME_RECOVERY",
+  "packageId": "RM1P6-CP-U05",
+  "authorization": "Dexter authorized the exact CP-U05 placement-report baseline recovery after independent receipt-chain audit.",
+  "recoveredPaths": [
+    {
+      "path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+      "baselineSha256": "0f476795da47024e529b673df0f281b0fdada0817008961f6ebc9f416e7efc32",
+      "currentSha256": "ce4679a64c9679dce25d81baeca23c5b0a1d00a4cabb11858c7779202fc549c7",
+      "receiptPair": {
+        "pre": {"path": ".runtime/compliance-control/hook-events/exec-2e174d74-fbd0-4291-8f5b-2fb7f163f93c.pre.json", "sha256": "0ea3d79cc3b64a964d94c0ece1d4b4052dcb8ab8ee23d6738b1a0a112fe1b75c"},
+        "post": {"path": ".runtime/compliance-control/hook-events/exec-2e174d74-fbd0-4291-8f5b-2fb7f163f93c.post.json", "sha256": "6fe931f1450baa34530e2bb7159665ad6d254092f0c17e68f01845fabc790215"}
+      }
+    }
+  ],
+  "staticVerifications": [
+    {"id": "EXACT_SINGLE_PATH", "result": "PASS"},
+    {"id": "BASELINE_HASH_FIXED", "result": "PASS"},
+    {"id": "CURRENT_HASH_FIXED", "result": "PASS"},
+    {"id": "RECEIPT_PAIR_HASH_BOUND", "result": "PASS"}
+  ]
+}

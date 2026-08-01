@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U03",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u03-control-plane-manifest.json",
+  "deliveryManifestSha256": "4b06021acd4a760b9c5bb19be775b8fdc2c7b6ad04292ca0b941aef6e1b2f75a",
+  "unitId": "RM1P6-CP-U03",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["P6-CP-U03-DYNAMIC_CONTROL_SOURCE_TEMPLATE"],
+  "businessEvidenceObligation": "CONTROL_PLANE_NOT_APPLICABLE",
+  "serialPredecessor": {"packageId":"RM1-U08","exitPath":"doc/evidence/platform/rm1/p5/rm1-u08-package-exit.json","exitSha256":"3271d82b1ce99b646f390edd146693ad22fa4e44d2558920227c590ed55ab2f9"},
+  "implementationAmendment": {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u03-control-plane-amendment.md","sha256":"4c473457e5c711ae20eea2f495d5214a05862af408e97cdb8d22703d97116306"},
+  "authorizationBoundary": "Dexter authorized this non-business CP-U03 only to make RM1 control-plane source-disposition anchors binding-derived and to prove the red/green behavior. It may not alter CP-U01 metadata, U01 implementation, contracts, generated sources, application code, database or frontend bytes."
+}

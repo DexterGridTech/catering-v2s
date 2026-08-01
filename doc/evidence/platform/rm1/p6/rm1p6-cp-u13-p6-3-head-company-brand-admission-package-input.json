@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U13-P6-3-HEAD-COMPANY-BRAND-ADMISSION",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-manifest.json",
+  "deliveryManifestSha256": "8ad0fcb30e6d5c6278b951acca65766eed9d1f00e2333e93724410421cc19aae",
+  "unitId": "RM1P6-CP-U13-P6-3-HEAD-COMPANY-BRAND-ADMISSION",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["P6-CP-U13-P6-3-HEAD-COMPANY-BRAND-ADMISSION"],
+  "businessEvidenceObligation": "NOT_REQUIRED_CONTROL_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U11",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u11-package-exit.json",
+    "exitSha256": "b5d0cac50b59ac56557f0b55cae699fc66c9b3b02ff9491b7b8754cb8c38422b"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u13-p6-3-head-company-brand-admission-amendment.md",
+    "sha256": "36d893010c1ffec180a8f9969c76ecfa41151e65962352d4a860f69afecaed78"
+  },
+  "authorizationBoundary": "Dexter authorized P6-3 design admission for one operations-admin head-company brand authorization corrective slice only; no implementation is authorized by this admission."
+}

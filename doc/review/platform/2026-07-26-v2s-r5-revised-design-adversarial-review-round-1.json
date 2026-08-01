@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-design-adversarial-review",
+  "reviewCycleId": "R5-REVISED-DESIGN-20260726",
+  "reviewTarget": "DESIGN",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-26-v2s-r5-revised-design-adversarial-round-1-inputs.json",
+    "sha256": "087a2454a107410aaedaf84580cd45a4ffab1a9873f4f7763dc4dc7951a1045b"
+  },
+  "blindReviewDeclaration": "Fresh catering-v2s-rooted reviewer formed this falsification-first finding set and NO_GO verdict before reading any author self-review or author finding disposition. No such author material exists for this dispatched round; frozen Journey, interaction, authorization, upstream direction, source, and governance inputs were read as the mandatory blind-review inputs.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "50f2b418e2549e720c6d73f18194826245e6fe7baee582d6f9c896620da50a5c",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "authorization-and-roadmap-control",
+      "standards-traceability",
+      "owner-boundary-and-audit-read-model",
+      "consumer-visible-security"
+    ]
+  },
+  "inputReadback": {
+    "freshContext": "catering-v2s repository root",
+    "sha256Verified": [
+      "AGENTS.md@7df534e31d78cf9cbec390d0b1276abd069336d90f27a168969ae43c9d34315c",
+      "CLAUDE.md@da3213ab7a75431198ac0d645d7de49b9705b07a27397a2e568d439ea4f66ca1",
+      "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md@7a8f7da278582a860cb0c857cf37b1ca1706d8ee49026b7ecb8ac1c3b3ca9c5f",
+      "doc/decisions/2026-07-26-v2s-r5-revised-design-authorization.md@358c3bc1657e76e8d9854c2e5d0271219246099c587f2cb345ca723c34c28736",
+      "doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md@4cdda492bb4c0fb4b26b1787d7c59de8b016d8050c034b0dce008a5c25b32771",
+      "doc/review/platform/2026-07-26-v2s-r5-revised-design-granularity-manifest.json@50f2b418e2549e720c6d73f18194826245e6fe7baee582d6f9c896620da50a5c",
+      "contracts/policy/standards-coverage-matrix.json@6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5"
+    ],
+    "memory": "Read all six kernels; ran both required six-dimension recall commands and reopened every routed hit, including deterministic-context-only, independent-subagent-adversarial-review, the corpus policy, and G-01 through G-10. G-11/G-12 were verified as out of R5 scope.",
+    "frozenInputs": "Read all six requested upstream frozen inputs in full, reviewed every decision title from the supplied sorted list whose SHA-256 is 632b2dce5ad96b3d290aac0d243d3c7300e1935f46544436c81079197c49ad07, and reopened the relevant Roadmap, service-shape, solution-reasonableness, independent-review, carry-over, foundation, scope, and R5 authorization decisions.",
+    "checks": [
+      "scripts/check/standards-coverage --phase R5 => PASS; RULES=150",
+      "scripts/check/implementation-design-granularity --self-test => PASS; all listed red fixtures PASS"
+    ]
+  },
+  "expectedBehavior": [
+    "The revised design remains design-only until its new design review pipeline and Dexter acceptance close; no reader can mistake the current scheduling truth for implementation permission.",
+    "All 150 standards entries referenced by the manifest use actual matrix IDs and remain traceable to their review or mechanical enforcement destination.",
+    "The one 105th audit read returns a human-readable, authorized, sanitized history for every one of the 12 approved entity types without creating a cross-owner fact owner or a second authorization model."
+  ],
+  "findings": [
+    {
+      "id": "R5-R1-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-U01"
+      ],
+      "title": "唯一 current Roadmap 仍把已停止的 R5 实施声明为进行中",
+      "evidence": "AGENTS.md requires only the current Roadmap's explicit authorization to start a step. The hash-verified Roadmap CURRENT_* says R5_WHOLE_SCOPE_IMPLEMENTATION_IN_PROGRESS, R5_WHOLE_SCOPE_IMPLEMENTATION_AUTHORIZED, and directs U01 implementation; its line 120 also says R5_IMPLEMENTATION_AUTHORIZED=true. The later exact authorization, hash 358c..., explicitly says R5_REVISED_IMPLEMENTATION_AUTHORIZED=false and stops the ongoing R5 implementation while the revised design is reviewed. The reviewed plan additionally conflicts with its own accepted-audit statement: section 0 says the wireframe was accepted, while section 11 still tells Dexter to accept or revise it before design review.",
+      "counterexample": "A fresh agent correctly following the Roadmap's own sole-scheduling-truth rule can begin U01 implementation from CURRENT_NEXT_ACTION even though the exact revised authorization forbids every app, contract, migration, test, runtime, seed, and reset write.",
+      "risk": "This is an authorization-control failure, not merely stale prose: it can cause prohibited implementation writes and makes the review packet incapable of proving which bytes are eligible for a later implementation decision.",
+      "minimalFix": "Before a new design verdict can be accepted, make the current Roadmap CURRENT_* and its nearby R5 authority prose explicitly state REVISED_DESIGN_IN_REVIEW and implementation/runtime/seed/reset unauthorized; make plan section 11 match the already accepted audit interaction. Bind the corrected scheduling source by hash in the revised manifest/review packet.",
+      "largerAlternativeCost": "Creating a second scheduler or a parallel R5 authority registry would duplicate the single-owner control plane and create another drift surface; a bounded correction to the existing Roadmap and stale plan paragraph is smaller.",
+      "disposition": "AUTHOR_ACTION_REQUIRED"
+    },
+    {
+      "id": "R5-R1-S-002",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-U01",
+        "R5-U02"
+      ],
+      "title": "Manifest Part C points to 23 non-existent standards rule IDs",
+      "evidence": "The reviewed manifest declares C.1 through C.4 as C.TABLE.01-C.TABLE.23. The hash-verified standards matrix contains those same 23 table rules only as C.T01-C.T23; jq readback confirms every C rule ID uses C.Txx. standards-coverage --phase R5 passes because it validates the matrix phase, not this manifest's semantic rule-ID references.",
+      "counterexample": "A reviewer following manifest C.2's C.TABLE.07-C.TABLE.12 cannot locate any matrix rule, enforcement destination, or review checklist, so a contract/face boundary omission can be presented as covered even though no real standards anchor was cited.",
+      "risk": "The mandatory Part B/C/D hit map is materially unverifiable for all 23 Part C rules. This defeats the stated trace/enforcement denominator and hides which rules are semantic review obligations rather than gates.",
+      "minimalFix": "Replace every C.TABLE.01-C.TABLE.23 reference with its existing C.T01-C.T23 matrix ID, then recheck each C group against its actual reviewChecklistRef and design location. Extend the manifest checker only if a mechanical ID-existence cross-check remains a recurring, one-line rule.",
+      "largerAlternativeCost": "Renaming all matrix IDs or adding compatibility aliases would rewrite a frozen 150-rule denominator and duplicate identifiers; correcting the new manifest references is strictly smaller.",
+      "disposition": "AUTHOR_ACTION_REQUIRED"
+    },
+    {
+      "id": "R5-R1-S-003",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-U02",
+        "R5-U04",
+        "R5-U07"
+      ],
+      "title": "统一操作历史缺少 actor 显示名的 owner-safe 读取设计",
+      "evidence": "The accepted audit Journey requires actorDisplayName and human-readable history, and the reviewed plan's proposed audit shape contains only actor_type and actor_id while requiring a shared getEntityAuditHistory task read. It does not assign who resolves platform versus workspace actors, which owner API may expose the display value, what an absent/disabled actor returns, or where that sanitization occurs. Current production source confirms the gap rather than solving it: platform_iam.platform_audit, organization.organization_audit, contract.contract_audit, and workspace_iam.workspace_audit have event/detail forms; writes use detail_json '{}' and commonly omit an actor identity. PlatformAssetService likewise shows current owner APIs are narrow commands, not a cross-owner actor display service. Under the owner rule, a platform-access facade may not become an owner of copied audit facts.",
+      "counterexample": "An operations user opens STORE history after a platform or workspace actor changed the fact. A union of owner-local rows can return actor type/id but cannot produce the required safe display name without either an unspecified cross-schema identity lookup, an unsafe frontend lookup, or a copied actor name with no defined snapshot/redaction semantics.",
+      "risk": "The only new user-facing Journey can either fail its central 'who changed what' task, leak identity information across platform/operations boundaries, or induce an unauthorized generic audit projection/facade during implementation.",
+      "minimalFix": "Specify a small read-only actor-display contract: each audit row records the permitted actor identity and a sanitized display snapshot or its owner-local audit task reader obtains it through an explicit identity read API; define deleted/disabled/system actor output, platform-versus-operations visibility, and the exact redaction set. Make getEntityAuditHistory compose only approved owner task-read DTOs after the host entity authorization succeeds, with focused tests for platform actor, operations actor, unavailable actor, and cross-face denial.",
+      "largerAlternativeCost": "A new global audit schema, projection, outbox, or identity replication would violate the current no-projection/no-outbox direction and adds a new fact owner. The explicit DTO/snapshot-or-read-API decision is enough for this one task read.",
+      "disposition": "AUTHOR_ACTION_REQUIRED"
+    },
+    {
+      "id": "R5-R1-S-004",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-U01"
+      ],
+      "title": "修订 design package 无法通过其声明为 ACTIVE 的 granularity validator",
+      "evidence": "Fresh production invocation `scripts/check/implementation-design-granularity --manifest doc/review/platform/2026-07-26-v2s-r5-revised-design-granularity-manifest.json --review doc/review/platform/2026-07-26-v2s-r5-revised-design-adversarial-review-round-1.json` fails `AUTHORIZATION_IMPLEMENTATION_AUTHORITY_NOT_FALSE`. The checker reads the manifest authorization artifact and requires a literal `implementationAuthority: false`; the exact authorization uses only R5_REVISED_IMPLEMENTATION_AUTHORIZED=false in a text block. The manifest declares this checker ACTIVE and its self-test true, so its own package binding is not runnable.",
+      "counterexample": "Even a review JSON with correct identity, checklist, verdict denominator, and severity links cannot be accepted by the mandated mechanical gate because validation fails before it reaches those review fields.",
+      "risk": "The design cannot establish its required review closure and can falsely appear ready if a reader relies on the authorization's prose rather than executing the declared production checker.",
+      "minimalFix": "Add the authoritative front-matter declaration `implementationAuthority: false` to the exact revised design authorization (while retaining the explicit R5_REVISED flags), then re-hash and bind it in the manifest before rerunning the validator.",
+      "largerAlternativeCost": "Weakening the validator to parse one-off prose or creating a second authorization binding convention would reduce a one-line mechanical rule's reliability; normalizing the active authorization metadata is smaller.",
+      "disposition": "AUTHOR_ACTION_REQUIRED"
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "R5-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-R1-M-001",
+        "R5-R1-S-002",
+        "R5-R1-S-004"
+      ]
+    },
+    {
+      "id": "R5-U02",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-R1-S-002",
+        "R5-R1-S-003"
+      ]
+    },
+    {
+      "id": "R5-U03",
+      "verdict": "GO",
+      "findingIds": []
+    },
+    {
+      "id": "R5-U04",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-R1-S-003"
+      ]
+    },
+    {
+      "id": "R5-U05",
+      "verdict": "GO",
+      "findingIds": []
+    },
+    {
+      "id": "R5-U06",
+      "verdict": "GO",
+      "findingIds": []
+    },
+    {
+      "id": "R5-U07",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-R1-S-003"
+      ]
+    },
+    {
+      "id": "R5-U08",
+      "verdict": "GO",
+      "findingIds": []
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "Reasonable in direction: the accepted user task needs a bounded, entity-detail operation history, and the design correctly rejects a generic audit product, per-entity duplicate endpoints, and a second permission system.",
+    "simplerAlternativeAssessment": "One shared 105th read operation and one Modal are smaller than twelve endpoints or a report surface. The smaller viable remediation for the findings is to correct existing authority/trace bindings and define one explicit actor-display read contract, not to introduce an audit platform, projection, or new schema owner.",
+    "costFit": "The planned phased reuse of owner-local facts, generated wire, existing foundation primitives, and explicit seed/test controls fits R5. It does not fit the current authorization and audit-read ambiguity: proceeding would convert small design decisions into expensive and potentially unauthorized rework.",
+    "verdict": "CONDITIONALLY_REASONABLE_BUT_NOT_READY_FOR_GO"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "NO_GO (M=1, S=3, N=0). The solution direction is proportionate, but the sole scheduling source still authorizes forbidden implementation, the declared package cannot pass its own validator, the manifest's 23 Part C anchors are invalid, and the user-visible audit read lacks an owner-safe actor-display design. All four must be resolved and independently re-reviewed in the permitted second round.",
+    "severityCounts": {
+      "M": 1,
+      "S": 3,
+      "N": 0
+    },
+    "authorizationBoundary": "This is DESIGN review only. It does not authorize implementation, runtime, DEV, database/Flyway, contract, app, test, seed/reset, or any other business-source write."
+  }
+}

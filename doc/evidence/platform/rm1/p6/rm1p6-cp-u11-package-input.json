@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U11",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u11-control-plane-manifest.json",
+  "deliveryManifestSha256": "6c6a529a14fe23f10dba869815713c11f1780fee5b20140b8d39f820d54e79e1",
+  "unitId": "RM1P6-CP-U11",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/remediation-compliance",
+    "scripts/check/standards-coverage",
+    "scripts/check/implementation-design-granularity"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/remediation-compliance",
+    "scripts/check/implementation-design-granularity"
+  ],
+  "requiredControlRuleIds": ["P6-CP-U11-FORMAL_GRANULARITY_BINDING_SCOPE"],
+  "businessEvidenceObligation": "CONTROL_PLANE_NOT_APPLICABLE",
+  "serialPredecessor": {
+    "packageId": "RM1-U08",
+    "exitPath": "doc/evidence/platform/rm1/p5/rm1-u08-package-exit.json",
+    "exitSha256": "3271d82b1ce99b646f390edd146693ad22fa4e44d2558920227c590ed55ab2f9"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u11-formal-granularity-binding-amendment.md",
+    "sha256": "b519f0a436ba0f21c54acb362fc9cb03b3cbe42e56e8dc0c7b626258e3afde30"
+  },
+  "authorizationBoundary": "Dexter authorized RM1P6-CP-U11 as an independent, parallel document-only interlude for a newly named formal-granularity-binding DESIGN cycle. It neither succeeds, repairs nor exits CP-U10, and it authorizes no runtime or generated implementation bytes."
+}

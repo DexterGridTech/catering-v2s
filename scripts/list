@@ -23,7 +23,7 @@ R1 checks:
   scripts/check/module-dependency-registry
   scripts/check/handoff-debt
   scripts/check/heritage-registry
-  scripts/check/r1-closure
+  scripts/check/baseline-closure
   scripts/check/claude-review-handoff
 
 R1 does not provide DEV, seed, reset, migration, application, or business-runtime commands.

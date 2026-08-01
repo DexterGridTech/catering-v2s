@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "V2S-GENERIC-DESIGN-ADMISSION-LIFT-20260729",
+  "genericProblem": "A rule discovered while repairing one Roadmap package can remain only in that package even when it is a reusable design-admission invariant, allowing later designs to omit the same business context, UI evidence or shared-foundation decision.",
+  "rootCauseClass": "P6 added strict interaction requirements locally, but their business-specific versus all-future-design applicability was not classified against the existing design-governance, carry-over and foundation rule owners.",
+  "finiteDenominator": [
+    "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md",
+    "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
+    "doc/decisions/templates/journey-decision-template.md",
+    "doc/decisions/templates/ui-interaction-design-template.md",
+    "doc/decisions/2026-07-25-v2s-frontend-asset-carry-over-first.md",
+    "doc/decisions/2026-07-25-v2s-frontend-foundation-consumption-rule.md",
+    "contracts/policy/standards-coverage-matrix.json",
+    "project-memory/kernel/04-contract-consumer-and-admin.md"
+  ],
+  "searchedSurfaces": [
+    "P6 section 4 UI admission rules",
+    "the accepted Journey-to-interaction-to-detail-design pipeline",
+    "the reusable interaction and Journey templates",
+    "the generic front-end carry-over and foundation-consumption decisions",
+    "the matrix review-checklist trace and all-task contract/admin kernel"
+  ],
+  "searchQueries": [
+    "implementation-facing|详设|BUSINESS_SCENARIO|BUSINESS_GOAL",
+    "UI_SURFACE|surface ownership|USER_VISIBLE_COPY|表单控件依赖图",
+    "EXACT_COUNTERPART|PARTIAL_COUNTERPART|DEXTER_WAIVED",
+    "admin-ui-foundation|FOUNDATION_PRIMITIVE|reuse",
+    "JOURNEY_INTERACTION_REVIEW|UI_USER_TASK_VALIDATION"
+  ],
+  "counterexamples": [
+    "The 22-surface/25-pageDesignKey denominator is RM1-P6-only and must not become a universal future-design number.",
+    "Invitation branding, OTP protocol, dynamic invitation title and the workspace-selector ruling are P6 user-task decisions, not reusable admission rules.",
+    "LoginFormPage applies only to a management-backend login screen, so it remains a UI-template rule rather than a non-UI pipeline requirement.",
+    "Foundation import equality cannot be claimed before final design binds an exact target path; interaction-stage admission is concrete primitive/non-reuse declaration plus later path binding."
+  ],
+  "findings": [
+    {
+      "findingId": "V2S-DESIGN-BUSINESS-SOURCE-AND-PROBLEM-01",
+      "classification": "CONFIRMED",
+      "evidence": "P6 required every detailed design to explain the original business problem, while the generic pipeline named Journey decisions but did not explicitly require each later detailed design to carry its original business-source anchor and problem statement."
+    },
+    {
+      "findingId": "V2S-UI-SCREEN-ADMISSION-02",
+      "classification": "CONFIRMED",
+      "evidence": "The reusable UI template owns screen declarations, surface ownership, form dependencies, user-language and operation rationale, but its generic wireframe skeleton was not synchronized with the foundation declaration and the overall pipeline/matrix did not reference the complete admission set."
+    },
+    {
+      "findingId": "V2S-FRONTEND-FOUNDATION-DESIGN-BINDING-03",
+      "classification": "CONFIRMED",
+      "evidence": "The accepted foundation-consumption rule prohibited app-local duplication during implementation, but did not require the preceding UI design to name a concrete export or non-reuse reason and later bind it to an exact target path."
+    },
+    {
+      "findingId": "V2S-HERITAGE-COUNTERPART-WAIVER-04",
+      "classification": "CONFIRMED",
+      "evidence": "The carry-over decision required a static counterpart for existing pages, while P6 introduced the necessary explicit Dexter-waiver record. The waiver form belongs to the generic carry-over rule, not only P6."
+    },
+    {
+      "findingId": "RM1-P6-BUSINESS-SPECIFIC-ADMISSION-05",
+      "classification": "NOT_APPLICABLE_WITH_REASON",
+      "evidence": "P6's exact 22/25 denominator, public invitation branding/title, platform OTP, invitation lifecycle and workspace-selector ruling depend on its approved user tasks and remain P6-only."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "V2S-DESIGN-BUSINESS-SOURCE-AND-PROBLEM-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md#generic-detailed-design-admission"
+    },
+    {
+      "findingId": "V2S-UI-SCREEN-ADMISSION-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#ui-detailed-design-admission"
+    },
+    {
+      "findingId": "V2S-FRONTEND-FOUNDATION-DESIGN-BINDING-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-25-v2s-frontend-foundation-consumption-rule.md#design-admission-before-implementation"
+    },
+    {
+      "findingId": "V2S-HERITAGE-COUNTERPART-WAIVER-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-25-v2s-frontend-asset-carry-over-first.md#waiver-record"
+    },
+    {
+      "findingId": "RM1-P6-BUSINESS-SPECIFIC-ADMISSION-05",
+      "preventionDestination": "NOT_APPLICABLE_WITH_REASON",
+      "owningSourceOrControl": "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md#ui-detailed-design-standard"
+    }
+  ]
+}

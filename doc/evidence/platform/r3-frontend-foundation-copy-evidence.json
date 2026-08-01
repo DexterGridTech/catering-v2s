@@ -1,0 +1,28 @@
+{
+  "kind": "r3-frontend-foundation-copy-evidence",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "status": "COPIED_UNWIRED",
+  "source": "catering-all-v2/libraries/frontend/admin-ui-foundation",
+  "target": "libraries/frontend/admin-ui-foundation",
+  "fileCount": 16,
+  "runtimeConsumerCount": 0,
+  "artifactHashes": [
+    {"path": "libraries/frontend/admin-ui-foundation/package.json", "sourceSha256": "80c462933c2273f40615fb11345189ad3b6d18e1f60e4b2d306169aa6703bf55", "targetSha256": "80c462933c2273f40615fb11345189ad3b6d18e1f60e4b2d306169aa6703bf55"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/automation/index.ts", "sourceSha256": "aaa52f136e048a6b7a2f87f719de12e99d9b5ead7627aa2fdabf269ee98ccb20", "targetSha256": "aaa52f136e048a6b7a2f87f719de12e99d9b5ead7627aa2fdabf269ee98ccb20"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/automation/testId.ts", "sourceSha256": "972a12ab2d653dcd2a81cfe2d09818effef48751f0ea921eae2b13f7b9c9fa7b", "targetSha256": "972a12ab2d653dcd2a81cfe2d09818effef48751f0ea921eae2b13f7b9c9fa7b"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/behavior/index.ts", "sourceSha256": "8e4153f772c8352a305e413b40a9fb22a1e539893846e95f1e2541d52a70e759", "targetSha256": "8e4153f772c8352a305e413b40a9fb22a1e539893846e95f1e2541d52a70e759"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts", "sourceSha256": "26b14618fef9f98148686ae124a8ff58818fdd1154c154258398284977f435fa", "targetSha256": "26b14618fef9f98148686ae124a8ff58818fdd1154c154258398284977f435fa"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts", "sourceSha256": "4aa0bb6f0bd5e836f97f4aa0a8f7a403c10285b8b8db3bf9fe6dff8f7c70ce1a", "targetSha256": "4aa0bb6f0bd5e836f97f4aa0a8f7a403c10285b8b8db3bf9fe6dff8f7c70ce1a"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/http/platformHttpProtocol.ts", "sourceSha256": "818be6ca47b2afcebed1672871c5fb6effea086edbed26c3914c55b2bbe76dbf", "targetSha256": "818be6ca47b2afcebed1672871c5fb6effea086edbed26c3914c55b2bbe76dbf"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/index.ts", "sourceSha256": "450744f8eb2ab5d9139f177fe3346713c84d03a69cb5baa3594b6344c0f52571", "targetSha256": "450744f8eb2ab5d9139f177fe3346713c84d03a69cb5baa3594b6344c0f52571"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/list/contextScopedQueryArgs.ts", "sourceSha256": "69863cd10662745441fa4ea7594443fe2f259dcf0332b97e302bddcbb910c4dc", "targetSha256": "69863cd10662745441fa4ea7594443fe2f259dcf0332b97e302bddcbb910c4dc"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/list/useDetailDrawer.ts", "sourceSha256": "35007428d27e236fa7b3b83b4fb3df587d8f0075a35df9930c656739c6bffc32", "targetSha256": "35007428d27e236fa7b3b83b4fb3df587d8f0075a35df9930c656739c6bffc32"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/observability/index.ts", "sourceSha256": "39b81d9f526cae7fc154e960d2c49478ffa46fe5e0bf1834feb66f1c72fba1cb", "targetSha256": "39b81d9f526cae7fc154e960d2c49478ffa46fe5e0bf1834feb66f1c72fba1cb"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/observability/observedBaseQuery.ts", "sourceSha256": "79023465e2860151893c1014889cbbc28ff8b0f718f44f966aa24f71891112f4", "targetSha256": "79023465e2860151893c1014889cbbc28ff8b0f718f44f966aa24f71891112f4"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/observability/safeLogger.ts", "sourceSha256": "66bc1a1076181dbbd93c38ce4ce8c461b0e9ec904900d1ac918deecb3fa36a7d", "targetSha256": "66bc1a1076181dbbd93c38ce4ce8c461b0e9ec904900d1ac918deecb3fa36a7d"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/overlay/drawerSurface.ts", "sourceSha256": "ca63d62804da045a772a93b8d556ac064007db942d6c585f51240c39e08ddd8e", "targetSha256": "ca63d62804da045a772a93b8d556ac064007db942d6c585f51240c39e08ddd8e"},
+    {"path": "libraries/frontend/admin-ui-foundation/src/overlay/overlayLock.tsx", "sourceSha256": "8724dee74c87000bce6957ee1bc33e160c40874eabe785d3553d314d78c4ebc2", "targetSha256": "8724dee74c87000bce6957ee1bc33e160c40874eabe785d3553d314d78c4ebc2"},
+    {"path": "libraries/frontend/admin-ui-foundation/tsconfig.json", "sourceSha256": "02ccca4acd36a43865e361a4c3024f08a5f28fb0e6c34b806ae430d2b2871215", "targetSha256": "02ccca4acd36a43865e361a4c3024f08a5f28fb0e6c34b806ae430d2b2871215"}
+  ]
+}

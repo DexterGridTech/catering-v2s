@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p0-pre-admission-linkage-recovery",
+  "packageId": "RM1-U01",
+  "status": "ONE_TIME_PRE_BASELINE_HASH_ONLY_UNRECOVERABLE",
+  "baseline": {
+    "path": ".runtime/compliance-control/package-baseline-RM1-U01.json",
+    "sha256": "058f2ee3c2136572260f8f314260a0692fd1f283f5d9b88a5f181c10ed5f7ccc"
+  },
+  "reason": "The prompt hook intentionally stores only prompt hash and never injects prompt text. The legacy receipt format did not bind a prompt hash to source changes, so these pre-baseline entries cannot be truthfully classified or attributed to RM1-U01.",
+  "entries": [
+    {
+      "promptSha256": "08e1e7fa28f4a58764902d884b49a2ed4adb2c17d86df680d28e67397752363e",
+      "intakePath": ".runtime/compliance-control/problem-intakes/08e1e7fa28f4a58764902d884b49a2ed4adb2c17d86df680d28e67397752363e.json",
+      "intakeSha256": "377db0a43e528d5cc9cef826363df4e1b9a281e4de1c536563ba104cb62d9c30"
+    },
+    {
+      "promptSha256": "0ac46e6a542d23e3f3d04d01fd3b758672c947314780129537b02d54cb279f63",
+      "intakePath": ".runtime/compliance-control/problem-intakes/0ac46e6a542d23e3f3d04d01fd3b758672c947314780129537b02d54cb279f63.json",
+      "intakeSha256": "b922a5e5ac41d5eef9684a768c15b6bafd47fd4d4ed16ba2f34ad057fe0a28a7"
+    },
+    {
+      "promptSha256": "23fa812e2ac5f3fd67bc7ea2a7b26efb495d90a0a296e9b57f053ecb8eb3c253",
+      "intakePath": ".runtime/compliance-control/problem-intakes/23fa812e2ac5f3fd67bc7ea2a7b26efb495d90a0a296e9b57f053ecb8eb3c253.json",
+      "intakeSha256": "2e73da4892547e9fd7c13b0bba6e5f158e3bfa6bf991e07edb50e9e88e169ae8"
+    },
+    {
+      "promptSha256": "28fc13bdcc1ff1cf6f358e0b8c68835cd3922d009db6ad89d442ccccbacf87c7",
+      "intakePath": ".runtime/compliance-control/problem-intakes/28fc13bdcc1ff1cf6f358e0b8c68835cd3922d009db6ad89d442ccccbacf87c7.json",
+      "intakeSha256": "c177fba836614594570cda0397fd371118ce351c7a3a80043f20c3a331bfc660"
+    },
+    {
+      "promptSha256": "363f52a2e92ec93f316159a3a70ef900e7acf1de12b4aba29d80039dd823ed87",
+      "intakePath": ".runtime/compliance-control/problem-intakes/363f52a2e92ec93f316159a3a70ef900e7acf1de12b4aba29d80039dd823ed87.json",
+      "intakeSha256": "2cc64d1444168bfe7992ad437a4bafbeea304cc738b499943cf57ccaabd1eac9"
+    },
+    {
+      "promptSha256": "3c3d2ec8a6f1739dd5ea610e12a553fe1c15e56fbf8e3a464923af7e37c6e649",
+      "intakePath": ".runtime/compliance-control/problem-intakes/3c3d2ec8a6f1739dd5ea610e12a553fe1c15e56fbf8e3a464923af7e37c6e649.json",
+      "intakeSha256": "520b23420a87c648b902121bc504c6a9e8ba619899297af8d7dd811c78c89923"
+    },
+    {
+      "promptSha256": "460d58fce52e6c8e6016855cf93c1d9e52ad27cb89dbce0dbc7bb40aaa174034",
+      "intakePath": ".runtime/compliance-control/problem-intakes/460d58fce52e6c8e6016855cf93c1d9e52ad27cb89dbce0dbc7bb40aaa174034.json",
+      "intakeSha256": "9495730fe4070ecf614079de0d7e81770bebbb7195b73a21a77c8b50584b6dfa"
+    },
+    {
+      "promptSha256": "4d9dbcac9ec53cd71c0187003b31de9a9f0306d9899ae2e67a3be78ecf8c77f5",
+      "intakePath": ".runtime/compliance-control/problem-intakes/4d9dbcac9ec53cd71c0187003b31de9a9f0306d9899ae2e67a3be78ecf8c77f5.json",
+      "intakeSha256": "d20d79e6d68f14705ef154da21c8b41a8dd34c99ee05866397fd2959ed240fc8"
+    },
+    {
+      "promptSha256": "54b925d5c712c0336d75d327056b7a6645d5add539ab68e95c5c4d10074b878f",
+      "intakePath": ".runtime/compliance-control/problem-intakes/54b925d5c712c0336d75d327056b7a6645d5add539ab68e95c5c4d10074b878f.json",
+      "intakeSha256": "33e2d8edab50571e32393998b1b1c7d67b1432672d01c22d963a4c19de10fb1f"
+    },
+    {
+      "promptSha256": "554500f2556a214a867b0de541d49b4f5cb40012ab5e628123e7592c3b8568d8",
+      "intakePath": ".runtime/compliance-control/problem-intakes/554500f2556a214a867b0de541d49b4f5cb40012ab5e628123e7592c3b8568d8.json",
+      "intakeSha256": "fc6eb974bb80697d7423a3eb18e40055230ee76712bdf0a689f0058bf3cf81ed"
+    },
+    {
+      "promptSha256": "59dc47c17a6ae5be660fdde59f345367dea75f202bc842d41085c91e6fcf07f7",
+      "intakePath": ".runtime/compliance-control/problem-intakes/59dc47c17a6ae5be660fdde59f345367dea75f202bc842d41085c91e6fcf07f7.json",
+      "intakeSha256": "e8f3a682d086ba95b1ec5520cdf5257adbbbd24575544604a40b6023e85b3dbb"
+    },
+    {
+      "promptSha256": "5d0c8be4ae6122da67f42c42395c3cb658bfa47fcb14096e42ea76fcbfa743fd",
+      "intakePath": ".runtime/compliance-control/problem-intakes/5d0c8be4ae6122da67f42c42395c3cb658bfa47fcb14096e42ea76fcbfa743fd.json",
+      "intakeSha256": "2e827623db903d942ed554afe15da23146afd51760228ed0266434abed06cd4c"
+    },
+    {
+      "promptSha256": "6a0757b5c599789619161223b2eec5c9eacf4459af547ff093aeec2058711fca",
+      "intakePath": ".runtime/compliance-control/problem-intakes/6a0757b5c599789619161223b2eec5c9eacf4459af547ff093aeec2058711fca.json",
+      "intakeSha256": "412d6ae36332c97f5811c0d60a81474553134ab090c840e37c2f82190ff5d2a6"
+    },
+    {
+      "promptSha256": "7f16678bf4fb1b062ee5a8cda23af5a2d6ae11a3046547a1f0cf87e6cee7a349",
+      "intakePath": ".runtime/compliance-control/problem-intakes/7f16678bf4fb1b062ee5a8cda23af5a2d6ae11a3046547a1f0cf87e6cee7a349.json",
+      "intakeSha256": "2179b67857a5e0260f09bf999bed2c84da3a21a702456dddaf0eeeffc18579a8"
+    },
+    {
+      "promptSha256": "88d52801a66ceeadc8fab6db394af0b3258351019cd11e8a6973a372be9fb0ba",
+      "intakePath": ".runtime/compliance-control/problem-intakes/88d52801a66ceeadc8fab6db394af0b3258351019cd11e8a6973a372be9fb0ba.json",
+      "intakeSha256": "3da4c3e9b35631022685a1f6b287f949c0e4fc10813e82e9709a3cebaf68f90d"
+    },
+    {
+      "promptSha256": "905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230",
+      "intakePath": ".runtime/compliance-control/problem-intakes/905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230.json",
+      "intakeSha256": "7f92901fabdd8911de7e96c2ceaa68df4c0866e5957018dd7775baa94514da6a"
+    },
+    {
+      "promptSha256": "906b3bc3d38189d61879c629592dfb01a019fb6997c5cfbe172877c957ac22e2",
+      "intakePath": ".runtime/compliance-control/problem-intakes/906b3bc3d38189d61879c629592dfb01a019fb6997c5cfbe172877c957ac22e2.json",
+      "intakeSha256": "86a6ebfcaa22f888e29290dbc0b52476eeb3526cf2a0694fa57cb2464d706c3e"
+    },
+    {
+      "promptSha256": "95501f0eb4077928adb03a3bb1cfe20a2b59a2b072aa7cdacf8770cb4fb8a1e6",
+      "intakePath": ".runtime/compliance-control/problem-intakes/95501f0eb4077928adb03a3bb1cfe20a2b59a2b072aa7cdacf8770cb4fb8a1e6.json",
+      "intakeSha256": "3ba6bc1e2d92e80f76f10005ccc84848e3c13be7436706f0cef0d57dc94fc060"
+    },
+    {
+      "promptSha256": "a4f176a3ef7c7f543495dc63f02ac484fb48bbf8cc40ca94ed5e4fe7cfbb245a",
+      "intakePath": ".runtime/compliance-control/problem-intakes/a4f176a3ef7c7f543495dc63f02ac484fb48bbf8cc40ca94ed5e4fe7cfbb245a.json",
+      "intakeSha256": "ee8693bedd6701d28257f79f54220a1254903dff46505ae38c6af0a5ea4bbc02"
+    },
+    {
+      "promptSha256": "a5c63dca1b0be5bfa4c6cc80b3a55550559df5f272ab9579f307e9a9261044c2",
+      "intakePath": ".runtime/compliance-control/problem-intakes/a5c63dca1b0be5bfa4c6cc80b3a55550559df5f272ab9579f307e9a9261044c2.json",
+      "intakeSha256": "5e08976d4f344b2953a068769c2078767a881faec2c0f1110154287f7f9c35c9"
+    },
+    {
+      "promptSha256": "a9f7bec17168e7318de12b7bb2d7ace67cd70ffb605cbc351e7446bd1f54ab2f",
+      "intakePath": ".runtime/compliance-control/problem-intakes/a9f7bec17168e7318de12b7bb2d7ace67cd70ffb605cbc351e7446bd1f54ab2f.json",
+      "intakeSha256": "8c040062827b84c9d86f59c1027c95abcca84219b944d371528e39f684a8f233"
+    },
+    {
+      "promptSha256": "b188addef113484419edf7fb90e91117f263f80bf03b2cabbe96eff851427129",
+      "intakePath": ".runtime/compliance-control/problem-intakes/b188addef113484419edf7fb90e91117f263f80bf03b2cabbe96eff851427129.json",
+      "intakeSha256": "9cd106aed2e9aecef8ecd1503fe93947493ec746d77ea2bf6b1192af1e54b20b"
+    },
+    {
+      "promptSha256": "b8f3f1a587483481f4a52369db7ec6ca22ef4e5ad5b98454d476d42f6e4ac454",
+      "intakePath": ".runtime/compliance-control/problem-intakes/b8f3f1a587483481f4a52369db7ec6ca22ef4e5ad5b98454d476d42f6e4ac454.json",
+      "intakeSha256": "cf48552deb6930c4152673779c3262bcf43da08296870ecf1e3d2e7dd2ec8014"
+    },
+    {
+      "promptSha256": "bbcc9c74fe4db2975d64c79bde76e45b405d7fda51b3bb27d32036c93d87909d",
+      "intakePath": ".runtime/compliance-control/problem-intakes/bbcc9c74fe4db2975d64c79bde76e45b405d7fda51b3bb27d32036c93d87909d.json",
+      "intakeSha256": "a5d264693ee3b6bed31de5ebdef8349d4e60e9518736df459e1f0fd4d41f7bff"
+    },
+    {
+      "promptSha256": "bf96915132945cd71ce07605ffed1f9a7d3de0435c52518184361a396901f944",
+      "intakePath": ".runtime/compliance-control/problem-intakes/bf96915132945cd71ce07605ffed1f9a7d3de0435c52518184361a396901f944.json",
+      "intakeSha256": "dad3b64f7b158b1c022adc4ee1570b99fdb253e151a979fc883edf90a28ab169"
+    },
+    {
+      "promptSha256": "bfbf1d00636091c1a8928a5d043c02ab2c6099f357d5746cd75e081613c2f426",
+      "intakePath": ".runtime/compliance-control/problem-intakes/bfbf1d00636091c1a8928a5d043c02ab2c6099f357d5746cd75e081613c2f426.json",
+      "intakeSha256": "71012fe9ba9e81398a0837401f176566f262d013a81652b693e9509f011d9092"
+    },
+    {
+      "promptSha256": "c14adeb92bb72b6cb00759a24af592367131571b6e2f9971481f30cef8bab4c5",
+      "intakePath": ".runtime/compliance-control/problem-intakes/c14adeb92bb72b6cb00759a24af592367131571b6e2f9971481f30cef8bab4c5.json",
+      "intakeSha256": "1d000551e7274ae6508d6047a6ba88ca51cb79ea6019377195f955b4438e5fac"
+    },
+    {
+      "promptSha256": "c63e7b8d4dc2df823dae6fea63e8d9c524814a96d23edca305f2652be5ebb352",
+      "intakePath": ".runtime/compliance-control/problem-intakes/c63e7b8d4dc2df823dae6fea63e8d9c524814a96d23edca305f2652be5ebb352.json",
+      "intakeSha256": "eaf7fa7fe299c03b26ee5c2eb75a410632064123d2bfd327f4d635595d9a3b45"
+    },
+    {
+      "promptSha256": "ce4659cb2be452c20aa47def729f50a3fd5a2f42d73b34945d90cbc8b310fe32",
+      "intakePath": ".runtime/compliance-control/problem-intakes/ce4659cb2be452c20aa47def729f50a3fd5a2f42d73b34945d90cbc8b310fe32.json",
+      "intakeSha256": "051ed9eb7416902f863d9d145479285e856173a94d8de4eba986b4cb0752382a"
+    },
+    {
+      "promptSha256": "e25b07031479b6dbdcf05682449b69e27b297e2e8637584ce0742902459d6034",
+      "intakePath": ".runtime/compliance-control/problem-intakes/e25b07031479b6dbdcf05682449b69e27b297e2e8637584ce0742902459d6034.json",
+      "intakeSha256": "37e57d7d4a117e9207720f44caf426899a91009f2cebfead5ee559f4566a3632"
+    },
+    {
+      "promptSha256": "f02b10063443c47b9877bc18947acd2aaa384a207023e133374175dfcd535085",
+      "intakePath": ".runtime/compliance-control/problem-intakes/f02b10063443c47b9877bc18947acd2aaa384a207023e133374175dfcd535085.json",
+      "intakeSha256": "100720740f2d85b5f2641b2a42a3482c39fc449b443eb91a6527fe2550f6de4f"
+    },
+    {
+      "promptSha256": "f07f30d4fb0719582fedad5ab9ac8fe9333500f03c263299fbaf1ce65e6c66fe",
+      "intakePath": ".runtime/compliance-control/problem-intakes/f07f30d4fb0719582fedad5ab9ac8fe9333500f03c263299fbaf1ce65e6c66fe.json",
+      "intakeSha256": "c160a0408587294f7ee4d593d7b38ee2f1929b289515045f93c992422ec6bd82"
+    },
+    {
+      "promptSha256": "f51442a1fb5f1ebc9f0258cd9cd4c5c583f316a4d884c200eeb1ed79b52f9aae",
+      "intakePath": ".runtime/compliance-control/problem-intakes/f51442a1fb5f1ebc9f0258cd9cd4c5c583f316a4d884c200eeb1ed79b52f9aae.json",
+      "intakeSha256": "3f043035995a41c0b8c4371caa6515c85620f26c92029f90df2141c7bc9653a3"
+    },
+    {
+      "promptSha256": "f808fa760dff3810cac87ca201e9f7f1aebb19a8b6d23207c6152c4b1c5e9ddc",
+      "intakePath": ".runtime/compliance-control/problem-intakes/f808fa760dff3810cac87ca201e9f7f1aebb19a8b6d23207c6152c4b1c5e9ddc.json",
+      "intakeSha256": "3ce9aca27bebcfd79b5760e70f253df0f7b9d058f57b08950b6e5c20fd37680f"
+    }
+  ]
+}

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const INVENTORY_SHA256 = "691762577b832efb329e0cfd2f49a0bc67cd4bb9712ab5e3ff5634748815e51f";
+const INVENTORY_SHA256 = "d73db88cb3b3e7afe3cf53424b3a793ca433ce30ab0f1a372d10335cf08a1758";
 const dimensions = ["taskKinds", "domains", "consumerFaces", "owners", "impacts", "triggers"];
 const routeFlags = {
   taskKinds: "--task-kind",
@@ -58,10 +59,10 @@ function loadValidated(root) {
   const inventoryPath = resolve(root, "project-memory/required-inventory.json");
   const inventoryBytes = readFileSync(inventoryPath);
   if (sha256(inventoryBytes) !== INVENTORY_SHA256) {
-    fail("required inventory differs from the independently approved R1 denominator");
+    fail("required inventory differs from the independently approved current denominator");
   }
   const inventory = JSON.parse(inventoryBytes);
-  if (inventory.schemaVersion !== 1 || inventory.kind !== "project-memory-required-inventory" || inventory.entries.length !== 11) {
+  if (inventory.schemaVersion !== 1 || inventory.kind !== "project-memory-required-inventory" || inventory.entries.length !== 20) {
     fail("invalid required inventory envelope");
   }
   const vocabulary = JSON.parse(readFileSync(resolve(root, "project-memory/routing-vocabulary.json"), "utf8"));
@@ -154,6 +155,16 @@ function renderMarkdown(index) {
   return lines.join("\n");
 }
 
+function recordDeterministicIndexWrite(root, phase, event) {
+  const command = phase === "pre" ? "deterministic-index-write-pre" : "deterministic-index-write-post";
+  const result = spawnSync(process.execPath, [resolve(root, "tools/compliance-control/cli.mjs"), command], {
+    cwd: root,
+    encoding: "utf8",
+    input: `${JSON.stringify(event)}\n`,
+  });
+  if (result.status !== 0) fail(`deterministic index ${phase} receipt rejected: ${(result.stderr || result.stdout || "unknown").trim()}`);
+}
+
 function build(root, checkOnly) {
   const entries = loadValidated(root);
   const index = {
@@ -170,10 +181,26 @@ function build(root, checkOnly) {
     if (!existsSync(jsonPath) || readFileSync(jsonPath, "utf8") !== json) fail("project-memory/index.json is stale");
     if (!existsSync(markdownPath) || readFileSync(markdownPath, "utf8") !== markdown) fail("project-memory/index.md is stale");
   } else {
-    writeFileSync(jsonPath, json);
-    writeFileSync(markdownPath, markdown);
+    const changed = !existsSync(jsonPath) || !existsSync(markdownPath)
+      || readFileSync(jsonPath, "utf8") !== json || readFileSync(markdownPath, "utf8") !== markdown;
+    if (changed) {
+      const event = {
+        cwd: root,
+        tool_name: "project-memory-index-build",
+        tool_use_id: `project-memory-index-build-${randomUUID()}`,
+        tool_input: {
+          writer: "project-memory-index-build",
+          paths: ["project-memory/index.json", "project-memory/index.md"],
+        },
+      };
+      recordDeterministicIndexWrite(root, "pre", event);
+      writeFileSync(jsonPath, json);
+      writeFileSync(markdownPath, markdown);
+      recordDeterministicIndexWrite(root, "post", event);
+    }
   }
-  process.stdout.write(`PROJECT_MEMORY=PASS\nENTRIES=${entries.length}\nKERNEL=6\nROUTED=5\n`);
+  const kernelCount = entries.filter((entry) => entry.layer === "kernel").length;
+  process.stdout.write(`PROJECT_MEMORY=PASS\nENTRIES=${entries.length}\nKERNEL=${kernelCount}\nROUTED=${entries.length - kernelCount}\n`);
 }
 
 function query(root) {

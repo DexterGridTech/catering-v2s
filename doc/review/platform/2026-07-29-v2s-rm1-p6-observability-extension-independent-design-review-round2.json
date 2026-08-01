@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-adversarial-design-review",
+  "reviewTarget": "DESIGN",
+  "REVIEW_CYCLE_ID": "RM1-P6-U01-OBSERVABILITY-EXTENSION-DESIGN-20260729",
+  "reviewCycleId": "RM1-P6-U01-OBSERVABILITY-EXTENSION-DESIGN-20260729",
+  "REVIEW_ROUND": 2,
+  "reviewRound": 2,
+  "REVIEW_ROUND_LIMIT": 2,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "ROUND_FINAL_DECISION": "SELF_DECIDED",
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-independent-design-review-round2-input-checklist.md",
+    "sha256": "6a6950ec9fee5e8e0ffc28b7e564cda03916c3da9581d153951ce540fad39b58"
+  },
+  "blindReviewStatement": "This fresh independent R2 reviewer reopened the R2 checklist, all routed memory, the amended design, and the current owning sources with a falsification stance. The R1 verdict and the design's R1 disposition were read only because this R2 checklist expressly requires their source-by-source verification; neither was accepted as proof. No author self-review or author intake outside that mandatory R1-disposition material was used to form this verdict.",
+  "authorMaterialReadAfterIndependentVerdict": false,
+  "currentRoadmap": {
+    "programId": "V2S_W0_W4_EXECUTION",
+    "roadmapPath": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+    "currentStep": "R5",
+    "currentStatus": "R5_COMPLIANCE_REMEDIATION_IMPLEMENTATION_IN_PROGRESS",
+    "implementationAuthority": false
+  },
+  "reviewedInputs": [
+    {"path": "AGENTS.md", "sha256": "e4e3c9af4fb0dc46ce5403edadb6704d1d4a60dea186efc9cbe22dd62fddb347", "read": true},
+    {"path": "CLAUDE.md", "sha256": "8b12b36e0c852f3a55f40f29d3d21101b9acb113b969ff5f8a9c2152c2aec50f", "read": true},
+    {"path": "contracts/policy/standards-coverage-matrix.json", "sha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3", "read": true},
+    {"path": "doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md", "sha256": "42540c01a04b902c04a5ef6f1d058ae1cc0b0399f305ba6e29dbcc14939202e7", "read": true},
+    {"path": "doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-design-granularity-manifest.json", "sha256": "8b3f6ecfda60fc02441802d4e9830094127bf8b9500771f784f24f865be942eb", "read": true},
+    {"path": "doc/evidence/platform/rm1/p6/rm1p6-u01-observability-extension-manifest.json", "sha256": "d29406c00f67134fc4fe61a99e751536d4d2958a087a08482447677d05efd6c4", "read": true},
+    {"path": "doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-independent-design-review-round1.json", "sha256": "7d17a6a36e0d20da913e0520f1d06e344ec52aa6f10383a4ae28cf9e5eeaf873", "read": true},
+    {"path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md", "sha256": "c9a58db37b73885d36373334cce63b64f39d174effec16b82e420d13b374d024", "read": true},
+    {"path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md", "sha256": "597a87741247b7abf600486087539d614f501e7b53ff031a635f387213b2e03b", "read": true},
+    {"path": "scripts/test/r5-remote-testcontainers.mjs", "sha256": "e7ca2ff05523426645b70455ac482d1977bf21eef611824546123f47c1ec2560", "read": true},
+    {"path": "tools/capability-invariants/cli.mjs", "sha256": "377432cc1799a70d003b3919b589ee4f4920c0f820165590e673b1429419bf01", "read": true},
+    {"path": "contracts/openapi/edge.openapi.yaml", "sha256": "8d22dcaa647ab039dc8ce2f29cd66b4759c5ebad948c19e834a39599358ec608", "read": true},
+    {"path": "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml", "sha256": "acb4a2d356d950d5fba6d511959795012efa8f3e1964b75bd0ae19419bf6a9d3", "read": true},
+    {"path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json", "sha256": "aeb0c56ef21bc3ba7731923954d16f7e6c358aeb7dcbac287ebaed09f56cb820", "read": true},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java", "sha256": "2bb183e7ed76b4e8a0a9fba55b9aa1cb4a6980c18855e533cc5a650047cd3db3", "read": true},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java", "sha256": "b83da27e3286018fd5edfc1532c0779dd65b3c04fc27c1591a17f859173545e3", "read": true},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/session/EdgeRequestContext.java", "sha256": "0e7c73ae1cc173b4641b5b4bec9d4b0c9e4f98af2ab5a3c88ecde74626cba8df", "read": true},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/session/EdgeRequestContextArgumentResolver.java", "sha256": "726ce5f28d5594c3366a9902aaeeb8e204fb41021857de61914edbe097888542", "read": true},
+    {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java", "sha256": "6bc7828e88592cce62a5e547fd1d1b4c618fa043d3c26a12d5f171a208435a1b", "read": true}
+  ],
+  "independentReadback": {
+    "operationDenominator": "The amended manifest lists 22 unique IDs. Each occurs exactly once in the current generated route registry. The seven PublicInvitationController routes are getPublicInvitationView, acceptPublicInvitation, sendPublicInvitationOtp, verifyPublicInvitationOtp, savePublicInvitationCredentials, completePublicInvitation, and getPublicInvitationCompletion; all seven are in the 22-ID set.",
+    "remoteRecovery": "The amended state machine makes a control record atomic before acknowledgement and bounds reconnect to the locally-known remote root. It requires runId/root/live bootId+startTicks+command hash+PGID validation before tail, signal, or reap. Record absence, mismatch, and reconnect failure are cleanup FAIL/ENVIRONMENT_BOUNDARY, so the implementation must neither PID/name/port-kill nor delete a potentially live scratch directory.",
+    "oneTerminal": "The proposed interceptor owns the only emission: advice and controller-local handlers freeze status/errorCode in the same typed request attribute, while afterCompletion uses compare-and-set across normal and error dispatches. The design names success, global-advice, controller-local-advice, and unhandled/error-dispatch exact-one tests; this removes the R1 duplicate-terminal bypass without changing the typed Problem wire.",
+    "productionPathControls": "The design binds the future root validator through validateCapabilityInvariants and requires it to jointly read the edge root and target path document. It also requires the runner's production execution path to call parseAndValidateRunManifest, with lifecycle-harness rather than source-string red fixtures. These are proportionate, testable plans; the current runner/capability self-tests remain baseline-only and are not cited as future closure evidence.",
+    "freshCommands": [
+      "scripts/check/standards-coverage --phase R5 => PASS (RULES=150)",
+      "node scripts/test/r5-remote-testcontainers.mjs --self-test => PASS, baseline source-string control only",
+      "node tools/capability-invariants/cli.mjs --self-test => PASS, baseline target-document control only",
+      "scripts/check/implementation-design-granularity --manifest doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-design-granularity-manifest.json --review doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-independent-design-review-round1.json => FAIL: MANIFEST_IDENTITY_INVALID"
+    ]
+  },
+  "findings": [
+    {
+      "id": "RM1-P6-U01-OBS-DESIGN-R2-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "title": "The supplied granularity manifest is not consumable by the repository's required implementation-design gate",
+      "owningSource": [
+        "doc/review/platform/2026-07-29-v2s-rm1-p6-observability-extension-design-granularity-manifest.json",
+        "tools/implementation-design-granularity/cli.mjs#validateManifest",
+        "scripts/README.md#Implementation-facing design handoff"
+      ],
+      "evidence": "The current manifest has status R1_REMEDIATED_AWAITING_FINAL_INDEPENDENT_REVIEW and lacks the gate-required programId and goalId. The production command fails immediately with MANIFEST_IDENTITY_INVALID; therefore it cannot validate the R1/R2 binding, required authorization, six source denominators, delivery-unit package exit, or the claimed reviewer linkage.",
+      "counterexample": "A later package can cite this document as a granularity manifest while changing an out-of-denominator source or omitting a required package-exit proof. Because the actual validator rejects the manifest before examining those fields, the asserted mechanical prevention has never existed for this package.",
+      "scope": "Design-governance artifact only. This finding does not reopen R1's 22-operation, remote-control-record, terminal-event, or root-projection design repairs, and it does not authorize implementation.",
+      "recommendation": "Replace or amend the manifest to the existing production schema (including its design-only authorization binding, program/goal identity, checker binding, and complete six-denominator owning-source entries), bind it to this final R2 review as required by the gate, and rerun the same production command to PASS. Keep the repair limited to making the declared package-exit control real; do not add a new checker or broaden the P6 business/design scope.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "RM1-P6-U01-OBS-DESIGN-R2-N-001",
+      "severity": "N",
+      "status": "RETAIN_AS_REVIEW_BOUNDARY",
+      "title": "Current self-tests are correctly treated only as baseline evidence",
+      "owningSource": [
+        "scripts/test/r5-remote-testcontainers.mjs#runnerSelfTest",
+        "tools/capability-invariants/cli.mjs#selfTest",
+        "doc/plans/platform/2026-07-29-v2s-rm1-p6-observability-extension-implementation-design.md#4"
+      ],
+      "evidence": "The existing runner self-test is source-string inspection and the existing capability control validates only the target path document. The amended design explicitly replaces both with future production-path controls and does not claim present self-tests close them.",
+      "counterexample": "Passing those current self-tests cannot prove SSH-drop recovery, a one-terminal error dispatch, or edge-root reference equality.",
+      "scope": "Evidence classification only.",
+      "recommendation": "Preserve this distinction at implementation/package exit: execute the future parser/lifecycle harness and joint root-projection validator with their stated red fixtures, rather than re-labelling today's PASS as proof.",
+      "disposition": "RETAIN"
+    }
+  ],
+  "severityCounts": {"M": 1, "S": 0, "N": 1},
+  "solutionReasonableness": {
+    "problemFit": "The foundation recorder plus fixed edge-operation registry is a smaller and safer answer than controller/service loggers: it covers the seven sensitive invitation operations and preserves owner/wire behavior. The atomic remote control record is also the smallest safe recovery primitive for an acknowledgement-loss/PID-reuse boundary.",
+    "alternativesConsidered": "A generic telemetry platform, a broad process supervisor, or PID/name cleanup would either exceed the bounded runner need or expand kill/secret risk. The retained plan's explicit no-kill-on-identity-absence rule is the appropriate minimum.",
+    "verdict": "DIRECTION_REASONABLE_BUT_NO_GO_UNTIL_DECLARED_GRANULARITY_GATE_IS_REAL"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "R2 confirms that the three R1 major design defects are substantively repaired: all seven PublicInvitationController operations are inside the 22-operation denominator; SSH ack-loss, record absence, reconnect, PID reuse, reaping and cleanup failure have a safe bounded state-machine treatment; and exactly-one terminal plus future production-path runner/root controls are specified. However, the artifact declared to mechanically govern that implementation-facing package fails the repository's required production validator at identity validation. Final DESIGN verdict is NO_GO (M=1, S=0, N=1). This is the second and final independent Codex adversarial round for the cycle; no third round is allowed.",
+    "authorizationBoundary": "DESIGN review only. This verdict does not authorize implementation, contract/source/generated-wire changes, runner execution or remote access, build, DEV, database, migration, seed/reset, Roadmap updates, or repository-control actions. After the confirmed M is addressed, the author performs the governed post-review intake/closure path; this reviewer must not be re-engaged for a third round."
+  }
+}

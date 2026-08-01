@@ -1,0 +1,1690 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "RM1_RESTRUCTURE_AND_REMEDIATION",
+  "design": {
+    "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+    "sha256": "8dfa1b07ede615bb9dbc4c0b2f9d3f21fffcda62b54f8302850a0d4550e9da2a"
+  },
+  "finalUiSurfaceRoster": {
+    "path": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+    "sha256": "6d728e051c2464b2de1f7361b8257a92ec4dfb838da4b26b77eba81b163b089f"
+  },
+  "physicalScreenImportContracts": {
+    "path": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+    "sha256": "7687ed3d7e4d0bddeaac7e5781eaa19cff58be1f379191be1b0f89fa115717a7"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-07-28-v2s-rm1-implementation-facing-design-authorization.md",
+    "sha256": "441a8855412d29b41dd2e3356fc43430686f3166b727b707aa340e288a033bd3",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "08f19fa7180e197ddc6cdbf4f076e07ee2a3d6e021fb4c2ca4bb4a80b88fcab8"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "REVIEWER_INPUT_CHECKLIST_NOT_FOUND",
+      "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE"
+    ]
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "RM1-P6-IMPLEMENTATION-FACING-DESIGN-20260729",
+    "reviewRound": 2,
+    "reviewPath": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-adversarial-review-round2.json",
+    "reviewedManifestSha256": "9a590edd67a4ff472c110126d92e9b584b8a11b0a2390d3b1decc596b4d29524",
+    "reviewSha256": "06a723c5ed3fe542a2e6c9eeb96bdb1a3b95221ee51392d75b76e790e902a559",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false,
+    "addedDeliveryUnitIds": [
+      "RM1P6-ADMIN-CATALOG-TRUTH-U04",
+      "RM1P6-UI-IA-CONFORMANCE-U06",
+      "RM1P6-AUTHORITY-LEDGER-U05"
+    ],
+    "reason": "Round 2 reached its hard independent-subagent limit. Current bytes now also correct the verified P6-3 brand owner-edge truth gaps under CP-U15 and must be independently and then Claude rechecked; no historical round is rewritten.",
+    "intake": {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-claude-recheck-intake.md",
+      "sha256": "e491d6125ea54fbe69d923d38a4f28c871b729b6c3f3c95a1a1f0e8b1e7c6d6e"
+    }
+  },
+  "candidateJourney": {
+    "id": "RM1-P6-IMPLEMENTATION-DESIGN",
+    "status": "DESIGN_ONLY_THREE_STAGE_DELIVERY",
+    "actor": "platform operator, operations user and public user",
+    "task": "establish owner truth before each approved P6 interaction is implemented",
+    "pageKey": "RM1_P6_MULTI_SURFACE",
+    "ownerReadback": "owner-authoritative readback and package-exit changed-path list",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-UI-IA-CONFORMANCE-U06",
+      "title": "P6-2 platform-admin 38-screen UI IA conformance remediation",
+      "approvedAssertions": [
+        "U06-38-SCREEN-SOURCE-TO-IA-CONFORMANCE"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-implementation-amendment.md",
+      "sha256": "e5e2aa8e2924eb047b2e15f6350832612fa5700d9ccd6d3344f41b1b45df8325",
+          "anchor": "# RM1 P6-2 UI IA conformance remediation"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-implementation-amendment.md",
+        "anchor": "# RM1 P6-2 UI IA conformance remediation"
+      },
+      "currentDeviation": "Historical U02 prewrite baseline is not final conformance.",
+  "changeSurfaces": [
+    {
+      "path": "AGENTS.md",
+      "disposition": "update",
+      "target": "Dexter-directed bounded-preparation and pointwise source-reread discipline"
+    },
+    {
+      "path": ".agents/skills/cs-memory-recall/SKILL.md",
+      "disposition": "update",
+      "target": "Dexter-directed bounded-preparation and pointwise source-reread discipline"
+    },
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/backend/catering-business-server",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/generated",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeResult.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionEditDrawer.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionSaveModal.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.tsx",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+      "disposition": "update",
+      "target": "U06 remove the confirmed assignment-list operation column while preserving the approved separate confirmation surface"
+    },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceEditDrawer.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceStatusModal.tsx",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+    {
+      "path": "apps/frontend/platform-admin/src/tests",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof for authenticated shell"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof for workspace context"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeResult.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionEditDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionSaveModal.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewDetailDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCreateDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCredentialDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorEditDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleCreateDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleEditDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolePermissionFields.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleStatusModal.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountActionModal.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceCreateDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceEditDrawer.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceStatusModal.test.tsx",
+      "disposition": "update",
+      "target": "U06 exact-sibling focused proof"
+    },
+        {
+          "path": "contracts/catalog/admin-catalog.json",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "contracts/openapi",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+    {
+      "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map.json",
+      "disposition": "update",
+      "target": "U06 project-memory assertion mapping refresh"
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "disposition": "update",
+      "target": "U06 project-memory assertion mapping refresh"
+    },
+    {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "disposition": "update",
+      "target": "U06 pointwise source-reread review standard"
+    },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-package-input.json",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-implementation-amendment.md",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-problem-family.json",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-source-compliance-disposition.json",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
+          "disposition": "update",
+          "target": "U06 bounded UI IA conformance surface"
+        },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-dexter-authorized-historical-receipt-recovery.json",
+      "disposition": "update",
+      "target": "U06 exact historical receipt-chain recovery evidence; no receipt recreation"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-package-exit.json",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+    {
+      "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+      "disposition": "update",
+      "target": "U06 pointwise source-reread review standard"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-implementation-adversarial-review.md",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review.md",
+      "disposition": "update",
+      "target": "U06 independent static implementation adversarial review round 1"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review-input-checklist.md",
+      "disposition": "update",
+      "target": "U06 independent static implementation adversarial review round 1 immutable input checklist"
+    },
+    {
+      "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-ui-ia-conformance-u06-static-implementation-adversarial-review-round-2.md",
+      "disposition": "update",
+      "target": "U06 same-cycle final independent static implementation adversarial review round 2"
+    },
+    {
+      "path": "doc/review/platform/independent-subagent-adversarial-review-input-checklist-template.md",
+      "disposition": "update",
+      "target": "U06 pointwise source-reread review standard"
+    },
+    {
+      "path": "project-memory/index.json",
+      "disposition": "update",
+      "target": "U06 project-memory index regeneration"
+    },
+    {
+      "path": "project-memory/index.md",
+      "disposition": "update",
+      "target": "U06 project-memory index regeneration"
+    },
+    {
+      "path": "project-memory/operations/implementation-source-reread-discipline.md",
+      "disposition": "update",
+      "target": "U06 reusable implementation and review discipline"
+    },
+    {
+      "path": "project-memory/required-inventory.json",
+      "disposition": "update",
+      "target": "U06 project-memory route and assertion registration"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "disposition": "update",
+      "target": "U06 bounded UI IA conformance surface"
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+      "disposition": "update",
+      "target": "U06 owner-command-only fixture correction for legal first extension-definition configuration"
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2.mjs",
+      "disposition": "update",
+      "target": "U06 managed L2 terminal evidence preservation"
+    },
+    {
+      "path": "tools/project-memory/cli.mjs",
+      "disposition": "update",
+      "target": "U06 project-memory inventory denominator refresh"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "disposition": "update",
+      "target": "U06 bounded generic historical receipt-recovery validator binding"
+    }
+      ],
+      "memoryRoute": {
+        "taskKind": "implementation",
+        "domain": "admin-ui",
+        "consumerFace": "platform-admin",
+        "owner": "platform",
+        "impact": "evidence",
+        "trigger": "implementation"
+      },
+      "orderedChain": [
+        "reopen approved IA, physical-screen bindings and routed memory per affected consumer",
+        "make only the approved conformance change",
+        "run focused proof and optional current-source reread",
+        "reconcile baseline, changed-path list and static package exit before later joint L2"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "This historical U06 conformance unit does not authorize U03 platform invitation retirement or any L2 run.",
+        "P6-3 may use U06 static source evidence only after its own UI admission, detail design and independent review inputs are current.",
+        "Business and cleanup evidence remain separate and are not supplied by this static-only U06 unit."
+      ],
+      "dataEvolution": {
+        "policy": "NOT_APPLICABLE: frontend conformance and evidence correction only; no schema, migration, seed or reset."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "This unit remediates existing physical consumers under the separately bound IA baseline; it introduces no new page key.",
+        "termSource": "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-implementation-amendment.md"
+      },
+      "evidence": {
+        "l1": "focused platform-admin component tests and typecheck",
+        "l2": "NOT_APPLICABLE: joint P6-2/P6-3 managed L2 is deferred to the U03-authorized serial run",
+        "l3": "UI IA baseline, interaction conformance record and changed-path list",
+        "business": "NOT_APPLICABLE_STATIC_ONLY",
+        "cleanup": "NOT_APPLICABLE_NO_MANAGED_RUNTIME"
+      },
+      "forbiddenPseudoFixes": [
+        "treat a static or typecheck result as dynamic business evidence",
+        "add an action column to a list",
+        "replace approved catalog copy with raw literal user-facing titles",
+        "skip per-consumer IA and memory reread because a broad screen inventory exists"
+      ],
+      "discriminator": {
+        "fixture": "Removing a required physical-consumer baseline binding or reintroducing a forbidden list action column must fail the corresponding static IA proof."
+      }
+    },
+    {
+      "id": "RM1P6-U01",
+      "title": "P6-1 public entry, authentication recovery and branding truth",
+      "approvedAssertions": [
+        "RM1-P6-1-OWNER-FIRST",
+        "RM1-P6-1-UNIT-TESTS-BEFORE-REVIEW"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+          "sha256": "8dfa1b07ede615bb9dbc4c0b2f9d3f21fffcda62b54f8302850a0d4550e9da2a",
+          "anchor": "## 3. P6-1：公开入口、认证恢复与品牌事实"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+        "anchor": "## 3. P6-1：公开入口、认证恢复与品牌事实"
+      },
+      "currentDeviation": "Public entry response lacks owner-approved branding, platform has no canonical mobile OTP/recovery protocol, and operations anonymous recovery must not reuse the administrator-issued reset protocol.",
+      "changeSurfaces": [
+        {
+          "path": "contracts/openapi",
+          "disposition": "update",
+          "target": "public authentication and entry contracts"
+        },
+        {
+          "path": "apps/backend/catering-business-server",
+          "disposition": "update",
+          "target": "owner service, additive migration, edge mapping and unit tests"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/generated",
+          "disposition": "update",
+          "target": "only generated contract consumption after contract generation; no UI path is permitted"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/generated",
+          "disposition": "update",
+          "target": "only generated contract consumption after contract generation; no UI path is permitted"
+        }
+      ],
+      "orderedChain": [
+        "freeze operationId and typed failure",
+        "owner service and additive migration unit tests",
+        "edge/controller mapping tests",
+        "generate all consumers",
+        "real red mutation",
+        "package exit then Dexter and Claude review"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "P6-1 begins from approved P6 interaction design and this implementation-facing design only",
+        "P6-2 and P6-3 cannot start until Dexter and Claude give P6-1 implementation GO"
+      ],
+      "dataEvolution": {
+        "policy": "ADDITIVE_ONLY: canonical normalized platform mobile and opaque one-time recovery state; no mutation of display-only mobile masking data."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "P6-1 delivers contract and owner/edge capability only; it deliberately contains no page implementation.",
+        "nonCatalogSurfaces": [
+          {
+            "surface": "PLATFORM-AUTH",
+            "contractOwnerOnly": true,
+            "consumerUnit": "RM1P6-U02",
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 2. P6-1 — non-catalog contract/owner inputs only"
+          },
+          {
+            "surface": "OPERATIONS-AUTH",
+            "contractOwnerOnly": true,
+            "consumerUnit": "RM1P6-U03",
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 2. P6-1 — non-catalog contract/owner inputs only"
+          },
+          {
+            "surface": "PUBLIC-ACCESS-RECOVERY",
+            "contractOwnerOnly": true,
+            "consumerUnit": "RM1P6-U03",
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 2. P6-1 — non-catalog contract/owner inputs only"
+          }
+        ],
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "owner/service and controller unit tests with named red mutations",
+        "l2": "OpenAPI generation and typed-problem mapping proof",
+          "l3": "package-exit changed-path list and R5 standards scan",
+        "business": "anonymous account+mobile+OTP recovery and workspace branding invariants",
+        "cleanup": "static design stage: NOT_APPLICABLE_WITH_REASON; future runtime execution must report cleanup independently"
+      },
+      "forbiddenPseudoFixes": [
+        "reuse administrator-issued resetGenerationKey as anonymous grant",
+        "derive logo URL from asset reference",
+        "use mobile_mask_source for identity",
+        "return empty debug code in production",
+        "write generated wire by hand"
+      ],
+      "discriminator": {
+        "fixture": "Change the owner-selected workspace or use an expired OTP; the edge must not reveal an account, session, asset reference, or cross-workspace brand."
+      },
+      "memoryRoute": {
+        "taskKind": "design",
+        "domain": "backend",
+        "consumerFace": "platform-admin",
+        "owner": "backend",
+        "impact": "contract",
+        "trigger": "implementation"
+      }
+    },
+    {
+      "id": "RM1P6-U02",
+      "title": "P6-2 platform governance truth and platform-admin consumption",
+      "approvedAssertions": [
+        "RM1-P6-2-PLATFORM-OWNER-FIRST",
+        "RM1-P6-2-NO-CLIENT-DERIVATION"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+          "sha256": "8dfa1b07ede615bb9dbc4c0b2f9d3f21fffcda62b54f8302850a0d4550e9da2a",
+          "anchor": "## 4. P6-2：平台治理真相与 platform-admin 消费"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-managed-l2-seed-and-runner-design.md",
+          "sha256": "cdbbacc940fe11c05c60eb00a38a282dc7228b12ff5e229acb7c941ce83e59ca",
+          "anchor": "# RM1 P6-2 managed isolated L2 seed and runner design"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+        "anchor": "## 4. P6-2：平台治理真相与 platform-admin 消费"
+      },
+      "currentDeviation": "Platform governance pages must not derive workspace, asset, candidate, filter, total, authorization or definition fact in the client.",
+      "changeSurfaces": [
+        {
+          "path": "contracts/openapi",
+          "disposition": "update",
+          "target": "platform governance contracts"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+          "disposition": "update",
+          "target": "accepted edge operation denominator for P6-2 owner-detail and staging-disposition facts"
+        },
+        {
+          "path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+          "disposition": "update",
+          "target": "generated placement report for the same accepted edge-operation denominator"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json",
+          "disposition": "update",
+          "target": "normative placement denominator and declared path/header materialization"
+        },
+        {
+          "path": "scripts/generate/r5-edge-materialize.mjs",
+          "disposition": "update",
+          "target": "controlled generator support for declared non-idempotency required headers"
+        },
+        {
+          "path": "contracts/registry/iam-org-governance-manifest.json",
+          "disposition": "update",
+          "target": "capability-operation registry closure for the new owner command"
+        },
+        {
+          "path": "apps/backend/catering-business-server",
+          "disposition": "update",
+          "target": "platform owner reads and commands with focused tests"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src",
+          "disposition": "update",
+          "target": "generated-wire platform pages using admin-ui-foundation"
+        },
+        {
+          "path": "contracts/policy/affected-l2-registry.json",
+          "disposition": "update",
+          "target": "Dexter-corrected finite P6-2/P6-3 business-scope L2 denominator"
+        },
+        {
+          "path": "tools/verify-gates/cli.mjs",
+          "disposition": "update",
+          "target": "mechanically validate the corrected finite L2 obligations and retain real-target red controls"
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2.mjs",
+          "disposition": "update",
+          "target": "managed, run-scoped platform-admin L2 execution with separate business and cleanup results"
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+          "disposition": "update",
+          "target": "minimal isolated P6-2 L2 fixture through owner commands and the sole approved root bootstrap"
+        },
+        {
+          "path": "scripts/dev/r5-dev-runner.mjs",
+          "disposition": "update",
+          "target": "fresh-database proof and isolated debug-OTP startup binding for a managed L2 run"
+        },
+        {
+          "path": "scripts/dev/r5-seed-bootstrap.mjs",
+          "disposition": "update",
+          "target": "pass managed private credentials only to its private environment validation child"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/generated",
+          "disposition": "update",
+          "target": "controlled shared-edge codegen output only; no P6-3 page, feature or behavior delivery"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+          "disposition": "update",
+          "target": "bind the exact P6-2 implementation-control denominator and revised final surface hashes"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+          "disposition": "update",
+          "target": "correct the current physical consumer path before UI IA admission"
+        },
+        {
+          "path": "tools/compliance-control/cli.mjs",
+          "disposition": "update",
+          "target": "generic pre-write UI IA admission plus exact bounded P6-2 receipt-recovery validation; no business-semantic decision"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-ui-ia-implementation-baseline.json",
+          "disposition": "update",
+          "target": "38 physical-screen pre-write source-to-IA admission baseline"
+        },
+        {
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "disposition": "update",
+          "target": "current RM1 P6-2 authorization/status alignment only"
+        },
+        {
+          "path": "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
+          "disposition": "update",
+          "target": "own the generic UI IA pre-write and pre-L2 conformance control"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+          "disposition": "update",
+          "target": "record generic UI IA admission as a P6-2 serial precondition"
+        },
+        {
+          "path": "project-memory/operations/verification-governance.md",
+          "disposition": "update",
+          "target": "memory anchor for the admitted UI IA controls"
+        },
+        {
+          "path": "project-memory/required-inventory.json",
+          "disposition": "update",
+          "target": "deterministic project-memory inventory refresh for the admitted control"
+        },
+        {
+          "path": "project-memory/index.json",
+          "disposition": "update",
+          "target": "generated project-memory index refresh for the admitted control"
+        },
+        {
+          "path": "project-memory/index.md",
+          "disposition": "update",
+          "target": "generated project-memory navigation refresh for the admitted control"
+        },
+        {
+          "path": "tools/project-memory/cli.mjs",
+          "disposition": "update",
+          "target": "deterministic project-memory build support for the admitted control"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-implementation-amendment.md",
+          "disposition": "update",
+          "target": "Dexter implementation authorization and explicit business/proof boundary"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-package-input.json",
+          "disposition": "update",
+          "target": "execution binding and serial predecessor evidence"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-source-compliance-disposition.json",
+          "disposition": "update",
+          "target": "six-denominator source compliance binding"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-extension-display-name-problem-family.json",
+          "disposition": "update",
+          "target": "auditable terminology problem-family record for extension display-name projection"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-governance-owner-boundaries-problem-family.json",
+          "disposition": "update",
+          "target": "auditable systemic owner-boundary finding family for P6-2 governance commands"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-final-review-finding-disposition.json",
+          "disposition": "update",
+          "target": "author disposition of final independent review findings after Dexter L2 scope correction"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-l2-scope-correction-problem-family.json",
+          "disposition": "update",
+          "target": "finite problem-family evidence for superseding the historical RM2 L2 defer"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-managed-l2-seed-and-runner-design.md",
+          "disposition": "update",
+          "target": "Dexter-authorized isolated L2 seed and runner implementation-facing design"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-formal-granularity-baseline-addendum.json",
+          "disposition": "update",
+          "target": "one-time pre-change baseline binding when an exact package-control surface is admitted after package baseline"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-dexter-authorized-historical-receipt-recovery.json",
+          "disposition": "update",
+          "target": "exact ten-path P6-2 historical receipt recovery; it pins missing baseline-to-current receipt edges without recreating historical receipts or resetting the package baseline"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-package-exit.json",
+          "disposition": "update",
+          "target": "receipt-bound implementation exit"
+        },
+        {
+          "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-2-implementation-adversarial-review.md",
+          "disposition": "update",
+          "target": "fresh independent implementation adversarial review and author disposition"
+        },
+        {
+          "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-2-managed-l2-seed-design-adversarial-review.md",
+          "disposition": "update",
+          "target": "fresh independent design review for Dexter-authorized isolated L2 seed scope"
+        }
+      ],
+      "orderedChain": [
+        "P6-1 implementation GO",
+        "owner and edge tests",
+        "generate contract consumers",
+        "platform frontend focused tests",
+        "real red mutation",
+        "package exit then Dexter and Claude review"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "P6-2 cannot start before P6-1 Dexter and Claude implementation GO",
+        "P6-3 cannot start before P6-2 Dexter and Claude implementation GO"
+      ],
+      "dataEvolution": {
+        "policy": "ADDITIVE_ONLY_OR_NOT_APPLICABLE; asset staging disposition is owner-controlled and definition revision remains definition-owner fact."
+      },
+      "uiAndTerms": {
+        "pageKeys": [
+          "PLATFORM-WORKSPACES",
+          "PLATFORM-WORKSPACE-OVERVIEW",
+          "PLATFORM-ADMIN-USERS",
+          "PLATFORM-ORGANIZATION-OVERVIEW",
+          "PLATFORM-CONTRACT-OVERVIEW",
+          "PLATFORM-ROLES",
+          "PLATFORM-WORKSPACE-ACCOUNTS",
+          "PLATFORM-EXTENSION-FIELDS"
+        ],
+        "interactionArtifacts": [
+          {
+            "pageKey": "PLATFORM-WORKSPACES",
+            "path": "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+            "anchor": "### Screen: IA02-PLATFORM-WORKSPACES-ACTIONS"
+          },
+          {
+            "pageKey": "PLATFORM-WORKSPACE-OVERVIEW",
+            "path": "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+            "anchor": "### Screen: IA02-PLATFORM-WORKSPACE-OVERVIEW"
+          },
+          {
+            "pageKey": "PLATFORM-ADMIN-USERS",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+            "anchor": "### Screen: IA03-ADMIN-LIST"
+          },
+          {
+            "pageKey": "PLATFORM-ORGANIZATION-OVERVIEW",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+            "anchor": "### Screen: IA03-ORG-OVERVIEW"
+          },
+          {
+            "pageKey": "PLATFORM-CONTRACT-OVERVIEW",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+            "anchor": "### Screen: IA03-CONTRACT-OVERVIEW"
+          },
+          {
+            "pageKey": "PLATFORM-ROLES",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+            "anchor": "### Screen: IA03-ROLE-LIST"
+          },
+          {
+            "pageKey": "PLATFORM-WORKSPACE-ACCOUNTS",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+            "anchor": "### Screen: IA03-ACCOUNT-TAB"
+          },
+          {
+            "pageKey": "PLATFORM-EXTENSION-FIELDS",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+            "anchor": "### Screen: IA03-EXTENSION-PAGE"
+          }
+        ],
+        "nonCatalogSurfaces": [
+          {
+            "surface": "PLATFORM-AUTH",
+            "consumerOnly": true,
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 3. P6-2 — platform-admin screen contracts"
+          },
+          {
+            "surface": "PLATFORM-PASSWORD",
+            "consumerOnly": true,
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 3. P6-2 — platform-admin screen contracts"
+          }
+        ],
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "owner/service and controller unit tests plus platform focused frontend tests",
+        "l2": "owner filter/total equivalence, conflict and asset-disposition red mutations",
+        "l3": "generation, architecture and package-exit receipt equality checks",
+        "business": "selected-workspace governance remains owner-authoritative",
+        "cleanup": "static design stage: NOT_APPLICABLE_WITH_REASON; future runtime execution must report cleanup independently"
+      },
+      "forbiddenPseudoFixes": [
+        "client-side full-list filtering",
+        "row action columns that bypass detail",
+        "clone admin-ui-foundation",
+        "treat overview as management page",
+        "reuse stale context after selected workspace changes"
+      ],
+      "discriminator": {
+        "fixture": "Switch selected workspace or submit an old version: list, total, candidates and command readback must remain owner-scoped and conflict must force a readback."
+      },
+      "memoryRoute": {
+        "taskKind": "design",
+        "domain": "admin-ui",
+        "consumerFace": "platform-admin",
+        "owner": "frontend-platform",
+        "impact": "architecture",
+        "trigger": "implementation"
+      }
+    },
+    {
+      "id": "RM1P6-U03",
+      "title": "P6-3 operations and public business completion paths",
+      "approvedAssertions": [
+        "RM1-P6-3-CAPABILITY-TARGET",
+        "RM1-P6-3-OWNER-CANDIDATE-AND-WRITE-AUTHORIZATION",
+        "RM1-P6-3-HEAD-COMPANY-BRAND-RESOURCE-COMMAND"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+          "sha256": "8dfa1b07ede615bb9dbc4c0b2f9d3f21fffcda62b54f8302850a0d4550e9da2a",
+          "anchor": "## 5. P6-3：运营管理后台与公开业务完成路径"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md",
+        "anchor": "## 5. P6-3：运营管理后台与公开业务完成路径"
+      },
+      "currentDeviation": "Operations/public paths require target-specific user semantics, owner-backed candidates and write authorization; the existing head-company Drawer calls a retired collection-replace operation despite current per-resource commands; ten extension request paths cannot carry client definition revisions; and the public recovery carry-over row incorrectly reduces three physical owner-bound steps to a deleted legacy consumer and resetGenerationKey route.",
+      "changeSurfaces": [
+        {
+          "path": ".codex/hooks.json",
+          "disposition": "update",
+          "target": "existing pre/post receipt hook binding only"
+        },
+        {
+          "path": "apps/backend/catering-business-server",
+          "disposition": "update",
+          "target": "owner pagination, typed edge mapping, context-version red proof and focused tests"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src",
+          "disposition": "update",
+          "target": "approved IA04 final Drawer, sole adapter consumer and legacy collection-replace removal"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+          "disposition": "update",
+          "target": "generator-owned platform API projection of shared workspace-access contract changes only"
+        },
+        {
+          "path": "contracts/catalog/admin-catalog.json",
+          "disposition": "update",
+          "target": "only if an approved catalog-derived UI label or action-model correction is required"
+        },
+        {
+          "path": "contracts/openapi",
+          "disposition": "update",
+          "target": "only if owner/edge truth requires a contract correction; generated outputs remain generator-owned"
+        },
+        {
+          "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "disposition": "update",
+          "target": "represent a multi-step physical public recovery surface as exact consumer and route sets"
+        },
+        {
+          "path": "contracts/policy/affected-l2-registry.json",
+          "disposition": "update",
+          "target": "derive the recovery L2 source directory from the approved physical-consumer set"
+        },
+        {
+          "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+          "disposition": "update",
+          "target": "existing source-compliance predicate maintenance only"
+        },
+        {
+          "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+          "disposition": "update",
+          "target": "accepted-byte IA04 conflict correction and hash refreeze"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6",
+          "disposition": "update",
+          "target": "package baseline, receipt, source disposition and exit evidence"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+          "disposition": "update",
+          "target": "rebind ST-8/ST-11 to the current carry-over truth without representing P6-2 static GO as business closure"
+        },
+        {
+          "path": "doc/plans/platform",
+          "disposition": "update",
+          "target": "corrective design and plan evidence only"
+        },
+        {
+          "path": "doc/review/platform",
+          "disposition": "update",
+          "target": "independent implementation review and Claude handoff"
+        },
+        {
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "disposition": "update",
+          "target": "current-step execution status only"
+        },
+        {
+          "path": "project-memory",
+          "disposition": "update",
+          "target": "confirmed problem-family prevention and execution discipline only"
+        },
+        {
+          "path": "scripts/hooks/pre-tool-compliance",
+          "disposition": "update",
+          "target": "existing pre-tool compliance hook binding only"
+        },
+        {
+          "path": "scripts/test",
+          "disposition": "update",
+          "target": "managed P6 joint verification entry evidence only"
+        },
+        {
+          "path": "tools/capability-invariants/cli.mjs",
+          "disposition": "update",
+          "target": "declared exact typed-owner exception invariant only"
+        },
+        {
+          "path": "tools/compliance-control/cli.mjs",
+          "disposition": "update",
+          "target": "existing receipt control prewrite-readback evidence only"
+        },
+        {
+          "path": "tools/verify-gates/cli.mjs",
+          "disposition": "update",
+          "target": "fail closed when a declared multi-physical-consumer carry-over surface is incomplete or not co-located for its L2 path"
+        },
+        {
+          "path": "tools/authority-source-ledger/cli.mjs",
+          "disposition": "update",
+          "target": "name the current physical-consumer authority denominator for ST-8"
+        }
+      ],
+      "orderedChain": [
+        "P6-2 implementation GO",
+        "target/candidate/owner write unit tests",
+        "edge mapping tests",
+        "generate contract consumers",
+        "operations focused frontend tests",
+        "real red mutation",
+        "package exit then Dexter and Claude review"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "P6-3 cannot start before P6-2 Dexter and Claude implementation GO",
+        "entire P6 implementation review cannot start before P6-3 Dexter and Claude implementation GO"
+      ],
+      "dataEvolution": {
+        "policy": "ADDITIVE_ONLY_OR_NOT_APPLICABLE; remove client-supplied entity definition revision from all ten existing request paths while owner validates the current definition."
+      },
+      "uiAndTerms": {
+        "pageKeys": [
+          "PG-ORG-STRUCTURE",
+          "PG-ORG-BRAND",
+          "PG-ORG-TENANT",
+          "PG-ORG-HEAD-COMPANY",
+          "PG-ORG-STORE-MANAGE",
+          "PG-CONTRACT-STORE-MANAGE",
+          "PG-IAM-GROUP-USERS",
+          "PG-IAM-REGION-USERS",
+          "PG-IAM-PROJECT-USERS",
+          "PG-IAM-HEAD-COMPANY-USERS",
+          "PG-IAM-STORE-USERS",
+          "PG-STORE-PROFILE",
+          "HOME-GROUP",
+          "HOME-REGION",
+          "HOME-PROJECT",
+          "HOME-HEAD-COMPANY",
+          "HOME-STORE"
+        ],
+        "interactionArtifacts": [
+          {
+            "pageKey": "PG-ORG-STRUCTURE",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+            "anchor": "### Screen: IA04-ORG-TREE"
+          },
+          {
+            "pageKey": "PG-ORG-BRAND",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+            "anchor": "### Screen: IA04-BRAND-PAGE"
+          },
+          {
+            "pageKey": "PG-ORG-TENANT",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+            "anchor": "### Screen: IA04-TENANT-PAGE"
+          },
+          {
+            "pageKey": "PG-ORG-HEAD-COMPANY",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+            "anchor": "### Screen: IA04-HEAD-COMPANY-PAGE"
+          },
+          {
+            "pageKey": "PG-ORG-STORE-MANAGE",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+            "anchor": "### Screen: IA04-STORE-PAGE"
+          },
+          {
+            "pageKey": "PG-CONTRACT-STORE-MANAGE",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+            "anchor": "### Screen: IA04-CONTRACT-PAGE"
+          },
+          {
+            "pageKey": "PG-IAM-GROUP-USERS",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-GROUP-USERS"
+          },
+          {
+            "pageKey": "PG-IAM-REGION-USERS",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-REGION-USERS"
+          },
+          {
+            "pageKey": "PG-IAM-PROJECT-USERS",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-PROJECT-USERS"
+          },
+          {
+            "pageKey": "PG-IAM-HEAD-COMPANY-USERS",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-HEAD-COMPANY-USERS"
+          },
+          {
+            "pageKey": "PG-IAM-STORE-USERS",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-STORE-USERS"
+          },
+          {
+            "pageKey": "PG-STORE-PROFILE",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+            "anchor": "### Screen: IA04-STORE-PROFILE\n"
+          },
+          {
+            "pageKey": "HOME-GROUP",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-HOME-GROUP"
+          },
+          {
+            "pageKey": "HOME-REGION",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-HOME-REGION"
+          },
+          {
+            "pageKey": "HOME-PROJECT",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-HOME-PROJECT"
+          },
+          {
+            "pageKey": "HOME-HEAD-COMPANY",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-HOME-HEAD-COMPANY"
+          },
+          {
+            "pageKey": "HOME-STORE",
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+            "anchor": "### Screen: IA05-HOME-STORE"
+          }
+        ],
+        "nonCatalogSurfaces": [
+          {
+            "surface": "OPERATIONS-AUTH",
+            "consumerOnly": true,
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 4. P6-3 — operations-admin and public screen contracts"
+          },
+          {
+            "surface": "PUBLIC-ACCESS-RECOVERY",
+            "consumerOnly": true,
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 4. P6-3 — operations-admin and public screen contracts"
+          },
+          {
+            "surface": "PUBLIC-INVITATION",
+            "consumerOnly": true,
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 4. P6-3 — operations-admin and public screen contracts"
+          },
+          {
+            "surface": "OPERATIONS-SHELL",
+            "consumerOnly": true,
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 4. P6-3 — operations-admin and public screen contracts"
+          },
+          {
+            "surface": "OPERATIONS-PASSWORD",
+            "consumerOnly": true,
+            "rosterPath": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+            "rosterAnchor": "## 4. P6-3 — operations-admin and public screen contracts"
+          }
+        ],
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md",
+        "correctiveSlice": {
+          "surface": "IA04-HEAD-COMPANY-BRANDS",
+          "pageKey": "PG-ORG-HEAD-COMPANY",
+          "consumerFace": "operations-admin",
+          "businessSource": {
+            "path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+            "anchor": "### 12.2 经营主体、品牌授权与门店：总公司经营品牌"
+          },
+          "exactChangeSurfaces": [
+            "contracts/openapi/paths/operations-admin/head-company-management.paths.yaml",
+            "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+            "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+            "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityControllerTest.java",
+            "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java",
+            "apps/backend/catering-business-server/src/test/java/edge/problem/ContractProblemAdviceTypedOwnerMappingTest.java",
+            "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts",
+            "apps/frontend/operations-admin/src/features/business-entity-management/application/HeadCompanyBrandAuthorizationActionAdapter.ts",
+            "apps/frontend/operations-admin/src/features/business-entity-management/application/HeadCompanyBrandAuthorizationActionAdapter.test.ts",
+            "apps/frontend/operations-admin/src/features/business-entity-management/ui/HeadCompanyBrandAuthorizationDrawer.tsx"
+          ],
+          "generatedOutputs": [
+            "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+            "apps/frontend/operations-admin/src/app/api/generated/operations-edge.rtk.ts"
+          ],
+          "operations": [
+            "getOperationsOrganizationHeadCompany",
+            "getOperationsOrganizationBrands",
+            "addOperationsOrganizationHeadCompanyBrandAuthorization",
+            "removeOperationsOrganizationHeadCompanyBrandAuthorization"
+          ],
+          "legacyRemovalChangeSurfaces": [
+            "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+            "apps/frontend/operations-admin/src/tests/architecture/static-boundary.test.mjs"
+          ],
+          "currentGaps": [
+            {
+              "id": "GAP-BRAND-CANDIDATE-OWNER-PAGINATION",
+              "currentFact": "BusinessEntityService#listEntities returns an unfiltered List and OperationsBusinessEntityController#page filters/sorts/pages it locally despite the candidate contract parameters.",
+              "futureP6_3Obligation": "Owner accepts entityType/workspace/group/name/code/status/sort/direction/page/pageSize and returns bounded items plus total; OperationsBusinessEntityController#brands passes it through, while a named focused controller test rejects local page(...); tenant/head-company branches remain outside this slice."
+            },
+            {
+              "id": "GAP-BRAND-IN-USE-TYPED-PROJECTION",
+              "currentFact": "HeadCompanyBrandAuthorizationInUseException is caught through OrganizationConflictException and resolves to generic PLATFORM_COMMON_VERSION_CONFLICT.",
+              "futureP6_3Obligation": "ContractProblemAdvice maps the actual most-specific exception to the declared safe 409 code before superclass fallback; focused test and invariant check mutate that specific mapping red."
+            }
+          ],
+          "nonvisualAdapterContract": {
+            "path": "apps/frontend/operations-admin/src/features/business-entity-management/application/HeadCompanyBrandAuthorizationActionAdapter.ts",
+            "kind": "NONVISUAL_APPLICATION_MODULE",
+            "soleUiConsumer": "apps/frontend/operations-admin/src/features/business-entity-management/ui/HeadCompanyBrandAuthorizationDrawer.tsx",
+            "permittedBoundary": "OperationsTransport generated-client/error-code boundary and four declared operations only",
+            "forbiddenImportsOrConsumers": [
+              "raw HTTP",
+              "OperationsApi",
+              "operationsRtk",
+              "new API slice",
+              "second UI consumer"
+            ],
+            "focusedProof": "apps/frontend/operations-admin/src/features/business-entity-management/application/HeadCompanyBrandAuthorizationActionAdapter.test.ts",
+            "physicalScreenDisposition": "OUTSIDE_PHYSICAL_SCREEN_DENOMINATOR_WITH_REASON"
+          },
+          "inUseFailure": "future P6-3 maps the actual owner subclass to an explicit 409 generated safe code; transport/adapter/Drawer state exposes errorCode only and the UI uses fixed copy",
+          "unknownResult": "only unknown/no-determinate outcome reads current detail; add succeeds iff brandId appears and remove succeeds iff it disappears; only an unsatisfied predicate may replay the exact original method/path/body/key; known 4xx never replay",
+          "excludes": "all other P6-3 surfaces; the legacy head-company-management authorization implementation is removal-only and cannot remain a second final path"
+        },
+        "platformInvitationRetirement": {
+          "serialSubUnitId": "RM1P6-U03-PLATFORM-INVITATION-RETIREMENT",
+          "detailDesign": {
+            "path": "doc/plans/platform/2026-07-31-v2s-rm1-p6-3-platform-invitation-retirement-and-managed-l2-bootstrap-design.md",
+            "sha256": "815fd86e42c443cd9ea2cd97f3a8e8544fbf480a260cd82464a4b2e338a0fdcb"
+          },
+          "serialBoundary": "static retirement receipt set closes before the separately declared managed-L2 bootstrap set; neither starts L2 before final UI alignment PASS",
+          "sourceDenominators": {
+            "iaAndPhysicalBinding": ["doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md", "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md", "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md", "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md"],
+            "handwrittenConsumers": ["apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx", "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx", "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx", "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx", "apps/frontend/platform-admin/src/features/audit-history/index.ts"],
+            "edgeAndContract": ["apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java", "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationCandidateController.java", "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java", "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml", "contracts/openapi/paths/platform-admin/audit-history.paths.yaml", "contracts/registry/iam-org-governance-manifest.json"],
+            "generatorInputs": ["doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json", "doc/evidence/platform/r5-u01-edge-placement-resolution.json", "scripts/generate/edge-codegen.mjs"],
+            "generatedOutputs": "exact non-empty changed path set emitted only by controlled edge-codegen --write-receipt; generated-path prediction is forbidden",
+            "l2Bootstrap": ["doc/evidence/platform/rm1/p6/rm1p6-u02-managed-l2-seed-and-runner-design.md", "scripts/test/r5-platform-admin-l2-fixture-seed.mjs", "scripts/test/r5-platform-admin-l2.mjs", "contracts/policy/affected-l2-registry.json", "contracts/policy/frontend-asset-carryover-manifest.json"]
+          },
+          "retainedCounterexamples": ["apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx after invitation Tab removal", "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java for non-invitation targets", "operations-admin and public invitation routes, controllers and generated projections", "WorkspaceAccount.invitationHistory and shared invitation schemas unless actual generator reachability proves platform-only"],
+          "packageExit": "actual change path set equals non-empty ordinary receipt set plus controlled generator receipt set; exact source-denominator and import scans must prove no platform invitation consumer or face survives"
+        }
+      },
+      "evidence": {
+        "l1": "owner/service and controller unit tests plus operations focused frontend tests",
+        "l2": "target mismatch, peer/cross-workspace, candidate cascade and ten-path extension red mutations",
+        "l3": "generation, architecture and package-exit receipt equality checks",
+        "business": "correct target user population and owner-authorized operations task completion",
+        "cleanup": "static design stage: NOT_APPLICABLE_WITH_REASON; future runtime execution must report cleanup independently"
+      },
+      "forbiddenPseudoFixes": [
+        "derive user target from pageKey, session assignment or selected id",
+        "use a client candidate as authorization proof",
+        "route all five user pages through a generic operation",
+        "add tenant mutation to contract create",
+        "send definition revision in entity requests",
+        "restore collection replace, share an idempotency key across brand intents, locally reconstruct authorization after 204, or surface raw in-use detail"
+      ],
+      "discriminator": {
+        "fixture": "Use a REGION-A assignment to manage PROJECT users under peer REGION-B: target.ancestorIds excludes the assignment and owner must reject. Positive control: the same REGION-A assignment manages a PROJECT under REGION-A and must be allowed. Separately mutate a definition after form open; owner rejects stale/unauthorized write. For IA04, remove a brand referenced by a store: edge returns the declared typed safe in-use 409; a client that restores bulk replace, reuses a key, or replays a known 4xx must fail focused proof."
+      },
+      "memoryRoute": {
+        "taskKind": "design",
+        "domain": "admin-ui",
+        "consumerFace": "operations-admin",
+        "owner": "frontend-platform",
+        "impact": "contract",
+        "trigger": "implementation"
+      }
+    },
+    {
+      "id": "RM1P6-ADMIN-CATALOG-TRUTH-U04",
+      "title": "Admin catalog single static truth migration",
+      "approvedAssertions": [
+        "U04-SINGLE-NODE-TRUTH",
+        "U04-STATIC-OWNER-BOUNDARY"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/decisions/2026-07-30-v2s-admin-catalog-semantic-copy-model.md",
+          "sha256": "b566700d188dabc6cf5a02d474c66ff9a74b0ef7798a4388337e1ad15d11ea8c",
+          "anchor": "# 管理后台目录的单一关系真相模型"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/decisions/2026-07-30-v2s-admin-catalog-semantic-copy-model.md",
+        "anchor": "# 管理后台目录的单一关系真相模型"
+      },
+      "currentDeviation": "Static PAGE, ACTION, group, user-management purpose and role-home relations are split across tuples, maps and a handwritten home switch.",
+      "changeSurfaces": [
+        {
+          "path": "contracts/catalog/admin-catalog.json",
+          "disposition": "update",
+          "target": "replace parallel static tuple/map relations with typed nodes"
+        },
+        {
+          "path": "scripts/generate/edge-codegen.mjs",
+          "disposition": "update",
+          "target": "validate nodes and project compatible generated catalogs plus role-home lookup"
+        },
+        {
+          "path": "tools/capability-invariants/cli.mjs",
+          "disposition": "update",
+          "target": "consume node-derived user-management purpose relations"
+        },
+        {
+          "path": "tools/authority-source-ledger/cli.mjs",
+          "disposition": "update",
+          "target": "retain its prior admitted control source; authority-ledger consumer reconciliation is deferred to a new correctly baselined package"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "disposition": "update",
+          "target": "generated platform static catalog projection"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "disposition": "update",
+          "target": "generated operations static catalog compatibility projection"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+          "disposition": "update",
+          "target": "generated static authorization catalog and role-home lookup"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+          "disposition": "update",
+          "target": "use generated role-home lookup only"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+          "disposition": "update",
+          "target": "bind this exact successor package denominator"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-input.json",
+          "disposition": "update",
+          "target": "package activation and predecessor binding"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-implementation-amendment.md",
+          "disposition": "update",
+          "target": "Dexter authorization and static-only boundary"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-problem-family.json",
+          "disposition": "update",
+          "target": "systemic finding and prevention denominator"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-source-compliance-disposition.json",
+          "disposition": "update",
+          "target": "six-denominator source compliance record"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-exit.json",
+          "disposition": "update",
+          "target": "receipt-bound static package exit"
+        },
+        {
+          "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-admin-catalog-truth-implementation-adversarial-review.md",
+          "disposition": "update",
+          "target": "fresh independent implementation adversarial review round 1"
+        },
+        {
+          "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-admin-catalog-truth-implementation-adversarial-review-round-2.md",
+          "disposition": "update",
+          "target": "same-cycle final independent implementation adversarial review round 2"
+        }
+      ],
+      "orderedChain": [
+        "activate exact successor package",
+        "node parser and generator red mutations",
+        "generate compatible consumers",
+        "role-home focused proof",
+        "static source and receipt checks",
+        "independent and Claude implementation reviews"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "This package follows the PASS CP-U16 denominator package and does not close invalidated historical U02.",
+        "The current-tree P1 authority-ledger consumer denominator is an independently recorded P6 evidence debt and requires a separate pre-baseline package; it cannot be added to this package after its immutable baseline.",
+        "Operations .tsx refactoring, DEV, seed, reset, L2 and dynamic business validation require separate later package admission."
+      ],
+      "dataEvolution": {
+        "policy": "NOT_APPLICABLE: static contract and generated source only; no database, seed or reset."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "No .tsx or router behavior changes are allowed; generated display projection remains bound to existing IA/carry-over sources.",
+        "termSource": "doc/decisions/2026-07-30-v2s-admin-catalog-semantic-copy-model.md"
+      },
+      "evidence": {
+        "l1": "edge-codegen node validation and generated Java/TypeScript output checks",
+        "l2": "real static red mutations for cross-face action, missing purpose relation, duplicate navigation order and role-home misuse",
+        "l3": "edge-codegen, capability invariants and receipt equality; authority-ledger readback is preserved as separate P6 evidence debt",
+        "business": "NOT_APPLICABLE_STATIC_ONLY",
+        "cleanup": "NOT_APPLICABLE_NO_MANAGED_RUNTIME"
+      },
+      "forbiddenPseudoFixes": [
+        "retain a legacy top-level tuple/map as runtime truth",
+        "duplicate node relation in a consumer",
+        "change dynamic owner routing besides homePage lookup",
+        "modify operations-admin .tsx without a new IA admission",
+        "claim static proof is dynamic business PASS"
+      ],
+      "discriminator": {
+        "fixture": "A cross-face ACTION target and a missing INVITE/ROLE_REVOKE purpose pair must be rejected before generation; a valid node list produces byte-equivalent existing projections plus only the role-home lookup."
+      },
+      "memoryRoute": {
+        "taskKind": "implementation",
+        "domain": "backend",
+        "consumerFace": "operations-admin",
+        "owner": "backend",
+        "impact": "contract",
+        "trigger": "implementation"
+      }
+    },
+    {
+      "id": "RM1P6-AUTHORITY-LEDGER-U05",
+      "title": "Carry-over authority ledger hash reconciliation",
+      "approvedAssertions": [
+        "U05-P6-CURRENT-TREE-LEDGER-RECONCILIATION"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-implementation-amendment.md",
+          "sha256": "387c0309fa48a7ef6ad7cd81964e60e3e1dc047e3f220ffbc07f45551d44f11a",
+          "anchor": "# RM1 P6 carry-over authority ledger reconciliation"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-implementation-amendment.md",
+        "anchor": "# RM1 P6 carry-over authority ledger reconciliation"
+      },
+      "currentDeviation": "ST-2 retains two removed consumer paths, while ST-8 and ST-11 retain stale SHA-256 values for their shared carry-over authority; P1-owned ST-3 and P5-owned ST-9 remain explicit external debts.",
+      "changeSurfaces": [
+        {
+          "path": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+          "disposition": "update",
+          "target": "align ST-2 current consumer paths and ST-8/ST-11 authority.sha256 values without touching P5-owned ST-9"
+        },
+        {
+          "path": "tools/authority-source-ledger/cli.mjs",
+          "disposition": "update",
+          "target": "add generic selected-row validation and red proof while retaining full-ledger fail-closed behavior"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+          "disposition": "update",
+          "target": "bind U05 finite denominator and activation surface set"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-package-input.json",
+          "disposition": "update",
+          "target": "successor package activation and predecessor binding"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-implementation-amendment.md",
+          "disposition": "update",
+          "target": "root cause, boundary, verification and exit design"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-problem-family.json",
+          "disposition": "update",
+          "target": "finite problem family and prevention disposition"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-source-compliance-disposition.json",
+          "disposition": "update",
+          "target": "six-denominator compliance disposition"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-authority-ledger-u05-package-exit.json",
+          "disposition": "update",
+          "target": "receipt-bound static package exit"
+        },
+        {
+          "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-authority-ledger-u05-implementation-adversarial-review.md",
+          "disposition": "update",
+          "target": "independent implementation adversarial review round 1"
+        },
+        {
+          "path": "doc/review/platform/2026-07-30-v2s-rm1-p6-authority-ledger-u05-implementation-adversarial-review-round-2.md",
+          "disposition": "update",
+          "target": "independent implementation adversarial review round 2"
+        }
+      ],
+      "orderedChain": [
+        "activate exact successor package",
+        "baseline stale ST-2/ST-8/ST-11 evidence and read its red state",
+        "reconcile only P6-owned current-tree paths and shared authority hashes",
+        "run ledger red proof and static controls",
+        "close changed-path list and independent review"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "This package follows U04 and may not rewrite its immutable exit or claim its independent ledger debt as historical green.",
+        "ST-2/ST-11 traces must be proven exact and ST-8 must retain its hash-only selector before repair; P1-owned ST-3 and P5-owned ST-9 remain separate package decisions.",
+        "No UI source, 38-screen IA, DEV, seed, reset, L2 or dynamic business validation belongs to this package."
+      ],
+      "dataEvolution": {
+        "policy": "NOT_APPLICABLE: authority evidence and checker only; no schema, data, seed or reset."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "理由：本 package 不允许页面、router、visible copy 或 UI consumer 变更；carry-over metadata 仅作为 authority source 读取。",
+        "termSource": "contracts/policy/frontend-asset-carryover-manifest.json"
+      },
+      "evidence": {
+        "l1": "ST-2 current consumer/trace paths, ST-8/ST-11 authority hashes and ST-11 trace exact sets",
+        "l2": "authority-ledger selected-row self-test including an invalid-row red mutation; full checker remains fail-closed for external debts",
+        "l3": "source compliance, receipt equality, standards coverage and independent implementation review",
+        "business": "NOT_REQUIRED_CONTROL_ONLY",
+        "cleanup": "NOT_REQUIRED_CONTROL_ONLY"
+      },
+      "forbiddenPseudoFixes": [
+        "change focusedEvidence semantics or authority source bytes",
+        "alter a consumer trace expected path or pattern to hide a mismatch",
+        "change relation NONE into an edge-codegen relation",
+        "modify a UI consumer to obtain a ledger green result",
+        "claim static evidence reconciliation is L2 or business PASS"
+      ],
+      "discriminator": {
+        "fixture": "A stale P6 row must fail selected-row validation while full ledger remains fail-closed for a P5-owned stale row; only the current P6 bytes and paths repair the selected state."
+      },
+      "memoryRoute": {
+        "taskKind": "implementation",
+        "domain": "admin-ui",
+        "consumerFace": "platform-admin",
+        "owner": "platform",
+        "impact": "evidence",
+        "trigger": "implementation"
+      }
+    }
+  ]
+}

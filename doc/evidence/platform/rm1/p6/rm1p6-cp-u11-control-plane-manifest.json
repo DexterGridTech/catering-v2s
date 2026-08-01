@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U11",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "P6-1 authentication and recovery observability needs a separately auditable formal granularity-gate binding before any new design can shape runner, foundation, edge-root or public-protocol implementation.",
+  "deliveryUnits": [{
+    "id": "RM1P6-CP-U11",
+    "title": "P6-1 observability formal granularity-binding design admission",
+    "sourceComplianceDispositionRequired": true,
+    "changeSurfaces": [
+      {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-design.md","disposition":"create","target":"future author design for the new formal binding only"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-manifest.json","disposition":"create","target":"future formal granularity manifest"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round1-input-checklist.md","disposition":"create","target":"new-cycle independent round-one input"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round1.json","disposition":"create","target":"new-cycle independent round-one verdict"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round2-input-checklist.md","disposition":"create","target":"new-cycle final independent review input"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-review-round2.json","disposition":"create","target":"new-cycle final independent verdict"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-observability-formal-granularity-binding-author-intake.md","disposition":"create","target":"author disposition after independent verdict only"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-granularity-binding-extension-manifest.json","disposition":"create","target":"future extension source/change-surface manifest"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u01-observability-formal-granularity-binding-source-disposition.json","disposition":"create","target":"future extension source-compliance denominator"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-control-plane-manifest.json","disposition":"create","target":"CP-U11 exact scope record"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-formal-granularity-binding-amendment.md","disposition":"create","target":"Dexter-authorized new-cycle boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-package-input.json","disposition":"create","target":"CP-U11 binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-source-compliance-disposition.json","disposition":"create","target":"CP-U11 two-source denominator"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-package-exit.json","disposition":"create","target":"CP-U11 exit"}
+    ],
+    "forbiddenPseudoFixes": [
+      "editing any CP-U10 document or either of its planned review-cycle artifacts",
+      "using an old cycle ID, manifest or verdict as this new formal-binding cycle's proof",
+      "writing runner, foundation, backend, OpenAPI, generated, migration, frontend, DEV, seed, reset or Roadmap implementation bytes",
+      "treating unfinished U01 or CP-U10 as this interlude's serial predecessor",
+      "writing an author detail design or reviewer verdict before this admission lane has been handed to its designated author/reviewer"
+    ],
+    "completion": "CP-U11 admits only the new formal-granularity-binding design cycle, closes its own CP receipts/disposition, then restores the exact prior CP-U10 active pointer without changing U10 files."
+  }]
+}

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+runtime_dir="${V2S_RUNTIME_DIR:-$root_dir/.runtime/r5}"
+
+if [[ "${R5_SEED:-}" == "true" ]]; then
+  echo "DEV_START_REJECTED=SEED_MUST_USE_EXPLICIT_COMMAND" >&2
+  exit 2
+fi
+
+export V2S_RUNTIME_DIR="$runtime_dir"
+exec node "$root_dir/scripts/dev/r5-dev-runner.mjs" start

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-UI-IA-CURRENT-CONFORMANCE-U10",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u10-ui-ia-current-conformance-delivery-manifest.json",
+  "deliveryManifestSha256": "c0c2a895c9a965f8d01d7c3f46cdaa84c447898b6b23863b3dbada10c1fa2ac3",
+  "unitId": "RM1P6-UI-IA-CURRENT-CONFORMANCE-U10",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/frontend-architecture",
+    "scripts/check/remediation-compliance",
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/frontend-architecture",
+    "scripts/check/remediation-compliance"
+  ],
+  "requiredControlRuleIds": [
+    "U10-CURRENT-UI-IA-CONFORMANCE"
+  ],
+  "businessEvidenceObligation": "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+  "serialPredecessor": {
+    "packageId": "RM1P6-UI-IA-FOCUSED-PROOF-U09",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u09-ui-ia-focused-proof-package-exit.json",
+    "exitSha256": "ecfc904a70ed54b6431d48a6d92511356188f3b5a939a37e9698dc5bf1903f7d"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u10-ui-ia-current-conformance-implementation-amendment.md",
+    "sha256": "0799099273e1947a2adfcb4fb9120ecb47affed0d4f69dcb4be9c208a7c38ea4"
+  },
+  "authorizationBoundary": "Direct static current-byte conformance only. It makes no business or L2 claim and authorizes no DEV, seed or reset."
+}

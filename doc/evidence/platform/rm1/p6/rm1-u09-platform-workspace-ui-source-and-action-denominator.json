@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-PLATFORM-WORKSPACE-ORIGINAL-SOURCE-AND-ACTION-DENOMINATOR-01",
+  "genericProblem": "A UI draft can invent visible actions or physical surfaces when it starts from a generic technical state instead of the original business task, formal UI standard, corresponding heritage page and interaction evidence.",
+  "rootCauseClass": "The interaction author treated a platform-workspace context as a generic management pattern and did not reconcile list-detail-action design rules against the all-v2 page source and L2 acceptance evidence before drawing the wireframe.",
+  "finiteDenominator": [
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md#IA02-PLATFORM-WORKSPACE-*",
+    "/Users/dexter/Documents/workspace/idea/catering-all-v2/doc/platform/admin-consumer-chrome-standard.md#2.4",
+    "/Users/dexter/Documents/workspace/idea/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+    "/Users/dexter/Documents/workspace/idea/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+    "/Users/dexter/Documents/workspace/idea/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-overview/ui/WorkspaceOverviewPage.tsx",
+    "/Users/dexter/Documents/workspace/idea/catering-all-v2/apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+    "doc/decisions/2026-07-25-v2s-r5-whole-scope-journey-decision.md#D01-S02-D01-S06"
+  ],
+  "searchedSurfaces": [
+    "all IA02 PLATFORM-WORKSPACE screen declarations, wireframes and visible-operation tables",
+    "all-v2 platform-admin list, detail Drawer, form Drawer, initialization Drawer, overview, shell and L2 tests",
+    "all-v2 formal administration list-detail-action standard and element ledger"
+  ],
+  "searchQueries": [
+    "IA02-PLATFORM-WORKSPACE|选择为当前空间|返回集团空间管理|更换当前空间|数据总览",
+    "操作列|行尾操作|业务名称链接|详情 Drawer|页头新建",
+    "WorkspaceManagementPage|WorkspaceDetailDrawer|WorkspaceOverviewPage|PlatformWorkspaceSelector"
+  ],
+  "counterexamples": [
+    "The v2 management table has no action column: the business-name link is the sole row entry and opens the detail Drawer.",
+    "The v2 detail Drawer closes before it opens the contextual edit Drawer, status confirmation Modal or commercial-group initialization Drawer.",
+    "The v2 overview is read-only except refresh/retry and its no-selection Result has no navigation button.",
+    "The formal v2 element ledger says Header for the workspace selector while current v2 source and L2 evidence place it in the side-menu footer; that conflict cannot be silently resolved by the IA author."
+  ],
+  "findings": [
+    {
+      "findingId": "RM1-P6-PLATFORM-WORKSPACE-ORIGINAL-SOURCE-AND-ACTION-DENOMINATOR-01",
+      "classification": "CONFIRMED",
+      "evidence": "The IA02 management table drew selection, view/edit and enable/disable row actions; the overview drew return/change buttons; the no-selection result drew a navigation button. Reopened all-v2 source, L2 and formal list-detail-action standard contradict every one of those additions."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "RM1-P6-PLATFORM-WORKSPACE-ORIGINAL-SOURCE-AND-ACTION-DENOMINATOR-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#visible-operation-denominator"
+    }
+  ]
+}

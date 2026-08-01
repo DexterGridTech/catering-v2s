@@ -1,0 +1,696 @@
+{
+  "paths": {
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}": {
+      "get": {
+        "operationId": "getPublicInvitationView",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "post": {
+        "operationId": "acceptPublicInvitation",
+        "x-required-capability": "REQ_ACCEPT_PUBLIC_INVITATION",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationAcceptIntent"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send": {
+      "post": {
+        "operationId": "sendPublicInvitationOtp",
+        "x-required-capability": "REQ_SEND_PUBLIC_INVITATION_OTP",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationOtpSendResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationOtpSendRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify": {
+      "post": {
+        "operationId": "verifyPublicInvitationOtp",
+        "x-required-capability": "REQ_VERIFY_PUBLIC_INVITATION_OTP",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationReadiness"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationOtpVerifyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials": {
+      "post": {
+        "operationId": "savePublicInvitationCredentials",
+        "x-required-capability": "REQ_SAVE_PUBLIC_INVITATION_CREDENTIALS",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationCredentialResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationCredentialRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete": {
+      "post": {
+        "operationId": "completePublicInvitation",
+        "x-required-capability": "REQ_COMPLETE_PUBLIC_INVITATION",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationCompletion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion": {
+      "get": {
+        "operationId": "getPublicInvitationCompletion",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationCompletion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    }
+  }
+,  "components": {
+    "responses": {
+      "ProblemResponse": {
+        "description": "Problem response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,407 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-authority-source-ledger",
+  "status": "PASS",
+  "frozenIdSet": [
+    "ST-2",
+    "ST-3",
+    "ST-4",
+    "ST-6",
+    "ST-8",
+    "ST-9",
+    "ST-11"
+  ],
+  "directClosureIds": [
+    "ST-3",
+    "ST-4",
+    "ST-8"
+  ],
+  "deferredClosureOwners": {
+    "ST-2": "P6",
+    "ST-6": "P6",
+    "ST-9": "P5",
+    "ST-11": "P6"
+  },
+  "rows": [
+    {
+      "id": "ST-2",
+      "closurePackage": "P6",
+      "authority": {
+        "kind": "PLANNED_P6_AUTHORITY",
+        "path": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+        "selector": "P6 ST-2 closure",
+        "sha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c",
+        "reason": "No current single feedback authority exists; P6 must materialize one per app."
+      },
+      "generatorRelation": {
+        "kind": "NONE",
+        "reason": "Generated edge clients expose wire error codes, not user feedback semantics."
+      },
+      "consumers": [
+        {
+          "path": "apps/frontend/operations-admin/src/features/access-recovery/ui/PublicPasswordRecoveryEntry.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/work-context/ui/RoleAssignmentSelector.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx"
+        }
+      ],
+      "consumerTraces": [
+        {
+          "id": "error-code-detail-renderers",
+          "root": "apps/frontend",
+          "glob": "*.{ts,tsx}",
+          "pattern": "(?:error|problem)\\.problem\\.errorCode.*(?:error|problem)\\.problem\\.detail|(?:error|problem)\\.errorCode.*(?:error|problem)\\.detail",
+          "expectedPaths": [
+            "apps/frontend/operations-admin/src/features/access-recovery/ui/PublicPasswordRecoveryEntry.tsx",
+            "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+            "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+            "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+            "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+            "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+            "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx",
+            "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx",
+            "apps/frontend/operations-admin/src/features/work-context/ui/RoleAssignmentSelector.tsx",
+            "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
+            "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ST-3",
+      "closurePackage": "P1",
+      "authority": {
+        "kind": "CURRENT_CATALOG",
+        "path": "contracts/catalog/admin-catalog.json",
+        "selector": "platformPages[PLATFORM-WORKSPACE-OVERVIEW].title",
+        "sha256": "5cf60243f4173eed3f06fd680358b7b1fde5a4cee4246bfb394d45fe0e99589f"
+      },
+      "generatorRelation": {
+        "kind": "EDGE_CODEGEN_CATALOG_PROJECTION",
+        "path": "scripts/generate/edge-codegen.mjs",
+        "selector": "tsAdminCatalog platformPages projection"
+      },
+      "consumers": [
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts"
+        }
+      ],
+      "consumerTraces": [
+        {
+          "id": "workspace-overview-title-consumer",
+          "root": "apps/frontend/platform-admin/src",
+          "glob": "*.{ts,tsx}",
+          "pattern": "workspaceOverviewPage\\.title|title=\"集团空间管理\"",
+          "expectedPaths": [
+            "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ST-4",
+      "closurePackage": "P1",
+      "authority": {
+        "kind": "CURRENT_CATALOG",
+        "path": "contracts/catalog/admin-catalog.json",
+        "selector": "platformPages array order",
+        "sha256": "5cf60243f4173eed3f06fd680358b7b1fde5a4cee4246bfb394d45fe0e99589f"
+      },
+      "generatorRelation": {
+        "kind": "EDGE_CODEGEN_CATALOG_PROJECTION",
+        "path": "scripts/generate/edge-codegen.mjs",
+        "selector": "tsAdminCatalog platformPages projection"
+      },
+      "consumers": [
+        {
+          "path": "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx"
+        }
+      ],
+      "consumerTraces": [
+        {
+          "id": "platform-page-order-consumer",
+          "root": "apps/frontend/platform-admin/src/app/routing",
+          "glob": "*.tsx",
+          "pattern": "adminCatalog\\.platformPages\\.map|Object\\.entries\\(routes\\)",
+          "expectedPaths": [
+            "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ST-6",
+      "closurePackage": "P6",
+      "authority": {
+        "kind": "PLANNED_P6_AUTHORITY",
+        "path": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+        "selector": "P6 ST-6 closure",
+        "sha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c",
+        "reason": "No shared field-label authority exists; P6 must materialize the foundation injection contract."
+      },
+      "generatorRelation": {
+        "kind": "NONE",
+        "reason": "Field labels are presentation semantics and not generated from an edge contract."
+      },
+      "consumers": [
+        {
+          "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx"
+        }
+      ],
+      "consumerTraces": [
+        {
+          "id": "audit-field-label-consumers",
+          "root": "apps/frontend",
+          "glob": "*.{ts,tsx}",
+          "pattern": "\\bfieldLabels\\b",
+          "expectedPaths": [
+            "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+            "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ST-8",
+      "closurePackage": "P1",
+      "authority": {
+        "kind": "CURRENT_CARRY_OVER_MANIFEST",
+        "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+        "selector": "surfaces[*].physicalConsumerPaths (or targetPath for a single physical consumer)",
+        "sha256": "8d53e1ed3b48202b29d3dc3c0dae9c5d740f6685f8760e9b80a661a7a4906eaa"
+      },
+      "generatorRelation": {
+        "kind": "CARRYOVER_TARGET_PATH_DERIVATION",
+        "path": "tools/verify-gates/cli.mjs",
+        "selector": "assertAffectedL2LayoutDerived"
+      },
+      "consumers": [
+        {
+          "path": "contracts/policy/affected-l2-registry.json"
+        },
+        {
+          "path": "tools/verify-gates/cli.mjs"
+        }
+      ],
+      "consumerTraces": [
+        {
+          "id": "affected-l2-layout-derivation-consumer",
+          "root": "tools/verify-gates",
+          "glob": "*.mjs",
+          "pattern": "assertAffectedL2LayoutDerived",
+          "expectedPaths": [
+            "tools/verify-gates/cli.mjs"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ST-9",
+      "closurePackage": "P5",
+      "authority": {
+        "kind": "PLANNED_P5_AUTHORITY",
+        "path": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+        "selector": "P5 ST-9 closure",
+        "sha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c",
+        "reason": "No current refresh authority exists; P5 must materialize RTK tag invalidation policy."
+      },
+      "generatorRelation": {
+        "kind": "NONE",
+        "reason": "Generated edge clients define HTTP operations, not client cache invalidation policy."
+      },
+      "consumers": [
+        {
+          "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceInvitationPanel.tsx"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx"
+        }
+      ],
+      "consumerTraces": [
+        {
+          "id": "reload-implementation-consumers",
+          "root": "apps/frontend",
+          "glob": "*.{ts,tsx}",
+          "pattern": "\\breloadVersion\\b|\\bsetReloadVersion\\b|void load\\(\\)|await load\\(\\)",
+          "expectedPaths": [
+            "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+            "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+            "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceInvitationPanel.tsx",
+            "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
+            "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+            "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+            "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+            "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+            "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+            "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ST-11",
+      "closurePackage": "P6",
+      "authority": {
+        "kind": "CURRENT_CARRY_OVER_MANIFEST",
+        "path": "contracts/policy/frontend-asset-carryover-manifest.json",
+        "selector": "surfaces[*].focusedEvidence",
+        "sha256": "8d53e1ed3b48202b29d3dc3c0dae9c5d740f6685f8760e9b80a661a7a4906eaa"
+      },
+      "generatorRelation": {
+        "kind": "NONE",
+        "reason": "Focused evidence is frozen carry-over metadata and not an edge-codegen output."
+      },
+      "consumers": [
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx"
+        },
+        {
+          "path": "contracts/policy/affected-l2-registry.json"
+        }
+      ],
+      "consumerTraces": [
+        {
+          "id": "workspace-write-ownership-app-consumers",
+          "root": "apps/frontend/platform-admin",
+          "glob": "*.{ts,tsx}",
+          "pattern": "PLATFORM-WORKSPACE-OVERVIEW|PLATFORM-WORKSPACES|WorkspaceAdministrationPage|WorkspaceManagementPage|transitionStatus|updateDisplay",
+          "expectedPaths": [
+        "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+        "apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx",
+        "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.test.tsx",
+        "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+        "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.test.tsx",
+        "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx"
+          ]
+        },
+        {
+          "id": "workspace-write-ownership-frozen-manifest-consumers",
+          "root": "contracts/policy",
+          "glob": "*.json",
+          "pattern": "PLATFORM-WORKSPACE-OVERVIEW|PLATFORM-WORKSPACES|focusedEvidence",
+          "expectedPaths": [
+            "contracts/policy/affected-l2-registry.json",
+            "contracts/policy/frontend-asset-carryover-manifest.json"
+          ]
+        }
+      ]
+    }
+  ]
+}

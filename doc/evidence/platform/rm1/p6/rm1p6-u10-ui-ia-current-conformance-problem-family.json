@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "identified-problem-family",
+  "id": "RM1P6-CURRENT-UI-IA-EVIDENCE-DRIFT-20260731",
+  "status": "OPEN_FOR_IMPLEMENTATION",
+  "rootCause": "Historical static records were retained after source IA/roster bytes changed and after two legacy operations consumers ceased to exist; treating archival records as current conformance would either create fake consumers or bypass actual consumer review.",
+  "finiteDenominator": [
+    "P6-2: 38 screen IDs / 36 present platform consumers",
+    "P6-3: 58 archival records less 2 absent zero-reference legacy paths = 56 present controls"
+  ],
+  "counterexamples": [
+    "P6-2 has no missing consumer or route mount",
+    "P6-3 present controls already have feature-owned test grouping; per-component test-file identity is not the test denominator",
+    "P6-3 absent brand/tenant legacy paths cannot be passed"
+  ],
+  "minimalReusableFix": "Rebase only the present physical denominator against current source hashes and explicit feature-owned focused tests; preserve absent paths as excluded evidence and gate L2 on the rebased records.",
+  "prevention": [
+    {
+      "destination": "REVIEW_CHECKLIST",
+      "owner": "U10 current-byte record",
+      "evidence": "record distinguishes present PASS from excluded legacy path and static proof from L2"
+    }
+  ]
+}

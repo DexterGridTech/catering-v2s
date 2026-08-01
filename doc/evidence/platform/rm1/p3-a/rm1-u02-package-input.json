@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U02",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3",
+  "unitId": "RM1-U02",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/capability-invariants",
+    "scripts/check/security-boundaries"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/affected-l2"
+  ],
+  "requiredControlRuleIds": [
+    "P-D0",
+    "P-D0b",
+    "P-D2",
+    "P-D6",
+    "P-N1",
+    "P-R7",
+    "P-X4"
+  ],
+  "serialPredecessor": {
+    "packageId": "RM1-U01",
+    "exitPath": "doc/evidence/platform/rm1/p0/rm1-u01-package-exit.json"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p3-a/rm1-u02-implementation-amendment.json",
+    "sha256": "af3effcce7c57311e2fa611d54f6ec312d470c08495a5b6c1162503c5c23ef00"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 implementation. This binding authorizes RM1-U02 P3-A only; it does not authorize P3-B or P6/P3-D interaction work."
+}

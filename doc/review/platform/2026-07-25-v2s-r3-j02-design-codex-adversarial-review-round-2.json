@@ -1,0 +1,65 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "R3-J02-DESIGN",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "GO",
+  "manifestSha256": "220b14c82a2f8c3b17b011c55d51406bbd99c8a09bf48374ef8aad102695227a",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["authorization-order", "owner-linearization", "schema-isolation", "migration-discipline", "authorization-ownership", "ui-semantics"],
+    "independentReviewInput": "doc/review/platform/2026-07-25-v2s-r3-j02-design-independent-codex-review.md"
+  },
+  "expectedBehavior": [
+    "Claude GO and Dexter implementation authorization precede GATE_0",
+    "only platform-workspace linearizes workspace eligibility and organization never reverse-queries it",
+    "the one real platform page remains GroupWorkspace management and initialization stays an action"
+  ],
+  "findings": [
+    {
+      "id": "R3J02-N-001",
+      "severity": "N",
+      "status": "OPEN_FOR_GATE_0",
+      "unitIds": ["R3J02-U01"],
+      "title": "Exact implementation dependency versions are intentionally deferred",
+      "evidence": "R3 remains design-only and U01 reserves a single exact version decision for authorized GATE_0.",
+      "risk": "Skipping the later decision could select incompatible versions.",
+      "disposition": "retain; do not run an unauthorized download or compatibility spike"
+    },
+    {
+      "id": "R3J02-N-002",
+      "severity": "N",
+      "status": "OPEN_FOR_CLAUDE_REVIEW",
+      "unitIds": ["R3J02-U03", "R3J02-U04"],
+      "title": "Heritage was source-reopened but is not yet a J02-specific frozen registry asset",
+      "evidence": "Dexter selection cites exact D01-S05/commercial-group-root paths; the inherited registry freezes only its R1 denominator.",
+      "risk": "Future ad-hoc rereads could become less reproducible if Heritage changes.",
+      "disposition": "ask Claude whether a minimal v2s-native hash receipt is sufficient before implementation; do not copy or mutate Heritage in this design cycle"
+    }
+  ],
+  "unitVerdicts": [
+    {"id":"R3J02-U01","verdict":"GO_WITH_N","findingIds":["R3J02-N-001"]},
+    {"id":"R3J02-U02","verdict":"GO","findingIds":[]},
+    {"id":"R3J02-U03","verdict":"GO_WITH_N","findingIds":["R3J02-N-002"]},
+    {"id":"R3J02-U04","verdict":"GO_WITH_N","findingIds":["R3J02-N-002"]},
+    {"id":"R3J02-U05","verdict":"GO","findingIds":[]},
+    {"id":"R3J02-U06","verdict":"GO","findingIds":[]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The revised design still solves the accepted explicit-initialization task rather than an interface-led lookup.",
+    "simplerAlternativeAssessment": "Reverse workspace query, duplicated facts and a separate initialization page were rejected as owner, data or UI regressions.",
+    "costFit": "The added typed grant, composite FK and precise ownership are bounded protections required by existing architecture rules, not new features.",
+    "verdict": "REASONABLE_AND_SELF_DECIDED"
+  },
+  "conclusion": {
+    "verdict": "GO",
+    "summary": "All M/S findings from the fresh independent review are resolved with source-backed minimal changes; two non-blocking future gates remain explicitly bounded.",
+    "severityCounts": {"M":0,"S":0,"N":2},
+    "authorizationBoundary": "This is a final DESIGN-cycle decision only. It does not grant GATE_0, implementation, runtime, database, seed/reset or Git authority."
+  }
+}

@@ -1,0 +1,1254 @@
+{
+  "schemaVersion": 1,
+  "kind": "p6-2-current-byte-ui-ia-conformance",
+  "packageId": "RM1P6-UI-IA-CURRENT-CONFORMANCE-U10",
+  "status": "PASS_STATIC_CURRENT_BYTE",
+  "purpose": "Current source-to-IA static conformance for the existing P6-2 physical denominator. This does not make a business, cleanup or L2 claim.",
+  "sourceBindings": [
+    {
+      "path": "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+      "sha256": "7e2ae73f810b8a7ad75a8f0a8800f873b5ea0c9f582648b8002d5258f6bb3a67"
+    },
+    {
+      "path": "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+      "sha256": "8d3821c8deaa5a7c0fa460e570b96247842d305daf387d6c59298d2fea442813"
+    },
+    {
+      "path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+      "sha256": "c07271ef42b5dccac553c814c82117b36b3c46c381b5087cb5cad96e6b2863d0"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+      "sha256": "7687ed3d7e4d0bddeaac7e5781eaa19cff58be1f379191be1b0f89fa115717a7"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+      "sha256": "6d728e051c2464b2de1f7361b8257a92ec4dfb838da4b26b77eba81b163b089f"
+    }
+  ],
+  "requiredControlDimensions": [
+    "business-task",
+    "actor-and-scenario",
+    "entry-and-surface",
+    "control-type",
+    "data-source-and-cascade",
+    "validation-and-error",
+    "state-and-permission",
+    "navigation-and-refresh",
+    "accessibility-and-test-id"
+  ],
+  "physicalScreenDenominator": [
+    "IA01-PLATFORM-LOGIN",
+    "IA01-PLATFORM-RECOVERY-VERIFY",
+    "IA01-PLATFORM-RECOVERY-PASSWORD",
+    "IA01-PLATFORM-RECOVERY-COMPLETE",
+    "IA02-PLATFORM-AUTHENTICATED-SHELL",
+    "IA02-PLATFORM-WORKSPACE-CONTEXT",
+    "IA02-PLATFORM-WORKSPACE-SIDER-CONTROL",
+    "IA02-PLATFORM-WORKSPACES-ACTIONS",
+    "IA02-PLATFORM-WORKSPACE-DETAIL-DRAWER",
+    "IA02-PLATFORM-WORKSPACE-CREATE-DRAWER",
+    "IA02-PLATFORM-COMMERCIAL-GROUP-INIT-DRAWER",
+    "IA02-PLATFORM-WORKSPACE-EDIT-DRAWER",
+    "IA02-PLATFORM-WORKSPACE-STATUS-MODAL",
+    "IA02-PLATFORM-WORKSPACE-OVERVIEW",
+    "IA03-ADMIN-LIST",
+    "IA03-ADMIN-DETAIL",
+    "IA03-ADMIN-CREATE",
+    "IA03-ADMIN-EDIT",
+    "IA03-ADMIN-CREDENTIAL",
+    "IA03-ADMIN-STATUS",
+    "IA03-ORG-OVERVIEW",
+    "IA03-ORG-HIERARCHY",
+    "IA03-ORG-DETAIL",
+    "IA03-CONTRACT-OVERVIEW",
+    "IA03-CONTRACT-DETAIL",
+    "IA03-ROLE-LIST",
+    "IA03-ROLE-DETAIL",
+    "IA03-ROLE-CREATE",
+    "IA03-ROLE-EDIT",
+    "IA03-ROLE-STATUS",
+    "IA03-ACCOUNT-TAB",
+    "IA03-ACCOUNT-DETAIL",
+    "IA03-ACCOUNT-ACTION",
+    "IA03-EXTENSION-PAGE",
+    "IA03-EXTENSION-EDIT",
+    "IA03-EXTENSION-SAVE",
+    "IA03-PASSWORD-DRAWER",
+    "IA03-PASSWORD-RESULT"
+  ],
+  "screenReadbackPolicy": "For every entry, the cited IA section is the business task, actor/scenario, entry/surface, visible control and accessibility truth; the physical contract is the consumer/foundation truth; the roster is the generated-operation, typed-failure, owner-readback and focused-proof truth. Each consumer was reopened against all three. All controls require testId and accessible native/pro-component labels; data/candidate changes must clear dependent state; typed owner failures retain only non-secret drafts; unknown submits read owner state before replay.",
+  "consumerBindings": [
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+      "screenIds": [
+        "IA01-PLATFORM-LOGIN"
+      ],
+      "businessTask": "运维管理员以密码或本人手机号验证码登录，或进入自助恢复。",
+      "actorAndScenario": "未认证运维管理员开始平台治理工作。",
+      "entryAndSurface": "/platform/login 独立 LoginFormPage。",
+      "controlType": "登录方式 Tabs、账号/密码或手机号/验证码输入、发送与提交、忘记密码链接。",
+      "dataSourceAndCascade": "owner 登录/OTP readback；切换方式或改手机号清除秘密、发送状态和测试码。",
+      "validationAndError": "本地格式后由 owner 判凭据；typed Problem、失败清除密码或验证码。",
+      "stateAndPermission": "public entry；无 client 凭据/会话推导。",
+      "navigationAndRefresh": "owner session 后进入平台壳；未知结果先读 session。",
+      "accessibilityAndTestId": "LoginFormPage 标签和 platform-login-* testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "c31a2db7f4dc3247f0308b2936f97f7d487656a5292d940a52a30171c329fc37",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.test.tsx",
+        "sha256": "b26b0ff6c4b805edfae394f548fc3b9fdef48a0b88921a3500300ca3c2b27edd",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.tsx",
+      "screenIds": [
+        "IA01-PLATFORM-RECOVERY-VERIFY"
+      ],
+      "businessTask": "本人以登录名、手机号和 OTP 验证后进入改密。",
+      "actorAndScenario": "无法登录的运维管理员自助恢复。",
+      "entryAndSurface": "忘记密码后的公开独立验证页。",
+      "controlType": "账号/手机/验证码输入、发送、下一步和返回。",
+      "dataSourceAndCascade": "匿名 owner recovery flow；任一前置值变化清验证码。",
+      "validationAndError": "反枚举统一反馈；失败不泄露匹配。",
+      "stateAndPermission": "不创建 session，owner 核验一次性 flow。",
+      "navigationAndRefresh": "验证成功只进恢复密码页；未知先读 flow。",
+      "accessibilityAndTestId": "明确 label 与 recovery-verify testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "b0886b59f9819e8a5dfa71269b0ef7c3f80776d3a9ae4f37f513c23a158ce5a3",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.test.tsx",
+        "sha256": "68ef3e48b7873af12d725335953cbe8df68ad59a373f5ec621d425e451053b0f",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.tsx",
+      "screenIds": [
+        "IA01-PLATFORM-RECOVERY-PASSWORD"
+      ],
+      "businessTask": "经本人验证后设置新密码。",
+      "actorAndScenario": "已验证恢复用户。",
+      "entryAndSurface": "公开恢复密码页。",
+      "controlType": "新密码/确认密码、上一步和提交。",
+      "dataSourceAndCascade": "opaque recovery grant；离开或失败清秘密。",
+      "validationAndError": "本地确认一致，owner 复核规则和 grant。",
+      "stateAndPermission": "不建立平台会话。",
+      "navigationAndRefresh": "完成后到完成页；未知结果读 flow。",
+      "accessibilityAndTestId": "明确密码字段和 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "228aa4315976326608863e806c17b4f30757da2c8358f2b48e89a5eade22651d",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.test.tsx",
+        "sha256": "93664235424fb64cb4e3dd4d84dba0915144d07aba31b95843cc3908a1a73795",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.tsx",
+      "screenIds": [
+        "IA01-PLATFORM-RECOVERY-COMPLETE"
+      ],
+      "businessTask": "确认恢复完成并返回登录。",
+      "actorAndScenario": "已完成本人恢复的运维管理员。",
+      "entryAndSurface": "公开完成页。",
+      "controlType": "完成提示与返回登录按钮。",
+      "dataSourceAndCascade": "owner 完成 readback；无可编辑数据。",
+      "validationAndError": "缺失/失效 flow 统一安全反馈。",
+      "stateAndPermission": "无 session。",
+      "navigationAndRefresh": "仅导航回平台登录。",
+      "accessibilityAndTestId": "可访问完成消息和 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "47e38a944c4cbbef6e2e2392953c7f13f0a24df89d06bbc5d6b1bce28af31356",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.test.tsx",
+        "sha256": "72ed3b1c9ca77c2e782477ac4210d8ea2955afd1073cdd59610b31428a093bf7",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-AUTHENTICATED-SHELL",
+        "IA02-PLATFORM-WORKSPACE-CONTEXT",
+        "IA02-PLATFORM-WORKSPACE-SIDER-CONTROL"
+      ],
+      "businessTask": "在认证平台壳中导航、切换当前集团空间并保护 required 页面。",
+      "actorAndScenario": "已登录运维管理员处理平台治理。",
+      "entryAndSurface": "登录后 Shell、侧栏底部集团空间 sibling 和 required 空态宿主。",
+      "controlType": "带图标菜单、页签、刷新/全屏、密码/登出、selector host。",
+      "dataSourceAndCascade": "WorkspaceScope owner-selected workspace；变更使上下文查询重建。",
+      "validationAndError": "owner session 恢复和安全空态；不由 URL 授权。",
+      "stateAndPermission": "菜单/任务仍由 owner 重验，未选 workspace 禁止 required 页读取。",
+      "navigationAndRefresh": "页签焦点/关闭与当前页 refresh；workspace 变更只刷新相关读取。",
+      "accessibilityAndTestId": "shell 按钮/标签与 platform-shell-* testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "f4cd0f617b5f9a765c810cb923b6c0ba1601a442db7cfe76dfb86bd80a16a559",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/app/PlatformApp.test.tsx",
+        "sha256": "462141392bd4befa8a5b8ce89f3e843a1c7f0f480097aeeaa3e9e1c0ea422f39",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-WORKSPACE-CONTEXT",
+        "IA02-PLATFORM-WORKSPACE-SIDER-CONTROL"
+      ],
+      "businessTask": "选择一个可管理集团空间并在未选时阻止 required 读取。",
+      "actorAndScenario": "已登录、准备处理特定空间的运维管理员。",
+      "entryAndSurface": "平台侧栏底部 searchable Select 与内容空态。",
+      "controlType": "搜索 Select、重试、无选择空态。",
+      "dataSourceAndCascade": "platform owner enabled workspace query；变更清理旧 context，未选不发 task read。",
+      "validationAndError": "只选 owner 返回值；失败保留最后确认值。",
+      "stateAndPermission": "selector 不是授权，后续 owner 再核验。",
+      "navigationAndRefresh": "selection 更新页面准入/缓存；无跳转快捷操作。",
+      "accessibilityAndTestId": "Form label、Select 和 platform-workspace-selector testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "1febad6fbe4189f69cc1a123249f78741ef84f10a49db5bd8758609eb7f1f5d8",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.test.tsx",
+        "sha256": "eec2eb7e2b6ad4291d2935e2110e72ba0e06edc7cae06f0b44c225a354b37e3f",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-WORKSPACES-ACTIONS"
+      ],
+      "businessTask": "查找空间、创建并从名称链接进入详情。",
+      "actorAndScenario": "维护空间资料和状态的运维管理员。",
+      "entryAndSurface": "/platform/workspaces 内容页。",
+      "controlType": "筛选、创建按钮、无操作列列表和名称详情链接。",
+      "dataSourceAndCascade": "owner list/create/asset staging；写后 owner detail/list readback。",
+      "validationAndError": "表单/typed failure 保留非秘密草稿。",
+      "stateAndPermission": "详情先于任何上下文动作，owner 重验。",
+      "navigationAndRefresh": "创建/写后刷新当前列表与详情。",
+      "accessibilityAndTestId": "表格/链接/按钮 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "20b3675caf56d3667bf018e8a749921c5e5d76bea93ffdb43b522850adcb2bf7",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.test.tsx",
+        "sha256": "8ebb7e8e48114097041414518eef0c0f80dc5d4462e9078443f763522e299c28",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-WORKSPACE-DETAIL-DRAWER"
+      ],
+      "businessTask": "核对空间后进入编辑、状态或初始化动作。",
+      "actorAndScenario": "已在列表定位目标空间的运维管理员。",
+      "entryAndSurface": "空间名称链接打开的详情 Drawer。",
+      "controlType": "只读资料及条件性上下文动作。",
+      "dataSourceAndCascade": "owner detail readback；关闭详情再开后续 action surface。",
+      "validationAndError": "加载/失败保持安全详情状态。",
+      "stateAndPermission": "owner 决定可动作性。",
+      "navigationAndRefresh": "动作后以最新 detail 替换。",
+      "accessibilityAndTestId": "Drawer 标题/关闭/动作 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "46d7f1ea9caed0f898d8aa292d6940f80950ec7938aca95c96f08a9ddf7ea02d",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.test.tsx",
+        "sha256": "37ac152b3e3df585cce5ef0669e40adb0e1079edaf925a96dc49619eb5cf2be3",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceCreateDrawer.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-WORKSPACE-CREATE-DRAWER"
+      ],
+      "businessTask": "录入空间资料与 Logo 后创建。",
+      "actorAndScenario": "新建空间的运维管理员。",
+      "entryAndSurface": "管理页页头新建 Drawer。",
+      "controlType": "编码/名称/标题/备注/Logo 上传与创建。",
+      "dataSourceAndCascade": "asset staging grant 唯一来源；替换/关闭释放暂存。",
+      "validationAndError": "字段规则、上传失败和 typed owner error。",
+      "stateAndPermission": "owner 校验唯一性、资产绑定与权限。",
+      "navigationAndRefresh": "成功回列表并刷新 owner readback。",
+      "accessibilityAndTestId": "字段 label、上传和提交 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "fe7e3f79044b7b3d039c7df4f70eabe1690066b11da0f7f0fb73870194dd75c4",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceCreateDrawer.test.tsx",
+        "sha256": "2d3bc3eabf83fce769d44b3d82bc70bb5c34208722d82c576c47f64cf9949be2",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-COMMERCIAL-GROUP-INIT-DRAWER"
+      ],
+      "businessTask": "为未初始化空间录入独立集团编码和名称。",
+      "actorAndScenario": "初始化商业集团的运维管理员。",
+      "entryAndSurface": "关闭空间详情后的初始化 Drawer。",
+      "controlType": "集团编码/名称、取消和初始化。",
+      "dataSourceAndCascade": "owner detail 表示未初始化；提交后重读 detail。",
+      "validationAndError": "字段规则/冲突保留草稿。",
+      "stateAndPermission": "owner 复核目标和一次性初始化前提。",
+      "navigationAndRefresh": "成功返回更新后的详情。",
+      "accessibilityAndTestId": "Drawer 字段与动作 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "01887dfed825f5b0be04fb315dd08c7664b936b954c7d08606b904962a2beb2b",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.test.tsx",
+        "sha256": "1f42b1f64ec934555cc0ba140aaa71697ffd979c8ee5c1012801b229ed962750",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceEditDrawer.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-WORKSPACE-EDIT-DRAWER"
+      ],
+      "businessTask": "以版本保护修正空间显示资料。",
+      "actorAndScenario": "维护空间资料的运维管理员。",
+      "entryAndSurface": "详情关闭后的编辑 Drawer。",
+      "controlType": "编码只读、资料输入、Logo keep/replace/remove、保存。",
+      "dataSourceAndCascade": "latest detail 和 staged asset；intent 变更清理暂存。",
+      "validationAndError": "字段/上传/冲突反馈；重读 detail 后重填。",
+      "stateAndPermission": "owner 重验版本、grant 与权限。",
+      "navigationAndRefresh": "成功更新 detail/list/context cache。",
+      "accessibilityAndTestId": "字段 label、radio、上传、提交 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "166a931491929bd31f05fba20da9277752a49caeec747a7a1c21d539c710091a",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceEditDrawer.test.tsx",
+        "sha256": "fab9f7350029523ab39fb08014df157e98360ea9826267139b50810b2aa4d7b8",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceStatusModal.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-WORKSPACE-STATUS-MODAL"
+      ],
+      "businessTask": "确认启用或停用一个空间。",
+      "actorAndScenario": "维护空间状态的运维管理员。",
+      "entryAndSurface": "详情关闭后的确认 Modal。",
+      "controlType": "确认/返回。",
+      "dataSourceAndCascade": "latest owner detail 提供目标/状态/版本。",
+      "validationAndError": "typed conflict 后重读。",
+      "stateAndPermission": "owner 核验状态迁移和权限。",
+      "navigationAndRefresh": "成功替换 detail 与列表行。",
+      "accessibilityAndTestId": "Modal 标题/按钮 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "580270ece5359a325a67d4083b31a9ce0b48903ada987c56dd426ff21310f212",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceStatusModal.test.tsx",
+        "sha256": "97310b3c4eece63e1a6eedd00c8a192df6bb0ba54e58d2d5f4e7af0fc6157553",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "screenIds": [
+        "IA02-PLATFORM-WORKSPACE-OVERVIEW"
+      ],
+      "businessTask": "只读核对已选空间概览。",
+      "actorAndScenario": "阅读空间基本、初始化和账号汇总的运维管理员。",
+      "entryAndSurface": "已选空间后的概览内容页。",
+      "controlType": "只读 Descriptions、刷新/资料重试。",
+      "dataSourceAndCascade": "selected workspace task read；selection 变更重建请求。",
+      "validationAndError": "加载/空/失败分离，禁止管理动作。",
+      "stateAndPermission": "未选不发读取，owner read authoritative。",
+      "navigationAndRefresh": "仅 refetch 当前 overview。",
+      "accessibilityAndTestId": "语义区块、按钮和 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "8fe3d46bb3c25ad866971abe19eae016f7e6ed8a2949e2eec88efb91072a5884",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.test.tsx",
+        "sha256": "642e8a05180a9146bbfd66a04c2d16d092571ce4c3363cb2033529a8d8a4d0f2",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "screenIds": [
+        "IA03-ADMIN-LIST"
+      ],
+      "businessTask": "查找或开始创建运维管理员。",
+      "actorAndScenario": "有平台管理员治理资格的运维管理员。",
+      "entryAndSurface": "平台管理员管理内容页。",
+      "controlType": "姓名/账号/状态筛选、创建和名称详情链接。",
+      "dataSourceAndCascade": "platform-IAM list owner；条件改变重取。",
+      "validationAndError": "typed list failure与空态分离。",
+      "stateAndPermission": "owner 列表与后续 detail/command 重验。",
+      "navigationAndRefresh": "查询/重置/创建后刷新。",
+      "accessibilityAndTestId": "筛选、表格、名称链接、创建 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "639f48dcecb77f12b0c3f4d45e9f7085d346a35b7bafe9bb14a7a8a2f630570b",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.test.tsx",
+        "sha256": "33fc20e45ede2734072df85b1a37c9137eb3e3b9d2e1dbda0adeb7c5bb21a4f0",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.tsx",
+      "screenIds": [
+        "IA03-ADMIN-DETAIL"
+      ],
+      "businessTask": "核对管理员资料再进入后续动作。",
+      "actorAndScenario": "管理员治理用户。",
+      "entryAndSurface": "管理员姓名打开的详情 Drawer。",
+      "controlType": "只读详情和编辑/凭据/状态入口。",
+      "dataSourceAndCascade": "owner detail readback。",
+      "validationAndError": "失败不假空。",
+      "stateAndPermission": "owner 决定可动作性。",
+      "navigationAndRefresh": "关闭详情后才开 action，写后重读。",
+      "accessibilityAndTestId": "Drawer/action testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "62386eb2ba61a9cdffff0d0bce7257dcb4437d216a7016a3b64fee59995acfcb",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.test.tsx",
+        "sha256": "bbd867ff624de1c8b4ac7a0a0550763110d91c682e4e1f39424c42aa0878803f",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCreateDrawer.tsx",
+      "screenIds": [
+        "IA03-ADMIN-CREATE"
+      ],
+      "businessTask": "创建独立可登录的平台管理员。",
+      "actorAndScenario": "管理员治理用户。",
+      "entryAndSurface": "列表页新建 Drawer。",
+      "controlType": "账号、姓名、手机、初始/确认密码与创建。",
+      "dataSourceAndCascade": "用户输入；密码不回显或保留。",
+      "validationAndError": "字段规则和 typed owner failure。",
+      "stateAndPermission": "owner 核验唯一性/密码/权限。",
+      "navigationAndRefresh": "成功刷新列表。",
+      "accessibilityAndTestId": "表单字段/创建 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "cdb741c1903590f091eed823252108419c9b2737d1d0124f6fa51ce54db1ad01",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCreateDrawer.test.tsx",
+        "sha256": "f6ef667bb4d0d1d509e1a6794b60d9569d2362bb52fea9b92f1e92f9e0cb7e96",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorEditDrawer.tsx",
+      "screenIds": [
+        "IA03-ADMIN-EDIT"
+      ],
+      "businessTask": "修正管理员姓名和手机号。",
+      "actorAndScenario": "管理员治理用户。",
+      "entryAndSurface": "详情关闭后编辑 Drawer。",
+      "controlType": "账号只读、姓名/手机输入、保存。",
+      "dataSourceAndCascade": "latest detail 预填。",
+      "validationAndError": "冲突重读、保留非秘密草稿。",
+      "stateAndPermission": "owner 复核版本/权限。",
+      "navigationAndRefresh": "成功替换 detail/list。",
+      "accessibilityAndTestId": "字段和保存 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "0e32db16509bece5764f45c71499e0b84fe26a968bdd1c59aaab0d7ad634d286",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorEditDrawer.test.tsx",
+        "sha256": "6272374bc8ea45a46a7c505173b02f1163580168f6c1f638d3fb6ed011e7e90f",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCredentialDrawer.tsx",
+      "screenIds": [
+        "IA03-ADMIN-CREDENTIAL"
+      ],
+      "businessTask": "为正确账号签发新的管理员登录凭据。",
+      "actorAndScenario": "管理员治理用户。",
+      "entryAndSurface": "详情关闭后的凭据 Drawer。",
+      "controlType": "新/确认密码、取消、确认重置。",
+      "dataSourceAndCascade": "latest owner detail 提供目标；秘密不进 readback。",
+      "validationAndError": "确认不一致/typed error 后清秘密。",
+      "stateAndPermission": "owner 重验账号/权限/版本。",
+      "navigationAndRefresh": "完成后重读目标详情。",
+      "accessibilityAndTestId": "密码字段/submit testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "711b2319de4a673d2159cac98c51cdf1e3bb18857f20e46fce8559342995b86f",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorCredentialDrawer.test.tsx",
+        "sha256": "7563649e98ca43cd63153632bc499e37b5ea0e4e21166045129e3dfbaed13457",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.tsx",
+      "screenIds": [
+        "IA03-ADMIN-STATUS"
+      ],
+      "businessTask": "明确确认管理员启停。",
+      "actorAndScenario": "管理员治理用户。",
+      "entryAndSurface": "详情中的状态动作 Modal。",
+      "controlType": "确认/取消。",
+      "dataSourceAndCascade": "latest detail 的姓名/状态/版本。",
+      "validationAndError": "冲突 readback。",
+      "stateAndPermission": "owner 复核资格与状态。",
+      "navigationAndRefresh": "成功刷新详情/列表。",
+      "accessibilityAndTestId": "Modal action testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "543814ce7c0d4c180c71d84b1a2cacb18d20146fd95590065c25fe2f3914c998",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorStatusModal.test.tsx",
+        "sha256": "644c6286e597b8bc4d0b2c70c893fa12aa9b0b47264e568cfa01af537cb952eb",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "screenIds": [
+        "IA03-ORG-OVERVIEW",
+        "IA03-ORG-HIERARCHY",
+        "IA03-CONTRACT-OVERVIEW"
+      ],
+      "businessTask": "在已选空间只读核对组织层级、经营对象或合同。",
+      "actorAndScenario": "有组织/合同只读资格的运维管理员。",
+      "entryAndSurface": "组织/合同概览内容页和内容 Tab。",
+      "controlType": "Tab、筛选占位、列表/树、名称或合同详情链接、刷新。",
+      "dataSourceAndCascade": "owner task reads，选择 workspace 后才读取。",
+      "validationAndError": "空/失败/加载分离，禁止 client full-list/materialization。",
+      "stateAndPermission": "只读页面，owner scope/权限重验。",
+      "navigationAndRefresh": "Tab/链接进入 detail，refetch 当前任务。",
+      "accessibilityAndTestId": "Tab/列表/链接/重试 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "1f207b076326fc22236e6e9ef5529f4a583d50ff6c961bc492f635780a4c3d16",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.test.tsx",
+        "sha256": "25cd6ce186642927874109250d354b818f5e19ee5153d3d4fe9f744464f45f3a",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewDetailDrawer.tsx",
+      "screenIds": [
+        "IA03-ORG-DETAIL"
+      ],
+      "businessTask": "阅读品牌、经营租户、总公司或门店 owner 事实。",
+      "actorAndScenario": "组织只读用户。",
+      "entryAndSurface": "概览名称链接详情 Drawer。",
+      "controlType": "只读字段和启用定义字段、关闭。",
+      "dataSourceAndCascade": "owner detail + current enabled definitions ordered by displayOrder。",
+      "validationAndError": "失败不显示伪空，缺值为业务占位。",
+      "stateAndPermission": "无编辑/启停/授权动作。",
+      "navigationAndRefresh": "关闭回原概览，readback 保持当前。",
+      "accessibilityAndTestId": "Drawer/字段/关闭 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "1c460b2b613c217d0f419e02a11de5c424ebc1fe08dd18344b867c2c810e552a",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewDetailDrawer.test.tsx",
+        "sha256": "0c1381eece406881b6d81d87139daa147515cb68ac7f16d2f1c18c37e5ba7c32",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.tsx",
+      "screenIds": [
+        "IA03-CONTRACT-DETAIL"
+      ],
+      "businessTask": "阅读当前或历史合同 owner 事实。",
+      "actorAndScenario": "合同只读用户。",
+      "entryAndSurface": "合同编号链接详情 Drawer。",
+      "controlType": "合同只读字段、扩展字段、关闭。",
+      "dataSourceAndCascade": "owner contract detail + enabled definitions。",
+      "validationAndError": "失败不伪造空态。",
+      "stateAndPermission": "无作废/编辑动作。",
+      "navigationAndRefresh": "关闭回合同概览。",
+      "accessibilityAndTestId": "Drawer/关闭 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "27163f7000ad230b722615c6157716b509973832721fcbcaa98a9c13b7de1d1a",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.test.tsx",
+        "sha256": "b2b798495e504136e21d90961a50b33ea35aa2cea171b7074e38f604937b87e3",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "screenIds": [
+        "IA03-ROLE-LIST"
+      ],
+      "businessTask": "查找或创建业务角色。",
+      "actorAndScenario": "角色治理运维管理员。",
+      "entryAndSurface": "已选空间角色管理内容页。",
+      "controlType": "列表、名称详情链接、新建。",
+      "dataSourceAndCascade": "workspace-IAM owner role list。",
+      "validationAndError": "加载/空/typed failure 分离。",
+      "stateAndPermission": "owner page/action authorization。",
+      "navigationAndRefresh": "写后刷新 list。",
+      "accessibilityAndTestId": "页面/链接/按钮 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "e0535f110205fb9f2fd2e2ce262812173b3f23847ed38392f70210edc6d79533",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.test.tsx",
+        "sha256": "111cc843d025be5136e1280fb826c23c075a6aa046c616150ef4426f199b333e",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.tsx",
+      "screenIds": [
+        "IA03-ROLE-DETAIL"
+      ],
+      "businessTask": "核对角色资料及两棵独立授权树。",
+      "actorAndScenario": "角色治理用户。",
+      "entryAndSurface": "角色名称详情 Drawer。",
+      "controlType": "只读详情、编辑、启停。",
+      "dataSourceAndCascade": "owner detail 及功能/动作集合。",
+      "validationAndError": "失败保留已确认 readback。",
+      "stateAndPermission": "两种授权不互推，owner 重验。",
+      "navigationAndRefresh": "关闭详情后开 action；写后重读。",
+      "accessibilityAndTestId": "Drawer/action testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "23e47323a15d03897179bf4999a899b5f7299469adf3412dcf4d09f248b17703",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.test.tsx",
+        "sha256": "65ebd3b995a29347162e317f5b26e7b3166e764b1b786d49249e6668d599ce3a",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleCreateDrawer.tsx",
+      "screenIds": [
+        "IA03-ROLE-CREATE"
+      ],
+      "businessTask": "一次保存新角色资料和独立授权。",
+      "actorAndScenario": "角色治理用户。",
+      "entryAndSurface": "角色列表新建 Drawer。",
+      "controlType": "名称、任职机构类型、说明、菜单/动作集。",
+      "dataSourceAndCascade": "owner candidate/readback；不从 UI 推导权限。",
+      "validationAndError": "字段失败保留非秘密草稿。",
+      "stateAndPermission": "owner 原子保存两树。",
+      "navigationAndRefresh": "成功刷新 list。",
+      "accessibilityAndTestId": "字段/创建 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "8389e98ccbc81e4a83a0c178a3c46cf9dad70cbb937b2c74e449c80706bcca89",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleCreateDrawer.test.tsx",
+        "sha256": "6453ed0a7923b3d285f04c19caf2d45963440ff603a62f824bd661a0544e1598",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleEditDrawer.tsx",
+      "screenIds": [
+        "IA03-ROLE-EDIT"
+      ],
+      "businessTask": "修订角色资料和独立授权。",
+      "actorAndScenario": "角色治理用户。",
+      "entryAndSurface": "详情关闭后编辑 Drawer。",
+      "controlType": "机构类型只读、名称/说明/两树编辑。",
+      "dataSourceAndCascade": "latest owner detail/candidates。",
+      "validationAndError": "冲突重读最新详情。",
+      "stateAndPermission": "owner 复核版本/两树。",
+      "navigationAndRefresh": "成功替换 detail/list。",
+      "accessibilityAndTestId": "字段/保存 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "738441bb4508849d3c89387fa97555dc7df6b42fa740234182b9e534a7963b81",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleEditDrawer.test.tsx",
+        "sha256": "bc1c41fdd224b3d55e0ec5e4e84d21c31e4fedab096be8a6a16315b4362b360b",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleStatusModal.tsx",
+      "screenIds": [
+        "IA03-ROLE-STATUS"
+      ],
+      "businessTask": "确认角色启停。",
+      "actorAndScenario": "角色治理用户。",
+      "entryAndSurface": "角色详情状态 Modal。",
+      "controlType": "确认/取消。",
+      "dataSourceAndCascade": "latest owner detail。",
+      "validationAndError": "typed conflict 后 readback。",
+      "stateAndPermission": "owner 状态/权限重验。",
+      "navigationAndRefresh": "刷新详情/list。",
+      "accessibilityAndTestId": "Modal action testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "886b451edfe6f217c07403eeef0d4e10c510062fc8c995256b095cf94287cd40",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleStatusModal.test.tsx",
+        "sha256": "e440e50f91b83ceedf6dcd22cdb64186cbfe387c0056977cd314aace26bd7d28",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "screenIds": [
+        "IA03-ACCOUNT-TAB"
+      ],
+      "businessTask": "查找空间账号和任职结果。",
+      "actorAndScenario": "空间账号治理运维管理员。",
+      "entryAndSurface": "已选空间账号单一内容页。",
+      "controlType": "账号名称详情链接；无邀请 Tab 或入口。",
+      "dataSourceAndCascade": "workspace-IAM owner account list。",
+      "validationAndError": "列表空/失败分离。",
+      "stateAndPermission": "target/assignment 仍 owner 判定。",
+      "navigationAndRefresh": "详情/写后刷新。",
+      "accessibilityAndTestId": "表格/链接 testId；无 invitation tab testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "d24ab52d5aa92f8577cd52f2d37f6e12d7e047b069bd62f675228e03604eccc1",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx",
+        "sha256": "f2045164b52bbd690df48ed2fb26a17f10da81718fda7bea85931c6ab966fa8a",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+      "screenIds": [
+        "IA03-ACCOUNT-DETAIL"
+      ],
+      "businessTask": "核对账号与任职，再进入批准动作。",
+      "actorAndScenario": "空间账号治理用户。",
+      "entryAndSurface": "账号名称详情 Drawer。",
+      "controlType": "只读账号/任职、凭据/状态/撤销入口。",
+      "dataSourceAndCascade": "owner detail readback。",
+      "validationAndError": "动作可用性由 owner 标记。",
+      "stateAndPermission": "owner 再核验账号/任职/版本。",
+      "navigationAndRefresh": "动作成功重读 detail/list。",
+      "accessibilityAndTestId": "Drawer/action testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "21ca767d649ffd6e8d9f587b2b5d354f907fbed866c75bdf24a13046e293e4eb",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.test.tsx",
+        "sha256": "c72e36ffb138fec29c25cf50183855abcab776046c1df7350259a88a1cc0eabc",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountActionModal.tsx",
+      "screenIds": [
+        "IA03-ACCOUNT-ACTION"
+      ],
+      "businessTask": "确认账号状态、凭据恢复或撤销一条任职。",
+      "actorAndScenario": "空间账号治理用户。",
+      "entryAndSurface": "账号详情动作 Modal。",
+      "controlType": "每次一个确认 action。",
+      "dataSourceAndCascade": "latest detail/lifecycle 给对象、版本和幂等。",
+      "validationAndError": "known 4xx 不重放；unknown 先 readback。",
+      "stateAndPermission": "owner 重新核验 assignment/状态/权限。",
+      "navigationAndRefresh": "成功刷新 owner detail。",
+      "accessibilityAndTestId": "具体确认 copy 与 action testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "afe0f295994ca84b9822f8e4918b9c5b3c1370a494b06eee2e9ea723c0cc6e9b",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountActionModal.test.tsx",
+        "sha256": "cc0a4e1df60656639fff3b32c0be165f30656dc5bd6094da932dc1776522887a",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "screenIds": [
+        "IA03-EXTENSION-PAGE"
+      ],
+      "businessTask": "查看某对象类别的可用字段定义并进入编辑。",
+      "actorAndScenario": "字段配置运维管理员。",
+      "entryAndSurface": "已选空间扩展字段内容页。",
+      "controlType": "类别导航、定义表、编辑入口。",
+      "dataSourceAndCascade": "definition owner catalog/readback。",
+      "validationAndError": "空/失败不伪造定义。",
+      "stateAndPermission": "无逐行 mutation，owner 定义权限。",
+      "navigationAndRefresh": "编辑后以 readback 刷新。",
+      "accessibilityAndTestId": "类别/表/编辑 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "1deb5894be7859f3ddd825e0cffc996658bc8b1976d791eec1614ce4d7148444",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.tsx",
+        "sha256": "863d41f9e673d667ed0a62629d4b31091b245e3a73028d5d24ea8eda4102d43d",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionEditDrawer.tsx",
+      "screenIds": [
+        "IA03-EXTENSION-EDIT"
+      ],
+      "businessTask": "一次保存完整对象字段定义。",
+      "actorAndScenario": "字段配置用户。",
+      "entryAndSurface": "页面关闭后编辑 Drawer。",
+      "controlType": "字段行、类型、必填、启用、选项、顺序和增删。",
+      "dataSourceAndCascade": "latest definition；类型变更清理不适用选项。",
+      "validationAndError": "整组校验/冲突回最新定义。",
+      "stateAndPermission": "definition owner 仅接受整组 replace。",
+      "navigationAndRefresh": "保存进结果 Modal/readback。",
+      "accessibilityAndTestId": "行字段/增删/保存 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "9df39e46489bb1c927a8a561d19533e5412acd20309f4d788314218983b6dabf",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionEditDrawer.test.tsx",
+        "sha256": "e3227f5c3cbb4e1cc49b730c68cacab129164c5de335da13f208a2bc0fb1847f",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionSaveModal.tsx",
+      "screenIds": [
+        "IA03-EXTENSION-SAVE"
+      ],
+      "businessTask": "获知定义保存或冲突，并按最新值恢复。",
+      "actorAndScenario": "字段配置用户。",
+      "entryAndSurface": "编辑提交后的结果 Modal。",
+      "controlType": "确认或查看最新配置。",
+      "dataSourceAndCascade": "owner replace result/readback。",
+      "validationAndError": "冲突不伪称成功。",
+      "stateAndPermission": "无 client CAS 推导。",
+      "navigationAndRefresh": "确认关闭；冲突读最新。",
+      "accessibilityAndTestId": "结果状态/按钮 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "108687866d46c7d8fcaf0d43310f41fbd825bffed925b06eb77ca5def8387dbc",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionSaveModal.test.tsx",
+        "sha256": "11912f240347595b7c3bb269e928ce7917da7c389f8ae7fbc8af0112ccf23c14",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.tsx",
+      "screenIds": [
+        "IA03-PASSWORD-DRAWER"
+      ],
+      "businessTask": "安全修改本人平台密码。",
+      "actorAndScenario": "已登录运维管理员。",
+      "entryAndSurface": "用户菜单修改密码 Drawer。",
+      "controlType": "当前/新/确认密码、取消、保存。",
+      "dataSourceAndCascade": "仅本人 owner command；所有 exit/failure 清秘密。",
+      "validationAndError": "确认和 owner 密码规则；typed error 不泄密。",
+      "stateAndPermission": "本人 session/版本由 owner 核验。",
+      "navigationAndRefresh": "成功关闭并进入结果 Modal。",
+      "accessibilityAndTestId": "密码 label 与 action testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "57031089e547b84288aff2a7875e5b1c527ecbc68e6779a30cd249903b96d352",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeDrawer.test.tsx",
+        "sha256": "0cd86d0bfff7ca7e22d7c97839e98af26ee7aab91ddf6a62e6b481d54516d108",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeResult.tsx",
+      "screenIds": [
+        "IA03-PASSWORD-RESULT"
+      ],
+      "businessTask": "告知本人密码更新后需重新登录。",
+      "actorAndScenario": "刚完成改密的运维管理员。",
+      "entryAndSurface": "改密成功后的结果 Modal。",
+      "controlType": "成功文案和重新登录。",
+      "dataSourceAndCascade": "owner 成功结果；无秘密。",
+      "validationAndError": "仅成功才显示。",
+      "stateAndPermission": "其他会话失效由 owner 处理。",
+      "navigationAndRefresh": "重新认证回登录。",
+      "accessibilityAndTestId": "结果/重登按钮 testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "6e0ce28afce5fa84d1405abc41649afcbf3fc3aeba091f829e3c33221f39d87c",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordChangeResult.test.tsx",
+        "sha256": "a5b5481cc981092b24d1daf4f066c96ce99747f6b05fa059e561b4b83fc2e215",
+        "result": "PASS"
+      }
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolePermissionFields.tsx",
+      "screenIds": [
+        "IA03-ROLE-CREATE",
+        "IA03-ROLE-EDIT"
+      ],
+      "businessTask": "在角色创建或编辑时选择两棵独立的 owner-authorized 授权树。",
+      "actorAndScenario": "配置某一任职机构类型业务角色的运维管理员。",
+      "entryAndSurface": "角色新建/编辑 Drawer 内的共享表单控件。",
+      "controlType": "可使用的功能菜单与可执行的操作 TreeSelect。",
+      "dataSourceAndCascade": "workspace-IAM role catalog；任职机构类型变更清空两类不适用选择。",
+      "validationAndError": "两项均为必填；候选仅来自 owner catalog。",
+      "stateAndPermission": "两棵树不互推，owner 在原子保存时复核。",
+      "navigationAndRefresh": "保存由父 Drawer 统一提交并以 owner readback 刷新。",
+      "accessibilityAndTestId": "明确 Form label 与 workspace-role-page-access/workspace-role-capability-access testId。",
+      "controlDimensions": [
+        "business-task",
+        "actor-and-scenario",
+        "entry-and-surface",
+        "control-type",
+        "data-source-and-cascade",
+        "validation-and-error",
+        "state-and-permission",
+        "navigation-and-refresh",
+        "accessibility-and-test-id"
+      ],
+      "currentSourceSha256": "e6de8292e8355313ec397ed53fffb15d92e030f8297a0c1f5b2e48f7469869e2",
+      "focusedTest": {
+        "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolePermissionFields.test.tsx",
+        "sha256": "b8e17f9c9b62d83ffa33f8041bc817a260dbea65ca22626a15154e72fafd32f4",
+        "result": "PASS"
+      }
+    }
+  ],
+  "exactStaticProof": {
+    "command": "yarn --cwd apps/frontend/platform-admin vitest run <36 explicit owner test files>",
+    "result": "PASS",
+    "files": 36,
+    "tests": 36
+  },
+  "typecheck": {
+    "command": "yarn --cwd apps/frontend/platform-admin typecheck",
+    "result": "PASS"
+  },
+  "currentSourceReadback": "Every actual consumer was reopened as the present physical denominator; all nine IA dimensions remain bound by the original IA/physical/roster truth and are hash-pinned above.",
+  "l2Boundary": "STATIC_ONLY: joint managed remote L2 remains a later required step; business=NOT_APPLICABLE; cleanup=NOT_APPLICABLE."
+}
+

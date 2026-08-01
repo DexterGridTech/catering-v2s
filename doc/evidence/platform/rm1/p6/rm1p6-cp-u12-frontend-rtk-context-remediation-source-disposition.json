@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-source-compliance-disposition",
+  "packageId": "RM1P6-CP-U12-FRONTEND-RTK-CONTEXT-REMEDIATION",
+  "rows": [
+    {
+      "denominator": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "sourcePath": "project-memory/decisions/confirmed-business-language-corpus.md",
+      "sourceSha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503",
+      "anchor": "Assertions",
+      "ruleId": "D1:project-memory/decisions/confirmed-business-language-corpus.md",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "denominator": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "sourcePath": "project-memory/kernel/01-workspace-and-roadmap.md",
+      "sourceSha256": "f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63",
+      "anchor": "Assertions",
+      "ruleId": "D1:project-memory/kernel/01-workspace-and-roadmap.md",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "denominator": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "sourcePath": "project-memory/kernel/02-service-shape-and-owner.md",
+      "sourceSha256": "45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032",
+      "anchor": "Assertions",
+      "ruleId": "D1:project-memory/kernel/02-service-shape-and-owner.md",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "denominator": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "sourcePath": "project-memory/kernel/03-transaction-data-and-dependencies.md",
+      "sourceSha256": "f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44",
+      "anchor": "Assertions",
+      "ruleId": "D1:project-memory/kernel/03-transaction-data-and-dependencies.md",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "denominator": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "sourcePath": "project-memory/kernel/04-contract-consumer-and-admin.md",
+      "sourceSha256": "1f6d9efbe0208f5b164d12effd4a4c4ab8f2c297b9b000462dc96820c3efa88d",
+      "anchor": "Assertions",
+      "ruleId": "D1:project-memory/kernel/04-contract-consumer-and-admin.md",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "denominator": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "sourcePath": "project-memory/kernel/05-evidence-runtime-and-git.md",
+      "sourceSha256": "d0d75e547400145ef7e764d735bc86e2fdaa5ea8a0b19ace213170b527d65a05",
+      "anchor": "Assertions",
+      "ruleId": "D1:project-memory/kernel/05-evidence-runtime-and-git.md",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "denominator": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "sourcePath": "project-memory/kernel/06-heritage-and-change.md",
+      "sourceSha256": "5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c",
+      "anchor": "Assertions",
+      "ruleId": "D1:project-memory/kernel/06-heritage-and-change.md",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "denominator": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "sourcePath": "project-memory/operations/business-corpus-adoption-and-read-policy.md",
+      "sourceSha256": "04d9329413131e369e8c1ea841f172d4c295f953b07b9768a0e597405fd28353",
+      "anchor": "Assertions",
+      "ruleId": "D1:project-memory/operations/business-corpus-adoption-and-read-policy.md",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "STATIC_ADMISSION_AND_PACKAGE_EXIT"
+    },
+    {
+      "denominator": "APPROVED_ASSERTIONS",
+      "sourcePath": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "sourceSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "anchor": "md:## 2. Exact design",
+      "ruleId": "D2:The operation content is keyed by the owner-issued monotonic contextVersion, so a context change resets only local visual state while generated RTK request generation remains owner-scoped.",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "PACKAGE_EXIT_ASSERTION"
+    },
+    {
+      "denominator": "APPROVED_ASSERTIONS",
+      "sourcePath": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "sourceSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "anchor": "md:## 2. Exact design",
+      "ruleId": "D2:Screen contracts never import app-substrate transport construction; generated hook reads and generated-client writes remain the only page data protocol.",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "PACKAGE_EXIT_ASSERTION"
+    },
+    {
+      "denominator": "FORBIDDEN_PSEUDO_FIXES",
+      "sourcePath": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "sourceSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "anchor": "md:## 4. Exclusions",
+      "ruleId": "D3:f81757a970fd96005e7146ba315c1c6b3006b287968bc210d776be4b9cae55c1",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "FULL_COMPLIANCE_SCAN"
+    },
+    {
+      "denominator": "FORBIDDEN_PSEUDO_FIXES",
+      "sourcePath": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "sourceSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "anchor": "md:## 4. Exclusions",
+      "ruleId": "D3:09c7c8366f66cbcb9291e5467a9c0cc5cf628e4a98bc7ce6b8d160c5e91c95a9",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "FULL_COMPLIANCE_SCAN"
+    },
+    {
+      "denominator": "FORBIDDEN_PSEUDO_FIXES",
+      "sourcePath": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "sourceSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "anchor": "md:## 4. Exclusions",
+      "ruleId": "D3:fa125e28fc5f82b36c1f9bc11fe9eb40146e81c76720e7b900b100113b09f51c",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "FULL_COMPLIANCE_SCAN"
+    },
+    {
+      "denominator": "FORBIDDEN_PSEUDO_FIXES",
+      "sourcePath": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "sourceSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "anchor": "md:## 4. Exclusions",
+      "ruleId": "D3:fb0379bcf9c165c0895f1dad863c41f316d8c0e710bd0f1b88dd5dcd8531c2fd",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "FULL_COMPLIANCE_SCAN"
+    },
+    {
+      "denominator": "FORBIDDEN_PSEUDO_FIXES",
+      "sourcePath": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "sourceSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "anchor": "md:## 4. Exclusions",
+      "ruleId": "D3:e4d5371dbfa7f048dab169b977f20c6821300d11601272f3519e488d1644d2b7",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "FULL_COMPLIANCE_SCAN"
+    },
+    {
+      "denominator": "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA",
+      "sourcePath": "doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md",
+      "sourceSha256": "e412b4a5e05599dccee43b2baaab65b472964a41c3ef396b2d5f779eca4285fb",
+      "anchor": "md:## 3. Proof and red mutation",
+      "ruleId": "D4:PACKAGE_EXIT",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "EXACT_CHANGED_PATH_AND_RECEIPT_SET"
+    },
+    {
+      "denominator": "OWNED_SURFACE_AND_PAGE_KEYS",
+      "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+      "sourceSha256": "6b531d3bba676f5cc24e3121f482f7920abfe0b4c476081c1ce0478a17ee3974",
+      "anchor": "json:/surfaces,json:/pageDesignKeySurfaceCrosswalk",
+      "ruleId": "D5:OWNED_SURFACE",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "PACKAGE_EXIT_OWNED_SURFACE_TRACE"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N02",
+      "ruleId": "D6:B.5.N02",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N03",
+      "ruleId": "D6:B.5.N03",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N04",
+      "ruleId": "D6:B.5.N04",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N05",
+      "ruleId": "D6:B.5.N05",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N06",
+      "ruleId": "D6:B.5.N06",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N07",
+      "ruleId": "D6:B.5.N07",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N09",
+      "ruleId": "D6:B.5.N09",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N10",
+      "ruleId": "D6:B.5.N10",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N11",
+      "ruleId": "D6:B.5.N11",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N12",
+      "ruleId": "D6:B.5.N12",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N13",
+      "ruleId": "D6:B.5.N13",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N14",
+      "ruleId": "D6:B.5.N14",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    },
+    {
+      "denominator": "DUE_STANDARDS_RULE_IDS",
+      "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+      "sourceSha256": "7d390eb692b627d876cdbfe34d03c140ce4f8450333c2d7618c849ced2fb55b3",
+      "anchor": "/rules/B.5.N15",
+      "ruleId": "D6:B.5.N15",
+      "applicability": "APPLICABLE",
+      "missingEntryFails": true,
+      "requiredEvidence": "REVIEW_CHECKLIST:JOURNEY_INTERACTION_REVIEW"
+    }
+  ]
+}

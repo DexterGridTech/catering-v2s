@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$root_dir"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/check/business-terminology-traceability --batch <deliveryBatchId>
+  scripts/check/business-terminology-traceability --batch <deliveryBatchId> --closure <closure-json>
+  scripts/check/business-terminology-traceability --audit-waves W1-W6
+  scripts/check/business-terminology-traceability --self-test
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "$#" -eq 0 ]]; then
+  usage
+  [[ "$#" -eq 0 ]] && exit 2 || exit 0
+fi
+
+exec yarn node --input-type=module - "$@" <<'NODE'
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+
+const {resolveRoadmap} = await import(pathToFileURL(path.join(process.cwd(), 'tools/roadmap-registry/core.mjs')).href);
+
+const root = process.cwd();
+const registryPath = 'doc/review/platform/2026-07-18-business-terminology-traceability.json';
+const defaultMapPath = 'doc/review/platform/2026-07-17-four-domain-module-delivery-batch-map.md';
+const args = process.argv.slice(2);
+
+class GateError extends Error { constructor(code, message) { super(message); this.code = code; } }
+function fail(code, message) { throw new GateError(code, message); }
+function exists(relative) { return fs.existsSync(path.join(root, relative)); }
+function read(relative) { return fs.readFileSync(path.join(root, relative), 'utf8'); }
+function norm(value) { return String(value ?? '').trim(); }
+function unique(values) { return new Set(values).size === values.length; }
+function codeTokens(value) { return [...String(value).matchAll(/`([^`]+)`/gu)].map((match) => match[1]); }
+
+function loadRegistry() {
+  if (!exists(registryPath)) fail('BUSINESS_TERMINOLOGY_REGISTRY_MISSING', registryPath);
+  let registry;
+  try { registry = JSON.parse(read(registryPath)); } catch (error) { fail('BUSINESS_TERMINOLOGY_REGISTRY_INVALID_JSON', String(error)); }
+  if (registry.schemaVersion !== 1 || registry.policyStatus !== 'ACTIVE') fail('BUSINESS_TERMINOLOGY_POLICY_INVALID', 'schemaVersion=1 and policyStatus=ACTIVE are required');
+  if (!Array.isArray(registry.batches)) fail('BUSINESS_TERMINOLOGY_BATCH_REGISTRY_MISSING', 'batches must be an array');
+  return registry;
+}
+
+function batchFromMap(batchId) {
+  const mapPath = resolveRoadmap({repoRoot: root, batchId, consumer: 'module-delivery-batch'}).entry.batchMapRef ?? defaultMapPath;
+  const line = read(mapPath).split(/\r?\n/u).find((candidate) => candidate.startsWith(`| \`${batchId}\` |`));
+  if (!line) fail('BATCH_UNKNOWN', batchId);
+  const cells = line.slice(1, -1).split('|').map(norm);
+  const steps = codeTokens(cells[3]);
+  if (!steps.length) fail('BATCH_STEPS_MISSING', batchId);
+  return {batchId, steps, scenarios: [...new Set(steps.map((step) => step.replace(/\.S\d+$/u, '')))]};
+}
+
+function resolveRef(ref, context) {
+  const raw = norm(ref);
+  const [relative] = raw.split('#', 2);
+  if (!relative || !exists(relative)) fail('BUSINESS_TERMINOLOGY_SOURCE_MISSING', `${context}: ${raw}`);
+  return {relative, source: read(relative)};
+}
+
+function checkManifest(ref, context) {
+  if (!exists(ref)) fail('BUSINESS_TERMINOLOGY_EVIDENCE_MISSING', `${context}: ${ref}`);
+  let manifest;
+  try { manifest = JSON.parse(read(ref)); } catch (error) { fail('BUSINESS_TERMINOLOGY_EVIDENCE_INVALID_JSON', `${context}: ${ref}: ${String(error)}`); }
+  if (manifest.business?.status !== 'PASS' || manifest.cleanup?.status !== 'PASS') fail('BUSINESS_TERMINOLOGY_EVIDENCE_NOT_PASS', `${context}: ${ref} business/cleanup must both be PASS`);
+}
+
+function checkScenario(record, requiredSteps, {requireEvidence}) {
+  const scenarioId = norm(record?.scenarioId);
+  if (!scenarioId) fail('BUSINESS_TERMINOLOGY_SCENARIO_ID_MISSING', 'scenario record has no scenarioId');
+  if (!requiredSteps.every((step) => step.startsWith(`${scenarioId}.`))) fail('BUSINESS_TERMINOLOGY_STEP_SCOPE_INVALID', `${scenarioId}: required step outside scenario`);
+  if (record.reviewStatus !== 'PASS' || record.readbackStatus !== 'PASS') fail('BUSINESS_TERMINOLOGY_REVIEW_NOT_PASS', `${scenarioId}: reviewStatus/readbackStatus must be PASS`);
+  if (!Array.isArray(record.terms) || record.terms.length === 0) fail('BUSINESS_TERMINOLOGY_TERMS_MISSING', `${scenarioId}: terms must be non-empty`);
+  if (!unique(record.terms.map((term) => norm(term.termId)))) fail('BUSINESS_TERMINOLOGY_TERM_DUPLICATE', `${scenarioId}: duplicate termId`);
+  if ((record.unknownTerms ?? []).length !== 0) fail('BUSINESS_TERMINOLOGY_UNKNOWN_TERMS', `${scenarioId}: ${record.unknownTerms.join(',')}`);
+  for (const term of record.terms) {
+    const id = norm(term.termId);
+    if (!id || !norm(term.text) || !norm(term.meaning) || !norm(term.boundary) || !norm(term.surface)
+      || term.status !== 'PASS' || !Array.isArray(term.sourceRefs) || term.sourceRefs.length === 0
+      || !Array.isArray(term.runtimePaths) || term.runtimePaths.length === 0 || !norm(term.runtimeAnchor)
+      || !Array.isArray(term.prohibitedAlternatives)) {
+      fail('BUSINESS_TERMINOLOGY_TERM_INCOMPLETE', `${scenarioId}/${id || 'missing'} requires text/meaning/boundary/surface/sourceRefs/runtimePaths/runtimeAnchor/status=PASS`);
+    }
+    const sources = term.sourceRefs.map((ref) => resolveRef(ref, `${scenarioId}/${id}`));
+    if (!sources.some(({source}) => source.includes(term.text))) fail('BUSINESS_TERMINOLOGY_TEXT_NOT_IN_SOURCE', `${scenarioId}/${id}: ${term.text}`);
+    for (const runtimePath of term.runtimePaths) {
+      if (!exists(norm(runtimePath))) fail('BUSINESS_TERMINOLOGY_RUNTIME_PATH_MISSING', `${scenarioId}/${id}: ${runtimePath}`);
+      if (!read(norm(runtimePath)).includes(term.runtimeAnchor)) fail('BUSINESS_TERMINOLOGY_RUNTIME_ANCHOR_MISSING', `${scenarioId}/${id}: ${runtimePath}#${term.runtimeAnchor}`);
+    }
+    if (requireEvidence) {
+      if (!Array.isArray(term.evidenceRefs) || term.evidenceRefs.length === 0) fail('BUSINESS_TERMINOLOGY_ELEMENT_EVIDENCE_MISSING', `${scenarioId}/${id}`);
+      term.evidenceRefs.forEach((ref) => checkManifest(norm(ref), `${scenarioId}/${id}`));
+    }
+  }
+  return record.terms.length;
+}
+
+function batchRecordFor(registry, batchId, batch) {
+  const direct = registry.batches.find((candidate) => candidate.deliveryBatchId === batchId);
+  if (batchId !== 'DAER-DUAL-ADMIN-EXPERIENCE-01') return direct;
+  const scenarios = batch.scenarios.map((scenarioId) => {
+    const source = (direct?.scenarios ?? []).concat(registry.batches.flatMap((candidate) => candidate.scenarios ?? []))
+      .find((candidate) => candidate.scenarioId === scenarioId);
+    return source ? structuredClone(source) : null;
+  });
+  if (scenarios.some((record) => !record)) return null;
+  return {deliveryBatchId: batchId, scenarios};
+}
+
+function runBatch(batchId, closurePath = null) {
+  const registry = loadRegistry();
+  const batch = batchFromMap(batchId);
+  const batchRecord = batchRecordFor(registry, batchId, batch);
+  if (!batchRecord) fail('BUSINESS_TERMINOLOGY_BATCH_REGISTRY_MISSING', batchId);
+  const scenarioRecords = batch.scenarios.map((scenarioId) => {
+    const record = batchRecord.scenarios?.find((candidate) => candidate.scenarioId === scenarioId);
+    if (!record) fail('BUSINESS_TERMINOLOGY_SCENARIO_REGISTRY_MISSING', `${batchId}: ${scenarioId}`);
+    return {record, steps: batch.steps.filter((step) => step.startsWith(`${scenarioId}.`))};
+  });
+  const requireEvidence = Boolean(closurePath);
+  const termCount = scenarioRecords.reduce((sum, item) => sum + checkScenario(item.record, item.steps, {requireEvidence}), 0);
+  if (closurePath) {
+    if (!exists(closurePath)) fail('CLOSURE_NOT_FOUND', closurePath);
+    let closure;
+    try { closure = JSON.parse(read(closurePath)); } catch (error) { fail('CLOSURE_INVALID_JSON', String(error)); }
+    const trace = closure.businessTerminologyTraceability;
+    if (!trace || trace.status !== 'PASS' || trace.registerRef !== registryPath || trace.gateVersion !== 1) {
+      fail('CLOSURE_BUSINESS_TERMINOLOGY_GATE_MISSING', `${closurePath}: businessTerminologyTraceability must be PASS, gateVersion=1 and point to ${registryPath}`);
+    }
+  }
+  console.log('BUSINESS_TERMINOLOGY_TRACEABILITY=PASS');
+  console.log(`DELIVERY_BATCH_ID=${batchId}`);
+  console.log(`SCENARIOS=${batch.scenarios.length}`);
+  console.log(`TERM_RECORDS=${termCount}`);
+  console.log(`EVIDENCE_REQUIRED=${requireEvidence}`);
+}
+
+function selfTest() {
+  const registry = loadRegistry();
+  const record = structuredClone(registry.batches[0].scenarios[0]);
+  const requiredSteps = [`${record.scenarioId}.S01`];
+  checkScenario(record, requiredSteps, {requireEvidence: false});
+  let rejected = false;
+  try {
+    const bad = structuredClone(record);
+    bad.terms[0].text = '不存在的业务词';
+    checkScenario(bad, requiredSteps, {requireEvidence: false});
+  } catch { rejected = true; }
+  if (!rejected) fail('BUSINESS_TERMINOLOGY_SELF_TEST_BAD_FIXTURE_ACCEPTED', 'source terminology mismatch was not rejected');
+  const inputDigest = crypto.createHash('sha256').update(read(registryPath)).digest('hex');
+  console.log('BUSINESS_TERMINOLOGY_TRACEABILITY_SELF_TEST=PASS');
+  console.log('VALIDATOR_VERSION=business-terminology-traceability-v2');
+  console.log(`INPUT_SHA256=${inputDigest}`);
+  console.log('GREEN_CONTROL=PASS');
+  console.log('RED_FIXTURE_SOURCE_MISMATCH=PASS');
+}
+
+try {
+  if (args[0] === '--self-test' && args.length === 1) selfTest();
+  else if (args[0] === '--batch') {
+    if (!args[1]) fail('ARGUMENT_MISSING', '--batch requires deliveryBatchId');
+    const closureIndex = args.indexOf('--closure');
+    const closurePath = closureIndex >= 0 ? args[closureIndex + 1] : null;
+    if (closureIndex >= 0 && !closurePath) fail('ARGUMENT_MISSING', '--closure requires closure JSON');
+    runBatch(args[1], closurePath);
+  } else if (args[0] === '--audit-waves' && args[1] === 'W1-W6') {
+    const registry = loadRegistry();
+    const ids = [...new Set(registry.batches.filter((batch) => ['W1','W2','W3','W4','W5','W6'].includes(batch.wave)).map((batch) => batch.deliveryBatchId))];
+    if (!ids.length) fail('BUSINESS_TERMINOLOGY_WAVE_REGISTRY_MISSING', 'W1-W6');
+    ids.forEach((id) => runBatch(id));
+    console.log('BUSINESS_TERMINOLOGY_WAVE_AUDIT=PASS');
+    console.log(`WAVE_BATCHES=${ids.length}`);
+  } else fail('ARGUMENT_INVALID', 'use --batch, --audit-waves W1-W6 or --self-test');
+} catch (error) {
+  console.error('BUSINESS_TERMINOLOGY_TRACEABILITY=FAIL');
+  console.error(`ERROR_CODE=${error instanceof GateError ? error.code : 'UNEXPECTED'}`);
+  console.error(`MESSAGE=${String(error?.message ?? error)}`);
+  process.exit(1);
+}
+NODE

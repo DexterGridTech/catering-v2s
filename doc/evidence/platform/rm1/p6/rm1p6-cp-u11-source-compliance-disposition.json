@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-compliance-disposition-template",
+  "packageId": "RM1P6-CP-U11",
+  "ruleCount": 2,
+  "applicableCount": 2,
+  "rows": [
+    {"denominator":"CONTROL_PLANE_AUTHORIZATION_AND_SCOPE","sourcePath":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-control-plane-manifest.json","sourceSha256":"6c6a529a14fe23f10dba869815713c11f1780fee5b20140b8d39f820d54e79e1","anchor":"deliveryUnits[RM1P6-CP-U11]","ruleId":"CP:MANIFEST","applicability":"APPLICABLE","missingEntryFails":true,"requiredEvidence":"EXACT_CONTROL_SURFACE_AND_RECEIPT_SET"},
+    {"denominator":"CONTROL_PLANE_AUTHORIZATION_AND_SCOPE","sourcePath":"doc/evidence/platform/rm1/p6/rm1p6-cp-u11-formal-granularity-binding-amendment.md","sourceSha256":"b519f0a436ba0f21c54acb362fc9cb03b3cbe42e56e8dc0c7b626258e3afde30","anchor":"packageId: RM1P6-CP-U11","ruleId":"CP:AMENDMENT","applicability":"APPLICABLE","missingEntryFails":true,"requiredEvidence":"NON_BUSINESS_SCOPE_AND_HANDOFF"}
+  ]
+}

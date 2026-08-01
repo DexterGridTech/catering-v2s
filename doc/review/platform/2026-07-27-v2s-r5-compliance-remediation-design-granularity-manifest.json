@@ -1,0 +1,2517 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "goalId": "R5-COMPLIANCE-REMEDIATION-DESIGN",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "authorization": {
+    "path": "doc/decisions/2026-07-27-v2s-r5-compliance-remediation-design-authorization.md",
+    "sha256": "e421bf728e91b77cccf20b34777dfdc2ccf4f3e222b32aa8a97630ee5008b521",
+    "scope": "design-only"
+  },
+  "delegatedDecision": {
+    "path": "doc/decisions/2026-07-27-v2s-r5-compliance-remediation-delegated-decisions.md",
+    "sha256": "3624fe4f319b21d04ef8b6953eed9f049667ed2c857850bbe520176d8609dd56",
+    "outcomes": {
+      "D-1": "B",
+      "D-2": "A",
+      "D-3": "A",
+      "D-4": "A",
+      "D-5": "A",
+      "D-6": "B",
+      "D-7": "B"
+    },
+    "implementationAuthority": false
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+    "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+  },
+  "candidateJourney": {
+    "id": "R5-J01",
+    "status": "DEXTER_ACCEPTED_BUSINESS_SCOPE_REMEDIATION_ONLY",
+    "actor": "系统服务提供者、商场运营方、店铺运营方与被邀请运营用户",
+    "task": "在两个独立后台完成冻结的 32 项业务任务，并按宿主权限查看操作历史",
+    "pageKey": "R5-WHOLE-SCOPE-32-SCENARIOS",
+    "ownerReadback": "七个 owner 的 typed command/task-read readback 与宿主授权审计 readback",
+    "mutations": [
+      "business denominator remains 106 operations, 32 scenarios, 22 surfaces, 25 pageDesignKeys and 7 owner schemas",
+      "compliance controls become source-derived and red-verified before protected work",
+      "contract and generated boundaries become recursively resolvable and typed",
+      "DEV and seed close only after owner, frontend and remote-test wiring"
+    ]
+  },
+  "standardsCoverage": {
+    "source": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+    "matrix": "contracts/policy/standards-coverage-matrix.json",
+    "chapterHitMap": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-manifest-chapter-hit-map.md",
+    "partB": {
+      "B.1": {
+        "ruleIds": [
+          "B.1.N01",
+          "B.1.N02",
+          "B.1.N03",
+          "B.1.N04",
+          "B.1.N05",
+          "B.1.N06",
+          "B.1.N07",
+          "B.1.N08",
+          "B.1.N09",
+          "B.1.N10",
+          "B.1.N11",
+          "B.1.N12",
+          "B.1.N13",
+          "B.1.N14",
+          "B.1.N15",
+          "B.1.N16",
+          "B.1.N17"
+        ],
+        "designUnits": [
+          "R5-CR-U03",
+          "R5-CR-U04"
+        ],
+        "sourceAnchor": "## 4. 详细实施单元"
+      },
+      "B.2": {
+        "ruleIds": [
+          "B.2.N01",
+          "B.2.N02",
+          "B.2.N03",
+          "B.2.N04",
+          "B.2.N05",
+          "B.2.N06",
+          "B.2.N07",
+          "B.2.N08",
+          "B.2.N09",
+          "B.2.N10",
+          "B.2.N11",
+          "B.2.N12",
+          "B.2.N13",
+          "B.2.N14",
+          "B.2.N15"
+        ],
+        "designUnits": [
+          "R5-CR-U01",
+          "R5-CR-U03",
+          "R5-CR-U04"
+        ],
+        "sourceAnchor": "### 4.2 R5-CR01 可解析契约与 typed generation"
+      },
+      "B.3": {
+        "ruleIds": [
+          "B.3.N01",
+          "B.3.N02",
+          "B.3.N03",
+          "B.3.N04",
+          "B.3.N05",
+          "B.3.N06",
+          "B.3.N07",
+          "B.3.N08",
+          "B.3.N09",
+          "B.3.N10",
+          "B.3.N11",
+          "B.3.N12"
+        ],
+        "designUnits": [
+          "R5-CR-U04",
+          "R5-CR-U07",
+          "R5-CR-U08"
+        ],
+        "sourceAnchor": "### 4.5 R5-CR04 owner 边界与数据完整性"
+      },
+      "B.4": {
+        "ruleIds": [
+          "B.4.N01",
+          "B.4.N02",
+          "B.4.N03",
+          "B.4.N04",
+          "B.4.N05",
+          "B.4.N06",
+          "B.4.N07",
+          "B.4.N08",
+          "B.4.N09",
+          "B.4.N10",
+          "B.4.N11",
+          "B.4.N12",
+          "B.4.N13",
+          "B.4.N14",
+          "B.4.N15",
+          "B.4.N16",
+          "B.4.N17",
+          "B.4.N18",
+          "B.4.N19",
+          "B.4.N20"
+        ],
+        "designUnits": [
+          "R5-CR-U02",
+          "R5-CR-U05",
+          "R5-CR-U06"
+        ],
+        "sourceAnchor": "### 4.3 R5-CR02 typed 前端消费底座"
+      },
+      "B.5": {
+        "ruleIds": [
+          "B.5.N01",
+          "B.5.N02",
+          "B.5.N03",
+          "B.5.N04",
+          "B.5.N05",
+          "B.5.N06",
+          "B.5.N07",
+          "B.5.N08",
+          "B.5.N09",
+          "B.5.N10",
+          "B.5.N11",
+          "B.5.N12",
+          "B.5.N13",
+          "B.5.N14",
+          "B.5.N15"
+        ],
+        "designUnits": [
+          "R5-CR-U05",
+          "R5-CR-U06"
+        ],
+        "sourceAnchor": "### 4.6 R5-CR05 写路径与 UI 一致性"
+      },
+      "B.6": {
+        "ruleIds": [
+          "B.6.N01",
+          "B.6.N02",
+          "B.6.N03",
+          "B.6.N04",
+          "B.6.N05",
+          "B.6.N06"
+        ],
+        "designUnits": [
+          "R5-CR-U04",
+          "R5-CR-U08"
+        ],
+        "sourceAnchor": "### 4.9 R5-CR08 测试、远端环境与证据接线"
+      }
+    },
+    "partC": {
+      "C.1-owner-and-transaction": {
+        "ruleIds": [
+          "C.T01",
+          "C.T02",
+          "C.T03",
+          "C.T04",
+          "C.T05",
+          "C.T06"
+        ],
+        "designUnits": [
+          "R5-CR-U03",
+          "R5-CR-U04"
+        ],
+        "sourceAnchor": "### 4.5 R5-CR04 owner 边界与数据完整性"
+      },
+      "C.2-contract-and-generated-face": {
+        "ruleIds": [
+          "C.T07",
+          "C.T08",
+          "C.T09",
+          "C.T10",
+          "C.T11",
+          "C.T12"
+        ],
+        "designUnits": [
+          "R5-CR-U01",
+          "R5-CR-U02"
+        ],
+        "sourceAnchor": "### 4.2 R5-CR01 可解析契约与 typed generation"
+      },
+      "C.3-frontend-foundation-and-test-patterns": {
+        "ruleIds": [
+          "C.T13",
+          "C.T14",
+          "C.T15",
+          "C.T16",
+          "C.T17",
+          "C.T18",
+          "C.T19"
+        ],
+        "designUnits": [
+          "R5-CR-U02",
+          "R5-CR-U05",
+          "R5-CR-U06"
+        ],
+        "sourceAnchor": "### 4.6 R5-CR05 写路径与 UI 一致性"
+      },
+      "C.4-run-and-red-fixture-patterns": {
+        "ruleIds": [
+          "C.T20",
+          "C.T21",
+          "C.T22",
+          "C.T23"
+        ],
+        "designUnits": [
+          "R5-CR-U00",
+          "R5-CR-U08"
+        ],
+        "sourceAnchor": "### 2.5 red-first 协议"
+      }
+    },
+    "partD": {
+      "D.1-layout": {
+        "ruleIds": [
+          "D.1.L01",
+          "D.1.L02",
+          "D.1.L03",
+          "D.1.L04"
+        ],
+        "designUnits": [
+          "R5-CR-U00",
+          "R5-CR-U04",
+          "R5-CR-U05"
+        ],
+        "sourceAnchor": "## 4. 详细实施单元"
+      },
+      "D.2-contract-governance": {
+        "ruleIds": [
+          "D.2.L01",
+          "D.2.L02",
+          "D.2.L03",
+          "D.2.L04"
+        ],
+        "designUnits": [
+          "R5-CR-U01"
+        ],
+        "sourceAnchor": "### 4.2 R5-CR01 可解析契约与 typed generation"
+      },
+      "D.3-gate-discipline": {
+        "ruleIds": [
+          "D.3.L01",
+          "D.3.L02",
+          "D.3.L03"
+        ],
+        "designUnits": [
+          "R5-CR-U00",
+          "R5-CR-U08"
+        ],
+        "sourceAnchor": "## 2. “做一点，验一点”的控制架构"
+      },
+      "D.4-document-governance": {
+        "ruleIds": [
+          "D.4.L01",
+          "D.4.L02",
+          "D.4.L03",
+          "D.4.L04",
+          "D.4.L05"
+        ],
+        "designUnits": [
+          "R5-CR-U00",
+          "R5-CR-U09"
+        ],
+        "sourceAnchor": "## 0. 状态、目标与不授权边界"
+      },
+      "D.5-process-sizing": {
+        "ruleIds": [
+          "D.5.L01",
+          "D.5.L02",
+          "D.5.L03",
+          "D.5.L04",
+          "D.5.L05"
+        ],
+        "designUnits": [
+          "R5-CR-U00",
+          "R5-CR-U09"
+        ],
+        "sourceAnchor": "## 7. 增量验证点"
+      },
+      "D.6-version-and-dependency": {
+        "ruleIds": [
+          "D.6.T01",
+          "D.6.T02",
+          "D.6.T03",
+          "D.6.T04",
+          "D.6.T05",
+          "D.6.L01",
+          "D.6.L02",
+          "D.6.L03",
+          "D.6.L04",
+          "D.6.L05",
+          "D.6.L06"
+        ],
+        "designUnits": [
+          "R5-CR-U01",
+          "R5-CR-U02",
+          "R5-CR-U04",
+          "R5-CR-U08"
+        ],
+        "sourceAnchor": "## 4. 详细实施单元"
+      },
+      "D.7-AI-first-entry": {
+        "ruleIds": [
+          "D.7.T01",
+          "D.7.T02",
+          "D.7.T03",
+          "D.7.T04",
+          "D.7.T05",
+          "D.7.T06",
+          "D.7.T07"
+        ],
+        "designUnits": [
+          "R5-CR-U00",
+          "R5-CR-U08"
+        ],
+        "sourceAnchor": "## 2. “做一点，验一点”的控制架构"
+      },
+      "D.8-logging": {
+        "ruleIds": [
+          "D.8.L01",
+          "D.8.L02",
+          "D.8.L03"
+        ],
+        "designUnits": [
+          "R5-CR-U00",
+          "R5-CR-U03",
+          "R5-CR-U07",
+          "R5-CR-U08"
+        ],
+        "sourceAnchor": "## 8. 失败、重试与恢复"
+      }
+    },
+    "enforcementPartitions": {
+      "B.1": {
+        "reviewRuleIds": [
+          "B.1.N01",
+          "B.1.N03",
+          "B.1.N04",
+          "B.1.N05",
+          "B.1.N06",
+          "B.1.N07",
+          "B.1.N08",
+          "B.1.N09",
+          "B.1.N10",
+          "B.1.N11",
+          "B.1.N12",
+          "B.1.N13",
+          "B.1.N14",
+          "B.1.N15",
+          "B.1.N17"
+        ],
+        "machineRuleIds": [
+          "B.1.N02",
+          "B.1.N16"
+        ],
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      },
+      "B.2": {
+        "reviewRuleIds": [
+          "B.2.N07",
+          "B.2.N08",
+          "B.2.N09",
+          "B.2.N10",
+          "B.2.N11",
+          "B.2.N14",
+          "B.2.N15"
+        ],
+        "machineRuleIds": [
+          "B.2.N01",
+          "B.2.N02",
+          "B.2.N03",
+          "B.2.N04",
+          "B.2.N05",
+          "B.2.N06",
+          "B.2.N12",
+          "B.2.N13"
+        ],
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      },
+      "B.3": {
+        "reviewRuleIds": [
+          "B.3.N04",
+          "B.3.N06",
+          "B.3.N11",
+          "B.3.N12"
+        ],
+        "machineRuleIds": [
+          "B.3.N01",
+          "B.3.N02",
+          "B.3.N03",
+          "B.3.N05",
+          "B.3.N07",
+          "B.3.N08",
+          "B.3.N09",
+          "B.3.N10"
+        ],
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      },
+      "B.4": {
+        "reviewRuleIds": [
+          "B.4.N01",
+          "B.4.N02",
+          "B.4.N03",
+          "B.4.N04",
+          "B.4.N05",
+          "B.4.N06",
+          "B.4.N07",
+          "B.4.N08",
+          "B.4.N09",
+          "B.4.N10",
+          "B.4.N11",
+          "B.4.N12",
+          "B.4.N13",
+          "B.4.N14",
+          "B.4.N16"
+        ],
+        "machineRuleIds": [
+          "B.4.N15",
+          "B.4.N17",
+          "B.4.N18",
+          "B.4.N19",
+          "B.4.N20"
+        ],
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      },
+      "B.5": {
+        "reviewRuleIds": [
+          "B.5.N02",
+          "B.5.N03",
+          "B.5.N04",
+          "B.5.N05",
+          "B.5.N06",
+          "B.5.N07",
+          "B.5.N09",
+          "B.5.N10",
+          "B.5.N11",
+          "B.5.N12",
+          "B.5.N13",
+          "B.5.N14",
+          "B.5.N15"
+        ],
+        "machineRuleIds": [
+          "B.5.N01",
+          "B.5.N08"
+        ],
+        "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      },
+      "B.6": {
+        "reviewRuleIds": [
+          "B.6.N02",
+          "B.6.N04"
+        ],
+        "machineRuleIds": [
+          "B.6.N01",
+          "B.6.N03",
+          "B.6.N05",
+          "B.6.N06"
+        ],
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      },
+      "C.1-owner-and-transaction": {
+        "reviewRuleIds": [
+          "C.T01",
+          "C.T02",
+          "C.T03",
+          "C.T04",
+          "C.T05",
+          "C.T06"
+        ],
+        "machineRuleIds": [],
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW",
+        "machineNotHumanReason": "no machine rows"
+      },
+      "C.2-contract-and-generated-face": {
+        "reviewRuleIds": [
+          "C.T07",
+          "C.T08",
+          "C.T09",
+          "C.T10",
+          "C.T11",
+          "C.T12"
+        ],
+        "machineRuleIds": [],
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW",
+        "machineNotHumanReason": "no machine rows"
+      },
+      "C.3-frontend-foundation-and-test-patterns": {
+        "reviewRuleIds": [
+          "C.T13",
+          "C.T14",
+          "C.T15",
+          "C.T16",
+          "C.T17",
+          "C.T18",
+          "C.T19"
+        ],
+        "machineRuleIds": [],
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW",
+        "machineNotHumanReason": "no machine rows"
+      },
+      "C.4-run-and-red-fixture-patterns": {
+        "reviewRuleIds": [
+          "C.T20",
+          "C.T21",
+          "C.T22",
+          "C.T23"
+        ],
+        "machineRuleIds": [],
+        "reviewChecklistRef": "REFERENCE_PATTERN_APPLICABILITY_REVIEW",
+        "machineNotHumanReason": "no machine rows"
+      },
+      "D.1-layout": {
+        "reviewRuleIds": [],
+        "machineRuleIds": [
+          "D.1.L01",
+          "D.1.L02",
+          "D.1.L03",
+          "D.1.L04"
+        ],
+        "reviewChecklistRef": null,
+        "machineNotHumanReason": "all rows are GATE"
+      },
+      "D.2-contract-governance": {
+        "reviewRuleIds": [
+          "D.2.L03",
+          "D.2.L04"
+        ],
+        "machineRuleIds": [
+          "D.2.L01",
+          "D.2.L02"
+        ],
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      },
+      "D.3-gate-discipline": {
+        "reviewRuleIds": [],
+        "machineRuleIds": [
+          "D.3.L01",
+          "D.3.L02",
+          "D.3.L03"
+        ],
+        "reviewChecklistRef": null,
+        "machineNotHumanReason": "all rows are GATE"
+      },
+      "D.4-document-governance": {
+        "reviewRuleIds": [
+          "D.4.L01",
+          "D.4.L02",
+          "D.4.L03",
+          "D.4.L04",
+          "D.4.L05"
+        ],
+        "machineRuleIds": [],
+        "reviewChecklistRef": "DOCUMENT_GOVERNANCE_REVIEW",
+        "machineNotHumanReason": "no machine rows"
+      },
+      "D.5-process-sizing": {
+        "reviewRuleIds": [
+          "D.5.L01",
+          "D.5.L02",
+          "D.5.L03",
+          "D.5.L04",
+          "D.5.L05"
+        ],
+        "machineRuleIds": [],
+        "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+        "machineNotHumanReason": "no machine rows"
+      },
+      "D.6-version-and-dependency": {
+        "reviewRuleIds": [
+          "D.6.T01",
+          "D.6.T02",
+          "D.6.T03",
+          "D.6.T04",
+          "D.6.T05",
+          "D.6.L01",
+          "D.6.L02",
+          "D.6.L03",
+          "D.6.L04",
+          "D.6.L05",
+          "D.6.L06"
+        ],
+        "machineRuleIds": [],
+        "reviewChecklistRef": "DEPENDENCY_AND_VERSION_DECISION_REVIEW",
+        "machineNotHumanReason": "no machine rows"
+      },
+      "D.7-AI-first-entry": {
+        "reviewRuleIds": [
+          "D.7.T02"
+        ],
+        "machineRuleIds": [
+          "D.7.T01",
+          "D.7.T03",
+          "D.7.T04",
+          "D.7.T05",
+          "D.7.T06",
+          "D.7.T07"
+        ],
+        "reviewChecklistRef": "CLAUDE_ENTRY_INTENTIONAL_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      },
+      "D.8-logging": {
+        "reviewRuleIds": [
+          "D.8.L02"
+        ],
+        "machineRuleIds": [
+          "D.8.L01",
+          "D.8.L03"
+        ],
+        "reviewChecklistRef": "R4_BOUNDARY_SEMANTICS_REVIEW",
+        "machineNotHumanReason": "matrix machine enforcement remains authoritative"
+      }
+    }
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "packageExitSourceCompliancePolicy": {
+    "version": "SOURCE_DISPOSITION_V1",
+    "appliesToAllDeliveryUnits": true,
+    "requiredDenominators": [
+      "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+      "APPROVED_ASSERTIONS",
+      "FORBIDDEN_PSEUDO_FIXES",
+      "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA",
+      "OWNED_SURFACE_AND_PAGE_KEYS",
+      "DUE_STANDARDS_RULE_IDS"
+    ],
+    "missingOrUnboundEntryFails": true,
+    "actualChangedPathsDerivedFromIndependentBaseline": true,
+    "incrementalChecksMustEqualActualChangedPaths": true,
+    "incrementalChecksMustBeNonEmpty": true,
+    "hookInvocationCanaryRequired": true,
+    "hookContractUnverifiedFailsCr00": true,
+    "mechanicalAdmissionPlannedIn": "R5-CR-U00",
+    "currentReviewEnforcement": "DECLARED_AND_HUMAN_REVIEWED_PENDING_AUTHORIZED_CR00_IMPLEMENTATION"
+  },
+  "sourceComplianceMappingContract": {
+    "acceptedManifestResolver": "ACTIVE_REGISTRY_TO_CURRENT_ROADMAP_TO_EXACT_MANIFEST_PATH_AND_REVIEWED_SHA256",
+    "stableRuleId": "SHA256(UTF8(JSON keys sourcePath,selector,exactRuleText in that order, no extra whitespace, standard JSON escaping, no locale or path normalization))",
+    "mappingArtifact": "contracts/policy/source-compliance-predicate-map.json",
+    "setEqualityRequired": true,
+    "unmappedExtraOrDriftFails": true,
+    "machineRowRequires": [
+      "predicateId",
+      "implementationPath",
+      "implementationSha256"
+    ],
+    "humanRowRequires": [
+      "reviewChecklistRef"
+    ],
+    "redFixtures": [
+      "NEW_SOURCE_ROW_UNMAPPED",
+      "SOURCE_TEXT_DRIFT",
+      "MAPPING_ROW_REMOVED",
+      "PREDICATE_HASH_DRIFT",
+      "UNIT_ROUTE_DRIFT",
+      "SURFACE_OWNER_DRIFT",
+      "SURFACE_OWNER_DUPLICATE",
+      "SURFACE_OWNER_UNOWNED",
+      "HOOK_INVOCATION_RECEIPT_MISSING",
+      "INCREMENTAL_CHECKS_EMPTY",
+      "INCREMENTAL_CHECK_MISSING",
+      "INCREMENTAL_CHECK_UNKNOWN",
+      "UNAUTHORIZED_CHANGED_PATH"
+    ]
+  },
+  "surfaceAndPageKeyPackageOwnership": {
+    "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+    "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+    "setEqualityNoOverlapNoUnknown": true,
+    "surfaceOwner": {
+      "PLATFORM-AUTH": "R5-CR-U06",
+      "PLATFORM-WORKSPACES": "R5-CR-U06",
+      "PLATFORM-ADMIN-USERS": "R5-CR-U06",
+      "PLATFORM-WORKSPACE-OVERVIEW": "R5-CR-U06",
+      "PLATFORM-ORGANIZATION-OVERVIEW": "R5-CR-U06",
+      "PLATFORM-CONTRACT-OVERVIEW": "R5-CR-U06",
+      "PLATFORM-ROLES": "R5-CR-U06",
+      "PLATFORM-WORKSPACE-ACCOUNTS": "R5-CR-U06",
+      "PLATFORM-EXTENSION-FIELDS": "R5-CR-U06",
+      "PLATFORM-PASSWORD": "R5-CR-U06",
+      "OPERATIONS-AUTH": "R5-CR-U06",
+      "PUBLIC-INVITATION": "R5-CR-U06",
+      "PUBLIC-ACCESS-RECOVERY": "R5-CR-U06",
+      "OPERATIONS-SHELL": "R5-CR-U06",
+      "OPERATIONS-PASSWORD": "R5-CR-U06",
+      "OPERATIONS-ORG-STRUCTURE": "R5-CR-U06",
+      "OPERATIONS-BUSINESS-ENTITIES": "R5-CR-U06",
+      "OPERATIONS-STORES": "R5-CR-U06",
+      "OPERATIONS-CONTRACTS": "R5-CR-U06",
+      "OPERATIONS-USERS": "R5-CR-U06",
+      "OPERATIONS-STORE-PROFILE": "R5-CR-U06",
+      "OPERATIONS-FIVE-HOME-BOOTSTRAPS": "R5-CR-U06"
+    },
+    "pageDesignKeyOwner": {
+      "PLATFORM-WORKSPACES": "R5-CR-U06",
+      "PLATFORM-ADMIN-USERS": "R5-CR-U06",
+      "PLATFORM-WORKSPACE-OVERVIEW": "R5-CR-U06",
+      "PLATFORM-ORGANIZATION-OVERVIEW": "R5-CR-U06",
+      "PLATFORM-CONTRACT-OVERVIEW": "R5-CR-U06",
+      "PLATFORM-ROLES": "R5-CR-U06",
+      "PLATFORM-WORKSPACE-ACCOUNTS": "R5-CR-U06",
+      "PLATFORM-EXTENSION-FIELDS": "R5-CR-U06",
+      "PG-ORG-STRUCTURE": "R5-CR-U06",
+      "PG-ORG-BRAND": "R5-CR-U06",
+      "PG-ORG-TENANT": "R5-CR-U06",
+      "PG-ORG-HEAD-COMPANY": "R5-CR-U06",
+      "PG-ORG-STORE-MANAGE": "R5-CR-U06",
+      "PG-CONTRACT-STORE-MANAGE": "R5-CR-U06",
+      "PG-IAM-GROUP-USERS": "R5-CR-U06",
+      "PG-IAM-REGION-USERS": "R5-CR-U06",
+      "PG-IAM-PROJECT-USERS": "R5-CR-U06",
+      "PG-IAM-HEAD-COMPANY-USERS": "R5-CR-U06",
+      "PG-IAM-STORE-USERS": "R5-CR-U06",
+      "PG-STORE-PROFILE": "R5-CR-U06",
+      "HOME-GROUP": "R5-CR-U06",
+      "HOME-REGION": "R5-CR-U06",
+      "HOME-PROJECT": "R5-CR-U06",
+      "HOME-HEAD-COMPANY": "R5-CR-U06",
+      "HOME-STORE": "R5-CR-U06"
+    }
+  },
+  "nonCorpusTermAuthorities": {
+    "operationHistory": [
+      "doc/decisions/2026-07-26-v2s-r5-operation-history-journey-decision.md",
+      "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md"
+    ],
+    "extensionFields": [
+      "doc/review/platform/2026-07-26-v2s-extension-and-role-storage-alignment-design-claude.md",
+      "doc/plans/platform/2026-07-26-v2s-r5-revised-implementation-design-and-plan.md#5"
+    ],
+    "corpusMissDoesNotWaiveDecision": true
+  },
+  "deliveryUnits": [
+    {
+      "id": "R5-CR-U00",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin"
+        ],
+        "owners": [
+          "platform",
+          "product"
+        ],
+        "impacts": [
+          "evidence",
+          "governance",
+          "memory",
+          "roadmap"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "task-start"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U00/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U00/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.1 R5-CR00 合规控制面",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U00",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "source-derived 合规控制面",
+      "approvedAssertions": [
+        "package-serial work starts only after predecessor true-green exit",
+        "file-level compliance is enforced by client-verified hooks with an invocation canary",
+        "every control proves production-path red before green and package exit independently requires non-empty changed-path/incremental-check set equality"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.1 R5-CR00 合规控制面",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.1 R5-CR00 合规控制面"
+      },
+      "currentDeviation": "Existing controls contain false-green, self-exempt and hardcoded denominator paths.",
+      "changeSurfaces": [
+        {
+          "path": ".codex/hooks.json",
+          "disposition": "update",
+          "target": "register compliance-only PreToolUse and PostToolUse"
+        },
+        {
+          "path": "scripts/hooks/",
+          "disposition": "create",
+          "target": "add no-context-injection compliance handlers"
+        },
+        {
+          "path": "tools/compliance-control/",
+          "disposition": "create",
+          "target": "source-derived static predicates, independent file delta and package receipts"
+        },
+        {
+          "path": "tools/verify-gates/",
+          "disposition": "update",
+          "target": "repair five false-green controls and production red protocol"
+        },
+        {
+          "path": "scripts/check/provider-free-context",
+          "disposition": "update",
+          "target": "derive current repository skill denominator instead of retaining stale five-skill literal"
+        },
+        {
+          "path": "PLATFORM-BLUEPRINT.md",
+          "disposition": "update",
+          "target": "replace stale five-skill count with source-derived current project-skill inventory"
+        },
+        {
+          "path": "project-memory/required-inventory.json",
+          "disposition": "update",
+          "target": "register incremental compliance no-context-injection and hook-contract state assertions"
+        }
+      ],
+      "orderedChain": [
+        "derive denominator from frozen sources",
+        "prove clean/red/clean for each control",
+        "prove real client hook invocation canary",
+        "wire hooks and full scan",
+        "prove independent changed-path set equality",
+        "close package receipt"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "First package; no protected implementation precedes its true-green exit."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "Static compliance controls do not mutate business data."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "This unit delivers no UI.",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "source-derived denominator, independent path baseline and control bindings",
+        "l2": "real Codex client invocation canary plus scratchpad red mutations",
+        "l3": "not applicable before test wiring",
+        "business": "mechanical controls do not claim semantic GO",
+        "cleanup": "scratch copies removed and receipts retained"
+      },
+      "forbiddenPseudoFixes": [
+        "hardcoded rule denominator",
+        "self-test-only green",
+        "keyword semantic verdict",
+        "pending control after protected work"
+      ],
+      "discriminator": {
+        "fixture": "a real protected write missing its PostToolUse receipt, any changed-path/incremental-check set mismatch, each source-derived forbidden violation and an unconditional-success gate substitution fail by exact named reason"
+      }
+    },
+    {
+      "id": "R5-CR-U01",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "contract"
+        ],
+        "consumerFaces": [
+          "backend",
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "contract"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "evidence"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U01/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U01/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.2 R5-CR01 可解析契约与 typed generation",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U01",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "递归可解析契约与 typed generation",
+      "approvedAssertions": [
+        "all OpenAPI references resolve by standard JSON Pointer",
+        "106 and 39/56/11 remain exact",
+        "generated business boundary contains no untyped map"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.2 R5-CR01 可解析契约与 typed generation",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.2 R5-CR01 可解析契约与 typed generation"
+      },
+      "currentDeviation": "The bespoke checker passes unresolved references and codegen collapses object schemas.",
+      "changeSurfaces": [
+        {
+          "path": "contracts/openapi/",
+          "disposition": "update",
+          "target": "resolve all references without changing frozen operations"
+        },
+        {
+          "path": "scripts/generate/",
+          "disposition": "update",
+          "target": "remove schema-name fallback and generate typed inline objects"
+        },
+        {
+          "path": "tools/verify-gates/",
+          "disposition": "update",
+          "target": "add standards-compliant recursive resolution"
+        }
+      ],
+      "orderedChain": [
+        "repair references",
+        "remove fallback",
+        "generate typed faces",
+        "prove denominator and negative fixtures"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires U00 PASS; precedes every contract consumer."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "Contract repair does not mutate persisted data."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "No UI is implemented here.",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "strict resolver and catalog closure",
+        "l2": "typed generation fixtures",
+        "l3": "not applicable",
+        "business": "operation semantics do not drift",
+        "cleanup": "generated scratch output removed"
+      },
+      "forbiddenPseudoFixes": [
+        "schema-name fallback",
+        "untyped map boundary",
+        "operation denominator drift",
+        "oversized contract file"
+      ],
+      "discriminator": {
+        "fixture": "a broken reference or inline object map fallback fails the production contract control"
+      }
+    },
+    {
+      "id": "R5-CR-U02",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "admin-ui",
+          "contract"
+        ],
+        "consumerFaces": [
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "contract",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "session"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U02/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U02/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.3 R5-CR02 typed 前端消费底座",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U02",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "typed 前端消费底座",
+      "approvedAssertions": [
+        "each face consumes generated endpoints",
+        "router store session and API remain app-local",
+        "feature handwritten HTTP paths are forbidden"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.3 R5-CR02 typed 前端消费底座",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.3 R5-CR02 typed 前端消费底座"
+      },
+      "currentDeviation": "Feature components use generic request functions, guessed shapes and local session state.",
+      "changeSurfaces": [
+        {
+          "path": "apps/frontend/platform-admin/src/app/",
+          "disposition": "update",
+          "target": "generated API, router, store, session and feedback"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/",
+          "disposition": "update",
+          "target": "generated API, router, store, session and feedback"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/",
+          "disposition": "update",
+          "target": "remove handwritten transport consumption"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/",
+          "disposition": "update",
+          "target": "remove handwritten transport consumption"
+        }
+      ],
+      "orderedChain": [
+        "generate face clients",
+        "wire independent app substrate",
+        "migrate one surface at a time",
+        "remove escape hatches"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires U01 PASS; precedes page and business completion."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "Frontend substrate does not evolve data."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "This unit establishes substrate, not a new interaction.",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "generated import and route closure",
+        "l2": "typecheck and cache/session fixtures",
+        "l3": "independent app boot later in U08",
+        "business": "Problem feedback and context behavior follow frozen tasks",
+        "cleanup": "browser test state cleared"
+      },
+      "forbiddenPseudoFixes": [
+        "generic request escape hatch",
+        "feature API literal",
+        "shared app session",
+        "business any or Record map"
+      ],
+      "discriminator": {
+        "fixture": "a feature path literal or foreign-face endpoint fails the incremental compliance hook"
+      }
+    },
+    {
+      "id": "R5-CR-U03",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend",
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "platform"
+        ],
+        "impacts": [
+          "evidence",
+          "session",
+          "transaction"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U03/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U03/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.4 R5-CR03 安全与授权闭合",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U03",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "安全与授权闭合",
+      "approvedAssertions": [
+        "public OTP is purpose-bound and rate-limited",
+        "audit read inherits assignment/page/action/data-scope host authorization",
+        "last-platform-admin guard remains owner-local and serialized",
+        "workspace-iam replay does not duplicate audit"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.4 R5-CR03 安全与授权闭合",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.4 R5-CR03 安全与授权闭合"
+      },
+      "currentDeviation": "Password reset lacks rate limiting, audit is workspace-only authorized, platform last-admin guarding is not serialized and invitation edge bypasses its generated masked wire.",
+      "changeSurfaces": [
+        {
+          "path": "libraries/backend/workspace-iam/",
+          "disposition": "update",
+          "target": "rate limits, public assignment/page/action/data-scope task API and workspace receipt replay"
+        },
+        {
+          "path": "libraries/backend/platform-iam/",
+          "disposition": "update",
+          "target": "owner-local serialized last-platform-admin guard"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/",
+          "disposition": "update",
+          "target": "host-authorized audit and generated masked wire mapping"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/",
+          "disposition": "update",
+          "target": "CR02_ESCAPE field-name alignment only: mobileNormalized to maskedMobile"
+        }
+      ],
+      "orderedChain": [
+        "capture focused red",
+        "implement one invariant",
+        "prove rollback/replay behavior",
+        "record CR02_ESCAPE and defer migration-bound receipt/audit work to U04"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires U02 PASS; all security findings close before owner/UI work."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "Any necessary schema is added later under U04 additive migration policy."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "Security behavior changes existing interactions only.",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "authorization and receipt mappings",
+        "l2": "six focused negative fixtures",
+        "l3": "managed security replay in U08",
+        "business": "authorized users retain frozen flows",
+        "cleanup": "security test facts removed separately"
+      },
+      "forbiddenPseudoFixes": [
+        "header-only idempotency",
+        "workspace-only audit authorization",
+        "organization or edge direct read of workspace_iam.role_assignment",
+        "rollback of security counters",
+        "raw mobile readback",
+        "moving platform-admin fact into workspace-iam"
+      ],
+      "discriminator": {
+        "fixture": "rate threshold, unauthorized host, direct role_assignment read, concurrent last-admin and workspace receipt replay each fail or return exact typed behavior"
+      }
+    },
+    {
+      "id": "R5-CR-U04",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "backend",
+          "contract"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "backend",
+          "contract"
+        ],
+        "impacts": [
+          "architecture",
+          "database",
+          "transaction"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U04/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U04/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.5 R5-CR04 owner 边界与数据完整性",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U04",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "owner 边界与数据完整性",
+      "approvedAssertions": [
+        "owner facts and commands remain sovereign",
+        "executed migration bytes never change",
+        "contract items and constraints follow accepted shapes",
+        "migration-bound extension and asset receipts preserve idempotency without persisting a bindGrant",
+        "commercial-group audit fact is organization-owned"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.5 R5-CR04 owner 边界与数据完整性",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.5 R5-CR04 owner 边界与数据完整性"
+      },
+      "currentDeviation": "Undeclared cross-owner reads, incomplete JSONB migration, migration-bound extension/asset receipt shapes, constraints and audit writers remain.",
+      "changeSurfaces": [
+        {
+          "path": "libraries/backend/",
+          "disposition": "update",
+          "target": "replace direct cross-owner reads with public APIs and add owner audit writers"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/resources/db/migration/",
+          "disposition": "create",
+          "target": "add preconditioned migrations without rewriting executed bytes"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+          "disposition": "update",
+          "target": "pass the already-contracted idempotency key into the extension owner receipt"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/asset/PlatformAssetController.java",
+          "disposition": "update",
+          "target": "pass the already-contracted idempotency key into the asset owner receipt"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+          "disposition": "update",
+          "target": "pass the authenticated operations actor into existing organization hierarchy owner commands"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+          "disposition": "update",
+          "target": "pass the authenticated platform actor into existing workspace owner commands"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java",
+          "disposition": "update",
+          "target": "pass the authenticated operations actor into the existing authorization owner command"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceMembershipController.java",
+          "disposition": "update",
+          "target": "pass the authenticated operations actor into the existing assignment-revoke owner command"
+        },
+        {
+          "path": "contracts/policy/module-dependency-registry.json",
+          "disposition": "update",
+          "target": "classify platform-access as schema-less and close seven fact schemas against code and Flyway"
+        }
+      ],
+      "orderedChain": [
+        "resolve Dexter decisions",
+        "eliminate one cross-owner fact at a time",
+        "append typed migrations",
+        "move migration-bound receipt/audit ownership",
+        "prove registry/schema closure"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires U03 PASS and D-4/D-5/D-6 decisions."
+      ],
+      "dataEvolution": {
+        "migrationPolicy": "additive only; typed preconditions list violating row ids before change"
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "Owner/data work delivers no new page.",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "registry/code/schema inventories",
+        "l2": "owner and precondition fixtures",
+        "l3": "fresh migration proof in U08",
+        "business": "owner readbacks preserve frozen semantics",
+        "cleanup": "test schema and fixture facts removed"
+      },
+      "forbiddenPseudoFixes": [
+        "rewrite executed migration",
+        "undeclared cross-schema read",
+        "direct external subject audit",
+        "anonymous check constraint"
+      ],
+      "discriminator": {
+        "fixture": "an undeclared schema literal, duplicate normalized value or invalid status fails exact control/precondition"
+      }
+    },
+    {
+      "id": "R5-CR-U05",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "admin-ui",
+          "backend"
+        ],
+        "consumerFaces": [
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "architecture",
+          "evidence"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U05/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U05/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.6 R5-CR05 写路径与 UI 一致性",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U05",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "写路径与 UI 一致性",
+      "approvedAssertions": [
+        "typed models determine request fields",
+        "lists use accepted foundation and ProComponents patterns",
+        "two apps own independent theme and shell"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.6 R5-CR05 写路径与 UI 一致性",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.6 R5-CR05 写路径与 UI 一致性"
+      },
+      "currentDeviation": "Request fields drift, store transition is wrong and accepted UI foundation/theme patterns are absent.",
+      "changeSurfaces": [
+        {
+          "path": "apps/frontend/platform-admin/src/",
+          "disposition": "update",
+          "target": "typed writes, theme, shell, locale, paging, generated admin catalog consumption and lint; retire obsolete raw-JS static snapshot from runtime source"
+        },
+        {
+          "path": "apps/frontend/platform-admin/scripts/build-static.mjs",
+          "disposition": "delete",
+          "target": "remove orphan build fallback that packages the retired raw-JS snapshot"
+        },
+        {
+          "path": "apps/frontend/platform-admin/package.json",
+          "disposition": "update",
+          "target": "bind ESLint, Stylelint, architecture and typecheck as build prerequisites"
+        },
+        {
+          "path": "apps/frontend/platform-admin/stylelint.config.mjs",
+          "disposition": "create",
+          "target": "adapt the v2 style ownership policy to the v2s theme boundary"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/",
+          "disposition": "update",
+          "target": "typed writes, independent features, theme, shell, locale, exhaustive generated page registry and paging; retire obsolete raw-JS static snapshot from runtime source"
+        },
+        {
+          "path": "apps/frontend/operations-admin/scripts/build-static.mjs",
+          "disposition": "delete",
+          "target": "remove orphan build fallback that packages the retired raw-JS snapshot"
+        },
+        {
+          "path": "apps/frontend/operations-admin/package.json",
+          "disposition": "update",
+          "target": "bind ESLint, Stylelint, architecture and typecheck as build prerequisites"
+        },
+        {
+          "path": "apps/frontend/operations-admin/stylelint.config.mjs",
+          "disposition": "create",
+          "target": "reuse the platform-admin style ownership policy"
+        },
+        {
+          "path": "eslint.config.mjs",
+          "disposition": "create",
+          "target": "adapt the v2 TypeScript lint policy to generated typed transport ownership"
+        },
+        {
+          "path": "yarn.lock",
+          "disposition": "update",
+          "target": "freeze the accepted v2-aligned ESLint and Stylelint tool versions"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/",
+          "disposition": "retain",
+          "target": "consume existing overlay and lifecycle primitives"
+        },
+        {
+          "path": "libraries/backend/organization/",
+          "disposition": "update",
+          "target": "align store status transition with contract"
+        },
+        {
+          "path": "libraries/backend/workspace-iam/",
+          "disposition": "update",
+          "target": "replace handwritten page and capability catalogs with one generated owner-local typed view"
+        },
+        {
+          "path": "contracts/catalog/admin-catalog.json",
+          "disposition": "create",
+          "target": "v2s-native single semantic source for 25 pageDesignKeys and 34 action capabilities, exact-set bound to accepted manifest and edge catalog"
+        },
+        {
+          "path": "contracts/openapi/components/workspace-iam/",
+          "disposition": "update",
+          "target": "replace widened page/action strings with reusable closed contract schemas"
+        },
+        {
+          "path": "contracts/openapi/components/organization/store.schemas.yaml",
+          "disposition": "update",
+          "target": "propagate the accepted ServiceNodeType rename through the complete contract closure"
+        },
+        {
+          "path": "contracts/openapi/paths/platform-admin/role-management.paths.yaml",
+          "disposition": "update",
+          "target": "replace the final WorkspaceOrganizationType query reference with ServiceNodeType"
+        },
+        {
+          "path": "contracts/openapi/edge.openapi.yaml",
+          "disposition": "update",
+          "target": "regenerate the root component index without the retired WorkspaceOrganizationType symbol"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+          "disposition": "update",
+          "target": "correct catalog-to-OpenAPI drift for URL-bearing public asset response and accepted ServiceNodeType rename"
+        },
+        {
+          "path": "scripts/generate/edge-codegen.mjs",
+          "disposition": "update",
+          "target": "generate frontend request/response types plus deterministic admin catalog projections from frozen v2s sources"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/",
+          "disposition": "update",
+          "target": "regenerate the complete wire closure after accepted contract rename; no handwritten generated source"
+        },
+        {
+          "path": "tools/verify-gates/cli.mjs",
+          "disposition": "update",
+          "target": "extend the existing frontend-architecture gate with CR05 operation-column, locale, generated-client-only transport, retired fallback and second-catalog assertions with real red mutations"
+        },
+        {
+          "path": "tools/admin-boundary-checks/cli.mjs",
+          "disposition": "update",
+          "target": "replace obsolete R3 raw-JS assertions with current independent-app and no-fallback assertions"
+        },
+        {
+          "path": "tools/code-layout/cli.mjs",
+          "disposition": "update",
+          "target": "reject unapproved repository-root directories so contract-relative components and paths cannot be materialized at root"
+        },
+        {
+          "path": "contracts/openapi/components/organization/business-entity.schemas.yaml",
+          "disposition": "update",
+          "target": "define the already-required expectedContextVersion property on the three business-entity update schemas so strict typed generation can represent the frozen request shape"
+        },
+        {
+          "path": "contracts/openapi/components/contract/contract.schemas.yaml",
+          "disposition": "update",
+          "target": "restore id/code/name properties already emitted by the contract candidate owner readback alongside the accepted storeStatus addition"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandUpdateRequest.java",
+          "disposition": "update",
+          "target": "regenerate from the corrected already-required request property"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantUpdateRequest.java",
+          "disposition": "update",
+          "target": "regenerate from the corrected already-required request property"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyUpdateRequest.java",
+          "disposition": "update",
+          "target": "regenerate from the corrected already-required request property"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractStoreCandidate.java",
+          "disposition": "update",
+          "target": "regenerate the typed contract candidate readback"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java",
+          "disposition": "update",
+          "target": "map the owner candidate readback to generated edge wire"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/ContractWireMapper.java",
+          "disposition": "update",
+          "target": "own deterministic candidate readback mapping"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+          "disposition": "update",
+          "target": "consume the accepted canonical ServiceNodeType generated wire name"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+          "disposition": "update",
+          "target": "consume the accepted canonical ServiceNodeType generated wire name"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+          "disposition": "update",
+          "target": "consume the accepted canonical ServiceNodeType generated wire name"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationCandidateController.java",
+          "disposition": "update",
+          "target": "consume the accepted canonical ServiceNodeType generated wire name"
+        }
+      ],
+      "orderedChain": [
+        "apply delegated D-1=B independent surface boundary",
+        "fix typed field compile errors",
+        "carry/adapt one page",
+        "prove focused UI behavior"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires U04 PASS; delegated D-1 is already bound; precedes business surface completion."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "This unit consumes owner data shapes established by U04."
+      },
+      "uiAndTerms": {
+        "pageKey": "R5-WHOLE-SCOPE-32-SCENARIOS",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md",
+        "interactionArtifact": {
+          "path": "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
+          "anchor": "## 4. 低保真线框"
+        }
+      },
+      "evidence": {
+        "l1": "22/25 UI structure mapping",
+        "l2": "page-focused typecheck/L2",
+        "l3": "managed app behavior in U08",
+        "business": "user edits occur in accepted detail interactions",
+        "cleanup": "browser state cleared"
+      },
+      "forbiddenPseudoFixes": [
+        "entity list operation column",
+        "page-local HTTP",
+        "manual request shape",
+        "new dashboard or page key"
+      ],
+      "discriminator": {
+        "fixture": "a wrong generated property, operation column or missing locale fails before page completion"
+      }
+    },
+    {
+      "id": "R5-CR-U06",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "admin-ui",
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "evidence",
+          "session"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U06/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U06/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.7 R5-CR06 业务能力与 surface 闭合",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows where owner=R5-CR-U06",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U06",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "业务能力与 surface 闭合",
+      "approvedAssertions": [
+        "all accepted edit capabilities close in the chosen scope",
+        "R-15 outcome and role switching are implemented",
+        "22 surfaces and 25 pageDesignKeys close bidirectionally"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.7 R5-CR06 业务能力与 surface 闭合",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.7 R5-CR06 业务能力与 surface 闭合"
+      },
+      "currentDeviation": "Operations edit capabilities, dynamic fields, role outcomes and several frozen surfaces are incomplete.",
+      "changeSurfaces": [
+        {
+          "path": "apps/frontend/operations-admin/src/features/",
+          "disposition": "update",
+          "target": "independent capability surfaces and R-15 workbench"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/",
+          "disposition": "update",
+          "target": "password and frozen platform surfaces"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/",
+          "disposition": "update",
+          "target": "additive edge adaptation only where frozen contract requires"
+        }
+      ],
+      "orderedChain": [
+        "apply delegated D-1=B D-2=A D-3=A",
+        "close one capability vertical slice",
+        "record focused and L2 receipt",
+        "close 22/25 ledger"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires U05 PASS; delegated D-1 through D-3 are already bound."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "Any persistence changes were closed by U04."
+      },
+      "uiAndTerms": {
+        "pageKey": "R5-WHOLE-SCOPE-32-SCENARIOS",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md",
+        "interactionArtifact": {
+          "path": "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
+          "anchor": "## 4. 低保真线框"
+        }
+      },
+      "evidence": {
+        "l1": "22 surface and 25 page key closure",
+        "l2": "capability-focused and L2 receipts",
+        "l3": "whole user flows in U08",
+        "business": "all accepted v2 implemented tasks have readable typed behavior",
+        "cleanup": "created user facts cleaned separately"
+      },
+      "forbiddenPseudoFixes": [
+        "generic registry replacing distinct behavior",
+        "static shell counted as surface",
+        "new operation for R-15",
+        "technical string user labels"
+      ],
+      "discriminator": {
+        "fixture": "any missing edit verb, page key, outcome or owner readback keeps its surface row red"
+      }
+    },
+    {
+      "id": "R5-CR-U07",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "implementation",
+          "runtime-management",
+          "testing"
+        ],
+        "domains": [
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend",
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "platform",
+          "product"
+        ],
+        "impacts": [
+          "cleanup",
+          "database",
+          "evidence",
+          "runtime"
+        ],
+        "triggers": [
+          "implementation",
+          "runtime"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U07/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U07/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.8 R5-CR07 可理解 DEV 与丰富 seed",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U07",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "可理解 DEV 与丰富 seed",
+      "approvedAssertions": [
+        "reset bootstrap creates only root/root",
+        "seed uses owner commands for producible facts",
+        "list entities exceed one page with readable business relationships"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.8 R5-CR07 可理解 DEV 与丰富 seed",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.8 R5-CR07 可理解 DEV 与丰富 seed"
+      },
+      "currentDeviation": "Seed executor is refused, fixture is non-authoritative and data cannot support user testing.",
+      "changeSurfaces": [
+        {
+          "path": "scripts/dev/",
+          "disposition": "update",
+          "target": "explicit reset seed start stop and owner readback lifecycle"
+        },
+        {
+          "path": "doc/evidence/",
+          "disposition": "create",
+          "target": "seed threshold, relationship, business and cleanup receipts"
+        }
+      ],
+      "orderedChain": [
+        "bootstrap root only",
+        "seed one owner family via command",
+        "verify threshold and relationship",
+        "close business and cleanup"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires U06 PASS; seed cannot compensate for missing behavior."
+      ],
+      "dataEvolution": {
+        "seedPolicy": "explicit destructive DEV action only; normal start never seeds"
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "Seed supplies data to accepted pages but creates no UI.",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "fixture and threshold inventory",
+        "l2": "owner-command seed readbacks",
+        "l3": "two-app readable dataset",
+        "business": "names and relationships are natural and domain-correct",
+        "cleanup": "namespace, object and process cleanup PASS separately"
+      },
+      "forbiddenPseudoFixes": [
+        "business direct SQL seed",
+        "test-purpose business name",
+        "start-time seed",
+        "single-page list dataset"
+      ],
+      "discriminator": {
+        "fixture": "a missing relationship, below-threshold list or non-root bootstrap fact keeps seed closure red"
+      }
+    },
+    {
+      "id": "R5-CR-U08",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "review",
+          "runtime-management",
+          "testing"
+        ],
+        "domains": [
+          "admin-ui",
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend",
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "frontend-platform",
+          "platform",
+          "product"
+        ],
+        "impacts": [
+          "cleanup",
+          "evidence",
+          "memory",
+          "roadmap",
+          "runtime"
+        ],
+        "triggers": [
+          "failure",
+          "review",
+          "runtime"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U08/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U08/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.9 R5-CR08 测试、远端环境与证据接线",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U08",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "测试、远端环境与证据接线",
+      "approvedAssertions": [
+        "full compliance scan precedes every test",
+        "Gradle uses wrapper and Testcontainers uses remote runner",
+        "declared tests are discovered and business/cleanup remain separate"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.9 R5-CR08 测试、远端环境与证据接线",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.9 R5-CR08 测试、远端环境与证据接线"
+      },
+      "currentDeviation": "Most L2 targets are undiscovered and verify is wired to a local Docker socket instead of the repository remote path.",
+      "changeSurfaces": [
+        {
+          "path": "gradlew",
+          "disposition": "create",
+          "target": "repository Gradle wrapper entry"
+        },
+        {
+          "path": "gradle/wrapper/",
+          "disposition": "create",
+          "target": "wrapper metadata and binary"
+        },
+        {
+          "path": "scripts/verify",
+          "disposition": "update",
+          "target": "invoke wrapper and exact remote test runner contract"
+        },
+        {
+          "path": "scripts/test/r5-remote-testcontainers.mjs",
+          "disposition": "update",
+          "target": "bind explicit host hash, task registry, source snapshot, business/test/cleanup receipt and red fixtures"
+        },
+        {
+          "path": "project-memory/kernel/",
+          "disposition": "update",
+          "target": "align current R5 state and evidence entry"
+        }
+      ],
+      "orderedChain": [
+        "pass full compliance scan",
+        "wire wrapper and remote runner",
+        "discover declared tests",
+        "execute evidence and cleanup"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires U07 PASS; no test starts before static compliance is green."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "This unit verifies data created by explicit U07 lifecycle."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "This unit verifies accepted UI without defining new interactions.",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "runner discovery and state inventory",
+        "l2": "all declared focused/L2 tests",
+        "l3": "managed remote Testcontainers and DEV flows",
+        "business": "106/32/22/25/7 user and contract evidence closes",
+        "cleanup": "remote namespace, process and object cleanup each PASS"
+      },
+      "forbiddenPseudoFixes": [
+        "local Docker socket",
+        "bare gradle",
+        "undiscovered test declaration",
+        "business PASS with cleanup red"
+      ],
+      "discriminator": {
+        "fixture": "missing host fingerprint, nonexistent test or cleanup failure fails its exact production entry"
+      }
+    },
+    {
+      "id": "R5-CR-U09",
+      "sourceComplianceDispositionRequired": true,
+      "complianceRoute": {
+        "taskKinds": [
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "backend",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend",
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "contract",
+          "frontend-platform",
+          "platform",
+          "product"
+        ],
+        "impacts": [
+          "cleanup",
+          "evidence",
+          "governance",
+          "roadmap"
+        ],
+        "triggers": [
+          "review"
+        ]
+      },
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {
+          "sourcePath": "project-memory/required-inventory.json",
+          "sourceSha256": "ca7fc2688d26d25416d4fbdc16ac1d2a1e4bcd2d3fae3c072c4e6d0b98201806",
+          "selector": "/entries/*/requiredAssertions/*",
+          "applicability": "ROUTE_MATCH_UNIT",
+          "missingEntryFails": true
+        },
+        "APPROVED_ASSERTIONS": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U09/approvedAssertions/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "FORBIDDEN_PSEUDO_FIXES": {
+          "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
+          "sourceSha256Binding": "CURRENT_MANIFEST_BYTES",
+          "selector": "/deliveryUnits/R5-CR-U09/forbiddenPseudoFixes/*",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {
+          "sourcePath": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "sourceSha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1",
+          "anchor": "### 4.10 R5-CR09 whole-scope review",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        },
+        "OWNED_SURFACE_AND_PAGE_KEYS": {
+          "sourcePath": "contracts/policy/frontend-asset-carryover-manifest.json",
+          "sourceSha256": "1a118c6ab2d5141780b98d1ab9a1f6b14366b21f54cc1fa9092b625d9e973d09",
+          "selector": "surfaceAndPageKeyPackageOwnership rows",
+          "applicability": "NOT_APPLICABLE_TRANSFER:R5-CR-U06",
+          "missingEntryFails": true
+        },
+        "DUE_STANDARDS_RULE_IDS": {
+          "sourcePath": "contracts/policy/standards-coverage-matrix.json",
+          "sourceSha256": "6a9f7a700d1b4dbbf3e6fb910a1a291f95d61777c70120e7ae049c4b415101c5",
+          "selector": "phase<=R5 AND manifest.designUnits CONTAINS R5-CR-U09",
+          "applicability": "OWN_UNIT",
+          "missingEntryFails": true
+        }
+      },
+      "title": "whole-scope implementation review",
+      "approvedAssertions": [
+        "only one whole-scope implementation review follows all packages",
+        "intermediate receipts are not GO",
+        "fresh independent review reopens production source and user evidence"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+          "anchor": "### 4.10 R5-CR09 whole-scope review",
+          "sha256": "b50f35f138e4d68c1eecefcbe92de99dae79f6b57024329638a042e4c1d581f1"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
+        "anchor": "### 4.10 R5-CR09 whole-scope review"
+      },
+      "currentDeviation": "Current implementation has no valid whole-scope acceptance evidence.",
+      "changeSurfaces": [
+        {
+          "path": "doc/review/platform/",
+          "disposition": "create",
+          "target": "independent implementation review, intake and Claude handoff"
+        },
+        {
+          "path": "doc/evidence/",
+          "disposition": "create",
+          "target": "whole-scope immutable evidence bindings"
+        }
+      ],
+      "orderedChain": [
+        "bind U00-U08 receipts",
+        "run fresh independent implementation review",
+        "perform dialectical intake",
+        "request Claude and Dexter acceptance"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires every prior package PASS; creates no implementation work."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "Review does not mutate business data."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "Review verifies UI but defines none.",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "all package hashes and denominators",
+        "l2": "focused and L2 denominator closure",
+        "l3": "managed whole-scope flows",
+        "business": "accepted tasks all PASS",
+        "cleanup": "all cleanup facts PASS"
+      },
+      "forbiddenPseudoFixes": [
+        "intermediate package GO",
+        "review split by journey",
+        "review from document claims only",
+        "cleanup omission"
+      ],
+      "discriminator": {
+        "fixture": "any missing or red predecessor receipt makes whole-scope review entry fail"
+      }
+    }
+  ],
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "da68a5f4d48d786cc4b5ac9a2de2abf1f717b8b6baa51c75a07e3ec88c4508b4"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "MISSING_UI_INTERACTION_ARTIFACT",
+      "DUPLICATE_UI_INTERACTION_ANCHOR",
+      "SEVERITY_COUNT_MISMATCH",
+      "ROUND_THREE",
+      "MISSING_FINDING_UNIT_LINK",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "REVIEWER_INPUT_CHECKLIST_NOT_FOUND",
+      "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE"
+    ]
+  },
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "R5-COMPLIANCE-REMEDIATION-DESIGN-20260727",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-adversarial-review-round-2.json",
+    "reviewSha256": "c980f2ae18a990176a987790cdf0d1e194923a1bce6b01956346cad13a12dec5",
+    "reviewedDesignSha256": "edbd083853e87e88cd3533c946aeb25f5e9f835da4a2f53bf778be93c4a25a08",
+    "reviewedManifestSha256": "e1b332b09cb9c9387ffc59c9541caa191cf8d6959618f315d9b349a74559fa92",
+    "intake": {
+      "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-post-remediation-intake.md",
+      "sha256": "15c544a7b20203f1f5b1776d55e2ab7b947659d478e29e29e19d7f6765443020"
+    },
+    "reason": "After the round-two hard stop, the author applies the confirmed canonical unit-route and exact 22-surface/25-pageDesignKey ownership correction, then the confirmed Claude recheck corrections for client invocation proof, independent non-empty changed-path set equality, source-derived forbidden replay and provider-free pretest admission. Dexter delegated D-1 through D-7 to Codex and the outcomes are bound without implementation authority. Current bytes were not reviewed by the final independent reviewer and require Claude recheck. No third Codex adversarial round is allowed.",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false
+  }
+}

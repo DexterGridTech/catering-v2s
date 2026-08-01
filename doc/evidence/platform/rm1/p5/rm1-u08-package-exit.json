@@ -1,0 +1,762 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1-U08",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "beforeSha256": "bc68141ae96606f332fdc4af3939da5de76830330299a94327f3d93514948207",
+      "afterSha256": "6ffa6d6a54e6b9370fc0ffa783d66438e0c243291c3ccda052b943a53540bf72"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+      "beforeSha256": "d04acb36d9d914f605e1c93789a0cae00981d8b41de1311bc729b69d666a49a6",
+      "afterSha256": "e777d1c982e30976e776be8e201fe1b1bc6eb0916c655e922ce03e3af0e3f513"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts",
+      "beforeSha256": "7da3ae622687a98cb80fff2b721b43aedf67d32fda3b2973c79f024b9f43a691",
+      "afterSha256": "ff06f66b6716cda042ceba8c33fe9e974604772b513d4c47c9a7f683c260ac0c"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.rtk.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d5400d962f269f2b6d3e1ca05d4b1e300616edf3419058b51bc2cfdc007db8a3"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.rtk.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c0836544e0455e4b15d86235bca35a6ac383e6030b6fc045eeb72d1ea9afff84"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+      "beforeSha256": "ed3152568ae6440d6dca0f5b3a39b3b7fbf06aae96e3168ab134cd3b86dc6e03",
+      "afterSha256": "c07adec5fcb3087be10785a3d1b9e39214a352dd6aea9cf6fa64b493c62a8fac"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+      "beforeSha256": "5f1b3b1b93db2d5bdca508e0268b574f6b7c4b114e0e478284fff7e0865f2e61",
+      "afterSha256": "3bbb7fac52f91a84798e2ed70231cbb901b425ed763aebe496c8e63ad9e92aac"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "beforeSha256": "dcbec7d1ebea9daddda51bfff3a9bb6fc65b62aab7688c6cdea6b2edaec26e2c",
+      "afterSha256": "e2b13f80eecf91194a25facdf430c5ab33957df674ae685110c8780e8018d21e"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+      "beforeSha256": "96e9548a7fb66cbf06f50efd772fa10608666d9e03d3c1b8e8dca7fe26e9aaac",
+      "afterSha256": "9ab94012974b3d98f6fe6244ef26fd8337419d9bc19564a0b6f4a6b3a580a3a1"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "beforeSha256": "43949b5df6d4f43bdcabd3feaca3c51c57eec5d4cda7eed5c909abd14ee820f3",
+      "afterSha256": "dbb85e497623727f9beadf01de188867ceb3950d1a7949706d28e04dd5717e17"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "beforeSha256": "010bb4134ba15e1beea8e7bff4f2d96fdb940742d30fd33f249916db4a0c1e07",
+      "afterSha256": "f44468a37ce163bee21bd4e6f1c95c41accc711284c69362e61e6beb3e600753"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleHomeBootstrapPage.tsx",
+      "beforeSha256": "6bafb4a34d7ea6d2d8af36e8fc81018e0462773f4ce96aa5c1a05c521989f3e7",
+      "afterSha256": "d624a1b837a1c9ba28f498361ae48ac49358ae4238be919244710faaf3137968"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "beforeSha256": "52bbae5a5912caab36800faa1c149250ff36508d16b5ca49f4139f1a140cb163",
+      "afterSha256": "dfef38b3e3733df59bba00efe79e393d4fd31057a123b20ecd742ded39593ea7"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "beforeSha256": "68400c9fa9d86400abecba7da31dcc21e23c7038066ec4202e43a1b5b581fea8",
+      "afterSha256": "4faa3d21d608731c278b4154044f378c42413640e788188eb7f311e912772de0"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+      "beforeSha256": "576966b88399447165bf7cb2052a7543344212261723611eb87ea8455087ae58",
+      "afterSha256": "fcc6ead7d2b5d27e82b28f6ef2c05375e08a6a45c506ca9694484db378647ee1"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
+      "beforeSha256": "4297b1a26a06274c1ca25a86955485e4ea6ea69b75ba755aac08dab029fb6170",
+      "afterSha256": "77f6c4c733892bbc73629b788a87f57eace29fd0aff9389334f3a4cb2a12b6d4"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+      "beforeSha256": "c42895d7f499d125768593eb1d9b30153512f0bc139086a66ca80ff7bb8c72a3",
+      "afterSha256": "1d863f2376dbd65c45961fb0f9a9ebdf5f57d89cf2897f9ececc3b4fc0b4af87"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "beforeSha256": "535579f6d643f41eac9cfe28b3f2e4eeac5ee6e814a1c25e8c79f5f121a03064",
+      "afterSha256": "3af6cf9be12474590bd7a6fecfa179a6868b70aca6ec776727e5378aaf8c9d33"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+      "beforeSha256": "ded6489a83821a6369ca37de690a9fb91d9141aa207f9cafe24813bc44562c8a",
+      "afterSha256": "c21fb9faf1748aa9ed9d29a75558ae5ac6e12f7fdd25f40cf3819944d3a71cd7"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+      "beforeSha256": "fa1fa3901c78a28250ef9c6829275e1d49cd5d7f34ad76cfa41141c4ba6f51e3",
+      "afterSha256": "7120362bf76da3aa5f70e12c8e565a9261fd7588f82e9a36da2573ebf3f30e9c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.rtk.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3c2a59ac021d72c6f8d1a9f68d4de4925fcc5ddb046e9908d0687c87ec82b928"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "beforeSha256": "ef90bcc3cf094179e9e3a49e1456bfc4742fdb3011200e994a4286b4a06f281d",
+      "afterSha256": "4b9e92aff177f23e0f7ce97e2b8ba3bca52671b1fc60845b7089be9c2ce820b6"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+      "beforeSha256": "deda023aa6e0d2cf9480bd5545b078fb6168149bce9503868683118bf397c99c",
+      "afterSha256": "1cba7be77a778b6293f45d4f5b505655f77c03ae71f3be3cb8049186168125de"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "beforeSha256": "71fa4e7d2a5c81543af26c11630a1352eabb7f7b2ab04c185b80fd77b63811e3",
+      "afterSha256": "b3370dc6e54b8083e7657608a90f9dc924dfab843b59e4149ff09eabcd781367"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "beforeSha256": "46bcbbb18017931cb78bf2586b0b4943a28a268fc07712e6524c936bad02536d",
+      "afterSha256": "b5c6de06212dc7cb50e0ee487431e73a0db3f5c0f7e9e3f13fe33511d6b29790"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "beforeSha256": "b1cdddda5ca85154f1c7e40fa9d1fdb60ccb78531e6b49e00b4d21cf3824fc9c",
+      "afterSha256": "2b4ed05662d894e43b06e361a4741431815308148eb51951f0aba473c2101557"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "beforeSha256": "39b5eb70d36a2b754eeeaa5595a7ce43cbff7b243039b5fec876327a40511fa4",
+      "afterSha256": "09e7cf53538dc77907151b9ef1dbdf9539a70c292f82b69a01ca9ed81a99a62e"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "beforeSha256": "4cca83a5171fe68bd01ec2f881978246987fee75ba969c75d2c4bb9f75e65088",
+      "afterSha256": "f90f75341772be1c92cab8381e52b74926ae88708964239acbb050d426a43fca"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "beforeSha256": "1dc48d6ad44495161ddf258fcbaa1670e0a77e271cf38b70971892eb7937d132",
+      "afterSha256": "5340e23aaa0571e070fa63ea9be88e3a9065e13c67125ab356dd02a6ac665533"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "beforeSha256": "7e5da4e69f9664e5ed35219ee45d3988333eea1458cae0b2f46f49f32a26fd94",
+      "afterSha256": "16416c77967e7b66bfe305e4391bc4ccd6a52f655f06e8edb54c00130a38fa41"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "beforeSha256": "fee571d1898598834663ddfd6b5c9e2f0c88d9c8f5f44f7469d9264e0b4e0e5c",
+      "afterSha256": "195e0539583a86141f37f6890d9aad5e213afab32a795fb8a06d1dc04eae49c6"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "beforeSha256": "411482b8f50e91aea961d0d718983059e796b0f49bb3a591f9d703c5e69d8455",
+      "afterSha256": "f57b24220903a1fadd46dd14c6e4f9cde0dfade16d3936a2e1995b7b276f14e2"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-claude-s1-problem-family.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "319eaf1e52084afce3e7034ba5e5156dec3f0c456e795c2e012e58c3688343a6"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-dexter-authorized-historical-receipt-recovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "74757025c5d201ab417be5e6e42e54beb386cb6308c15e224bd36edf51844ee8"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-focused-frontend-recovery-evidence.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b5864c61918071209b61b749934c63fa764861e844e09ff4e0f00685ff7f6422"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-implementation-amendment.md",
+      "beforeSha256": "ab878b37069568652a184cf40a3f9e953ea002b58e51dd2a14d3f751c5b9d0c9",
+      "afterSha256": "b98e86228f9b6dd7e32310b82ed3c7ec338d1a4dc4a3e624cd9dde5711e94d60"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-package-input.json",
+      "beforeSha256": "c1f4916ffbf7902fd0966d60cbe0964f540f4042cea8446ccb034bf2a20f4feb",
+      "afterSha256": "ab22635905009c0e81d395d1cfb8dab12a6b738e767799b3a98fd463f3762c9c"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-review-remediation-problem-family.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "911c214da3d46ee4110b3c9392052180cef4be7a390ad45aee28419e8aeb8a8d"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-rtk-scope-baseline-addendum.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "bb75f1bd4b71011198846b2ef82d22bbd2447e4a8721e5e9204cece62eda38c8"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "68af37d718bae92bc23ffd01eb4910b931256594b9af89a96f22ee865e3fb54f"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "fe675190bc3c6671de8f34c77f2f0e4d19cf6505cb71511f54d795c4100298fd"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-claude.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "71ba0e82bd2a03d4026d9da5d61cb6ed1e46c4cc8d46bedfd0aae4425c511c69"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-request.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a383ffe36e687f3b18fab8f074aa387c6edb6cb40721bd29e6ca5db9a31f3965"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-round1-codex.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9b6f3730d02ba7b07b4b8628de480dee8be560cc239533288d2438a244960c54"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-round2-codex.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9a815d9ee926bd9bad611282604fa8c0e93b188db3b7e0cf7c17902a5bcd084a"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-post-remediation-intake.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "db093bcb718371e60e75da793a77397d31921d7c452a23458dee61e6b692bb5a"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-post-remediation-review-request.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "02f97bef78c37b15c619aa65749290d4c7ee82be8736249828454f645aaf075b"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "beforeSha256": "0bc1be8db520aff9532f46dbdbc9e73d40533a11da0969d8057355f0340fadda",
+      "afterSha256": "89f4400bb00b8233caabcbc3211a687408d9365134b16712f6af0d9b39d64d16"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/AdminErrorBoundary.tsx",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "20edd14c59986a8cf78adbf51ab9415439315843e307c3c1c6df6c395d8e9149"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/asyncGeneration.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5f15ae1b55163cf414d2de42ed6ec198ad34c04e286f5a8616511c1c951ddaf0"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/index.ts",
+      "beforeSha256": "8e4153f772c8352a305e413b40a9fb22a1e539893846e95f1e2541d52a70e759",
+      "afterSha256": "368a3a1498b935ed8c282b6cc38a5bf2702404a134e00807524fb6977d89b627"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/refreshSignal.ts",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b7926b0801497523c372205a6d4e45445f2fa97c5e2935e552bf8042db960cc3"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
+      "beforeSha256": "26b14618fef9f98148686ae124a8ff58818fdd1154c154258398284977f435fa",
+      "afterSha256": "5ffeea9eb88bab1a99f1c1cb3f7fa45fe58d57dbb171d942928520041fbdedb2"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+      "beforeSha256": "98cf69b43c873fdad94a4bd2186b51f970f54d40d5b597e52746082f1022315c",
+      "afterSha256": "78bcc9dfd343245d6426a59e232c24893660c7f4f9b83d3b1824edff8b0be03e"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/index.ts",
+      "beforeSha256": "60607e83e7d5b90a635c1f993f0f45f1093331809c7dce7ef613a7454afc38f7",
+      "afterSha256": "452a388aa08965076aa692e44f7d5fb7d780ec349e2216bb244acd32fc08df5f"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/observability/observedBaseQuery.ts",
+      "beforeSha256": "79023465e2860151893c1014889cbbc28ff8b0f718f44f966aa24f71891112f4",
+      "afterSha256": "6c9c5999a5868ba932775db91e1bbd64c706e5ba137b675ee8f4c54a69530045"
+    },
+    {
+      "path": "package.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "525b0f4f837bb8cbf75fbea9811ff5235d12342950273fe10b28f5ae50abb201"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "beforeSha256": "b184cd9d0b7533b8393859e3bda1463aef3d38bc2c36f19e89cf44e42182ff0d",
+      "afterSha256": "be6010edfe7852d6d89f610552fbe3fb2f8a7b755b0a071660c39014dc2c40d2"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "c328b3f2e935d5fd4202ee937783ba52bc7df77a13a2fb2b9439c4700eb257ef"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d1d85664be4a5a235fed8221fc23b4592c40c3ae3dcc95335877ca5039c22ab4"
+    },
+    {
+      "path": "yarn.lock",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "011ab7148e165f0c8d053095e03cc8c12d1b9445a31a194e7ff31f1a028ec9bf"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+      "afterSha256": "6ffa6d6a54e6b9370fc0ffa783d66438e0c243291c3ccda052b943a53540bf72",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+      "afterSha256": "e777d1c982e30976e776be8e201fe1b1bc6eb0916c655e922ce03e3af0e3f513",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts",
+      "afterSha256": "ff06f66b6716cda042ceba8c33fe9e974604772b513d4c47c9a7f683c260ac0c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.rtk.ts",
+      "afterSha256": "d5400d962f269f2b6d3e1ca05d4b1e300616edf3419058b51bc2cfdc007db8a3",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.rtk.ts",
+      "afterSha256": "c0836544e0455e4b15d86235bca35a6ac383e6030b6fc045eeb72d1ea9afff84",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+      "afterSha256": "c07adec5fcb3087be10785a3d1b9e39214a352dd6aea9cf6fa64b493c62a8fac",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
+      "afterSha256": "3bbb7fac52f91a84798e2ed70231cbb901b425ed763aebe496c8e63ad9e92aac",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "afterSha256": "e2b13f80eecf91194a25facdf430c5ab33957df674ae685110c8780e8018d21e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
+      "afterSha256": "9ab94012974b3d98f6fe6244ef26fd8337419d9bc19564a0b6f4a6b3a580a3a1",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+      "afterSha256": "dbb85e497623727f9beadf01de188867ceb3950d1a7949706d28e04dd5717e17",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "afterSha256": "f44468a37ce163bee21bd4e6f1c95c41accc711284c69362e61e6beb3e600753",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleHomeBootstrapPage.tsx",
+      "afterSha256": "d624a1b837a1c9ba28f498361ae48ac49358ae4238be919244710faaf3137968",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "afterSha256": "dfef38b3e3733df59bba00efe79e393d4fd31057a123b20ecd742ded39593ea7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "afterSha256": "4faa3d21d608731c278b4154044f378c42413640e788188eb7f311e912772de0",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
+      "afterSha256": "fcc6ead7d2b5d27e82b28f6ef2c05375e08a6a45c506ca9694484db378647ee1",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
+      "afterSha256": "77f6c4c733892bbc73629b788a87f57eace29fd0aff9389334f3a4cb2a12b6d4",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+      "afterSha256": "1d863f2376dbd65c45961fb0f9a9ebdf5f57d89cf2897f9ececc3b4fc0b4af87",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+      "afterSha256": "3af6cf9be12474590bd7a6fecfa179a6868b70aca6ec776727e5378aaf8c9d33",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+      "afterSha256": "c21fb9faf1748aa9ed9d29a75558ae5ac6e12f7fdd25f40cf3819944d3a71cd7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+      "afterSha256": "7120362bf76da3aa5f70e12c8e565a9261fd7588f82e9a36da2573ebf3f30e9c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.rtk.ts",
+      "afterSha256": "3c2a59ac021d72c6f8d1a9f68d4de4925fcc5ddb046e9908d0687c87ec82b928",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "afterSha256": "4b9e92aff177f23e0f7ce97e2b8ba3bca52671b1fc60845b7089be9c2ce820b6",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+      "afterSha256": "1cba7be77a778b6293f45d4f5b505655f77c03ae71f3be3cb8049186168125de",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "afterSha256": "b3370dc6e54b8083e7657608a90f9dc924dfab843b59e4149ff09eabcd781367",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "afterSha256": "b5c6de06212dc7cb50e0ee487431e73a0db3f5c0f7e9e3f13fe33511d6b29790",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "afterSha256": "2b4ed05662d894e43b06e361a4741431815308148eb51951f0aba473c2101557",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
+      "afterSha256": "09e7cf53538dc77907151b9ef1dbdf9539a70c292f82b69a01ca9ed81a99a62e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "afterSha256": "f90f75341772be1c92cab8381e52b74926ae88708964239acbb050d426a43fca",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
+      "afterSha256": "5340e23aaa0571e070fa63ea9be88e3a9065e13c67125ab356dd02a6ac665533",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "afterSha256": "16416c77967e7b66bfe305e4391bc4ccd6a52f655f06e8edb54c00130a38fa41",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "afterSha256": "195e0539583a86141f37f6890d9aad5e213afab32a795fb8a06d1dc04eae49c6",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+      "afterSha256": "f57b24220903a1fadd46dd14c6e4f9cde0dfade16d3936a2e1995b7b276f14e2",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-claude-s1-problem-family.json",
+      "afterSha256": "319eaf1e52084afce3e7034ba5e5156dec3f0c456e795c2e012e58c3688343a6",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-dexter-authorized-historical-receipt-recovery.json",
+      "afterSha256": "74757025c5d201ab417be5e6e42e54beb386cb6308c15e224bd36edf51844ee8",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-focused-frontend-recovery-evidence.json",
+      "afterSha256": "b5864c61918071209b61b749934c63fa764861e844e09ff4e0f00685ff7f6422",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-implementation-amendment.md",
+      "afterSha256": "b98e86228f9b6dd7e32310b82ed3c7ec338d1a4dc4a3e624cd9dde5711e94d60",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-package-input.json",
+      "afterSha256": "ab22635905009c0e81d395d1cfb8dab12a6b738e767799b3a98fd463f3762c9c",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-review-remediation-problem-family.json",
+      "afterSha256": "911c214da3d46ee4110b3c9392052180cef4be7a390ad45aee28419e8aeb8a8d",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-rtk-scope-baseline-addendum.json",
+      "afterSha256": "bb75f1bd4b71011198846b2ef82d22bbd2447e4a8721e5e9204cece62eda38c8",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p5/rm1-u08-source-compliance-disposition.json",
+      "afterSha256": "68af37d718bae92bc23ffd01eb4910b931256594b9af89a96f22ee865e3fb54f",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "afterSha256": "fe675190bc3c6671de8f34c77f2f0e4d19cf6505cb71511f54d795c4100298fd",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-claude.md",
+      "afterSha256": "71ba0e82bd2a03d4026d9da5d61cb6ed1e46c4cc8d46bedfd0aae4425c511c69",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-request.md",
+      "afterSha256": "a383ffe36e687f3b18fab8f074aa387c6edb6cb40721bd29e6ca5db9a31f3965",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-round1-codex.md",
+      "afterSha256": "9b6f3730d02ba7b07b4b8628de480dee8be560cc239533288d2438a244960c54",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-round2-codex.md",
+      "afterSha256": "9a815d9ee926bd9bad611282604fa8c0e93b188db3b7e0cf7c17902a5bcd084a",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-post-remediation-intake.md",
+      "afterSha256": "db093bcb718371e60e75da793a77397d31921d7c452a23458dee61e6b692bb5a",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-post-remediation-review-request.md",
+      "afterSha256": "02f97bef78c37b15c619aa65749290d4c7ee82be8736249828454f645aaf075b",
+      "result": "PASS"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "afterSha256": "89f4400bb00b8233caabcbc3211a687408d9365134b16712f6af0d9b39d64d16",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/AdminErrorBoundary.tsx",
+      "afterSha256": "20edd14c59986a8cf78adbf51ab9415439315843e307c3c1c6df6c395d8e9149",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/asyncGeneration.ts",
+      "afterSha256": "5f15ae1b55163cf414d2de42ed6ec198ad34c04e286f5a8616511c1c951ddaf0",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/index.ts",
+      "afterSha256": "368a3a1498b935ed8c282b6cc38a5bf2702404a134e00807524fb6977d89b627",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/refreshSignal.ts",
+      "afterSha256": "b7926b0801497523c372205a6d4e45445f2fa97c5e2935e552bf8042db960cc3",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
+      "afterSha256": "5ffeea9eb88bab1a99f1c1cb3f7fa45fe58d57dbb171d942928520041fbdedb2",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+      "afterSha256": "78bcc9dfd343245d6426a59e232c24893660c7f4f9b83d3b1824edff8b0be03e",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/index.ts",
+      "afterSha256": "452a388aa08965076aa692e44f7d5fb7d780ec349e2216bb244acd32fc08df5f",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/frontend/admin-ui-foundation/src/observability/observedBaseQuery.ts",
+      "afterSha256": "6c9c5999a5868ba932775db91e1bbd64c706e5ba137b675ee8f4c54a69530045",
+      "result": "PASS"
+    },
+    {
+      "path": "package.json",
+      "afterSha256": "525b0f4f837bb8cbf75fbea9811ff5235d12342950273fe10b28f5ae50abb201",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "afterSha256": "be6010edfe7852d6d89f610552fbe3fb2f8a7b755b0a071660c39014dc2c40d2",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "c328b3f2e935d5fd4202ee937783ba52bc7df77a13a2fb2b9439c4700eb257ef",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "afterSha256": "d1d85664be4a5a235fed8221fc23b4592c40c3ae3dcc95335877ca5039c22ab4",
+      "result": "PASS"
+    },
+    {
+      "path": "yarn.lock",
+      "afterSha256": "011ab7148e165f0c8d053095e03cc8c12d1b9445a31a194e7ff31f1a028ec9bf",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p5/rm1-u08-source-compliance-disposition.json",
+    "sha256": "68af37d718bae92bc23ffd01eb4910b931256594b9af89a96f22ee865e3fb54f"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "controls": [
+    {
+      "ruleId": "P-E4",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-Q2",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-Q3",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-Q4",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-Q9",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-R1",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-R2",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-R3",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-R4",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-R5",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-R6",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "P-X3",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "ST-9",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "focusedFrontendEvidence": [
+    {
+      "kind": "FOCUSED_FRONTEND_RECOVERY",
+      "runner": "yarn",
+      "suite": "admin-ui-foundation + platform-admin + operations-admin focused frontend recovery suites",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+          "sha256": "78bcc9dfd343245d6426a59e232c24893660c7f4f9b83d3b1824edff8b0be03e"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+          "sha256": "c21fb9faf1748aa9ed9d29a75558ae5ac6e12f7fdd25f40cf3819944d3a71cd7"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/PlatformTransport.ts",
+          "sha256": "7120362bf76da3aa5f70e12c8e565a9261fd7588f82e9a36da2573ebf3f30e9c"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+          "sha256": "e777d1c982e30976e776be8e201fe1b1bc6eb0916c655e922ce03e3af0e3f513"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts",
+          "sha256": "ff06f66b6716cda042ceba8c33fe9e974604772b513d4c47c9a7f683c260ac0c"
+        },
+        {
+          "path": "scripts/generate/edge-codegen.mjs",
+          "sha256": "be6010edfe7852d6d89f610552fbe3fb2f8a7b755b0a071660c39014dc2c40d2"
+        },
+        {
+          "path": "tools/compliance-control/cli.mjs",
+          "sha256": "c328b3f2e935d5fd4202ee937783ba52bc7df77a13a2fb2b9439c4700eb257ef"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+          "sha256": "dfef38b3e3733df59bba00efe79e393d4fd31057a123b20ecd742ded39593ea7"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+          "sha256": "e2b13f80eecf91194a25facdf430c5ab33957df674ae685110c8780e8018d21e"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/PlatformApp.tsx",
+          "sha256": "3af6cf9be12474590bd7a6fecfa179a6868b70aca6ec776727e5378aaf8c9d33"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/OperationsApp.tsx",
+          "sha256": "6ffa6d6a54e6b9370fc0ffa783d66438e0c243291c3ccda052b943a53540bf72"
+        },
+        {
+          "path": "tools/verify-gates/cli.mjs",
+          "sha256": "d1d85664be4a5a235fed8221fc23b4592c40c3ae3dcc95335877ca5039c22ab4"
+        }
+      ],
+      "log": {
+        "path": "doc/evidence/platform/rm1/p5/rm1-u08-focused-frontend-recovery-evidence.json",
+        "sha256": "b5864c61918071209b61b749934c63fa764861e844e09ff4e0f00685ff7f6422"
+      }
+    }
+  ],
+  "independentImplementationReview": {
+    "round1": {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-round1-codex.md",
+      "sha256": "9b6f3730d02ba7b07b4b8628de480dee8be560cc239533288d2438a244960c54",
+      "verdict": "GO",
+      "major": 0,
+      "serious": 0,
+      "note": 2
+    },
+    "round2": {
+      "path": "doc/review/platform/2026-07-29-v2s-rm1-p5-implementation-review-round2-codex.md",
+      "sha256": "9a815d9ee926bd9bad611282604fa8c0e93b188db3b7e0cf7c17902a5bcd084a",
+      "verdict": "GO",
+      "major": 0,
+      "serious": 0,
+      "note": 0,
+      "roundFinalDecision": "SELF_DECIDED"
+    }
+  }
+}

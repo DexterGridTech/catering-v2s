@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P3-A-SUCCESSOR-INTAKE-BASELINE-SCOPE-20260728",
+  "genericProblem": "A successor package-exit validator can treat pre-baseline historical prompt intakes as if they were created by the successor, so an unrelated historical intake without a disposition blocks the successor exit.",
+  "rootCauseClass": "SUCCESSOR_PACKAGE_EXIT_GLOBAL_INTAKE_SCAN_WITHOUT_BASELINE_SCOPE",
+  "finiteDenominator": [
+    ".runtime/compliance-control/package-baseline-RM1-U02.json baseline snapshot: 0 problem-intake entries",
+    ".runtime/compliance-control/current-problem-intake.json current-intake authority",
+    ".runtime/compliance-control/problem-intakes post-baseline snapshot: 99 intake files",
+    ".runtime/compliance-control/problem-intakes/363f52a2e92ec93f316159a3a70ef900e7acf1de12b4aba29d80039dd823ed87.json historical counterexample",
+    ".runtime/compliance-control/problem-intakes/28fc13bdcc1ff1cf6f358e0b8c68835cd3922d009db6ad89d442ccccbacf87c7.json successor discovery intake"
+  ],
+  "searchedSurfaces": [
+    ".runtime/compliance-control/package-baseline-RM1-U02.json",
+    ".runtime/compliance-control/current-problem-intake.json",
+    ".runtime/compliance-control/problem-intakes",
+    ".runtime/compliance-control/problem-family-dispositions",
+    "tools/compliance-control/cli.mjs"
+  ],
+  "searchQueries": [
+    "problem-intakes and problem-family-dispositions against RM1-U02 baseline entries",
+    "validatePackageExit and validateProblemIntakeDisposition call paths",
+    "validateRM1P0PackageIntakeDispositions historical exclusion behavior",
+    "363f52a2e92ec93f316159a3a70ef900e7acf1de12b4aba29d80039dd823ed87"
+  ],
+  "counterexamples": [
+    {
+      "id": "CE-01",
+      "claim": "Every intake outside the RM1-U02 baseline was created by the RM1-U02 successor and must have a successor disposition.",
+      "evidence": "The RM1-U02 baseline has zero intake entries while the working tree has 99 post-baseline intake files; historical intake 363f52a2... exists without a disposition and predates this P3-A discovery work.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    },
+    {
+      "id": "CE-02",
+      "claim": "Validating only current-problem-intake is sufficient for package exit.",
+      "evidence": "The package-exit path scans the intake directory and reaches historical 363f52a2... even though current-problem-intake is the separately declared authority.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-01",
+      "classification": "CONFIRMED",
+      "summary": "RM1-U02 package-exit validation has a finite baseline-scope gap: the empty intake baseline and global intake scan allow historical 363f52a2... to be attributed to the successor."
+    },
+    {
+      "findingId": "PF-02",
+      "classification": "CONFIRMED",
+      "summary": "The generic failure is distinct from any individual historical intake content; the required scope is baseline intake snapshot, current intake, and post-baseline intake set rather than a one-file exception."
+    },
+    {
+      "findingId": "PF-03",
+      "classification": "NOT_APPLICABLE_WITH_REASON",
+      "summary": "This P3-A discovery is evidence-only by authorization; it must not alter the compliance-control validator or package-exit artifact in this action."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs#validatePackageExit"
+    },
+    {
+      "findingId": "PF-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md#package-exit"
+    },
+    {
+      "findingId": "PF-03",
+      "preventionDestination": "NOT_APPLICABLE_WITH_REASON",
+      "owningSourceOrControl": "P3-A evidence-only authorization; no validator or package-exit changes in this action"
+    }
+  ]
+}

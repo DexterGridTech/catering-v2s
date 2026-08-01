@@ -1,0 +1,216 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "R3-WHOLE-SCOPE-WALKING-SKELETON",
+  "design": {
+    "path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md",
+    "sha256": "50fa920ff64de0092ec5d2ef7ff372c282416b04bbf61c855848b1c2f8d3dbc3"
+  },
+  "authorization": {
+    "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+    "sha256": "3e580ed837a9fdf09b91fbc00d6541c3820c4a96bee48dab85ec6e9cba16cf7a",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "7f4c7c6d78c87f76df07c82662558c623c7a974702bf1aa5db06c8df893d15be"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "SEVERITY_COUNT_MISMATCH",
+      "ROUND_THREE",
+      "MISSING_FINDING_UNIT_LINK"
+    ]
+  },
+  "candidateJourney": {
+    "id": "R3-C01",
+    "status": "DEXTER_ACCEPTED_INTERACTION_AND_WHOLE_R3_DETAIL_AUTHORIZED",
+    "actor": "系统服务提供者（运维管理员）",
+    "task": "在既有空集团空间中独立录入商业集团编码和名称，并读回唯一商业集团",
+    "pageKey": "PLATFORM_GROUP_WORKSPACE_COMMERCIAL_GROUP_INITIALIZATION",
+    "ownerReadback": "organization.commercial_group",
+    "mutations": ["initializeCommercialGroup"]
+  },
+  "deliveryUnits": [
+    {
+      "id": "R3-U01",
+      "title": "Gate 0、版本冻结与 immutable checkpoint",
+      "approvedAssertions": ["R3 business source is created only after Gate 0", "new mechanical gates share production validators and prove red mutations"],
+      "approvedSources": [
+        {"path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md", "anchor": "## 9. R3：W1——最薄运行骨架与 walking skeleton", "sha256": "3e580ed837a9fdf09b91fbc00d6541c3820c4a96bee48dab85ec6e9cba16cf7a"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### R3-U01 — Gate 0、版本冻结和不可变 checkpoint", "sha256": "50fa920ff64de0092ec5d2ef7ff372c282416b04bbf61c855848b1c2f8d3dbc3"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### R3-U01 — Gate 0、版本冻结和不可变 checkpoint"},
+      "currentDeviation": "R3 only has the D.1 code-layout gate; the required Gate 0 contract/Flyway/provenance validators and checkpoint do not yet exist.",
+      "changeSurfaces": [
+        {"path": "scripts/check/gate-0", "disposition": "create", "target": "R3 readiness aggregator"},
+        {"path": "scripts/check/r3-contract-face", "disposition": "create", "target": "OpenAPI face and generated closure gate"},
+        {"path": "scripts/check/r3-flyway-layout", "disposition": "create", "target": "single history and owner DDL gate"},
+        {"path": "scripts/check/r3-production-conformity", "disposition": "create", "target": "post-source production validator"},
+        {"path": "tools/r3-gates/<validator>.mjs", "disposition": "create", "target": "shared production validator core"}
+      ],
+      "orderedChain": ["freeze versions and denominators", "implement shared validators and self-tests", "run red mutations", "Gate 0 clean pass", "Dexter checkpoint", "read-only descendant verification"],
+      "dependencyAndSerialBoundaries": ["All U02-U07 sources are serially blocked until the checkpoint is verified; R4 gates are not claimed by this unit."],
+      "dataEvolution": {"notApplicableReason": "Gate 0 creates no business data or schema."},
+      "uiAndTerms": {"notApplicableReason": "No user-facing surface is created.", "termSource": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md#0. 结论、范围和不可越过的边界"},
+      "evidence": {"l1": "each gate clean/self-test/red mutation and empty inventory receipt", "l2": "not applicable before sources", "l3": "not applicable before sources", "business": "checkpoint is explicitly not business completion", "cleanup": "self-tests use temporary scratch roots and remove them"},
+      "forbiddenPseudoFixes": ["fixture-only red proof", "pre-Gate-0 business source", "dirty-worktree checkpoint"],
+      "discriminator": {"fixture": "a validator helper not reached from production run must fail Gate 0"}
+    },
+    {
+      "id": "R3-U02",
+      "title": "单 deployable、外部访问契约和五命令骨架",
+      "approvedAssertions": ["platform access is deployment-controlled rather than a new C-01 login product", "one business deployable and two independent admin apps", "start/restart never seed"],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.1 部署拓扑", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"},
+        {"path": "doc/decisions/2026-07-25-v2s-r3-c01-commercial-group-initialization-journey-inventory.md", "anchor": "## 3. 逐 actor 前提链", "sha256": "70b7f81d2a4979e053aa80b8d372237512118865716663cdf741b7cb5aaa4340"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### R3-U02 — 一个 deployable、外部访问契约和五命令骨架"},
+      "currentDeviation": "No application, proxy template, managed run or five-command split exists in this successor repository.",
+      "changeSurfaces": [
+        {"path": "apps/backend/<gradle-single-deployable>", "disposition": "create", "target": "one modular Spring Boot application"},
+        {"path": "infra/r3/<proxy-and-runtime-templates>", "disposition": "create", "target": "standard reverse proxy and run-scoped topology"},
+        {"path": "scripts/dev/{start,restart,stop,seed,reset}", "disposition": "create", "target": "five-command ownership split"},
+        {"path": "apps/frontend/platform-admin/<app-skeleton>", "disposition": "create", "target": "independent platform application"},
+        {"path": "apps/frontend/operations-admin/<app-skeleton>", "disposition": "create", "target": "independent operations boundary application"}
+      ],
+      "orderedChain": ["lock compatible version decision", "create private app/proxy topology", "implement trusted edge context validation", "add managed five commands", "prove direct-app rejection"],
+      "dependencyAndSerialBoundaries": ["Requires U01 checkpoint; U03-U07 require this topology but no business data may be seeded by it."],
+      "dataEvolution": {"notApplicableReason": "External platform subject and group workspace are deployment preconditions, not R3-created data."},
+      "uiAndTerms": {"notApplicableReason": "This unit creates access topology, not a credential UX.", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-03"},
+      "evidence": {"l1": "version lock, dependency allowlist and topology static tests", "l2": "edge signature/face/direct-port negative tests", "l3": "independent app build and proxy route checks", "business": "access precondition is recorded, not inferred as a new account", "cleanup": "managed runtime manifest stops only identified resources"},
+      "forbiddenPseudoFixes": ["root/default account", "anonymous session", "unsafe DEV cookie/security profile", "operations login shell"],
+      "discriminator": {"fixture": "forged or missing X-Edge-Auth and direct backend request both fail before controller"}
+    },
+    {
+      "id": "R3-U03",
+      "title": "Edge OpenAPI、Problem、face registry 与 generated closure",
+      "approvedAssertions": ["x-consumer-faces is the single route exposure truth", "platform has exactly the C-01 operations and operations has no business operation", "Problem codes are a closed OpenAPI components enum generated as typed constants for both ends; production code has no handwritten error-code strings"],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.10 边缘、安全面与 OpenAPI face", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### 3.1 Edge OpenAPI 分母", "sha256": "50fa920ff64de0092ec5d2ef7ff372c282416b04bbf61c855848b1c2f8d3dbc3"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### R3-U03 — OpenAPI、Problem、face registry 与生成 closure"},
+      "currentDeviation": "There is no v2s edge OpenAPI, generated server/client closure or operation face registry.",
+      "changeSurfaces": [
+        {"path": "contracts/openapi/edge.openapi.yaml", "disposition": "create", "target": "C-01 edge operation truth"},
+        {"path": "contracts/openapi/components/{platform-workspace,commercial-group,problem}.schemas.yaml", "disposition": "create", "target": "typed reachable schemas"},
+        {"path": "scripts/generate/r3-edge-<target>", "disposition": "create", "target": "server registry and per-app generation"},
+        {"path": "apps/frontend/{platform-admin,operations-admin}/src/app/api/generated/<closure>", "disposition": "create", "target": "face-specific generated output"}
+      ],
+      "orderedChain": ["write OpenAPI and problems", "generate server registry", "generate each app closure", "byte/check closure", "run production conformity"],
+      "dependencyAndSerialBoundaries": ["Requires U01 checkpoint and U02 target skeleton; U04 controllers and U05 UI must consume generated output only."],
+      "dataEvolution": {"notApplicableReason": "Wire-only unit; no database mutation."},
+      "uiAndTerms": {"notApplicableReason": "Generated wire has no user-facing screen by itself.", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-01"},
+      "evidence": {"l1": "OpenAPI parse, generation byte check, face closure, typed Problem-code generation and red mutations", "l2": "contract binding exercised by controller integration", "l3": "generated app slices compile without crossing imports", "business": "only C-01 operations are externally exposed", "cleanup": "generation uses temporary output for check mode"},
+      "forbiddenPseudoFixes": ["manual client allowlist", "copying all-v2 generated code", "operations endpoint invented for nonempty count"],
+      "discriminator": {"fixture": "removing x-consumer-faces or adding an unreachable operations type makes production conformity fail"}
+    },
+    {
+      "id": "R3-U04",
+      "title": "C-01 后端 owner、单库 migration 与原子初始化命令",
+      "approvedAssertions": ["one group workspace has at most one commercial group", "name/code are independent input", "no downstream facts are created", "cross-owner write uses public command in one REQUIRED transaction"],
+      "approvedSources": [
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-01 集团空间与商业集团", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.3 跨模块原子写", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### R3-U04 — 后端 owner、单库 migration 与 C-01 原子命令"},
+      "currentDeviation": "No v2s schemas, owner modules, migrations, command API, audit or task query exist.",
+      "changeSurfaces": [
+        {"path": "libraries/backend/platform-workspace/{api,domain,application,adapter}/<sources>", "disposition": "create", "target": "workspace fact owner and task query"},
+        {"path": "libraries/backend/organization/{api,domain,application,adapter}/<sources>", "disposition": "create", "target": "commercial group fact owner and command"},
+        {"path": "apps/backend/app/src/main/resources/db/migration/V<utc-millis>__platform_workspace.sql", "disposition": "create", "target": "workspace owner schema"},
+        {"path": "apps/backend/app/src/main/resources/db/migration/V<utc-millis>__organization_commercial_group.sql", "disposition": "create", "target": "commercial group owner schema, composite FK and audit"},
+        {"path": "contracts/policy/module-dependency-registry.json", "disposition": "update", "target": "COMMAND and SCHEMA_FK declaration"}
+      ],
+      "orderedChain": ["migrate owner schemas", "implement platform access/context", "implement workspace query/ref", "implement organization command", "wire coordinator", "run atomicity/readback tests"],
+      "dependencyAndSerialBoundaries": ["Requires U01-U03; it must finish before U05 can call the real owner endpoint and before U07 can run C-01 evidence."],
+      "dataEvolution": {"schemaOwners": ["platform_workspace", "organization"], "transaction": "platform-workspace coordinator plus organization command joins REQUIRED", "forbidden": ["cross-schema DML", "organization tree creation", "account/role/store creation", "outbox/listener"]},
+      "uiAndTerms": {"notApplicableReason": "Backend unit owns no standalone UI; UI is U05.", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-01"},
+      "evidence": {"l1": "compile, module-boundary and migration-layout gates", "l2": "clean migration, FK/unique/rollback/idempotency/typed conflict integration tests; databaseOperationCount asserts list/detail each <=3 and initialization write <=5", "l3": "not applicable to backend owner alone", "business": "readback contains independent submitted code/name and no downstream record", "cleanup": "Testcontainers database is run-scoped and removed"},
+      "forbiddenPseudoFixes": ["select-then-insert race", "workspace-name copy", "automatic organization/account/store", "cross-schema repository import"],
+      "discriminator": {"fixture": "two concurrent initialize requests yield exactly one group and one COMMERCIAL_GROUP_ALREADY_INITIALIZED conflict"}
+    },
+    {
+      "id": "R3-U05",
+      "title": "platform-admin C-01 页面与受控 Heritage 搬运",
+      "approvedAssertions": ["every C-01 operation follows the accepted four-screen interaction", "UI success requires owner readback", "all-v2 page assets are registered and adapted before carry", "generated Problem code maps to business copy through an exhaustive TypeScript switch with a never backstop"],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-25-v2s-r3-c01-commercial-group-initialization-interaction.md", "anchor": "## 4. 低保真线框", "sha256": "2c16b9034ce657cf1780edb1920ececce496a556fad6e648e3353c2251efd301"},
+        {"path": "doc/decisions/2026-07-25-v2s-frontend-asset-carry-over-first.md", "anchor": "## 3. 实现期：显式搬运优先", "sha256": "08566474c4227d6fbebdade06a3d29aa2ad54f09fc87a70456af8ffccc90b212"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### R3-U05 — platform-admin C-01 页面和受控 carry-over"},
+      "currentDeviation": "No platform-admin app or frozen C-01 source assets are registered for implementation carry-over.",
+      "changeSurfaces": [
+        {"path": "doc/heritage/{registry.json,required-inventory.json,frozen/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/**}", "disposition": "update", "target": "hash-bound source registration and frozen copies"},
+        {"path": "apps/frontend/platform-admin/src/features/group-workspace-commercial-group/<feature>", "disposition": "create", "target": "list/detail/initialization task feature"},
+        {"path": "apps/frontend/platform-admin/src/{app,routing,state}/<C01-owned-files>", "disposition": "create", "target": "app-owned route, state and base API"},
+        {"path": "apps/frontend/platform-admin/src/tests/{architecture,l2}/<C01-tests>", "disposition": "create", "target": "locators, lifecycle and readback proof"}
+      ],
+      "orderedChain": ["recheck source hashes", "register and freeze Heritage copies", "generate v2s wire", "adapt app shell and task feature", "bind typed locators", "run L2 owner readback"],
+      "dependencyAndSerialBoundaries": ["Requires U03 generated platform slice and U04 real endpoint; U05 cannot copy any PENDING_HERITAGE_REGISTRATION source or use an old runtime import."],
+      "dataEvolution": {"notApplicableReason": "UI stores only transient drawer draft; server facts remain U04 owner data."},
+      "uiAndTerms": {"pageKey": "PLATFORM_GROUP_WORKSPACE_COMMERCIAL_GROUP_INITIALIZATION", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-01", "interactionArtifact": {"path": "doc/decisions/2026-07-25-v2s-r3-c01-commercial-group-initialization-interaction.md", "anchor": "### Screen: commercial-group-initialize-drawer"}},
+      "evidence": {"l1": "TypeScript, exhaustive Problem-code copy mapping, generated import boundary and locator binding tests", "l2": "real mutation then owner readback, drawer failure/unknown-result recovery", "l3": "platform app architecture remains independent", "business": "list → detail → independent fields → exactly-one readback", "cleanup": "browser/run resources close through managed runner"},
+      "forbiddenPseudoFixes": ["toast-only success", "direct list initialization", "old workspace fields copied into group request", "all-v2 runtime/build import"],
+      "discriminator": {"fixture": "a 201 response without owner readback cannot close the drawer as successful"}
+    },
+    {
+      "id": "R3-U06",
+      "title": "operations-admin 独立 app 架构边界",
+      "approvedAssertions": ["operations-admin is a separate application", "R3 does not claim or implement real operations-user login", "the user-visible R3 boundary page is explicitly visual-reviewed and does not masquerade as a login or business screen"],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-25-v2s-r3-r6-journey-inventory-acceptance-and-c01-interaction-authorization.md", "anchor": "## 2. Dexter 接受与产品裁决", "sha256": "adafc8c87a0bcc0ced6743260de92200b92bc1ba3c3a5272cf901ab69c8a561c"},
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.12 前端与工程证据", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"},
+        {"path": "doc/decisions/2026-07-25-v2s-r3-c01-commercial-group-initialization-interaction.md", "anchor": "### Appendix Screen: operations-r3-boundary", "sha256": "2c16b9034ce657cf1780edb1920ececce496a556fad6e648e3353c2251efd301"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### R3-U06 — operations-admin 独立 app 边界"},
+      "currentDeviation": "No operations-admin app exists, so app independence has no production proof.",
+      "changeSurfaces": [
+        {"path": "apps/frontend/operations-admin/<independent-app>", "disposition": "create", "target": "operations app shell and boundary route"},
+        {"path": "infra/r3/operations-admin-route.conf", "disposition": "create", "target": "separate public app route"},
+        {"path": "apps/frontend/operations-admin/src/tests/architecture/<isolation-tests>", "disposition": "create", "target": "no platform imports and no session/business claim"}
+      ],
+      "orderedChain": ["create independent app configuration", "create explicit R3 boundary route", "generate empty operation receipt", "verify proxy route and import isolation"],
+      "dependencyAndSerialBoundaries": ["Requires U02 topology; must not wait for or create an operations identity/module/session to look complete."],
+      "dataEvolution": {"notApplicableReason": "R3 creates no operations account, employment, session or business data."},
+      "uiAndTerms": {"pageKey": "OPERATIONS_R3_BOUNDARY", "termSource": "doc/decisions/2026-07-25-v2s-r3-c02-operations-real-login-rejected-inventory.md", "interactionArtifact": {"path": "doc/decisions/2026-07-25-v2s-r3-c01-commercial-group-initialization-interaction.md", "anchor": "### Appendix Screen: operations-r3-boundary"}},
+      "evidence": {"l1": "independent build and no-cross-import architecture test", "l2": "static boundary-page visual/locator assertion; no operations business behavior", "l3": "separate route/app artifact without shared shell/store/router", "business": "explicitly proves no operations login claim", "cleanup": "app process is tracked in the managed run manifest"},
+      "forbiddenPseudoFixes": ["current-session endpoint", "blank business dashboard", "shared platform shell or generated types", "test-only operations account"],
+      "discriminator": {"fixture": "introducing a platform-admin import or operations session route fails the R3 architecture/face gate"}
+    },
+    {
+      "id": "R3-U07",
+      "title": "测试、受管 walking skeleton 与闭环证据",
+      "approvedAssertions": ["business and cleanup are separate", "walking skeleton uses proxy and external preconditions", "no dynamic evidence is claimed until all resources are cleaned"],
+      "approvedSources": [
+        {"path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md", "anchor": "## 9. R3：W1——最薄运行骨架与 walking skeleton", "sha256": "3e580ed837a9fdf09b91fbc00d6541c3820c4a96bee48dab85ec6e9cba16cf7a"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "## 7. Evidence, red controls and completion definition", "sha256": "50fa920ff64de0092ec5d2ef7ff372c282416b04bbf61c855848b1c2f8d3dbc3"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r3-whole-scope-implementation-design.md", "anchor": "### R3-U07 — 测试、受管 walking skeleton 与关闭证据"},
+      "currentDeviation": "No production code or managed runner exists; therefore no R3 test/evidence claim exists.",
+      "changeSurfaces": [
+        {"path": "apps/backend/**/src/test/<R3-tests>", "disposition": "create", "target": "unit, integration and Testcontainers proof"},
+        {"path": "apps/frontend/platform-admin/src/tests/{architecture,l2}/<R3-tests>", "disposition": "create", "target": "C-01 user-action/readback proof"},
+        {"path": "scripts/run/r3-walking-skeleton", "disposition": "create", "target": "run-scoped proxy-mediated runner"},
+        {"path": "doc/evidence/platform/2026-07-25-v2s-r3-<run>.json", "disposition": "create", "target": "business/cleanup/hash evidence"}
+      ],
+      "orderedChain": ["implement focused static/integration tests", "create external-precondition run manifest", "run proxy-mediated walker", "record business result", "perform cleanup", "record cleanup result and target hash"],
+      "dependencyAndSerialBoundaries": ["Requires U01-U06; must not reuse DEV state or call direct app ports as a substitute for the walking skeleton."],
+      "dataEvolution": {"notApplicableReason": "Test data is a declared external run precondition, never a C-01 side effect or persistent DEV seed."},
+      "uiAndTerms": {"pageKey": "PLATFORM_GROUP_WORKSPACE_COMMERCIAL_GROUP_INITIALIZATION", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-01", "interactionArtifact": {"path": "doc/decisions/2026-07-25-v2s-r3-c01-commercial-group-initialization-interaction.md", "anchor": "## 2. Interaction map"}},
+      "evidence": {"l1": "all R3 focused static/codegen/gate checks", "l2": "Testcontainers and UI L2 failure/readback proofs; databaseOperationCount asserts list/detail each <=3 and initialization write <=5; C-01 four-screen copy asserts required 集团空间/商业集团/编码/名称 and prohibits workspaceKey/aggregate/internal-error copy/诊断", "l3": "two-app topology/import isolation proof", "business": "managed proxy C-01 journey succeeds with external preconditions", "cleanup": "runner declares resource readback and must PASS separately"},
+      "forbiddenPseudoFixes": ["mock-only L2", "direct-app browser route", "DEV reuse", "business PASS without cleanup PASS"],
+      "discriminator": {"fixture": "a passing business action with leaked managed resource marks cleanup FAIL and blocks closure"}
+    }
+  ]
+}

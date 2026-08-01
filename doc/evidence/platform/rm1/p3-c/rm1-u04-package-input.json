@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U04",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "7c8f7919243f016d122c8394c633a6d9ecb98835b6c9fe8b881c74a3d399a9cb",
+  "unitId": "RM1-U04",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/capability-invariants",
+    "scripts/check/security-boundaries"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/affected-l2"
+  ],
+  "requiredControlRuleIds": [
+    "P-D0c"
+  ],
+  "serialPredecessor": {
+    "packageId": "RM1-U03",
+    "exitPath": "doc/evidence/platform/rm1/p3-b/rm1-u03-package-exit.json",
+    "exitSha256": "1e7efd4155faea2345927b038ccca3143455fb6c609ec5dd587bdb8113dbc1a5"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p3-c/rm1-u04-implementation-amendment.json",
+    "sha256": "6a217b898d50938aac836373431d9671deb30639fc8f8eae2fc7e1b469e8266f"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 implementation. This binding authorizes RM1-U04 P3-C only; it excludes P3-B migration/receipt work and all P3-D or P6 user interaction behavior."
+}

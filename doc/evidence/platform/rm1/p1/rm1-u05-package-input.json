@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U05",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "d37b3ed52c7c509f48a287d97f19e58e117f0b6fd6913f749bc42a4bbce5491c",
+  "unitId": "RM1-U05",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/authority-source-ledger",
+    "scripts/check/affected-l2"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/frontend-architecture"
+  ],
+  "requiredControlRuleIds": [
+    "ST-3",
+    "ST-4",
+    "ST-8"
+  ],
+  "businessEvidenceObligation": "NOT_REQUIRED_CONTROL_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1-U12",
+    "exitPath": "doc/evidence/platform/rm1/p3-c/rm1-u12-package-exit.json",
+    "exitSha256": "e8d6a51c74e954c360e492e45fc74c558c4a6d640f177e328aa3378393e389fd"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p1/rm1-u05-implementation-amendment.json",
+    "sha256": "0951640265d3b302bb4eb5b11f696a937aa36643b06454b93b999824e71f2ec7"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 P1 after P3-A+B+C Claude GO. P1 may implement only the exact ST authority ledger plus direct ST-3/ST-4/ST-8 fixes; it must not claim P5/P6-owned ST closure or enter later packages."
+}

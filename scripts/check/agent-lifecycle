@@ -14,6 +14,8 @@ validate_hooks_config() {
 const fs = require("node:fs");
 const value = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const expected = {
+  PreToolUse: { command: "scripts/hooks/pre-tool-compliance", matcher: ".*" },
+  PostToolUse: { command: "scripts/hooks/post-tool-compliance", matcher: ".*" },
   SessionStart: "scripts/hooks/session-start",
   UserPromptSubmit: "scripts/hooks/prompt-route",
   Stop: "scripts/hooks/stop"
@@ -30,11 +32,14 @@ if (!value.hooks || typeof value.hooks !== "object" || Array.isArray(value.hooks
     Object.keys(value.hooks).sort().join(",") !== Object.keys(expected).sort().join(",")) {
   fail("lifecycle event set differs from the approved minimum");
 }
-for (const [event, command] of Object.entries(expected)) {
+for (const [event, expectedRegistration] of Object.entries(expected)) {
+  const command = typeof expectedRegistration === "string" ? expectedRegistration : expectedRegistration.command;
+  const matcher = typeof expectedRegistration === "string" ? undefined : expectedRegistration.matcher;
   const groups = value.hooks[event];
   if (!Array.isArray(groups) || groups.length !== 1 ||
       !groups[0] || typeof groups[0] !== "object" || Array.isArray(groups[0]) ||
-      Object.keys(groups[0]).sort().join(",") !== "hooks") {
+      Object.keys(groups[0]).sort().join(",") !== (matcher === undefined ? "hooks" : "hooks,matcher") ||
+      (matcher !== undefined && groups[0].matcher !== matcher)) {
     fail(`invalid event group: ${event}`);
   }
   const registrations = groups[0].hooks;
@@ -85,11 +90,18 @@ echo "HOOKS_FLAT_REGISTRATION_RED=PASS"
 session_command="$(node -p "require('./.codex/hooks.json').hooks.SessionStart[0].hooks[0].command")"
 prompt_command="$(node -p "require('./.codex/hooks.json').hooks.UserPromptSubmit[0].hooks[0].command")"
 stop_command="$(node -p "require('./.codex/hooks.json').hooks.Stop[0].hooks[0].command")"
+pre_tool_command="$(node -p "require('./.codex/hooks.json').hooks.PreToolUse[0].hooks[0].command")"
+post_tool_command="$(node -p "require('./.codex/hooks.json').hooks.PostToolUse[0].hooks[0].command")"
 
 expected_session=$'STATUS=PASS\nCONTEXT_MODE=DETERMINISTIC_ONLY\nENTRY_1=AGENTS.md\nENTRY_2=PLATFORM-BLUEPRINT.md\nENTRY_3=doc/platform/roadmap-program-registry.json\nENTRY_4=selected Roadmap CURRENT_*\nENTRY_5=project-memory/index.md\nENTRY_6=scripts/README.md'
 actual_session="$(printf '{not-json' | "$repo_root/$session_command")"
 [[ "$actual_session" == "$expected_session" ]] || { echo "SESSION_START_CONTRACT=FAIL"; exit 2; }
 echo "SESSION_START_CONTRACT=PASS"
+
+for hook_command in "$pre_tool_command" "$post_tool_command"; do
+  [[ -x "$repo_root/$hook_command" ]] || { echo "COMPLIANCE_HOOK_EXECUTABLE=FAIL"; exit 2; }
+done
+echo "COMPLIANCE_HOOK_EXECUTABLE=PASS"
 
 unknown_prompt="$(printf '%s' '{"prompt":"unrelated greeting"}' | "$repo_root/$prompt_command")"
 [[ "$unknown_prompt" == $'STATUS=PASS\nRECOMMENDED_SKILL=NONE\nCONTEXT_QUERY_PERFORMED=false' ]] ||
@@ -106,6 +118,11 @@ fi
 [[ "$(grep -c '^RECOMMENDED_SKILL_PATH=' <<<"$injection_prompt")" -eq 1 ]] ||
   { echo "PROMPT_SINGLE_SKILL=FAIL"; exit 2; }
 echo "PROMPT_SOURCE_INJECTION_RED=PASS"
+
+self_review_prompt="$(printf '%s' '{"prompt":"请做 Codex 对抗式自审"}' | "$repo_root/$prompt_command")"
+grep -q '^RECOMMENDED_SKILL=cs-spec-to-plan$' <<<"$self_review_prompt" ||
+  { echo "PROMPT_CODEX_SELF_REVIEW_ROUTE=FAIL"; exit 2; }
+echo "PROMPT_CODEX_SELF_REVIEW_ROUTE=PASS"
 
 runtime_fixture_root="$fixture_root/runtime"
 mkdir -p "$runtime_fixture_root/.runtime/agent-sessions" "$runtime_fixture_root/.runtime/managed-runs/run-clean" "$runtime_fixture_root/.runtime/managed-runs/run-fail"

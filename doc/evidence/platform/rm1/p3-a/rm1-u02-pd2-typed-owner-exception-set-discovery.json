@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P3-A-TYPED-OWNER-EXCEPTION-SET-EQUALITY-20260728",
+  "genericProblem": "Sampling a few owner exception-to-Problem mappings can leave a public typed owner failure unmapped even though the edge appears covered; mapping completeness requires an exact finite source denominator and every edge handler surface.",
+  "rootCauseClass": "TYPED_OWNER_EXCEPTION_DENOMINATOR_AND_EDGE_HANDLER_SURFACE_DRIFT",
+  "finiteDenominator": [
+    "75 public static typed *Exception classes declared in the seven owner application roots: contract, extension, organization, platform-asset, platform-iam, platform-workspace, workspace-iam",
+    "ContractProblemAdvice global @RestControllerAdvice handler surface",
+    "PlatformCommercialGroupController controller-local @ExceptionHandler surface",
+    "WorkspaceRoleService RoleValidationException inheritance closure for three typed subclasses"
+  ],
+  "searchedSurfaces": [
+    "libraries/backend/contract/src/main/java/com/catering/v2s/contract/application",
+    "libraries/backend/extension/src/main/java/com/catering/v2s/extension/application",
+    "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application",
+    "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application",
+    "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application",
+    "libraries/backend/platform-workspace/src/main/java/com/catering/v2s/platform/workspace/application",
+    "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge",
+    "tools/capability-invariants/cli.mjs"
+  ],
+  "searchQueries": [
+    "public static class *Exception across all seven owner application roots",
+    "@ExceptionHandler across every app edge Java source, including controller-local handlers",
+    "PlatformAssetService.AssetIdempotencyConflictException throw and PlatformAssetController.stage call chain",
+    "RuntimeException|Exception|Throwable as a catch-all @ExceptionHandler",
+    "RoleValidationException subclass-to-handler assignability"
+  ],
+  "counterexamples": [
+    {
+      "id": "CE-01",
+      "claim": "The previous focused sample proves every typed owner exception has a Problem mapping.",
+      "evidence": "PlatformAssetService.stageContent throws AssetIdempotencyConflictException when a repeated idempotency key has a different request hash or non-STAGED replay, and PlatformAssetController.stage directly invokes stageContent; the previous sample did not assert this mapping.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    },
+    {
+      "id": "CE-02",
+      "claim": "Only the global ContractProblemAdvice is an edge mapping surface.",
+      "evidence": "PlatformCommercialGroupController has controller-local handlers for PlatformWorkspaceService.GroupWorkspaceNotFoundException and GroupWorkspaceNotEligibleException.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    },
+    {
+      "id": "CE-03",
+      "claim": "Each typed subclass needs a duplicate direct handler annotation.",
+      "evidence": "WorkspaceRoleService.RoleCapabilityUnknownException, RoleCapabilityIncompatibleException, and PageAccessCatalogMismatchException inherit RoleValidationException; Spring handler assignability makes the named parent mapping the typed mapping surface.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-01",
+      "classification": "CONFIRMED",
+      "summary": "AssetIdempotencyConflictException was a reachable public typed owner exception absent from the previous focused mapping sample; it requires an explicit 409 PLATFORM_COMMON_IDEMPOTENCY_CONFLICT mapping."
+    },
+    {
+      "findingId": "PF-02",
+      "classification": "CONFIRMED",
+      "summary": "Completeness is a 75-type source denominator cross every global and controller-local handler surface, with typed inheritance closure; no source type is NOT_REACHABLE or UNMAPPED after the repair."
+    },
+    {
+      "findingId": "PF-03",
+      "classification": "CONFIRMED",
+      "summary": "A generic RuntimeException, Exception, or Throwable handler would hide denominator drift and must fail closed rather than produce a typed success."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/capability-invariants/cli.mjs#validateTypedOwnerExceptionMappings"
+    },
+    {
+      "findingId": "PF-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md#P-D2"
+    },
+    {
+      "findingId": "PF-03",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/capability-invariants/cli.mjs#selfTest"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "kind": "dexter-authorized-rm1-u01-implementation-amendment",
+  "packageId": "RM1-U01",
+  "status": "ACTIVE_NOT_EXIT",
+  "authorization": "Dexter explicit active-conversation authorization to enter implementation after RM1 design review continuation.",
+  "scope": "RM1 P0 only: static control hardening, receipt admission, standards referenced-gate execution, and P3-A/P4 red-only scanner skeletons. P-C2 may run only through the recorded RM1 P0 managed standards runner. The runner first checks the whole R5 matrix/catalog structural denominator, then executes only the exact P0-owned requiredStandardsRefs plus requiredControlRefs declared by the immutable package input; it intentionally defers the full scripts/verify aggregate because that aggregate includes later P2-owned Flyway work. It does not start DEV, seed, reset, alter business contracts, or mutate Roadmap CURRENT_*.",
+  "historicalDesignBindingImmutable": true,
+  "historicalDesign": {
+    "plan": {
+      "path": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md",
+      "sha256": "8ea5d20a8d614cfc4fd9de0bebe946bee5a240d1b5bcbfe1943c0159aa384e3c",
+      "anchor": "### RM1-P0｜控制先行与状态诚实"
+    },
+    "manifest": {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "sha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3",
+      "unitId": "RM1-U01"
+    },
+    "roundTwoReview": {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-implementation-design-review-round2-claude.md",
+      "sha256": "5373b94d25f3695d11418e769dd64a4fa63a0d7273a0b04760d1d436ee0660f7"
+    },
+    "postRemediationIntake": {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-post-remediation-intake.md",
+      "sha256": "b90aaee967fbcb814c372f1ad7dbaaac04d04bdcd2f5590588d6f7dc455890b5"
+    },
+    "preservedStatus": "Historical DESIGN remains POST_REMEDIATION_V1 / DECLARED_POST_REMEDIATION_AWAITING_CLAUDE; this implementation authorization neither rewrites it nor asserts historical review green."
+  },
+  "predecessor": {
+    "packageId": "R5-CR-U06",
+    "configSha256": "4ef5a814c3cf23d7e1fe35a2359aed0fbe7cf8e1999d5f7e4c8dea73e113c25c",
+    "exit": {
+      "path": "doc/evidence/platform/2026-07-27-v2s-r5-cr06-package-exit.json",
+      "status": "PASS"
+    }
+  },
+  "declaredChangeSurfaces": [
+    {"path": "tools/implementation-design-granularity/cli.mjs", "disposition": "update", "purpose": "D1 exact dynamic owning-source set and existing-create rejection"},
+    {"path": "tools/compliance-control/cli.mjs", "disposition": "update", "purpose": "receipt, package binding, canary, and self-test fail-closed controls"},
+    {"path": "scripts/check/standards-coverage", "disposition": "update", "purpose": "execute and attest ACTIVE referenced gates"},
+    {"path": "scripts/verify", "disposition": "update", "purpose": "provide an explicit validate-only recursion boundary for standards execution"},
+    {"path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json", "disposition": "update", "purpose": "synchronize the existing write-channel overlay's implementation hash with the strengthened compliance-control predicate without rewriting its frozen base map"},
+    {"path": "contracts/policy/affected-l2-registry.json", "disposition": "update", "purpose": "record the exact 18 pre-existing legacy L2 debts as RM2-expiring DEFERRED entries without deleting surfaces or manufacturing empty test files"},
+    {"path": "contracts/policy/standards-enforcement-execution-catalog.json", "disposition": "create", "purpose": "derive and execute the unique ACTIVE matrix-ref denominator without duplicating rule ownership"},
+    {"path": "tools/verify-gates/cli.mjs", "disposition": "update", "purpose": "remove P0 self-test exemption and pseudo-gate paths"},
+    {"path": "tools/verify-gates/strict-openapi-resolver.mjs", "disposition": "update", "purpose": "remove an undeclared non-built-in parser from the production standards control path"},
+    {"path": "tools/verify-gates/verify.mjs", "disposition": "update", "purpose": "provide the aggregate verifier's explicit validate-only recursion boundary"},
+    {"path": "tools/capability-invariants/cli.mjs", "disposition": "create", "purpose": "P3-A current OpenAPI write-operation red-only skeleton"},
+    {"path": "scripts/check/capability-invariants", "disposition": "create", "purpose": "P3-A checker wrapper"},
+    {"path": "tools/performance/canonical-ledger-scanner.mjs", "disposition": "create", "purpose": "P4 current-tree canonical-ledger red-only skeleton"},
+    {"path": "scripts/check/canonical-performance-ledger", "disposition": "create", "purpose": "P4 scanner wrapper"},
+    {"path": "scripts/run/rm1-p0-standards-execution", "disposition": "create", "purpose": "P-C2 run-scoped managed execution with separate business and cleanup evidence"},
+    {"path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/AssetObjectStorage.java", "disposition": "update", "purpose": "make environment-configured object-prefix ownership an owner port invariant"},
+    {"path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/MinioAssetObjectStorage.java", "disposition": "update", "purpose": "remove development-only prefix and validate object keys against configured prefix"},
+    {"path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java", "disposition": "update", "purpose": "delegate externally supplied object-key ownership validation to asset owner configuration"},
+    {"path": "libraries/backend/platform-asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java", "disposition": "update", "purpose": "cover non-development configured prefix through the owner-port fake"},
+    {"path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java", "disposition": "update", "purpose": "remove test-only compatibility constructor's embedded HMAC secret"},
+    {"path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceLoginRateLimitService.java", "disposition": "update", "purpose": "remove test-only compatibility constructor's embedded HMAC secret"},
+    {"path": "apps/backend/catering-business-server/src/test/java/database/DatabaseBoundariesTest.java", "disposition": "update", "purpose": "derive the disposable Flyway denominator from the migrated inventory instead of a stale literal"},
+    {"path": "apps/backend/catering-business-server/src/test/java/edge/EdgeRouteRegistryCoverageTest.java", "disposition": "update", "purpose": "supply explicit non-production asset adapter properties for the disposable full Spring context"},
+    {"path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipService.java", "disposition": "update", "purpose": "remove the unrelated workspace summary API implementation that closes the production constructor cycle"},
+    {"path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamSummaryReadService.java", "disposition": "create", "purpose": "workspace-IAM owner JDBC-only implementation of the existing WorkspaceIamSummaryLookup public API"},
+    {"path": "doc/evidence/platform/rm1/p0", "disposition": "create", "purpose": "package binding, bootstrap disclosure, red-proof and exit evidence"}
+    ,{"path": "doc/plans/platform/2026-07-28-v2s-rm1-implementation-review-cadence-addendum.md", "disposition": "create", "purpose": "Dexter-authorized successor-package Claude review cadence without changing frozen historical design bytes"}
+  ],
+  "preBaselineDisclosure": {
+    "required": true,
+    "reason": "The D1/create checker amendment and this binding were authorized before RM1-U01 baseline creation. Their recorded hook receipts establish provenance but cannot be counted as package-exit evidence.",
+    "rule": "Only deltas after the RM1-U01 baseline, plus explicitly validated scope addenda if needed, may enter RM1-U01 actualChangedPaths and incrementalChecks."
+  },
+  "lateSurfaceCorrection": {
+    "path": "doc/evidence/platform/rm1/p0/rm1-u01-owner-scope-baseline-addendum.json",
+    "rule": "A source that was present before the RM1-U01 baseline but was added to the approved P0 surface later is admitted only with its exact pre-change hash and, where it changed, a real pre/post receipt chain. This is not a baseline reset."
+  },
+  "exitRules": [
+    "actualChangedPaths and nonempty incrementalChecks have exact path-set equality",
+    "every actual file has a pre/post receipt and exact before/after hashes",
+    "P0 control claims require ACTIVE_RED_VERIFIED with real scratch mutation",
+    "P3-A and P4 skeletons may prove only red detection, never P3/P4 business completion"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-cr01-strict-openapi-resolver-baseline",
+  "packageId": "R5-CR-U01",
+  "status": "ACTIVE_RED_BASELINE",
+  "resolver": {
+    "parser": "yaml@1.10.3",
+    "referenceRules": "relative URI resolution plus RFC 6901 JSON Pointer token unescaping; no component-name fallback"
+  },
+  "result": {
+    "documents": 44,
+    "totalReferences": 1330,
+    "missingFile": 50,
+    "missingPointer": 830,
+    "other": 0,
+    "unresolved": 880
+  },
+  "completionOracle": "unresolved=0; the category counts are a baseline explanation only.",
+  "firstObserved": [
+    "components/extension/extension.schemas.yaml -> ./platform-time.schemas.yaml#/components/schemas/EpochMillis",
+    "components/organization/store.schemas.yaml -> ./workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType"
+  ],
+  "authorityBoundary": "This is a read-only CR01 baseline and does not alter any frozen operation semantics."
+}

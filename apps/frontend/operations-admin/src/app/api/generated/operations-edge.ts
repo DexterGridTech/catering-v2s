@@ -1,0 +1,3580 @@
+// Generated from accepted R5 edge catalog; do not edit.
+
+export const OPERATIONS_ADMIN_OPERATIONS = [
+  {
+    "operationId": "addOperationsOrganizationHeadCompanyBrandAuthorization",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
+    "owner": "organization"
+  },
+  {
+    "operationId": "cancelOperationsWorkspaceGroupInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "cancelOperationsWorkspaceHeadCompanyInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "cancelOperationsWorkspaceProjectInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "cancelOperationsWorkspaceRegionInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "cancelOperationsWorkspaceStoreInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "changeCurrentWorkspacePassword",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "createOperationsContract",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+    "owner": "contract"
+  },
+  {
+    "operationId": "createOperationsOrganizationBrand",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+    "owner": "organization"
+  },
+  {
+    "operationId": "createOperationsOrganizationHeadCompany",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+    "owner": "organization"
+  },
+  {
+    "operationId": "createOperationsOrganizationProject",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
+    "owner": "organization"
+  },
+  {
+    "operationId": "createOperationsOrganizationRegion",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
+    "owner": "organization"
+  },
+  {
+    "operationId": "createOperationsOrganizationStore",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+    "owner": "organization"
+  },
+  {
+    "operationId": "createOperationsOrganizationTenant",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+    "owner": "organization"
+  },
+  {
+    "operationId": "createOperationsWorkspaceGroupInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "createOperationsWorkspaceHeadCompanyInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "createOperationsWorkspaceProjectInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "createOperationsWorkspaceRegionInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "createOperationsWorkspaceStoreInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsContract",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+    "owner": "contract"
+  },
+  {
+    "operationId": "getOperationsContractCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates",
+    "owner": "contract"
+  },
+  {
+    "operationId": "getOperationsContractExtensionDefinition",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition",
+    "owner": "contract"
+  },
+  {
+    "operationId": "getOperationsContracts",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+    "owner": "contract"
+  },
+  {
+    "operationId": "getOperationsEntityAuditHistory",
+    "method": "GET",
+    "path": "/api/operations/audit-history",
+    "owner": "platform-workspace"
+  },
+  {
+    "operationId": "getOperationsFixedStoreContracts",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts",
+    "owner": "contract"
+  },
+  {
+    "operationId": "getOperationsOrganizationBrand",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationBrands",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationBusinessEntityExtensionDefinition",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationHeadCompanies",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationHeadCompany",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationHierarchy",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationStore",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationStoreCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationStoreExtensionDefinition",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationStores",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationTenant",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsOrganizationTenants",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsStoreProfile",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile",
+    "owner": "organization"
+  },
+  {
+    "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceGroupInvitations",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceGroupUser",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceGroupUserAccount",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceHeadCompanyInvitations",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceHeadCompanyUser",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceHeadCompanyUserAccount",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceLoginEntry",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceProjectInvitationCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceProjectInvitations",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceProjectUser",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceProjectUserAccount",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceRegionInvitationCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceRegionInvitations",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceRegionUser",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceRegionUserAccount",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceSessionEntry",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceStoreInvitationCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceStoreInvitations",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceStoreUser",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "getOperationsWorkspaceStoreUserAccount",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "invalidateOperationsContract",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+    "owner": "contract"
+  },
+  {
+    "operationId": "operationsWorkspaceLogout",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "operationsWorkspacePasswordLogin",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "reissueOperationsWorkspaceGroupInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "reissueOperationsWorkspaceHeadCompanyInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "reissueOperationsWorkspaceProjectInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "reissueOperationsWorkspaceRegionInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "reissueOperationsWorkspaceStoreInvitation",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+    "method": "DELETE",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "revokeOperationsWorkspaceGroupUserAssignment",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "revokeOperationsWorkspaceProjectUserAssignment",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "revokeOperationsWorkspaceRegionUserAssignment",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "revokeOperationsWorkspaceStoreUserAssignment",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "selectOperationsWorkspaceSessionContext",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "selectOperationsWorkspaceSessionDataNode",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "sendOperationsWorkspaceOtp",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
+    "owner": "workspace-iam"
+  },
+  {
+    "operationId": "transitionOperationsOrganizationBrandStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
+    "owner": "organization"
+  },
+  {
+    "operationId": "transitionOperationsOrganizationHeadCompanyStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
+    "owner": "organization"
+  },
+  {
+    "operationId": "transitionOperationsOrganizationNodeStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
+    "owner": "organization"
+  },
+  {
+    "operationId": "transitionOperationsOrganizationStoreStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
+    "owner": "organization"
+  },
+  {
+    "operationId": "transitionOperationsOrganizationTenantStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+    "owner": "organization"
+  },
+  {
+    "operationId": "updateOperationsContract",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+    "owner": "contract"
+  },
+  {
+    "operationId": "updateOperationsOrganizationBrand",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "updateOperationsOrganizationHeadCompany",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "updateOperationsOrganizationNode",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "updateOperationsOrganizationStore",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "updateOperationsOrganizationTenant",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+    "owner": "organization"
+  },
+  {
+    "operationId": "verifyOperationsWorkspaceOtp",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
+    "owner": "workspace-iam"
+  }
+] as const;
+
+export const OPERATIONS_ADMIN_OPERATION_IDS = {
+  "addOperationsOrganizationHeadCompanyBrandAuthorization": "addOperationsOrganizationHeadCompanyBrandAuthorization",
+  "cancelOperationsWorkspaceGroupInvitation": "cancelOperationsWorkspaceGroupInvitation",
+  "cancelOperationsWorkspaceHeadCompanyInvitation": "cancelOperationsWorkspaceHeadCompanyInvitation",
+  "cancelOperationsWorkspaceProjectInvitation": "cancelOperationsWorkspaceProjectInvitation",
+  "cancelOperationsWorkspaceRegionInvitation": "cancelOperationsWorkspaceRegionInvitation",
+  "cancelOperationsWorkspaceStoreInvitation": "cancelOperationsWorkspaceStoreInvitation",
+  "changeCurrentWorkspacePassword": "changeCurrentWorkspacePassword",
+  "createOperationsContract": "createOperationsContract",
+  "createOperationsOrganizationBrand": "createOperationsOrganizationBrand",
+  "createOperationsOrganizationHeadCompany": "createOperationsOrganizationHeadCompany",
+  "createOperationsOrganizationProject": "createOperationsOrganizationProject",
+  "createOperationsOrganizationRegion": "createOperationsOrganizationRegion",
+  "createOperationsOrganizationStore": "createOperationsOrganizationStore",
+  "createOperationsOrganizationTenant": "createOperationsOrganizationTenant",
+  "createOperationsWorkspaceGroupInvitation": "createOperationsWorkspaceGroupInvitation",
+  "createOperationsWorkspaceHeadCompanyInvitation": "createOperationsWorkspaceHeadCompanyInvitation",
+  "createOperationsWorkspaceProjectInvitation": "createOperationsWorkspaceProjectInvitation",
+  "createOperationsWorkspaceRegionInvitation": "createOperationsWorkspaceRegionInvitation",
+  "createOperationsWorkspaceStoreInvitation": "createOperationsWorkspaceStoreInvitation",
+  "getOperationsContract": "getOperationsContract",
+  "getOperationsContractCandidates": "getOperationsContractCandidates",
+  "getOperationsContractExtensionDefinition": "getOperationsContractExtensionDefinition",
+  "getOperationsContracts": "getOperationsContracts",
+  "getOperationsEntityAuditHistory": "getOperationsEntityAuditHistory",
+  "getOperationsFixedStoreContracts": "getOperationsFixedStoreContracts",
+  "getOperationsOrganizationBrand": "getOperationsOrganizationBrand",
+  "getOperationsOrganizationBrands": "getOperationsOrganizationBrands",
+  "getOperationsOrganizationBusinessEntityExtensionDefinition": "getOperationsOrganizationBusinessEntityExtensionDefinition",
+  "getOperationsOrganizationHeadCompanies": "getOperationsOrganizationHeadCompanies",
+  "getOperationsOrganizationHeadCompany": "getOperationsOrganizationHeadCompany",
+  "getOperationsOrganizationHierarchy": "getOperationsOrganizationHierarchy",
+  "getOperationsOrganizationStore": "getOperationsOrganizationStore",
+  "getOperationsOrganizationStoreCandidates": "getOperationsOrganizationStoreCandidates",
+  "getOperationsOrganizationStoreExtensionDefinition": "getOperationsOrganizationStoreExtensionDefinition",
+  "getOperationsOrganizationStores": "getOperationsOrganizationStores",
+  "getOperationsOrganizationTenant": "getOperationsOrganizationTenant",
+  "getOperationsOrganizationTenants": "getOperationsOrganizationTenants",
+  "getOperationsStoreProfile": "getOperationsStoreProfile",
+  "getOperationsWorkspaceGroupInvitationCandidates": "getOperationsWorkspaceGroupInvitationCandidates",
+  "getOperationsWorkspaceGroupInvitations": "getOperationsWorkspaceGroupInvitations",
+  "getOperationsWorkspaceGroupUser": "getOperationsWorkspaceGroupUser",
+  "getOperationsWorkspaceGroupUserAccount": "getOperationsWorkspaceGroupUserAccount",
+  "getOperationsWorkspaceHeadCompanyInvitationCandidates": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+  "getOperationsWorkspaceHeadCompanyInvitations": "getOperationsWorkspaceHeadCompanyInvitations",
+  "getOperationsWorkspaceHeadCompanyUser": "getOperationsWorkspaceHeadCompanyUser",
+  "getOperationsWorkspaceHeadCompanyUserAccount": "getOperationsWorkspaceHeadCompanyUserAccount",
+  "getOperationsWorkspaceLoginEntry": "getOperationsWorkspaceLoginEntry",
+  "getOperationsWorkspaceProjectInvitationCandidates": "getOperationsWorkspaceProjectInvitationCandidates",
+  "getOperationsWorkspaceProjectInvitations": "getOperationsWorkspaceProjectInvitations",
+  "getOperationsWorkspaceProjectUser": "getOperationsWorkspaceProjectUser",
+  "getOperationsWorkspaceProjectUserAccount": "getOperationsWorkspaceProjectUserAccount",
+  "getOperationsWorkspaceRegionInvitationCandidates": "getOperationsWorkspaceRegionInvitationCandidates",
+  "getOperationsWorkspaceRegionInvitations": "getOperationsWorkspaceRegionInvitations",
+  "getOperationsWorkspaceRegionUser": "getOperationsWorkspaceRegionUser",
+  "getOperationsWorkspaceRegionUserAccount": "getOperationsWorkspaceRegionUserAccount",
+  "getOperationsWorkspaceSessionEntry": "getOperationsWorkspaceSessionEntry",
+  "getOperationsWorkspaceStoreInvitationCandidates": "getOperationsWorkspaceStoreInvitationCandidates",
+  "getOperationsWorkspaceStoreInvitations": "getOperationsWorkspaceStoreInvitations",
+  "getOperationsWorkspaceStoreUser": "getOperationsWorkspaceStoreUser",
+  "getOperationsWorkspaceStoreUserAccount": "getOperationsWorkspaceStoreUserAccount",
+  "invalidateOperationsContract": "invalidateOperationsContract",
+  "operationsWorkspaceLogout": "operationsWorkspaceLogout",
+  "operationsWorkspacePasswordLogin": "operationsWorkspacePasswordLogin",
+  "reissueOperationsWorkspaceGroupInvitation": "reissueOperationsWorkspaceGroupInvitation",
+  "reissueOperationsWorkspaceHeadCompanyInvitation": "reissueOperationsWorkspaceHeadCompanyInvitation",
+  "reissueOperationsWorkspaceProjectInvitation": "reissueOperationsWorkspaceProjectInvitation",
+  "reissueOperationsWorkspaceRegionInvitation": "reissueOperationsWorkspaceRegionInvitation",
+  "reissueOperationsWorkspaceStoreInvitation": "reissueOperationsWorkspaceStoreInvitation",
+  "removeOperationsOrganizationHeadCompanyBrandAuthorization": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+  "revokeOperationsWorkspaceGroupUserAssignment": "revokeOperationsWorkspaceGroupUserAssignment",
+  "revokeOperationsWorkspaceHeadCompanyUserAssignment": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+  "revokeOperationsWorkspaceProjectUserAssignment": "revokeOperationsWorkspaceProjectUserAssignment",
+  "revokeOperationsWorkspaceRegionUserAssignment": "revokeOperationsWorkspaceRegionUserAssignment",
+  "revokeOperationsWorkspaceStoreUserAssignment": "revokeOperationsWorkspaceStoreUserAssignment",
+  "selectOperationsWorkspaceSessionContext": "selectOperationsWorkspaceSessionContext",
+  "selectOperationsWorkspaceSessionDataNode": "selectOperationsWorkspaceSessionDataNode",
+  "sendOperationsWorkspaceOtp": "sendOperationsWorkspaceOtp",
+  "transitionOperationsOrganizationBrandStatus": "transitionOperationsOrganizationBrandStatus",
+  "transitionOperationsOrganizationHeadCompanyStatus": "transitionOperationsOrganizationHeadCompanyStatus",
+  "transitionOperationsOrganizationNodeStatus": "transitionOperationsOrganizationNodeStatus",
+  "transitionOperationsOrganizationStoreStatus": "transitionOperationsOrganizationStoreStatus",
+  "transitionOperationsOrganizationTenantStatus": "transitionOperationsOrganizationTenantStatus",
+  "updateOperationsContract": "updateOperationsContract",
+  "updateOperationsOrganizationBrand": "updateOperationsOrganizationBrand",
+  "updateOperationsOrganizationHeadCompany": "updateOperationsOrganizationHeadCompany",
+  "updateOperationsOrganizationNode": "updateOperationsOrganizationNode",
+  "updateOperationsOrganizationStore": "updateOperationsOrganizationStore",
+  "updateOperationsOrganizationTenant": "updateOperationsOrganizationTenant",
+  "verifyOperationsWorkspaceOtp": "verifyOperationsWorkspaceOtp"
+} as const;
+
+export const EDGE_PROBLEM_CODES = [
+  "CONTRACT_ALREADY_INVALID",
+  "CONTRACT_DATE_RANGE_INVALID",
+  "CONTRACT_ITEM_CODE_DUPLICATE",
+  "CONTRACT_ITEM_CODE_REQUIRED",
+  "CONTRACT_NUMBER_CONFLICT",
+  "CONTRACT_REFERENCE_UNRESOLVED",
+  "CONTRACT_VERSION_CONFLICT",
+  "ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT",
+  "ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT",
+  "ORGANIZATION_BUSINESS_ENTITY_REFERENCE_CONFLICT",
+  "ORGANIZATION_BUSINESS_ENTITY_REFERENCE_UNRESOLVED",
+  "ORGANIZATION_BUSINESS_ENTITY_STATUS_TRANSITION_INVALID",
+  "ORGANIZATION_BUSINESS_ENTITY_VERSION_CONFLICT",
+  "ORGANIZATION_COMMERCIAL_GROUP_NOT_INITIALIZED",
+  "ORGANIZATION_COMMERCIAL_GROUP_REQUIRED",
+  "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE",
+  "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED",
+  "ORGANIZATION_NODE_CODE_CONFLICT",
+  "ORGANIZATION_NODE_NAME_CONFLICT",
+  "ORGANIZATION_NODE_PARENT_INVALID",
+  "ORGANIZATION_NODE_STATUS_TRANSITION_INVALID",
+  "ORGANIZATION_NODE_VERSION_CONFLICT",
+  "ORGANIZATION_STORE_CODE_CONFLICT",
+  "ORGANIZATION_STORE_EXTENSION_VERSION_CONFLICT",
+  "ORGANIZATION_STORE_FIXED_SCOPE_FORBIDDEN",
+  "ORGANIZATION_STORE_HEAD_COMPANY_AUTHORIZATION_REQUIRED",
+  "ORGANIZATION_STORE_NAME_CONFLICT",
+  "ORGANIZATION_STORE_PROJECT_REQUIRED",
+  "ORGANIZATION_STORE_RELATION_INVALID",
+  "ORGANIZATION_STORE_RELATION_LOCKED",
+  "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID",
+  "ORGANIZATION_STORE_VERSION_CONFLICT",
+  "PLATFORM_COMMON_ACCESS_DENIED",
+  "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+  "PLATFORM_COMMON_CONTEXT_STALE",
+  "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+  "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+  "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+  "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+  "PLATFORM_COMMON_RESULT_UNKNOWN",
+  "PLATFORM_COMMON_VALIDATION_FAILED",
+  "PLATFORM_COMMON_VERSION_CONFLICT",
+  "WORKSPACE_IAM_ACCOUNT_DISABLED",
+  "WORKSPACE_IAM_CREDENTIAL_LOCKED",
+  "WORKSPACE_IAM_INVALID_CREDENTIALS",
+  "WORKSPACE_IAM_OTP_EXPIRED",
+  "WORKSPACE_IAM_OTP_INVALID",
+  "WORKSPACE_IAM_RATE_LIMITED",
+  "WORKSPACE_IAM_RESULT_UNKNOWN",
+  "WORKSPACE_IAM_WORKSPACE_DISABLED",
+  "WORKSPACE_IAM_WORKSPACE_NOT_FOUND"
+] as const;
+export type EdgeProblemCode = (typeof EDGE_PROBLEM_CODES)[number];
+export type OperationsAdminOperationId = (typeof OPERATIONS_ADMIN_OPERATIONS)[number]["operationId"];
+
+export type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
+
+export type AuditChange = {
+  fieldKey: string;
+  beforeValue: string;
+  afterValue: string;
+};
+
+export type AuditHistoryItem = {
+  id: string;
+  occurredAt: EpochMillis;
+  actorDisplayName: string;
+  actionSummary: string;
+  action: string;
+  target: AuditTarget;
+  changes: Array<AuditChange>;
+};
+
+export type AuditHistoryPage = {
+  items: Array<AuditHistoryItem>;
+  page: number;
+  pageSize: number;
+  total: number;
+};
+
+export type AuditTarget = {
+  entityType: string;
+  entityId: string;
+};
+
+export type Brand = {
+  id: string;
+  groupWorkspaceKey: string;
+  code: string;
+  name: string;
+  alias?: (string) | null;
+  remark?: (string) | null;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
+  status: BusinessEntityStatus;
+  revision: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type BrandCreateRequest = {
+  code: string;
+  name: string;
+  alias?: (string) | null;
+  remark?: (string) | null;
+  extensionValues?: (Record<string, JsonValue>) | null;
+};
+
+export type BrandPage = {
+  metadata: {
+  groupWorkspaceKey: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  sort: BusinessEntitySortKey;
+  direction: BusinessEntitySortDirection;
+};
+  items: Array<Brand>;
+};
+
+export type BrandUpdateRequest = (BrandCreateRequest) & ({
+  expectedVersion: number;
+  expectedContextVersion: number;
+});
+
+export type BusinessEntitySortDirection = "ASC" | "DESC";
+
+export type BusinessEntitySortKey = "NAME" | "CODE" | "UPDATED_AT";
+
+export type BusinessEntityStatus = "ENABLED" | "DISABLED";
+
+export type BusinessEntityStatusRequest = {
+  targetStatus: BusinessEntityStatus;
+  expectedVersion: number;
+};
+
+export type CommercialGroupRoot = {
+  id: string;
+  groupWorkspaceKey: string;
+  groupCode: string;
+  groupName: string;
+  version: number;
+  createdAt: EpochMillis;
+  updatedAt: EpochMillis;
+};
+
+export type EpochMillis = number;
+
+export type ExtensionDefinition = {
+  groupWorkspaceKey: string;
+  entityType: ExtensionEntityType;
+  definitions: Array<{
+  key: string;
+  label: string;
+  type: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "SELECT";
+  required: boolean;
+  options: Array<string>;
+  status?: "ENABLED" | "DISABLED";
+  displayOrder?: number;
+  displaySuffix?: string;
+}>;
+  revision: number;
+  updatedAt: EpochMillis;
+};
+
+export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT";
+
+export type GroupWorkspaceStatus = "ENABLED" | "DISABLED";
+
+export type HeadCompany = {
+  id: string;
+  groupWorkspaceKey: string;
+  code: string;
+  name: string;
+  legalName: string;
+  unifiedSocialCreditCode: string;
+  remark?: (string) | null;
+  authorizedBrands: Array<{
+  id: string;
+  code: string;
+  name: string;
+  status: BusinessEntityStatus;
+}>;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
+  status: BusinessEntityStatus;
+  revision: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type HeadCompanyBrandAuthorizationAddRequest = {
+  brandId: string;
+};
+
+export type HeadCompanyCreateRequest = {
+  code: string;
+  name: string;
+  legalName: string;
+  unifiedSocialCreditCode: string;
+  remark?: (string) | null;
+  extensionValues?: (Record<string, JsonValue>) | null;
+};
+
+export type HeadCompanyPage = {
+  metadata: {
+  groupWorkspaceKey: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  sort: BusinessEntitySortKey;
+  direction: BusinessEntitySortDirection;
+};
+  items: Array<HeadCompany>;
+};
+
+export type HeadCompanyUpdateRequest = (HeadCompanyCreateRequest) & ({
+  expectedVersion: number;
+  expectedContextVersion: number;
+});
+
+export type NoBody = Record<string, never>;
+
+export type NoContent = null;
+
+export type OrganizationHierarchySnapshot = {
+  groupWorkspaceKey: string;
+  commercialGroup: CommercialGroupRoot;
+  items: Array<OrganizationNode>;
+};
+
+export type OrganizationNode = {
+  id: string;
+  groupWorkspaceKey: string;
+  nodeType: "GROUP" | "REGION" | "PROJECT";
+  parentId: (string) | null;
+  code: string;
+  name: string;
+  notes?: (string) | null;
+  status: "ENABLED" | "DISABLED";
+  phases: Array<{
+  name: string;
+}>;
+  revision: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type OrganizationNodeCreateRequest = {
+  code: string;
+  name: string;
+  notes?: (string) | null;
+};
+
+export type OrganizationNodeStatusTransitionRequest = {
+  targetStatus: "ENABLED" | "DISABLED";
+  expectedVersion: number;
+};
+
+export type OrganizationNodeUpdateRequest = {
+  code: string;
+  name: string;
+  parentId: (string) | null;
+  phases: Array<{
+  name: string;
+}>;
+  notes?: (string) | null;
+  expectedVersion: number;
+};
+
+export type OrganizationProjectCreateRequest = (OrganizationNodeCreateRequest) & ({
+  phases?: Array<{
+  name: string;
+}>;
+});
+
+export type OrganizationStore = {
+  id: string;
+  groupWorkspaceKey: string;
+  code: string;
+  name: string;
+  project: {
+  id: string;
+  code: string;
+  name: string;
+  path?: (string) | null;
+};
+  brand: {
+  id: string;
+  code: string;
+  name: string;
+  path?: (string) | null;
+};
+  tenant: {
+  id: string;
+  code: string;
+  name: string;
+  path?: (string) | null;
+};
+  headCompany?: {
+  id: string;
+  code: string;
+  name: string;
+  path?: (string) | null;
+};
+  notes?: (string) | null;
+  status: OrganizationStoreStatus;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
+  revision: number;
+  createdAt: number;
+  updatedAt: number;
+  contractDerivedStatus: "OPERATING" | "PREPARING" | "NOT_OPERATING";
+};
+
+export type OrganizationStoreCandidatePage = {
+  groupWorkspaceKey: string;
+  dataScope: {
+  nodeType: ServiceNodeType;
+  nodeRef: string;
+  nodeName: string;
+};
+  projects: Array<{
+  id: string;
+  code: string;
+  name: string;
+  path?: (string) | null;
+}>;
+  brands: Array<{
+  id: string;
+  code: string;
+  name: string;
+  path?: (string) | null;
+}>;
+  tenants: Array<{
+  id: string;
+  code: string;
+  name: string;
+  path?: (string) | null;
+}>;
+  headCompanies: Array<{
+  id: string;
+  code: string;
+  name: string;
+  path?: (string) | null;
+}>;
+};
+
+export type OrganizationStoreCreateRequest = {
+  projectId: string;
+  brandId: string;
+  tenantId: string;
+  headCompanyId?: (string) | null;
+  code: string;
+  name: string;
+  notes?: (string) | null;
+  extensionValues?: Record<string, JsonValue>;
+};
+
+export type OrganizationStorePage = {
+  metadata: {
+  groupWorkspaceKey: string;
+  dataScope: {
+  nodeType: ServiceNodeType;
+  nodeRef: string;
+  nodeName: string;
+};
+  page: number;
+  pageSize: number;
+  total: number;
+  sort: OrganizationStoreSortKey;
+  direction: OrganizationStoreSortDirection;
+};
+  items: Array<OrganizationStore>;
+};
+
+export type OrganizationStoreSortDirection = "ASC" | "DESC";
+
+export type OrganizationStoreSortKey = "NAME" | "CODE" | "UPDATED_AT";
+
+export type OrganizationStoreStatus = "ENABLED" | "DISABLED";
+
+export type OrganizationStoreStatusRequest = {
+  targetStatus: OrganizationStoreStatus;
+  expectedVersion: number;
+};
+
+export type OrganizationStoreUpdateRequest = {
+  name: string;
+  headCompanyId?: (string) | null;
+  notes?: (string) | null;
+  extensionValues: Record<string, JsonValue>;
+  expectedVersion: number;
+};
+
+export type Problem = {
+  type: string;
+  title: string;
+  status: number;
+  detail: string;
+  instance?: (string) | null;
+  errorCode: EdgeProblemCode;
+  correlationId: string;
+  brandAuthorizationBlockers?: {
+  visibleStores: Array<{
+  id: string;
+  code: string;
+  name: string;
+}>;
+};
+};
+
+export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
+
+export type SortDirection = "ASC" | "DESC";
+
+export type StoreContract = {
+  id: string;
+  groupWorkspaceKey: string;
+  project: {
+  id: string;
+  code: string;
+  name: string;
+};
+  store: {
+  id: string;
+  code: string;
+  name: string;
+};
+  tenant: {
+  id: string;
+  code: string;
+  name: string;
+};
+  phaseName: string;
+  contractNo: string;
+  effectiveFrom: string;
+  effectiveTo: (string) | null;
+  note?: (string) | null;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
+  status: StoreContractStatus;
+  revision: number;
+  source: "MANUAL";
+  createdAt: number;
+  updatedAt: number;
+  items: Array<StoreContractItem>;
+  phaseNameSnapshot?: (string) | null;
+};
+
+export type StoreContractCandidatePage = {
+  groupWorkspaceKey: string;
+  project: {
+  id: string;
+  code: string;
+  name: string;
+};
+  metadata: {
+  storeSearch: (string) | null;
+  page: number;
+  pageSize: number;
+  total: number;
+};
+  stores: Array<StoreContractStoreCandidate>;
+  phases: Array<string>;
+  selectedStoreTenant: (StoreContractSelectedTenant) | null;
+};
+
+export type StoreContractCreateRequest = {
+  projectId: string;
+  storeId: string;
+  phaseName: string;
+  contractNo: string;
+  effectiveFrom: string;
+  effectiveTo: (string) | null;
+  note?: (string) | null;
+  extensionValues?: (Record<string, JsonValue>) | null;
+  items: Array<StoreContractItem>;
+  phaseNameSnapshot?: (string) | null;
+};
+
+export type StoreContractInvalidateRequest = {
+  expectedVersion: number;
+};
+
+export type StoreContractItem = {
+  code: string;
+  name: string;
+};
+
+export type StoreContractPage = {
+  metadata: {
+  groupWorkspaceKey: string;
+  projectRef: string;
+  projectName: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  sort: StoreContractSortKey;
+  direction: StoreContractSortDirection;
+};
+  items: Array<StoreContract>;
+};
+
+export type StoreContractSelectedTenant = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type StoreContractSortDirection = "ASC" | "DESC";
+
+export type StoreContractSortKey = "CONTRACT_NO" | "EFFECTIVE_FROM" | "UPDATED_AT";
+
+export type StoreContractStatus = "VALID" | "INVALID";
+
+export type StoreContractStoreCandidate = {
+  id: string;
+  code: string;
+  name: string;
+  storeStatus: "ENABLED" | "DISABLED";
+};
+
+export type StoreContractUpdateRequest = {
+  phaseName: string;
+  effectiveFrom: string;
+  effectiveTo: (string) | null;
+  note?: (string) | null;
+  extensionValues?: (Record<string, JsonValue>) | null;
+  expectedVersion: number;
+  items: Array<StoreContractItem>;
+  phaseNameSnapshot?: (string) | null;
+};
+
+export type StoreContractViewState = "CURRENT" | "PENDING_EFFECTIVE" | "HISTORY" | "INVALID";
+
+export type Tenant = {
+  id: string;
+  groupWorkspaceKey: string;
+  code: string;
+  name: string;
+  legalName: string;
+  unifiedSocialCreditCode: string;
+  remark?: (string) | null;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
+  status: BusinessEntityStatus;
+  revision: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type TenantCreateRequest = {
+  code: string;
+  name: string;
+  legalName: string;
+  unifiedSocialCreditCode: string;
+  remark?: (string) | null;
+  extensionValues?: (Record<string, JsonValue>) | null;
+};
+
+export type TenantPage = {
+  metadata: {
+  groupWorkspaceKey: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  sort: BusinessEntitySortKey;
+  direction: BusinessEntitySortDirection;
+};
+  items: Array<Tenant>;
+};
+
+export type TenantUpdateRequest = (TenantCreateRequest) & ({
+  expectedVersion: number;
+  expectedContextVersion: number;
+});
+
+export type WorkspaceAccountStatus = "ENABLED" | "DISABLED";
+
+export type WorkspaceCurrentPasswordChangeRequest = {
+  currentPassword: string;
+  newPassword: string;
+  expectedSessionVersion: number;
+};
+
+export type WorkspaceCurrentPasswordChangeResult = {
+  status: "COMPLETED";
+  sessionsRevoked: boolean;
+  reauthenticationRequired: boolean;
+};
+
+export type WorkspaceInvitation = {
+  id: string;
+  groupWorkspaceKey: string;
+  maskedMobile: string;
+  targetOrganizationType: ServiceNodeType;
+  targetOrganizationPath: string;
+  roleNames: Array<string>;
+  status: WorkspaceInvitationStatus;
+  generation: number;
+  expiresAt: EpochMillis;
+  revision: number;
+  createdAt: EpochMillis;
+  consentedAt?: (EpochMillis) | null;
+  completedAt?: (EpochMillis) | null;
+  cancelledAt?: (EpochMillis) | null;
+  invitationPageUrl: string;
+};
+
+export type WorkspaceInvitationCandidatePage = {
+  metadata?: ({
+  subjectType: "ORGANIZATION" | "ROLE";
+  queryText: (string) | null;
+  page: number;
+  pageSize: number;
+  total: number;
+  selectedOrganizationRef: (string) | null;
+}) | null;
+  organizations: Array<{
+  serviceNodeType: ServiceNodeType;
+  organizationRef: string;
+  path: string;
+}>;
+  roles: Array<WorkspaceRole>;
+};
+
+export type WorkspaceInvitationPage = {
+  items: Array<WorkspaceInvitation>;
+  page: number;
+  pageSize: number;
+  total: number;
+  criteria: {
+  mobile?: (string) | null;
+  organizationQuery?: (string) | null;
+  roleQuery?: (string) | null;
+  status?: (WorkspaceInvitationStatus) | null;
+  expiresFrom?: (EpochMillis) | null;
+  expiresTo?: (EpochMillis) | null;
+  sort: WorkspaceInvitationSortKey;
+  direction: SortDirection;
+};
+};
+
+export type WorkspaceInvitationSortKey = "CREATED_AT" | "EXPIRES_AT";
+
+export type WorkspaceInvitationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "COMPLETED";
+
+export type WorkspaceLoginEntry = {
+  groupWorkspaceKey: string;
+  workspaceName: string;
+  operationsTitle: string;
+  logoUrl?: (string) | null;
+  status: GroupWorkspaceStatus;
+  sessionState: "NONE" | "AUTHENTICATED";
+};
+
+export type WorkspaceOperationsInvitationActionRequest = {
+  expectedVersion: number;
+  expectedContextVersion: number;
+  idempotencyKey: string;
+};
+
+export type WorkspaceOperationsInvitationCreateRequest = {
+  scopeRef?: (string) | null;
+  mobile: string;
+  roleIds: Array<string>;
+  expectedContextVersion: number;
+  idempotencyKey: string;
+};
+
+export type WorkspaceOtpSendRequest = {
+  mobile: string;
+};
+
+export type WorkspaceOtpSendResponse = {
+  expiresAt: number;
+  debugVerificationCode?: (string) | null;
+};
+
+export type WorkspaceOtpVerifyRequest = {
+  mobile: string;
+  code: string;
+};
+
+export type WorkspacePasswordLoginRequest = {
+  loginName: string;
+  password: string;
+};
+
+export type WorkspaceRole = {
+  id: string;
+  groupWorkspaceKey: string;
+  name: string;
+  description?: (string) | null;
+  serviceNodeType: ServiceNodeType;
+  capabilityKeys: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
+  pageAccessKeys: Array<string>;
+  status: WorkspaceRoleStatus;
+  revision: number;
+  createdAt: EpochMillis;
+  updatedAt: EpochMillis;
+};
+
+export type WorkspaceRoleStatus = "ENABLED" | "DISABLED";
+
+export type WorkspaceSelectContextRequest = {
+  roleAssignmentRef: string;
+  requiredContextVersion: number;
+};
+
+export type WorkspaceSelectDataNodeRequest = {
+  dataNodeRef: string;
+  dataNodeType: ServiceNodeType;
+  requiredContextVersion: number;
+};
+
+export type WorkspaceSessionEntry = {
+  groupWorkspaceKey: string;
+  accountId: string;
+  displayName: string;
+  workspaceName: string;
+  operationsTitle: string;
+  logoUrl?: (string) | null;
+  contextVersion: number;
+  mode: "DIRECT" | "SELECT" | "EMPTY";
+  outcome: "HOME" | "SELECT_IDENTITY" | "SELECT_SCOPE" | "EMPTY_WORKBENCH";
+  candidates: Array<{
+  roleAssignmentRef: string;
+  roleId: string;
+  roleName: string;
+  roleNodeRef: string;
+  roleNodeType: ServiceNodeType;
+  roleNodeName: string;
+  homePageDesignKey: string;
+  pageDesignKeys: Array<string>;
+  navigation: Array<{
+  pageDesignKey: string;
+  title: string;
+  menuGroup: string;
+  menuOrder: number;
+  kind: "ROLE_HOME" | "BUSINESS";
+  pageAccessManaged: boolean;
+  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE";
+}>;
+}>;
+  actionGrants: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
+  dataNodeCandidates?: Array<{
+  dataNodeType: ServiceNodeType;
+  dataNodeRef: string;
+  dataNodeName: string;
+  ancestorPath: Array<string>;
+  regionRef?: (string) | null;
+  projectRef?: (string) | null;
+  storeRef?: (string) | null;
+}>;
+  selected?: ((({
+  roleAssignmentRef: string;
+  roleId: string;
+  roleName: string;
+  roleNodeRef: string;
+  roleNodeType: ServiceNodeType;
+  roleNodeName: string;
+  homePageDesignKey: string;
+  pageDesignKeys: Array<string>;
+  navigation: Array<{
+  pageDesignKey: string;
+  title: string;
+  menuGroup: string;
+  menuOrder: number;
+  kind: "ROLE_HOME" | "BUSINESS";
+  pageAccessManaged: boolean;
+  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE";
+}>;
+}) & ({
+  contextVersion: number;
+}))) | null;
+  selectedDataNode?: ({
+  dataNodeType: ServiceNodeType;
+  dataNodeRef: string;
+  dataNodeName: string;
+  ancestorPath: Array<string>;
+  regionRef?: (string) | null;
+  projectRef?: (string) | null;
+  storeRef?: (string) | null;
+}) & ({
+  contextVersion: number;
+});
+};
+
+export type WorkspaceUser = {
+  accountId: string;
+  displayName: string;
+  maskedMobile: string;
+  loginName: string;
+  status: WorkspaceAccountStatus;
+  credentialStatus: "SET" | "RESET_PENDING";
+  activeAssignmentCount: number;
+  lastLoginAt?: (EpochMillis) | null;
+  createdAt: EpochMillis;
+  assignments: Array<{
+  id: string;
+  accountId: string;
+  roleId: string;
+  roleName: string;
+  serviceNodeType: ServiceNodeType;
+  organizationPath: string;
+  status: "ACTIVE" | "REVOKED";
+  source: "INVITATION" | "ADMINISTRATION";
+  revision: number;
+  createdAt: EpochMillis;
+  updatedAt: EpochMillis;
+}>;
+  invitationHistory: Array<{
+  invitationId: string;
+  status: WorkspaceInvitationStatus;
+  generation: number;
+  expiresAt: EpochMillis;
+}>;
+  revision: number;
+};
+
+export type WorkspaceUserPage = {
+  items: Array<WorkspaceUser>;
+  page: number;
+  pageSize: number;
+  total: number;
+  targetOrganizationType: ServiceNodeType;
+  scopeRef?: (string) | null;
+  scopeName?: (string) | null;
+  contextVersion: number;
+};
+
+export type WorkspaceUserRevokeRequest = {
+  expectedVersion: number;
+  expectedContextVersion: number;
+};
+
+export type WorkspaceUserRevokeResult = {
+  revokedAssignmentId: string;
+  accountRetained: boolean;
+  user: WorkspaceUser;
+  contextVersion: number;
+  sessionEntryRequired: boolean;
+  sessionEntry?: (WorkspaceSessionEntry) | null;
+};
+
+export type FaceOperationContracts = {
+  "addOperationsOrganizationHeadCompanyBrandAuthorization": {
+    request: HeadCompanyBrandAuthorizationAddRequest;
+    response: NoContent;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    headCompanyId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "cancelOperationsWorkspaceGroupInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "cancelOperationsWorkspaceHeadCompanyInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "cancelOperationsWorkspaceProjectInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "cancelOperationsWorkspaceRegionInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "cancelOperationsWorkspaceStoreInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "changeCurrentWorkspacePassword": {
+    request: WorkspaceCurrentPasswordChangeRequest;
+    response: WorkspaceCurrentPasswordChangeResult;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsContract": {
+    request: StoreContractCreateRequest;
+    response: StoreContract;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsOrganizationBrand": {
+    request: BrandCreateRequest;
+    response: Brand;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsOrganizationHeadCompany": {
+    request: HeadCompanyCreateRequest;
+    response: HeadCompany;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsOrganizationProject": {
+    request: OrganizationProjectCreateRequest;
+    response: OrganizationNode;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    regionId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsOrganizationRegion": {
+    request: OrganizationNodeCreateRequest;
+    response: OrganizationNode;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsOrganizationStore": {
+    request: OrganizationStoreCreateRequest;
+    response: OrganizationStore;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsOrganizationTenant": {
+    request: TenantCreateRequest;
+    response: Tenant;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsWorkspaceGroupInvitation": {
+    request: WorkspaceOperationsInvitationCreateRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsWorkspaceHeadCompanyInvitation": {
+    request: WorkspaceOperationsInvitationCreateRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsWorkspaceProjectInvitation": {
+    request: WorkspaceOperationsInvitationCreateRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsWorkspaceRegionInvitation": {
+    request: WorkspaceOperationsInvitationCreateRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsWorkspaceStoreInvitation": {
+    request: WorkspaceOperationsInvitationCreateRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "getOperationsContract": {
+    request: NoBody;
+    response: StoreContract;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    contractId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsContractCandidates": {
+    request: NoBody;
+    response: StoreContractCandidatePage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    projectId: string;
+    storeSearch?: string;
+    selectedStoreId?: string;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsContractExtensionDefinition": {
+    request: NoBody;
+    response: ExtensionDefinition;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    projectId: string;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsContracts": {
+    request: NoBody;
+    response: StoreContractPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    projectId: string;
+    storeId?: string;
+    contractNo?: string;
+    phaseName?: string;
+    tenantName?: string;
+    itemCode?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    status?: StoreContractStatus;
+    sort?: StoreContractSortKey;
+    direction?: StoreContractSortDirection;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsEntityAuditHistory": {
+    request: NoBody;
+    response: AuditHistoryPage;
+    requestRequired: false;
+    path: Record<string, never>;
+    query: {
+    groupWorkspaceKey: string;
+    entityType: "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "ORGANIZATION_NODE" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "STORE_CONTRACT";
+    entityId: string;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsFixedStoreContracts": {
+    request: NoBody;
+    response: StoreContractPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    state: StoreContractViewState;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationBrand": {
+    request: NoBody;
+    response: Brand;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    brandId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationBrands": {
+    request: NoBody;
+    response: BrandPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    name?: string;
+    code?: string;
+    status?: BusinessEntityStatus;
+    sort?: BusinessEntitySortKey;
+    direction?: BusinessEntitySortDirection;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationBusinessEntityExtensionDefinition": {
+    request: NoBody;
+    response: ExtensionDefinition;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    entityType: "BRAND" | "TENANT" | "HEAD_COMPANY";
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationHeadCompanies": {
+    request: NoBody;
+    response: HeadCompanyPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    name?: string;
+    code?: string;
+    legalName?: string;
+    unifiedSocialCreditCode?: string;
+    brandId?: string;
+    status?: BusinessEntityStatus;
+    sort?: BusinessEntitySortKey;
+    direction?: BusinessEntitySortDirection;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationHeadCompany": {
+    request: NoBody;
+    response: HeadCompany;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    headCompanyId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationHierarchy": {
+    request: NoBody;
+    response: OrganizationHierarchySnapshot;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationStore": {
+    request: NoBody;
+    response: OrganizationStore;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    storeId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationStoreCandidates": {
+    request: NoBody;
+    response: OrganizationStoreCandidatePage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    brandId?: string;
+    projectId?: string;
+    tenantId?: string;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationStoreExtensionDefinition": {
+    request: NoBody;
+    response: ExtensionDefinition;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationStores": {
+    request: NoBody;
+    response: OrganizationStorePage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    name?: string;
+    projectId?: string;
+    code?: string;
+    status?: OrganizationStoreStatus;
+    sort?: OrganizationStoreSortKey;
+    direction?: OrganizationStoreSortDirection;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationTenant": {
+    request: NoBody;
+    response: Tenant;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    tenantId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOrganizationTenants": {
+    request: NoBody;
+    response: TenantPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    name?: string;
+    code?: string;
+    legalName?: string;
+    unifiedSocialCreditCode?: string;
+    status?: BusinessEntityStatus;
+    sort?: BusinessEntitySortKey;
+    direction?: BusinessEntitySortDirection;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsStoreProfile": {
+    request: NoBody;
+    response: OrganizationStore;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceGroupInvitationCandidates": {
+    request: NoBody;
+    response: WorkspaceInvitationCandidatePage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    subjectType: "ORGANIZATION" | "ROLE";
+    queryText?: string;
+    page?: number;
+    pageSize?: number;
+    selectedOrganizationRef?: string;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceGroupInvitations": {
+    request: NoBody;
+    response: WorkspaceInvitationPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    mobile?: string;
+    organizationQuery?: string;
+    roleQuery?: string;
+    status?: WorkspaceInvitationStatus;
+    expiresFrom?: number;
+    expiresTo?: number;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceGroupUser": {
+    request: NoBody;
+    response: WorkspaceUserPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    userName?: string;
+    mobile?: string;
+    roleQuery?: string;
+    status?: WorkspaceAccountStatus;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceGroupUserAccount": {
+    request: NoBody;
+    response: WorkspaceUser;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    accountId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceHeadCompanyInvitationCandidates": {
+    request: NoBody;
+    response: WorkspaceInvitationCandidatePage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    subjectType: "ORGANIZATION" | "ROLE";
+    queryText?: string;
+    page?: number;
+    pageSize?: number;
+    selectedOrganizationRef?: string;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceHeadCompanyInvitations": {
+    request: NoBody;
+    response: WorkspaceInvitationPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    mobile?: string;
+    organizationQuery?: string;
+    roleQuery?: string;
+    status?: WorkspaceInvitationStatus;
+    expiresFrom?: number;
+    expiresTo?: number;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceHeadCompanyUser": {
+    request: NoBody;
+    response: WorkspaceUserPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    userName?: string;
+    mobile?: string;
+    roleQuery?: string;
+    status?: WorkspaceAccountStatus;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceHeadCompanyUserAccount": {
+    request: NoBody;
+    response: WorkspaceUser;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    accountId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceLoginEntry": {
+    request: NoBody;
+    response: WorkspaceLoginEntry;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceProjectInvitationCandidates": {
+    request: NoBody;
+    response: WorkspaceInvitationCandidatePage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    subjectType: "ORGANIZATION" | "ROLE";
+    queryText?: string;
+    page?: number;
+    pageSize?: number;
+    selectedOrganizationRef?: string;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceProjectInvitations": {
+    request: NoBody;
+    response: WorkspaceInvitationPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    mobile?: string;
+    organizationQuery?: string;
+    roleQuery?: string;
+    status?: WorkspaceInvitationStatus;
+    expiresFrom?: number;
+    expiresTo?: number;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceProjectUser": {
+    request: NoBody;
+    response: WorkspaceUserPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    userName?: string;
+    mobile?: string;
+    roleQuery?: string;
+    status?: WorkspaceAccountStatus;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceProjectUserAccount": {
+    request: NoBody;
+    response: WorkspaceUser;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    accountId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceRegionInvitationCandidates": {
+    request: NoBody;
+    response: WorkspaceInvitationCandidatePage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    subjectType: "ORGANIZATION" | "ROLE";
+    queryText?: string;
+    page?: number;
+    pageSize?: number;
+    selectedOrganizationRef?: string;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceRegionInvitations": {
+    request: NoBody;
+    response: WorkspaceInvitationPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    mobile?: string;
+    organizationQuery?: string;
+    roleQuery?: string;
+    status?: WorkspaceInvitationStatus;
+    expiresFrom?: number;
+    expiresTo?: number;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceRegionUser": {
+    request: NoBody;
+    response: WorkspaceUserPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    userName?: string;
+    mobile?: string;
+    roleQuery?: string;
+    status?: WorkspaceAccountStatus;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceRegionUserAccount": {
+    request: NoBody;
+    response: WorkspaceUser;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    accountId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceSessionEntry": {
+    request: NoBody;
+    response: WorkspaceSessionEntry;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceStoreInvitationCandidates": {
+    request: NoBody;
+    response: WorkspaceInvitationCandidatePage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    subjectType: "ORGANIZATION" | "ROLE";
+    queryText?: string;
+    page?: number;
+    pageSize?: number;
+    selectedOrganizationRef?: string;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceStoreInvitations": {
+    request: NoBody;
+    response: WorkspaceInvitationPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    mobile?: string;
+    organizationQuery?: string;
+    roleQuery?: string;
+    status?: WorkspaceInvitationStatus;
+    expiresFrom?: number;
+    expiresTo?: number;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceStoreUser": {
+    request: NoBody;
+    response: WorkspaceUserPage;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    scopeRef?: string;
+    userName?: string;
+    mobile?: string;
+    roleQuery?: string;
+    status?: WorkspaceAccountStatus;
+    page?: number;
+    pageSize?: number;
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsWorkspaceStoreUserAccount": {
+    request: NoBody;
+    response: WorkspaceUser;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    accountId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "invalidateOperationsContract": {
+    request: StoreContractInvalidateRequest;
+    response: StoreContract;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    contractId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "operationsWorkspaceLogout": {
+    request: NoBody;
+    response: NoContent;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "operationsWorkspacePasswordLogin": {
+    request: WorkspacePasswordLoginRequest;
+    response: WorkspaceSessionEntry;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "reissueOperationsWorkspaceGroupInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "reissueOperationsWorkspaceHeadCompanyInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "reissueOperationsWorkspaceProjectInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "reissueOperationsWorkspaceRegionInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "reissueOperationsWorkspaceStoreInvitation": {
+    request: WorkspaceOperationsInvitationActionRequest;
+    response: WorkspaceInvitation;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "removeOperationsOrganizationHeadCompanyBrandAuthorization": {
+    request: NoBody;
+    response: NoContent;
+    requestRequired: false;
+    path: {
+    groupWorkspaceKey: string;
+    headCompanyId: string;
+    brandId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "revokeOperationsWorkspaceGroupUserAssignment": {
+    request: WorkspaceUserRevokeRequest;
+    response: WorkspaceUserRevokeResult;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    assignmentId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "revokeOperationsWorkspaceHeadCompanyUserAssignment": {
+    request: WorkspaceUserRevokeRequest;
+    response: WorkspaceUserRevokeResult;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    assignmentId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "revokeOperationsWorkspaceProjectUserAssignment": {
+    request: WorkspaceUserRevokeRequest;
+    response: WorkspaceUserRevokeResult;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    assignmentId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "revokeOperationsWorkspaceRegionUserAssignment": {
+    request: WorkspaceUserRevokeRequest;
+    response: WorkspaceUserRevokeResult;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    assignmentId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "revokeOperationsWorkspaceStoreUserAssignment": {
+    request: WorkspaceUserRevokeRequest;
+    response: WorkspaceUserRevokeResult;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    assignmentId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "selectOperationsWorkspaceSessionContext": {
+    request: WorkspaceSelectContextRequest;
+    response: WorkspaceSessionEntry;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "selectOperationsWorkspaceSessionDataNode": {
+    request: WorkspaceSelectDataNodeRequest;
+    response: WorkspaceSessionEntry;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "sendOperationsWorkspaceOtp": {
+    request: WorkspaceOtpSendRequest;
+    response: WorkspaceOtpSendResponse;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "transitionOperationsOrganizationBrandStatus": {
+    request: BusinessEntityStatusRequest;
+    response: Brand;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    brandId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "transitionOperationsOrganizationHeadCompanyStatus": {
+    request: BusinessEntityStatusRequest;
+    response: HeadCompany;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    headCompanyId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "transitionOperationsOrganizationNodeStatus": {
+    request: OrganizationNodeStatusTransitionRequest;
+    response: OrganizationNode;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    nodeId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "transitionOperationsOrganizationStoreStatus": {
+    request: OrganizationStoreStatusRequest;
+    response: OrganizationStore;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "transitionOperationsOrganizationTenantStatus": {
+    request: BusinessEntityStatusRequest;
+    response: Tenant;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    tenantId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsContract": {
+    request: StoreContractUpdateRequest;
+    response: StoreContract;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    contractId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsOrganizationBrand": {
+    request: BrandUpdateRequest;
+    response: Brand;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    brandId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsOrganizationHeadCompany": {
+    request: HeadCompanyUpdateRequest;
+    response: HeadCompany;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    headCompanyId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsOrganizationNode": {
+    request: OrganizationNodeUpdateRequest;
+    response: OrganizationNode;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    nodeId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsOrganizationStore": {
+    request: OrganizationStoreUpdateRequest;
+    response: OrganizationStore;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsOrganizationTenant": {
+    request: TenantUpdateRequest;
+    response: Tenant;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+    tenantId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "verifyOperationsWorkspaceOtp": {
+    request: WorkspaceOtpVerifyRequest;
+    response: WorkspaceSessionEntry;
+    requestRequired: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+};
+
+type RequestPart<I extends OperationsAdminOperationId> = FaceOperationContracts[I]["requestRequired"] extends true
+  ? {body: FaceOperationContracts[I]["request"]}
+  : {body?: never};
+type QueryPart<I extends OperationsAdminOperationId> = FaceOperationContracts[I]["queryRequired"] extends true
+  ? {query: FaceOperationContracts[I]["query"]}
+  : {query?: FaceOperationContracts[I]["query"]};
+type HeaderPart<I extends OperationsAdminOperationId> = FaceOperationContracts[I]["headersRequired"] extends true
+  ? {headers: FaceOperationContracts[I]["headers"]}
+  : {headers?: never};
+export type FaceOperationOptions<I extends OperationsAdminOperationId> = RequestPart<I> & QueryPart<I> & HeaderPart<I>;
+export type FaceOperationRequest<I extends OperationsAdminOperationId> = FaceOperationOptions<I> & {
+  operationId: I;
+  method: (typeof OPERATIONS_ADMIN_OPERATIONS)[number]["method"];
+  path: (typeof OPERATIONS_ADMIN_OPERATIONS)[number]["path"];
+  pathParameters: FaceOperationContracts[I]["path"];
+};
+export type FaceExecutor = <I extends OperationsAdminOperationId>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;
+
+export function createOperationsAdminClient(execute: FaceExecutor) {
+  return {
+    addOperationsOrganizationHeadCompanyBrandAuthorization: (pathParameters: FaceOperationContracts["addOperationsOrganizationHeadCompanyBrandAuthorization"]["path"], options: FaceOperationOptions<"addOperationsOrganizationHeadCompanyBrandAuthorization">) => execute({
+      operationId: "addOperationsOrganizationHeadCompanyBrandAuthorization",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceGroupInvitation">) => execute({
+      operationId: "cancelOperationsWorkspaceGroupInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceHeadCompanyInvitation">) => execute({
+      operationId: "cancelOperationsWorkspaceHeadCompanyInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceProjectInvitation">) => execute({
+      operationId: "cancelOperationsWorkspaceProjectInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceRegionInvitation">) => execute({
+      operationId: "cancelOperationsWorkspaceRegionInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    cancelOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceStoreInvitation">) => execute({
+      operationId: "cancelOperationsWorkspaceStoreInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
+      pathParameters,
+      ...options,
+    }),
+    changeCurrentWorkspacePassword: (pathParameters: FaceOperationContracts["changeCurrentWorkspacePassword"]["path"], options: FaceOperationOptions<"changeCurrentWorkspacePassword">) => execute({
+      operationId: "changeCurrentWorkspacePassword",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsContract: (pathParameters: FaceOperationContracts["createOperationsContract"]["path"], options: FaceOperationOptions<"createOperationsContract">) => execute({
+      operationId: "createOperationsContract",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["createOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"createOperationsOrganizationBrand">) => execute({
+      operationId: "createOperationsOrganizationBrand",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["createOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"createOperationsOrganizationHeadCompany">) => execute({
+      operationId: "createOperationsOrganizationHeadCompany",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationProject: (pathParameters: FaceOperationContracts["createOperationsOrganizationProject"]["path"], options: FaceOperationOptions<"createOperationsOrganizationProject">) => execute({
+      operationId: "createOperationsOrganizationProject",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationRegion: (pathParameters: FaceOperationContracts["createOperationsOrganizationRegion"]["path"], options: FaceOperationOptions<"createOperationsOrganizationRegion">) => execute({
+      operationId: "createOperationsOrganizationRegion",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationStore: (pathParameters: FaceOperationContracts["createOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"createOperationsOrganizationStore">) => execute({
+      operationId: "createOperationsOrganizationStore",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["createOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"createOperationsOrganizationTenant">) => execute({
+      operationId: "createOperationsOrganizationTenant",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceGroupInvitation">) => execute({
+      operationId: "createOperationsWorkspaceGroupInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceHeadCompanyInvitation">) => execute({
+      operationId: "createOperationsWorkspaceHeadCompanyInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceProjectInvitation">) => execute({
+      operationId: "createOperationsWorkspaceProjectInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceRegionInvitation">) => execute({
+      operationId: "createOperationsWorkspaceRegionInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+      pathParameters,
+      ...options,
+    }),
+    createOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceStoreInvitation">) => execute({
+      operationId: "createOperationsWorkspaceStoreInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsContract: (pathParameters: FaceOperationContracts["getOperationsContract"]["path"], options: FaceOperationOptions<"getOperationsContract">) => execute({
+      operationId: "getOperationsContract",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsContractCandidates: (pathParameters: FaceOperationContracts["getOperationsContractCandidates"]["path"], options: FaceOperationOptions<"getOperationsContractCandidates">) => execute({
+      operationId: "getOperationsContractCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsContractExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsContractExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsContractExtensionDefinition">) => execute({
+      operationId: "getOperationsContractExtensionDefinition",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsContracts: (pathParameters: FaceOperationContracts["getOperationsContracts"]["path"], options: FaceOperationOptions<"getOperationsContracts">) => execute({
+      operationId: "getOperationsContracts",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsEntityAuditHistory: (pathParameters: FaceOperationContracts["getOperationsEntityAuditHistory"]["path"], options: FaceOperationOptions<"getOperationsEntityAuditHistory">) => execute({
+      operationId: "getOperationsEntityAuditHistory",
+      method: "GET",
+      path: "/api/operations/audit-history",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsFixedStoreContracts: (pathParameters: FaceOperationContracts["getOperationsFixedStoreContracts"]["path"], options: FaceOperationOptions<"getOperationsFixedStoreContracts">) => execute({
+      operationId: "getOperationsFixedStoreContracts",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["getOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBrand">) => execute({
+      operationId: "getOperationsOrganizationBrand",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationBrands: (pathParameters: FaceOperationContracts["getOperationsOrganizationBrands"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBrands">) => execute({
+      operationId: "getOperationsOrganizationBrands",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationBusinessEntityExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationBusinessEntityExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBusinessEntityExtensionDefinition">) => execute({
+      operationId: "getOperationsOrganizationBusinessEntityExtensionDefinition",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationHeadCompanies: (pathParameters: FaceOperationContracts["getOperationsOrganizationHeadCompanies"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHeadCompanies">) => execute({
+      operationId: "getOperationsOrganizationHeadCompanies",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["getOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHeadCompany">) => execute({
+      operationId: "getOperationsOrganizationHeadCompany",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationHierarchy: (pathParameters: FaceOperationContracts["getOperationsOrganizationHierarchy"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHierarchy">) => execute({
+      operationId: "getOperationsOrganizationHierarchy",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationStore: (pathParameters: FaceOperationContracts["getOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStore">) => execute({
+      operationId: "getOperationsOrganizationStore",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationStoreCandidates: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreCandidates">) => execute({
+      operationId: "getOperationsOrganizationStoreCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationStoreExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreExtensionDefinition">) => execute({
+      operationId: "getOperationsOrganizationStoreExtensionDefinition",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationStores: (pathParameters: FaceOperationContracts["getOperationsOrganizationStores"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStores">) => execute({
+      operationId: "getOperationsOrganizationStores",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["getOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"getOperationsOrganizationTenant">) => execute({
+      operationId: "getOperationsOrganizationTenant",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsOrganizationTenants: (pathParameters: FaceOperationContracts["getOperationsOrganizationTenants"]["path"], options: FaceOperationOptions<"getOperationsOrganizationTenants">) => execute({
+      operationId: "getOperationsOrganizationTenants",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsStoreProfile: (pathParameters: FaceOperationContracts["getOperationsStoreProfile"]["path"], options: FaceOperationOptions<"getOperationsStoreProfile">) => execute({
+      operationId: "getOperationsStoreProfile",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceGroupInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitationCandidates">) => execute({
+      operationId: "getOperationsWorkspaceGroupInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceGroupInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitations">) => execute({
+      operationId: "getOperationsWorkspaceGroupInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceGroupUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupUser">) => execute({
+      operationId: "getOperationsWorkspaceGroupUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceGroupUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupUserAccount">) => execute({
+      operationId: "getOperationsWorkspaceGroupUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceHeadCompanyInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyInvitationCandidates">) => execute({
+      operationId: "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceHeadCompanyInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyInvitations">) => execute({
+      operationId: "getOperationsWorkspaceHeadCompanyInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceHeadCompanyUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyUser">) => execute({
+      operationId: "getOperationsWorkspaceHeadCompanyUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceHeadCompanyUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyUserAccount">) => execute({
+      operationId: "getOperationsWorkspaceHeadCompanyUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceLoginEntry: (pathParameters: FaceOperationContracts["getOperationsWorkspaceLoginEntry"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceLoginEntry">) => execute({
+      operationId: "getOperationsWorkspaceLoginEntry",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceProjectInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectInvitationCandidates">) => execute({
+      operationId: "getOperationsWorkspaceProjectInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceProjectInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectInvitations">) => execute({
+      operationId: "getOperationsWorkspaceProjectInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceProjectUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectUser">) => execute({
+      operationId: "getOperationsWorkspaceProjectUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceProjectUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectUserAccount">) => execute({
+      operationId: "getOperationsWorkspaceProjectUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceRegionInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionInvitationCandidates">) => execute({
+      operationId: "getOperationsWorkspaceRegionInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceRegionInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionInvitations">) => execute({
+      operationId: "getOperationsWorkspaceRegionInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceRegionUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionUser">) => execute({
+      operationId: "getOperationsWorkspaceRegionUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceRegionUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionUserAccount">) => execute({
+      operationId: "getOperationsWorkspaceRegionUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceSessionEntry: (pathParameters: FaceOperationContracts["getOperationsWorkspaceSessionEntry"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceSessionEntry">) => execute({
+      operationId: "getOperationsWorkspaceSessionEntry",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceStoreInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreInvitationCandidates">) => execute({
+      operationId: "getOperationsWorkspaceStoreInvitationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceStoreInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreInvitations">) => execute({
+      operationId: "getOperationsWorkspaceStoreInvitations",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceStoreUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreUser">) => execute({
+      operationId: "getOperationsWorkspaceStoreUser",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
+      pathParameters,
+      ...options,
+    }),
+    getOperationsWorkspaceStoreUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreUserAccount">) => execute({
+      operationId: "getOperationsWorkspaceStoreUserAccount",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
+      pathParameters,
+      ...options,
+    }),
+    invalidateOperationsContract: (pathParameters: FaceOperationContracts["invalidateOperationsContract"]["path"], options: FaceOperationOptions<"invalidateOperationsContract">) => execute({
+      operationId: "invalidateOperationsContract",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+      pathParameters,
+      ...options,
+    }),
+    operationsWorkspaceLogout: (pathParameters: FaceOperationContracts["operationsWorkspaceLogout"]["path"], options: FaceOperationOptions<"operationsWorkspaceLogout">) => execute({
+      operationId: "operationsWorkspaceLogout",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
+      pathParameters,
+      ...options,
+    }),
+    operationsWorkspacePasswordLogin: (pathParameters: FaceOperationContracts["operationsWorkspacePasswordLogin"]["path"], options: FaceOperationOptions<"operationsWorkspacePasswordLogin">) => execute({
+      operationId: "operationsWorkspacePasswordLogin",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceGroupInvitation">) => execute({
+      operationId: "reissueOperationsWorkspaceGroupInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceHeadCompanyInvitation">) => execute({
+      operationId: "reissueOperationsWorkspaceHeadCompanyInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceProjectInvitation">) => execute({
+      operationId: "reissueOperationsWorkspaceProjectInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceRegionInvitation">) => execute({
+      operationId: "reissueOperationsWorkspaceRegionInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    reissueOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceStoreInvitation">) => execute({
+      operationId: "reissueOperationsWorkspaceStoreInvitation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
+      pathParameters,
+      ...options,
+    }),
+    removeOperationsOrganizationHeadCompanyBrandAuthorization: (pathParameters: FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["path"], options: FaceOperationOptions<"removeOperationsOrganizationHeadCompanyBrandAuthorization">) => execute({
+      operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+      method: "DELETE",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceGroupUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceGroupUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceGroupUserAssignment">) => execute({
+      operationId: "revokeOperationsWorkspaceGroupUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceHeadCompanyUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceHeadCompanyUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceHeadCompanyUserAssignment">) => execute({
+      operationId: "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceProjectUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceProjectUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceProjectUserAssignment">) => execute({
+      operationId: "revokeOperationsWorkspaceProjectUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceRegionUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceRegionUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceRegionUserAssignment">) => execute({
+      operationId: "revokeOperationsWorkspaceRegionUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    revokeOperationsWorkspaceStoreUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceStoreUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceStoreUserAssignment">) => execute({
+      operationId: "revokeOperationsWorkspaceStoreUserAssignment",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
+      pathParameters,
+      ...options,
+    }),
+    selectOperationsWorkspaceSessionContext: (pathParameters: FaceOperationContracts["selectOperationsWorkspaceSessionContext"]["path"], options: FaceOperationOptions<"selectOperationsWorkspaceSessionContext">) => execute({
+      operationId: "selectOperationsWorkspaceSessionContext",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
+      pathParameters,
+      ...options,
+    }),
+    selectOperationsWorkspaceSessionDataNode: (pathParameters: FaceOperationContracts["selectOperationsWorkspaceSessionDataNode"]["path"], options: FaceOperationOptions<"selectOperationsWorkspaceSessionDataNode">) => execute({
+      operationId: "selectOperationsWorkspaceSessionDataNode",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
+      pathParameters,
+      ...options,
+    }),
+    sendOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["sendOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"sendOperationsWorkspaceOtp">) => execute({
+      operationId: "sendOperationsWorkspaceOtp",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationBrandStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationBrandStatus">) => execute({
+      operationId: "transitionOperationsOrganizationBrandStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationHeadCompanyStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationHeadCompanyStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationHeadCompanyStatus">) => execute({
+      operationId: "transitionOperationsOrganizationHeadCompanyStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationNodeStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationNodeStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationNodeStatus">) => execute({
+      operationId: "transitionOperationsOrganizationNodeStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationStoreStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationStoreStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationStoreStatus">) => execute({
+      operationId: "transitionOperationsOrganizationStoreStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
+      pathParameters,
+      ...options,
+    }),
+    transitionOperationsOrganizationTenantStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationTenantStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationTenantStatus">) => execute({
+      operationId: "transitionOperationsOrganizationTenantStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsContract: (pathParameters: FaceOperationContracts["updateOperationsContract"]["path"], options: FaceOperationOptions<"updateOperationsContract">) => execute({
+      operationId: "updateOperationsContract",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["updateOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationBrand">) => execute({
+      operationId: "updateOperationsOrganizationBrand",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["updateOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationHeadCompany">) => execute({
+      operationId: "updateOperationsOrganizationHeadCompany",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationNode: (pathParameters: FaceOperationContracts["updateOperationsOrganizationNode"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationNode">) => execute({
+      operationId: "updateOperationsOrganizationNode",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationStore: (pathParameters: FaceOperationContracts["updateOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationStore">) => execute({
+      operationId: "updateOperationsOrganizationStore",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+      pathParameters,
+      ...options,
+    }),
+    updateOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["updateOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationTenant">) => execute({
+      operationId: "updateOperationsOrganizationTenant",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+      pathParameters,
+      ...options,
+    }),
+    verifyOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["verifyOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"verifyOperationsWorkspaceOtp">) => execute({
+      operationId: "verifyOperationsWorkspaceOtp",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
+      pathParameters,
+      ...options,
+    })
+  } as const;
+}

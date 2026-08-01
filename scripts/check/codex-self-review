@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/check/codex-self-review --file <repository-relative-review-path>
+  scripts/check/codex-self-review --self-test
+
+Validates the mandatory structure of a Codex adversarial self-review.
+It can enforce that reasonableness was addressed, but it cannot decide
+whether a business or UI judgment is substantively correct.
+EOF
+}
+
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+
+fail() {
+  printf 'CODEX_SELF_REVIEW=FAIL\nREASON=%s\n' "$1" >&2
+  exit 1
+}
+
+section() {
+  local file="$1"
+  local heading="$2"
+  awk -v heading="$heading" '
+    $0 == heading {capture=1; next}
+    capture && /^## / {exit}
+    capture {print}
+  ' "$file"
+}
+
+validate() {
+  local file="$1"
+  [[ -f "$file" ]] || fail "FILE_NOT_FOUND:$file"
+  local target
+  target="$(sed -n 's/^REVIEW_TARGET=//p' "$file" | head -1)"
+  [[ "$target" == "DESIGN" || "$target" == "IMPLEMENTATION" ]] ||
+    fail "REVIEW_TARGET_MISSING_OR_INVALID"
+  local cycle round round_limit final_decision
+  cycle="$(sed -n 's/^REVIEW_CYCLE_ID=//p' "$file" | head -1)"
+  round="$(sed -n 's/^REVIEW_ROUND=//p' "$file" | head -1)"
+  round_limit="$(sed -n 's/^REVIEW_ROUND_LIMIT=//p' "$file" | head -1)"
+  final_decision="$(sed -n 's/^ROUND_FINAL_DECISION=//p' "$file" | head -1)"
+  [[ "$cycle" =~ ^[A-Z0-9][A-Z0-9._-]*$ ]] || fail "REVIEW_CYCLE_ID_MISSING_OR_INVALID"
+  [[ "$round" == "1" || "$round" == "2" ]] || fail "REVIEW_ROUND_MISSING_OR_EXCEEDS_TWO"
+  [[ "$round_limit" == "2" ]] || fail "REVIEW_ROUND_LIMIT_MUST_EQUAL_TWO"
+  if [[ "$round" == "2" && "$final_decision" != "SELF_DECIDED" ]]; then
+    fail "ROUND_TWO_MUST_SELF_DECIDE"
+  fi
+
+  local heading
+  for heading in \
+    "## 用户任务" \
+    "## Dexter 立场" \
+    "## 替代方案" \
+    "## 方案合理性" \
+    "## UI 与交互" \
+    "## 审查意见复核" \
+    "## 闭环核验" \
+    "## 结论"; do
+    grep -Fqx "$heading" "$file" || fail "MISSING_SECTION:${heading#\#\# }"
+  done
+
+  local user_task dexter alternatives reasonableness ui finding_intake conclusion
+  user_task="$(section "$file" "## 用户任务")"
+  dexter="$(section "$file" "## Dexter 立场")"
+  alternatives="$(section "$file" "## 替代方案")"
+  reasonableness="$(section "$file" "## 方案合理性")"
+  ui="$(section "$file" "## UI 与交互")"
+  finding_intake="$(section "$file" "## 审查意见复核")"
+  conclusion="$(section "$file" "## 结论")"
+
+  grep -Eq '业务用户|用户任务' <<<"$user_task" || fail "USER_TASK_NOT_FROM_BUSINESS_USER"
+  grep -Fq 'Dexter' <<<"$dexter" || fail "DEXTER_INTENT_MISSING"
+  grep -Eq '替代|不选|取舍' <<<"$alternatives" || fail "ALTERNATIVE_TRADEOFF_MISSING"
+  grep -Eq '问题|方案|代价|复杂度|收益' <<<"$reasonableness" || fail "SOLUTION_REASONABLENESS_INCOMPLETE"
+  if ! grep -Eq 'APPLICABLE|NOT_APPLICABLE' <<<"$ui"; then
+    fail "UI_APPLICABILITY_MISSING"
+  fi
+  if grep -Fq 'NOT_APPLICABLE' <<<"$ui"; then
+    grep -Eq '理由|不涉及|无 UI|无交互' <<<"$ui" || fail "UI_NOT_APPLICABLE_REASON_MISSING"
+  elif ! grep -Eq 'Journey|用户|操作|路径|歧义|接口' <<<"$ui"; then
+    fail "UI_USER_TASK_REASONING_MISSING"
+  fi
+  if grep -Fq 'NOT_APPLICABLE' <<<"$finding_intake"; then
+    grep -Eq '无 finding|没有 finding|未收到|理由' <<<"$finding_intake" ||
+      fail "FINDING_INTAKE_NOT_APPLICABLE_REASON_MISSING"
+  else
+    grep -Eq 'CONFIRMED|PARTIALLY_CONFIRMED|REJECTED_WITH_EVIDENCE|UNVERIFIED_REQUIRES_EVIDENCE|DEXTER_DECISION' <<<"$finding_intake" ||
+      fail "FINDING_INTAKE_DISPOSITION_MISSING"
+    grep -Eq '证据|source|源码|一手|复核' <<<"$finding_intake" ||
+      fail "FINDING_INTAKE_EVIDENCE_REOPEN_MISSING"
+    grep -Eq '反例|适用|边界' <<<"$finding_intake" ||
+      fail "FINDING_INTAKE_COUNTEREXAMPLE_OR_APPLICABILITY_MISSING"
+    grep -Eq '更小|过度设计|成本' <<<"$finding_intake" ||
+      fail "FINDING_INTAKE_MINIMAL_FIX_REVIEW_MISSING"
+  fi
+  grep -Eq 'VERDICT=(GO|NO_GO)' <<<"$conclusion" || fail "VERDICT_MISSING"
+
+  if [[ "$target" == "IMPLEMENTATION" ]]; then
+    grep -Fqx "## 实施代码核验" "$file" || fail "IMPLEMENTATION_CODE_REVIEW_SECTION_MISSING"
+    local implementation
+    implementation="$(section "$file" "## 实施代码核验")"
+    grep -Eq '源码|代码' <<<"$implementation" || fail "IMPLEMENTATION_SOURCE_REOPEN_MISSING"
+    grep -Eq '编译|测试|运行|evidence' <<<"$implementation" || fail "IMPLEMENTATION_EXECUTABLE_EVIDENCE_MISSING"
+    grep -Eq '业务用户|用户行为|Journey|业务结果' <<<"$implementation" ||
+      fail "IMPLEMENTATION_BUSINESS_BEHAVIOR_RECHECK_MISSING"
+  fi
+
+  printf 'CODEX_SELF_REVIEW=PASS\nREVIEW_TARGET=%s\nREVIEW_CYCLE_ID=%s\nREVIEW_ROUND=%s\nREVIEW_ROUND_LIMIT=2\nFILE=%s\n' \
+    "$target" "$cycle" "$round" "${file#"$root_dir"/}"
+}
+
+self_test() {
+  local temp_dir
+  temp_dir="$(mktemp -d)"
+  trap 'rm -rf "$temp_dir"' RETURN
+  local good="$temp_dir/good.md"
+  local good_implementation="$temp_dir/good-implementation.md"
+  local closure_only="$temp_dir/closure-only.md"
+  local blind_acceptance="$temp_dir/blind-acceptance.md"
+  local round_three="$temp_dir/round-three.md"
+  local round_two_no_decision="$temp_dir/round-two-no-decision.md"
+
+  cat > "$good" <<'EOF'
+REVIEW_TARGET=DESIGN
+REVIEW_CYCLE_ID=SELF-TEST-DESIGN
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+## 用户任务
+业务用户要完成明确的用户任务。
+## Dexter 立场
+Dexter 当前要求最小范围和可解释成本。
+## 替代方案
+替代方案更短，但不选，因为缺少真实 readback；这是明确取舍。
+## 方案合理性
+问题正确；方案复杂度与收益匹配，代价可接受。
+## UI 与交互
+APPLICABLE：操作来自批准 Journey，用户路径合理；接口限制和歧义已说明。
+## 审查意见复核
+NOT_APPLICABLE：未收到外部 finding，本轮只有首次 Codex 自审。
+## 闭环核验
+owner、contract、evidence 与 cleanup 已核验。
+## 结论
+VERDICT=GO
+EOF
+
+  cat > "$good_implementation" <<'EOF'
+REVIEW_TARGET=IMPLEMENTATION
+REVIEW_CYCLE_ID=SELF-TEST-IMPLEMENTATION
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+ROUND_FINAL_DECISION=SELF_DECIDED
+## 用户任务
+业务用户要完成明确的用户任务。
+## Dexter 立场
+Dexter 当前要求最小范围和可解释成本。
+## 替代方案
+替代方案更短，但不选，因为缺少真实 readback；这是明确取舍。
+## 方案合理性
+问题正确；方案复杂度与收益匹配，代价可接受。
+## UI 与交互
+APPLICABLE：操作来自批准 Journey，用户路径合理；接口限制和歧义已说明。
+## 审查意见复核
+NOT_APPLICABLE：未收到外部 finding，本轮只有首次 Codex 自审。
+## 实施代码核验
+已重开源码和代码调用链，运行编译与测试 evidence，并复查业务用户行为和 Journey 业务结果。
+## 闭环核验
+owner、contract、evidence 与 cleanup 已核验。
+## 结论
+VERDICT=GO
+EOF
+
+  cat > "$blind_acceptance" <<'EOF'
+REVIEW_TARGET=DESIGN
+REVIEW_CYCLE_ID=SELF-TEST-BLIND-ACCEPTANCE
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+## 用户任务
+业务用户要完成明确的用户任务。
+## Dexter 立场
+Dexter 当前要求最小范围和可解释成本。
+## 替代方案
+替代方案更短，但不选，因为缺少真实 readback；这是明确取舍。
+## 方案合理性
+问题正确；方案复杂度与收益匹配，代价可接受。
+## UI 与交互
+APPLICABLE：操作来自批准 Journey，用户路径合理。
+## 审查意见复核
+reviewer 很专业，所以全部接受。
+## 闭环核验
+owner、contract、evidence 与 cleanup 已核验。
+## 结论
+VERDICT=GO
+EOF
+
+  cat > "$closure_only" <<'EOF'
+REVIEW_TARGET=IMPLEMENTATION
+REVIEW_CYCLE_ID=SELF-TEST-CLOSURE-ONLY
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+## 闭环核验
+代码、测试、报告和 evidence 全部完整。
+## 结论
+VERDICT=GO
+EOF
+
+  cat > "$round_three" <<'EOF'
+REVIEW_TARGET=DESIGN
+REVIEW_CYCLE_ID=SELF-TEST-ROUND-LIMIT
+REVIEW_ROUND=3
+REVIEW_ROUND_LIMIT=2
+## 用户任务
+业务用户要完成明确的用户任务。
+## Dexter 立场
+Dexter 当前要求最小范围和可解释成本。
+## 替代方案
+替代方案更短，但不选，因为缺少真实 readback；这是明确取舍。
+## 方案合理性
+问题正确；方案复杂度与收益匹配，代价可接受。
+## UI 与交互
+NOT_APPLICABLE：不涉及 UI 或交互。
+## 审查意见复核
+NOT_APPLICABLE：没有 finding。
+## 闭环核验
+owner、contract、evidence 与 cleanup 已核验。
+## 结论
+VERDICT=GO
+EOF
+
+  grep -v '^ROUND_FINAL_DECISION=' "$good_implementation" > "$round_two_no_decision"
+
+  validate "$good" >/dev/null
+  validate "$good_implementation" >/dev/null
+  if (validate "$closure_only") >/dev/null 2>&1; then
+    fail "RED_FIXTURE_CLOSURE_ONLY_DID_NOT_FAIL"
+  fi
+  if (validate "$blind_acceptance") >/dev/null 2>&1; then
+    fail "RED_FIXTURE_BLIND_FINDING_ACCEPTANCE_DID_NOT_FAIL"
+  fi
+  if (validate "$round_three") >/dev/null 2>&1; then
+    fail "RED_FIXTURE_ROUND_THREE_DID_NOT_FAIL"
+  fi
+  if (validate "$round_two_no_decision") >/dev/null 2>&1; then
+    fail "RED_FIXTURE_ROUND_TWO_WITHOUT_SELF_DECISION_DID_NOT_FAIL"
+  fi
+  printf 'CODEX_SELF_REVIEW_SELF_TEST=PASS\nDESIGN_TARGET=PASS\nIMPLEMENTATION_TARGET=PASS\nRED_FIXTURE_CLOSURE_ONLY=PASS\nRED_FIXTURE_BLIND_FINDING_ACCEPTANCE=PASS\nRED_FIXTURE_ROUND_THREE=PASS\nRED_FIXTURE_ROUND_TWO_WITHOUT_SELF_DECISION=PASS\n'
+}
+
+case "${1:-}" in
+  --file)
+    [[ $# -eq 2 ]] || { usage >&2; exit 2; }
+    case "$2" in
+      /*) fail "ABSOLUTE_PATH_NOT_ALLOWED" ;;
+    esac
+    validate "$root_dir/$2"
+    ;;
+  --self-test)
+    [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    self_test
+    ;;
+  --help|-h)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

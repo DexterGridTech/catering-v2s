@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U00",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u00-control-plane-manifest.json",
+  "deliveryManifestSha256": "f1c0f4d9099b39921c18c7156d5030bb0559d893f839e0a83ec6738c8ce4a29b",
+  "unitId": "RM1P6-CP-U00",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["P6-CP-U00-HISTORICAL-RENAME-GAP"],
+  "businessEvidenceObligation": "CONTROL_PLANE_NOT_APPLICABLE",
+  "serialPredecessor": {
+    "packageId": "RM1-U08",
+    "exitPath": "doc/evidence/platform/rm1/p5/rm1-u08-package-exit.json",
+    "exitSha256": "3271d82b1ce99b646f390edd146693ad22fa4e44d2558920227c590ed55ab2f9"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u00-control-plane-amendment.md",
+    "sha256": "f19c8bf0859b50ee1ee01be3715e233d28d576c2904d7415c538e86cb27b54f9"
+  },
+  "authorizationBoundary": "Dexter authorized a separate non-business RM1 P6 control-plane package. It may only create the one P6 receipt-rename recovery registry, exact evidence and red control proof; it may not alter U01 business, contract, generated, baseline or historical receipt bytes."
+}

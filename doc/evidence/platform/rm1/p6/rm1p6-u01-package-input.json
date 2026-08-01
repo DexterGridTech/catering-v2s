@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-U01",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+  "deliveryManifestSha256": "f60185102ef8ddaad368af9a31879b2e704ce5d35cd95a49c3c89b09ef4155d0",
+  "unitId": "RM1P6-U01",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/openapi-contracts",
+    "scripts/check/edge-codegen",
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/openapi-contracts",
+    "scripts/check/edge-codegen",
+    "scripts/check/remediation-compliance"
+  ],
+  "requiredControlRuleIds": [
+    "P6-U01-OWNER-AND-EDGE",
+    "P6-U01-TYPED-PROBLEM",
+    "P6-U01-GENERATED-CONSUMER-ONLY",
+    "P6-U01-RECOVERY-RED-MUTATIONS"
+  ],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_DYNAMIC_HIERARCHY_AND_CAPABILITY",
+  "serialPredecessor": {
+    "packageId": "RM1-U08",
+    "exitPath": "doc/evidence/platform/rm1/p5/rm1-u08-package-exit.json",
+    "exitSha256": "3271d82b1ce99b646f390edd146693ad22fa4e44d2558920227c590ed55ab2f9"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u01-implementation-amendment.md",
+    "sha256": "96619487dd93c0a71a994df290afd662fc19fe74bdbb0286bb8cc07be822128b"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 P6-1 implementation after the P6 implementation-facing design recheck GO. This package authorizes only P6-1 public entry, authentication recovery and branding contract/owner/edge work, additive owner migration, generated consumers and focused tests. It excludes P6-2/P6-3, all UI/page/shell/foundation changes, DEV, seed, reset and Roadmap state changes."
+}

@@ -1,0 +1,470 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1-U03",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "beforeSha256": "e9206aa269a605d596b077c8a3e809ae493442ad64b08923e65cc47a66da1ebc",
+      "afterSha256": "5063450c4e6b5c0e34d8459bd18acdbb9163256947fdbddb5985f17eac640d39"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationAddRequest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "863e35aa69bc87044210a9dc86c3b07ab96afd69225524a8da8c8142f350e83e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationRequest.java",
+      "beforeSha256": "6328134a1b67a18d7e5daf8cb4ee194161f79afad3115760ea82b41496bb21aa",
+      "afterSha256": "ABSENT"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationResult.java",
+      "beforeSha256": "f384633550de6e8cefb2a28940463ee81fb806b96968488949a768e3adb7281b",
+      "afterSha256": "ABSENT"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Problem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "9b67869409f48affeb4a2cebfee035e4e8f3f62a71ac46f5f20d652465117e9f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ProblemBrandAuthorizationBlockers.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "99c516c546d9f66164e1dad9e8caab1f9113347d945a4733835d6e70d8598dd4"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ProblemBrandAuthorizationBlockersVisibleStoresItem.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "80076a5c4ab739b4b978ae2c68469688fea784219bee27c50beaabe832604e42"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java",
+      "beforeSha256": "65e755104956981baadb30d8d8918134680e158d97f1818a8ee9c5295cc47dcc",
+      "afterSha256": "61ad2643a9495c25168372148e5481a49ea651a78ae04fb169333aa638376935"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java",
+      "beforeSha256": "46cc39517bc74b8baa220cf408053af8a29ee89c63451f405a32135ff49cf1e9",
+      "afterSha256": "550235767f89e77af34b558da7b1494a970fbc01a9d2e1d45da15cc6e0023619"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/db/migration/V20260728_090000_000__rm1_p3_b_organization_receipt_and_authorization_safety.sql",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7049ef4413244a1281f30dd857c48c6e5fc03c58af30cccc7eab08df1a759aa8"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json",
+      "beforeSha256": "20037a51ffd704c8b61921de3d26b4f8d317f8370b39ba508a61b53d28955d3d",
+      "afterSha256": "09f8960999e84022b28a42ec45075c1c7bb8367aca73c2f7984da9e1ee54069c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+      "beforeSha256": "5fae0cecc2bac8e69e564372fee2bb9b437746ca819e848deb99a661c5e8595a",
+      "afterSha256": "22d4da6c5914d2ffe90b53008e7ab3a3eb796346a86ea47af639acf5dfb31594"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationControllerTest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "31be911331cfed3fc5e08c1ca04137713680239542d5e63a17d5031742e6f5ff"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/EdgeRouteRegistryCoverageTest.java",
+      "beforeSha256": "8c1d64464c13628c22d4ee2465e85612768829571b2917ce687d8961399e43cf",
+      "afterSha256": "60f66da3b06d035ff86310d96be65a660bdb20ec7d50733521a88e6d1196dd1d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/PlatformCommercialGroupControllerProblemTest.java",
+      "beforeSha256": "1f21c43c164f6a054df695fb8d809f08b1b9f75b0fb3a70d15fc02e1b4123ff8",
+      "afterSha256": "8e2737a1f6bae6ef358047c99f3e0e99e0c6978ac2fc2a7dafe5ef928d45a7c1"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "beforeSha256": "31ad34455ed4b41cbe517503b414517610d1a41f9f522b889d085021c2a26c28",
+      "afterSha256": "1160b8130832136c077e5db05783c39228773c2c4d78f8eae4e7bfde4dfe29db"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+      "beforeSha256": "9c5e65aeb3f8f1c74c0afdd08c66f6ccbe84ae14a1c3ec4811e0d093ca9086ba",
+      "afterSha256": "8018333cbcc2c729acc16be97f5b095955d5b249b96b0359d6fca150e6b1e88c"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+      "beforeSha256": "0e67f7870c251d185330379b935a44c0d9e1e6f20e4c3a8965dae372e1b7e93d",
+      "afterSha256": "bae7836634a668a4e9d930f1af0756a7b4ff8369506955ebefcd1dae4fa1550f"
+    },
+    {
+      "path": "contracts/openapi/components/common/problem.schemas.yaml",
+      "beforeSha256": "c92b874ce83fe8aba52f06ee8f4b7fd4213311a10e2ff64afdbc030035ee34cc",
+      "afterSha256": "601264794951b0ce0fe7185cce10475ee6c374f7fc3bf7b5e7a6d56f15fdbf76"
+    },
+    {
+      "path": "contracts/openapi/components/organization/business-entity.schemas.yaml",
+      "beforeSha256": "44b1c8a068045018b3377882fabe10ae30097d792ebb66587d65eb0df0cb8f9f",
+      "afterSha256": "f0ba7941fb42da6469c515ffead1304c61c245616c12b06f1d61f6df61135c45"
+    },
+    {
+      "path": "contracts/openapi/edge.openapi.yaml",
+      "beforeSha256": "f8e87c2cb4e282cbd551c1ac38c4d13ead88c9fda4eb39493d12d09aaf800135",
+      "afterSha256": "4036ef01cb66377c4007d2a33fc0bef3e4685fb1b0e9599fa020fc375eb79877"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/head-company-management.paths.yaml",
+      "beforeSha256": "4f2cd46344266d45d61b7d5cf67db4228dfdb953d421db76707ff431f269aa50",
+      "afterSha256": "1a9d1c85a1f2f3c1d3d6c267651f8eeb543aaf7f9ae2446b8e6915e8133f7f12"
+    },
+    {
+      "path": "contracts/registry/iam-org-governance-manifest.json",
+      "beforeSha256": "b02ac52c2035729d6f7d2159cbbcf470acb8d4949b0b710e76d4ce3a1730b124",
+      "afterSha256": "b707ce47c5608a136288ef66090adabae69da447b8b6ea8347031edba148771b"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-implementation-amendment.json",
+      "beforeSha256": "f90f8810e49dfd56552ee439a8400cc934e46540e67826d0e1da6a5808885885",
+      "afterSha256": "eefd1d51a66b7ef77e825e6a07d05b9ec9082eb3af82629aabad56c5495fd285"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-package-input.json",
+      "beforeSha256": "242a080553d4ffb93d38c4dca2797eec5bfcd85d92de2d5ae025d266302f8046",
+      "afterSha256": "f66fe51444602cb3757a3bf5e13f4891f524468c61494af2d051680d95a23d47"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-route-gate-baseline-addendum.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "5606142914fef5e70cd9eb34d704d84a7909b715e10405993d9d8faa73051b27"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d0ce867d97d428ae2b046e013bba92f820bfbd1120b9d597360875cd887bec34"
+    },
+    {
+      "path": "libraries/backend/extension/src/main/java/com/catering/v2s/extension/application/ExtensionCommandReceiptService.java",
+      "beforeSha256": "4e1590d477d8bddab817de17f8a38a632a531994274aab5cabf861b650fe1188",
+      "afterSha256": "1c0023b70dc1837bab7f963535540f44c1777657a72212236cd18de47ab2d9a9"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityCommandReceiptService.java",
+      "beforeSha256": "dcc4cf88efbae079febd624eeb38417f2045cfc63af17d66c0578fbaae6b1b74",
+      "afterSha256": "ec8815f5f4fb0ea72b887df217d402a6a62bf768f719d46f7e29e6f0cd657132"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+      "beforeSha256": "ee8936abdd56630abec5b4b8a1fe81d29a2efe0066a212ca021fc8515191d868",
+      "afterSha256": "234b3628d536bbcdc118f682d1445fd6c2da2ff357416113ff530da8a3f0e4fc"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java",
+      "beforeSha256": "ce07b54101ec97fb1c763e8eafadd7e9a0f066b2dc29660793ae9e71c3dcc93c",
+      "afterSha256": "a5a3c6691b68e6fae1dce716cc91084b929dff3ff1aa868b0c05420055cf3b36"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyCommandReceiptService.java",
+      "beforeSha256": "a11fd6dd980f5fe4dc6a9a1e6b077b0e52872381a33ed3073494bb6c06bb9481",
+      "afterSha256": "b54fdebaffc5e1777d27f5f890f42575d0343c4942878b4bf375d13dfd188512"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java",
+      "beforeSha256": "cc4d7ee90be74161824c8db7059e00ee3e57120abc214bffb83aaceac7545346",
+      "afterSha256": "a02b6ef3ff7209711fcff5f82e8df0e01c68d4aeb935e95ef4266db315ae3bfe"
+    },
+    {
+      "path": "libraries/backend/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+      "beforeSha256": "da7093e3707a8c5202f781f0b300ad115d9495c15c3161a53e3b3a5ae99fd48a",
+      "afterSha256": "a5932d51c17723cce2e71d4ad7515ffa024d84231d724e3e0329e34cb9d3bfcd"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+      "beforeSha256": "f795c3e14bad842e13fb3786c03f0d30154f543868d2b8a05c17a1375979cf21",
+      "afterSha256": "2f745b974c5c9fcacaaeb94499c5927089d28f9bcbd9ac76e89e3c5ece4b7275"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "beforeSha256": "8e1ca42ff407aa4de0becdfe3f4b97dfcfb48a28e0ff7a21b6a80f6def6576f7",
+      "afterSha256": "3f6518d55a7b74a70282bb5475aabc0434d4958519bff230dc18068eeb2b858c"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java",
+      "beforeSha256": "0e9431ca95053d7db501e8ac09afd4309b7478e8b15769221c0b7f4028d7ff8b",
+      "afterSha256": "5bbccbb47c25884311f004432eefa4d52301a2150689d56708c37be2b9fce232"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamCommandReceiptService.java",
+      "beforeSha256": "65b53b60f1dfe875da7b137acf83eedc12113f8cf012fd90507da98aa0c65519",
+      "afterSha256": "9e298e16531fd46f232d74618e0c66df7eb84179c93b1bc4585053d5d4940aed"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+      "beforeSha256": "74c89f0f445f51864d7382108c4c002bfe5cc1c556ff2fe060e2233b33eb2831",
+      "afterSha256": "c765c78a361dc07e3f9c6b3b7d61c192d50dc1850ca865d18165aa50527c8570"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "beforeSha256": "cd49d792c4451ea1df65e9ecd3a78f4da877494ea1fd0ecb2f71b3a97ba47158",
+      "afterSha256": "97a0e770092d1a9980d7790900f0a0fe7dbd8e58bc147d787ae3776c5b0d9284"
+    },
+    {
+      "path": "tools/capability-invariants/cli.mjs",
+      "beforeSha256": "e758a3021f98b901c31e95cfc90d3fa18c0df896ff317dc870f800a0e925eb72",
+      "afterSha256": "1c86cc4e0b49a5274ec611702d8f2c94b4cd1b72ca737028dfa50482dffd2320"
+    },
+    {
+      "path": "tools/code-layout/cli.mjs",
+      "beforeSha256": "5797e90b4e125ef4f3daa39355f3086faa42101268c624a9eb9cbec74969d421",
+      "afterSha256": "e5cf1ebff1119cf09eb91fdc4db42f38a3c8c5788d1ccd9e53d56a7c29726d35"
+    },
+    {
+      "path": "tools/platform-boundary-gates/cli.mjs",
+      "beforeSha256": "fc8d10d75c55969e32217712b03b703796a0da57cf8280eaa84daec69d56e2c1",
+      "afterSha256": "9f1d37114668a7c566c08a408c6ae610e76f154719f37bdd2a2032ec04d88b65"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "beforeSha256": "8c1246e1246c06995290acc12e5c46a0a0c3506ca6bc84fdec86aed78d7960a1",
+      "afterSha256": "ddc4798d8437da37c70a307de028ec3ae37114a61e3b7889824b7b947b9f731c"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "afterSha256": "5063450c4e6b5c0e34d8459bd18acdbb9163256947fdbddb5985f17eac640d39",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationAddRequest.java",
+      "afterSha256": "863e35aa69bc87044210a9dc86c3b07ab96afd69225524a8da8c8142f350e83e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationRequest.java",
+      "afterSha256": "ABSENT",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyBrandAuthorizationResult.java",
+      "afterSha256": "ABSENT",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Problem.java",
+      "afterSha256": "9b67869409f48affeb4a2cebfee035e4e8f3f62a71ac46f5f20d652465117e9f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ProblemBrandAuthorizationBlockers.java",
+      "afterSha256": "99c516c546d9f66164e1dad9e8caab1f9113347d945a4733835d6e70d8598dd4",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ProblemBrandAuthorizationBlockersVisibleStoresItem.java",
+      "afterSha256": "80076a5c4ab739b4b978ae2c68469688fea784219bee27c50beaabe832604e42",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java",
+      "afterSha256": "61ad2643a9495c25168372148e5481a49ea651a78ae04fb169333aa638376935",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java",
+      "afterSha256": "550235767f89e77af34b558da7b1494a970fbc01a9d2e1d45da15cc6e0023619",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/db/migration/V20260728_090000_000__rm1_p3_b_organization_receipt_and_authorization_safety.sql",
+      "afterSha256": "7049ef4413244a1281f30dd857c48c6e5fc03c58af30cccc7eab08df1a759aa8",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/capability-operation-registry.json",
+      "afterSha256": "09f8960999e84022b28a42ec45075c1c7bb8367aca73c2f7984da9e1ee54069c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+      "afterSha256": "22d4da6c5914d2ffe90b53008e7ab3a3eb796346a86ea47af639acf5dfb31594",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationControllerTest.java",
+      "afterSha256": "31be911331cfed3fc5e08c1ca04137713680239542d5e63a17d5031742e6f5ff",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/EdgeRouteRegistryCoverageTest.java",
+      "afterSha256": "60f66da3b06d035ff86310d96be65a660bdb20ec7d50733521a88e6d1196dd1d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/PlatformCommercialGroupControllerProblemTest.java",
+      "afterSha256": "8e2737a1f6bae6ef358047c99f3e0e99e0c6978ac2fc2a7dafe5ef928d45a7c1",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "afterSha256": "1160b8130832136c077e5db05783c39228773c2c4d78f8eae4e7bfde4dfe29db",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+      "afterSha256": "8018333cbcc2c729acc16be97f5b095955d5b249b96b0359d6fca150e6b1e88c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+      "afterSha256": "bae7836634a668a4e9d930f1af0756a7b4ff8369506955ebefcd1dae4fa1550f",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/common/problem.schemas.yaml",
+      "afterSha256": "601264794951b0ce0fe7185cce10475ee6c374f7fc3bf7b5e7a6d56f15fdbf76",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/components/organization/business-entity.schemas.yaml",
+      "afterSha256": "f0ba7941fb42da6469c515ffead1304c61c245616c12b06f1d61f6df61135c45",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/edge.openapi.yaml",
+      "afterSha256": "4036ef01cb66377c4007d2a33fc0bef3e4685fb1b0e9599fa020fc375eb79877",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/openapi/paths/operations-admin/head-company-management.paths.yaml",
+      "afterSha256": "1a9d1c85a1f2f3c1d3d6c267651f8eeb543aaf7f9ae2446b8e6915e8133f7f12",
+      "result": "PASS"
+    },
+    {
+      "path": "contracts/registry/iam-org-governance-manifest.json",
+      "afterSha256": "b707ce47c5608a136288ef66090adabae69da447b8b6ea8347031edba148771b",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-implementation-amendment.json",
+      "afterSha256": "eefd1d51a66b7ef77e825e6a07d05b9ec9082eb3af82629aabad56c5495fd285",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-package-input.json",
+      "afterSha256": "f66fe51444602cb3757a3bf5e13f4891f524468c61494af2d051680d95a23d47",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-route-gate-baseline-addendum.json",
+      "afterSha256": "5606142914fef5e70cd9eb34d704d84a7909b715e10405993d9d8faa73051b27",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-source-compliance-disposition.json",
+      "afterSha256": "d0ce867d97d428ae2b046e013bba92f820bfbd1120b9d597360875cd887bec34",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/extension/src/main/java/com/catering/v2s/extension/application/ExtensionCommandReceiptService.java",
+      "afterSha256": "1c0023b70dc1837bab7f963535540f44c1777657a72212236cd18de47ab2d9a9",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityCommandReceiptService.java",
+      "afterSha256": "ec8815f5f4fb0ea72b887df217d402a6a62bf768f719d46f7e29e6f0cd657132",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+      "afterSha256": "234b3628d536bbcdc118f682d1445fd6c2da2ff357416113ff530da8a3f0e4fc",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java",
+      "afterSha256": "a5a3c6691b68e6fae1dce716cc91084b929dff3ff1aa868b0c05420055cf3b36",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyCommandReceiptService.java",
+      "afterSha256": "b54fdebaffc5e1777d27f5f890f42575d0343c4942878b4bf375d13dfd188512",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java",
+      "afterSha256": "a02b6ef3ff7209711fcff5f82e8df0e01c68d4aeb935e95ef4266db315ae3bfe",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+      "afterSha256": "a5932d51c17723cce2e71d4ad7515ffa024d84231d724e3e0329e34cb9d3bfcd",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+      "afterSha256": "2f745b974c5c9fcacaaeb94499c5927089d28f9bcbd9ac76e89e3c5ece4b7275",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+      "afterSha256": "3f6518d55a7b74a70282bb5475aabc0434d4958519bff230dc18068eeb2b858c",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java",
+      "afterSha256": "5bbccbb47c25884311f004432eefa4d52301a2150689d56708c37be2b9fce232",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamCommandReceiptService.java",
+      "afterSha256": "9e298e16531fd46f232d74618e0c66df7eb84179c93b1bc4585053d5d4940aed",
+      "result": "PASS"
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+      "afterSha256": "c765c78a361dc07e3f9c6b3b7d61c192d50dc1850ca865d18165aa50527c8570",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/generate/edge-codegen.mjs",
+      "afterSha256": "97a0e770092d1a9980d7790900f0a0fe7dbd8e58bc147d787ae3776c5b0d9284",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/capability-invariants/cli.mjs",
+      "afterSha256": "1c86cc4e0b49a5274ec611702d8f2c94b4cd1b72ca737028dfa50482dffd2320",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/code-layout/cli.mjs",
+      "afterSha256": "e5cf1ebff1119cf09eb91fdc4db42f38a3c8c5788d1ccd9e53d56a7c29726d35",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/platform-boundary-gates/cli.mjs",
+      "afterSha256": "9f1d37114668a7c566c08a408c6ae610e76f154719f37bdd2a2032ec04d88b65",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/verify-gates/cli.mjs",
+      "afterSha256": "ddc4798d8437da37c70a307de028ec3ae37114a61e3b7889824b7b947b9f731c",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-source-compliance-disposition.json",
+    "sha256": "d0ce867d97d428ae2b046e013bba92f820bfbd1120b9d597360875cd887bec34"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "PASS",
+  "controls": [
+    {
+      "ruleId": "CR05-WC-01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-WC-02",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-HISTORICAL-RECEIPT-RECOVERY",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ]
+}

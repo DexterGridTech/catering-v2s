@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-UI-IA-CONFORMANCE-20260730",
+  "genericProblem": "A UI package can retain a valid prewrite snapshot while its physical screens drift from accepted IA, owner facts, foundation contracts, or catalog references; it can also spend disproportionate time on generic preparation and then make point fixes without a per-change source reread and post-change IA review. A written reread/process rule is not itself evidence that the author applied it to a later remediation batch.",
+  "rootCauseClass": "SOURCE_TO_IA_CONFORMANCE_SINGLE_TRUTH_AND_EXECUTION_CADENCE_DRIFT",
+  "finiteDenominator": [
+    "38 accepted physical screens / 36 actual platform-admin consumers for the source-to-IA conformance baseline",
+    "AdministratorStatusModal.tsx lifecycle dependency correction",
+    "WorkspaceStatusModal.tsx lifecycle dependency correction",
+    "PlatformLoginPage.test.tsx generated operation-id reference",
+    "PlatformPasswordRecoveryVerifyPage.test.tsx generated operation-id reference",
+    "PlatformPasswordRecoveryPasswordPage.test.tsx generated operation-id reference",
+    "ExtensionDefinitionEditDrawer.test.tsx generated operation-id reference",
+    "PlatformReadPage.test.tsx generated operation-id reference",
+    "AdministratorCreateDrawer.test.tsx generated operation-id reference",
+    "AdministratorEditDrawer.test.tsx generated operation-id reference",
+    "AdministratorCredentialDrawer.test.tsx generated operation-id reference",
+    "AdministratorStatusModal.test.tsx generated operation-id reference",
+    "RoleCreateDrawer.test.tsx generated operation-id reference",
+    "RoleEditDrawer.test.tsx generated operation-id reference",
+    "RolesPage.test.tsx generated operation-id reference",
+    "WorkspaceCreateDrawer.test.tsx generated operation-id reference",
+    "CommercialGroupInitializationDrawer.test.tsx generated operation-id reference",
+    "WorkspaceEditDrawer.test.tsx generated operation-id reference",
+    "WorkspaceStatusModal.test.tsx generated operation-id reference"
+  ],
+  "searchedSurfaces": [
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+    "apps/frontend/platform-admin/src"
+  ],
+  "searchQueries": ["PAGE title raw literal", "contextScopedQueryArgs", "conflict readback", "testId", "operations address", "focused sibling test", "implementation cadence", "per-change IA reread", "post-change IA review", "PLATFORM_ADMIN_OPERATION_IDS", "generated operation-id literal in focused test"],
+  "counterexamples": [
+    "PlatformApp menu labels already derive from platformPageRegistry and must not be rewritten.",
+    "Drawer and field copy without a corresponding semantic catalog node is not a PAGE-title catalog bypass.",
+    "Generated RTK invalidation is a valid refresh mechanism even when a component has no explicit refetch call.",
+    "A read-only source inspection is not an actual implementation change point, but it remains required evidence before a later write.",
+    "A single aggregate test command can prove the suite outcome but cannot replace each changed test's IA/consumer/design reread."
+  ],
+  "findings": [
+    {"findingId": "F-CATALOG-PAGE-TITLE", "status": "CONFIRMED", "scope": "6 raw titles plus PLATFORM-ROLES label mismatch"},
+    {"findingId": "F-FOUNDATION-RECOVERY-A11Y", "status": "CONFIRMED", "scope": "workspace scope/result/recovery and audited test-id gaps"},
+    {"findingId": "F-IA-OWNER-SOURCE-DRIFT", "status": "CONFIRMED", "scope": "organization and contract current filters versus old IA GAP text"},
+    {"findingId": "F-OPERATIONS-ADDRESS-READBACK", "status": "CONFIRMED", "scope": "IA02 workspace list address requirement absent from current owner contract"},
+    {"findingId": "F-FOCUSED-PROOF-MISSING", "status": "CONFIRMED", "scope": "roster-named platform focused tests absent"},
+    {"findingId": "F-EXECUTION-CADENCE-AND-POINTWISE-REREAD", "status": "CONFIRMED", "scope": "implementation and review instructions did not explicitly require bounded preparation plus per-change pre/post reread of applicable IA, routed memory, design constraints, and reusable source"},
+    {"findingId": "F-U06-POINTWISE-REREAD-APPLICATION-RECURRENCE", "status": "CONFIRMED", "scope": "the later 18-point status-modal/generated-operation-id remediation batch did not retain per-point prewrite and post-proof source records before its aggregate focused proof"},
+    {"findingId": "F-U06-PROGRESS-FORMAT-APPLICATION-RECURRENCE", "status": "CONFIRMED", "scope": "several ongoing-task updates omitted AGENTS.md's exact six-line progress form before Dexter reported the process breach"},
+    {"findingId": "F-U06-DEFERRED-JOINT-L2-CLOSED-VOCABULARY", "status": "CONFIRMED", "scope": "the U06 package input truthfully declares Dexter's P6-3-joint-L2 sequence decision, but package-exit validation previously rejected that state because its business-evidence vocabulary had no corresponding branch"}
+  ],
+  "dexterAcceptedHistoricalException": {
+    "findingId": "F-U06-POINTWISE-REREAD-APPLICATION-RECURRENCE",
+    "classification": "DEXTER_ONE_TIME_ACCEPTED_HISTORICAL_PROCESS_EXCEPTION",
+    "decisionSource": "Dexter 2026-07-30 RM1 P6-2 static closure decision",
+    "acceptedScope": "The historical 18-point status-modal/generated-operation-id remediation batch lacks irrecoverable per-point prewrite and post-proof readback records.",
+    "nonPrecedent": true,
+    "disciplineStatus": "MISSING_NOT_SATISFIED",
+    "doesNotChange": [
+      "business=NOT_APPLICABLE",
+      "cleanup=NOT_APPLICABLE",
+      "JOINT_MANAGED_L2_AFTER_P6_3_IMPLEMENTATION_BY_DEXTER_SEQUENCE_DECISION",
+      "P6-3 pointwise prewrite and post-proof reread requirement"
+    ]
+  },
+  "p6_3StartObligations": [
+    {"id":"P6-3-PREWRITE-RECEIPT-READBACK","status":"REQUIRED_BEFORE_P6_3_IMPLEMENTATION","owningSources":["F-U06-POINTWISE-REREAD-APPLICATION-RECURRENCE",".codex/hooks.json","tools/compliance-control/cli.mjs#hookPre"],"requiredClosure":"Reuse the existing PreToolUse/pre-receipt path to record, per changed path, the IA/design files reread since that path's prior write; preserve no-context-injection and produce a red proof."},
+    {"id":"GAP-BRAND-CANDIDATE-OWNER-PAGINATION","status":"REQUIRED_BEFORE_P6_3_UI_BINDING","owningSources":["doc/evidence/platform/rm1/p6/rm1p6-u15-brand-owner-edge-truth-problem-family.json#PF-BRAND-CHAIN-01","doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md#2"],"requiredClosure":"Owner-bounded items/total with exact predicate pass-through; restoring edge-local page(...) must fail."},
+    {"id":"GAP-BRAND-IN-USE-TYPED-PROJECTION","status":"REQUIRED_BEFORE_P6_3_UI_BINDING","owningSources":["doc/evidence/platform/rm1/p6/rm1p6-u15-brand-owner-edge-truth-problem-family.json#PF-BRAND-CHAIN-02","doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md#2"],"requiredClosure":"Map the most-specific in-use owner exception before parent fallback and make both mapping proof and capability invariant fail on fallback."},
+    {"id":"P6-3-RETIRED-BULK-CONSUMER-REMOVAL","status":"REQUIRED_IN_ONE_RECEIPT_SET","owningSources":["doc/evidence/platform/rm1/p6/rm1p6-u15-brand-owner-edge-truth-problem-family.json#PF-BRAND-CHAIN-03","doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-exit.json#U04-S1-P6-3-LEGACY-CONSUMER"],"requiredClosure":"Remove or rewrite HeadCompanyManagementPage and its stale static-boundary assertion together; the U04 regeneration retired the operation and residual calls caused operations-admin typecheck FAIL."},
+    {"id":"P6-3-RTK-CONTEXT-OWNER-INVARIANT","status":"REQUIRED_IN_P6_3_ROSTER","owningSources":["doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md#RTK / transport invariant","doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-manifest.json"],"requiredClosure":"Reads use generated hooks, writes use generated client/transport, invalidation and expectedContextVersion own refresh, and an owner-side red proves contextVersion strictly advances for scope or assignment mutation."},
+    {"id":"P6-3-IA04-ACCEPTED-BYTE-CONFLICT","status":"DEXTER_REPORT_REQUIRED_BEFORE_IA_CHANGE","owningSources":["doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md#3","doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md#12.2"],"requiredClosure":"Report the accepted IA04 multi-select-draft conflict to Dexter before changing it; then align to per-item immediate commands and re-freeze the roster IA04 hash."},
+    {"id":"P1-ST-11-AUTHORITY-LEDGER","status":"OPEN_SUCCESSOR_PACKAGE","owningSources":["doc/evidence/platform/rm1/p6/rm1p6-u04-admin-catalog-truth-package-exit.json#P1-ST-11-AUTHORITY-LEDGER"],"requiredClosure":"Repair only through a correctly baselined successor package; U06 static PASS does not imply authority-ledger PASS."}
+  ],
+  "preventionDispositions": [
+    {"findingId": "F-CATALOG-PAGE-TITLE", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "tools/verify-gates/cli.mjs#R5_FRONTEND_PAGE_KEY_LITERAL and generated catalog projection"},
+    {"findingId": "F-FOUNDATION-RECOVERY-A11Y", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "project-memory/operations/verification-governance.md#UI_INTERACTION_CONFORMANCE_BEFORE_L2"},
+    {"findingId": "F-IA-OWNER-SOURCE-DRIFT", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "rm1p6-u06-ia-source-reconciliation.md"},
+    {"findingId": "F-OPERATIONS-ADDRESS-READBACK", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "rm1p6-ui-ia-conformance-u06-implementation-amendment.md#实施边界与最小方案"},
+    {"findingId": "F-FOCUSED-PROOF-MISSING", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "rm1-u09-physical-screen-import-contracts.md#focused test contract"},
+    {"findingId": "F-EXECUTION-CADENCE-AND-POINTWISE-REREAD", "preventionDestination": "PROJECT_MEMORY", "owningSourceOrControl": "project-memory/operations/implementation-source-reread-discipline.md"},
+    {"findingId": "F-U06-POINTWISE-REREAD-APPLICATION-RECURRENCE", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md#5 and doc/review/platform/independent-subagent-adversarial-review-input-checklist-template.md"},
+    {"findingId": "F-U06-PROGRESS-FORMAT-APPLICATION-RECURRENCE", "preventionDestination": "PROJECT_MEMORY", "owningSourceOrControl": "AGENTS.md#协作进度与结束闸门 and project-memory/operations/implementation-source-reread-discipline.md"},
+    {"findingId": "F-U06-DEFERRED-JOINT-L2-CLOSED-VOCABULARY", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "tools/compliance-control/cli.mjs#validateRequiredDynamicEvidence with DEFERRED_JOINT_L2_EXIT_DECLARATION_INVALID red mutation"}
+  ]
+}

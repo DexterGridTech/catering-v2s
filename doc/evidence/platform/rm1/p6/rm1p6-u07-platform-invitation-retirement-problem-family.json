@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "identified-problem-family",
+  "id": "RM1P6-PLATFORM-INVITATION-FACE-REACHABILITY-20260731",
+  "status": "OPEN_FOR_IMPLEMENTATION",
+  "rootCause": "A platform-face invitation path survived after the approved journey moved invitation work to target-specific operations pages, and the shared historical U03 evidence manifest was reused across later packages without a receipt chain that could honestly represent new retirement work.",
+  "finiteDenominator": [
+    "platform-admin invitation UI consumers",
+    "platform invitation edge/OpenAPI/catalog/report operations",
+    "platform audit invitation dispatch",
+    "generator-owned outputs reached by the exact five operation removal",
+    "IA03 and every hash-bound physical/roster/baseline consumer"
+  ],
+  "counterexamples": [
+    "AccountsPage account task remains live",
+    "operations-admin target-specific invitation operations remain live",
+    "public invitation acceptance remains live",
+    "shared invitation wire/schema types remain unless reachability proves platform-only"
+  ],
+  "minimalReusableFix": "Use a fresh successor package with a new baseline and exact source/receipt denominator; atomically retire the unapproved platform face rather than hiding it or relabeling old U03 receipts.",
+  "prevention": [
+    {"destination": "EXISTING_MACHINE_CONTROL", "owner": "tools/compliance-control/cli.mjs#successorPackageAdmission", "evidence": "new package baseline and exact allowed-surface equality"},
+    {"destination": "REVIEW_CHECKLIST", "owner": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md", "evidence": "independent round-two review checks UI/edge/codegen/IA closure and retained counterexamples"}
+  ]
+}

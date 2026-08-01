@@ -1,0 +1,78 @@
+{
+  "components": {
+    "schemas": {
+      "CommercialGroupInitializeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groupCode",
+          "groupName",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "groupCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          }
+        }
+      },
+      "CommercialGroupRoot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "groupCode",
+          "groupName",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+          },
+          "updatedAt": {
+            "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+          }
+        }
+      }
+    }
+  }
+}

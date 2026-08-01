@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-CANDIDATE-NORMATIVE-TRUTH-DRIFT",
+  "genericProblem": "A living candidate plan retains superseded normative instructions beside later decisions, so different implementers can select contradictory owners, denominators, security behavior, or package exits while each cites a real paragraph.",
+  "rootCauseClass": "DESIGN_DOCUMENT_SINGLE_SOURCE_OF_TRUTH_DRIFT",
+  "finiteDenominator": [
+    "doc/roadmaps/platform/2026-07-28-v2s-rm1-restructure-and-remediation-roadmap-claude.md: all normative P0, P3-B, P3-D, P8, and completion-definition clauses",
+    "doc/review/platform/2026-07-28-v2s-r6-problem-inventory-claude.md: current R-25 through R-30 decision rows and sections 15.6 through 15.8"
+  ],
+  "searchedSurfaces": [
+    "candidate Roadmap normative sections and completion definition",
+    "candidate problem inventory current-decision rows and remediation history",
+    "current OpenAPI Problem schema, operations transport, authorization receipt/controller, and authorization catalog"
+  ],
+  "searchQueries": [
+    "affected-l2|registry 只留|DEFERRED|RM2|R-28|transfer manifest|ST-1|ST-5|ST-7",
+    "HeadCompanyBrandAuthorizationActionAdapter|结果未知|幂等键|readback|Problem|门店标识|使用状态",
+    "x-required-capability|A1|A2|A3|A4|A5|P3-D|P8"
+  ],
+  "counterexamples": [
+    {"case": "Historical review narration", "boundary": "Prior-round findings remain valid historical evidence when explicitly labeled superseded and are not an active instruction."},
+    {"case": "Single owner with generated consumers", "boundary": "A single authority may legitimately have generated or read-only consumers; the defect is duplicate normative ownership, not repeated textual references."}
+  ],
+  "findings": [
+    {"findingId": "F01", "summary": "P0 retains duplicate and conflicting affected-l2 instructions, including a forbidden registry-pruning remedy."},
+    {"findingId": "F02", "summary": "R-28, P8, and completion text retain stale RM2/ledger closure semantics after canonical transfer and 7+1 decisions."},
+    {"findingId": "F03", "summary": "P3-B/P3-D boundary does not yet make the nonvisual adapter, logical command identity, and unknown-result terminal state unambiguous."},
+    {"findingId": "F04", "summary": "The planned typed blocker information lacks a named closed contract field and a generated transport-preservation chain."},
+    {"findingId": "F05", "summary": "Blocker-store disclosure must not expose identifiers outside the acting user's visible scope."},
+    {"findingId": "F06", "summary": "Receipt replay and the P3-D command-count assertion must distinguish immutable action acknowledgement from fresh owner readback and same-key recovery retries."}
+  ],
+  "preventionDispositions": [
+    {"findingId": "F01", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "RM1 candidate acceptance checklist: one active normative owner and no superseded candidate branch per subject"},
+    {"findingId": "F02", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "RM1 candidate acceptance checklist: canonical denominator and transfer wording set-equality across decision, package, and completion sections"},
+    {"findingId": "F03", "preventionDestination": "PROJECT_MEMORY", "owningSourceOrControl": "project-memory/operations/phase-retrospective-and-systemic-repair.md#USER_REPORTED_PROBLEM_FAMILY_DISCOVERY_REQUIRED"},
+    {"findingId": "F04", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "OpenAPI code generation plus focused contract/transport preservation tests specified in RM1 P3-B"},
+    {"findingId": "F05", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "RM1 P3-B authorization review: response fields are filtered by the executing actor visibility scope"},
+    {"findingId": "F06", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "RM1 P3-B/P3-D action-recovery contract and focused replay-after-intervening-write test"}
+  ]
+}

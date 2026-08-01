@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-U03",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+  "deliveryManifestSha256": "9f61441904d3fc6216ead9f65f87c4c3657e123c545746661c2ecb153b00f0d3",
+  "unitId": "RM1-U03",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/capability-invariants",
+    "scripts/check/security-boundaries"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/affected-l2"
+  ],
+  "requiredControlRuleIds": [
+    "P-B1",
+    "P-B2",
+    "P-D1",
+    "P-D3",
+    "P-D4",
+    "P-D5",
+    "P-X1"
+  ],
+  "serialPredecessor": {
+    "packageId": "RM1-U02",
+    "exitPath": "doc/evidence/platform/rm1/p3-a/rm1-u02-package-exit.json",
+    "exitSha256": "95f92181aaee90e795a143d96e713c49e4a6506870fe540b94fa6f7206294082"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p3-b/rm1-u03-implementation-amendment.json",
+    "sha256": "eefd1d51a66b7ef77e825e6a07d05b9ec9082eb3af82629aabad56c5495fd285"
+  },
+  "authorizationBoundary": "Dexter authorized RM1 implementation. This binding authorizes RM1-U03 P3-B only, including the R-24 backend contract/owner/migration/generated-adapter safety work, and excludes P3-D interaction implementation pending RM1-IA-03."
+}

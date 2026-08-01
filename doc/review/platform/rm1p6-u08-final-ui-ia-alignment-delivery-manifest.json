@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p6-u08-direct-final-ui-ia-alignment-manifest",
+  "businessProblem": "The admitted operations-admin consumers are largely implemented, but final UI IA evidence still contains two absent legacy consumers, fourteen unrun focused-proof records, and one concrete stable-test-id gap in the current contract detail Drawer. A single direct implementation package must close this finite denominator before any joint L2.",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-UI-IA-FINAL-ALIGNMENT-U08",
+      "title": "Direct final operations UI IA alignment",
+      "sourceComplianceDispositionRequired": true,
+      "approvedAssertions": [
+        "IA04-CONTRACT-DETAIL-LOADING-AND-ERROR-TEST-ID",
+        "IA04-CURRENT-CONSUMER-FOCUSED-PROOF",
+        "P6-3-JOINT-L2-REMAINS-BLOCKED-UNTIL-FINAL-UI-IA-PASS"
+      ],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md", "anchor": "§2 IA04-CONTRACT-DETAIL, IA04-STORE-PROFILE"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u03-final-ui-ia-control-alignment.json", "anchor": "PENDING control records"}
+      ],
+      "detailDesign": {"path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-implementation-amendment.md", "anchor": "## Direct implementation denominator"},
+      "currentDeviation": "The old alignment record conflates removed legacy paths with active consumers and leaves current compliant consumers unproven. Contract detail also lacks stable loading/error identifiers required for focused accessibility verification.",
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "direct U08 activation and admitted UI IA metadata only"},
+        {"path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractDetailDrawer.tsx", "disposition": "update", "target": "stable loading and safe-error test identifiers only"},
+        {"path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.test.tsx", "disposition": "update", "target": "focused proof for contract page, overlays and detail identifiers"},
+        {"path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.test.tsx", "disposition": "create", "target": "focused proof for read-only profile and fixed contract detail"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-package-input.json", "disposition": "update", "target": "U08 execution binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-implementation-amendment.md", "disposition": "update", "target": "U08 direct scope and IA reread record"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-problem-family.json", "disposition": "update", "target": "finite stale-evidence and focused-proof finding family"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-source-compliance-disposition.json", "disposition": "update", "target": "derived U08 source disposition"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-prewrite-baseline.json", "disposition": "create", "target": "U08 contract detail prewrite baseline"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-control-alignment.json", "disposition": "create", "target": "current-source final alignment record"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-package-exit.json", "disposition": "create", "target": "static exit only; joint L2 remains deferred"},
+        {"path": "doc/review/platform/rm1p6-u08-final-ui-ia-alignment-delivery-manifest.json", "disposition": "update", "target": "exact direct delivery manifest"},
+        {"path": "doc/review/platform", "disposition": "update", "target": "independent implementation review artifacts"}
+      ],
+      "orderedChain": ["freeze U08 direct denominator", "admit current contract detail source", "make the one stable-id correction", "run focused remote proof", "re-read every current control against IA04", "record final UI IA result", "only then admit joint L2"],
+      "dependencyAndSerialBoundaries": ["U08 follows the fixed U07 static exit without reopening U07.", "U08 does not create a control-plane package.", "U08 does not perform DEV, seed, reset, business PASS, cleanup PASS, or joint L2."],
+      "dataEvolution": {"policy": "NO_DATABASE_OR_SEED_CHANGE"},
+      "uiAndTerms": {"consumerFace": "operations-admin", "retiredConsumerPaths": ["apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx", "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx"], "retainedCounterexamples": ["BusinessEntityManagementPage remains the route-mounted brand and tenant consumer", "StoreProfile remains read-only", "contract mutation remains in separate overlays"]},
+      "forbiddenPseudoFixes": ["create an intermediate control-plane package", "restore or relabel deleted legacy pages", "claim static or focused proof is business or cleanup PASS", "run joint L2 before every final UI control is PASS", "replace owner generated reads with page-local fetch or refetch loops"],
+      "discriminator": {"fixture": "A direct route scan must find PgOrgBrand and PgOrgTenant mapping to BusinessEntityManagementPage and no legacy page consumer. Contract detail loading/error nodes must have stable test-id, while mutations stay only in their independent overlays."},
+      "evidence": {"l1": "source-bound focused frontend tests", "l2": "deferred until final UI control alignment PASS", "l3": "exact receipt/source disposition/static architecture", "business": "NOT_APPLICABLE_STATIC_ALIGNMENT_ONLY", "cleanup": "NOT_APPLICABLE_NO_MANAGED_RUNTIME"},
+      "sourceComplianceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {"sourcePath": "project-memory/index.json", "selector": "routed implementation/admin-ui/operations-admin entries", "applicability": "APPLICABLE", "missingEntryFails": true},
+        "APPROVED_ASSERTIONS": {"sourcePath": "doc/review/platform/rm1p6-u08-final-ui-ia-alignment-delivery-manifest.json", "selector": "deliveryUnits[RM1P6-UI-IA-FINAL-ALIGNMENT-U08].approvedAssertions", "applicability": "APPLICABLE", "missingEntryFails": true},
+        "FORBIDDEN_PSEUDO_FIXES": {"sourcePath": "doc/review/platform/rm1p6-u08-final-ui-ia-alignment-delivery-manifest.json", "selector": "deliveryUnits[RM1P6-UI-IA-FINAL-ALIGNMENT-U08].forbiddenPseudoFixes", "applicability": "APPLICABLE", "missingEntryFails": true},
+        "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {"sourcePath": "doc/evidence/platform/rm1/p6/rm1p6-u08-final-ui-ia-alignment-implementation-amendment.md", "selector": "md:## Direct implementation denominator", "applicability": "APPLICABLE", "missingEntryFails": true},
+        "OWNED_SURFACE_AND_PAGE_KEYS": {"sourcePath": "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md", "selector": "IA04 contract and store-profile physical consumers", "applicability": "APPLICABLE", "missingEntryFails": true},
+        "DUE_STANDARDS_RULE_IDS": {"sourcePath": "contracts/policy/standards-coverage-matrix.json", "selector": "json:/rules", "applicability": "APPLICABLE", "missingEntryFails": true}
+      },
+      "memoryRoute": {"taskKind": "implementation", "domain": "admin-ui", "consumerFace": "operations-admin", "owner": "frontend-platform", "impact": "evidence", "trigger": "implementation"}
+    }
+  ]
+}

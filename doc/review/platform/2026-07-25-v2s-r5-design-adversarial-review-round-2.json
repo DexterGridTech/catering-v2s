@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-design-adversarial-review",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewCycleId": "R5-W3-DESIGN-20260725",
+  "reviewTarget": "DESIGN",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "manifestSha256": "8f546650a257d674c16b323c7c29e6013dc2bb78f6824e5bc6736f4bf0653325",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-25-v2s-r5-design-adversarial-round-2-inputs.json",
+    "sha256": "08bfb9865bb661b42dc6679ab601016d80c30137be27bcaba7666eee53467274"
+  },
+  "blindReviewDeclaration": "Fresh falsification-first independent review. The current R5 design package, frozen upstream sources, corpus, standards and granularity controls were reviewed before the standalone round-1 review and intake. Independent findings and NO_GO were frozen before those two round-1 materials were read. No third Codex adversarial round is permitted.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["scope-traceability","contract-exactness","component-boundary","auth-session","ui-foundation","dev-seed-cleanup"]
+  },
+  "expectedBehavior": [
+    "32 scenarios and 104 operations must be falsifiable in both directions, including the two deletions and one addition.",
+    "Every operation must have deterministic scenario, owner, page, security, query/request/response, status, idempotency, CAS, error and focused-test behavior.",
+    "The 12 units must preserve one deployable, seven owner modules, two independent apps, foundation-first UI, invitation-only assignment, internal-only ResolveNavigation, and one controlled r5-full business/cleanup proof.",
+    "Five extension value hosts, stable fixture keys/counts, secret references, exact remote allowlists, scenario prerequisites and controlled date boundaries must be executable without agent invention."
+  ],
+  "findings": [
+    {
+      "id":"R5-DESIGN-R2-M-001",
+      "severity":"M",
+      "status":"OPEN",
+      "unitIds":["R5-U01","R5-U11","R5-U12"],
+      "title":"32↔104 remains only operation-to-scenario, not a normative reverse crosswalk",
+      "evidence":"The independent recount finds 104 unique operation rows and all 32 scenario IDs occur in operations[*].scenarioIds. The Journey decision has scenario rows and the catalog has operation rows, but neither provides a checked scenario-step→operationIds mapping with required operation completeness, two deletions, and one addition.",
+      "risk":"The denominator can be numerically green while a scenario is missing a required operation or an operation is orphaned; the development agent must infer the exact task contract from prose.",
+      "disposition":"CONFIRMED residual. Counterexample: a scenario can resolve one operation and still omit its required detail/readback/error operation. Minimal repair: add one checked 32-row scenarioOperationCrosswalk with ordered step IDs, operationIds, face, owner, page, disposition and positive/negative proof refs, and assert both-direction equality including deletedCandidates/addedOperations. Smaller than a traceability database; low-to-medium synchronization cost before implementation.",
+      "counterexample":"All 32 IDs are touched, but an omitted operation inside a scenario cannot be detected because no normative scenario-side operation set exists.",
+      "minimalRepair":"Add the checked reverse crosswalk and make the catalog checker compare both directions.",
+      "largerAlternativeCost":"A traceability database or Journey-by-Journey review is unnecessary; one versioned JSON crosswalk is smaller."
+    },
+    {
+      "id":"R5-DESIGN-R2-M-002",
+      "severity":"M",
+      "status":"OPEN",
+      "unitIds":["R5-U01","R5-U06"],
+      "title":"Deleted page-guard semantics still survive in the normative component baseline",
+      "evidence":"catalog.componentFieldBaseline retains WorkspacePageEntryGuard and WorkspacePageEntryGuardRequest as Heritage refs, and also retains WorkspaceRoleCandidateCatalog after getWorkspaceRoleCandidates is deleted. componentOverrides.forbiddenProperties forbids workspaceKey/itemCodes/logoBindGrant but has no forbidden component/symbol closure. U06 correctly describes internal ResolveNavigation, but the baseline still gives a generated/component implementation path for the deleted guard contract.",
+      "risk":"A developer can regenerate or carry a page-guard DTO/component and recreate a second navigation/authorization truth while claiming compliance with the catalog; ResolveNavigation then ceases to be only internal UX readback.",
+      "disposition":"CONFIRMED residual. Counterexample: a generated client/component imports WorkspacePageEntryGuard because the baseline reference remains and no zero-reference rule rejects it. Minimal repair: remove the two page-guard refs and unused role-candidate ref from the selected component baseline, and add a checked forbiddenSymbols/zeroReference closure for deleted operation types and public ResolveNavigation exposure. Low cost; do not add a policy engine.",
+      "counterexample":"The deleted operation is absent from operations[], yet its request/response component references remain admissible in the generated component closure.",
+      "minimalRepair":"Delete the forbidden refs and add a negative symbol/reference assertion covering generated schemas, routes, tests and runtime.",
+      "largerAlternativeCost":"A generalized authorization policy engine is unnecessary and would expand scope."
+    },
+    {
+      "id":"R5-DESIGN-R2-M-003",
+      "severity":"M",
+      "status":"OPEN",
+      "unitIds":["R5-U01","R5-U04","R5-U10"],
+      "title":"Operations extension-definition contract cannot select the required five value hosts",
+      "evidence":"r5-full defines five extensionDefinitions for BRAND, TENANT, HEAD_COMPANY, STORE and CONTRACT. The catalog has explicit entityType path binding for platform get/replaceExtensionDefinition, but getOperationsOrganizationBusinessEntityExtensionDefinition uses pageKey OPERATIONS-HEAD-COMPANY and only groupWorkspaceKey plus expectedContextVersion; it has no entityType/host discriminator. Other operations definition rows are separately hard-wired to stores or contracts, leaving the operations business-entity task unable to express the three entity hosts represented by the five-host requirement.",
+      "risk":"The developer must invent whether head-company is the only operations definition, whether one endpoint multiplexes hosts, or whether additional operations are needed; UI and owner readback can silently diverge from D-03.",
+      "disposition":"CONFIRMED residual. Counterexample: the same page can request a BRAND definition but the contract has no legal selector and the agent must add an unapproved query/path or hard-code HEAD_COMPANY. Minimal repair: choose one closed entityType enum on the operations business-entity definition operation (or explicitly add three operations), bind it to the five-host crosswalk and focused tests. The single closed enum is the smaller low-cost repair.",
+      "counterexample":"Five host fixtures exist, but the operations business-entity definition operation has no host selector and is named/anchored only for HEAD_COMPANY.",
+      "minimalRepair":"Add closed entityType semantics and crosswalk rows for BRAND/TENANT/HEAD_COMPANY, preserving separate STORE/CONTRACT owner endpoints.",
+      "largerAlternativeCost":"Adding a new endpoint per host is more expensive and risks unnecessary contract expansion."
+    },
+    {
+      "id":"R5-DESIGN-R2-S-001",
+      "severity":"S",
+      "status":"OPEN",
+      "unitIds":["R5-U11","R5-U12"],
+      "title":"r5-full declares a generic prerequisite rule but no 32 scenario prerequisite fixtures",
+      "evidence":"scenarioPrerequisitePolicy contains denominator 32 and a mapping source to operations[*].scenarioIds, plus a generic rule. It does not contain 32 concrete scenario rows with positive fixture refs and declared negative/stale/denied/disabled refs. businessPassPredicates asserts that all sets resolve, but those sets are not present in the contract.",
+      "risk":"Seed and acceptance agents still decide at runtime which fixtures prove each scenario and negative branch; stable counts alone cannot prove business coverage.",
+      "disposition":"CONFIRMED residual. Counterexample: two scenarios can resolve the same generic workspace fixture and pass the predicate while the required invitation, stale context or contract-date branch is absent. Minimal repair: add explicit 32-row prerequisite entries and negative refs, reusing existing stable keys. Low fixture-manifest cost.",
+      "counterexample":"The predicate names prerequisite sets that are not represented as data in r5-full.",
+      "minimalRepair":"Freeze positiveFixtureRefs and negativeFixtureRefs for every scenario before seed implementation.",
+      "largerAlternativeCost":"A generalized scenario data service is unnecessary."
+    },
+    {
+      "id":"R5-DESIGN-R2-S-002",
+      "severity":"S",
+      "status":"OPEN",
+      "unitIds":["R5-U03","R5-U11"],
+      "title":"Platform credential fixtures do not carry complete secret references",
+      "evidence":"profile.credentialSources lists source names, and pa-bootstrap has passwordSource, but pa-support and pa-disabled only declare createPlatformAdmin channels with no credentialSource/secretRef. Recovery, invitation, reset and session credential purposes likewise have no per-fixture secret reference or purpose binding.",
+      "risk":"The agent must choose how stable platform accounts and recovery flows obtain credentials, which can create undocumented defaults or make the acceptance run non-reproducible.",
+      "disposition":"CONFIRMED residual. Counterexample: pa-support is expected to log in but its fixture row has no password source, so implementation can silently reuse the bootstrap secret or invent a local default. Minimal repair: add non-secret secretRef/purpose fields for every credential-bearing fixture and recovery/OTP grant; keep values external and forbidden from persistence/logs. Low cost.",
+      "counterexample":"A stable account without a credentialSource cannot be deterministically exercised.",
+      "minimalRepair":"Add secretRef and purpose to all platform/operations/recovery fixture rows without adding secret values.",
+      "largerAlternativeCost":"A credential service is out of scope; source references are sufficient."
+    },
+    {
+      "id":"R5-DESIGN-R2-S-003",
+      "severity":"S",
+      "status":"OPEN",
+      "unitIds":["R5-U11","R5-U12"],
+      "title":"Reset fail-closed wording refers to an undefined exact remote allowlist",
+      "evidence":"r5-full names V2S_DEV_REMOTE_HOST, databaseUrlSource, namespace pattern and assetRootSource, and resetFailClosedPredicates says host/database/schema/asset root must be in an explicit DEV allowlist. The contract does not freeze the allowed host set, database/schema rule, or asset-root prefix/namespace mapping.",
+      "risk":"A reset runner can satisfy the prose with different host or path checks, weakening destructive-operation isolation and making cleanup evidence incomparable.",
+      "disposition":"CONFIRMED residual. Counterexample: two runners accept different remote hosts or schema patterns while both report the generic allowlist predicate PASS. Minimal repair: add exact allowlist identifiers/patterns and namespace-to-database/schema/asset-root derivation to r5-full, with a negative matrix. Low cost and no dynamic run required.",
+      "counterexample":"The phrase explicit DEV allowlist is a requirement but no exact allowlist data is supplied.",
+      "minimalRepair":"Freeze exact remote host, database, schema and asset root allowlist predicates and their negative fixtures.",
+      "largerAlternativeCost":"A generalized environment policy service is unnecessary."
+    },
+    {
+      "id":"R5-DESIGN-R2-S-004",
+      "severity":"S",
+      "status":"OPEN",
+      "unitIds":["R5-U07","R5-U11","R5-U12"],
+      "title":"Contract date profiles are symbolic rather than bound to controlled clock values",
+      "evidence":"stableFixtures.contracts use dateProfile values CURRENT, FUTURE, PAST and ENDED, while the blueprint and U07 require controlled-date three-state derivation. No exact controlled clock instants or date endpoints are specified in r5-full, so the same fixture can change state with the run date or an implementation-defined offset.",
+      "risk":"OPERATING/PREPARING/NOT_OPERATING and invalid/ended negative evidence can drift or differ between agents while expectedCounts remain green.",
+      "disposition":"CONFIRMED residual. Counterexample: a FUTURE contract becomes CURRENT if the runner chooses today differently, or PAST/ENDED boundaries differ by timezone. Minimal repair: bind each dateProfile to explicit UTC instants and a controlled BusinessDateProvider readback, including boundary cases. Low test-fixture cost.",
+      "counterexample":"Symbolic CURRENT/FUTURE/PAST/ENDED labels do not determine actual interval comparisons.",
+      "minimalRepair":"Add exact effective/expiry timestamps and fixed clock profiles to r5-full.",
+      "largerAlternativeCost":"A production scheduling abstraction is unnecessary for DEV proof."
+    }
+  ],
+  "unitVerdicts": [
+    {"id":"R5-U01","verdict":"NO_GO","findingIds":["R5-DESIGN-R2-M-001","R5-DESIGN-R2-M-002","R5-DESIGN-R2-M-003"]},
+    {"id":"R5-U02","verdict":"GO","findingIds":[]},
+    {"id":"R5-U03","verdict":"NO_GO","findingIds":["R5-DESIGN-R2-S-002"]},
+    {"id":"R5-U04","verdict":"NO_GO","findingIds":["R5-DESIGN-R2-M-003"]},
+    {"id":"R5-U05","verdict":"GO","findingIds":[]},
+    {"id":"R5-U06","verdict":"NO_GO","findingIds":["R5-DESIGN-R2-M-002"]},
+    {"id":"R5-U07","verdict":"NO_GO","findingIds":["R5-DESIGN-R2-S-004"]},
+    {"id":"R5-U08","verdict":"GO","findingIds":[]},
+    {"id":"R5-U09","verdict":"GO","findingIds":[]},
+    {"id":"R5-U10","verdict":"NO_GO","findingIds":["R5-DESIGN-R2-M-003"]},
+    {"id":"R5-U11","verdict":"NO_GO","findingIds":["R5-DESIGN-R2-M-001","R5-DESIGN-R2-S-001","R5-DESIGN-R2-S-002","R5-DESIGN-R2-S-003","R5-DESIGN-R2-S-004"]},
+    {"id":"R5-U12","verdict":"NO_GO","findingIds":["R5-DESIGN-R2-M-001","R5-DESIGN-R2-S-001","R5-DESIGN-R2-S-003","R5-DESIGN-R2-S-004"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit":"The selected one-deployable, owner-command, generated-face and carry-over-first design fits the approved 32-scenario problem; the remaining gaps are closure defects in that design, not a reason to expand topology.",
+    "simplerAlternativeAssessment":"The smaller repairs are checked reverse crosswalk rows, forbidden component references, one closed host discriminator, explicit fixture rows, secret refs, allowlist predicates and fixed clock values; splitting R5 or adding a platform is less reasonable.",
+    "costFit":"The repair cost is bounded and materially lower than letting implementation invent behavior and discovering it in business verification.",
+    "verdict":"UNREASONABLE_UNTIL_RESOLVED"
+  },
+  "conclusion": {
+    "verdict":"NO_GO",
+    "summary":"R5 DESIGN round 2 is NO_GO. Independent residual findings are 3 M / 4 S / 0 N: the catalog is now per-operation and the round-1 defects are largely closed, but reverse scenario trace, deleted component closure, operations five-host contract selection, and deterministic fixture details are not fully frozen.",
+    "severityCounts":{"M":3,"S":4,"N":0},
+    "authorizationBoundary":"Design review only. No implementation, production-source modification, DEV, remote, seed, reset, dynamic business run, or repository-control action is authorized. Round 2 is final; no third Codex adversarial round."
+  }
+}

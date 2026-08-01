@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-cr00-baseline-recovery-hook-chain",
+  "status": "ACTIVE_FOR_NON_INDEX_BASELINE_RECOVERY",
+  "packageId": "R5-CR-U00",
+  "scope": "Only paths absent from the initial independent baseline because the accepted CR00 change-surface configuration was incomplete. This is not the accepted deterministic-index exception.",
+  "recoveredPaths": [
+    {
+      "path": "project-memory/decisions/incremental-compliance-hook.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "0e0179020433b8948287f02b061cb1a7c456048b3cfeac0b8fc68a60e83af94d",
+      "receiptChain": [
+        {"path": ".runtime/compliance-control/hook-events/exec-22b0becd-fcd7-451c-b4ff-7ed926ceae4f.pre.json", "sha256": "5d4e7e5c6851d6b09cc9eb9722f087b5fef5e73dfab216d5049151c5e399edfe"},
+        {"path": ".runtime/compliance-control/hook-events/exec-22b0becd-fcd7-451c-b4ff-7ed926ceae4f.post.json", "sha256": "80dd7339428d9253671ddff431204f2aaff5980fcb70017e276b3c5e53087e97"},
+        {"path": ".runtime/compliance-control/hook-events/exec-05a504b5-543b-4861-884a-4e4a926435df.pre.json", "sha256": "65ce8d9245019a263c34a4a8d8d02e1fc6d7615309c63c8098fc719b96f8b151"},
+        {"path": ".runtime/compliance-control/hook-events/exec-05a504b5-543b-4861-884a-4e4a926435df.post.json", "sha256": "733ca465963c859541aef368e2a724f011fdaf41ff289152efafdc826cbd47ba"}
+      ]
+    },
+    {
+      "path": "tools/project-memory/cli.mjs",
+      "beforeSha256": "cd1136cad6106ec401bfa6341c101f5240c1b05e78cdacd913f240342b12a8e5",
+      "afterSha256": "9992dafd2a03eb4ea98bed6017dae95b99ca1c735c5fd5da77e5e0ea23ff0ba9",
+      "receiptChain": [
+        {"path": ".runtime/compliance-control/hook-events/exec-08498929-e469-4094-91ae-66465f50dc31.pre.json", "sha256": "d84298a53a1e676c866273d37755ebf384e741d6f3061126b65d39bde8459b22"},
+        {"path": ".runtime/compliance-control/hook-events/exec-08498929-e469-4094-91ae-66465f50dc31.post.json", "sha256": "ffb38f3151a2a6949c9afd28c254ec384407602a06fa1468d0d68e89cd39e241"}
+      ]
+    },
+    {
+      "path": "doc/decisions/2026-07-27-v2s-r5-cr00-deterministic-generated-index-disposition.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "7cb390d484ab6c0138442bbd64bf0930033ddfdf0e03e11a1d5aea9a9db9aff0",
+      "receiptChain": [
+        {"path": ".runtime/compliance-control/hook-events/exec-994cbe6d-6afb-4b26-befe-f3e19c48d1bc.pre.json", "sha256": "5030ad1fe995a898d260021b186b5a5295710bcd3dccfea2a1e6264a5e6def5d"},
+        {"path": ".runtime/compliance-control/hook-events/exec-994cbe6d-6afb-4b26-befe-f3e19c48d1bc.post.json", "sha256": "189d85ba063478e86e48da501fb94b0ad2d092b5107d68d519ac9e8f77974f4e"},
+        {"path": ".runtime/compliance-control/hook-events/exec-c0a75f8b-f12e-4368-b2f1-5fb8a4ec1f93.pre.json", "sha256": "82aaeedad3bb8523a923a08fd27906e7c2ece192c0e31122390d6077999b47dc"},
+        {"path": ".runtime/compliance-control/hook-events/exec-c0a75f8b-f12e-4368-b2f1-5fb8a4ec1f93.post.json", "sha256": "a6dd6ed4c5308978564e1d43568868481c5baaa21f2db6b4eff2af4f4ea93c34"}
+      ]
+    }
+  ],
+  "requiredVerifierBehavior": "Every receipt byte hash, path, invocationId, before/after chain continuity, final worktree hash, and exact recovered-path set must be validated. A missing/changed receipt, extra path, discontinuity, or final hash drift is a named fail."
+}

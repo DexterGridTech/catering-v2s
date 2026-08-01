@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-U02",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+  "deliveryManifestSha256": "5f45290ec4160b01b51fb7d06e9c70d56fd19c4df80e32f7aaf11458daba9e64",
+  "unitId": "RM1P6-U02",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/openapi-contracts", "scripts/check/edge-codegen", "scripts/check/frontend-architecture", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/openapi-contracts", "scripts/check/edge-codegen", "scripts/check/frontend-architecture", "scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["P6-U02-OWNER-FIRST", "P6-U02-NO-CLIENT-DERIVATION", "P6-U02-GENERATED-CONSUMER-ONLY", "P6-U02-FOCUSED-RED-MUTATIONS"],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_DYNAMIC_HIERARCHY_AND_CAPABILITY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U16-P6-2-ADMIN-SURFACE-DENOMINATOR",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u16-p6-2-admin-surface-denominator-package-exit.json",
+    "exitSha256": "b23d83dd9ca5e1f4fa183693f12036263af0c6a79d4478a1ccd7cc9f4e3d840f"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-implementation-amendment.md",
+    "sha256": "7d94089170d30f23b4063c6927e587444e6ee8d4303689c4324ba994287bb5b2"
+  },
+  "authorizationBoundary": "Dexter authorized all RM1 P6 work without repeated prompts. RM1 P6-2 implementation follows P6-1 implementation GO; its finite business-surface L2 denominator is mandatory through a managed browser run. Dexter separately authorizes a managed isolated L2 environment plus minimal owner-command-only seed, with no reset. This package covers platform governance owner/edge/contracts, generated platform consumers, platform-admin implementation, focused proof and the minimal CURRENT Roadmap alignment required to record that authorization. It excludes P6-3 implementation and reset."
+}

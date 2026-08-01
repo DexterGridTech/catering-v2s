@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-p6-frontend-rtk-context-remediation-manifest",
+  "status": "ACTIVE_NOT_EXIT",
+  "packageId": "RM1P6-CP-U12-FRONTEND-RTK-CONTEXT-REMEDIATION",
+  "businessPurpose": "An operations administrator who changes assignment or data range must see the newly permitted business population from its first page, not an empty retained later page; the same remediation keeps page code behind the repository's single generated RTK API and transport boundary.",
+  "approvedDesignSources": [
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md","anchor":"## 4. P6-3 — operations-admin and public screen contracts"},
+    {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-conformance-review-claude.md","anchor":"M1 / S1 / S2 / S3 / N1 / N2"},
+    {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","anchor":"## 1. Purpose, denominator, and binding rules"}
+  ],
+  "deliveryUnits": [{
+    "id": "RM1P6-CP-U12-FRONTEND-RTK-CONTEXT-REMEDIATION",
+    "title": "P6 frontend RTK substrate contract and operations context local-view reset",
+    "sourceComplianceDispositionRequired": true,
+    "approvedAssertions": [
+      "The operation content is keyed by the owner-issued monotonic contextVersion, so a context change resets only local visual state while generated RTK request generation remains owner-scoped.",
+      "Screen contracts never import app-substrate transport construction; generated hook reads and generated-client writes remain the only page data protocol."
+    ],
+    "changeSurfaces": [
+      {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md","disposition":"create","target":"implementation-facing design for the narrowly authorized corrective slice"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md","disposition":"update","target":"separate screen primitive from app-substrate transport denominator"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","disposition":"update","target":"generated RTK read/write, context-generation and local-view-reset rules"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-rtk-substrate-and-context-generation-problem-family.json","disposition":"create","target":"finite finding/prevention evidence"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-manifest.json","disposition":"create","target":"exact corrective package scope"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-amendment.md","disposition":"create","target":"Dexter authorization and parallel-correction boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-package-input.json","disposition":"create","target":"execution binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-source-disposition.json","disposition":"create","target":"six-dimension source disposition"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-focused-proof.log","disposition":"create","target":"focused architecture and red-mutation run log"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u12-frontend-rtk-context-remediation-package-exit.json","disposition":"create","target":"receipt-bound completion evidence"},
+      {"path":"apps/frontend/operations-admin/src/app/OperationsApp.tsx","disposition":"update","target":"key operations content by monotonic owner contextVersion"},
+      {"path":"apps/frontend/operations-admin/src/tests/architecture/operations-context-view-reset.test.mjs","disposition":"create","target":"focused red-mutation proof for the keyed local-view reset boundary"}
+    ],
+    "forbiddenPseudoFixes": [
+      "Moving createObservedBaseQuery or platformHttpProtocol into a page or shell component.",
+      "Adding a second createApi, Redux slice, reducer, page fetch, refetch loop or refreshKey.",
+      "Changing owner CAS, contextVersion monotonicity, selected-data-node clearing, or generated query argument semantics.",
+      "Putting scopeRef in every operation or removing it from an operation that declares it.",
+      "Claiming this independent correction closes, repairs, or advances the unfinished P6-1 observability package or starts P6-2/P6-3 UI delivery."
+    ],
+    "sourceComplianceDenominators": {
+      "PROJECT_MEMORY_ASSERTION_OCCURRENCES": {"sourcePath":"project-memory/index.json","selector":"json:/entries","applicability":"APPLICABLE","missingEntryFails":true},
+      "APPROVED_ASSERTIONS": {"sourcePath":"doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md","selector":"md:## 2. Exact design","applicability":"APPLICABLE","missingEntryFails":true},
+      "FORBIDDEN_PSEUDO_FIXES": {"sourcePath":"doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md","selector":"md:## 4. Exclusions","applicability":"APPLICABLE","missingEntryFails":true},
+      "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA": {"sourcePath":"doc/plans/platform/2026-07-30-v2s-rm1-p6-frontend-rtk-context-remediation-design.md","selector":"md:## 3. Proof and red mutation","applicability":"APPLICABLE","missingEntryFails":true},
+      "OWNED_SURFACE_AND_PAGE_KEYS": {"sourcePath":"contracts/policy/frontend-asset-carryover-manifest.json","selector":"json:/surfaces,json:/pageDesignKeySurfaceCrosswalk","applicability":"APPLICABLE","missingEntryFails":true},
+      "DUE_STANDARDS_RULE_IDS": {"sourcePath":"contracts/policy/standards-coverage-matrix.json","selector":"json:/rules","applicability":"APPLICABLE","missingEntryFails":true}
+    },
+    "memoryRoute": {"taskKind":"implementation","domain":"frontend","consumerFace":"operations-admin","owner":"workspace-iam","impact":"behavior","trigger":"review"}
+  }]
+}

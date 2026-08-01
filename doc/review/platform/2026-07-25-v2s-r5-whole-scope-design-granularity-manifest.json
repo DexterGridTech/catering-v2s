@@ -1,0 +1,558 @@
+{
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "R5-WHOLE-SCOPE-BUSINESS-MIGRATION",
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "R5-W3-DESIGN-20260725",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-07-25-v2s-r5-design-adversarial-review-round-2.json",
+    "reviewSha256": "0fc602f9e789d908bc3ab4af206df351775141ac6125e86fdbf91d85e7151d39",
+    "reviewedManifestSha256": "8f546650a257d674c16b323c7c29e6013dc2bb78f6824e5bc6736f4bf0653325",
+    "intake": {
+      "path": "doc/review/platform/2026-07-26-v2s-r5-whole-scope-design-review-claude-resolution.md",
+      "sha256": "668167800321b82a69a6fc6c8947dda4edb4b39a6ceb643fb075ba2bf49cf48a"
+    },
+    "reason": "Claude Part R2 confirmed all prior findings closed and reported 0 M, 2 S and 4 N final line-level inputs; Dexter resolved the only product decision, authorized Codex to close the six inputs and declared no further review required. The POST_REMEDIATION_V1 claudeRecheckRequired marker remains the checker-required historical provenance mode and is superseded for scheduling by dexterFinalDisposition.",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false,
+    "dexterFinalDisposition": {
+      "path": "doc/decisions/2026-07-26-v2s-r5-whole-scope-design-final-acceptance.md",
+      "sha256": "06ef5e0d9d366384f535d19d5023d88c882f683f4197b6a3ec63a366d577e95f",
+      "designVerdict": "GO",
+      "furtherReviewRequired": false,
+      "implementationAuthority": false
+    }
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md",
+    "sha256": "a3668ac5502735adb2b452fb94ef0b5c55f423078607cc78da1bb78baa0aa014"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-design-authorization.md",
+    "sha256": "ee6531685144761a265870b59b8a3aaa0db502bc8495a7c6f27bdf67950bedaf",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "c85b2e1908df7b393b0ba5136827eaf9b027f32e6fc8077d332e2dafd068bcae"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "SEVERITY_COUNT_MISMATCH",
+      "ROUND_THREE",
+      "MISSING_FINDING_UNIT_LINK",
+      "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE",
+      "POST_REMEDIATION_WITHOUT_DECLARATION",
+      "POST_REMEDIATION_INTAKE_NOT_FOUND"
+    ]
+  },
+  "candidateJourney": {
+    "id": "R5-J01",
+    "status": "DEXTER_ACCEPTED",
+    "actor": "系统服务提供者、商场运营方、店铺运营方与被邀请运营用户",
+    "task": "在两个独立后台完成 all-v2 已实现的 32 项平台、组织、合同、IAM 与凭据任务",
+    "pageKey": "R5-WHOLE-SCOPE-32-SCENARIOS",
+    "ownerReadback": "七个 owner module 的 command/task-query readback 与完整 DEV business evidence",
+    "mutations": [
+      "workspace and commercial group remain separate",
+      "new assignment only through invitation",
+      "contract item uses code and name",
+      "all external workspace spelling is groupWorkspaceKey"
+    ]
+  },
+  "standardsCoverage": {
+    "source": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+    "matrix": "contracts/policy/standards-coverage-matrix.json",
+    "partB": {
+      "B.1": {"ruleIds": ["B.1.N01-B.1.N17"], "designUnits": ["R5-U03", "R5-U06", "R5-U09"]},
+      "B.2": {"ruleIds": ["B.2.N01-B.2.N15"], "designUnits": ["R5-U02", "R5-U04", "R5-U05", "R5-U06", "R5-U07"]},
+      "B.3": {"ruleIds": ["B.3.N01-B.3.N12"], "designUnits": ["R5-U02", "R5-U03", "R5-U04", "R5-U05", "R5-U06", "R5-U07"]},
+      "B.4": {"ruleIds": ["B.4.N01-B.4.N20"], "designUnits": ["R5-U01", "R5-U08", "R5-U09", "R5-U10"]},
+      "B.5": {"ruleIds": ["B.5.N01-B.5.N15"], "designUnits": ["R5-U08", "R5-U09", "R5-U10"]},
+      "B.6": {"ruleIds": ["B.6.N01-B.6.N06"], "designUnits": ["R5-U05", "R5-U06", "R5-U07", "R5-U12"]}
+    },
+    "partC": {
+      "C.1-owner-and-transaction": {"ruleIds": ["C.TABLE.01-C.TABLE.06"], "designUnits": ["R5-U02", "R5-U04", "R5-U05", "R5-U06", "R5-U07"]},
+      "C.2-contract-and-generated-face": {"ruleIds": ["C.TABLE.07-C.TABLE.12"], "designUnits": ["R5-U01"]},
+      "C.3-frontend-foundation-and-test-patterns": {"ruleIds": ["C.TABLE.13-C.TABLE.19"], "designUnits": ["R5-U08", "R5-U09", "R5-U10"]},
+      "C.4-run-and-red-fixture-patterns": {"ruleIds": ["C.TABLE.20-C.TABLE.23"], "designUnits": ["R5-U11", "R5-U12"]}
+    },
+    "partD": {
+      "D.1-layout": {"ruleIds": ["D.1.*"], "designUnits": ["R5-U02", "R5-U08", "R5-U09", "R5-U10"]},
+      "D.2-contract-governance": {"ruleIds": ["D.2.L01-D.2.L04"], "designUnits": ["R5-U01"]},
+      "D.3-gate-discipline": {"ruleIds": ["D.3.L01-D.3.L03"], "designUnits": ["R5-U12"]},
+      "D.4-document-governance": {"ruleIds": ["D.4.*"], "designUnits": ["R5-U01", "R5-U12"]},
+      "D.5-process-sizing": {"ruleIds": ["D.5.*"], "designUnits": ["R5-U01", "R5-U11", "R5-U12"]},
+      "D.6-version-and-dependency": {"ruleIds": ["D.6.*"], "designUnits": ["R5-U01", "R5-U02", "R5-U11"]},
+      "D.7-AI-first-entry": {"ruleIds": ["D.7.*"], "designUnits": ["R5-U01", "R5-U12"]},
+      "D.8-logging": {"ruleIds": ["D.8.L01-D.8.L03"], "designUnits": ["R5-U03", "R5-U06", "R5-U11", "R5-U12"]}
+    }
+  },
+  "deliveryUnits": [
+    {
+      "id": "R5-U01",
+      "title": "Heritage freeze、contract 分母与生成 closure",
+      "approvedAssertions": [
+        "104 operations are the only R5 edge denominator after dialectical assessment of 105 v2 candidates",
+        "each operation has a nonempty closed consumer-face set and current single-face choices are not generalized into a platform rule",
+        "R3 operations evolve in place without aliases",
+        "Heritage is frozen before carry and never becomes runtime/build fallback",
+        "each of the 104 operations has an exact scenario, owner, page, security, wire, error and focused-test binding",
+        "contract source files are split by face plus capability and owner plus schema family; the root contains references rather than inline operations or schemas"
+      ],
+      "approvedSources": [
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-edge-operation-inventory.md", "anchor": "## 1. 分母与迁移规则", "sha256": "fbe5c65e571f871bb827400665f2ffc96577bd7382b044b09f6462ec67bc7e0d"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-dialectical-assessment.md", "anchor": "## 3. 逐组辩证处置", "sha256": "4627038d6fe5a803c07b8e4fabf3fb5590b93e1a60fa4f1c148eefcc35d610a8"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json", "anchor": "\"operationId\": \"getPlatformContractOverviewPage\",\n      \"method\": \"GET\"", "sha256": "da81a2d2e040e039dfbc0484e716792fdbd1fb53242f3b2e1e631fef0fbdc73f"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 3. Edge implementation map", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"},
+        {"path": "doc/decisions/2026-07-25-v2s-r5-scope-and-method-decisions.md", "anchor": "### D-02：A0 契约惯例", "sha256": "a87f09443222b367791528a0e075176112f920d43697e0ceb1ff9ff8b038cff8"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U01 — Heritage freeze、contract 分母与生成 closure"},
+      "currentDeviation": "The current edge has only the three R3 operations; most selected v2 UI assets are not yet registered as frozen Heritage.",
+      "changeSurfaces": [
+        {"path": "doc/heritage/registry.json", "disposition": "update", "target": "selected R5 source path and dual-side hash registration"},
+        {"path": "doc/heritage/required-inventory.json", "disposition": "update", "target": "R5 frozen source denominator"},
+        {"path": "doc/heritage/frozen/catering-all-v2/", "disposition": "update", "target": "immutable selected page and standard copies"},
+        {"path": "contracts/openapi/edge.openapi.yaml", "disposition": "update", "target": "single edge root with metadata and route references only"},
+        {"path": "contracts/openapi/paths/platform/", "disposition": "create", "target": "platform face operations split by capability"},
+        {"path": "contracts/openapi/paths/operations/", "disposition": "create", "target": "operations face operations split by capability"},
+        {"path": "contracts/openapi/paths/public/", "disposition": "create", "target": "public operations split by capability"},
+        {"path": "contracts/openapi/components/", "disposition": "update", "target": "schemas split by owner and schema family; each handwritten YAML at most 500 nonblank lines"},
+        {"path": "contracts/policy/route-face-registry.json", "disposition": "update", "target": "generated route and consumer-face reality"},
+        {"path": "scripts/generate/", "disposition": "update", "target": "server and two independent client reachable closures"}
+      ],
+      "orderedChain": ["reopen the dialectical assessment", "recompute v2 source hashes", "freeze and register selected assets", "write 104 operations and components", "generate server and face-specific clients", "run contract/face/generated closure", "record exact denominator evidence"],
+      "dependencyAndSerialBoundaries": ["Runs before every backend and frontend unit; no code may infer or add an operation outside the inventory."],
+      "dataEvolution": {"notApplicableReason": "Contract and Heritage artifacts do not mutate runtime business data."},
+      "uiAndTerms": {
+        "pageKey": "R5-ALL-UI-CONTRACT-TRACEABILITY",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md",
+        "interactionArtifact": {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md", "anchor": "## 3. v2 对应页面盘点"}
+      },
+      "evidence": {"l1": "104=38+55+11, path/face/schema reachability and exact generated bytes", "l2": "focused contract bindings for three R3 operations, two NOT_CARRIED operations and changed wire conventions", "l3": "two client targets expose only their consumer-face closure", "business": "contract-to-32-scenario traceability complete", "cleanup": "temporary generated output and source-copy scratch removed"},
+      "forbiddenPseudoFixes": ["second edge spec", "workspaceKey alias", "shared generated model barrel", "manual face allowlist", "runtime Heritage import", "duplicate R3 operations"],
+      "discriminator": {"fixture": "an unknown face, 107th operation, duplicate alias or unreachable schema must fail the existing production contract gate"}
+    },
+    {
+      "id": "R5-U02",
+      "title": "组装、schema 基线与模块依赖",
+      "approvedAssertions": [
+        "one business deployable and one Flyway history assemble seven owner modules",
+        "terminal-data-server remains an empty placeholder",
+        "COMMAND and SCHEMA_FK graphs are acyclic",
+        "runtime and test names use capabilities rather than process identifiers",
+        "all persisted instants use Java long or Long and PostgreSQL BIGINT epochMillis while pure contract business dates use LocalDate and DATE",
+        "the backend platform-foundation carries only explicitly approved wire-agnostic primitives and owns no business fact"
+      ],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "### 3.2 领域与模块边界", "sha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568"},
+        {"path": "project-memory/decisions/deterministic-context-only.md", "anchor": "# Deterministic context only", "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 2. 全局编码和命名约定", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U02 — 组装、schema 基线与模块依赖"},
+      "currentDeviation": "Only the R3 platform-access, platform-workspace and organization modules exist; the other capability modules and R5 schema graph do not.",
+      "changeSurfaces": [
+        {"path": "settings.gradle.kts", "disposition": "update", "target": "capability module includes"},
+        {"path": "build.gradle.kts", "disposition": "update", "target": "shared dependency and Java conventions"},
+        {"path": "apps/backend/catering-business-server/", "disposition": "update", "target": "single deployable assembly and Flyway locations"},
+        {"path": "apps/backend/terminal-data-server/", "disposition": "retain", "target": "empty future TDP placeholder"},
+        {"path": "libraries/backend/platform-iam/", "disposition": "create", "target": "platform identity owner module"},
+        {"path": "libraries/backend/platform-asset/", "disposition": "create", "target": "asset owner module"},
+        {"path": "libraries/backend/extension/", "disposition": "create", "target": "extension definition owner module"},
+        {"path": "libraries/backend/workspace-iam/", "disposition": "create", "target": "workspace identity and access owner module"},
+        {"path": "libraries/backend/contract/", "disposition": "create", "target": "light contract owner module"},
+        {"path": "libraries/backend/platform-foundation/", "disposition": "create", "target": "correlation, safe logging, Problem, pagination and persistence-observation primitives only"},
+        {"path": "contracts/policy/module-dependency-registry.json", "disposition": "update", "target": "module, command, FK, judgment and task-read reality"}
+      ],
+      "orderedChain": ["freeze module/schema ownership", "create capability modules", "register dependency edges", "add ordered additive migrations", "run clean Testcontainers migration", "run ArchUnit and registry reality checks"],
+      "dependencyAndSerialBoundaries": ["Depends on U01 wire types and precedes owner implementation; no second deployable, history or process-local RPC."],
+      "dataEvolution": {
+        "schemaOwners": ["platform_iam", "platform_workspace", "platform_asset", "organization", "extension", "workspace_iam", "contract"],
+        "transaction": "single PostgreSQL database and one public.flyway_schema_history; additive migrations only",
+        "forbidden": ["modified R3 migration", "second history", "COMMAND cycle", "cross-module repository", "TDP runtime"]
+      },
+      "uiAndTerms": {"notApplicableReason": "Backend assembly has no direct user surface.", "termSource": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md#3. 单体模块、依赖与事务"},
+      "evidence": {"l1": "Gradle assembly, ArchUnit, code-layout and dependency registry reality", "l2": "clean migration, composite FK and forbidden-edge negatives", "l3": "single business deployable starts with all modules", "business": "schema/module ownership supports all 32 scenarios without claiming behavior", "cleanup": "temporary database/container and build outputs removed"},
+      "forbiddenPseudoFixes": ["module folders inside app", "journey-named packages or tests", "empty module stub claimed complete", "second Flyway history", "TDP source placeholder"],
+      "discriminator": {"fixture": "a cross-module repository import, dependency cycle, second history or source under terminal-data-server must fail existing production gates"}
+    },
+    {
+      "id": "R5-U03",
+      "title": "platform IAM",
+      "approvedAssertions": [
+        "platform principal, credential and session are independent from operations identity",
+        "no default or root account is created",
+        "platform administrators share platform-super-admin semantics",
+        "password change revokes other sessions"
+      ],
+      "approvedSources": [
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-03 三类用户、总公司与门店关联", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-journey-decision.md", "anchor": "### 账号、权限与会话", "sha256": "dfa67547e3bda2b8703e8227cd463d65ad8211d09526eeed01c5b45a08e51324"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 4. platform-IAM 详细设计", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U03 — platform IAM"},
+      "currentDeviation": "R3 trusts a deployment-time edge subject and has no product platform credential, session or administrator governance.",
+      "changeSurfaces": [
+        {"path": "libraries/backend/platform-iam/src/main/", "disposition": "create", "target": "platform identity domain/application/adapters"},
+        {"path": "libraries/backend/platform-iam/src/test/", "disposition": "create", "target": "credential, session, status and rollback tests"},
+        {"path": "libraries/backend/platform-access/src/main/", "disposition": "update", "target": "trusted platform session execution-context adapter"},
+        {"path": "apps/backend/catering-business-server/src/main/resources/db/migration/", "disposition": "update", "target": "additive platform identity schema migration"}
+      ],
+      "orderedChain": ["migrate platform identity schema", "implement credential and session owner", "bind generated auth/admin interfaces", "enforce face/cookie/security boundaries", "test login/admin/self-password behavior", "publish owner and browser readback"],
+      "dependencyAndSerialBoundaries": ["Depends on U01/U02; U08 consumes generated platform operations; deployment-time first identity remains external."],
+      "dataEvolution": {
+        "schemaOwners": ["platform_iam"],
+        "transaction": "credential/session/admin command receipt and audit commit in one REQUIRED transaction",
+        "forbidden": ["default account", "root type", "operations assignment", "shared session cookie"]
+      },
+      "uiAndTerms": {"notApplicableReason": "This unit implements the owner; its user UI is delivered by U08.", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-03 三类用户、总公司与门店关联"},
+      "evidence": {"l1": "compile, architecture, security and generated-interface binding", "l2": "credential/session/status/reset integration and rollback", "l3": "platform login/admin governance through proxy", "business": "D01-S01, D04-S11 and D04-S12P owner readbacks", "cleanup": "test sessions, credentials and temporary database resources removed"},
+      "forbiddenPseudoFixes": ["root flag", "seeded runtime default principal", "operations cookie reuse", "client identity header", "secret-bearing logs"],
+      "discriminator": {"fixture": "an operations session cookie or client-forged platform subject must be rejected before a platform command executes"}
+    },
+    {
+      "id": "R5-U04",
+      "title": "workspace、asset 与 extension",
+      "approvedAssertions": [
+        "workspace and commercial group remain separate owner facts",
+        "asset claim/release and workspace write are atomic within the monolith",
+        "extension definitions are limited to five real value hosts",
+        "R3 commercial group behavior remains intact"
+      ],
+      "approvedSources": [
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-01 集团空间与商业集团", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "doc/decisions/2026-07-25-v2s-r5-scope-and-method-decisions.md", "anchor": "### D-03：扩展字段宿主", "sha256": "a87f09443222b367791528a0e075176112f920d43697e0ceb1ff9ff8b038cff8"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 5. platform-workspace 与 asset 详细设计", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 6. extension 详细设计", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U04 — workspace、asset 与 extension"},
+      "currentDeviation": "R3 can list/detail an externally provided workspace and initialize a commercial group, but cannot create/update/status a workspace, manage assets or define extension fields.",
+      "changeSurfaces": [
+        {"path": "libraries/backend/platform-workspace/src/main/", "disposition": "update", "target": "workspace create/display/status and task read"},
+        {"path": "libraries/backend/platform-workspace/src/test/", "disposition": "update", "target": "workspace/asset transaction and R3 regression"},
+        {"path": "libraries/backend/platform-asset/src/main/", "disposition": "create", "target": "staging/content/claim/release owner"},
+        {"path": "libraries/backend/platform-asset/src/test/", "disposition": "create", "target": "content validation, lifecycle and cleanup tests"},
+        {"path": "libraries/backend/extension/src/main/", "disposition": "create", "target": "five-host definition owner"},
+        {"path": "libraries/backend/extension/src/test/", "disposition": "create", "target": "definition CAS and host-closure tests"},
+        {"path": "apps/backend/catering-business-server/src/main/resources/db/migration/", "disposition": "update", "target": "workspace alterations plus asset/extension schemas"}
+      ],
+      "orderedChain": ["add workspace and owner schemas", "implement asset stage/content", "implement workspace command with local asset command", "implement five-host extension definitions", "run R3 regression and atomic rollback tests", "expose task readbacks"],
+      "dependencyAndSerialBoundaries": ["Depends on U01/U02; organization values consume extension definitions in U05 and contract values in U07."],
+      "dataEvolution": {
+        "schemaOwners": ["platform_workspace", "platform_asset", "extension", "organization commercial_group retained"],
+        "transaction": "workspace command calls asset and organization public APIs in the same REQUIRED transaction",
+        "forbidden": ["logoBindGrant wire", "outbox", "transient asset activation", "three unrealized extension hosts"]
+      },
+      "uiAndTerms": {"notApplicableReason": "Owner implementation only; platform UI is U08 and entity UI is U10.", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-01 集团空间与商业集团"},
+      "evidence": {"l1": "module/contract/migration and content-validation checks", "l2": "workspace/asset/extension owner integration and rollback", "l3": "workspace create/edit/status/logo and definition task through proxy", "business": "D01-S02-S07 plus D02-S01 source facts", "cleanup": "staging TTL, asset storage and test database cleanup separately PASS"},
+      "forbiddenPseudoFixes": ["workspace creates commercial group implicitly", "async asset claim", "client-derived asset URL", "extension values in definition owner", "business success before content readback"],
+      "discriminator": {"fixture": "an expired/wrong-workspace asset, unsupported host or failed claim must roll back the workspace command and preserve separate cleanup evidence"}
+    },
+    {
+      "id": "R5-U05",
+      "title": "organization",
+      "approvedAssertions": [
+        "organization hierarchy is fixed group-region-project",
+        "brand, tenant and head company are distinct facts",
+        "store locks project, tenant and brand with head-company authorization",
+        "organization never writes IAM facts"
+      ],
+      "approvedSources": [
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-02 商场运营方组织树", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-06 品牌与总公司品牌授权", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 7. organization 详细设计", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U05 — organization"},
+      "currentDeviation": "Only the R3 commercial-group fact exists; hierarchy, entities, authorizations, stores, values and task overviews are absent.",
+      "changeSurfaces": [
+        {"path": "libraries/backend/organization/src/main/", "disposition": "update", "target": "hierarchy, business entity, store and task-read capabilities"},
+        {"path": "libraries/backend/organization/src/test/", "disposition": "update", "target": "owner invariants, task joins and database budgets"},
+        {"path": "apps/backend/catering-business-server/src/main/resources/db/migration/", "disposition": "update", "target": "additive organization capability schema"}
+      ],
+      "orderedChain": ["migrate hierarchy and entity facts", "implement hierarchy commands", "implement brand/tenant/head-company and authorization", "implement store invariants and extension values", "implement platform/store task reads", "run cross-workspace and owner negatives"],
+      "dependencyAndSerialBoundaries": ["Depends on U02/U04; supplies judgments/task reads to U06 and U07 without accepting IAM or contract writes."],
+      "dataEvolution": {
+        "schemaOwners": ["organization"],
+        "transaction": "each organization command validates all references and writes receipt/audit atomically",
+        "forbidden": ["organization-to-IAM command", "merchant synonym model", "brand authorization as data/write scope", "store status as contract status"]
+      },
+      "uiAndTerms": {"notApplicableReason": "Owner implementation only; organization user pages are delivered by U10.", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-02 商场运营方组织树"},
+      "evidence": {"l1": "compile, ArchUnit, migration, query and terminology checks", "l2": "hierarchy/entity/store/extension owner integration and negative invariants", "l3": "organization and store task operations through proxy", "business": "D02-S02/S03/S04/S06/S07 and organization side of D04 candidates", "cleanup": "test records/database/container resources removed"},
+      "forbiddenPseudoFixes": ["generic organization node types", "merchant aggregate", "front-end-only candidate filtering", "cross-schema DML", "IAM projection"],
+      "discriminator": {"fixture": "a store with a cross-workspace project, unauthorized brand or mismatched tenant/head-company relation must fail atomically"}
+    },
+    {
+      "id": "R5-U06",
+      "title": "workspace IAM",
+      "approvedAssertions": [
+        "role, page, action and visible-data dimensions do not infer each other",
+        "new assignment occurs only through atomic invitation completion",
+        "platform and operations may revoke assignments within approved capability",
+        "session context readback is complete and versioned"
+      ],
+      "approvedSources": [
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-05 运营访问上下文", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-07 任职动作与角色定义", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 8. workspace-IAM 详细设计", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U06 — workspace IAM"},
+      "currentDeviation": "No operations account, role, assignment, invitation, session, page/action or recovery owner exists in v2s.",
+      "changeSurfaces": [
+        {"path": "libraries/backend/workspace-iam/src/main/", "disposition": "create", "target": "workspace identity, authorization, invitation and session owner"},
+        {"path": "libraries/backend/workspace-iam/src/test/", "disposition": "create", "target": "owner transaction, authorization and session tests"},
+        {"path": "apps/backend/catering-business-server/src/main/resources/db/migration/", "disposition": "update", "target": "workspace identity/access schema"}
+      ],
+      "orderedChain": ["migrate IAM facts", "implement role/page/action/account commands", "implement invitations and public completion", "implement login/session/context/data-node/logout", "implement internal ResolveNavigation and revoke while forbidding a page-guard endpoint", "run atomicity/security/version tests"],
+      "dependencyAndSerialBoundaries": ["Depends on U02/U05 and workspace judgments from U04; U09/U10 consume its generated operations."],
+      "dataEvolution": {
+        "schemaOwners": ["workspace_iam"],
+        "transaction": "invitation acceptance, credential readiness, account and assignments commit atomically with receipt/audit",
+        "forbidden": ["direct assignment create/edit", "organization facts copied as projection", "workspaceKey URL as authority", "session shared with platform"]
+      },
+      "uiAndTerms": {"notApplicableReason": "Owner implementation only; public/session and user pages are U09/U10.", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-05 运营访问上下文"},
+      "evidence": {"l1": "security/face/module/contract and migration checks", "l2": "role/invitation/session/recovery/revoke owner integration and negative authorization", "l3": "public acceptance and operations session through proxy", "business": "D04-S01-S10 and D04-S12O owner readbacks", "cleanup": "tokens, OTPs, sessions, test identities and temporary resources removed"},
+      "forbiddenPseudoFixes": ["ADMINISTRATION direct-add", "UI hiding as authorization", "role implies page/action/data", "OTP or token logging", "mutation-followed refetch compensation"],
+      "discriminator": {"fixture": "partial invitation completion, wrong-purpose grant, disabled service node or mismatched context version must fail without partial assignment"}
+    },
+    {
+      "id": "R5-U07",
+      "title": "contract",
+      "approvedAssertions": [
+        "contract items contain code and name",
+        "contract history and phase snapshots survive edits and invalidation",
+        "store operating status is a read-only three-state derivation",
+        "derived status does not drive commands or authorization"
+      ],
+      "approvedSources": [
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-09 轻合同、货号与合同衍生状态", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "doc/decisions/2026-07-25-v2s-r5-scope-and-method-decisions.md", "anchor": "### D-04：G-09 合同衍生状态的用法", "sha256": "a87f09443222b367791528a0e075176112f920d43697e0ceb1ff9ff8b038cff8"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 9. contract 详细设计", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U07 — contract"},
+      "currentDeviation": "No contract owner, item pair, platform overview or store derived-status read model exists in v2s.",
+      "changeSurfaces": [
+        {"path": "libraries/backend/contract/src/main/", "disposition": "create", "target": "light contract owner and task reads"},
+        {"path": "libraries/backend/contract/src/test/", "disposition": "create", "target": "CAS, history, date-boundary and status tests"},
+        {"path": "apps/backend/catering-business-server/src/main/resources/db/migration/", "disposition": "update", "target": "contract, item and extension-value schema"}
+      ],
+      "orderedChain": ["migrate contract facts", "implement candidates and create", "implement detail/edit/invalidate", "implement platform/store task reads", "implement controlled-date three-state derivation", "run CAS/history/date-boundary tests"],
+      "dependencyAndSerialBoundaries": ["Depends on U04 extension definitions and U05 organization judgments; U08/U10 consume its task operations."],
+      "dataEvolution": {
+        "schemaOwners": ["contract"],
+        "transaction": "contract aggregate, item pairs, extension values, receipt and audit commit atomically",
+        "forbidden": ["itemCodes array", "unique current contract inference", "derived status write column", "status-driven authorization"]
+      },
+      "uiAndTerms": {"notApplicableReason": "Owner implementation only; contract pages are U08/U10.", "termSource": "project-memory/decisions/confirmed-business-language-corpus.md#G-09 轻合同、货号与合同衍生状态"},
+      "evidence": {"l1": "compile/migration/query/contract binding", "l2": "contract CAS, snapshot, item and clock-boundary integration", "l3": "contract and store profile operations through proxy", "business": "D03-S01-S06 and contract side of D02-S07", "cleanup": "controlled clock reset and temporary database resources removed"},
+      "forbiddenPseudoFixes": ["itemCodes compatibility field", "VALID as operating state", "precomputed mutable derived status", "front-end status derivation", "contract status blocks store login"],
+      "discriminator": {"fixture": "current/future boundary changes under a controlled date must alter only readback state and never mutate store, session or authorization facts"}
+    },
+    {
+      "id": "R5-U08",
+      "title": "platform-admin 搬运与适配",
+      "approvedAssertions": [
+        "platform UI follows the accepted v2 static baseline",
+        "platform-admin consumes only its 38-operation generated closure and 38+55+11 equals 104",
+        "foundation primitives are consumed before app-local alternatives",
+        "contextScopedQueryArgs and its foundation test use groupWorkspaceKey without a workspaceKey alias",
+        "owner readback rather than toast proves success"
+      ],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md", "anchor": "### 3.1 platform-admin", "sha256": "5ae243d823cca0bd00570bdc351769661ebdcb7b88cfb8cae41b7324e754ab1e"},
+        {"path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-frontend-implementation-standard.md", "anchor": "# Admin 前端实现标准", "sha256": "12afa79feb6369995e2744897bff8cbfe5cfbfdf7ff63985d8abea0b73c7c7dd"},
+        {"path": "contracts/policy/frontend-asset-carryover-manifest.json", "anchor": "\"surfaces\": [", "sha256": "5ccaa5208a9f421f928916c795e36b1fa6eaec76499dd79f4d3e6c75047b8273"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "### 10.2 platform feature folders", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U08 — platform-admin 搬运/适配"},
+      "currentDeviation": "The app currently implements only the R3 workspace/commercial-group slice and does not consume the full copied foundation.",
+      "changeSurfaces": [
+        {"path": "apps/frontend/platform-admin/src/app/", "disposition": "update", "target": "independent shell/router/store/base API and generated closure"},
+        {"path": "apps/frontend/platform-admin/src/features/", "disposition": "update", "target": "carried/adapted platform pages and workflows"},
+        {"path": "apps/frontend/platform-admin/src/tests/", "disposition": "update", "target": "architecture, component and real browser L2"},
+        {"path": "libraries/frontend/admin-ui-foundation/src/list/contextScopedQueryArgs.ts", "disposition": "update", "target": "rename context and output workspaceKey to groupWorkspaceKey without alias"},
+        {"path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts", "disposition": "update", "target": "prove groupWorkspaceKey-only context query arguments"},
+        {"path": "libraries/frontend/admin-ui-foundation/", "disposition": "retain", "target": "consume existing wire-agnostic primitives without business imports"}
+      ],
+      "orderedChain": ["verify all carryover manifest source hashes", "adapt contextScopedQueryArgs and its test to groupWorkspaceKey", "bind 38-operation generated client", "wire every listed foundation primitive", "carry/adapt platform pages to listed targets", "run per-surface component and architecture tests", "run real browser owner-readback journeys"],
+      "dependencyAndSerialBoundaries": ["Depends on U01 and backend U03-U07; remains independent from operations-admin."],
+      "dataEvolution": {"notApplicableReason": "Frontend owns no business schema or server fact."},
+      "uiAndTerms": {
+        "pageKey": "PLATFORM-ADMIN-R5-PAGES",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md",
+        "interactionArtifact": {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md", "anchor": "### 3.1 platform-admin"}
+      },
+      "evidence": {"l1": "typecheck/build/import/foundation/generated closure", "l2": "platform page states, actions, typed recovery and owner readback", "l3": "proxy-mediated platform login and all platform journeys", "business": "platform face portion of D01/D02/D03/D04 scenarios", "cleanup": "browser contexts, server cache and test resources removed"},
+      "forbiddenPseudoFixes": ["plain AntD reimplementation of foundation", "operations import", "manual fetch", "toast-only success", "v2 runtime import", "list action column"],
+      "discriminator": {"fixture": "a platform page importing an operations type, bypassing generated wire or completing before owner readback must fail architecture/L2 evidence"}
+    },
+    {
+      "id": "R5-U09",
+      "title": "operations public、session 与 shell",
+      "approvedAssertions": [
+        "operations routes carry groupWorkspaceKey without treating it as authorization",
+        "public invitation and recovery remain purpose-bound",
+        "session/context mutation returns complete owner readback",
+        "five home routes retain the v2 bootstrap without new content"
+      ],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md", "anchor": "### 3.2 operations-admin 与 public", "sha256": "5ae243d823cca0bd00570bdc351769661ebdcb7b88cfb8cae41b7324e754ab1e"},
+        {"path": "project-memory/decisions/confirmed-business-language-corpus.md", "anchor": "## G-10 集团空间编码与双后台 URL", "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"},
+        {"path": "contracts/policy/frontend-asset-carryover-manifest.json", "anchor": "\"surfaces\": [", "sha256": "5ccaa5208a9f421f928916c795e36b1fa6eaec76499dd79f4d3e6c75047b8273"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "### 10.3 operations feature folders", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U09 — operations public/session/shell"},
+      "currentDeviation": "operations-admin currently proves only an R3 static boundary and has no login, public flow, session, context or business shell.",
+      "changeSurfaces": [
+        {"path": "apps/frontend/operations-admin/src/app/", "disposition": "update", "target": "independent shell/router/store/base API/session/context"},
+        {"path": "apps/frontend/operations-admin/src/features/authentication/", "disposition": "create", "target": "keyed login and recovery"},
+        {"path": "apps/frontend/operations-admin/src/features/invitation/", "disposition": "create", "target": "public invitation flow"},
+        {"path": "apps/frontend/operations-admin/src/features/session/", "disposition": "create", "target": "role/data-node context and password"},
+        {"path": "apps/frontend/operations-admin/src/tests/", "disposition": "update", "target": "public/session/shell architecture and L2"}
+      ],
+      "orderedChain": ["bind operations/public generated closure", "carry public flows", "carry keyed login", "build session/context shell and tabs", "retain five bootstrap home routes", "run context isolation and browser journeys"],
+      "dependencyAndSerialBoundaries": ["Depends on U01/U06 and U08 foundation integration patterns but may not import platform-admin."],
+      "dataEvolution": {"notApplicableReason": "Frontend owns no business schema or identity fact."},
+      "uiAndTerms": {
+        "pageKey": "OPERATIONS-PUBLIC-SESSION-SHELL",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md",
+        "interactionArtifact": {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md", "anchor": "### Screen: OPERATIONS-SHELL"}
+      },
+      "evidence": {"l1": "typecheck/build/import/route/generated closure", "l2": "public steps, login roles, context switch, cache/tabs and password recovery", "l3": "proxy-mediated public-to-operations full flow", "business": "D04-S06/S08/S09/S10/S12O", "cleanup": "cookies, browser contexts, cache and temporary test identities removed"},
+      "forbiddenPseudoFixes": ["workspace URL as authorization", "shared platform cookie", "post-mutation refetch", "new home dashboard", "token in tab/localStorage/log"],
+      "discriminator": {"fixture": "a late response from the previous context, a mismatched groupWorkspaceKey or a platform cookie must not populate or authorize the operations shell"}
+    },
+    {
+      "id": "R5-U10",
+      "title": "operations business pages",
+      "approvedAssertions": [
+        "all business pages follow the accepted v2 static baseline",
+        "each independent task surface consumes one task query rather than owner fan-out",
+        "business vocabulary and permissions follow G-01 through G-10",
+        "new assignments are never created or edited directly"
+      ],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md", "anchor": "### Screen: OPERATIONS BUSINESS PAGES", "sha256": "5ae243d823cca0bd00570bdc351769661ebdcb7b88cfb8cae41b7324e754ab1e"},
+        {"path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/business-entity-list-detail-action-standard.md", "anchor": "# 业务实体列表、详情与动作统一交互标准", "sha256": "3d036edb2b3ea4ef5f96ccca464669a5f1f309f4c4ca448aba5cddd92d92fe4d"},
+        {"path": "contracts/policy/frontend-asset-carryover-manifest.json", "anchor": "\"surfaces\": [", "sha256": "5ccaa5208a9f421f928916c795e36b1fa6eaec76499dd79f4d3e6c75047b8273"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "### 10.4 state/recovery recipe", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U10 — operations business pages"},
+      "currentDeviation": "No operations business pages are implemented in v2s; all selected v2 pages remain read-only Heritage sources.",
+      "changeSurfaces": [
+        {"path": "apps/frontend/operations-admin/src/features/organization/", "disposition": "create", "target": "hierarchy, entities, store and store profile pages"},
+        {"path": "apps/frontend/operations-admin/src/features/contracts/", "disposition": "create", "target": "contract list/detail/forms and read-only status"},
+        {"path": "apps/frontend/operations-admin/src/features/users/", "disposition": "create", "target": "five user/invitation pages and revoke"},
+        {"path": "apps/frontend/operations-admin/src/tests/", "disposition": "update", "target": "business page components, behavior and browser L2"}
+      ],
+      "orderedChain": ["verify frozen page sources", "bind task queries and commands", "carry hierarchy and entity pages", "carry store and contract pages", "carry five user/invitation pages", "run business terminology/permission/owner-readback L2"],
+      "dependencyAndSerialBoundaries": ["Depends on U05-U07 and U09 shell; does not create a new app, home content or frontend owner fan-out."],
+      "dataEvolution": {"notApplicableReason": "Frontend owns no business schema or authoritative derivation."},
+      "uiAndTerms": {
+        "pageKey": "OPERATIONS-BUSINESS-PAGES",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md",
+        "interactionArtifact": {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md", "anchor": "### Screen: OPERATIONS BUSINESS PAGES"}
+      },
+      "evidence": {"l1": "typecheck/build/generated/foundation/terminology traceability", "l2": "all page states, command recovery, capability and owner readback", "l3": "operations business journeys through proxy and real database", "business": "operations face portion of D01-S07O, D02, D03 and D04 user scenarios", "cleanup": "browser contexts, caches and test resources removed"},
+      "forbiddenPseudoFixes": ["merchant catch-all page", "front-end owner fan-out", "direct assignment add/edit", "client-derived contract state", "projection delay UI", "plain AntD duplicate"],
+      "discriminator": {"fixture": "a hidden action without server denial, a direct-assignment control or an itemCodes-only form must fail real page behavior evidence"}
+    },
+    {
+      "id": "R5-U11",
+      "title": "remote DEV 与 rich seed",
+      "approvedAssertions": [
+        "Dexter receives a complete testable DEV environment",
+        "start and restart never seed",
+        "reset is allowlisted and separate from seed",
+        "ordinary facts use real commands and assignments use invitation acceptance"
+      ],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-25-v2s-r5-scope-and-method-decisions.md", "anchor": "### D-06：R5 完成时的完整 DEV 与 seed 交付", "sha256": "a87f09443222b367791528a0e075176112f920d43697e0ceb1ff9ff8b038cff8"},
+        {"path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md", "anchor": "# 长期约束", "sha256": "597a87741247b7abf600486087539d614f501e7b53ff031a635f387213b2e03b"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json", "anchor": "\"stableFixtures\": {", "sha256": "6aface29eafe0c326b8e6de67ecb07e0b7a1254d5bc0611d55893a58342a3cdd"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 12. seed stage blueprint", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U11 — remote DEV 与 rich seed"},
+      "currentDeviation": "Current R3 DEV commands are not a complete R5 remote environment and no r5-full seed/check contract exists.",
+      "changeSurfaces": [
+        {"path": "scripts/dev/start", "disposition": "update", "target": "complete proxy/backend/two-app DEV start without seed"},
+        {"path": "scripts/dev/restart", "disposition": "update", "target": "manifest-owned restart without data mutation"},
+        {"path": "scripts/dev/stop", "disposition": "update", "target": "manifest-owned process cleanup"},
+        {"path": "scripts/dev/reset", "disposition": "update", "target": "allowlisted remote DEV database and asset reset"},
+        {"path": "scripts/dev/seed", "disposition": "update", "target": "r5-full dry-run and explicit seed"},
+        {"path": "scripts/dev/check", "disposition": "create", "target": "configuration, readiness and profile check"},
+        {"path": "scripts/dev/profiles/r5-full.json", "disposition": "create", "target": "versioned 32-scenario fixture denominator"},
+        {"path": "scripts/README.md", "disposition": "update", "target": "DEV/seed operator contract and failure protocol"}
+      ],
+      "orderedChain": ["define remote allowlist and credential inputs", "implement check/readiness", "complete start/restart/stop manifests", "implement reset readback", "implement seed dry-run and command chain", "perform clean rebuild and owner readback"],
+      "dependencyAndSerialBoundaries": ["Depends on U03-U10; never runs during design and never introduces rejected middleware."],
+      "dataEvolution": {
+        "schemaOwners": ["all seven owner schemas in an explicit DEV namespace"],
+        "transaction": "seed stages are explicit, idempotent or fail with drift; owner commands retain normal transactions",
+        "forbidden": ["auto-seed", "implicit reset", "ordinary-fact direct SQL", "assignment direct SQL", "non-allowlisted asset deletion"]
+      },
+      "uiAndTerms": {"notApplicableReason": "Managed runtime/fixture unit; user behavior is proven in U12.", "termSource": "doc/decisions/2026-07-25-v2s-r5-scope-and-method-decisions.md#D-06：R5 完成时的完整 DEV 与 seed 交付"},
+      "evidence": {"l1": "script syntax/config/profile/manifest and secret-boundary checks", "l2": "dry-run denominator, idempotency/drift and owner readback", "l3": "complete remote DEV topology ready for both apps", "business": "r5-full provides every prerequisite for 32 scenarios without manual data", "cleanup": "reset/stop database, asset and process readbacks separately PASS"},
+      "forbiddenPseudoFixes": ["manual database preparation", "seed on start", "runtime root account", "secret in evidence", "port-based cleanup", "MQ/Redis/TDP dependency"],
+      "discriminator": {"fixture": "start must leave seed counts unchanged, and an out-of-allowlist reset target or missing invitation-chain fixture must fail before mutation"}
+    },
+    {
+      "id": "R5-U12",
+      "title": "全范围验证与 review packet",
+      "approvedAssertions": [
+        "32 scenarios, 104 operations, seven owners and two apps close as one R5 implementation target",
+        "business and cleanup evidence are separate",
+        "R4 mechanical gates are reused instead of duplicated",
+        "retired topology and old wire shapes have zero runtime references"
+      ],
+      "approvedSources": [
+        {"path": "doc/decisions/2026-07-24-v2s-verification-governance.md", "anchor": "## 4. 假绿优先治理", "sha256": "c9632a65f9eac7678a4be919d980894e3f1e71e5e2e1ddce70ea3c7091d829dc"},
+        {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-journey-decision.md", "anchor": "## 4. 32 项 scenario inventory", "sha256": "dfa67547e3bda2b8703e8227cd463d65ad8211d09526eeed01c5b45a08e51324"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json", "anchor": "\"operationId\": \"getPlatformContractOverviewPage\",\n      \"method\": \"GET\"", "sha256": "da81a2d2e040e039dfbc0484e716792fdbd1fb53242f3b2e1e631fef0fbdc73f"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json", "anchor": "\"businessPassPredicates\": [", "sha256": "6aface29eafe0c326b8e6de67ecb07e0b7a1254d5bc0611d55893a58342a3cdd"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 11. focused test blueprint", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md", "anchor": "## 13. unit 进入/退出 checklist", "sha256": "aa9ef24e5c39e544fd192df28dc332e14da19dd6490ad77e83c298e632c4e978"}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-07-25-v2s-r5-whole-scope-implementation-design.md", "anchor": "### R5-U12 — 全范围验证与 review packet"},
+      "currentDeviation": "No R5 implementation or evidence exists; R4 verify covers the platform mechanics but not R5 business behavior.",
+      "changeSurfaces": [
+        {"path": "apps/backend/catering-business-server/src/test/", "disposition": "update", "target": "owner, architecture, Testcontainers and full integration evidence"},
+        {"path": "apps/frontend/platform-admin/src/tests/", "disposition": "update", "target": "platform full L2/L3 suite"},
+        {"path": "apps/frontend/operations-admin/src/tests/", "disposition": "update", "target": "public/operations full L2/L3 suite"},
+        {"path": "scripts/run/full-business-acceptance", "disposition": "create", "target": "run-scoped 32-scenario dynamic evidence"},
+        {"path": "doc/evidence/platform/r5-full-implementation-evidence.json", "disposition": "create", "target": "single implementation evidence index with five accounts"},
+        {"path": "doc/review/platform/r5-implementation-review-packet.md", "disposition": "create", "target": "section-sized single review target"}
+      ],
+      "orderedChain": ["run scripts/verify", "run all owner/Testcontainers L2", "build both apps", "run proxy-mediated 32-scenario L3", "recompute retirement and owner readbacks", "stop and prove cleanup", "publish one indexed review packet"],
+      "dependencyAndSerialBoundaries": ["Runs after U01-U11; no unit-level GO/NO-GO or separate review packet is allowed."],
+      "dataEvolution": {
+        "schemaOwners": ["temporary Testcontainers and explicit DEV namespace only"],
+        "transaction": "tests use normal owner transactions; evidence never writes around commands",
+        "forbidden": ["mock-only closure", "DEV data reused by verify", "business PASS with cleanup FAIL", "partial-scenario completion claim"]
+      },
+      "uiAndTerms": {
+        "pageKey": "R5-32-SCENARIO-ACCEPTANCE",
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md",
+        "interactionArtifact": {"path": "doc/decisions/2026-07-25-v2s-r5-whole-scope-interaction-design.md", "anchor": "## 2. Interaction map"}
+      },
+      "evidence": {"l1": "scripts/verify, builds, static structure, contract and generated closure", "l2": "all owner integrations, Testcontainers and real browser task behavior", "l3": "two apps through proxy and remote DEV across 32 scenarios", "business": "32/32 owner-confirmed results and negative recovery", "cleanup": "containers, processes, browser contexts, temporary credentials/data/assets all separately PASS"},
+      "forbiddenPseudoFixes": ["partial GO", "unit-level review verdict", "static gate as business evidence", "mock server as L3", "cleanup omitted", "old service fallback"],
+      "discriminator": {"fixture": "one missing scenario, operation, owner readback, retired reference or nonzero managed resource must keep the single R5 implementation packet NO_GO"}
+    }
+  ]
+}

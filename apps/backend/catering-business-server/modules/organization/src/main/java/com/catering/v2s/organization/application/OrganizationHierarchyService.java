@@ -1,0 +1,285 @@
+package com.catering.v2s.organization.application;
+
+import com.catering.v2s.organization.api.OrganizationNodeLookup;
+import com.catering.v2s.organization.api.OrganizationNodeReadback;
+import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.organization.api.WorkspaceStatusLookup;
+import com.catering.v2s.organization.api.CommercialGroupLookup;
+import com.catering.v2s.audit.contract.AuditActor;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class OrganizationHierarchyService implements OrganizationNodeLookup {
+    /** The commercial group is the logical root. Only its REGION and PROJECT descendants are organization nodes. */
+    private static final List<String> NODE_TYPES = List.of("REGION", "PROJECT");
+    private final JdbcTemplate jdbc;
+    private final TimeProvider time;
+    private final OrganizationHierarchyCommandReceiptService receipts;
+    private final WorkspaceStatusLookup workspaces;
+    private final CommercialGroupLookup commercialGroups;
+
+    public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time) {
+        this(jdbc, time, new OrganizationHierarchyCommandReceiptService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time, OrganizationHierarchyCommandReceiptService receipts, WorkspaceStatusLookup workspaces, CommercialGroupLookup commercialGroups) {
+        this.jdbc = jdbc;
+        this.time = time;
+        this.receipts = receipts;
+        this.workspaces = workspaces;
+        this.commercialGroups = commercialGroups;
+    }
+
+    @Transactional
+    public OrganizationNodeReadback create(
+        UUID workspaceUuid, String groupWorkspaceKey, String nodeType, UUID parentId, String code, String name
+    ) {
+        return create(workspaceUuid, groupWorkspaceKey, nodeType, parentId, code, name, null, List.of());
+    }
+
+    @Transactional
+    public OrganizationNodeReadback create(
+        UUID workspaceUuid, String groupWorkspaceKey, String nodeType, UUID parentId, String code, String name, String notes, List<String> phaseNames
+    ) {
+        return create(workspaceUuid, groupWorkspaceKey, nodeType, parentId, code, name, notes, phaseNames, AuditActor.system());
+    }
+
+    @Transactional
+    public OrganizationNodeReadback create(
+        UUID workspaceUuid, String groupWorkspaceKey, String nodeType, UUID parentId, String code, String name, String notes, List<String> phaseNames, AuditActor actor
+    ) {
+        String type = requiredType(nodeType);
+        requireWorkspace(workspaceUuid, groupWorkspaceKey);
+        validateParent(workspaceUuid, groupWorkspaceKey, type, parentId);
+        List<String> phases = normalizedPhases(type, phaseNames);
+        UUID id = UUID.randomUUID();
+        long now = time.currentEpochMillis();
+        jdbc.update(
+            "INSERT INTO organization.organization_node (id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, phase_names, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST('[]' AS JSONB), 'ENABLED', 1, ?, ?)",
+            id, workspaceUuid, groupWorkspaceKey, parentId, type, requiredText(code, 64), requiredText(name, 120), optionalNotes(notes), now, now
+        );
+        replacePhases(id, phases);
+        OrganizationNodeReadback created = requireNode(workspaceUuid, groupWorkspaceKey, id, type);
+        audit(workspaceUuid, groupWorkspaceKey, id, "ORGANIZATION_NODE_CREATED", now, actor, "[{\"fieldKey\":\"name\",\"after\":\"" + json(created.name()) + "\"}]");
+        return created;
+    }
+
+    @Transactional
+    public OrganizationNodeReadback createRegion(UUID workspaceUuid, String groupWorkspaceKey, String code, String name) {
+        return createRegion(workspaceUuid, groupWorkspaceKey, code, name, null);
+    }
+
+    @Transactional
+    public OrganizationNodeReadback createRegion(UUID workspaceUuid, String groupWorkspaceKey, String code, String name, String notes) {
+        requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
+        return create(workspaceUuid, groupWorkspaceKey, "REGION", null, code, name, notes, List.of());
+    }
+
+    @Transactional
+    public OrganizationNodeReadback createRegion(UUID workspaceUuid, String groupWorkspaceKey, String code, String name, String notes, String idempotencyKey) {
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("createRegion", workspaceUuid, groupWorkspaceKey, code, name, notes), () -> createRegion(workspaceUuid, groupWorkspaceKey, code, name, notes));
+    }
+
+    @Transactional
+    public OrganizationNodeReadback createRegion(UUID workspaceUuid, String groupWorkspaceKey, String code, String name, String notes, String idempotencyKey, AuditActor actor) {
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("createRegion", workspaceUuid, groupWorkspaceKey, code, name, notes), () -> {
+            requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
+            return create(workspaceUuid, groupWorkspaceKey, "REGION", null, code, name, notes, List.of(), actor);
+        });
+    }
+
+    @Transactional
+    public OrganizationNodeReadback createProject(UUID workspaceUuid, String groupWorkspaceKey, UUID regionId, String code, String name, String notes, List<String> phaseNames, String idempotencyKey) {
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("createProject", workspaceUuid, groupWorkspaceKey, regionId, code, name, notes, phaseNames), () -> create(workspaceUuid, groupWorkspaceKey, "PROJECT", regionId, code, name, notes, phaseNames));
+    }
+
+    @Transactional
+    public OrganizationNodeReadback createProject(UUID workspaceUuid, String groupWorkspaceKey, UUID regionId, String code, String name, String notes, List<String> phaseNames, String idempotencyKey, AuditActor actor) {
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("createProject", workspaceUuid, groupWorkspaceKey, regionId, code, name, notes, phaseNames), () -> create(workspaceUuid, groupWorkspaceKey, "PROJECT", regionId, code, name, notes, phaseNames, actor));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrganizationNodeReadback> list(UUID workspaceUuid, String groupWorkspaceKey) {
+        List<NodeListRow> nodes = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND node_type IN ('REGION','PROJECT') ORDER BY node_type, code", (result, row) -> new NodeListRow(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class), result.getString(5), result.getString(6), result.getString(7), result.getString(8), result.getString(9), result.getLong(10), result.getLong(11), result.getLong(12)), workspaceUuid, groupWorkspaceKey);
+        List<UUID> projectIds = nodes.stream().filter(node -> "PROJECT".equals(node.nodeType())).map(NodeListRow::id).toList();
+        Map<UUID, List<String>> phases = new java.util.LinkedHashMap<>();
+        if (!projectIds.isEmpty()) jdbc.query("SELECT project_id, phase_name FROM organization.project_phase_name WHERE project_id IN (" + String.join(",", java.util.Collections.nCopies(projectIds.size(), "?")) + ") ORDER BY project_id, display_order", statement -> { for (int index = 0; index < projectIds.size(); index++) statement.setObject(index + 1, projectIds.get(index)); }, result -> { while (result.next()) phases.computeIfAbsent(result.getObject(1, UUID.class), ignored -> new ArrayList<>()).add(result.getString(2)); });
+        return nodes.stream().map(node -> new OrganizationNodeReadback(node.id(), node.workspaceUuid(), node.groupWorkspaceKey(), node.parentId(), node.nodeType(), node.code(), node.name(), node.notes(), node.status(), node.version(), node.createdAtEpochMillis(), node.updatedAtEpochMillis(), phases.getOrDefault(node.id(), List.of()))).toList();
+    }
+
+    @Transactional
+    public OrganizationNodeReadback replaceProjectPhaseNames(
+        UUID workspaceUuid, String groupWorkspaceKey, UUID projectId, long expectedVersion, List<String> phaseNames
+    ) {
+        OrganizationNodeReadback project = requireNode(workspaceUuid, groupWorkspaceKey, projectId, "PROJECT");
+        if (project.version() != expectedVersion || phaseNames == null || phaseNames.stream().anyMatch(value -> value == null || value.isBlank() || value.trim().length() > 120) || phaseNames.stream().map(String::trim).distinct().count() != phaseNames.size()) {
+            throw new OrganizationConflictException();
+        }
+        long now = time.currentEpochMillis();
+        if (jdbc.update("UPDATE organization.organization_node SET version=version+1, updated_at_epoch_millis=? WHERE id=? AND version=?", now, projectId, expectedVersion) != 1) {
+            throw new OrganizationConflictException();
+        }
+        jdbc.update("DELETE FROM organization.project_phase_name WHERE project_id=?", projectId);
+        for (int index = 0; index < phaseNames.size(); index++) {
+            jdbc.update("INSERT INTO organization.project_phase_name (project_id, phase_name, display_order) VALUES (?, ?, ?)", projectId, phaseNames.get(index).trim(), index);
+        }
+        OrganizationNodeReadback updated = requireNode(workspaceUuid, groupWorkspaceKey, projectId, "PROJECT");
+        audit(workspaceUuid, groupWorkspaceKey, projectId, "PROJECT_PHASE_NAMES_REPLACED", now, AuditActor.system(), "[]");
+        return updated;
+    }
+
+    @Transactional
+    public OrganizationNodeReadback transitionStatus(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, long expectedVersion, String status) {
+        return transitionStatus(workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status, AuditActor.system());
+    }
+
+    @Transactional
+    public OrganizationNodeReadback transitionStatus(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, long expectedVersion, String status, AuditActor actor) {
+        OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        if (!List.of("ENABLED", "DISABLED").contains(status) || current.version() != expectedVersion || jdbc.update("UPDATE organization.organization_node SET status=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND version=?", status, time.currentEpochMillis(), nodeId, expectedVersion) != 1) {
+            throw new OrganizationConflictException();
+        }
+        OrganizationNodeReadback updated = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        audit(workspaceUuid, groupWorkspaceKey, nodeId, "ORGANIZATION_NODE_STATUS_CHANGED", time.currentEpochMillis(), actor, "[{\"fieldKey\":\"status\",\"before\":\"" + json(current.status()) + "\",\"after\":\"" + json(updated.status()) + "\"}]");
+        return updated;
+    }
+
+    @Transactional
+    public OrganizationNodeReadback transitionStatus(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, long expectedVersion, String status, String idempotencyKey) {
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("transitionStatus", workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status), () -> transitionStatus(workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status));
+    }
+
+    @Transactional
+    public OrganizationNodeReadback transitionStatus(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, long expectedVersion, String status, String idempotencyKey, AuditActor actor) {
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("transitionStatus", workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status), () -> transitionStatus(workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status, actor));
+    }
+
+    @Transactional
+    public OrganizationNodeReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String code, String name, long expectedVersion) {
+        OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        return update(workspaceUuid, groupWorkspaceKey, nodeId, code, name, current.parentId(), current.notes(), current.phaseNames(), expectedVersion);
+    }
+
+    @Transactional
+    public OrganizationNodeReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String code, String name, UUID parentId, String notes, List<String> phaseNames, long expectedVersion) {
+        return update(workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion, AuditActor.system());
+    }
+
+    @Transactional
+    public OrganizationNodeReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String code, String name, UUID parentId, String notes, List<String> phaseNames, long expectedVersion, AuditActor actor) {
+        OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        if (!Objects.equals(current.parentId(), parentId) || current.version() != expectedVersion || jdbc.update("UPDATE organization.organization_node SET code=?, name=?, notes=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?", requiredText(code, 64), requiredText(name, 120), optionalNotes(notes), time.currentEpochMillis(), nodeId, workspaceUuid, groupWorkspaceKey, expectedVersion) != 1) throw new OrganizationConflictException();
+        replacePhases(nodeId, normalizedPhases(current.nodeType(), phaseNames));
+        OrganizationNodeReadback updated = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        audit(workspaceUuid, groupWorkspaceKey, nodeId, "ORGANIZATION_NODE_UPDATED", time.currentEpochMillis(), actor, "[{\"fieldKey\":\"name\",\"before\":\"" + json(current.name()) + "\",\"after\":\"" + json(updated.name()) + "\"}]");
+        return updated;
+    }
+
+    @Transactional
+    public OrganizationNodeReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String code, String name, UUID parentId, String notes, List<String> phaseNames, long expectedVersion, String idempotencyKey) {
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("update", workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion), () -> update(workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion));
+    }
+
+    @Transactional
+    public OrganizationNodeReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String code, String name, UUID parentId, String notes, List<String> phaseNames, long expectedVersion, String idempotencyKey, AuditActor actor) {
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("update", workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion), () -> update(workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion, actor));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrganizationNodeReadback requireNode(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String requiredType) {
+        OrganizationNodeReadback node = jdbc.query(
+            "SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.organization_node WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
+            statement -> { statement.setObject(1, nodeId); statement.setObject(2, workspaceUuid); statement.setString(3, groupWorkspaceKey); },
+            result -> {
+                if (!result.next()) throw new OrganizationNotFoundException();
+                String actualType = result.getString("node_type");
+                if (requiredType != null && !requiredType.equals(actualType)) throw new OrganizationValidationException();
+                return new OrganizationNodeReadback(result.getObject("id", UUID.class), result.getObject("workspace_uuid", UUID.class), result.getString("group_workspace_key"), result.getObject("parent_id", UUID.class), actualType, result.getString("code"), result.getString("name"), result.getString("notes"), result.getString("status"), result.getLong("version"), result.getLong("created_at_epoch_millis"), result.getLong("updated_at_epoch_millis"), List.of());
+            }
+        );
+        List<String> phases = jdbc.query("SELECT phase_name FROM organization.project_phase_name WHERE project_id=? ORDER BY display_order", (rs, row) -> rs.getString(1), node.id());
+        return new OrganizationNodeReadback(node.id(), node.workspaceUuid(), node.groupWorkspaceKey(), node.parentId(), node.nodeType(), node.code(), node.name(), node.notes(), node.status(), node.version(), node.createdAtEpochMillis(), node.updatedAtEpochMillis(), phases);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isEnterable(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId) {
+        return jdbc.query("SELECT status FROM organization.organization_node WHERE id=? AND workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, nodeId); statement.setObject(2, workspaceUuid); statement.setString(3, groupWorkspaceKey); }, result -> result.next() && "ENABLED".equals(result.getString(1)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String describePath(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId) {
+        return jdbc.query(
+            "WITH RECURSIVE ancestry AS (" +
+                "SELECT id, parent_id, code, name, 0 AS depth FROM organization.organization_node WHERE id=? AND workspace_uuid=? AND group_workspace_key=? " +
+                "UNION ALL " +
+                "SELECT parent.id, parent.parent_id, parent.code, parent.name, ancestry.depth + 1 " +
+                "FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id " +
+                "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?" +
+            ") SELECT string_agg(code || ' ' || name, ' / ' ORDER BY depth DESC) FROM ancestry",
+            statement -> { statement.setObject(1, nodeId); statement.setObject(2, workspaceUuid); statement.setString(3, groupWorkspaceKey); statement.setObject(4, workspaceUuid); statement.setString(5, groupWorkspaceKey); },
+            result -> {
+                if (!result.next() || result.getString(1) == null) throw new OrganizationNotFoundException();
+                return result.getString(1);
+            }
+        );
+    }
+
+    private void requireWorkspace(UUID workspaceUuid, String groupWorkspaceKey) {
+        if (!workspaces.isEnabled(workspaceUuid, groupWorkspaceKey)) throw new OrganizationValidationException();
+    }
+    private record NodeListRow(UUID id, UUID workspaceUuid, String groupWorkspaceKey, UUID parentId, String nodeType, String code, String name, String notes, String status, long version, long createdAtEpochMillis, long updatedAtEpochMillis) { }
+
+    private void validateParent(UUID workspaceUuid, String key, String type, UUID parentId) {
+        String parentType = switch (type) { case "REGION" -> null; case "PROJECT" -> "REGION"; default -> throw new OrganizationValidationException(); };
+        if ((parentType == null) != (parentId == null)) throw new OrganizationValidationException();
+        if (parentType != null) {
+            OrganizationNodeReadback parent = requireNode(workspaceUuid, key, parentId, parentType);
+            if (!"ENABLED".equals(parent.status())) throw new OrganizationValidationException();
+        }
+    }
+
+    private void requireCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey) {
+        if (commercialGroups == null) return;
+        commercialGroups.requireCommercialGroupRef(workspaceUuid, groupWorkspaceKey);
+    }
+    private void audit(UUID workspaceUuid, String key, UUID nodeId, String action, long occurredAt, AuditActor actor, String changesJson) {
+        jdbc.update("INSERT INTO organization.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'ORGANIZATION_NODE', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))", UUID.randomUUID(), workspaceUuid, key, nodeId.toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), action, occurredAt, changesJson);
+    }
+    private static String json(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
+
+    private static String requiredType(String value) { if (!NODE_TYPES.contains(value)) throw new OrganizationValidationException(); return value; }
+    private static String requiredText(String value, int limit) { String normalized = Objects.requireNonNullElse(value, "").trim(); if (normalized.isEmpty() || normalized.length() > limit) throw new OrganizationValidationException(); return normalized; }
+    private static String optionalNotes(String value) { if (value == null || value.isBlank()) return null; return requiredText(value, 2000); }
+    private static List<String> normalizedPhases(String nodeType, List<String> values) {
+        List<String> phases = values == null ? List.of() : values.stream().map(value -> requiredText(value, 120)).toList();
+        if (!"PROJECT".equals(nodeType) && !phases.isEmpty()) throw new OrganizationValidationException();
+        if (phases.stream().distinct().count() != phases.size()) throw new OrganizationValidationException();
+        return phases;
+    }
+    private void replacePhases(UUID projectId, List<String> phases) {
+        jdbc.update("DELETE FROM organization.project_phase_name WHERE project_id=?", projectId);
+        for (int index = 0; index < phases.size(); index++) jdbc.update("INSERT INTO organization.project_phase_name (project_id, phase_name, display_order) VALUES (?, ?, ?)", projectId, phases.get(index), index);
+    }
+    private static String canonical(String operation, Object... values) {
+        StringBuilder result = new StringBuilder(operation);
+        for (Object value : values) {
+            String safe = value == null ? "<null>" : value instanceof List<?> list ? String.join("\\u001f", list.stream().map(String::valueOf).toList()) : String.valueOf(value);
+            result.append('|').append(safe.length()).append(':').append(safe);
+        }
+        return result.toString();
+    }
+    public static final class OrganizationNotFoundException extends RuntimeException { }
+    public static final class OrganizationConflictException extends RuntimeException { }
+    public static final class OrganizationValidationException extends RuntimeException { }
+}

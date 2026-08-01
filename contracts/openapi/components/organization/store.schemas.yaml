@@ -1,0 +1,599 @@
+{
+  "components": {
+    "schemas": {
+      "OrganizationStore": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "code",
+          "name",
+          "project",
+          "brand",
+          "tenant",
+          "status",
+          "extensionValues",
+          "extensionRuleRevision",
+          "revision",
+          "createdAt",
+          "updatedAt",
+          "contractDerivedStatus"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "project": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "code",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "path": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 512
+              }
+            }
+          },
+          "brand": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "code",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "path": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 512
+              }
+            }
+          },
+          "tenant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "code",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "path": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 512
+              }
+            }
+          },
+          "headCompany": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "code",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "path": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 512
+              }
+            }
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrganizationStoreStatus"
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "contractDerivedStatus": {
+            "type": "string",
+            "enum": [
+              "OPERATING",
+              "PREPARING",
+              "NOT_OPERATING"
+            ],
+            "readOnly": true
+          }
+        }
+      },
+      "OrganizationStoreCandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groupWorkspaceKey",
+          "dataScope",
+          "projects",
+          "brands",
+          "tenants",
+          "headCompanies"
+        ],
+        "properties": {
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "dataScope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "nodeType",
+              "nodeRef",
+              "nodeName"
+            ],
+            "properties": {
+              "nodeType": {
+                "$ref": "../common/enum.schemas.yaml#/components/schemas/ServiceNodeType"
+              },
+              "nodeRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "nodeName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              }
+            }
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "code",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "path": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 512
+                }
+              }
+            }
+          },
+          "brands": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "code",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "path": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 512
+                }
+              }
+            }
+          },
+          "tenants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "code",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "path": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 512
+                }
+              }
+            }
+          },
+          "headCompanies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "code",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "path": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 512
+                }
+              }
+            }
+          }
+        }
+      },
+      "OrganizationStoreCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "projectId",
+          "brandId",
+          "tenantId",
+          "code",
+          "name"
+        ],
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "brandId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "tenantId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "headCompanyId": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "OrganizationStorePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metadata",
+          "items"
+        ],
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "groupWorkspaceKey",
+              "dataScope",
+              "page",
+              "pageSize",
+              "total",
+              "sort",
+              "direction"
+            ],
+            "properties": {
+              "groupWorkspaceKey": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "dataScope": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "nodeType",
+                  "nodeRef",
+                  "nodeName"
+                ],
+                "properties": {
+                  "nodeType": {
+                    "$ref": "../common/enum.schemas.yaml#/components/schemas/ServiceNodeType"
+                  },
+                  "nodeRef": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "nodeName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  }
+                }
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "total": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "sort": {
+                "$ref": "#/components/schemas/OrganizationStoreSortKey"
+              },
+              "direction": {
+                "$ref": "#/components/schemas/OrganizationStoreSortDirection"
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationStore"
+            }
+          }
+        }
+      },
+      "OrganizationStoreSortDirection": {
+        "type": "string",
+        "enum": [
+          "ASC",
+          "DESC"
+        ]
+      },
+      "OrganizationStoreSortKey": {
+        "type": "string",
+        "enum": [
+          "NAME",
+          "CODE",
+          "UPDATED_AT"
+        ]
+      },
+      "OrganizationStoreStatus": {
+        "type": "string",
+        "enum": [
+          "ENABLED",
+          "DISABLED"
+        ]
+      },
+      "OrganizationStoreStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetStatus",
+          "expectedVersion"
+        ],
+        "properties": {
+          "targetStatus": {
+            "$ref": "#/components/schemas/OrganizationStoreStatus"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "OrganizationStoreUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "extensionValues",
+          "expectedVersion"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "headCompanyId": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

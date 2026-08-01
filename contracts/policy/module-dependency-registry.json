@@ -2,6 +2,285 @@
   "schemaVersion": 1,
   "kind": "module-dependency-registry",
   "status": "ACTIVE",
-  "modules": [],
-  "edges": []
+  "modules": [
+    {
+      "moduleKey": "platform-access",
+      "sourceRoot": "apps/backend/catering-business-server/modules/execution-context",
+      "ownerSchema": null,
+      "commandApiPackages": ["com.catering.v2s.platform.access"]
+    },
+    {
+      "moduleKey": "platform-iam",
+      "sourceRoot": "apps/backend/catering-business-server/modules/platform-admin-iam",
+      "ownerSchema": "platform_iam",
+      "commandApiPackages": ["com.catering.v2s.platform.iam.api"]
+    },
+    {
+      "moduleKey": "platform-workspace",
+      "sourceRoot": "apps/backend/catering-business-server/modules/workspace",
+      "ownerSchema": "platform_workspace",
+      "commandApiPackages": ["com.catering.v2s.platform.workspace.api"]
+    },
+    {
+      "moduleKey": "organization",
+      "sourceRoot": "apps/backend/catering-business-server/modules/organization",
+      "ownerSchema": "organization",
+      "commandApiPackages": ["com.catering.v2s.organization.api"]
+    },
+    {
+      "moduleKey": "platform-asset",
+      "sourceRoot": "apps/backend/catering-business-server/modules/asset",
+      "ownerSchema": "platform_asset",
+      "commandApiPackages": ["com.catering.v2s.platform.asset.api"]
+    },
+    {
+      "moduleKey": "extension",
+      "sourceRoot": "apps/backend/catering-business-server/modules/extension",
+      "ownerSchema": "extension",
+      "commandApiPackages": ["com.catering.v2s.extension.api"]
+    },
+    {
+      "moduleKey": "workspace-iam",
+      "sourceRoot": "apps/backend/catering-business-server/modules/workspace-iam",
+      "ownerSchema": "workspace_iam",
+      "commandApiPackages": ["com.catering.v2s.workspace.iam.api"]
+    },
+    {
+      "moduleKey": "contract",
+      "sourceRoot": "apps/backend/catering-business-server/modules/store-contract",
+      "ownerSchema": "contract",
+      "commandApiPackages": ["com.catering.v2s.contract.api"]
+    },
+    {
+      "moduleKey": "audit-contract",
+      "sourceRoot": "apps/backend/catering-business-server/modules/audit-model",
+      "ownerSchema": null,
+      "valueOnly": true,
+      "commandApiPackages": ["com.catering.v2s.audit.contract"]
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "r3-command-platform-workspace-organization-initialize",
+      "edgeKind": "COMMAND",
+      "fromModule": "platform-workspace",
+      "toModule": "organization",
+      "rationale": "The workspace coordinator calls the organization owner command inside the same REQUIRED transaction.",
+      "apiPackage": "com.catering.v2s.organization.api",
+      "operation": "InitializeCommercialGroup"
+    },
+    {
+      "edgeId": "r3-fk-organization-commercial-group-workspace",
+      "edgeKind": "SCHEMA_FK",
+      "fromModule": "organization",
+      "toModule": "platform-workspace",
+      "rationale": "The organization owner references the existing workspace fact with an immediate composite FK.",
+      "referencingObject": "organization.commercial_group.group_workspace_ref",
+      "referencedObject": "platform_workspace.group_workspace.composite_ref",
+      "constraintName": "fk_commercial_group_workspace"
+    },
+    {
+      "edgeId": "r3-read-platform-workspace-commercial-group",
+      "edgeKind": "TASK_READ",
+      "fromModule": "platform-workspace",
+      "toModule": "organization",
+      "rationale": "The platform workspace task query joins the owner facts for list and detail surfaces.",
+      "queryId": "platform-group-workspace-c01-read",
+      "initiatingModule": "platform-workspace",
+      "referencedSchemaObject": "organization.commercial_group"
+    },
+    {
+      "edgeId": "r5-command-platform-workspace-platform-asset",
+      "edgeKind": "COMMAND",
+      "fromModule": "platform-workspace",
+      "toModule": "platform-asset",
+      "rationale": "Workspace create/update claims or releases its logo through the asset public command API in the same REQUIRED transaction.",
+      "apiPackage": "com.catering.v2s.platform.asset.api",
+      "operation": "ClaimOrReleaseWorkspaceLogo"
+    },
+    {
+      "edgeId": "r5-judgment-workspace-iam-platform-workspace",
+      "edgeKind": "TASK_READ",
+      "fromModule": "workspace-iam",
+      "toModule": "platform-workspace",
+      "rationale": "Login and context selection read workspace enablement without writing workspace facts.",
+      "queryId": "workspace-iam-workspace-enable-judgment",
+      "initiatingModule": "workspace-iam",
+      "referencedSchemaObject": "platform_workspace.group_workspace"
+    },
+    {
+      "edgeId": "r5-judgment-workspace-iam-organization",
+      "edgeKind": "TASK_READ",
+      "fromModule": "workspace-iam",
+      "toModule": "organization",
+      "rationale": "Invitation completion and session switching validate service-node enterability without writing organization facts.",
+      "queryId": "workspace-iam-service-node-enterability",
+      "initiatingModule": "workspace-iam",
+      "referencedSchemaObject": "organization.organization_node"
+    },
+    {
+      "edgeId": "r5-judgment-organization-extension",
+      "edgeKind": "TASK_READ",
+      "fromModule": "organization",
+      "toModule": "extension",
+      "rationale": "Entity commands validate extension definitions while retaining entity values in organization schema.",
+      "queryId": "organization-extension-definition-judgment",
+      "initiatingModule": "organization",
+      "referencedSchemaObject": "extension.extension_definition"
+    },
+    {
+      "edgeId": "r5-judgment-contract-organization",
+      "edgeKind": "TASK_READ",
+      "fromModule": "contract",
+      "toModule": "organization",
+      "rationale": "Contract commands validate store, tenant and project phase snapshot facts without cross-schema DML.",
+      "queryId": "contract-store-reference-judgment",
+      "initiatingModule": "contract",
+      "referencedSchemaObject": "organization.store"
+    },
+    {
+      "edgeId": "r5-judgment-contract-extension",
+      "edgeKind": "TASK_READ",
+      "fromModule": "contract",
+      "toModule": "extension",
+      "rationale": "Contract commands validate definition revisions while retaining contract values in contract schema.",
+      "queryId": "contract-extension-definition-judgment",
+      "initiatingModule": "contract",
+      "referencedSchemaObject": "extension.extension_definition"
+    },
+    {
+      "edgeId": "r5-value-api-organization-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "organization",
+      "toModule": "audit-contract",
+      "rationale": "The value-only audit contract carries organization command-time actor snapshots and task-read values without creating an eighth owner schema.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "r5-value-api-contract-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "contract",
+      "toModule": "audit-contract",
+      "rationale": "The contract owner uses the value-only audit contract for same-transaction audit facts.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "r5-value-api-platform-iam-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "platform-iam",
+      "toModule": "audit-contract",
+      "rationale": "Platform IAM derives the platform actor snapshot and uses the value-only audit contract.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "r5-value-api-platform-workspace-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "platform-workspace",
+      "toModule": "audit-contract",
+      "rationale": "The platform host reader uses value-only audit task-read inputs and results.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "r5-value-api-workspace-iam-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "workspace-iam",
+      "toModule": "audit-contract",
+      "rationale": "Workspace IAM derives the workspace actor snapshot and uses the value-only audit contract.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "r5-value-api-extension-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "extension",
+      "toModule": "audit-contract",
+      "rationale": "Extension definition history uses only the value-only audit contract.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "r5-task-read-platform-workspace-organization-audit",
+      "edgeKind": "TASK_READ",
+      "fromModule": "platform-workspace",
+      "toModule": "organization",
+      "rationale": "The workspace host reader combines only the accepted commercial-group initialization audit fact after host authorization.",
+      "queryId": "platform-workspace-commercial-group-initialization-audit",
+      "initiatingModule": "platform-workspace",
+      "referencedSchemaObject": "organization.audit_event"
+    },
+    {
+      "edgeId": "r5-task-read-platform-workspace-workspace-account-count",
+      "edgeKind": "TASK_READ",
+      "fromModule": "platform-workspace",
+      "toModule": "workspace-iam",
+      "rationale": "The workspace administration readback obtains account totals through the workspace-IAM public task API.",
+      "queryId": "platform-workspace-account-count",
+      "initiatingModule": "platform-workspace",
+      "referencedSchemaObject": "workspace_iam.workspace_account"
+    },
+    {
+      "edgeId": "r5-task-read-platform-workspace-workspace-role-count",
+      "edgeKind": "TASK_READ",
+      "fromModule": "platform-workspace",
+      "toModule": "workspace-iam",
+      "rationale": "The workspace administration readback obtains role totals through the workspace-IAM public task API.",
+      "queryId": "platform-workspace-role-count",
+      "initiatingModule": "platform-workspace",
+      "referencedSchemaObject": "workspace_iam.workspace_role"
+    },
+    {
+      "edgeId": "r5-task-read-organization-workspace-assignment-scope",
+      "edgeKind": "TASK_READ",
+      "fromModule": "organization",
+      "toModule": "workspace-iam",
+      "rationale": "The store editor resolves the authenticated assignment scope through the workspace-IAM public task API before composing organization-owned candidates.",
+      "queryId": "organization-store-candidate-assignment-scope",
+      "initiatingModule": "organization",
+      "referencedSchemaObject": "workspace_iam.role_assignment"
+    },
+    {
+      "edgeId": "r5-task-read-contract-workspace-identity",
+      "edgeKind": "TASK_READ",
+      "fromModule": "contract",
+      "toModule": "platform-workspace",
+      "rationale": "The platform contract overview resolves the workspace identity by key through its bounded task reader.",
+      "queryId": "contract-overview-workspace-identity",
+      "initiatingModule": "contract",
+      "referencedSchemaObject": "platform_workspace.group_workspace"
+    },
+    {
+      "edgeId": "r5-task-read-contract-organization-node",
+      "edgeKind": "TASK_READ",
+      "fromModule": "contract",
+      "toModule": "organization",
+      "rationale": "The contract candidate and resolved-reference read model joins project node display facts without command authority.",
+      "queryId": "contract-organization-project-read-model",
+      "initiatingModule": "contract",
+      "referencedSchemaObject": "organization.organization_node"
+    },
+    {
+      "edgeId": "r5-task-read-contract-organization-tenant",
+      "edgeKind": "TASK_READ",
+      "fromModule": "contract",
+      "toModule": "organization",
+      "rationale": "The contract list and detail read model joins tenant display facts without command authority.",
+      "queryId": "contract-organization-tenant-read-model",
+      "initiatingModule": "contract",
+      "referencedSchemaObject": "organization.tenant"
+    },
+    {
+      "edgeId": "r5-task-read-contract-project-phase-name",
+      "edgeKind": "TASK_READ",
+      "fromModule": "contract",
+      "toModule": "organization",
+      "rationale": "The contract editor candidate readback obtains the owning project's ordered phase names.",
+      "queryId": "contract-project-phase-candidates",
+      "initiatingModule": "contract",
+      "referencedSchemaObject": "organization.project_phase_name"
+    }
+  ]
 }

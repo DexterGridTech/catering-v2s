@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P3-ABC-TARGET-CAPABILITY-AND-EVIDENCE-TRUTH",
+  "genericProblem": "A multi-target business capability was represented by a generic operation and assignment-derived target, allowing the actor's role node to replace the task's target node; separately, package evidence represented changed-file compliance as if it could stand in for business verification or current generated-output continuity.",
+  "rootCauseClass": "OPERATION_IDENTITY_COLLAPSE_AND_EVIDENCE_SEMANTIC_CONFLATION",
+  "finiteDenominator": [
+    "8 current operations x 5 frozen target identities",
+    "10 catalog user-management action bindings",
+    "P3 U02/U03/U04 package exits and bindings",
+    "U04 four generated output replay paths and 012/013/015/016 receipts",
+    "managed remote runner failure/result/cleanup branches"
+  ],
+  "searchedSurfaces": [
+    "contracts/catalog/admin-catalog.json", "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml", "contracts/registry/iam-org-governance-manifest.json", "WorkspaceAuthorizationCatalog", "WorkspaceMembershipService", "WorkspaceCommandAuthorizationService", "operations edge controllers", "operations workspace-membership frontend", "U02/U03/U04 exits", ".runtime/compliance-control/hook-events", "scripts/test/r5-remote-testcontainers.mjs", "tools/compliance-control/cli.mjs"
+  ],
+  "searchQueries": [
+    "userManagementActionBindings", "requiredUserManagementCapabilityForTarget", "OPERATIONS-FIVE-USER-PAGES", "resolveTaskScope", "assignment.serviceNodeType", "finalSha256", "rm1-u04-s1-generated", "business: NOT_APPLICABLE", "dynamicEvidence", "process.exit(2)"
+  ],
+  "counterexamples": [
+    {"id": "COMMAND_TARGET_RECHECK_EXISTS", "evidence": "WorkspaceCommandAuthorizationService already maps the server-supplied target type to the target-specific capability; the failure is the upstream target model, not a reason to remove the owner recheck."},
+    {"id": "ANCESTOR_PREDICATE_CORRECT", "evidence": "OrganizationTaskPathService isScopeAllowed rejects peer branches and preserves leaf exact identity; no repair may widen it."},
+    {"id": "GENERATED_CREATE_UNCHANGED", "evidence": "WorkspaceOperationsInvitationCreateRequest retains its original final hash, demonstrating the SHA comparison is not an all-output false positive."},
+    {"id": "P0_BUSINESS_NA", "evidence": "P0 is a control-only package and is a valid NOT_APPLICABLE business counterexample; obligation must be explicit rather than inferred from source paths."}
+  ],
+  "findings": [
+    {"findingId": "M1_TARGET_CAPABILITY_MODEL", "classification": "CONFIRMED", "finding": "The five frozen target tasks collapse into eight generic operation identities; assignment.serviceNodeType becomes target type, causing wrong population or descendant 404.", "owningSources": ["contracts/catalog/admin-catalog.json", "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml", "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipService.java"]},
+    {"findingId": "M2_REPLAY_TERMINAL_BINDING", "classification": "CONFIRMED", "finding": "Current 015/016 receipt edges exist but the replay artifact has no terminal current-chain model and no mechanical replay-terminal-to-exit equality check.", "owningSources": ["doc/evidence/platform/rm1/p3-c/rm1-u04-generated-output-replay.json", ".runtime/compliance-control/hook-events/rm1-u04-s1-generated-baseline-replay-015.post.json", ".runtime/compliance-control/hook-events/rm1-u04-s1-generated-authoritative-replay-016.post.json", "doc/evidence/platform/rm1/p3-c/rm1-u04-package-exit.json"]},
+    {"findingId": "M3_DYNAMIC_EVIDENCE_TRUTH", "classification": "CONFIRMED", "finding": "P3 U02/U03/U04 exits declare business NOT_APPLICABLE and have no separate dynamic evidence even though their approved units change business behavior.", "owningSources": ["doc/evidence/platform/rm1/p3-a/rm1-u02-package-exit.json", "doc/evidence/platform/rm1/p3-b/rm1-u03-package-exit.json", "doc/evidence/platform/rm1/p3-c/rm1-u04-package-exit.json", "tools/compliance-control/cli.mjs"]},
+    {"findingId": "S1_AUTHORIZATION_SEMANTICS_EVIDENCE", "classification": "CONFIRMED", "finding": "The P3 exit does not bind target/capability/ancestor assertions and their red mutations to actual test methods.", "owningSources": ["doc/evidence/platform/rm1/p3-c/rm1-u04-package-exit.json", "libraries/backend/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipTaskScopeTest.java"]},
+    {"findingId": "RUNNER_FAILED_RUN_EVIDENCE_LOSS", "classification": "CONFIRMED", "finding": "The managed runner exits inside try on a remote Gradle failure, bypassing result collection and cleanup; a future failed first run would not meet log-first discipline.", "owningSources": ["scripts/test/r5-remote-testcontainers.mjs", "project-memory/pitfalls/log-first-failure-retry.md"]}
+  ],
+  "preventionDispositions": [
+    {"findingId": "M1_TARGET_CAPABILITY_MODEL", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "target-specific operation identity invariant plus focused real hierarchy tests"},
+    {"findingId": "M2_REPLAY_TERMINAL_BINDING", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "tools/compliance-control/cli.mjs replay terminal output to package-exit equality validator"},
+    {"findingId": "M3_DYNAMIC_EVIDENCE_TRUTH", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "tools/compliance-control/cli.mjs declared business-evidence obligation and dynamicEvidence validator"},
+    {"findingId": "S1_AUTHORIZATION_SEMANTICS_EVIDENCE", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "P3 remediation exit authorizationSemanticsEvidence exact assertion/test/red-mutation set"},
+    {"findingId": "RUNNER_FAILED_RUN_EVIDENCE_LOSS", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/test/r5-remote-testcontainers.mjs finally-safe result collection and cleanup"}
+  ]
+}

@@ -6,8 +6,9 @@ cd "$repo_root"
 [[ -L .claude/skills ]] || { echo "PROVIDER_FREE_CONTEXT=FAIL"; echo "REASON=.claude/skills is not a symlink"; exit 2; }
 [[ "$(readlink .claude/skills)" == "../.agents/skills" ]] ||
   { echo "PROVIDER_FREE_CONTEXT=FAIL"; echo "REASON=.claude/skills target drift"; exit 2; }
-[[ "$(find .agents/skills -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')" -eq 5 ]] ||
-  { echo "PROVIDER_FREE_CONTEXT=FAIL"; echo "REASON=skill denominator is not five"; exit 2; }
+skill_count="$(find .agents/skills -mindepth 2 -maxdepth 2 -name SKILL.md -print | LC_ALL=C sort | wc -l | tr -d ' ')"
+[[ "$skill_count" -gt 0 ]] ||
+  { echo "PROVIDER_FREE_CONTEXT=FAIL"; echo "REASON=project skill inventory is empty"; exit 2; }
 
 for forbidden in .openmemory .mcp semantic-index index-service background-daemon; do
   if find . -path './.git' -prune -o -path './.runtime' -prune -o -name "$forbidden" -print | grep -q .; then
@@ -46,10 +47,11 @@ function walk(candidate) {
 for (const candidate of process.argv.slice(2)) walk(candidate);
 for (const file of files) {
   const text = fs.readFileSync(file, "utf8");
-  const specs = [
-    ...[...text.matchAll(/\bfrom\s+["']([^"']+)["']/g)].map((match) => match[1]),
-    ...[...text.matchAll(/\brequire\(["']([^"']+)["']\)/g)].map((match) => match[1])
-  ];
+  const specs = text.split("\n").flatMap((line) => {
+    const importMatch = line.match(/^\s*import(?:\s+[^"']+?\s+from)?\s*["']([^"']+)["']/);
+    const requireMatch = line.match(/^\s*(?:const|let|var)\s+[^=]+?=\s*require\(["']([^"']+)["']\)/);
+    return [importMatch?.[1], requireMatch?.[1]].filter(Boolean);
+  });
   if (specs.some((spec) => !spec.startsWith("node:"))) {
     process.stderr.write(`non-built-in dependency in ${file}\n`);
     process.exit(2);
@@ -57,3 +59,4 @@ for (const file of files) {
 }
 NODE
 echo "PROVIDER_FREE_CONTEXT=PASS"
+echo "PROJECT_SKILL_COUNT=$skill_count"

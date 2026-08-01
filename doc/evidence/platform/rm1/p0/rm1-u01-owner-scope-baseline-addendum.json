@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "RM1-U01",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "authority": "Dexter authorized RM1 P0 implementation; the P0 execution amendment added a concrete aggregate-verifier source after baseline creation, so its pre-change source hash must be admitted without resetting the package baseline.",
+  "redProof": "tools/compliance-control/cli.mjs validate-delta-receipts fails closed if a changed late-admitted path lacks a matching pre/post receipt chain.",
+  "entries": [
+    {
+      "path": "scripts/verify",
+      "kind": "FILE",
+      "sha256": "c607e045189b0425600358b252b1b4612d21e603adeb2431180d46d6a9708b2c",
+      "boundary": "Existing aggregate wrapper; it has no RM1-U01 delta and is included solely so the scope expansion does not manufacture a false ABSENT-to-current change."
+    },
+    {
+      "path": "contracts/policy/source-compliance-predicate-map-r5-cr05-write-channel.json",
+      "kind": "FILE",
+      "sha256": "55121bcb9b5b577ba940d7b3cd82fef7717d8509cc33a91fe95745f78411bcfd",
+      "boundary": "Existing write-channel overlay admitted before synchronizing its implementation hash with the RM1-U01 strengthened compliance-control validator, while preserving the frozen source-derived base map."
+    },
+    {
+      "path": "contracts/policy/affected-l2-registry.json",
+      "kind": "FILE",
+      "sha256": "b0214e08980ec7ba8fdd03d7e5858fc845f50e12dbaea225fbb2ca06513af9ca",
+      "boundary": "Existing R5 affected-L2 registry admitted before P0 records only the accepted legacy DEFERRED-to-RM2 debt; no current RM1 behavior receives a test deferral."
+    },
+    {
+      "path": "tools/verify-gates/verify.mjs",
+      "kind": "FILE",
+      "sha256": "73a868142049b42d98fa892e08995f78e77c899d4df89d2988a6320deb799eff",
+      "receipt": "exec-8d332b51-4e92-45ce-8582-ab7e76ebd080",
+      "boundary": "The source existed before the new surface was declared; the RM1-U01 receipt chain records its real subsequent validate-only change from this exact hash."
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/AssetObjectStorage.java",
+      "kind": "FILE",
+      "sha256": "0f0d8cc45d80417498f457b00407dcb76989f984dd27b382502e79cce3aed2dc",
+      "boundary": "Existing asset owner port admitted before its P0 environment-derived prefix correction."
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/MinioAssetObjectStorage.java",
+      "kind": "FILE",
+      "sha256": "16b454f281142f5732b640740ef95f05f1722c10480273410e7d999996d5fe46",
+      "boundary": "Existing configured object-storage adapter admitted before removal of the development-only prefix rule."
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+      "kind": "FILE",
+      "sha256": "20b0d4e2a8ed19b39821c9e1e0a405999ea11f0a8f06b5d2c4b9f14c4e53e49c",
+      "boundary": "Existing asset owner service admitted before delegation of key ownership validation to configured storage."
+    },
+    {
+      "path": "libraries/backend/platform-asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java",
+      "kind": "FILE",
+      "sha256": "c9a5b1fdaf2f517ffff4fab567729499923eb2f4ee689d678aca1dd7bf4fe648",
+      "boundary": "Existing owner-port test admitted so the non-development-prefix regression can be represented by the fake adapter."
+    },
+    {
+      "path": "libraries/backend/platform-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+      "kind": "FILE",
+      "sha256": "2ec3c771aa3b985fa303a45ef218f7c6fb591eb544bc1e020f92a726765b6cfd",
+      "boundary": "Existing platform IAM test-compatibility constructor admitted before removal of embedded HMAC material."
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceLoginRateLimitService.java",
+      "kind": "FILE",
+      "sha256": "e6bb9c9640bfb48a14beae07ca482fd060688b98353eff07b1feccaffcf77f15",
+      "boundary": "Existing workspace IAM test-compatibility constructor admitted before removal of embedded HMAC material."
+    },
+    {
+      "path": "tools/verify-gates/strict-openapi-resolver.mjs",
+      "kind": "FILE",
+      "sha256": "59a973cc7c7140e88398bc5eb560d993ea4c80c081d17f0f79fb58192604fc8c",
+      "receipt": "exec-0e10f79f-fade-4431-a128-35fa38497179",
+      "boundary": "Existing strict OpenAPI verifier admitted after full standards execution proved its undeclared non-built-in parser blocked the P-C2 denominator."
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/database/DatabaseBoundariesTest.java",
+      "kind": "FILE",
+      "sha256": "5a11e861f397390eaf2f22becb465134583bdafe8356e7af9835593677917b3d",
+      "receipt": "exec-bdcd7bc0-b148-41d4-a6d4-5d51b9e01005",
+      "boundary": "Existing disposable migration test admitted after managed execution found its fixed migration count had drifted from the current Flyway inventory."
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/edge/EdgeRouteRegistryCoverageTest.java",
+      "kind": "FILE",
+      "sha256": "961eed3b609b35c7c46d29caf7e380dbca37012d703f7262ab7c92a40a8eaf38",
+      "receipt": "exec-bdcd7bc0-b148-41d4-a6d4-5d51b9e01005",
+      "boundary": "Existing disposable Spring context test admitted after the P0 configured asset-prefix correction exposed absent non-production adapter properties."
+    },
+    {
+      "path": "libraries/backend/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceMembershipService.java",
+      "kind": "FILE",
+      "sha256": "ef3abb348ebfae28700a5c82ec95c94fc19456a05eb1c2351faca126a4e6cdb8",
+      "receipt": "exec-666efeab-9b05-4b81-9587-790758d0e584",
+      "boundary": "Existing member task read service admitted as the production constructor-cycle root; it now relinquishes the unrelated workspace summary port."
+    }
+  ]
+}

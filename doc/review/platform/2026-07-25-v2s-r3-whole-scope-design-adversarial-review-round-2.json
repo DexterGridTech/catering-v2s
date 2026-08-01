@@ -1,0 +1,67 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "R3-WHOLE-SCOPE-IMPLEMENTATION-DESIGN",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "GO",
+  "manifestSha256": "11eecccf5e1dbb039bd5f14980d776c8f66458eb30e6f207a168557ed196960e",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["product-scope", "external-precondition", "owner-transaction", "schema", "contract-face", "ui-user-task", "heritage", "evidence", "review-governance"]
+  },
+  "expectedBehavior": [
+    "C-01 initializes exactly one independently named and coded commercial group in an existing empty group workspace.",
+    "The implementation uses a deployment-controlled platform access context and never creates an account or workspace as a C-01 side effect.",
+    "Platform-admin follows the accepted list-detail-drawer-readback interaction; operations-admin has an accepted static boundary page but remains a separate non-business app with no login claim.",
+    "Gate 0 precedes all business source, and later evidence is proxy-mediated, owner-backed, database-budgeted and cleanup-separated.",
+    "Problem codes are OpenAPI-closed generated typed symbols, and C-01 business copy is exhaustively mapped without internal terms."
+  ],
+  "findings": [
+    {
+      "id": "R3-N-001",
+      "severity": "N",
+      "status": "OPEN_IMPLEMENTATION_ACCEPTANCE",
+      "unitIds": ["R3-U02", "R3-U07"],
+      "title": "部署期外部前提必须以可执行且 fail-closed 的 run input 出现",
+      "evidence": "C-01 card §3 declares platform identity/access and existing group workspace as deployment-controlled facts; whole-scope design §1.4 and U02/U07 require a signed context plus explicit run manifest, but no implementation exists yet.",
+      "risk": "If a later runner silently creates a default account/workspace or accepts unverified headers, it would fabricate the approved actor precondition and invalidate C-01 business evidence.",
+      "disposition": "Retain as an implementation acceptance criterion; do not invent credential UI, seed, root or test-only product route."
+    },
+    {
+      "id": "R3-N-002",
+      "severity": "N",
+      "status": "OPEN_IMPLEMENTATION_ACCEPTANCE",
+      "unitIds": ["R3-U05"],
+      "title": "C-01 前端来源尚未进入 Heritage registry，未来搬运前必须冻结",
+      "evidence": "C-01 interaction §3 marks the three workspace-management sources PENDING_HERITAGE_REGISTRATION; carry-over-first §3-4 requires registry/frozen disposition before implementation carry.",
+      "risk": "Copying or importing unregistered all-v2 source could hide source drift and transfer old contract/auth/scope assumptions.",
+      "disposition": "U05 begins with hash recheck and registry/frozen handling; until then source serves only the already accepted static visual baseline."
+    }
+  ],
+  "unitVerdicts": [
+    {"id": "R3-U01", "verdict": "GO", "findingIds": []},
+    {"id": "R3-U02", "verdict": "GO_WITH_N", "findingIds": ["R3-N-001"]},
+    {"id": "R3-U03", "verdict": "GO", "findingIds": []},
+    {"id": "R3-U04", "verdict": "GO", "findingIds": []},
+    {"id": "R3-U05", "verdict": "GO_WITH_N", "findingIds": ["R3-N-002"]},
+    {"id": "R3-U06", "verdict": "GO", "findingIds": []},
+    {"id": "R3-U07", "verdict": "GO_WITH_N", "findingIds": ["R3-N-001"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The second-round changes close concrete review gaps without altering the approved C-01 task: the only added visible surface explicitly prevents a false operations-login claim.",
+    "simplerAlternativeAssessment": "A U06 exemption would preserve a bad non-Journey/non-UI inference; adding a login or a general semantic checker would exceed scope. One static appendix and targeted existing L2/typecheck assertions are the smaller alternatives.",
+    "costFit": "The adjustments add no runtime, new service, schema, consumer operation, or R4 gate. They make existing U03-U07 acceptance criteria inspectable at negligible design and later test cost.",
+    "verdict": "REASONABLE"
+  },
+  "conclusion": {
+    "verdict": "GO",
+    "summary": "The directed second review confirms the five Claude N fixes and Dexter's U06 visual decision are correctly scoped. The two retained N items are explicitly future implementation-acceptance constraints, not hidden product scope or blockers to Claude quick review.",
+    "severityCounts": {"M": 0, "S": 0, "N": 2},
+    "authorizationBoundary": "This second-round review approves only the revised design packet for Claude/Dexter quick review. It does not authorize implementation, app/contract/database writes, runtime, seed/reset or Git."
+  }
+}

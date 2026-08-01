@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P3-A-BOUNDARY-AND-ACTIVATION-20260728",
+  "genericProblem": "A closed package-specific control may leave its authorized successor unable to establish a truthful package baseline, while a broad implementation assertion can hide finite authorization and interaction exceptions.",
+  "rootCauseClass": "SUCCESSOR_PACKAGE_BINDING_AND_SCOPE_DENOMINATOR_NOT_MATERIALIZED",
+  "finiteDenominator": [
+    "tools/compliance-control/cli.mjs currentRM1ExecutionBinding P0-only branch",
+    "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json RM1-U02 declared surfaces",
+    "scripts/generate/edge-codegen.mjs generated capability-catalog producer",
+    "contracts/openapi/paths/public/access-recovery.paths.yaml four public writes",
+    "contracts/openapi/paths/public/invitation-acceptance.paths.yaml four public writes",
+    "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md P3-A/P6/section 7 boundaries"
+  ],
+  "searchedSurfaces": [
+    "tools/compliance-control",
+    "contracts/openapi/paths",
+    "contracts/registry",
+    "scripts/generate",
+    "libraries/backend",
+    "apps/backend/catering-business-server",
+    "doc/plans/platform",
+    "doc/review/platform"
+  ],
+  "searchQueries": [
+    "RM1-U01|RM1_P0|DEXTER_AUTHORIZED_IMPLEMENTATION_P0|rm1-execution-package-input",
+    "P-N1|platform OTP|UI amendment required|RM1-IA-01",
+    "public write operation security empty",
+    "x-required-capability capability resolver codegen"
+  ],
+  "counterexamples": [
+    {
+      "id": "CE-01",
+      "claim": "P0 package binding can be reused by an RM1 successor.",
+      "evidence": "The active P0-only branch hard-codes RM1-U01, its historical prompt recovery, and P0's referenced-gate set; a successor would either fail admission or falsely reuse P0 evidence.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    },
+    {
+      "id": "CE-02",
+      "claim": "Every mutating operation has an authenticated workspace session.",
+      "evidence": "Eight public invitation/password-reset writes have security: [] and are token-bound owner protocols.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    },
+    {
+      "id": "CE-03",
+      "claim": "P3-A can implement a new platform OTP UI because its issue table names OTP.",
+      "evidence": "P6 and RM1-IA-01 explicitly reserve platform OTP login interaction and protocol materialization for Dexter-accepted UI amendment.",
+      "result": "REJECTED_WITH_EVIDENCE"
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-01",
+      "classification": "CONFIRMED",
+      "summary": "Compliance-control has an RM1-U01-only successor activation gap."
+    },
+    {
+      "findingId": "PF-02",
+      "classification": "CONFIRMED",
+      "summary": "P3-A's three broad manifest surfaces omit its approved generator, generated output, typed Problem, platform-IAM, owner-recheck and focused-test implementation paths."
+    },
+    {
+      "findingId": "PF-03",
+      "classification": "DEXTER_DECISION",
+      "summary": "Dexter assigned new platform mobile OTP protocol and UI to P6/RM1-IA-01; P3-A retains only existing server response hardening."
+    },
+    {
+      "findingId": "PF-04",
+      "classification": "DEXTER_DECISION",
+      "summary": "Dexter selected a finite PUBLIC_PROTOCOL requirement mode for the eight token-bound public writes."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs#currentRM1ExecutionBinding"
+    },
+    {
+      "findingId": "PF-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/evidence/platform/rm1/p3-a/rm1-u02-implementation-amendment.json"
+    },
+    {
+      "findingId": "PF-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/plans/platform/2026-07-28-v2s-rm1-restructure-and-remediation-implementation-design-and-plan.md#7.1"
+    },
+    {
+      "findingId": "PF-04",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/capability-invariants/cli.mjs"
+    }
+  ]
+}

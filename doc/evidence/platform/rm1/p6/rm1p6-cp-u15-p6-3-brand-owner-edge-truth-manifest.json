@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-control-plane-package-manifest",
+  "packageId": "RM1P6-CP-U15-P6-3-BRAND-OWNER-EDGE-TRUTH",
+  "status": "ACTIVE_NOT_EXIT",
+  "businessProblem": "A total-company administrator needs one-at-a-time, owner-confirmed brand authorization; the P6-3 design must distinguish current facts from the owner/edge work still required to deliver that task safely.",
+  "deliveryUnits": [{
+    "id": "RM1P6-CP-U15-P6-3-BRAND-OWNER-EDGE-TRUTH",
+    "title": "P6-3 brand authorization owner-edge truth corrective design",
+    "sourceComplianceDispositionRequired": true,
+    "changeSurfaces": [
+      {"path":"doc/plans/platform/2026-07-30-v2s-rm1-p6-3-head-company-brand-authorization-corrective-design.md","disposition":"update","target":"replace unproven current-chain claims with GAP and future owner/edge obligations"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md","disposition":"update","target":"record fact versus obligation, exact legacy denominator and nonvisual adapter consumer contract"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json","disposition":"update","target":"bind GAP, exact legacy removal and nonvisual adapter contract"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1-u09-implementation-facing-design-and-three-phase-plan.md","disposition":"update","target":"remove unproven current assertions while preserving the P6-3 serial gate"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u15-brand-owner-edge-truth-problem-family.json","disposition":"create","target":"finite finding family and prevention set"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-manifest.json","disposition":"create","target":"exact design-only correction scope"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-amendment.md","disposition":"create","target":"Dexter authorization boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-package-input.json","disposition":"create","target":"execution binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-source-disposition.json","disposition":"create","target":"source disposition"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-cp-u15-p6-3-brand-owner-edge-truth-package-exit.json","disposition":"create","target":"receipt-bound design-only exit"},
+      {"path":"doc/review/platform/2026-07-30-v2s-rm1-p6-3-brand-owner-edge-truth-design-adversarial-review.md","disposition":"create","target":"fresh independent DESIGN review and author disposition"}
+    ],
+    "forbiddenPseudoFixes": ["relabelling edge-local list materialization as owner pagination", "mapping the in-use condition by raw Problem.detail", "adding a fake physical screen row for a nonvisual adapter", "leaving an unnamed stale bulk assertion", "implementing contract, owner, edge, generated or frontend production code in this design-only package"],
+    "completion": "The corrective design is receipt-bound and independently reviewed; it authorizes no P6-3 implementation and does not bypass P6-2 review gating."
+  }]
+}

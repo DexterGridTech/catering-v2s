@@ -14,6 +14,6 @@ sourceRefs: ["doc/decisions/2026-07-24-v2s-r1-authorization.md","doc/roadmaps/pl
 # Workspace and Roadmap kernel
 
 - `PROGRAM_SCOPED_CURRENT_ONLY`: 每次先从 Registry 选择显式 program，只消费该程序 Roadmap 的 `CURRENT_*`。
-- `R1_ONLY`: R1 已关闭且不再提供写入授权；当前 R2 只等待 fresh-session 静态验收。
-- `GIT_BY_DEXTER`: Git stage、commit、push、branch 与 worktree 由 Dexter 负责。
-- `NO_R2_W1`: Dexter 仅授权 standards coverage、R1 review resolution 与相应 current-truth 导航修订；完成后停在 R2 `IN_REVIEW`。除此以外，R2 fresh-session acceptance 未获写入授权，W1 业务 runtime 仍由前置门阻断。
+- `R1_ONLY`: R1 的授权只覆盖已关闭的 R1；R2 也已由 fresh v2s-rooted evidence 与 Dexter 接受关闭，二者均不提供 R3/W1 实现授权。
+- `GIT_BY_DEXTER`: 项目只有 Codex 与 Claude 两个 AI 在 Dexter 的分工下协调；仓库控制权由 Dexter 自主决定，Codex 与 Claude 不得要求或等待 Dexter 执行任何仓库控制动作，且该决定不影响任何设计与开发工作。
+- `NO_R2_W1`: R2 已关闭且不再接受写入；Dexter 已暂停 R3-J02 implementation-facing design，其既有资产为 `PENDING_RECOVERY`。第一批、`DESIGN_GOVERNANCE_BATCH_1_5` 与 Batch 2 inventory 已由 Dexter 接受；R3-C01 carry-over-first 低保真线框已获 Dexter 接受。当前可一次性形成整个 R3 的 implementation-facing 详设与实施计划：C-01 是唯一业务 Journey，整体覆盖 R3-TECH、契约、脚本、后端、数据库、双 app 边界、测试与证据；不得实现、代码搬运或恢复 J02/C-02，禁止 W1 业务实现与 runtime。

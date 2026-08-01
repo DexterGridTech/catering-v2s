@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "problemFamilyId": "RM1-P6-POST_LOGIN_SHELL_STRICT_INTERACTION-20260729",
+  "rootCause": "Authenticated application chrome was not a finite strict-interaction denominator, so shared shell behavior could be guessed or omitted by page designs.",
+  "finiteApplicabilityDenominator": {
+    "consumerFaces": ["platform-admin", "operations-admin"],
+    "surfaces": ["PLATFORM-POST-LOGIN-SHELL", "OPERATIONS-SHELL"],
+    "requirements": ["menu icons", "content tabs", "content container spacing", "tab-body scrolling", "tab refresh", "shell full-screen", "operations workspace title and logo"]
+  },
+  "counterexamples": [
+    "Platform group-workspace selector remains the sider-footer control Dexter accepted; it must not return to the header.",
+    "Role homes remain route/bootstrap only; shell tabs do not authorize a dashboard.",
+    "Do not invent browser full-screen, persistent mounted tab bodies, header brand assets, or fixed pixel dimensions absent from the source."
+  ],
+  "minimalPrevention": "Add one strict authenticated-shell screen sheet per consumer face before any feature page relies on shared chrome.",
+  "status": "CONFIRMED"
+}

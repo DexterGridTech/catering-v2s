@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-IA-DORMANT-FOUNDATION-DECLARATION-20260729",
+  "genericProblem": "A UI design can declare an exported shared-foundation primitive solely because it exists, causing a later declaration-to-import control to revive a primitive already retained as dormant and unrelated to the user's task.",
+  "rootCauseClass": "Export existence was treated as sufficient reuse evidence; the design admission lacked a required readback of production consumers and documented dormant or retirement disposition.",
+  "finiteDenominator": [
+    "IA-01's 10 FOUNDATION_PRIMITIVE declarations",
+    "IA-02's 13 FOUNDATION_PRIMITIVE declarations",
+    "libraries/frontend/admin-ui-foundation/src/index.ts exports",
+    "both frontend apps' non-generated consumers",
+    "P5 refresh-signal disposition"
+  ],
+  "searchedSurfaces": [
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+    "libraries/frontend/admin-ui-foundation/src/index.ts and behavior/refreshSignal.ts",
+    "apps/frontend/platform-admin and apps/frontend/operations-admin non-generated source",
+    "doc/evidence/platform/rm1/p5/rm1-u08-claude-s1-problem-family.json",
+    "../catering-all-v2/apps/frontend/platform-admin/src/features/workspace-overview/ui/WorkspaceOverviewPage.tsx"
+  ],
+  "searchQueries": [
+    "FOUNDATION_PRIMITIVE=.*createRefreshSignal|useRefreshVersion",
+    "createRefreshSignal|useRefreshVersion",
+    "RefreshSignal|RTK tags|dormant",
+    "refetch()|WorkspaceOverviewPage"
+  ],
+  "counterexamples": [
+    "A new, business-required foundation primitive can legitimately have zero current production consumers when the declared screen is explicitly designed as its first and uniquely owned consumer.",
+    "An exported primitive with active consumers is not rejected merely because it is implemented in foundation rather than locally.",
+    "The overview page's refresh and retry are valid user actions; only the dormant RefreshSignal dependency is removed, while the generated RTK query refetch behavior remains its source-backed implementation path."
+  ],
+  "findings": [
+    {
+      "findingId": "P6-IA-DORMANT-REFRESH-DECLARATION-01",
+      "classification": "CONFIRMED",
+      "evidence": "IA02-PLATFORM-WORKSPACE-OVERVIEW declared createRefreshSignal/useRefreshVersion. useRefreshVersion has no production consumer; P5 records RefreshSignal publish sites without a production subscriber and RTK tags as the refresh authority; the all-v2 counterpart uses generated query refetch()."
+    },
+    {
+      "findingId": "P6-IA-DORMANT-REFRESH-DECLARATION-SIBLING-SCAN-02",
+      "classification": "CONFIRMED",
+      "evidence": "The cross-IA declaration scan finds createRefreshSignal/useRefreshVersion only in IA02-PLATFORM-WORKSPACE-OVERVIEW; no other IA-01/IA-02 screen declares either dormant refresh primitive."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "P6-IA-DORMANT-REFRESH-DECLARATION-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/templates/ui-interaction-design-template.md#ui-detailed-design-admission"
+    },
+    {
+      "findingId": "P6-IA-DORMANT-REFRESH-DECLARATION-SIBLING-SCAN-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md#4.1-ui-详设标准final-p6-的机械缺项即-no-go"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "kind": "r4-capability-naming-remediation",
+  "status": "CLOSED",
+  "source": {
+    "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/runtime-source-organization-must-not-follow-journey-ids.md",
+    "sha256": "f88855cc3583026ad6edf7afb3e729c46705ea5f30fa7d635acd6784db9c236a"
+  },
+  "scan": {
+    "command": "find apps libraries -path '*/build' -prune -o -path '*/.gradle' -prune -o -path '*/node_modules' -prune -o -type f -print | rg '(?:^|/)(?:r|u|j|jg|pkg)[0-9][^/]*|(?:^|/)g-[0-9][^/]*' -i",
+    "result": "ZERO_SOURCE_NAME_HITS",
+    "scope": "apps/** and libraries/** source names; build outputs excluded"
+  },
+  "dispositions": [
+    {
+      "legacy": "R3DataConfiguration and r3* bean names",
+      "replacement": "BusinessDataConfiguration and business* bean names",
+      "status": "RENAMED"
+    },
+    {
+      "legacy": "R3PlatformController and R3ProblemCode",
+      "replacement": "PlatformCommercialGroupController and CommercialGroupProblemCode",
+      "status": "RENAMED"
+    },
+    {
+      "legacy": "R3SkeletonBoundary",
+      "replacement": "BusinessServerBoundary",
+      "status": "RENAMED"
+    },
+    {
+      "legacy": "r3 route registry, r3 edge client, and generated R3 symbols",
+      "replacement": "platform route registry, platform commercial-group edge client, and capability symbols",
+      "status": "RENAMED_AND_REGENERATED"
+    },
+    {
+      "legacy": "R3 database and edge environment variables",
+      "replacement": "CATERING_BUSINESS_DB_* and CATERING_EDGE_AUTH_SECRET",
+      "status": "RENAMED"
+    },
+    {
+      "legacy": "r4.database.R4DatabaseBoundariesTest and r4_reader",
+      "replacement": "database.DatabaseBoundariesTest and database_reader",
+      "status": "RENAMED"
+    },
+    {
+      "legacy": "r3 platform/operations architecture test file names and titles",
+      "replacement": "commercial-group-boundary and static-boundary capability names",
+      "status": "RENAMED"
+    },
+    {
+      "legacy": "r3 migration filename",
+      "replacement": "platform_workspace_and_commercial_group migration filename",
+      "status": "RENAMED"
+    },
+    {
+      "legacy": "R3/U02/U03 runtime comments and static boundary copy",
+      "replacement": "capability/current-stage wording",
+      "status": "RENAMED"
+    },
+    {
+      "legacy": "OrganizationCommandService \\u0000 separator text match",
+      "replacement": "not applicable",
+      "status": "REJECTED_FALSE_POSITIVE",
+      "reason": "Unicode escape syntax is not a flow identifier in a source name."
+    },
+    {
+      "legacy": "historical doc/evidence/review references",
+      "replacement": "retained as immutable historical trace",
+      "status": "PERMITTED_ARCHIVE"
+    },
+    {
+      "legacy": "scripts/generate/r3-edge-codegen.mjs, scripts/run/r3-walking-skeleton, tools/r3-*/ and tools/r4-gates/ prefixes",
+      "replacement": "edge-codegen, platform-commercial-group-skeleton, platform-boundary-gates, admin-boundary-checks and verify-gates",
+      "status": "RENAMED_BY_DEXTER_DECISION",
+      "reason": "Dexter chose capability-name migration; no script/tool whitelist exists."
+    }
+  ],
+  "preventiveControls": [
+    "implementation-design-granularity rejects flow identifiers in create/update apps/** and libraries/** design paths with a red fixture.",
+    "code-layout rejects flow identifiers in apps/**/src and libraries/**/src directory/file names with a red fixture.",
+    "AGENTS.md and cs-writing-plans require capability naming before implementation planning."
+  ]
+}

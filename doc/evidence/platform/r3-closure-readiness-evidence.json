@@ -1,0 +1,57 @@
+{
+  "kind": "r3-closure-readiness-evidence",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "status": "R3_CLOSURE_READY_AFTER_CLAUDE_GO_AND_N_RESOLUTION",
+  "approvedScope": ["R3-C01", "R3-TECH"],
+  "excludedScope": ["R3-J02", "C-02 real operations login", "future TDP implementation"],
+  "backendAppShape": {
+    "currentBusinessApp": "apps/backend/catering-business-server",
+    "futureTdpPlaceholder": "apps/backend/terminal-data-server",
+    "tdpRuntimeInR3": "NONE"
+  },
+  "implementation": {
+    "u01Gate0": "PASS",
+    "u02Skeleton": "PASS",
+    "u03ContractCodegen": "PASS",
+    "u04BackendOwnerMigration": "PASS",
+    "u05PlatformAdmin": "PASS",
+    "u06OperationsAdminBoundary": "PASS",
+    "u07TestingWalkingSkeleton": "PASS"
+  },
+  "freshManagedRun": {
+    "runId": "20260725T100351Z-90982",
+    "manifest": ".runtime/r3/20260725T100351Z-90982/run-manifest.json",
+    "business": "PASS",
+    "cleanup": "PASS",
+    "activeManagedResources": 0,
+    "hashCheckpoint": ".runtime/r3/20260725T100351Z-90982/hash-checkpoint.json",
+    "hashCheckpointSha256": "f09930720e5d6c2d0a5d9ea412514e3521a0136787de6976373315a6119b7757",
+    "positive": "list-detail-initialize-owner-readback-same-key-replay",
+    "negative": "same-key-different-payload; duplicate-initialization; same-key-cross-workspace; missing-edge-context"
+  },
+  "governanceChecks": {
+    "projectMemory": "PASS",
+    "standardsCoverageR3": "PASS; RULES=150",
+    "roadmapProgramRegistry": "PASS",
+    "agentLifecycle": "PASS",
+    "heritageRegistry": "PASS; 31 selected assets",
+    "moduleDependencyRegistry": "PASS",
+    "edgeCodegen": "PASS",
+    "flywayLayoutPostGate0": "PASS",
+    "contractFacePostGate0": "PASS",
+    "productionConformityPostGate0": "PASS",
+    "frontendBoundaries": "PASS; operations-business-endpoints=0",
+    "codeLayout": "PASS",
+    "tdpPlaceholderBoundary": "PASS",
+    "hashEvidenceCheckpoint": "PASS; SHA-256; selfHashExcluded=true",
+    "activeManagedResources": "PASS; 0",
+    "codexImplementationSelfReviewRound2": "PASS; SELF_DECIDED",
+    "claudeHandoffStructure": "PASS"
+  },
+  "reviewPackage": "doc/review/platform/2026-07-25-v2s-r3-implementation-review-request.md",
+  "claudeReview": "doc/review/platform/2026-07-25-v2s-r3-implementation-review-claude.md",
+  "claudeVerdict": "GO(0 M / 0 S / 3 N)",
+  "nResolution": "doc/evidence/platform/r3-implementation-n-resolution-codex.md",
+  "acceptanceDecision": "doc/decisions/2026-07-25-v2s-r3-implementation-acceptance.md"
+}

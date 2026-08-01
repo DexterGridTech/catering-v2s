@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-design-adversarial-review",
+  "reviewCycleId": "R5-COMPLIANCE-REMEDIATION-DESIGN-20260727",
+  "reviewTarget": "DESIGN",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-adversarial-input-checklist-round-1.md",
+    "sha256": "d087204afd8c2d4034b852c4ce153b155797c210d28bf902f24c7723f57c07cb"
+  },
+  "blindReviewDeclaration": "Fresh catering-v2s-rooted independent reviewer tried to falsify the reviewed R5 compliance-remediation design and froze the findings, severity counts, unit verdicts, and NO_GO verdict before reading any current-cycle author self-review, author intake, or author disposition. No current-cycle author self-review verdict existed. A routed historical governance disposition source was read only after the independent verdict was frozen.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "2245468d27f01edcc60735e7a2b6a37bab7e1f1dc6d8bd5bbee6b4d97e11f09a",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "authorization-and-roadmap-control",
+      "source-derived-compliance-denominator",
+      "package-exit-admission",
+      "contract-and-generated-boundary",
+      "owner-schema-and-database",
+      "remote-testcontainers-and-cleanup",
+      "standards-and-business-traceability"
+    ]
+  },
+  "inputReadback": {
+    "freshContext": "/Users/dexter/Documents/workspace/idea/catering-v2s",
+    "reviewedManifest": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json@2245468d27f01edcc60735e7a2b6a37bab7e1f1dc6d8bd5bbee6b4d97e11f09a",
+    "checks": [
+      "scripts/check/standards-coverage --phase R5 => PASS; RULES=150",
+      "scripts/check/implementation-design-granularity --self-test => PASS",
+      "OpenAPI recount => 44 YAML; 1330 refs; 880 unresolved; 50 missing-file; 830 missing-pointer",
+      "operation recount => 106 unique operationIds; platform-admin=39; operations-admin=56; public=11",
+      "business/UI recount => 32 active scenarios; 22 surfaces; 25 pageDesignKeys",
+      "owner-schema recount => 7 created fact schemas but 8 non-null module registry ownerSchema values"
+    ],
+    "dynamicBoundary": "No build, DEV, seed/reset, database, browser, or remote dynamic run was executed."
+  },
+  "expectedBehavior": [
+    "CR00 establishes a deterministic source-derived compliance control plane whose accepted-source resolver, stable rule identity, applicability, predicate mapping, and red oracle cannot be replaced by a hardcoded checklist while remaining green.",
+    "Every R5-CR-U00 through R5-CR-U09 delivery unit binds all six package-exit denominators to exact owning source, hash, anchor, applicability, disposition, and evidence requirements before the design can enter implementation.",
+    "The sole current Roadmap and the latest exact authorization expose one non-contradictory design-only scheduling truth before any remediation implementation authorization is considered.",
+    "The frozen 106/32/22/25/7 denominators, all 150 standards rules, dual-admin boundaries, owner schemas, remote Testcontainers path, business evidence, and cleanup remain independently falsifiable."
+  ],
+  "findings": [
+    {
+      "id": "R5-CR-DESIGN-R1-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U00",
+        "R5-CR-U01",
+        "R5-CR-U02",
+        "R5-CR-U03",
+        "R5-CR-U04",
+        "R5-CR-U05",
+        "R5-CR-U06",
+        "R5-CR-U07",
+        "R5-CR-U08",
+        "R5-CR-U09"
+      ],
+      "title": "source-derived compliance engine lacks a deterministic source-to-predicate contract",
+      "evidence": "The design section 2.2 names changing sources and says a predicate registry maps source rules to algorithms, while section 4.1 separately lists the first predicates. It does not define how one accepted granularity manifest is selected, how natural-language approvedAssertions/forbiddenPseudoFixes receive stable rule IDs, how source changes invalidate mappings, how applicability is derived, or how the registry proves complete coverage rather than becoming a second hardcoded truth. The current manifest contains no rule-to-predicate bindings. A source count can therefore be dynamic while the actually enforced subset remains hand-selected.",
+      "counterexample": "A future CR00 implementation dynamically counts every approved assertion but registers predicates only for feature API paths, operation columns, generated maps, time, JDBC, audit, page keys, locale, pagination, and registry edges. It reports the correct denominator and passes every implemented red fixture while silently leaving a new forbidden assertion unenforced.",
+      "risk": "The proposed root-cause control can reproduce the same false-green failure it is intended to eliminate, and every later package receipt can inherit a false completeness claim.",
+      "minimalFix": "Freeze one deterministic accepted-manifest resolver and a versioned per-source-row mapping contract containing source path/hash/anchor, stable ruleId, applicability algorithm, enforcement kind, predicate implementation identity or reviewChecklistRef, and fail-closed behavior for unmapped or changed rows. Require a production red fixture that adds a new source row without a mapping and proves the same production entry fails.",
+      "largerAlternativeCost": "A semantic rule DSL or generalized policy platform would be disproportionate and would still not mechanize business judgment. A checked mapping manifest plus existing matrix review destinations is the smaller repair.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "R5-CR-DESIGN-R1-M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U00",
+        "R5-CR-U01",
+        "R5-CR-U02",
+        "R5-CR-U03",
+        "R5-CR-U04",
+        "R5-CR-U05",
+        "R5-CR-U06",
+        "R5-CR-U07",
+        "R5-CR-U08",
+        "R5-CR-U09"
+      ],
+      "title": "the manifest declares universal package-exit policy but does not bind its six denominators per unit",
+      "evidence": "The design section 2.3.1 requires every delivery unit to declare owning source/anchor for PROJECT_MEMORY_ASSERTION_OCCURRENCES, APPROVED_ASSERTIONS, FORBIDDEN_PSEUDO_FIXES, DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA, OWNED_SURFACE_AND_PAGE_KEYS, and DUE_STANDARDS_RULE_IDS. The reviewed manifest only declares those names once at packageExitSourceCompliancePolicy and gives each U00-U09 a boolean sourceComplianceDispositionRequired=true plus one detail-design source. No unit has six denominator rows, exact owning sources/anchors, applicability, or a complete out-of-scope owner. The currently ACTIVE checker self-test passes because this future policy is not yet enforced, so currentReviewEnforcement='human reviewed' is not supported by the bytes.",
+      "counterexample": "U04 can omit all project-memory occurrences and due standards IDs while retaining its boolean and one plan anchor; U04 still satisfies the current manifest shape and nothing in the review packet exposes which missing denominator row should fail.",
+      "risk": "CR00 cannot safely make this design the first universal admission specimen, and package exits cannot prove item-by-item completeness for any of the ten units.",
+      "minimalFix": "Add a sourceComplianceDenominators object to every U00-U09 with exactly six named rows. Each row must bind source path/hash/anchor, derivation selector, applicable entries or explicit owning-unit N/A transfer, expected disposition/evidence fields, and missing-entry failure. Specify the checker traversal and red fixtures for deleting one row, one source binding, and one due rule from an arbitrary unit.",
+      "largerAlternativeCost": "A separate package-governance service is unnecessary. Extending the existing manifest schema and checker is the bounded solution already chosen by the design.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "R5-CR-DESIGN-R1-M-003",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U00",
+        "R5-CR-U08",
+        "R5-CR-U09"
+      ],
+      "title": "the sole current Roadmap still authorizes the implementation that the exact authorization paused",
+      "evidence": "The registry-selected Roadmap CURRENT_* says R5_REVISED_IMPLEMENTATION_IN_PROGRESS, R5_WHOLE_SCOPE_IMPLEMENTATION_AUTHORIZED and R5_IMPLEMENTATION_AUTHORIZED=true, with CURRENT_NEXT_ACTION directing U01 implementation. The later exact authorization is design-only and explicitly pauses the prior implementation. The candidate Roadmap says it does not change current Roadmap state, while the design defers Roadmap alignment to CR08 after eight implementation packages would already have run.",
+      "counterexample": "A fresh agent follows AGENTS, resolves the sole active Roadmap, reads CURRENT_NEXT_ACTION and continues the old U01 implementation before the candidate remediation design is accepted, even though the latest exact decision has paused it.",
+      "risk": "This is an active authorization-control contradiction. It can permit prohibited writes and makes CR00's promised predecessor/authority guard depend on stale scheduling truth.",
+      "minimalFix": "Make control-plane synchronization a pre-CR00 design acceptance prerequisite: bind the latest exact authorization as the temporary override, require the sole current Roadmap CURRENT_* to move to compliance-remediation design review with implementation/runtime/seed/reset false before any later implementation authorization, and move final completion status updates to U08/U09 only after evidence closes.",
+      "largerAlternativeCost": "Creating a second Roadmap owner or registering the candidate prematurely would duplicate scheduling truth. Correcting the existing sole owner at the authorized transition is smaller.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "R5-CR-DESIGN-R1-S-001",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U00",
+        "R5-CR-U04",
+        "R5-CR-U08"
+      ],
+      "title": "the frozen seven-owner-schema denominator conflicts with the current module registry",
+      "evidence": "Static migration recount creates seven fact schemas: platform_iam, platform_asset, extension, workspace_iam, contract, platform_workspace, and organization. contracts/policy/module-dependency-registry.json currently declares eight non-null ownerSchema values by additionally assigning platform_access to the schema-less platform-access facade. The revised accepted design states platform-access is not an eighth owner, but the compliance-remediation design freezes only the number 7 and does not name the seven or classify/fix the contradictory registry row.",
+      "counterexample": "A source-derived CR00 denominator reads the registry and obtains 8, while U08 completion expects 7. Either the dynamic source or the frozen acceptance number must be ignored, and both paths can be presented as compliant.",
+      "risk": "Owner/schema closure is not independently falsifiable and can conceal a phantom schema owner or force a hardcoded exception.",
+      "minimalFix": "Name the seven fact-owner schemas and their owning modules in the design; explicitly classify platform-access as schema-less and include the registry correction/schema treatment in U04 with a bidirectional registry-to-Flyway-to-runtime check. If eight is intended instead, escalate as a Dexter scope decision rather than silently changing the denominator.",
+      "largerAlternativeCost": "Adding a platform_access schema merely to make the registry count match would create an unnecessary fact owner. Correcting the registry classification is smaller if the accepted facade boundary remains.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "R5-CR-DESIGN-R1-S-002",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U08"
+      ],
+      "title": "U08 does not bind the exact remote Testcontainers runner and host identity contract",
+      "evidence": "The design correctly rejects a local Docker requirement and says verify will call the existing remote Testcontainers runner through SSH, but U08 change surfaces only name scripts/test/ broadly. The current repository entry is scripts/test/r5-remote-testcontainers.mjs@a0aa5028f9c8b8a9b1109fc7f880db242ed1505f46baec4fad4657e503ec7739; it defaults V2S_DEV_REMOTE_HOST and currently has no V2S_DEV_REMOTE_HOST_SHA256 validation, while the separate DEV environment code does. The design neither binds this exact entry nor defines the allowed Gradle task, host hash input, source snapshot, evidence, and cleanup contract that verify must consume.",
+      "counterexample": "An implementation can wire verify to a new SSH docker-exec wrapper or keep the current default host without fingerprint validation and still claim it used an existing remote runner and did not use the local Docker socket.",
+      "risk": "The local/remote boundary can drift during remediation, producing unreviewed host selection, undiscovered tests, or cleanup evidence from a different execution path.",
+      "minimalFix": "Bind U08 to the exact current runner path/hash or a named successor, define the permitted task registry, require V2S_DEV_REMOTE_HOST plus its SHA-256 binding with no default during verification, and specify the returned run-scoped business/test/cleanup receipt fields and production red fixtures.",
+      "largerAlternativeCost": "Installing local Docker or building a remote execution platform is unnecessary. A precise contract for the existing runner and verify adapter is sufficient.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO"
+    },
+    {
+      "id": "R5-CR-DESIGN-R1-N-001",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U01"
+      ],
+      "title": "record the full unresolved OpenAPI category split in the CR01 baseline receipt",
+      "evidence": "An independent standards-compliant recursive recount reproduced 1330 total refs and 880 unresolved: 50 missing-file and 830 missing-pointer. Of the missing pointers, 742 are ProblemResponse and 88 are other root/component pointer failures. The design records 742+50 as previously identified but does not state the remaining 88 category explicitly.",
+      "counterexample": "A repair can close ProblemResponse and missing files yet leave the 88 other pointer failures, while a reviewer comparing only the highlighted categories may misunderstand what remains.",
+      "risk": "This does not invalidate the unresolved=0 oracle, but weakens the diagnostic baseline and regression explanation.",
+      "minimalFix": "Have the CR01 input receipt record the resolver version and the 50/742/88 category split while keeping unresolved=0 as the only completion oracle.",
+      "largerAlternativeCost": "Per-reference prose documentation is unnecessary; a generated category summary is enough.",
+      "disposition": "NON_BLOCKING_DESIGN_CLARIFICATION"
+    },
+    {
+      "id": "R5-CR-DESIGN-R1-N-002",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U00",
+        "R5-CR-U09"
+      ],
+      "title": "restore explicit human-review versus machine-enforcement splits in Part B/C/D",
+      "evidence": "The current manifest contains all 150 real matrix rule IDs with no missing or extra IDs, and the chapter hit map provides design locations. It relies on the matrix plus prose such as 'machine items N/A' to determine the destination. The prior revised manifest explicitly listed reviewRuleIds, notApplicableRuleIds, reason, and reviewChecklistRef per group; the current packet dropped that useful partition even though 104 rules are UNENFORCEABLE_BY_MACHINE and 46 have machine destinations.",
+      "counterexample": "A reviewer must manually re-partition mixed groups such as B.1 or B.2 and can accidentally treat a human semantic rule as covered by a gate or re-review a machine rule without identifying its production evidence.",
+      "risk": "The denominator is complete, but review execution is more error-prone and less directly auditable.",
+      "minimalFix": "Restore per-group reviewRuleIds, machineRuleIds/notApplicableRuleIds, exact reviewChecklistRef, and N/A reason without duplicating rule text.",
+      "largerAlternativeCost": "A second standards matrix would create drift; the split belongs only in this manifest mapping.",
+      "disposition": "NON_BLOCKING_DESIGN_CLARIFICATION"
+    },
+    {
+      "id": "R5-CR-DESIGN-R1-N-003",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "R5-CR-U05",
+        "R5-CR-U06"
+      ],
+      "title": "bind non-corpus operation-history and extension-field terms to their owning accepted decisions",
+      "evidence": "Literal corpus searches returned NO_CORPUS_ENTRY_MATCHED for 操作历史 and 扩展字段. The corpus policy says a miss is not a semantic decision. The unit manifest generally points uiAndTerms.termSource to the corpus; U05/U06 also point to the operation-history interaction artifact, but the non-corpus source ownership is not stated as an explicit fallback rule for both operation history and extension-field behavior.",
+      "counterexample": "An implementer treats a corpus literal miss as freedom to rename or reshape the interaction instead of reopening the accepted operation-history Journey/interaction and extension-field decisions.",
+      "risk": "Low if reviewers reopen all upstream decisions, but the generic termSource field can be misread as exhaustive.",
+      "minimalFix": "Add explicit owning decision refs for operation history and extension-field interaction/behavior next to the corpus term source, stating that corpus misses do not waive those decisions.",
+      "largerAlternativeCost": "Promoting new corpus entries would require Dexter's separate corpus authority and is unnecessary for this design clarification.",
+      "disposition": "NON_BLOCKING_DESIGN_CLARIFICATION"
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "R5-CR-U00",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002",
+        "R5-CR-DESIGN-R1-M-003",
+        "R5-CR-DESIGN-R1-S-001",
+        "R5-CR-DESIGN-R1-N-002"
+      ]
+    },
+    {
+      "id": "R5-CR-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002",
+        "R5-CR-DESIGN-R1-N-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U02",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002"
+      ]
+    },
+    {
+      "id": "R5-CR-U03",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002"
+      ]
+    },
+    {
+      "id": "R5-CR-U04",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002",
+        "R5-CR-DESIGN-R1-S-001"
+      ]
+    },
+    {
+      "id": "R5-CR-U05",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002",
+        "R5-CR-DESIGN-R1-N-003"
+      ]
+    },
+    {
+      "id": "R5-CR-U06",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002",
+        "R5-CR-DESIGN-R1-N-003"
+      ]
+    },
+    {
+      "id": "R5-CR-U07",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002"
+      ]
+    },
+    {
+      "id": "R5-CR-U08",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002",
+        "R5-CR-DESIGN-R1-M-003",
+        "R5-CR-DESIGN-R1-S-001",
+        "R5-CR-DESIGN-R1-S-002"
+      ]
+    },
+    {
+      "id": "R5-CR-U09",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "R5-CR-DESIGN-R1-M-001",
+        "R5-CR-DESIGN-R1-M-002",
+        "R5-CR-DESIGN-R1-M-003",
+        "R5-CR-DESIGN-R1-N-002"
+      ]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The direction fits the diagnosed problem: control false-greens must be repaired before contract, owner, UI, DEV, seed, and evidence remediation. Strict serial delivery, dual-admin boundaries, remote Testcontainers, and one whole-scope implementation review are proportionate.",
+    "simplerAlternativeAssessment": "The smaller viable repair is not to redesign R5 or add a policy platform. It is to make the existing design deterministic by adding one source-to-rule mapping contract, per-unit six-denominator bindings, one Roadmap authority synchronization prerequisite, the exact seven-owner classification, and the exact remote runner contract.",
+    "costFit": "Those bounded design repairs cost less than implementing CR00 with an ambiguous rule registry and discovering false completeness across CR01-CR09. The current design transfers foundational ambiguity into every package, so proceeding is more expensive than repairing the design now.",
+    "verdict": "DIRECTION_REASONABLE_BUT_DESIGN_NOT_READY_FOR_GO"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "NO_GO (M=3, S=2, N=3). The serial remediation direction is reasonable and the 106/32/22/25 counts, 880 OpenAPI recount, pending Dexter decisions, standards ID denominator, and manifest hashes were independently reproduced. GO is blocked because source-derived enforcement is not deterministic, every unit lacks the six required package-exit bindings, the sole Roadmap contradicts the latest design-only pause, the seven-owner denominator conflicts with the registry, and U08 does not bind the exact remote runner contract.",
+    "severityCounts": {
+      "M": 3,
+      "S": 2,
+      "N": 3
+    },
+    "authorizationBoundary": "DESIGN review only. This verdict and its minimal repairs do not authorize implementation, business source, contract, migration, test, scripts, build, DEV, database, remote runtime, seed/reset, or any dynamic execution."
+  }
+}

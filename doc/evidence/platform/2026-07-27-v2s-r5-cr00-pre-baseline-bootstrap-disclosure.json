@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U00",
+  "status": "DECLARED_NOT_PACKAGE_EXIT_EVIDENCE",
+  "reason": "Dexter explicitly requested that PreToolUse/PostToolUse be created and that Codex stop for Desktop authorization before normal CR00 continuation. The hook registration and its authorized real-client canary therefore predate the independent CR00 package baseline.",
+  "scope": [
+    ".codex/hooks.json",
+    "scripts/hooks/pre-tool-compliance",
+    "scripts/hooks/post-tool-compliance",
+    "tools/compliance-control/cli.mjs",
+    "scripts/check/agent-lifecycle"
+  ],
+  "separateEvidence": "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json",
+  "packageBaseline": {
+    "createdAfterBootstrap": true,
+    "path": ".runtime/compliance-control/package-baseline.json",
+    "rule": "Only changes made after this baseline may enter CR00 actualChangedPaths and incrementalChecks; this disclosure cannot substitute for a package exit receipt."
+  }
+}

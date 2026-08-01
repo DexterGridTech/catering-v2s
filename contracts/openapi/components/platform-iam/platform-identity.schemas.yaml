@@ -1,0 +1,451 @@
+{
+  "components": {
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accountName",
+          "password"
+        ],
+        "properties": {
+          "accountName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": ".*\\S.*"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "writeOnly": true
+          }
+        }
+      },
+      "PlatformAdminCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "loginName",
+          "userName",
+          "password",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "loginName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "userName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": ".*\\S.*"
+          },
+          "mobile": {
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "writeOnly": true
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          }
+        }
+      },
+      "PlatformAdminCredentialResetRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "password",
+          "expectedVersion",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "writeOnly": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          }
+        }
+      },
+      "PlatformAdminDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "userName",
+          "loginName",
+          "builtIn",
+          "status",
+          "credentialStatus",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "auditSummary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "loginName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "builtIn": {
+            "type": "boolean"
+          },
+          "mobile": {
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true,
+            "description": "Governance-authorized edit prefill only; the detail surface must render maskedMobile instead."
+          },
+          "maskedMobile": {
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/PlatformAdminStatus"
+          },
+          "credentialStatus": {
+            "type": "string",
+            "enum": [
+              "SET"
+            ]
+          },
+          "lastLoginAt": {
+            "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "createdAt": {
+            "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+          },
+          "updatedAt": {
+            "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "auditSummary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        }
+      },
+      "PlatformAdminPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "sortKey",
+          "sortDirection"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "userName",
+                "loginName",
+                "builtIn",
+                "status",
+                "updatedAt",
+                "version"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "userName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "loginName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "builtIn": {
+                  "type": "boolean"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/PlatformAdminStatus"
+                },
+                "lastLoginAt": {
+                  "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+                },
+                "version": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "sortKey": {
+            "$ref": "#/components/schemas/PlatformAdminSortKey"
+          },
+          "sortDirection": {
+            "$ref": "../common/enum.schemas.yaml#/components/schemas/SortDirection"
+          }
+        }
+      },
+      "PlatformAdminProfileUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "userName",
+          "expectedVersion",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "userName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": ".*\\S.*"
+          },
+          "mobile": {
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          }
+        }
+      },
+      "PlatformAdminStatusTransitionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetStatus",
+          "expectedVersion",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "targetStatus": {
+            "$ref": "#/components/schemas/PlatformAdminStatus"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          }
+        }
+      },
+      "PlatformCurrentPasswordChangeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currentPassword",
+          "newPassword",
+          "expectedSessionVersion"
+        ],
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "writeOnly": true
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "writeOnly": true
+          },
+          "expectedSessionVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "PlatformCurrentPasswordChangeResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "sessionsRevoked",
+          "reauthenticationRequired"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "sessionsRevoked": {
+            "type": "boolean"
+          },
+          "reauthenticationRequired": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PlatformLoginOtpSendRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["mobile"],
+        "properties": {"mobile": {"type": "string", "minLength": 6, "maxLength": 32, "pattern": "^\\+?[0-9][0-9 -]{5,30}$"}}
+      },
+      "PlatformLoginOtpVerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["mobile", "code"],
+        "properties": {"mobile": {"type": "string", "minLength": 6, "maxLength": 32, "pattern": "^\\+?[0-9][0-9 -]{5,30}$"}, "code": {"type": "string", "minLength": 6, "maxLength": 6, "pattern": "^[0-9]{6}$"}}
+      },
+      "PlatformOtpDispatchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["expiresAt"],
+        "properties": {"expiresAt": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"}, "debugVerificationCode": {"type": "string", "nullable": true, "minLength": 6, "maxLength": 6, "pattern": "^[0-9]{6}$"}}
+      },
+      "PlatformPasswordRecoveryStartRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["loginName", "mobile"],
+        "properties": {"loginName": {"type": "string", "minLength": 1, "maxLength": 64}, "mobile": {"type": "string", "minLength": 6, "maxLength": 32, "pattern": "^\\+?[0-9][0-9 -]{5,30}$"}}
+      },
+      "PlatformPasswordRecoveryStartResponse": {"type": "object", "additionalProperties": false, "required": ["status"], "properties": {"status": {"type": "string", "enum": ["OTP_REQUIRED"]}}},
+      "PlatformPasswordRecoveryOtpSendRequest": {"type": "object", "additionalProperties": false},
+      "PlatformPasswordRecoveryOtpVerifyRequest": {"type": "object", "additionalProperties": false, "required": ["code"], "properties": {"code": {"type": "string", "minLength": 6, "maxLength": 6, "pattern": "^[0-9]{6}$"}}},
+      "PlatformPasswordRecoveryVerification": {"type": "object", "additionalProperties": false, "required": ["status"], "properties": {"status": {"type": "string", "enum": ["PASSWORD_REQUIRED"]}}},
+      "PlatformPasswordRecoveryCompleteRequest": {"type": "object", "additionalProperties": false, "required": ["newPassword"], "properties": {"newPassword": {"type": "string", "writeOnly": true, "minLength": 8, "maxLength": 128}}},
+      "PlatformPasswordRecoveryCompletion": {"type": "object", "additionalProperties": false, "required": ["status", "sessionsRevoked", "reauthenticationRequired"], "properties": {"status": {"type": "string", "enum": ["COMPLETED"]}, "sessionsRevoked": {"type": "boolean"}, "reauthenticationRequired": {"type": "boolean"}}},
+      "PlatformSessionView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sessionId",
+          "sessionVersion",
+          "displayName",
+          "capabilities",
+          "platformAdminAccessible"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "Optimistic version required by the current-password command."
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "capabilities": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "platform.admin.access",
+                "platform.workspace.initialize"
+              ]
+            }
+          },
+          "platformAdminAccessible": {
+            "type": "boolean",
+            "description": "Gateway-derived UI admission projection. It never replaces owner-side typed authorization."
+          }
+        }
+      },
+      "PlatformAdminSortKey": {
+        "type": "string",
+        "enum": [
+          "USER_NAME",
+          "LOGIN_NAME",
+          "LAST_LOGIN_AT",
+          "UPDATED_AT"
+        ]
+      },
+      "PlatformAdminStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "DISABLED"
+        ]
+      }
+    }
+  }
+}

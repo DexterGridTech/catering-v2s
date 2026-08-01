@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 4,
+  "kind": "affected-l2-registry",
+  "status": "R5_DESIGN_NORMATIVE_PENDING_IMPLEMENTATION",
+  "fallback": "ALL_R5_L2",
+  "surfaces": [
+    {
+      "id": "backend-owner",
+      "paths": [
+        "apps/backend/catering-business-server/modules/",
+        "apps/backend/catering-business-server/"
+      ],
+      "tests": [
+        "apps/backend/catering-business-server/src/test/"
+      ]
+    },
+    {
+      "id": "edge-contract",
+      "paths": [
+        "contracts/openapi/",
+        "scripts/generate/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/architecture/",
+        "apps/frontend/operations-admin/src/tests/architecture/"
+      ]
+    },
+    {
+      "id": "frontend-foundation",
+      "paths": [
+        "libraries/frontend/admin-ui-foundation/"
+      ],
+      "tests": [
+        "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+        "apps/frontend/platform-admin/src/tests/architecture/",
+        "apps/frontend/operations-admin/src/tests/architecture/"
+      ]
+    },
+    {
+      "id": "PLATFORM-AUTH",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/authentication/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/authentication.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-PASSWORD",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/authentication/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/authentication.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-WORKSPACES",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/workspace-management/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-ADMIN-USERS",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/platform-administration/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-WORKSPACE-OVERVIEW",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/workspace-administration/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/workspace-overview.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-ORGANIZATION-OVERVIEW",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/organization-overview.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-CONTRACT-OVERVIEW",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/contract-overview.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-ROLES",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/workspace-iam/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-WORKSPACE-ACCOUNTS",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/workspace-iam/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts"
+      ]
+    },
+    {
+      "id": "PLATFORM-EXTENSION-FIELDS",
+      "paths": [
+        "apps/frontend/platform-admin/src/features/extension-management/ui/"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-AUTH",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/authentication/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/authentication.spec.ts"
+      ]
+    },
+    {
+      "id": "PUBLIC-INVITATION",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/invitation-acceptance.spec.ts"
+      ]
+    },
+    {
+      "id": "PUBLIC-ACCESS-RECOVERY",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/authentication/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-SHELL",
+      "paths": [
+        "apps/frontend/operations-admin/src/app/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-PASSWORD",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/authentication/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-ORG-STRUCTURE",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/organization-structure/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/organization-hierarchy.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-BUSINESS-ENTITIES",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/business-entity-management/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/business-entity-management.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-STORES",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/store-management/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/store-management.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-CONTRACTS",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/contract-management/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/contract-management.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-USERS",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/workspace-user/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-STORE-PROFILE",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/store-profile/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts"
+      ]
+    },
+    {
+      "id": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts"
+      ]
+    }
+  ],
+  "closure": {
+    "r5FrontendSurfaceCount": 22,
+    "surfaceIdsSource": "contracts/policy/frontend-asset-carryover-manifest.json#surfaces[*].id",
+    "rule": "all 22 surface ids occur exactly once; shared path changes may select multiple precise rows; fallback is only for genuinely unclassified changes"
+  },
+  "phaseBusinessL2Obligations": [
+    {
+      "packageId": "RM1P6-U02",
+      "implementationState": "ACTIVE_REQUIRED",
+      "surfaceIds": [
+        "PLATFORM-AUTH",
+        "PLATFORM-PASSWORD",
+        "PLATFORM-WORKSPACES",
+        "PLATFORM-ADMIN-USERS",
+        "PLATFORM-WORKSPACE-OVERVIEW",
+        "PLATFORM-ORGANIZATION-OVERVIEW",
+        "PLATFORM-CONTRACT-OVERVIEW",
+        "PLATFORM-ROLES",
+        "PLATFORM-WORKSPACE-ACCOUNTS",
+        "PLATFORM-EXTENSION-FIELDS"
+      ],
+      "tests": [
+        "apps/frontend/platform-admin/src/tests/l2/authentication.spec.ts",
+        "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+        "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts",
+        "apps/frontend/platform-admin/src/tests/l2/workspace-overview.spec.ts",
+        "apps/frontend/platform-admin/src/tests/l2/organization-overview.spec.ts",
+        "apps/frontend/platform-admin/src/tests/l2/contract-overview.spec.ts",
+        "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts",
+        "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
+        "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts"
+      ],
+      "requirement": "Each P6-2 business surface must be exercised by a non-empty real browser L2 case through a managed run. The package exit must bind its run-scoped business PASS and independent cleanup PASS; focused unit, static or mock-only proof cannot substitute."
+    },
+    {
+      "packageId": "RM1P6-U03",
+      "implementationState": "PENDING_FUTURE_UNIT",
+      "surfaceIds": [
+        "OPERATIONS-AUTH",
+        "PUBLIC-INVITATION",
+        "PUBLIC-ACCESS-RECOVERY",
+        "OPERATIONS-SHELL",
+        "OPERATIONS-PASSWORD",
+        "OPERATIONS-ORG-STRUCTURE",
+        "OPERATIONS-BUSINESS-ENTITIES",
+        "OPERATIONS-STORES",
+        "OPERATIONS-CONTRACTS",
+        "OPERATIONS-USERS",
+        "OPERATIONS-STORE-PROFILE",
+        "OPERATIONS-FIVE-HOME-BOOTSTRAPS"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/authentication.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/invitation-acceptance.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/organization-hierarchy.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/business-entity-management.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/store-management.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/contract-management.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
+        "apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts"
+      ],
+      "requirement": "Each future P6-3 business surface must be exercised by a non-empty real browser L2 case through a managed run before P6-3 can exit. This is a future obligation only and does not authorize P6-3 implementation now."
+    }
+  ],
+  "legacyDeferredTestCount": 0,
+  "legacyTestDebts": []
+}

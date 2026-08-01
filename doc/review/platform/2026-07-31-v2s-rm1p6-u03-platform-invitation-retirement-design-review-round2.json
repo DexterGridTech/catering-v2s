@@ -1,0 +1,52 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "RM1P6-U03-PLATFORM-RETIREMENT-DESIGN",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-07-31-v2s-rm1p6-u03-platform-invitation-retirement-design-review-round2.md",
+    "sha256": "9c1f0e7984c889a65c0dab03135a0b915682397131d13449966be147ceb06ab2"
+  },
+  "blindReviewDeclaration": "Fresh independent reviewer formed findings and verdict before reading author finding intake.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "56de9e1a0a3944d3a166c442845b796c95d721148b56ac5d1d1d6a93e6ecdb7f",
+  "transcriptionSource": "Mechanical JSON transcription of the independent round-two Markdown verdict; it is not a third review.",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["governance-admission", "ui-ia", "contract-codegen", "audit-retention", "l2-boundary"]
+  },
+  "expectedBehavior": [
+    "Platform duplicate invitation UI and HTTP retire atomically.",
+    "Operations and public invitation routes remain.",
+    "Static proof does not imply L2, business or cleanup."
+  ],
+  "findings": [
+    {"id": "M1", "severity": "M", "status": "CONFIRMED", "unitIds": ["RM1P6-PLATFORM-INVITATION-RETIREMENT-U07"], "title": "U07 is not a verifiable implementation-facing delivery unit and is absent from the unique granularity manifest", "evidence": "Round-two reviewer found the former standalone shape did not satisfy production validator bindings.", "risk": "Activation could modify IA, frontend, OpenAPI and generated output without a verifiable receipt denominator.", "disposition": "NO_GO: integrate a schema-valid serial U07 unit into U09 or a fully wired equivalent and rerun validator."},
+    {"id": "M2", "severity": "M", "status": "CONFIRMED", "unitIds": ["RM1P6-PLATFORM-INVITATION-RETIREMENT-U07"], "title": "PASS U07 UI prewrite baseline lacks concrete ten-dimensional control facts", "evidence": "Former baseline supplied dimension names instead of retained and retired consumer facts.", "risk": "A source edit could omit invitation entry removal, accessibility assertions or retained owner-readback behavior.", "disposition": "NO_GO: bind retained and retired consumers with exact IA facts and actual activation uiInteractionAdmission."},
+    {"id": "S1", "severity": "S", "status": "CONFIRMED", "unitIds": ["RM1P6-PLATFORM-INVITATION-RETIREMENT-U07"], "title": "Generator input states three actual augmentation keys but catalog has exactly two", "evidence": "Catalog contains only createWorkspaceInvitation and cancelWorkspaceInvitation augmentation keys.", "risk": "A fabricated deletion denominator would make source closure and receipt narration false.", "disposition": "Correct exact denominator to five operations plus create/cancel augmentation keys."},
+    {"id": "S2", "severity": "S", "status": "CONFIRMED", "unitIds": ["RM1P6-PLATFORM-INVITATION-RETIREMENT-U07"], "title": "Audit retain and operations counterexample lacks concrete focused proof", "evidence": "The original exact surface set had no proof of platform invitation removal while retaining platform account/role and operations invitation audit.", "risk": "String cleanup could damage retained audit branches.", "disposition": "Add exact platform reject/account-role retain plus operations retain focused proof."},
+    {"id": "N1", "severity": "N", "status": "CONFIRMED", "unitIds": ["RM1P6-PLATFORM-INVITATION-RETIREMENT-U07"], "title": "Historical U03 receipt-chain and affected-L2 failures remain disclosed", "evidence": "Current U03 historical receipt chain and separate affected-L2 signal are not U07 receipt evidence.", "risk": "Static outcomes could be misrepresented as L2, business or cleanup closure.", "disposition": "Do not mask or reclassify; static outputs are not L2, business or cleanup."}
+  ],
+  "unitVerdicts": [
+    {"id": "RM1P6-PLATFORM-INVITATION-RETIREMENT-U07", "verdict": "NO_GO", "findingIds": ["M1", "M2", "S1", "S2", "N1"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "Correctly removes an unapproved duplicate platform invite path while retaining approved operations and public journeys.",
+    "simplerAlternativeAssessment": "Hiding the tab while retaining HTTP or fixture compatibility leaves the prohibited face and is rejected.",
+    "costFit": "Serial static retirement before an independently designed remote L2 bootstrap is proportional and avoids false runtime claims.",
+    "verdict": "NO_GO until M1 and M2 are repaired."
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Direction is correct but package admission and UI prewrite evidence were insufficient.",
+    "severityCounts": {"M": 2, "S": 2, "N": 1},
+    "authorizationBoundary": "No source, contract, runtime, L2, business or cleanup authorization follows from this verdict."
+  }
+}

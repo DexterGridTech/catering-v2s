@@ -1,21 +1,40 @@
 #!/usr/bin/env node
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+
 let input = "";
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => { input += chunk; });
 process.stdin.on("end", () => {
-  let prompt = "";
+  let rawPrompt = "";
   try {
     const parsed = JSON.parse(input || "{}");
-    if (typeof parsed.prompt === "string") prompt = parsed.prompt.trim().toLowerCase();
+    if (typeof parsed.prompt === "string") rawPrompt = parsed.prompt.trim();
   } catch {
-    prompt = "";
+    rawPrompt = "";
+  }
+  const prompt = rawPrompt.toLowerCase();
+  if (rawPrompt) {
+    const promptSha256 = crypto.createHash("sha256").update(rawPrompt).digest("hex");
+    const directory = path.join(process.cwd(), ".runtime/compliance-control/problem-intakes");
+    fs.mkdirSync(directory, { recursive: true });
+    const intake = {
+      schemaVersion: 1,
+      kind: "user-prompt-problem-family-intake",
+      promptSha256,
+      state: "REQUIRES_PROBLEM_FAMILY_DISPOSITION",
+    };
+    fs.writeFileSync(path.join(directory, `${promptSha256}.json`), `${JSON.stringify(intake, null, 2)}\n`);
+    fs.mkdirSync(path.join(process.cwd(), ".runtime/compliance-control"), { recursive: true });
+    fs.writeFileSync(path.join(process.cwd(), ".runtime/compliance-control/current-problem-intake.json"), `${JSON.stringify(intake, null, 2)}\n`);
   }
   const routes = [
     { name: "cs-failure-recall", match: /\b(fail|failure|error|exception|timeout|log|debug)\b|失败|报错|日志|排障/ },
     { name: "cs-managed-runtime-execution", match: /\b(dev|start|restart|runtime|runner|container)\b|启动|重启|运行环境/ },
     { name: "cs-memory-recall", match: /\b(memory|history|decision|heritage|roadmap)\b|记忆|历史|决策|路线图/ },
     { name: "cs-code-structure-recall", match: /\b(code|symbol|class|method|reference|where)\b|代码|符号|引用|在哪/ },
-    { name: "cs-spec-to-plan", match: /\b(spec|plan|design|architecture)\b|规格|计划|设计|架构/ }
+    { name: "cs-spec-to-plan", match: /\b(spec|plan|design|architecture|review|self-review|adversarial)\b|规格|计划|设计|架构|评审|审查|自审|对抗/ }
   ];
   const selected = prompt ? routes.find((route) => route.match.test(prompt)) : undefined;
   const lines = ["STATUS=PASS", `RECOMMENDED_SKILL=${selected?.name ?? "NONE"}`];

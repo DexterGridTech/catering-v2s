@@ -1,0 +1,8 @@
+{
+  "kind": "r3-business-source-inventory",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "R3",
+  "schemaVersion": 1,
+  "sources": [],
+  "status": "EMPTY_BEFORE_GATE_0"
+}

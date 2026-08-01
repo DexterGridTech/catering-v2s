@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-IMPLEMENTATION-MANIFEST-CURRENT-STATE-20260731",
+  "genericProblem": "A post-remediation implementation manifest can retain historical planned-create dispositions or omit fields newly required by its active validator, so it stops describing the current eligible worktree and fails one stale field at a time.",
+  "rootCauseClass": "HISTORICAL_MANIFEST_NOT_RECONCILED_TO_ACTIVE_VALIDATOR_AND_CURRENT_WORKTREE",
+  "finiteDenominator": [
+    "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json: all six delivery units",
+    "the manifest's 70 change surfaces with disposition=create, each verified against its current repository path",
+    "RM1P6-UI-IA-CONFORMANCE-U06: six sourceComplianceDenominators and required delivery-unit fields",
+    "tools/implementation-design-granularity/cli.mjs: current-path create predicate and full delivery-unit validation"
+  ],
+  "searchedSurfaces": [
+    "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json",
+    "tools/implementation-design-granularity/cli.mjs",
+    "project-memory/index.json",
+    "contracts/policy/frontend-asset-carryover-manifest.json",
+    "contracts/policy/standards-coverage-matrix.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-ui-ia-conformance-u06-implementation-amendment.md"
+  ],
+  "searchQueries": [
+    "disposition=create plus current path existence across all delivery units",
+    "sourceComplianceDenominators missing sourceSha256 or owningSourceSet",
+    "required delivery-unit fields orderedChain dependencyAndSerialBoundaries dataEvolution uiAndTerms evidence forbiddenPseudoFixes discriminator",
+    "DESIGN_HASH_DRIFT and postRemediationDeclaration binding"
+  ],
+  "counterexamples": [
+    {"id":"CE-01","claim":"Every create disposition should be rewritten to update without checking current existence.","result":"REJECTED_WITH_EVIDENCE","boundary":"A genuinely absent future capability path remains create and must stay fail-closed if it appears before the declared implementation point."},
+    {"id":"CE-02","claim":"A post-remediation declaration excuses the new unit from all validator-required fields.","result":"REJECTED_WITH_EVIDENCE","boundary":"Post-remediation provenance distinguishes review status only; every current delivery unit still needs complete current-state validation."}
+  ],
+  "findings": [
+    {"findingId":"PF-01","classification":"CONFIRMED","summary":"All 70 historical create dispositions point to paths that now exist, contradicting the validator's explicit current-path create predicate."},
+    {"findingId":"PF-02","classification":"CONFIRMED","summary":"The later-added U06 unit lacked the complete source denominator bindings and the required current delivery-unit structure, causing serial first-error failures."},
+    {"findingId":"PF-03","classification":"CONFIRMED","summary":"The manifest still bound its top-level design and repeated owning-source hashes to pre-remediation bytes, creating honest design-hash drift."}
+  ],
+  "preventionDispositions": [
+    {"findingId":"PF-01","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"tools/implementation-design-granularity/cli.mjs current-path create predicate and its existing create-already-exists failure"},
+    {"findingId":"PF-02","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"tools/implementation-design-granularity/cli.mjs full delivery-unit and source-denominator validation"},
+    {"findingId":"PF-03","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"tools/implementation-design-granularity/cli.mjs design artifact hash binding and post-remediation declaration validation"}
+  ]
+}

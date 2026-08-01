@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$root_dir"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/check/ui-wireframe-traceability --batch <deliveryBatchId>
+  scripts/check/ui-wireframe-traceability --batch <deliveryBatchId> --closure <closure-json>
+  scripts/check/ui-wireframe-traceability --audit-waves W1-W6
+  scripts/check/ui-wireframe-traceability --self-test
+
+The gate is fail-closed: every user-visible UI element registered for an
+included Journey must point to an approved wireframe anchor, an exact runtime
+path and (for closure) a PASS business/cleanup manifest. A page, locator,
+generated hook or screenshot cannot satisfy this gate by itself.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "$#" -eq 0 ]]; then
+  usage
+  [[ "$#" -eq 0 ]] && exit 2 || exit 0
+fi
+
+exec yarn node --input-type=module - "$@" <<'NODE'
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import crypto from 'node:crypto';
+import {pathToFileURL} from 'node:url';
+
+const {resolveRoadmap} = await import(pathToFileURL(path.join(process.cwd(), 'tools/roadmap-registry/core.mjs')).href);
+
+const root = process.cwd();
+const registryPath = 'doc/review/platform/2026-07-18-ui-wireframe-element-traceability.json';
+const defaultMapPath = 'doc/review/platform/2026-07-17-four-domain-module-delivery-batch-map.md';
+const args = process.argv.slice(2);
+
+class GateError extends Error {
+  constructor(code, message) { super(message); this.code = code; }
+}
+
+function fail(code, message) { throw new GateError(code, message); }
+function read(relative) { return fs.readFileSync(path.join(root, relative), 'utf8'); }
+function exists(relative) { return fs.existsSync(path.join(root, relative)); }
+function norm(value) { return String(value ?? '').trim(); }
+function unique(values) { return new Set(values).size === values.length; }
+function codeTokens(value) { return [...String(value).matchAll(/`([^`]+)`/gu)].map((match) => match[1]); }
+
+function loadRegistry() {
+  if (!exists(registryPath)) fail('UI_WIREFRAME_REGISTRY_MISSING', registryPath);
+  let registry;
+  try { registry = JSON.parse(read(registryPath)); } catch (error) { fail('UI_WIREFRAME_REGISTRY_INVALID_JSON', String(error)); }
+  if (registry.schemaVersion !== 1 || registry.policyStatus !== 'ACTIVE') {
+    fail('UI_WIREFRAME_POLICY_INVALID', 'registry schemaVersion=1 and policyStatus=ACTIVE are required');
+  }
+  if (!Array.isArray(registry.batches)) fail('UI_WIREFRAME_BATCH_REGISTRY_MISSING', 'batches must be an array');
+  return registry;
+}
+
+function batchFromMap(batchId) {
+  const mapPath = resolveRoadmap({repoRoot: root, batchId, consumer: 'module-delivery-batch'}).entry.batchMapRef ?? defaultMapPath;
+  const line = read(mapPath).split(/\r?\n/u).find((candidate) => candidate.startsWith(`| \`${batchId}\` |`));
+  if (!line) fail('BATCH_UNKNOWN', batchId);
+  const cells = line.slice(1, -1).split('|').map(norm);
+  const steps = codeTokens(cells[3]);
+  if (!steps.length) fail('BATCH_STEPS_MISSING', batchId);
+  return {batchId, steps, scenarios: [...new Set(steps.map((step) => step.replace(/\.S\d+$/u, '')))]};
+}
+
+function resolveWireframeRef(ref, scenarioId) {
+  const raw = norm(ref);
+  const [relative, anchor = ''] = raw.split('#', 2);
+  if (!relative || !anchor) fail('WIREFRAME_REF_INCOMPLETE', `${scenarioId}: ${raw}`);
+  if (!exists(relative)) fail('WIREFRAME_REF_MISSING', `${scenarioId}: ${relative}`);
+  const source = read(relative);
+  if (!/线框|wireframe/iu.test(source)) fail('WIREFRAME_SOURCE_MISSING', `${scenarioId}: ${relative}`);
+  if (!source.includes(anchor)) fail('WIREFRAME_ANCHOR_MISSING', `${scenarioId}: ${relative}#${anchor}`);
+  return {relative, anchor};
+}
+
+function checkManifest(ref, context) {
+  if (!exists(ref)) fail('UI_WIREFRAME_EVIDENCE_MISSING', `${context}: ${ref}`);
+  let manifest;
+  try { manifest = JSON.parse(read(ref)); } catch (error) { fail('UI_WIREFRAME_EVIDENCE_INVALID_JSON', `${context}: ${ref}: ${String(error)}`); }
+  if (manifest.business?.status !== 'PASS' || manifest.cleanup?.status !== 'PASS') {
+    fail('UI_WIREFRAME_EVIDENCE_NOT_PASS', `${context}: ${ref} business/cleanup must both be PASS`);
+  }
+}
+
+function checkScenario(record, requiredSteps, {requireEvidence}) {
+  const scenarioId = norm(record?.scenarioId);
+  if (!scenarioId) fail('UI_WIREFRAME_SCENARIO_ID_MISSING', 'scenario record has no scenarioId');
+  if (!requiredSteps.every((step) => step.startsWith(`${scenarioId}.`))) {
+    fail('UI_WIREFRAME_STEP_SCOPE_INVALID', `${scenarioId}: required step outside scenario`);
+  }
+  if (record.reviewStatus !== 'PASS') fail('UI_WIREFRAME_REVIEW_NOT_PASS', `${scenarioId}: reviewStatus=${record.reviewStatus || 'missing'}`);
+  resolveWireframeRef(record.wireframeRef, scenarioId);
+  const elements = record.elements;
+  const variances = Array.isArray(record.variances) ? record.variances : [];
+  if (!Array.isArray(elements) || elements.length === 0) fail('UI_WIREFRAME_ELEMENTS_MISSING', `${scenarioId}: elements must be non-empty`);
+  if (!unique(elements.map((element) => norm(element.elementId)))) fail('UI_WIREFRAME_ELEMENT_DUPLICATE', `${scenarioId}: duplicate elementId`);
+  if ((record.unmappedElements ?? []).length !== 0) fail('UI_WIREFRAME_UNMAPPED_ELEMENTS', `${scenarioId}: ${record.unmappedElements.join(',')}`);
+  const wireframeSource = read(resolveWireframeRef(record.wireframeRef, scenarioId).relative);
+  for (const element of elements) {
+    const id = norm(element.elementId);
+    const mappingType = element.mappingType || 'DIRECT';
+    if (!id || !norm(element.surface) || !norm(element.runtimePath) || !norm(element.runtimeAnchor) || element.status !== 'PASS') {
+      fail('UI_WIREFRAME_ELEMENT_INCOMPLETE', `${scenarioId}/${id || 'missing'} requires surface/runtimePath/runtimeAnchor/status=PASS`);
+    }
+    if (!exists(norm(element.runtimePath))) fail('UI_WIREFRAME_RUNTIME_PATH_MISSING', `${scenarioId}/${id}: ${element.runtimePath}`);
+    if (!read(norm(element.runtimePath)).includes(norm(element.runtimeAnchor))) {
+      fail('UI_WIREFRAME_RUNTIME_ANCHOR_MISSING', `${scenarioId}/${id}: ${element.runtimePath}#${element.runtimeAnchor}`);
+    }
+    if (mappingType === 'DIRECT') {
+      if (!norm(element.wireframeAnchor) || !wireframeSource.includes(norm(element.wireframeAnchor))) {
+        fail('UI_WIREFRAME_ANCHOR_MISSING', `${scenarioId}/${id}: direct mapping requires an anchor present in the approved wireframe`);
+      }
+    } else if (mappingType === 'JUSTIFIED_ADDITION') {
+      const variance = variances.find((candidate) => candidate.varianceId === element.varianceRef && candidate.kind === 'ADDED_ELEMENT');
+      if (!variance || variance.status !== 'APPROVED' || !norm(variance.rationale) || !norm(variance.businessValue)
+        || !norm(variance.rejectionImpact) || !norm(variance.decisionRef)) {
+        fail('UI_WIREFRAME_ADDITION_NOT_JUSTIFIED', `${scenarioId}/${id}: addition needs approved rationale, businessValue, rejectionImpact and decisionRef`);
+      }
+    } else {
+      fail('UI_WIREFRAME_MAPPING_TYPE_INVALID', `${scenarioId}/${id}: ${mappingType}`);
+    }
+    if (requireEvidence) {
+      if (!Array.isArray(element.evidenceRefs) || element.evidenceRefs.length === 0) fail('UI_WIREFRAME_ELEMENT_EVIDENCE_MISSING', `${scenarioId}/${id}`);
+      element.evidenceRefs.forEach((ref) => checkManifest(norm(ref), `${scenarioId}/${id}`));
+    }
+  }
+  for (const omission of record.omittedWireframeElements ?? []) {
+    if (!norm(omission.wireframeAnchor) || !wireframeSource.includes(norm(omission.wireframeAnchor))
+      || omission.status !== 'APPROVED' || !norm(omission.rationale) || !norm(omission.businessValue)
+      || !norm(omission.rejectionImpact) || !norm(omission.decisionRef)) {
+      fail('UI_WIREFRAME_OMISSION_NOT_JUSTIFIED', `${scenarioId}: omitted wireframe element needs approved rationale, businessValue, rejectionImpact and decisionRef`);
+    }
+  }
+  return elements.length;
+}
+
+function batchRecordFor(registry, batchId, batch) {
+  const direct = registry.batches.find((candidate) => candidate.deliveryBatchId === batchId);
+  if (batchId !== 'DAER-DUAL-ADMIN-EXPERIENCE-01') return direct;
+  const scenarios = batch.scenarios.map((scenarioId) => {
+    const source = (direct?.scenarios ?? []).concat(registry.batches.flatMap((candidate) => candidate.scenarios ?? []))
+      .find((candidate) => candidate.scenarioId === scenarioId);
+    return source ? structuredClone(source) : null;
+  });
+  if (scenarios.some((record) => !record)) return null;
+  return {deliveryBatchId: batchId, scenarios};
+}
+
+function runBatch(batchId, closurePath = null) {
+  const registry = loadRegistry();
+  const batch = batchFromMap(batchId);
+  const batchRecord = batchRecordFor(registry, batchId, batch);
+  if (!batchRecord) fail('UI_WIREFRAME_BATCH_REGISTRY_MISSING', batchId);
+  const scenarioRecords = batch.scenarios.map((scenarioId) => {
+    const record = batchRecord.scenarios?.find((candidate) => candidate.scenarioId === scenarioId);
+    if (!record) fail('UI_WIREFRAME_SCENARIO_REGISTRY_MISSING', `${batchId}: ${scenarioId}`);
+    return {record, steps: batch.steps.filter((step) => step.startsWith(`${scenarioId}.`))};
+  });
+  const requireEvidence = Boolean(closurePath);
+  const elementCount = scenarioRecords.reduce((sum, item) => sum + checkScenario(item.record, item.steps, {requireEvidence}), 0);
+  if (closurePath) {
+    if (!exists(closurePath)) fail('CLOSURE_NOT_FOUND', closurePath);
+    let closure;
+    try { closure = JSON.parse(read(closurePath)); } catch (error) { fail('CLOSURE_INVALID_JSON', String(error)); }
+    const trace = closure.uiWireframeTraceability;
+    if (!trace || trace.status !== 'PASS' || trace.registerRef !== registryPath || trace.gateVersion !== 1) {
+      fail('CLOSURE_UI_WIREFRAME_GATE_MISSING', `${closurePath}: uiWireframeTraceability must be PASS, gateVersion=1 and point to ${registryPath}`);
+    }
+  }
+  console.log(`UI_WIREFRAME_TRACEABILITY=PASS`);
+  console.log(`DELIVERY_BATCH_ID=${batchId}`);
+  console.log(`SCENARIOS=${batch.scenarios.length}`);
+  console.log(`ELEMENT_MAPPINGS=${elementCount}`);
+  console.log(`EVIDENCE_REQUIRED=${requireEvidence}`);
+}
+
+function selfTest() {
+  const registry = loadRegistry();
+  const record = structuredClone(registry.batches[0].scenarios[0]);
+  const requiredSteps = [`${record.scenarioId}.S01`];
+  checkScenario(record, requiredSteps, {requireEvidence: false});
+  let rejected = false;
+  try {
+    const bad = structuredClone(record);
+    bad.elements[0].runtimeAnchor = 'missing-runtime-anchor-fixture';
+    checkScenario(bad, requiredSteps, {requireEvidence: false});
+  } catch { rejected = true; }
+  if (!rejected) fail('UI_WIREFRAME_SELF_TEST_BAD_FIXTURE_ACCEPTED', 'missing runtime anchor was not rejected');
+  const inputDigest = crypto.createHash('sha256').update(read(registryPath)).digest('hex');
+  console.log('UI_WIREFRAME_TRACEABILITY_SELF_TEST=PASS');
+  console.log('VALIDATOR_VERSION=ui-wireframe-traceability-v2');
+  console.log(`INPUT_SHA256=${inputDigest}`);
+  console.log('GREEN_CONTROL=PASS');
+  console.log('RED_FIXTURE_MISSING_RUNTIME_BINDING=PASS');
+}
+
+try {
+  if (args[0] === '--self-test' && args.length === 1) selfTest();
+  else if (args[0] === '--batch') {
+    if (!args[1]) fail('ARGUMENT_MISSING', '--batch requires deliveryBatchId');
+    const closureIndex = args.indexOf('--closure');
+    const closurePath = closureIndex >= 0 ? args[closureIndex + 1] : null;
+    if (closureIndex >= 0 && !closurePath) fail('ARGUMENT_MISSING', '--closure requires closure JSON');
+    runBatch(args[1], closurePath);
+  } else if (args[0] === '--audit-waves' && args[1] === 'W1-W6') {
+    const registry = loadRegistry();
+    const ids = [...new Set(registry.batches.filter((batch) => ['W1','W2','W3','W4','W5','W6'].includes(batch.wave)).map((batch) => batch.deliveryBatchId))];
+    if (!ids.length) fail('UI_WIREFRAME_WAVE_REGISTRY_MISSING', 'W1-W6');
+    ids.forEach((id) => runBatch(id));
+    console.log(`UI_WIREFRAME_WAVE_AUDIT=PASS`);
+    console.log(`WAVE_BATCHES=${ids.length}`);
+  } else fail('ARGUMENT_INVALID', 'use --batch, --audit-waves W1-W6 or --self-test');
+} catch (error) {
+  if (error instanceof GateError) {
+    console.error(`UI_WIREFRAME_TRACEABILITY=FAIL`);
+    console.error(`ERROR_CODE=${error.code}`);
+    console.error(`MESSAGE=${error.message}`);
+  } else {
+    console.error(`UI_WIREFRAME_TRACEABILITY=FAIL`);
+    console.error(`ERROR_CODE=UNEXPECTED`);
+    console.error(`MESSAGE=${String(error)}`);
+  }
+  process.exit(1);
+}
+NODE

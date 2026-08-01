@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "packageId": "R5-CR-U03",
+  "kind": "security-authorization-static-control-closure",
+  "status": "PASS",
+  "firstFailure": {
+    "command": "gradle :apps:backend:catering-business-server:compileJava --no-daemon",
+    "result": "FAIL",
+    "errors": 34,
+    "classification": "CR02_PREDECESSOR_ESCAPE",
+    "rootCause": "generated records had become typed while edge adapters still supplied Map<String,Object> or mismatched JsonNode shapes"
+  },
+  "closure": {
+    "staticCompliance": "PASS",
+    "incrementalReceiptCoverage": "PASS",
+    "focusedCompile": "BUILD SUCCESSFUL",
+    "generatedWireEscapeDisposition": "typed record and JsonNode adapters restored; invitation commands and pages use generated request/response records"
+  },
+  "securityAssertions": {
+    "passwordResetOtp": "PASSWORD_RESET_VERIFY purpose; 3 sends and 5 invalid verifications per 10-minute window; security facts survive typed failures",
+    "auditAuthorization": "current assignment, page applicability and data scope are re-read through workspace-iam public task API before owner audit dispatch",
+    "lastPlatformAdmin": "platform-iam owner-global advisory transaction lock precedes target row lock and enabled count",
+    "invitationReadback": "HTTP generated wire exposes maskedMobile; raw mobile remains owner-local",
+    "workspaceIamReplay": "receipt lookup and fingerprint comparison precede command; replay returns stored readback without re-executing command or audit"
+  },
+  "deferredByAcceptedCorrection": [
+    "extension durable receipt canonical identity to R5-CR-U04",
+    "platform-asset receipt and fresh bindGrant replay to R5-CR-U04",
+    "commercial-group initialization audit owner move to R5-CR-U04"
+  ],
+  "business": "NOT_APPLICABLE_STATIC_PACKAGE",
+  "cleanup": "PASS",
+  "authorityBoundary": "No DEV, seed/reset, remote runtime or CR04+ action is authorized by this closure."
+}

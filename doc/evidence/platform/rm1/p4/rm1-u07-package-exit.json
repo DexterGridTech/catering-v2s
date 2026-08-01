@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1-U07",
+  "status": "PASS",
+  "actualChangedPaths": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "beforeSha256": "17df3f69e7aa5f042e61fd6859ae45231f8a51c52dbbc7e66d4ba0d5162b1844",
+      "afterSha256": "23dc5c8919f3add9778cd919df9bff0f1b7915b03e7845c1210d768fa62be87c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+      "beforeSha256": "2f745b974c5c9fcacaaeb94499c5927089d28f9bcbd9ac76e89e3c5ece4b7275",
+      "afterSha256": "93b2dfc2441e9af764f0781a4e19662195187de168196bd1ca1300e94aca336b"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+      "beforeSha256": "e7e575e246ad653890d50ed485f6d34efe06b5d665fa071169b32b6ca80fa37e",
+      "afterSha256": "4c36136d3c2ca0224db36aea1e0daf96b59b59e6dbeeb90e36f60d6435f8c75a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationTaskPathLookup.java",
+      "beforeSha256": "844ebbc6ef6b0adf77218902bd239758ebd8062ddbe43f9e51aee4c5790d76ae",
+      "afterSha256": "f9734a7268ae38261181dce233b6b37f172beebb8adeca1876438b5eb1f4a55f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+      "beforeSha256": "234b3628d536bbcdc118f682d1445fd6c2da2ff357416113ff530da8a3f0e4fc",
+      "afterSha256": "ababe80b58bdb79637e88958eae530f670a4afa50cbd7b12882a2adaca96d30d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationAssignmentCandidateService.java",
+      "beforeSha256": "0130faa7d386f2dc7d36364e7a5f87dd6e229f1a0186622a277de4a496bd2643",
+      "afterSha256": "71cb5072ff75d74c0c0871f4a9709e4f938198a5c39c3adbd7134aeecd8450ca"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java",
+      "beforeSha256": "a02b6ef3ff7209711fcff5f82e8df0e01c68d4aeb935e95ef4266db315ae3bfe",
+      "afterSha256": "022da4dccd1560fc302e9b77c751d9bd502688f900ceb3d9ede767cd1b1abe8a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+      "beforeSha256": "0548075f2c9f08a9f0d70c21adf8b6c8aa0c56c1be9895bcce4196ec0408c3a6",
+      "afterSha256": "6b590886119c9f12418dcb1f7d9783c28b40acccc5ed4b3880bca51dc523bf32"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationTaskPathService.java",
+      "beforeSha256": "9108fdc03604611fadc96420586b921860b8277c76223e5879e56162f328d27f",
+      "afterSha256": "0b148fb57804826f6678d0d3c4a288373bc71d66e36b4c5015911979f01707f9"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java",
+      "beforeSha256": "5744b98e6feb4ca5d6b156c9aad4018941d72952915f80b7b791ce5ef9048f0e",
+      "afterSha256": "2a62f735db0e89f323dcdd326ac2145e51d2e6380660f8b6f81ffd8cfd9fe50a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+      "beforeSha256": "75a4a7219fd61638b4b000c226a10f96430aff8898575640825862743fd5fe6c",
+      "afterSha256": "e3f7a41d722d9a2adbd97923744a463a1f3fc95a46213a8bcac243778a168ed6"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java",
+      "beforeSha256": "bd9aaf11f8ecdd5d823a3c0033db5f9a480608ea31443951cd9fa766c4591d6e",
+      "afterSha256": "611cdaffad391dfe24993ea80238c952682fe04fa911130db61b87da99216383"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java",
+      "beforeSha256": "9620ffa9c85d0d9b9359b40e508e0d8a7d422c69481eb05ac56a3cbf9380b33d",
+      "afterSha256": "ce0a1c4a0990c51d2981de5316ff090388c6003de71b32de11fa677c07214fb7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java",
+      "beforeSha256": "09c322384b4f2743857bcb0622334c816ca702e146babec15b2a94a7ae2f58b0",
+      "afterSha256": "53334e56f6498d718af2dde3dd208d7c4d5583a6683b2d8fb7ceec04c04605d1"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+      "beforeSha256": "1590fd5f28b5e943086a0b9c9c15f1b0d5349a3cb8e00e9a11f73afd226646de",
+      "afterSha256": "8d14a74a4ad03e939f8d5327d983c32f33d182d659cc5ef56a8889e82543cc14"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+      "beforeSha256": "fc746c3bc136fe6534de83e40bd9b6ac4b2d1b8ad55013b81bc1dd44c132c11c",
+      "afterSha256": "d3267f3c126209bcd3dc6463fba45daf6fd4fe99be3daedd7c2ef7c18b6ee110"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java",
+      "beforeSha256": "ec7246e0061e89bf51fb7e415b0a2f335c186b05684d0cf5484be344c7fa84b4",
+      "afterSha256": "b254bf96d69b67f61fb7e368e4125ea608e2fbde1d3f809292139366a9884a0f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceSessionRequestCache.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "b62860ab968ea5a753d46d32076f58102b752f469f7a6a2c8c1ebe8e2487da8d"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+      "beforeSha256": "62a9caf2dca9a8a355a2484281d0961b3e9294faab23637169e8292d65bb9afb",
+      "afterSha256": "1dc6a9a26aa60abfd6c1618a6c0035ec541b0a2dab4b88dc2c5e1cb18edac17c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+      "beforeSha256": "7cfaf0a68c3ac600cacbe6897d6c3f7ab0f08ab975d40efac30dec9ef85077e4",
+      "afterSha256": "1f8fb6bb2ac3bdf86e0de42cfb95729ede3fbfd54a9e952dc3d412b3ba3fcc1a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "d125a4e0011aa0a19baa101c576a56e84207de9aed39e06d06b89642ec0c5748"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ef3bd69df957d70c77d76b57b13a2998604249df4806b48b7820e89b7246a90e"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "6352c3ace207cec3070578857b8f1a6c04e0126c71374b9326a5302b86c58a79"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationPageWireMapper.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "a30fc717929a7cec55a58dfe5c235e92ea2dcce48a7bd70ba8c90315b550b534"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/db/migration/V20260729_010000_000__rm1_p4_hot_foreign_key_indexes.sql",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "14eae15e02729cb66ba41c9fe0e3c09212b553ceed6e262dd0cfd49822f98284"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ff4b0e5caa3519cd080eec08102d42f17609b08e48f032518b2565f97a1c4e1c"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3e8a92ca8c1122d80214be8123dc1847c32ee598f59c190c8c8e4464b4662ed8"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/canonical-performance-ledger.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "ffa6052bce6388cc25b6819527fcf9c16dab25a0ec64af87f7feb29005f59cf0"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/p4-ledger-authority-problem-family-discovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1d0f542e1a68ae566999b58b7311692a6e504239ce308d15900749c90f3a42c2"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-dexter-authorized-historical-receipt-recovery.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "1d067ee3a93ff33868a5e4ec8ea8e3789f47d9799f9920c81dd93c5e94aa74ea"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-dexter-business-requirement-traceability-record.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "709e4d1b03b70ba46b60e2c4ad3e453bc7c44e5bda56479a2cf8933cd290283a"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-implementation-amendment.json",
+      "beforeSha256": "bd14051fe0ee53b9f7e5a5cec24b81a3b4f1d7cb3ac7c1a47501a66aa8669316",
+      "afterSha256": "c60472987ca54dd9fe297b27583f33f47fc87bb2ff2dc6f9d223a5af28d1f5dd"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-package-input.json",
+      "beforeSha256": "7cdcfd1dce04686278ff658aa6de5c9c70cb5c1d69707f44071882db0669703a",
+      "afterSha256": "f9d51f64c3e150d05b0f3ac333db6745ec5f79e49c0cdf3c3be7402f6ccad4a8"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-source-compliance-disposition.json",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "3e8aecdf3779d2d501a4a2913354cce7cb69cee7ebe3c4b71d41a3c17681d869"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "beforeSha256": "8cac40b465e2e35bdb5144cbdc028de30b1c05ba10bf32f05d0d44b3fda3e00c",
+      "afterSha256": "f85a464ebdf3a409ac3707cb04228b6a1034cf3cc5554b38e9b1a9bede36fc74"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-p4-implementation-review-round2-codex.md",
+      "beforeSha256": "ABSENT",
+      "afterSha256": "2121e2781b36e8969b634264320496e86ddb677901b0bc2a336d5545c0c9f00e"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "beforeSha256": "be85dda3236a76898d7ce805be46d275489c2f98877bb53979afa08f3774d42d",
+      "afterSha256": "987c617890427b093ed30ceef5c4061fe0861749971c61dd86db9f29ea57e792"
+    },
+    {
+      "path": "tools/performance/canonical-ledger-scanner.mjs",
+      "beforeSha256": "d6554525d2b7a69b283c347a8aac4d8612b95343a6c9332fedff28343e7c80c3",
+      "afterSha256": "83549736b6f2d0f3a5bff6bcf21eb09fb2967e7f09f65bb6812dd8c9fc5a74b6"
+    }
+  ],
+  "incrementalChecks": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "afterSha256": "23dc5c8919f3add9778cd919df9bff0f1b7915b03e7845c1210d768fa62be87c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+      "afterSha256": "93b2dfc2441e9af764f0781a4e19662195187de168196bd1ca1300e94aca336b",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+      "afterSha256": "4c36136d3c2ca0224db36aea1e0daf96b59b59e6dbeeb90e36f60d6435f8c75a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationTaskPathLookup.java",
+      "afterSha256": "f9734a7268ae38261181dce233b6b37f172beebb8adeca1876438b5eb1f4a55f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+      "afterSha256": "ababe80b58bdb79637e88958eae530f670a4afa50cbd7b12882a2adaca96d30d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationAssignmentCandidateService.java",
+      "afterSha256": "71cb5072ff75d74c0c0871f4a9709e4f938198a5c39c3adbd7134aeecd8450ca",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java",
+      "afterSha256": "022da4dccd1560fc302e9b77c751d9bd502688f900ceb3d9ede767cd1b1abe8a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+      "afterSha256": "6b590886119c9f12418dcb1f7d9783c28b40acccc5ed4b3880bca51dc523bf32",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationTaskPathService.java",
+      "afterSha256": "0b148fb57804826f6678d0d3c4a288373bc71d66e36b4c5015911979f01707f9",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java",
+      "afterSha256": "2a62f735db0e89f323dcdd326ac2145e51d2e6380660f8b6f81ffd8cfd9fe50a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+      "afterSha256": "e3f7a41d722d9a2adbd97923744a463a1f3fc95a46213a8bcac243778a168ed6",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java",
+      "afterSha256": "611cdaffad391dfe24993ea80238c952682fe04fa911130db61b87da99216383",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java",
+      "afterSha256": "ce0a1c4a0990c51d2981de5316ff090388c6003de71b32de11fa677c07214fb7",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java",
+      "afterSha256": "53334e56f6498d718af2dde3dd208d7c4d5583a6683b2d8fb7ceec04c04605d1",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+      "afterSha256": "8d14a74a4ad03e939f8d5327d983c32f33d182d659cc5ef56a8889e82543cc14",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+      "afterSha256": "d3267f3c126209bcd3dc6463fba45daf6fd4fe99be3daedd7c2ef7c18b6ee110",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java",
+      "afterSha256": "b254bf96d69b67f61fb7e368e4125ea608e2fbde1d3f809292139366a9884a0f",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceSessionRequestCache.java",
+      "afterSha256": "b62860ab968ea5a753d46d32076f58102b752f469f7a6a2c8c1ebe8e2487da8d",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+      "afterSha256": "1dc6a9a26aa60abfd6c1618a6c0035ec541b0a2dab4b88dc2c5e1cb18edac17c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+      "afterSha256": "1f8fb6bb2ac3bdf86e0de42cfb95729ede3fbfd54a9e952dc3d412b3ba3fcc1a",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "afterSha256": "d125a4e0011aa0a19baa101c576a56e84207de9aed39e06d06b89642ec0c5748",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java",
+      "afterSha256": "ef3bd69df957d70c77d76b57b13a2998604249df4806b48b7820e89b7246a90e",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+      "afterSha256": "6352c3ace207cec3070578857b8f1a6c04e0126c71374b9326a5302b86c58a79",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationPageWireMapper.java",
+      "afterSha256": "a30fc717929a7cec55a58dfe5c235e92ea2dcce48a7bd70ba8c90315b550b534",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/resources/db/migration/V20260729_010000_000__rm1_p4_hot_foreign_key_indexes.sql",
+      "afterSha256": "14eae15e02729cb66ba41c9fe0e3c09212b553ceed6e262dd0cfd49822f98284",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+      "afterSha256": "ff4b0e5caa3519cd080eec08102d42f17609b08e48f032518b2565f97a1c4e1c",
+      "result": "PASS"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+      "afterSha256": "3e8a92ca8c1122d80214be8123dc1847c32ee598f59c190c8c8e4464b4662ed8",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/canonical-performance-ledger.json",
+      "afterSha256": "ffa6052bce6388cc25b6819527fcf9c16dab25a0ec64af87f7feb29005f59cf0",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/p4-ledger-authority-problem-family-discovery.json",
+      "afterSha256": "1d0f542e1a68ae566999b58b7311692a6e504239ce308d15900749c90f3a42c2",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-dexter-authorized-historical-receipt-recovery.json",
+      "afterSha256": "1d067ee3a93ff33868a5e4ec8ea8e3789f47d9799f9920c81dd93c5e94aa74ea",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-dexter-business-requirement-traceability-record.md",
+      "afterSha256": "709e4d1b03b70ba46b60e2c4ad3e453bc7c44e5bda56479a2cf8933cd290283a",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-implementation-amendment.json",
+      "afterSha256": "c60472987ca54dd9fe297b27583f33f47fc87bb2ff2dc6f9d223a5af28d1f5dd",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-package-input.json",
+      "afterSha256": "f9d51f64c3e150d05b0f3ac333db6745ec5f79e49c0cdf3c3be7402f6ccad4a8",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-source-compliance-disposition.json",
+      "afterSha256": "3e8aecdf3779d2d501a4a2913354cce7cb69cee7ebe3c4b71d41a3c17681d869",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-design-granularity-manifest.json",
+      "afterSha256": "f85a464ebdf3a409ac3707cb04228b6a1034cf3cc5554b38e9b1a9bede36fc74",
+      "result": "PASS"
+    },
+    {
+      "path": "doc/review/platform/2026-07-28-v2s-rm1-p4-implementation-review-round2-codex.md",
+      "afterSha256": "2121e2781b36e8969b634264320496e86ddb677901b0bc2a336d5545c0c9f00e",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/compliance-control/cli.mjs",
+      "afterSha256": "987c617890427b093ed30ceef5c4061fe0861749971c61dd86db9f29ea57e792",
+      "result": "PASS"
+    },
+    {
+      "path": "tools/performance/canonical-ledger-scanner.mjs",
+      "afterSha256": "83549736b6f2d0f3a5bff6bcf21eb09fb2967e7f09f65bb6812dd8c9fc5a74b6",
+      "result": "PASS"
+    }
+  ],
+  "sourceComplianceDisposition": {
+    "path": "doc/evidence/platform/rm1/p4/rm1-u07-source-compliance-disposition.json",
+    "sha256": "3e8aecdf3779d2d501a4a2913354cce7cb69cee7ebe3c4b71d41a3c17681d869"
+  },
+  "fullComplianceScan": "PASS",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "controls": [
+    {
+      "ruleId": "CR05-WC-01",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-WC-02",
+      "state": "ACTIVE_RED_VERIFIED"
+    },
+    {
+      "ruleId": "CR05-HISTORICAL-RECEIPT-RECOVERY",
+      "state": "ACTIVE_RED_VERIFIED"
+    }
+  ],
+  "dynamicEvidence": [
+    {
+      "kind": "QUERY_COUNT_BUDGET",
+      "runner": "scripts/test/r5-remote-testcontainers.mjs",
+      "suite": ":apps:backend:catering-business-server:test",
+      "result": "PASS",
+      "cleanup": "PASS",
+      "currentSourceHashes": [
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+          "sha256": "d3267f3c126209bcd3dc6463fba45daf6fd4fe99be3daedd7c2ef7c18b6ee110"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+          "sha256": "3e8a92ca8c1122d80214be8123dc1847c32ee598f59c190c8c8e4464b4662ed8"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p4/canonical-performance-ledger.json",
+          "sha256": "ffa6052bce6388cc25b6819527fcf9c16dab25a0ec64af87f7feb29005f59cf0"
+        },
+        {
+          "path": "tools/performance/canonical-ledger-scanner.mjs",
+          "sha256": "83549736b6f2d0f3a5bff6bcf21eb09fb2967e7f09f65bb6812dd8c9fc5a74b6"
+        }
+      ],
+      "log": {
+        "path": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785283313018-44839/runner-result.txt",
+        "sha256": "7f1fbecfdfea9f59de73cf62ff7e0aa52b2eeb23386772d120707932b4602f82"
+      }
+    }
+  ]
+}

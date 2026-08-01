@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-EXECUTABLE-IMPORT-AND-DISCRIMINATOR-DENOMINATOR-20260729",
+  "genericProblem": "An implementation-facing design can inherit accepted UI declarations yet restate them with non-export names, omit their lower-bound primitives, omit supporting shell chrome, or phrase a negative discriminator as a legal business path. The resulting future gate can be mechanically green while either impossible to execute or aimed at the wrong behavior.",
+  "rootCauseClass": "IMPLEMENTATION_FACING_DENOMINATOR_DRIFT",
+  "finiteDenominator": [
+    "all physical-screen and roster foundation primitive occurrences",
+    "all 94 accepted IA FOUNDATION_PRIMITIVE declarations",
+    "all three delivery-unit discriminators",
+    "all non-catalog screen contracts and U01 frontend change surfaces",
+    "all roster concrete final-consumer path claims"
+  ],
+  "searchedSurfaces": [
+    "libraries/frontend/admin-ui-foundation/src/index.ts",
+    "contracts/catalog/admin-catalog.json",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationTaskPathService.java",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+    "doc/decisions/2026-07-28-v2s-rm1-ia-02-operation-context-interaction.md",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md",
+    "doc/decisions/2026-07-29-v2s-rm1-ia-05-operations-users-recovery-and-home-interaction.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-final-ui-surface-roster.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-physical-screen-import-contracts.md",
+    "doc/evidence/platform/rm1/p6/rm1-u09-implementation-design-granularity-manifest.json"
+  ],
+  "searchQueries": [
+    "overlayLock|observedBaseQuery|useOverlayLock|createObservedBaseQuery",
+    "FOUNDATION_PRIMITIVE=",
+    "IA02-PLATFORM-AUTHENTICATED-SHELL|IA02-OPERATIONS-AUTHENTICATED-SHELL",
+    "Use a REGION assignment to manage PROJECT users",
+    "apps/frontend/(platform-admin|operations-admin)/src"
+  ],
+  "counterexamples": [
+    "The IA sources already use only actual foundation exports; the naming regression begins in the implementation-facing roster/contracts.",
+    "A REGION assignment can legally manage a PROJECT below that same REGION; only a peer-region target is rejected by ancestor containment.",
+    "The carry-over surface ledger intentionally has 22 surfaces and no PLATFORM-SHELL; platform shell chrome therefore needs a supporting-screen contract rather than an invented 23rd catalog surface.",
+    "U01 has no UI implementation authority, so its frontend declarations must be limited to generated consumer output rather than whole app source roots."
+  ],
+  "findings": [
+    {"findingId":"M1","genericProblem":"Foundation contract names can be module basenames rather than exports.","rootCauseClass":"NON_EXECUTABLE_IMPORT_SYMBOL","applicability":"CONFIRMED","evidence":"index.ts exports useOverlayLock and createObservedBaseQuery, while the P6 roster/contracts used their module basenames.","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"manifest-backed foundation import equality"},
+    {"findingId":"M2","genericProblem":"A physical screen contract can silently drop an accepted IA primitive.","rootCauseClass":"IA_LOWER_BOUND_ERASURE","applicability":"CONFIRMED","evidence":"IA and physical screen rows disagree for login, Drawers and result Modals.","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"physical import denominator IA-lower-bound rule"},
+    {"findingId":"S1","genericProblem":"A supporting app shell absent from the catalog denominator can be omitted from implementation proof.","rootCauseClass":"SUPPORTING_SCREEN_UNBOUND","applicability":"CONFIRMED","evidence":"IA02 defines platform authenticated shell; the 22-surface ledger has no platform-shell surface.","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"physical screen support-contract rule"},
+    {"findingId":"S2","genericProblem":"A no-UI delivery phase can name a root wide enough to admit feature UI.","rootCauseClass":"CHANGE_SURFACE_OVERBREADTH","applicability":"CONFIRMED","evidence":"U01 named whole app src while only generated consumers are allowed.","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"implementation-design-granularity D4 declared change-surface equality"},
+    {"findingId":"S3","genericProblem":"A negative discriminator can misstate an allowed owner relation.","rootCauseClass":"BUSINESS_NEGATIVE_WITHOUT_POSITIVE_CONTROL","applicability":"CONFIRMED","evidence":"admin catalog and OrganizationTaskPathService allow same-region project management by ancestor containment.","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"delivery-unit discriminator paired-control rule"},
+    {"findingId":"N1-N3","genericProblem":"Concrete path/count prose can drift from the physical contract and frozen manifest.","rootCauseClass":"ROSTER_RECONCILIATION_DRIFT","applicability":"CONFIRMED","evidence":"generic recovery filenames and four-versus-five non-catalog prose disagreed with physical contracts/manifest.","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"re-freeze reconciliation checklist"}
+  ],
+  "preventionDispositions": [
+    {"findingId":"M1","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"manifest-backed foundation import equality"},
+    {"findingId":"M2","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"physical import denominator IA-lower-bound rule"},
+    {"findingId":"S1","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"physical screen support-contract rule"},
+    {"findingId":"S2","preventionDestination":"EXISTING_MACHINE_CONTROL","owningSourceOrControl":"implementation-design-granularity D4 declared change-surface equality"},
+    {"findingId":"S3","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"delivery-unit discriminator paired-control rule"},
+    {"findingId":"N1-N3","preventionDestination":"REVIEW_CHECKLIST","owningSourceOrControl":"re-freeze reconciliation checklist"}
+  ],
+  "preventionSetEquality": {
+    "expected": ["export-name scan", "IA-lower-bound import rule", "supporting-shell contract", "U01 generated-only paths", "paired U03 negative/positive discriminator", "concrete-path/count reconciliation"],
+    "actual": ["export-name scan", "IA-lower-bound import rule", "supporting-shell contract", "U01 generated-only paths", "paired U03 negative/positive discriminator", "concrete-path/count reconciliation"],
+    "equal": true
+  },
+  "authorizationBoundary": "Static implementation-facing design and evidence only; no implementation, contract/source/test modification, dynamic execution, DEV, seed/reset, Roadmap state or repository-control action."
+}

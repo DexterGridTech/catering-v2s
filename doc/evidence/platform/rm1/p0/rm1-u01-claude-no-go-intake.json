@@ -1,0 +1,36 @@
+{
+  "skillUsed": "SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787",
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P0-EXECUTION-TRUTHFULNESS",
+  "genericProblem": "A package can report PASS when production controls, their self-tests, and the package-exit fact surface do not share an exact, fail-closed result denominator.",
+  "rootCauseClass": "CONTROL_EXECUTION_AND_EVIDENCE_SPLIT_BRAIN",
+  "finiteDenominator": [
+    "scripts/run/rm1-p0-standards-execution",
+    "tools/verify-gates/cli.mjs#affectedL2",
+    "tools/verify-gates/cli.mjs#prepareSelfTestClean",
+    "tools/compliance-control/cli.mjs#validatePackageExit",
+    "contracts/policy/affected-l2-registry.json",
+    "doc/evidence/platform/rm1/p0/rm1-u01-package-exit.json"
+  ],
+  "searchedSurfaces": ["scripts/run", "scripts/check", "tools", "contracts/policy", "doc/evidence/platform/rm1/p0"],
+  "searchQueries": ["if { ... } | tee", "affected-l2", "prepareSelfTestClean", "requiredControlRefs", "deferredUntilPhase"],
+  "counterexamples": [
+    {"id": "CE-1", "result": "Four P0 required standards refs return zero; the failure is not a blanket standards runner failure."},
+    {"id": "CE-2", "result": "P3-A capability-invariants remains explicitly NOT_READY and is outside P0 completion; no P3 claim is made."}
+  ],
+  "findings": [
+    {"findingId": "M1", "classification": "CONFIRMED", "statement": "The runner places multiple commands in an if-condition group, so a non-final failure can be hidden by a later success."},
+    {"findingId": "M2", "classification": "CONFIRMED", "statement": "affected-l2 is production-red for 18 legacy missing targets and lacks the accepted RM2-expiring DEFERRED representation."},
+    {"findingId": "M3", "classification": "CONFIRMED", "statement": "The P0 exit has no exact production status record for declared refs and the affected-l2 self-test prepared empty target paths."},
+    {"findingId": "S1", "classification": "CONFIRMED", "statement": "The managed-run manifest used business PASS for standards-execution success while P0 business is not applicable."},
+    {"findingId": "N1-N3", "classification": "NOT_A_PROBLEM_FOR_P0_EXIT", "statement": "The frozen historical-intake exact set remains intentionally immutable; P3-A and P4 skeleton states remain explicitly non-completion and are not advanced by this remediation."}
+  ],
+  "preventionDispositions": [
+    {"findingId": "M1", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/run/rm1-p0-standards-execution#per-reference-exit-accumulation"},
+    {"findingId": "M2", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "tools/verify-gates/cli.mjs#affectedL2"},
+    {"findingId": "M3", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "tools/compliance-control/cli.mjs#validatePackageExit"},
+    {"findingId": "S1", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/run/rm1-p0-standards-execution#manifest"},
+    {"findingId": "N1-N3", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "doc/review/platform/2026-07-28-v2s-rm1-p0-implementation-review-claude.md#2"}
+  ]
+}

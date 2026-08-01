@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-P6-INTERACTION-ACCEPTANCE-STATE-DRIFT-20260729",
+  "genericProblem": "A recorded Dexter/Claude acceptance can leave every prerequisite artifact in an older draft state, causing a later fail-closed manifest to contradict the actual authorization or tempting an implementation to ignore the artifact state.",
+  "rootCauseClass": "Acceptance was communicated after the interaction documents were written, but the acceptance state was not reconciled across their finite prerequisite set.",
+  "finiteDenominator": ["IA-01", "IA-02", "IA-03", "IA-04", "IA-05", "P6 interaction preparation and re-freeze design"],
+  "searchedSurfaces": ["five IA front-matter status fields", "five DEXTER_WIREFRAME_REVIEW anchors", "P6 preparation status and re-freeze procedure", "Dexter 2026-07-29 GO instruction", "P6 post-remediation Claude review"],
+  "searchQueries": ["DEXTER_WIREFRAME_REVIEW", "PREPARED_FOR_DEXTER_INTERACTION_ACCEPTANCE", "DRAFT_FOR_DEXTER_WIREFRAME_REVIEW", "implementationAuthority"],
+  "counterexamples": ["Claude GO alone does not authorize implementation; every artifact continues to state implementationAuthority=false.", "A future bounded Dexter edit would require the affected IA to return to a draft/re-review state; acceptance is not a permanent implementation authorization."],
+  "findings": [{"findingId": "RM1-P6-INTERACTION-ACCEPTANCE-STATE-01", "classification": "DEXTER_DECISION", "evidence": "Dexter explicitly declared the interaction design GO and directed entry to implementation-facing detail design and planning, while all six prerequisite artifacts still declared UNSET/draft acceptance state."}],
+  "preventionDispositions": [{"findingId": "RM1-P6-INTERACTION-ACCEPTANCE-STATE-01", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md#7"}]
+}

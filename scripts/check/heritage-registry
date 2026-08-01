@@ -71,8 +71,8 @@ function validateRequired(required) {
     assert(repository.buildFallback === false, "HERITAGE_BUILD_FALLBACK_FORBIDDEN", repository.repositoryId);
     assert(Array.isArray(repository.selectedAssets), "HERITAGE_ASSETS_INVALID", repository.repositoryId);
     if (repository.repositoryId === "catering-all-v2") {
-      assert(repository.selectedAssetPolicy === "EXACT_R1_DENOMINATOR", "HERITAGE_ALL_V2_POLICY_INVALID");
-      assert(repository.selectedAssets.length === 13, "HERITAGE_ALL_V2_ASSET_COUNT_INVALID");
+      assert(repository.selectedAssetPolicy === "EXPLICIT_FROZEN_SELECTED_ASSETS", "HERITAGE_ALL_V2_POLICY_INVALID");
+      assert(repository.selectedAssets.length === 31, "HERITAGE_ALL_V2_ASSET_COUNT_INVALID");
     } else {
       assert(repository.selectedAssetPolicy === "EXPLICIT_FUTURE_REF_ONLY", "HERITAGE_FUTURE_POLICY_INVALID");
       assert(repository.selectedAssets.length === 0, "HERITAGE_FUTURE_ASSETS_MUST_BE_EMPTY");
@@ -125,9 +125,9 @@ function validateRegistry(required, registry, {verifyFiles = true} = {}) {
   }
 }
 
-function expectFail(name, required, registry, expectedCode) {
+function expectFail(name, required, registry, expectedCode, {verifyFiles = false} = {}) {
   try {
-    validateRegistry(required, registry, {verifyFiles: false});
+    validateRegistry(required, registry, {verifyFiles});
   } catch (error) {
     assert(error.message.startsWith(expectedCode), "HERITAGE_SELF_TEST_WRONG_FAILURE", `${name}: ${error.message}`);
     process.stdout.write(`FIXTURE=${name}; EXPECTED=FAIL; ACTUAL=FAIL; CODE=${expectedCode}\n`);
@@ -138,34 +138,50 @@ function expectFail(name, required, registry, expectedCode) {
 
 function selfTest(required, registry) {
   validateRegistry(required, registry, {verifyFiles: false});
-  process.stdout.write("FIXTURE=approved-four-repository-thirteen-asset; EXPECTED=PASS; ACTUAL=PASS\n");
+  process.stdout.write("FIXTURE=approved-four-repository-thirty-one-asset; EXPECTED=PASS; ACTUAL=PASS\n");
 
+  const missingRequired = clone(required);
   const missing = clone(registry);
+  missingRequired.repositories[0].selectedAssets.pop();
   missing.repositories[0].selectedAssets.pop();
-  expectFail("missing-selected-asset", required, missing, "HERITAGE_REGISTRY_DENOMINATOR_MISMATCH");
+  expectFail("missing-selected-asset", missingRequired, missing, "HERITAGE_ALL_V2_ASSET_COUNT_INVALID");
 
+  const extraRequired = clone(required);
   const extra = clone(registry);
+  extraRequired.repositories.push(clone(extraRequired.repositories[1]));
+  extraRequired.repositories[4].repositoryId = "extra-current-truth";
   extra.repositories.push(clone(extra.repositories[1]));
   extra.repositories[4].repositoryId = "extra-current-truth";
-  expectFail("extra-current-repository", required, extra, "HERITAGE_REGISTRY_DENOMINATOR_MISMATCH");
+  expectFail("extra-current-repository", extraRequired, extra, "HERITAGE_REQUIRED_REPOSITORY_COUNT_INVALID");
 
   for (const [name, field] of [
     ["write-back-enabled", "writeBack"],
     ["runtime-fallback-enabled", "runtimeFallback"],
     ["build-fallback-enabled", "buildFallback"],
   ]) {
+    const candidateRequired = clone(required);
     const candidate = clone(registry);
+    candidateRequired.repositories[0][field] = true;
     candidate.repositories[0][field] = true;
-    expectFail(name, required, candidate, "HERITAGE_REGISTRY_DENOMINATOR_MISMATCH");
+    const code = field === "writeBack"
+      ? "HERITAGE_WRITE_BACK_FORBIDDEN"
+      : field === "runtimeFallback"
+        ? "HERITAGE_RUNTIME_FALLBACK_FORBIDDEN"
+        : "HERITAGE_BUILD_FALLBACK_FORBIDDEN";
+    expectFail(name, candidateRequired, candidate, code);
   }
 
+  const futureImplicitRequired = clone(required);
   const futureImplicit = clone(registry);
+  futureImplicitRequired.repositories[1].selectedAssets.push(clone(required.repositories[0].selectedAssets[0]));
   futureImplicit.repositories[1].selectedAssets.push(clone(required.repositories[0].selectedAssets[0]));
-  expectFail("future-source-implicit-asset", required, futureImplicit, "HERITAGE_REGISTRY_DENOMINATOR_MISMATCH");
+  expectFail("future-source-implicit-asset", futureImplicitRequired, futureImplicit, "HERITAGE_FUTURE_ASSETS_MUST_BE_EMPTY");
 
+  const hashDriftRequired = clone(required);
   const hashDrift = clone(registry);
+  hashDriftRequired.repositories[0].selectedAssets[0].expectedSha256 = "0".repeat(64);
   hashDrift.repositories[0].selectedAssets[0].expectedSha256 = "0".repeat(64);
-  expectFail("selected-asset-hash-drift", required, hashDrift, "HERITAGE_REGISTRY_DENOMINATOR_MISMATCH");
+  expectFail("selected-asset-hash-drift", hashDriftRequired, hashDrift, "HERITAGE_SOURCE_HASH_MISMATCH", {verifyFiles: true});
   process.stdout.write("HERITAGE_REGISTRY_SELF_TEST=PASS\n");
 }
 
