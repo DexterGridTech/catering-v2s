@@ -5,6 +5,7 @@ import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
+import com.catering.v2s.platform.iam.api.PlatformDiagnosticBootstrap;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -24,7 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 /** Platform credential/session owner. It has no default principal and stores only token hashes. */
 @Service
-public class PlatformAuthenticationService implements PlatformGovernanceAuthorization {
+public class PlatformAuthenticationService implements PlatformGovernanceAuthorization, PlatformDiagnosticBootstrap {
     private static final long SESSION_TTL_MILLIS = 8 * 60 * 60 * 1000L;
     private static final int CREDENTIAL_FAILURE_LIMIT = 10;
     private static final long CREDENTIAL_LOCK_MILLIS = 15 * 60 * 1000L;
@@ -49,17 +50,17 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     private final SecureRandom secureRandom = new SecureRandom();
 
     @org.springframework.beans.factory.annotation.Autowired
-    public PlatformAuthenticationService(JdbcTemplate jdbc, TimeProvider timeProvider, PlatformCommandReceiptService receipts, @Value("${platform.iam.rate-limit-hmac-secret:}") String rateLimitHmacSecret, @Value("${platform.otp.debug-code-exposure:false}") boolean debugCodeExposure) {
+    public PlatformAuthenticationService(JdbcTemplate jdbc, TimeProvider timeProvider, PlatformCommandReceiptService receipts, @Value("${platform.iam.rate-limit-hmac-secret:}") String rateLimitHmacSecret, com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy) {
         this.jdbc = jdbc;
         this.timeProvider = timeProvider;
         this.receipts = receipts;
         if (rateLimitHmacSecret == null || rateLimitHmacSecret.isBlank()) throw new IllegalStateException("platform.iam.rate-limit-hmac-secret must be configured");
         this.rateLimitHmacSecret = rateLimitHmacSecret.getBytes(StandardCharsets.UTF_8);
-        this.debugCodeExposure = debugCodeExposure;
+        this.debugCodeExposure = otpDebugExposurePolicy.enabled();
     }
 
     /** Test-only compatibility constructor; production always supplies the configured HMAC secret. */
-    public PlatformAuthenticationService(JdbcTemplate jdbc, TimeProvider timeProvider) { this(jdbc, timeProvider, new PlatformCommandReceiptService(jdbc, timeProvider), UUID.randomUUID().toString(), false); }
+    public PlatformAuthenticationService(JdbcTemplate jdbc, TimeProvider timeProvider) { this(jdbc, timeProvider, new PlatformCommandReceiptService(jdbc, timeProvider), UUID.randomUUID().toString(), new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("", false)); }
 
     /** Public OTP entry is mobile-bound; display-only mobile data is never read as identity. */
     @Transactional(noRollbackFor = OtpRateLimitedException.class)
@@ -306,6 +307,33 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         return createAdministrator(loginName, displayName, mobile, initialPassword, AuditActor.system());
     }
 
+    /**
+     * Establishes the sole initial administrator for a diagnostic-owned empty database. This is not
+     * an HTTP capability and cannot create a second administrator or bypass normal actor checks.
+     */
+    @Transactional
+    @Override
+    public DiagnosticAdministrator bootstrapFirstAdministrator(String loginName, String displayName, char[] initialPassword) {
+        jdbc.execute("LOCK TABLE platform_iam.platform_admin IN EXCLUSIVE MODE");
+        Long existing = jdbc.queryForObject("SELECT COUNT(*) FROM platform_iam.platform_admin", Long.class);
+        if (existing == null || existing != 0L) throw new DiagnosticBootstrapUnavailableException();
+        PlatformAdminReadback created = createAdministratorForDiagnosticBootstrap(loginName, displayName, initialPassword);
+        return new DiagnosticAdministrator(created.id(), created.loginName());
+    }
+
+    private PlatformAdminReadback createAdministratorForDiagnosticBootstrap(String loginName, String displayName, char[] initialPassword) {
+        String normalized = normalize(loginName);
+        if (displayName == null || displayName.trim().isEmpty() || initialPassword == null || initialPassword.length < 8) throw new InvalidAdministratorInputException();
+        UUID id = UUID.randomUUID();
+        long now = timeProvider.currentEpochMillis();
+        try {
+            jdbc.update("INSERT INTO platform_iam.platform_admin (id, login_name, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, 'ENABLED', 1, ?, ?)", id, loginName.trim(), normalized, displayName.trim(), now, now);
+            jdbc.update("INSERT INTO platform_iam.platform_credential (platform_admin_id, password_hash, algorithm, changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)", id, passwordEncoder.encode(new String(initialPassword)), now);
+        } catch (org.springframework.dao.DuplicateKeyException exception) { throw new LoginNameConflictException(); }
+        audit(id, "PLATFORM_DIAGNOSTIC_ADMIN_BOOTSTRAPPED", now, AuditActor.system(), ADMIN_CREATED.allow(List.of(new AuditChange("displayName", null, displayName.trim()))));
+        return requireAdministrator(id);
+    }
+
     @Transactional
     public PlatformAdminReadback createAdministrator(String loginName, String displayName, String mobile, char[] initialPassword, AuditActor actor) {
         requireEnabledPlatformAdministrator(actor);
@@ -522,6 +550,12 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     public record PasswordChangeResult(String status, boolean sessionsRevoked, boolean reauthenticationRequired) { }
     public static final class InvalidCredentialsException extends RuntimeException { }
     public static final class AccountDisabledException extends RuntimeException { }
+    /**
+     * Diagnostic bootstrap is a process-startup fixture, not an HTTP owner fact.  Keep this
+     * exception non-public so the typed HTTP-problem denominator cannot mistake it for a
+     * contract-visible failure.
+     */
+    static final class DiagnosticBootstrapUnavailableException extends RuntimeException { }
     public static final class CredentialLockedException extends RuntimeException { }
     public static final class SessionExpiredException extends RuntimeException { }
     public static final class PlatformAdminNotFoundException extends RuntimeException { }

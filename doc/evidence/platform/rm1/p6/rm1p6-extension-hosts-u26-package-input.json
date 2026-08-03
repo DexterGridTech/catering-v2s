@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-EXTENSION-HOSTS-U26",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-extension-hosts-u26-delivery-manifest.json",
+  "deliveryManifestSha256": "43d1b845caef3061677f3c4e95d8feedca74caaf83001412c9e4ec8f4e7428f0",
+  "unitId": "RM1P6-EXTENSION-HOSTS-U26",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance", "scripts/check/edge-codegen"],
+  "requiredControlRuleIds": [],
+  "businessEvidenceObligation": "MANAGED_DEV_OWNER_EXTENSION_HOST_READBACK_AND_FORM_DETAIL_PROOF",
+  "serialPredecessor": {
+    "packageId": "RM1P6-AUTH-SURFACE-LAYOUT-U24",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-package-exit.json",
+    "exitSha256": "e1e508b29e28256aca0f5d5af491f77a1b039a98afbe14f50d183681f37bbbbc"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
+    "sha256": "fbc4d6ca3f22c321e07b5ad8b1d60ee82daf9f54177f552de9660496b162d835"
+  },
+  "authorizationBoundary": "Dexter authorized all three new extension hosts from OpenAPI contract through owner and UI, with a formal fresh seed at completion."
+}

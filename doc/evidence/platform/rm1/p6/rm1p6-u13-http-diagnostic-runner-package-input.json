@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-RUNNER-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u13-http-diagnostic-runner-delivery-manifest.json",
+  "deliveryManifestSha256": "a238dd6f67dd7c208bc462d0b3deb645338c747e493cc24944ffe4fef195fa0e",
+  "unitId": "RM1P6-HTTP-DIAGNOSTIC-RUNNER-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["U13-C06-SERVER_EVENT_FIELD_EXACTNESS", "U13-C06-LOCAL_BACKEND_ONLY_EXECUTION", "U13-C06-DIAGNOSTIC_OUTPUT_SECRET_EXCLUSION"],
+  "businessEvidenceObligation": "NOT_APPLICABLE_HTTP_DIAGNOSTIC_INTEGRATION",
+  "serialPredecessor": {"packageId": "RM1P6-HTTP-DIAGNOSTIC-METRICS-U13", "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-package-exit.json", "exitSha256": "413a817ff049c7f33c64b45e271d89f6d0c61f99eac0c611f5c3156f61f1ce2f"},
+  "implementationAmendment": {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-runner-implementation-amendment.md", "sha256": "45fc38f46215671b006b1239121528f894ea25a04a530c525111adf6802b72a5"},
+  "authorizationBoundary": "Dexter authorized U13 implementation. This package aligns the report with server routeTemplate completion events and creates the local-backend-only managed diagnostic runner. It excludes frontend/Playwright, Seed/reset, UAT, business PASS and performance conclusions."
+}

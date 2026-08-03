@@ -214,5 +214,37 @@
       "preventionDestination": "PROJECT_MEMORY",
       "owningSourceOrControl": "U11 implementation review: detail-action Drawer lifecycle/source proof, rendered Modal dialog locator proof, and fresh platform joint L2"
     }
-  ]
+  ],
+  "postClaudeReview": {
+    "reviewPath": "doc/review/platform/2026-08-01-v2s-rm1p6-u11-joint-l2-implementation-review-claude.md",
+    "verdict": "NO-GO",
+    "genericProblem": "A current-byte joint L2 can pass its happy path while reusing stale session scope for a fixed-target page, conflating page read range with command target, running source-focused controls outside the executable test gate, writing back the same values, skipping unavailable asset cleanup, or carrying a stale evidence denominator.",
+    "rootCauseClass": "PAGE_AUTHORITY_AND_EVIDENCE_CLOSURE_BOUNDARIES_NOT_SEPARATED",
+    "finiteDenominator": [
+      "five generated user-management page target types and their pageCatalog requiredDataNodeType values",
+      "operations invitation list and create consumers of WorkspaceUserService scope resolution",
+      "two admin package test entry points and four platform detail lifecycle source controls",
+      "five platform write specs plus one public recovery write flow",
+      "one managed remote namespace cleanup script and its database, role and asset readbacks",
+      "the U11 delivery manifest, affected-l2-registry U03 obligation and 19 executed specs"
+    ],
+    "counterexamples": [
+      "scope-required pages still use an explicit owner-approved scopeRef and isScopeAllowed",
+      "platform/public invitation HTTP retirement remains unchanged; operations/public invitation contracts remain active",
+      "read-only detail Drawers must remain mounted, while child edit/action Drawers may retain destroyOnHidden",
+      "secret values cannot be asserted by readback; credential persistence is proven by revision and a subsequent login",
+      "ST-11 remains an inherited authority-ledger debt and is not a U11-caused defect"
+    ],
+    "findings": [
+      {"id":"M1-M2","classification":"CONFIRMED","prevention":"PROJECT_MEMORY_AND_OWNER_FOCUSED_PROOF","remedy":"Catalog-driven NONE page resolution plus an explicit command-target resolver; invitation aggregate listing keeps target family separate from fixed target id."},
+      {"id":"S1","classification":"CONFIRMED","prevention":"EXISTING_MANAGED_L2_CONTROL","remedy":"Same-session scope-required page followed by GROUP and HEAD_COMPANY users/invitation readback."},
+      {"id":"S2","classification":"CONFIRMED","prevention":"EXECUTABLE_FRONTEND_TEST_GATE","remedy":"Each admin package runs architecture node tests and all vitest focused source controls; controls reject both destroyOnHidden and destroyOnClose on read-only detail Drawers."},
+      {"id":"S3","classification":"CONFIRMED","prevention":"L2_WRITE_READBACK_CHECKLIST","remedy":"Every changed write sends a run-unique non-identity value, asserts owner readback and version increment; recovery logs in once with the new password."},
+      {"id":"N1","classification":"CONFIRMED","prevention":"MANAGED_CLEANUP_READBACK","remedy":"MinIO availability is fail-closed; database, role and asset absence are read back after deletion."},
+      {"id":"N2","classification":"CONFIRMED_INHERITED_DEBT","prevention":"PACKAGE_EXIT_INHERITED_DEBT","remedy":"U11 exit explicitly records P1_AUTHORITY_SOURCE_LEDGER/ST-11 FAIL and does not claim closure."},
+      {"id":"N3","classification":"CONFIRMED","prevention":"DENOMINATOR_STATE_EXACT_SET","remedy":"Delivery manifest says 19; U03 registry is current evidence rather than future-only; no implementation authority is inferred."},
+      {"id":"N4","classification":"CONFIRMED_RECONCILED","prevention":"IA05_REVIEW_CHECKLIST","remedy":"Record why platform radio selection and operations row-local detail revoke are both detail-first and target-fixed."},
+      {"id":"N5","classification":"CONFIRMED_GOVERNANCE_REPRODUCIBILITY","prevention":"PACKAGE_INTAKE_CUTOFF_CHECKLIST","remedy":"Record late concurrent intake cutoff in post-remediation evidence; do not alter business code or create a third adversarial round."}
+    ]
+  }
 }

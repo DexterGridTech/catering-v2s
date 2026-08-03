@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-SEED-REPORT-AND-CLOSURE-20260801",
+  "genericProblem": "RM1 runtime closure treats seed execution as an unimplemented command and has no authoritative, correlated per-request API/database accounting, so a seed can neither be replayed as a real owner-command workflow nor produce auditable performance evidence.",
+  "rootCauseClass": "SEED_EXECUTION_AND_OBSERVABILITY_DENOMINATOR_MISSING",
+  "finiteDenominator": [
+    "scripts/dev/seed",
+    "scripts/dev/r5-seed-bootstrap.mjs",
+    "scripts/test/r5-joint-remote-l2-fixture.mjs",
+    "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+    "backend HTTP request completion and database operation observation used by the RM1 seed path",
+    "r5-full seed report evidence and package closure"
+  ],
+  "searchedSurfaces": [
+    "current RM1 Roadmap and P6-3 authorization",
+    "r5-full seed fixture contract and seed-stage blueprint",
+    "RM1 managed L2 runner and owner-command fixture",
+    "backend DataSource/JdbcTemplate and diagnostic boundary",
+    "project-memory seed-report and DEV separation decisions"
+  ],
+  "searchQueries": [
+    "scripts/dev/seed OWNER_COMMAND_EXECUTOR_NOT_IMPLEMENTED",
+    "seed-report apiEndpoints databaseOperationCount correlationId",
+    "JdbcTemplate DataSource request completion diagnostic",
+    "P6 minimal owner-command seed versus r5-full fixture"
+  ],
+  "counterexamples": [
+    {
+      "surface": "scripts/dev/r5-seed-plan.mjs",
+      "finding": "Dry-run profile/count validation is useful but does not execute owner commands or provide runtime API/database measurements."
+    },
+    {
+      "surface": "RM1 U11 package",
+      "finding": "The joint L2 fixture is a bounded P6 proof and cannot be relabeled as the full r5-full seed denominator."
+    },
+    {
+      "surface": "scripts/dev/r5-seed-bootstrap.mjs",
+      "finding": "The single DEV-only bootstrap SQL stage is explicitly non-API and must remain a separate stage receipt."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-SEED-01",
+      "surface": "scripts/dev/seed",
+      "confirmedRootCause": "After profile and confirmation checks, the command unconditionally exits OWNER_COMMAND_EXECUTOR_NOT_IMPLEMENTED; no seed execution or finally-written report exists."
+    },
+    {
+      "findingId": "PF-SEED-02",
+      "surface": "seed request path",
+      "confirmedRootCause": "The fixture records phase/status only; it does not bind operationId/method/normalized route, HTTP duration, database operation count/duration, or request completion correlation."
+    },
+    {
+      "findingId": "PF-SEED-03",
+      "surface": "backend runtime",
+      "confirmedRootCause": "The runtime has no request-local logical database operation tracker attached to the application DataSource and no seed-mode request-completed event stream from which a report can safely derive DB statistics."
+    },
+    {
+      "findingId": "PF-SEED-04",
+      "surface": "scope/closure",
+      "confirmedRootCause": "The accepted P6 fixture denominator and the proposed r5-full fixture denominator are separate; using one as proof for the other would be a scope alias rather than completion."
+    },
+    {
+      "findingId": "PF-SEED-05",
+      "surface": "seed report delivery",
+      "confirmedRootCause": "The JSON report is suitable for machine validation but does not provide a Dexter-readable summary of conclusion, endpoint metrics, non-API stages and business/cleanup boundaries."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-SEED-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/dev/seed plus seed runner focused command/report proof"
+    },
+    {
+      "findingId": "PF-SEED-02",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/decisions/r5-full-seed-report-api-db-accounting.md"
+    },
+    {
+      "findingId": "PF-SEED-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "foundation request-local tracker, seed-mode request completion events and backend focused tests"
+    },
+    {
+      "findingId": "PF-SEED-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "RM1 seed package input and final implementation review"
+    },
+    {
+      "findingId": "PF-SEED-05",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/test/seed-report.mjs#writeSeedReportPair and seed-report focused proof"
+    }
+  ]
+}

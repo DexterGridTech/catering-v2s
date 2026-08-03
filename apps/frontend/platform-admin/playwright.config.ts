@@ -6,6 +6,7 @@ if (!baseURL) throw new Error('R5_L2_PLATFORM_BASE_URL_REQUIRED');
 export default defineConfig({
   testDir: './src/tests/l2',
   testMatch: '**/*.spec.ts',
+  workers: 1,
   timeout: 30_000,
   reporter: [['line']],
   use: {baseURL, trace: 'retain-on-failure'},

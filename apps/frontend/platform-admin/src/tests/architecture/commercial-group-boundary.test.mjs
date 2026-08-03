@@ -48,9 +48,9 @@ test("platform typed write paths include extension replacement and opaque asset 
   assert.match(workspaceStatusSource, /\{getIdempotencyKey, reset\} = useSubmissionLifecycle/);
   assert.match(workspaceEditSource, /platformProblemOf\(error\).*PLATFORM_COMMON_VERSION_CONFLICT/s);
   assert.match(workspaceStatusSource, /platformProblemOf\(error\).*PLATFORM_COMMON_VERSION_CONFLICT/s);
-  assert.match(workspaceEditSource, /getPlatformGroupWorkspaceDetail/);
-  assert.match(workspaceStatusSource, /getPlatformGroupWorkspaceDetail/);
-  assert.match(workspaceEditSource, /changed\.logoIntent.*releaseStagedLogo/s);
+  assert.match(workspaceSource, /getPlatformGroupWorkspaceDetail/);
+  assert.match(workspaceSource, /WorkspaceMutationConflictModal/);
+  assert.match(workspaceEditSource, /logoIntent[\s\S]*releaseStagedLogo/);
   assert.match(workspaceCreateSource + workspaceEditSource, /logoBindGrant: stagedLogo\??\.bindGrant|logoBindGrant: stagedLogo\.bindGrant/);
   assert.doesNotMatch(workspaceManagement + workspaceCreateSource + workspaceEditSource, /name="logoBindGrant"|name="logoAssetRef"/);
   assert.match(transportSource, /platformRtk = platformApi/);

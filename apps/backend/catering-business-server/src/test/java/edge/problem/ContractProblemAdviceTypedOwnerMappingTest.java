@@ -33,6 +33,10 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertProblem(advice.platformLoginNameConflict(new PlatformAuthenticationService.LoginNameConflictException(), request), HttpStatus.CONFLICT, "PLATFORM_IAM_LOGIN_NAME_CONFLICT");
         assertProblem(advice.invitationTerminal(new WorkspaceInvitationService.InvitationStateException(), request), HttpStatus.CONFLICT, "WORKSPACE_IAM_INVITATION_TERMINAL");
         assertProblem(advice.credentialLocked(new PlatformAuthenticationService.CredentialLockedException(), request), HttpStatus.LOCKED, "PLATFORM_IAM_CREDENTIAL_LOCKED");
+        assertProblem(advice.rateLimited(new PlatformAuthenticationService.LoginRateLimitedException(), request), HttpStatus.TOO_MANY_REQUESTS, "PLATFORM_IAM_RATE_LIMITED");
+        assertProblem(advice.rateLimited(new PlatformAuthenticationService.OtpRateLimitedException(), request), HttpStatus.TOO_MANY_REQUESTS, "PLATFORM_IAM_RATE_LIMITED");
+        assertProblem(advice.rateLimited(new WorkspaceAuthenticationService.LoginRateLimitedException(), request), HttpStatus.TOO_MANY_REQUESTS, "WORKSPACE_IAM_RATE_LIMITED");
+        assertProblem(advice.rateLimited(new WorkspaceAuthenticationService.OtpRateLimitedException(), request), HttpStatus.TOO_MANY_REQUESTS, "WORKSPACE_IAM_RATE_LIMITED");
         assertProblem(advice.resetOtpInvalid(new WorkspaceAuthenticationService.OtpInvalidException(), request), HttpStatus.UNPROCESSABLE_ENTITY, "WORKSPACE_IAM_OTP_INVALID");
         assertProblem(advice.ownerResultUnknown(new ContractCommandReceiptService.ContractReceiptCorruptException(new IllegalStateException("corrupt")), request), HttpStatus.INTERNAL_SERVER_ERROR, "PLATFORM_COMMON_RESULT_UNKNOWN");
         assertProblem(advice.ownerResultUnknown(new ExtensionCommandReceiptService.ExtensionReceiptCorruptException(new IllegalStateException("corrupt")), request), HttpStatus.INTERNAL_SERVER_ERROR, "PLATFORM_COMMON_RESULT_UNKNOWN");

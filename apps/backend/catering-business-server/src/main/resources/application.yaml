@@ -13,3 +13,9 @@ platform:
     rate-limit-hmac-secret: ${CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET:}
 workspace-iam:
   rate-limit-hmac-secret: ${CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET:}
+v2s:
+  runtime-environment: ${V2S_RUNTIME_ENVIRONMENT:}
+  dev-profile: ${V2S_DEV_PROFILE:}
+  dev-namespace: ${V2S_DEV_NAMESPACE:}
+  seed:
+    fixed-otp-value: ${V2S_SEED_OTP_FIXED_VALUE:}

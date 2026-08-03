@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-SCENARIOS-U13",
+  "deliveryUnits": [{
+    "id": "RM1P6-HTTP-DIAGNOSTIC-SCENARIOS-U13",
+    "title": "Source-derived 147-operation HTTP diagnostic scenario facts",
+    "approvedAssertions": ["EVERY_GENERATED_ROUTE_FACE_TUPLE_HAS_ONE_SOURCE_DERIVED_SCENARIO_FACT", "ROUTE_METADATA_NEVER_INVENTS_BUSINESS_PREREQUISITES_OR_OWNER_READBACK", "SENSITIVE_RUNTIME_VALUES_NEVER_ENTER_DECLARATIONS"],
+    "changeSurfaces": [
+      {"path":".runtime/compliance-control/active-package.json","disposition":"update","target":"activate C04"},
+      {"path":"scripts/test/http-diagnostic-scenarios.mjs","disposition":"create","target":"explicit source-bound scenario facts"},
+      {"path":"scripts/test/http-diagnostic-scenarios.test.mjs","disposition":"create","target":"exact-set and secret red proof"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-package-input.json","disposition":"create","target":"C04 binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-implementation-amendment.md","disposition":"create","target":"C04 detail boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-package-exit.json","disposition":"create","target":"C04 path-list exit"},
+      {"path":"doc/review/platform/rm1p6-u13-http-diagnostic-scenarios-delivery-manifest.json","disposition":"create","target":"C04 manifest"}
+    ],
+    "complianceRoute":{"taskKind":"implementation","domain":"backend","consumerFace":"backend","owner":"platform","impact":"evidence","trigger":"implementation"},
+    "sourceDenominators":{"PROJECT_MEMORY_ASSERTION_OCCURRENCES":["project-memory/decisions/http-crud-efficiency-design-redlines.md","project-memory/kernel/02-service-shape-and-owner.md","project-memory/kernel/03-transaction-data-and-dependencies.md"],"APPROVED_ASSERTIONS":["doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#3.2","doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-problem-family.json#PF-HTTP-EFF-10"],"FORBIDDEN_PSEUDO_FIXES":["no route-derived business scenario","no raw secret or identity in declaration","no Seed fixture relabeling","no dynamic execution in C04"],"DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA":["doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-implementation-amendment.md"],"OWNED_SURFACE_AND_OPERATION_KEYS":["generated edge-route-face-registry 147 tuples","source-derived diagnostic scenario facts"],"DUE_STANDARDS_RULE_IDS":["scripts/check/remediation-compliance","scripts/check/standards-coverage"]}
+  }]
+}

@@ -16,6 +16,13 @@ describe('BusinessEntityManagementPage', () => {
     expect(page).toMatch(/useGetOperationsOrganizationBrandsQuery/);
     expect(page).toMatch(/useGetOperationsOrganizationTenantsQuery/);
     expect(page).toMatch(/useGetOperationsOrganizationHeadCompaniesQuery/);
+    expect(page).toMatch(/useState<BusinessEntitySortKey>\('NAME'\)/);
+    expect(page).toMatch(/useState<BusinessEntitySortDirection>\('ASC'\)/);
+    expect(page).toMatch(/sort,\s*direction,\s*page/);
+    expect(page).toMatch(/key: 'name'.*sorter: true/);
+    expect(page).toMatch(/key: 'updatedAt'.*sorter: true/);
+    expect(page).toMatch(/current\?\.columnKey === 'name' \? 'NAME'/);
+    expect(page).toMatch(/current\?\.columnKey === 'code' \? 'CODE' : 'UPDATED_AT'/);
     expect(page).not.toMatch(/valueType:\s*['"]option/);
     expect(page).not.toMatch(/title:\s*['"]操作/);
   });
@@ -26,6 +33,10 @@ describe('BusinessEntityManagementPage', () => {
     expect(page).toMatch(/BusinessEntityEditDrawer/);
     expect(page).toMatch(/BusinessEntityStatusModal/);
     expect(detail).toMatch(/useGetOperationsOrganizationBusinessEntityExtensionDefinitionQuery/);
+    expect(detail).toMatch(/detailReady = Boolean\(selected\)/);
+    expect(detail).toMatch(/extra=\{detailReady && selected/);
+    expect(detail).toContain('size="small" column={1} styles={{label: {width: 164}}}');
+    expect(detail).toMatch(/if \(!detailReady \|\| !selected\) return/);
     expect(create).toMatch(/useGetOperationsOrganizationBusinessEntityExtensionDefinitionQuery/);
     expect(edit).toMatch(/useGetOperationsOrganizationBusinessEntityExtensionDefinitionQuery/);
     expect(status).toMatch(/useSubmissionLifecycle/);

@@ -327,7 +327,7 @@ HOST_AND_ENTRY=IA03-ORG-OVERVIEW 的“组织架构”Tab
 ACTOR=有组织只读资格的运维管理员
 BUSINESS_SCENARIO=核对集团、大区和项目的层级归属
 BUSINESS_GOAL=从树中找到一项组织并阅读其详情
-USER_VISIBLE_COPY=左侧“集团 / 大区 / 项目”；右侧标题“组织详情”；字段“名称”“编码”“所属机构”“状态”“备注”“更新时间”
+USER_VISIBLE_COPY=左侧“集团 / 大区 / 项目”；右侧标题“组织详情”；集团与大区字段“名称”“编码”“所属机构”“状态”“备注”“更新时间”；项目在同一详情中额外显示“项目分期名称”
 TECHNICAL_BOUNDARY=内部类型、内部标识和任务路径不显示
 FOUNDATION_PRIMITIVE=testId
 HERITAGE_COUNTERPART=PARTIAL_COUNTERPART; all-v2/apps/frontend/platform-admin/src/features/organization-overview/ui/OrganizationOverviewPage.tsx@72f5ab9beb8f9eb58b1f44effcaaad924d7fcd2dba00e96b93ad21b43c408829
@@ -336,11 +336,13 @@ HERITAGE_COUNTERPART=PARTIAL_COUNTERPART; all-v2/apps/frontend/platform-admin/sr
 集团 / 大区 / 项目        组织详情
 ▾ 集团                    名称：____
   ▸ 大区                  编码：____ 状态：____
-                           所属机构 / 备注 / 更新时间
+                           所属机构 / 备注 / 项目分期名称 / 更新时间
 ```
 | 控件 | 形态 | 候选来源 | 可用条件 | 级联 | 约束 | 状态 | owner 再核验 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 组织树项 | Tree | 当前集团空间 owner readback | 树加载成功 | 选中即换右侧详情 | 仅集团/大区/项目三层 | 加载、空、失败分开显示 | organization task read |
+
+PRODUCT_DECISION_AMENDMENT=2026-08-02 Dexter 裁决：平台项目详情必须显示项目分期信息。该增量只适用于 PROJECT 详情；集团、大区不显示分期，运营组织树详情仍遵循 IA04-ORG-TREE 的字段集合。分期由 organization owner 的 hierarchy readback 提供，禁止前端臆造或以通用详情模板替代项目变体。
 
 <a id="IA03-ORG-DETAIL"></a>
 ### Screen: IA03-ORG-DETAIL
@@ -732,3 +734,11 @@ screen 为详情、创建确认、状态操作或本人密码，`NOT_APPLICABLE_
 本 IA 出现的增长型业务对象 searchable Select（集团空间及组织概览引用对象）统一经 P6 `CandidateQuery`
 consumer protocol；角色 catalog Tree 与固定类别/状态不是候选搜索，不被伪装成该协议。adapter 只统一
 wire/lifecycle，仍将每个 `subjectType` 路由回正确 owner public task read，并保留已登记的 overview candidate GAP。
+
+## 14. 2026-08-02 Dexter 永久平台邀请中心修订
+
+本节 supersede `IA03-ACCOUNT-TAB` 原先“不提供 invitation 子流或入口”的 selector。Dexter 裁决平台管理员必须永久能够对任意组织节点发起邀请，故空间账号页固定包含两个内容 Tab：`账号` 与 `邀请`。`账号` Tab 负责账号搜索、详情、状态、凭据和任职撤销；`邀请` Tab 负责跨节点邀请列表、候选级联、创建、取消和重发。邀请 Tab 不是 operations-admin 五个 target-specific 用户页的替代，而是平台跨节点治理入口；两者共享 workspace-IAM owner 事实与 command API。
+
+`IA03-ACCOUNT-TAB` 的新用户任务是“查找账号或邀请并进入对应详情/确认面”。账号表格的 IA 对账必须包含姓名、手机号、登录账号、状态、任职机构类型与多值机构路径、业务角色多值、最后登录、更新时间；邀请表格必须包含脱敏手机号、组织节点类型、组织节点路径、角色、状态、有效期、创建时间和邀请操作入口。任职机构与邀请节点均使用 opaque ref 的 owner 候选查询；选择节点类型后才可搜索节点，选择节点后才可搜索角色，任何上游变化清空下游草稿和 query。
+
+邀请详情/动作遵循现有 Drawer/Modal 分离约束：详情只读展示邀请事实和公开接受状态；创建、取消、重发分别进入独立动作面并在完成后 owner readback。平台不展示 invitation token，不在 platform session 中直接接受邀请；公开接受仍由 `IA01-PUBLIC-INVITATION` 完成。

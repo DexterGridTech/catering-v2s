@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-WORKSPACE-ACCOUNTS-U18",
+  "kind": "rm1-execution-package-exit",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+    "apps/backend/catering-business-server/src/main/resources/db/migration/V20260803_050000_000__workspace_authentication_history.sql",
+    "apps/backend/catering-business-server/src/main/resources/db/migration/V20260803_060000_000__workspace_invitation_token_retention.sql",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.test.tsx",
+    "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
+    "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml",
+    "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+    "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-workspace-accounts-u18-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-workspace-accounts-u18-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-workspace-accounts-u18-problem-family.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-workspace-accounts-u18-ui-ia-baseline.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-workspace-accounts-u18-package-exit.json",
+    "doc/review/platform/rm1p6-workspace-accounts-u18-delivery-manifest.json"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "focusedProof": {
+    "static": [
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/openapi-contracts",
+      "scripts/check/code-layout",
+      "scripts/check/remediation-compliance static-scan"
+    ],
+    "frontend": [
+      "AccountsPage and PlatformInvitationPanel focused tests PASS",
+      "platform-admin typecheck PASS"
+    ],
+    "owner": {
+      "run": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785726155064-238",
+      "business": "PASS",
+      "cleanup": "PASS"
+    }
+  },
+  "scopeStatement": "U18 closes the platform workspace account and permanent invitation-centre source-bound slice. Managed DEV and focused owner evidence are present; no UAT claim is made."
+}

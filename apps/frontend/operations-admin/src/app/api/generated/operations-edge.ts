@@ -5,535 +5,638 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "operationId": "addOperationsOrganizationHeadCompanyBrandAuthorization",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "cancelOperationsWorkspaceGroupInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "cancelOperationsWorkspaceHeadCompanyInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "cancelOperationsWorkspaceProjectInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "cancelOperationsWorkspaceRegionInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "cancelOperationsWorkspaceStoreInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "changeCurrentWorkspacePassword",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsContract",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsOrganizationBrand",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsOrganizationHeadCompany",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsOrganizationProject",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsOrganizationRegion",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsOrganizationStore",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsOrganizationTenant",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsWorkspaceGroupInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsWorkspaceHeadCompanyInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsWorkspaceProjectInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsWorkspaceRegionInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "createOperationsWorkspaceStoreInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsContract",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsContractCandidates",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsContractExtensionDefinition",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsContracts",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsEntityAuditHistory",
     "method": "GET",
     "path": "/api/operations/audit-history",
-    "owner": "platform-workspace"
+    "owner": "platform-workspace",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsFixedStoreContracts",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationBrand",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationBrands",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationBusinessEntityExtensionDefinition",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsOrganizationCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates",
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationHeadCompanies",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationHeadCompany",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationHierarchy",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition",
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationStore",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationStoreCandidates",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationStoreExtensionDefinition",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationStores",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationTenant",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsOrganizationTenants",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsStoreProfile",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceGroupInvitations",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceGroupUser",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceGroupUserAccount",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceHeadCompanyInvitations",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceHeadCompanyUser",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceHeadCompanyUserAccount",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceLoginEntry",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "getOperationsWorkspaceProjectInvitationCandidates",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceProjectInvitations",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceProjectUser",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceProjectUserAccount",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceRegionInvitationCandidates",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceRegionInvitations",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceRegionUser",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceRegionUserAccount",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceSessionEntry",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceStoreInvitationCandidates",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceStoreInvitations",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceStoreUser",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getOperationsWorkspaceStoreUserAccount",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "invalidateOperationsContract",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "operationsWorkspaceLogout",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "operationsWorkspacePasswordLogin",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "reissueOperationsWorkspaceGroupInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "reissueOperationsWorkspaceHeadCompanyInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "reissueOperationsWorkspaceProjectInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "reissueOperationsWorkspaceRegionInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "reissueOperationsWorkspaceStoreInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
     "method": "DELETE",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "revokeOperationsWorkspaceGroupUserAssignment",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "revokeOperationsWorkspaceProjectUserAssignment",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "revokeOperationsWorkspaceRegionUserAssignment",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "revokeOperationsWorkspaceStoreUserAssignment",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "selectOperationsWorkspaceSessionContext",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "selectOperationsWorkspaceSessionDataNode",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "sendOperationsWorkspaceOtp",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "transitionOperationsOrganizationBrandStatus",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "transitionOperationsOrganizationHeadCompanyStatus",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "transitionOperationsOrganizationNodeStatus",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "transitionOperationsOrganizationStoreStatus",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "transitionOperationsOrganizationTenantStatus",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "updateOperationsContract",
     "method": "PATCH",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "updateOperationsOrganizationBrand",
     "method": "PATCH",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "updateOperationsOrganizationHeadCompany",
     "method": "PATCH",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "updateOperationsOrganizationNode",
     "method": "PATCH",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "updateOperationsOrganizationStore",
     "method": "PATCH",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "updateOperationsOrganizationTenant",
     "method": "PATCH",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "verifyOperationsWorkspaceOtp",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   }
 ] as const;
 
@@ -566,9 +669,11 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsOrganizationBrand": "getOperationsOrganizationBrand",
   "getOperationsOrganizationBrands": "getOperationsOrganizationBrands",
   "getOperationsOrganizationBusinessEntityExtensionDefinition": "getOperationsOrganizationBusinessEntityExtensionDefinition",
+  "getOperationsOrganizationCandidates": "getOperationsOrganizationCandidates",
   "getOperationsOrganizationHeadCompanies": "getOperationsOrganizationHeadCompanies",
   "getOperationsOrganizationHeadCompany": "getOperationsOrganizationHeadCompany",
   "getOperationsOrganizationHierarchy": "getOperationsOrganizationHierarchy",
+  "getOperationsOrganizationHierarchyExtensionDefinition": "getOperationsOrganizationHierarchyExtensionDefinition",
   "getOperationsOrganizationStore": "getOperationsOrganizationStore",
   "getOperationsOrganizationStoreCandidates": "getOperationsOrganizationStoreCandidates",
   "getOperationsOrganizationStoreExtensionDefinition": "getOperationsOrganizationStoreExtensionDefinition",
@@ -771,6 +876,8 @@ export type CommercialGroupRoot = {
   groupWorkspaceKey: string;
   groupCode: string;
   groupName: string;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
   version: number;
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
@@ -795,7 +902,7 @@ export type ExtensionDefinition = {
   updatedAt: EpochMillis;
 };
 
-export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT";
+export type ExtensionEntityType = "COMMERCIAL_GROUP" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "REGION" | "PROJECT" | "STORE" | "CONTRACT";
 
 export type GroupWorkspaceStatus = "ENABLED" | "DISABLED";
 
@@ -855,6 +962,24 @@ export type NoBody = Record<string, never>;
 
 export type NoContent = null;
 
+export type OrganizationCandidatePage = {
+  metadata: {
+  subjectType: OrganizationCandidateQuerySubjectType;
+  queryText: (string) | null;
+  page: number;
+  pageSize: number;
+  total: number;
+  selectedId: (string) | null;
+};
+  items: Array<{
+  id: string;
+  code: string;
+  name: string;
+}>;
+};
+
+export type OrganizationCandidateQuerySubjectType = "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
+
 export type OrganizationHierarchySnapshot = {
   groupWorkspaceKey: string;
   commercialGroup: CommercialGroupRoot;
@@ -869,6 +994,8 @@ export type OrganizationNode = {
   code: string;
   name: string;
   notes?: (string) | null;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
   status: "ENABLED" | "DISABLED";
   phases: Array<{
   name: string;
@@ -882,6 +1009,7 @@ export type OrganizationNodeCreateRequest = {
   code: string;
   name: string;
   notes?: (string) | null;
+  extensionValues?: (Record<string, JsonValue>) | null;
 };
 
 export type OrganizationNodeStatusTransitionRequest = {
@@ -897,6 +1025,7 @@ export type OrganizationNodeUpdateRequest = {
   name: string;
 }>;
   notes?: (string) | null;
+  extensionValues?: (Record<string, JsonValue>) | null;
   expectedVersion: number;
 };
 
@@ -1461,6 +1590,10 @@ export type WorkspaceUserPage = {
   scopeRef?: (string) | null;
   scopeName?: (string) | null;
   contextVersion: number;
+  criteria: {
+  sort: WorkspaceUserSortKey;
+  direction: SortDirection;
+};
 };
 
 export type WorkspaceUserRevokeRequest = {
@@ -1477,11 +1610,14 @@ export type WorkspaceUserRevokeResult = {
   sessionEntry?: (WorkspaceSessionEntry) | null;
 };
 
+export type WorkspaceUserSortKey = "DISPLAY_NAME" | "LOGIN_NAME";
+
 export type FaceOperationContracts = {
   "addOperationsOrganizationHeadCompanyBrandAuthorization": {
     request: HeadCompanyBrandAuthorizationAddRequest;
     response: NoContent;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     headCompanyId: string;
@@ -1497,6 +1633,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -1512,6 +1649,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -1527,6 +1665,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -1542,6 +1681,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -1557,6 +1697,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -1572,6 +1713,7 @@ export type FaceOperationContracts = {
     request: WorkspaceCurrentPasswordChangeRequest;
     response: WorkspaceCurrentPasswordChangeResult;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1586,6 +1728,7 @@ export type FaceOperationContracts = {
     request: StoreContractCreateRequest;
     response: StoreContract;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1600,6 +1743,7 @@ export type FaceOperationContracts = {
     request: BrandCreateRequest;
     response: Brand;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1614,6 +1758,7 @@ export type FaceOperationContracts = {
     request: HeadCompanyCreateRequest;
     response: HeadCompany;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1628,6 +1773,7 @@ export type FaceOperationContracts = {
     request: OrganizationProjectCreateRequest;
     response: OrganizationNode;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     regionId: string;
@@ -1643,6 +1789,7 @@ export type FaceOperationContracts = {
     request: OrganizationNodeCreateRequest;
     response: OrganizationNode;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1657,6 +1804,7 @@ export type FaceOperationContracts = {
     request: OrganizationStoreCreateRequest;
     response: OrganizationStore;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1671,6 +1819,7 @@ export type FaceOperationContracts = {
     request: TenantCreateRequest;
     response: Tenant;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1685,6 +1834,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationCreateRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1699,6 +1849,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationCreateRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1713,6 +1864,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationCreateRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1727,6 +1879,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationCreateRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1741,6 +1894,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationCreateRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1755,6 +1909,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: StoreContract;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     contractId: string;
@@ -1770,6 +1925,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: StoreContractCandidatePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1789,6 +1945,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: ExtensionDefinition;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1804,6 +1961,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: StoreContractPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1831,10 +1989,11 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: AuditHistoryPage;
     requestRequired: false;
+    requiresSession: true;
     path: Record<string, never>;
     query: {
     groupWorkspaceKey: string;
-    entityType: "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "ORGANIZATION_NODE" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "STORE_CONTRACT";
+    entityType: "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "COMMERCIAL_GROUP" | "ORGANIZATION_NODE" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "STORE_CONTRACT";
     entityId: string;
     page?: number;
     pageSize?: number;
@@ -1847,6 +2006,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: StoreContractPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1864,6 +2024,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: Brand;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     brandId: string;
@@ -1879,6 +2040,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: BrandPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1900,6 +2062,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: ExtensionDefinition;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1911,10 +2074,34 @@ export type FaceOperationContracts = {
     headers: Record<string, never>;
     headersRequired: false;
   };
+  "getOperationsOrganizationCandidates": {
+    request: NoBody;
+    response: OrganizationCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    subjectType: OrganizationCandidateQuerySubjectType;
+    queryText?: string;
+    page?: number;
+    pageSize?: number;
+    selectedId?: string;
+    projectId?: string;
+    brandId?: string;
+    tenantId?: string;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
   "getOperationsOrganizationHeadCompanies": {
     request: NoBody;
     response: HeadCompanyPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1939,6 +2126,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: HeadCompany;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     headCompanyId: string;
@@ -1954,6 +2142,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: OrganizationHierarchySnapshot;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1962,10 +2151,27 @@ export type FaceOperationContracts = {
     headers: Record<string, never>;
     headersRequired: false;
   };
+  "getOperationsOrganizationHierarchyExtensionDefinition": {
+    request: NoBody;
+    response: ExtensionDefinition;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    entityType: "COMMERCIAL_GROUP" | "REGION" | "PROJECT";
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
   "getOperationsOrganizationStore": {
     request: NoBody;
     response: OrganizationStore;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     storeId: string;
@@ -1981,6 +2187,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: OrganizationStoreCandidatePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1998,6 +2205,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: ExtensionDefinition;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2012,6 +2220,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: OrganizationStorePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2034,6 +2243,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: Tenant;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     tenantId: string;
@@ -2049,6 +2259,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: TenantPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2072,6 +2283,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: OrganizationStore;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2086,6 +2298,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationCandidatePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2106,6 +2319,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2117,6 +2331,8 @@ export type FaceOperationContracts = {
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2129,6 +2345,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUserPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2138,6 +2355,8 @@ export type FaceOperationContracts = {
     mobile?: string;
     roleQuery?: string;
     status?: WorkspaceAccountStatus;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2150,6 +2369,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUser;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -2165,6 +2385,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationCandidatePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2185,6 +2406,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2196,6 +2418,8 @@ export type FaceOperationContracts = {
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2208,6 +2432,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUserPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2217,6 +2442,8 @@ export type FaceOperationContracts = {
     mobile?: string;
     roleQuery?: string;
     status?: WorkspaceAccountStatus;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2229,6 +2456,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUser;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -2244,6 +2472,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceLoginEntry;
     requestRequired: false;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2256,6 +2485,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationCandidatePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2276,6 +2506,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2287,6 +2518,8 @@ export type FaceOperationContracts = {
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2299,6 +2532,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUserPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2308,6 +2542,8 @@ export type FaceOperationContracts = {
     mobile?: string;
     roleQuery?: string;
     status?: WorkspaceAccountStatus;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2320,6 +2556,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUser;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -2335,6 +2572,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationCandidatePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2355,6 +2593,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2366,6 +2605,8 @@ export type FaceOperationContracts = {
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2378,6 +2619,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUserPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2387,6 +2629,8 @@ export type FaceOperationContracts = {
     mobile?: string;
     roleQuery?: string;
     status?: WorkspaceAccountStatus;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2399,6 +2643,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUser;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -2414,6 +2659,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceSessionEntry;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2426,6 +2672,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationCandidatePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2446,6 +2693,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceInvitationPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2457,6 +2705,8 @@ export type FaceOperationContracts = {
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2469,6 +2719,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUserPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2478,6 +2729,8 @@ export type FaceOperationContracts = {
     mobile?: string;
     roleQuery?: string;
     status?: WorkspaceAccountStatus;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
@@ -2490,6 +2743,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceUser;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -2505,6 +2759,7 @@ export type FaceOperationContracts = {
     request: StoreContractInvalidateRequest;
     response: StoreContract;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     contractId: string;
@@ -2520,6 +2775,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: NoContent;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2534,6 +2790,7 @@ export type FaceOperationContracts = {
     request: WorkspacePasswordLoginRequest;
     response: WorkspaceSessionEntry;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2548,6 +2805,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -2563,6 +2821,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -2578,6 +2837,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -2593,6 +2853,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -2608,6 +2869,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     invitationId: string;
@@ -2623,6 +2885,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: NoContent;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     headCompanyId: string;
@@ -2639,6 +2902,7 @@ export type FaceOperationContracts = {
     request: WorkspaceUserRevokeRequest;
     response: WorkspaceUserRevokeResult;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     assignmentId: string;
@@ -2654,6 +2918,7 @@ export type FaceOperationContracts = {
     request: WorkspaceUserRevokeRequest;
     response: WorkspaceUserRevokeResult;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     assignmentId: string;
@@ -2669,6 +2934,7 @@ export type FaceOperationContracts = {
     request: WorkspaceUserRevokeRequest;
     response: WorkspaceUserRevokeResult;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     assignmentId: string;
@@ -2684,6 +2950,7 @@ export type FaceOperationContracts = {
     request: WorkspaceUserRevokeRequest;
     response: WorkspaceUserRevokeResult;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     assignmentId: string;
@@ -2699,6 +2966,7 @@ export type FaceOperationContracts = {
     request: WorkspaceUserRevokeRequest;
     response: WorkspaceUserRevokeResult;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     assignmentId: string;
@@ -2714,6 +2982,7 @@ export type FaceOperationContracts = {
     request: WorkspaceSelectContextRequest;
     response: WorkspaceSessionEntry;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2728,6 +2997,7 @@ export type FaceOperationContracts = {
     request: WorkspaceSelectDataNodeRequest;
     response: WorkspaceSessionEntry;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2742,6 +3012,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOtpSendRequest;
     response: WorkspaceOtpSendResponse;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2756,6 +3027,7 @@ export type FaceOperationContracts = {
     request: BusinessEntityStatusRequest;
     response: Brand;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     brandId: string;
@@ -2771,6 +3043,7 @@ export type FaceOperationContracts = {
     request: BusinessEntityStatusRequest;
     response: HeadCompany;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     headCompanyId: string;
@@ -2786,6 +3059,7 @@ export type FaceOperationContracts = {
     request: OrganizationNodeStatusTransitionRequest;
     response: OrganizationNode;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     nodeId: string;
@@ -2801,6 +3075,7 @@ export type FaceOperationContracts = {
     request: OrganizationStoreStatusRequest;
     response: OrganizationStore;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     storeId: string;
@@ -2816,6 +3091,7 @@ export type FaceOperationContracts = {
     request: BusinessEntityStatusRequest;
     response: Tenant;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     tenantId: string;
@@ -2831,6 +3107,7 @@ export type FaceOperationContracts = {
     request: StoreContractUpdateRequest;
     response: StoreContract;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     contractId: string;
@@ -2846,6 +3123,7 @@ export type FaceOperationContracts = {
     request: BrandUpdateRequest;
     response: Brand;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     brandId: string;
@@ -2861,6 +3139,7 @@ export type FaceOperationContracts = {
     request: HeadCompanyUpdateRequest;
     response: HeadCompany;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     headCompanyId: string;
@@ -2876,6 +3155,7 @@ export type FaceOperationContracts = {
     request: OrganizationNodeUpdateRequest;
     response: OrganizationNode;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     nodeId: string;
@@ -2891,6 +3171,7 @@ export type FaceOperationContracts = {
     request: OrganizationStoreUpdateRequest;
     response: OrganizationStore;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     storeId: string;
@@ -2906,6 +3187,7 @@ export type FaceOperationContracts = {
     request: TenantUpdateRequest;
     response: Tenant;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     tenantId: string;
@@ -2921,6 +3203,7 @@ export type FaceOperationContracts = {
     request: WorkspaceOtpVerifyRequest;
     response: WorkspaceSessionEntry;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
   };
@@ -2948,6 +3231,7 @@ export type FaceOperationRequest<I extends OperationsAdminOperationId> = FaceOpe
   method: (typeof OPERATIONS_ADMIN_OPERATIONS)[number]["method"];
   path: (typeof OPERATIONS_ADMIN_OPERATIONS)[number]["path"];
   pathParameters: FaceOperationContracts[I]["path"];
+  requiresSession: FaceOperationContracts[I]["requiresSession"];
 };
 export type FaceExecutor = <I extends OperationsAdminOperationId>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;
 
@@ -2958,6 +3242,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceGroupInvitation">) => execute({
@@ -2965,6 +3250,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceHeadCompanyInvitation">) => execute({
@@ -2972,6 +3258,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceProjectInvitation">) => execute({
@@ -2979,6 +3266,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceRegionInvitation">) => execute({
@@ -2986,6 +3274,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceStoreInvitation">) => execute({
@@ -2993,6 +3282,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     changeCurrentWorkspacePassword: (pathParameters: FaceOperationContracts["changeCurrentWorkspacePassword"]["path"], options: FaceOperationOptions<"changeCurrentWorkspacePassword">) => execute({
@@ -3000,6 +3290,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsContract: (pathParameters: FaceOperationContracts["createOperationsContract"]["path"], options: FaceOperationOptions<"createOperationsContract">) => execute({
@@ -3007,6 +3298,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["createOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"createOperationsOrganizationBrand">) => execute({
@@ -3014,6 +3306,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["createOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"createOperationsOrganizationHeadCompany">) => execute({
@@ -3021,6 +3314,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationProject: (pathParameters: FaceOperationContracts["createOperationsOrganizationProject"]["path"], options: FaceOperationOptions<"createOperationsOrganizationProject">) => execute({
@@ -3028,6 +3322,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationRegion: (pathParameters: FaceOperationContracts["createOperationsOrganizationRegion"]["path"], options: FaceOperationOptions<"createOperationsOrganizationRegion">) => execute({
@@ -3035,6 +3330,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationStore: (pathParameters: FaceOperationContracts["createOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"createOperationsOrganizationStore">) => execute({
@@ -3042,6 +3338,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["createOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"createOperationsOrganizationTenant">) => execute({
@@ -3049,6 +3346,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceGroupInvitation">) => execute({
@@ -3056,6 +3354,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceHeadCompanyInvitation">) => execute({
@@ -3063,6 +3362,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceProjectInvitation">) => execute({
@@ -3070,6 +3370,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceRegionInvitation">) => execute({
@@ -3077,6 +3378,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceStoreInvitation">) => execute({
@@ -3084,6 +3386,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsContract: (pathParameters: FaceOperationContracts["getOperationsContract"]["path"], options: FaceOperationOptions<"getOperationsContract">) => execute({
@@ -3091,6 +3394,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsContractCandidates: (pathParameters: FaceOperationContracts["getOperationsContractCandidates"]["path"], options: FaceOperationOptions<"getOperationsContractCandidates">) => execute({
@@ -3098,6 +3402,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsContractExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsContractExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsContractExtensionDefinition">) => execute({
@@ -3105,6 +3410,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsContracts: (pathParameters: FaceOperationContracts["getOperationsContracts"]["path"], options: FaceOperationOptions<"getOperationsContracts">) => execute({
@@ -3112,6 +3418,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsEntityAuditHistory: (pathParameters: FaceOperationContracts["getOperationsEntityAuditHistory"]["path"], options: FaceOperationOptions<"getOperationsEntityAuditHistory">) => execute({
@@ -3119,6 +3426,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/audit-history",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsFixedStoreContracts: (pathParameters: FaceOperationContracts["getOperationsFixedStoreContracts"]["path"], options: FaceOperationOptions<"getOperationsFixedStoreContracts">) => execute({
@@ -3126,6 +3434,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["getOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBrand">) => execute({
@@ -3133,6 +3442,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationBrands: (pathParameters: FaceOperationContracts["getOperationsOrganizationBrands"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBrands">) => execute({
@@ -3140,6 +3450,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationBusinessEntityExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationBusinessEntityExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBusinessEntityExtensionDefinition">) => execute({
@@ -3147,6 +3458,15 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition",
       pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsOrganizationCandidates: (pathParameters: FaceOperationContracts["getOperationsOrganizationCandidates"]["path"], options: FaceOperationOptions<"getOperationsOrganizationCandidates">) => execute({
+      operationId: "getOperationsOrganizationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationHeadCompanies: (pathParameters: FaceOperationContracts["getOperationsOrganizationHeadCompanies"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHeadCompanies">) => execute({
@@ -3154,6 +3474,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["getOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHeadCompany">) => execute({
@@ -3161,6 +3482,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationHierarchy: (pathParameters: FaceOperationContracts["getOperationsOrganizationHierarchy"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHierarchy">) => execute({
@@ -3168,6 +3490,15 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
       pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsOrganizationHierarchyExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationHierarchyExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHierarchyExtensionDefinition">) => execute({
+      operationId: "getOperationsOrganizationHierarchyExtensionDefinition",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationStore: (pathParameters: FaceOperationContracts["getOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStore">) => execute({
@@ -3175,6 +3506,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationStoreCandidates: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreCandidates">) => execute({
@@ -3182,6 +3514,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationStoreExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreExtensionDefinition">) => execute({
@@ -3189,6 +3522,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationStores: (pathParameters: FaceOperationContracts["getOperationsOrganizationStores"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStores">) => execute({
@@ -3196,6 +3530,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["getOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"getOperationsOrganizationTenant">) => execute({
@@ -3203,6 +3538,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationTenants: (pathParameters: FaceOperationContracts["getOperationsOrganizationTenants"]["path"], options: FaceOperationOptions<"getOperationsOrganizationTenants">) => execute({
@@ -3210,6 +3546,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsStoreProfile: (pathParameters: FaceOperationContracts["getOperationsStoreProfile"]["path"], options: FaceOperationOptions<"getOperationsStoreProfile">) => execute({
@@ -3217,6 +3554,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceGroupInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitationCandidates">) => execute({
@@ -3224,6 +3562,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceGroupInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitations">) => execute({
@@ -3231,6 +3570,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceGroupUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupUser">) => execute({
@@ -3238,6 +3578,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceGroupUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupUserAccount">) => execute({
@@ -3245,6 +3586,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceHeadCompanyInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyInvitationCandidates">) => execute({
@@ -3252,6 +3594,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceHeadCompanyInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyInvitations">) => execute({
@@ -3259,6 +3602,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceHeadCompanyUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyUser">) => execute({
@@ -3266,6 +3610,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceHeadCompanyUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyUserAccount">) => execute({
@@ -3273,6 +3618,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceLoginEntry: (pathParameters: FaceOperationContracts["getOperationsWorkspaceLoginEntry"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceLoginEntry">) => execute({
@@ -3280,6 +3626,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     getOperationsWorkspaceProjectInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectInvitationCandidates">) => execute({
@@ -3287,6 +3634,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceProjectInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectInvitations">) => execute({
@@ -3294,6 +3642,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceProjectUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectUser">) => execute({
@@ -3301,6 +3650,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceProjectUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectUserAccount">) => execute({
@@ -3308,6 +3658,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceRegionInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionInvitationCandidates">) => execute({
@@ -3315,6 +3666,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceRegionInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionInvitations">) => execute({
@@ -3322,6 +3674,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceRegionUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionUser">) => execute({
@@ -3329,6 +3682,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceRegionUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionUserAccount">) => execute({
@@ -3336,6 +3690,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceSessionEntry: (pathParameters: FaceOperationContracts["getOperationsWorkspaceSessionEntry"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceSessionEntry">) => execute({
@@ -3343,6 +3698,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceStoreInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreInvitationCandidates">) => execute({
@@ -3350,6 +3706,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceStoreInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreInvitations">) => execute({
@@ -3357,6 +3714,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceStoreUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreUser">) => execute({
@@ -3364,6 +3722,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceStoreUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreUserAccount">) => execute({
@@ -3371,6 +3730,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     invalidateOperationsContract: (pathParameters: FaceOperationContracts["invalidateOperationsContract"]["path"], options: FaceOperationOptions<"invalidateOperationsContract">) => execute({
@@ -3378,6 +3738,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     operationsWorkspaceLogout: (pathParameters: FaceOperationContracts["operationsWorkspaceLogout"]["path"], options: FaceOperationOptions<"operationsWorkspaceLogout">) => execute({
@@ -3385,6 +3746,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     operationsWorkspacePasswordLogin: (pathParameters: FaceOperationContracts["operationsWorkspacePasswordLogin"]["path"], options: FaceOperationOptions<"operationsWorkspacePasswordLogin">) => execute({
@@ -3392,6 +3754,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     reissueOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceGroupInvitation">) => execute({
@@ -3399,6 +3762,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceHeadCompanyInvitation">) => execute({
@@ -3406,6 +3770,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceProjectInvitation">) => execute({
@@ -3413,6 +3778,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceRegionInvitation">) => execute({
@@ -3420,6 +3786,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceStoreInvitation">) => execute({
@@ -3427,6 +3794,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     removeOperationsOrganizationHeadCompanyBrandAuthorization: (pathParameters: FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["path"], options: FaceOperationOptions<"removeOperationsOrganizationHeadCompanyBrandAuthorization">) => execute({
@@ -3434,6 +3802,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "DELETE",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceGroupUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceGroupUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceGroupUserAssignment">) => execute({
@@ -3441,6 +3810,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceHeadCompanyUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceHeadCompanyUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceHeadCompanyUserAssignment">) => execute({
@@ -3448,6 +3818,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceProjectUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceProjectUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceProjectUserAssignment">) => execute({
@@ -3455,6 +3826,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceRegionUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceRegionUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceRegionUserAssignment">) => execute({
@@ -3462,6 +3834,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceStoreUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceStoreUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceStoreUserAssignment">) => execute({
@@ -3469,6 +3842,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     selectOperationsWorkspaceSessionContext: (pathParameters: FaceOperationContracts["selectOperationsWorkspaceSessionContext"]["path"], options: FaceOperationOptions<"selectOperationsWorkspaceSessionContext">) => execute({
@@ -3476,6 +3850,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     selectOperationsWorkspaceSessionDataNode: (pathParameters: FaceOperationContracts["selectOperationsWorkspaceSessionDataNode"]["path"], options: FaceOperationOptions<"selectOperationsWorkspaceSessionDataNode">) => execute({
@@ -3483,6 +3858,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     sendOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["sendOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"sendOperationsWorkspaceOtp">) => execute({
@@ -3490,6 +3866,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     transitionOperationsOrganizationBrandStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationBrandStatus">) => execute({
@@ -3497,6 +3874,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsOrganizationHeadCompanyStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationHeadCompanyStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationHeadCompanyStatus">) => execute({
@@ -3504,6 +3882,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsOrganizationNodeStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationNodeStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationNodeStatus">) => execute({
@@ -3511,6 +3890,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsOrganizationStoreStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationStoreStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationStoreStatus">) => execute({
@@ -3518,6 +3898,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsOrganizationTenantStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationTenantStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationTenantStatus">) => execute({
@@ -3525,6 +3906,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsContract: (pathParameters: FaceOperationContracts["updateOperationsContract"]["path"], options: FaceOperationOptions<"updateOperationsContract">) => execute({
@@ -3532,6 +3914,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["updateOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationBrand">) => execute({
@@ -3539,6 +3922,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["updateOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationHeadCompany">) => execute({
@@ -3546,6 +3930,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationNode: (pathParameters: FaceOperationContracts["updateOperationsOrganizationNode"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationNode">) => execute({
@@ -3553,6 +3938,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationStore: (pathParameters: FaceOperationContracts["updateOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationStore">) => execute({
@@ -3560,6 +3946,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["updateOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationTenant">) => execute({
@@ -3567,6 +3954,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     verifyOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["verifyOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"verifyOperationsWorkspaceOtp">) => execute({
@@ -3574,6 +3962,7 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     })
   } as const;

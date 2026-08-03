@@ -22,7 +22,7 @@
       "OrganizationHierarchyTreeNode": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "type", "code", "name", "status", "updatedAt", "children"],
+        "required": ["id", "type", "code", "name", "status", "updatedAt", "children", "phases"],
         "properties": {
           "id": {"type": "string", "minLength": 1, "maxLength": 64},
           "type": {"type": "string", "enum": ["REGION", "PROJECT"]},
@@ -31,7 +31,8 @@
           "status": {"$ref": "#/components/schemas/OrganizationOverviewStatus"},
           "notes": {"type": "string", "nullable": true, "maxLength": 2000},
           "updatedAt": {"type": "integer", "format": "int64", "minimum": 0},
-          "children": {"type": "array", "items": {"$ref": "#/components/schemas/OrganizationHierarchyTreeNode"}}
+          "children": {"type": "array", "items": {"$ref": "#/components/schemas/OrganizationHierarchyTreeNode"}},
+          "phases": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 120}}
         }
       },
       "OrganizationOverviewItem": {

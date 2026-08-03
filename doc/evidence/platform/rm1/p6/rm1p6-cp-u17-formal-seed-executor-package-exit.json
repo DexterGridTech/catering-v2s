@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-CP-U17",
+  "kind": "rm1-execution-package-exit",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "scripts/dev/seed",
+    "scripts/dev/owner-command-seed-executor.mjs",
+    "scripts/dev/owner-command-seed-executor.test.mjs",
+    "scripts/dev/terminal-fixture-state.mjs",
+    "scripts/dev/terminal-fixture-state.test.mjs",
+    "scripts/dev/r5-dev-runner.mjs",
+    "scripts/dev/profiles/r5-full.json",
+    "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+    "scripts/README.md",
+    "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json",
+    "apps/backend/catering-business-server/src/main/resources/application.yaml",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/DevSeedRuntimeConfiguration.java",
+    "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/seed/DevFixedOtpIssuer.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/DevSeedRuntimeConfigurationTest.java",
+    "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+    "project-memory/index.json",
+    "project-memory/index.md",
+    ".runtime/compliance-control/problem-family-dispositions/9d25308eb1e458c86d2cd6f11d0ae9929ae3a348e513a116b071a56245e07030.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-problem-family.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-package-exit.json",
+    "doc/review/platform/rm1p6-cp-u17-formal-seed-executor-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": ["scripts/check/standards-coverage --phase R5", "scripts/check/remediation-compliance static-scan", "scripts/dev/check", "scripts/dev/reset --dry-run", "scripts/dev/seed --profile r5-full --dry-run"],
+    "formalSeedRun": ".runtime/r5/seed/rm1-seed-3148e9be-ed61-4599-9770-d83c2514d7db",
+    "assertions": ["147 owner HTTP calls across 39 endpoint groups", "owner readback accounts=6 invitations=17 contracts=5", "bootstrap and terminal inv-expired stages passed", "no unmatched HTTP or database events"],
+    "dynamicBoundary": "Formal seed proof only; no browser L2 or UAT claim."
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "business": "PASS_FORMAL_OWNER_COMMAND_SEED",
+  "cleanup": "PASS_NO_PERSISTENT_SEED_PROCESS",
+  "scopeStatement": "U17 closes the managed r5-full formal owner-command seed only. It neither implements nor proves the U18 workspace account product closure."
+}

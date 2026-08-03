@@ -48,6 +48,7 @@
                 "PLATFORM_ADMIN",
                 "WORKSPACE_ROLE",
                 "WORKSPACE_ACCOUNT",
+                "WORKSPACE_INVITATION",
                 "EXTENSION_DEFINITION",
                 "STORE_CONTRACT"
               ]

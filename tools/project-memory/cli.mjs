@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const INVENTORY_SHA256 = "d73db88cb3b3e7afe3cf53424b3a793ca433ce30ab0f1a372d10335cf08a1758";
+const INVENTORY_SHA256 = "cca6f31259ae0f5d19496b5972ee7be5836950e868e65b3a98f2a8c99cab4db1";
 const dimensions = ["taskKinds", "domains", "consumerFaces", "owners", "impacts", "triggers"];
 const routeFlags = {
   taskKinds: "--task-kind",
@@ -62,7 +62,7 @@ function loadValidated(root) {
     fail("required inventory differs from the independently approved current denominator");
   }
   const inventory = JSON.parse(inventoryBytes);
-  if (inventory.schemaVersion !== 1 || inventory.kind !== "project-memory-required-inventory" || inventory.entries.length !== 20) {
+  if (inventory.schemaVersion !== 1 || inventory.kind !== "project-memory-required-inventory" || inventory.entries.length !== 21) {
     fail("invalid required inventory envelope");
   }
   const vocabulary = JSON.parse(readFileSync(resolve(root, "project-memory/routing-vocabulary.json"), "utf8"));

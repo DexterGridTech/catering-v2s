@@ -259,6 +259,7 @@ function openApiOperation(base, catalogOperation, reportOperation) {
   if (requestSchema !== catalogOperation.requestSchema || responseSchema !== catalogOperation.responseSchema) {
     fail("R5_EDGE_CODEGEN_CATALOG_OPENAPI_SCHEMA_DRIFT", `${catalogOperation.operationId}:${catalogOperation.requestSchema}/${requestSchema}:${catalogOperation.responseSchema}/${responseSchema}`);
   }
+  if (!Array.isArray(operation.security)) fail("R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED", catalogOperation.operationId);
   const idempotencyHeaders = headerParameters.filter((parameter) => parameter.name.toLowerCase() === "idempotency-key");
   const expectsIdempotency = catalogOperation.idempotency?.header === "REQUIRED_16_128";
   if (idempotencyHeaders.length !== (expectsIdempotency ? 1 : 0)
@@ -272,8 +273,54 @@ function openApiOperation(base, catalogOperation, reportOperation) {
       queryParameters,
       headerParameters,
       requestRequired: localReference(pathDocument, operation.requestBody, "requestBodies", `${catalogOperation.operationId}:requestBody`)?.required === true,
+      requiresSession: operation.security.length > 0,
     },
   };
+}
+function jsonPointer(document, fragment, context) {
+  if (!fragment.startsWith("#/")) fail("R5_EDGE_ROOT_OPENAPI_REFERENCE_INVALID", context);
+  const value = fragment.slice(2).split("/").reduce((current, token) => current?.[token.replaceAll("~1", "/").replaceAll("~0", "~")], document);
+  if (!value || typeof value !== "object") fail("R5_EDGE_ROOT_OPENAPI_REFERENCE_MISSING", context);
+  return value;
+}
+function rootPathItem(base, rootPath, value) {
+  if (!value || typeof value !== "object" || typeof value.$ref !== "string") fail("R5_EDGE_ROOT_OPENAPI_PATH_REFERENCE_REQUIRED", rootPath);
+  const [referenceFile, fragment = ""] = value.$ref.split("#", 2);
+  if (!referenceFile || !fragment) fail("R5_EDGE_ROOT_OPENAPI_REFERENCE_INVALID", `${rootPath}:${value.$ref}`);
+  const relative = path.posix.normalize(path.posix.join("contracts/openapi", referenceFile));
+  if (!relative.startsWith("contracts/openapi/")) fail("R5_EDGE_ROOT_OPENAPI_REFERENCE_INVALID", `${rootPath}:${value.$ref}`);
+  return jsonPointer(read(relative, base), `#${fragment}`, `${rootPath}:${value.$ref}`);
+}
+function operationTuple({operationId, method, path: operationPath, face, owner}) {
+  if (typeof operationId !== "string" || typeof method !== "string" || typeof operationPath !== "string" || typeof face !== "string" || typeof owner !== "string") {
+    fail("R5_EDGE_ROOT_ROUTE_REGISTRY_TUPLE_INVALID", operationId || operationPath || "UNKNOWN");
+  }
+  return JSON.stringify([operationId, method.toUpperCase(), operationPath, face, owner]);
+}
+function rootOpenApiOperationTuples(base) {
+  const document = read("contracts/openapi/edge.openapi.yaml", base);
+  const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
+  const tuples = [];
+  for (const [rootPath, reference] of Object.entries(document.paths || {})) {
+    const pathItem = rootPathItem(base, rootPath, reference);
+    for (const [method, operation] of Object.entries(pathItem)) {
+      if (!methods.has(method)) continue;
+      const faces = operation?.["x-consumer-faces"];
+      const owner = operation?.["x-owner-module"];
+      if (!operation || typeof operation.operationId !== "string" || !Array.isArray(faces) || faces.length === 0 || typeof owner !== "string") {
+        fail("R5_EDGE_ROOT_OPENAPI_OPERATION_INVALID", `${rootPath}:${method}`);
+      }
+      for (const face of faces) tuples.push(operationTuple({operationId: operation.operationId, method, path: rootPath, face, owner}));
+    }
+  }
+  return tuples;
+}
+function assertRootOpenApiRouteRegistryExactSet(base, operations) {
+  const rootTuples = rootOpenApiOperationTuples(base);
+  const registryTuples = operations.map((operation) => operationTuple(operation));
+  if (new Set(rootTuples).size !== rootTuples.length || new Set(registryTuples).size !== registryTuples.length || !sameSet(rootTuples, registryTuples)) {
+    fail("R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT", `root=${rootTuples.length}:registry=${registryTuples.length}`);
+  }
 }
 function load(base = root) {
   const sourceCatalog = read(catalogPath, base);
@@ -293,6 +340,7 @@ function load(base = root) {
   const operations = catalog.operations
     .map((operation) => openApiOperation(base, operation, reportById.get(operation.operationId)))
     .sort((left, right) => left.operationId.localeCompare(right.operationId));
+  assertRootOpenApiRouteRegistryExactSet(base, operations);
   const faceCounts = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, operations.filter((operation) => operation.face === face).length]));
   if (JSON.stringify(faceCounts) !== JSON.stringify(catalog.denominator.faces)) fail("R5_EDGE_CODEGEN_FACE_COUNT");
   const codes = activeCodes(errors);
@@ -312,7 +360,7 @@ function loadAdminCatalog(base = root) {
   }
   const nodesByKey = new Map();
   for (const node of source.nodes) {
-    if (!node || typeof node.key !== "string" || nodesByKey.has(node.key) || !["NAVIGATION_GROUP", "ACTION_GROUP", "PAGE", "ACTION"].includes(node.kind)
+    if (!node || typeof node.key !== "string" || nodesByKey.has(node.key) || !["NAVIGATION_GROUP", "ACTION_GROUP", "PAGE", "ACTION", "SHELL_COPY"].includes(node.kind)
       || typeof node.display?.label !== "string" || node.display.label.length === 0) fail("R5_ADMIN_CATALOG_NODE_INVALID", node?.key);
     nodesByKey.set(node.key, node);
   }
@@ -321,6 +369,7 @@ function loadAdminCatalog(base = root) {
   const actionGroups = nodes.filter((node) => node.kind === "ACTION_GROUP");
   const pages = nodes.filter((node) => node.kind === "PAGE");
   const actions = nodes.filter((node) => node.kind === "ACTION");
+  const shellCopy = nodes.filter((node) => node.kind === "SHELL_COPY");
   const pageKeys = pages.map((node) => node.key);
   const actionKeys = actions.map((node) => node.key);
   const manifestPages = Object.keys(manifest.pageDesignKeySurfaceCrosswalk.byPageDesignKey);
@@ -328,11 +377,13 @@ function loadAdminCatalog(base = root) {
   if (!sameSet(pageKeys, manifestPages) || pageKeys.length !== 25) fail("R5_ADMIN_CATALOG_PAGE_SET_DRIFT");
   if (!sameSet(actionKeys, manifestActions) || actionKeys.length !== 34) fail("R5_ADMIN_CATALOG_ACTION_SET_DRIFT");
   if (new Set(pageKeys).size !== pageKeys.length || new Set(actionKeys).size !== actionKeys.length) fail("R5_ADMIN_CATALOG_DUPLICATE_KEY");
+  if (shellCopy.length !== 4 || shellCopy.some((node) => node.consumerFace !== "platform-admin")) fail("R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT");
   if (navigationGroups.length !== 4 || actionGroups.length !== 4) fail("R5_ADMIN_CATALOG_GROUP_SET_DRIFT");
   const navigationByKey = new Map(navigationGroups.map((node) => [node.key, node]));
   const actionGroupByKey = new Map(actionGroups.map((node) => [node.key, node]));
+  const navigationIconKeys = new Set(["WORKBENCH", "ACCESS", "ORGANIZATION", "STORE_OPERATIONS"]);
   if (navigationByKey.size !== 4 || actionGroupByKey.size !== 4
-    || navigationGroups.some((node) => node.consumerFace !== "operations-admin" || !Number.isInteger(node.navigation?.order))
+    || navigationGroups.some((node) => node.consumerFace !== "operations-admin" || !Number.isInteger(node.navigation?.order) || !navigationIconKeys.has(node.navigation?.iconKey))
     || actionGroups.some((node) => !Number.isInteger(node.actionGroup?.order))) fail("R5_ADMIN_CATALOG_GROUP_INVALID");
   const platformNodes = pages.filter((node) => node.consumerFace === "platform-admin");
   const operationsNodes = pages.filter((node) => node.consumerFace === "operations-admin");
@@ -352,16 +403,16 @@ function loadAdminCatalog(base = root) {
     const experience = experienceOf(node);
     if (node.page.kind === "ROLE_HOME") {
       if (node.pageAccess || node.workspaceRequirement !== undefined || typeof node.page.roleHomeForNodeType !== "string") fail("R5_ADMIN_CATALOG_ROLE_HOME_INVALID", node.key);
-      return {pageDesignKey:node.key, kind:"ROLE_HOME", pageAccessManaged:false, menuOrder:node.navigation.order, menuGroupLabel:navigationByKey.get(node.navigation.groupKey).display.label, menuLabel:node.display.label, pageTitle:node.display.label, contentTabLabel:node.display.label, ...experience, requiredDataNodeType:"NONE", supportedRoleNodeTypes:[node.page.roleHomeForNodeType], userManagementTargetOrganizationType:null};
+      return {pageDesignKey:node.key, kind:"ROLE_HOME", pageAccessManaged:false, menuOrder:node.navigation.order, menuGroupKey:node.navigation.groupKey, menuGroupIconKey:navigationByKey.get(node.navigation.groupKey).navigation.iconKey, menuGroupLabel:navigationByKey.get(node.navigation.groupKey).display.label, menuLabel:node.display.label, pageTitle:node.display.label, contentTabLabel:node.display.label, ...experience, requiredDataNodeType:"NONE", supportedRoleNodeTypes:[node.page.roleHomeForNodeType], userManagementTargetOrganizationType:null};
     }
     const access = node.pageAccess;
     if (node.workspaceRequirement !== undefined || node.page.roleHomeForNodeType !== undefined || !access || access.pageAccessManaged !== true || !Array.isArray(access.grantableRoleNodeTypes) || access.grantableRoleNodeTypes.length === 0 || typeof access.requiredDataNodeType !== "string") fail("R5_ADMIN_CATALOG_PAGE_ACCESS_INVALID", node.key);
-    return {pageDesignKey:node.key, kind:"BUSINESS", pageAccessManaged:true, menuOrder:node.navigation.order, menuGroupLabel:navigationByKey.get(node.navigation.groupKey).display.label, menuLabel:node.display.label, pageTitle:node.display.label, contentTabLabel:node.display.label, ...experience, requiredDataNodeType:access.requiredDataNodeType, supportedRoleNodeTypes:access.grantableRoleNodeTypes, userManagementTargetOrganizationType:access.userManagementTargetOrganizationType ?? null};
+    return {pageDesignKey:node.key, kind:"BUSINESS", pageAccessManaged:true, menuOrder:node.navigation.order, menuGroupKey:node.navigation.groupKey, menuGroupIconKey:navigationByKey.get(node.navigation.groupKey).navigation.iconKey, menuGroupLabel:navigationByKey.get(node.navigation.groupKey).display.label, menuLabel:node.display.label, pageTitle:node.display.label, contentTabLabel:node.display.label, ...experience, requiredDataNodeType:access.requiredDataNodeType, supportedRoleNodeTypes:access.grantableRoleNodeTypes, userManagementTargetOrganizationType:access.userManagementTargetOrganizationType ?? null};
   });
   if (new Set(operationsNodes.map((node) => `${node.navigation.groupKey}:${node.navigation.order}`)).size !== operationsNodes.length) fail("R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT");
   const platformPages = platformNodes.map((node) => {
     if (node.page?.kind !== "BUSINESS" || node.page.roleHomeForNodeType !== undefined || node.pageAccess || node.experience !== undefined || typeof node.workspaceRequirement !== "string" || !Number.isInteger(node.navigation?.order) || typeof node.navigation?.iconKey !== "string") fail("R5_ADMIN_CATALOG_PLATFORM_PAGE_INVALID", node.key);
-    return {pageDesignKey:node.key, title:node.display.label, iconKey:node.navigation.iconKey, workspaceRequirement:node.workspaceRequirement};
+    return {pageDesignKey:node.key, title:node.display.label, iconKey:node.navigation.iconKey, menuOrder:node.navigation.order, workspaceRequirement:node.workspaceRequirement};
   });
   const catalogActions = actions.map((node) => {
     const action = node.action;
@@ -384,7 +435,7 @@ function loadAdminCatalog(base = root) {
     if (bindings.INVITE === undefined || bindings.ROLE_REVOKE === undefined || userManagementActionBindings.some((binding) => binding.pageDesignKey === page.pageDesignKey && binding.targetOrganizationType !== page.userManagementTargetOrganizationType)) fail("R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT");
     return [page.pageDesignKey, {targetOrganizationType:page.userManagementTargetOrganizationType, inviteActionKey:bindings.INVITE, roleRevokeActionKey:bindings.ROLE_REVOKE}];
   }));
-  return {platformPages, operationsPages, actions:catalogActions, actionGroups:actionGroups.map((group) => ({actionGroupKey:group.key, actionGroupLabel:group.display.label, actionGroupOrder:group.actionGroup.order})), userManagementActionBindings, userManagementByPage, roleHomes:roleHomes.map((node) => ({roleNodeType:node.page.roleHomeForNodeType, pageDesignKey:node.key}))};
+  return {platformPages, platformShellCopy:Object.fromEntries(shellCopy.map((node) => [node.key, node.display.label])), operationsPages, actions:catalogActions, actionGroups:actionGroups.map((group) => ({actionGroupKey:group.key, actionGroupLabel:group.display.label, actionGroupOrder:group.actionGroup.order})), userManagementActionBindings, userManagementByPage, roleHomes:roleHomes.map((node) => ({roleNodeType:node.page.roleHomeForNodeType, pageDesignKey:node.key}))};
 }
 function symbolName(key) {
   return key.toLowerCase().split(/[^a-z0-9]+/).map((part) => part[0].toUpperCase() + part.slice(1)).join("");
@@ -397,8 +448,11 @@ function tsAdminCatalog(face, base = root) {
   const pages = face === "platform-admin" ? catalog.platformPages : catalog.operationsPages;
   const keyName = face === "platform-admin" ? "platformPageDesignKeys" : "operationsPageDesignKeys";
   const keys = Object.fromEntries(pages.map((page) => [symbolName(page.pageDesignKey), page.pageDesignKey]));
+  const shellCopyKeys = face === "platform-admin"
+    ? Object.fromEntries(Object.keys(catalog.platformShellCopy).map((key) => [symbolName(key), key]))
+    : undefined;
   const body = face === "platform-admin"
-    ? {platformPages: catalog.platformPages}
+    ? {platformPages: catalog.platformPages, platformShellCopy: catalog.platformShellCopy}
     : {
       operationsPages: catalog.operationsPages,
       actionGroups: catalog.actionGroups,
@@ -414,7 +468,10 @@ function tsAdminCatalog(face, base = root) {
   const userManagementLookup = face === "operations-admin"
     ? `export function userManagementFor(pageDesignKey: UserManagementPageDesignKey) {\n  const value = adminCatalog.userManagementByPage[pageDesignKey];\n  if (!value) throw new Error(\`USER_MANAGEMENT_TARGET_MISSING:\${pageDesignKey}\`);\n  return value;\n}\n`
     : "";
-  return `// Generated from ${adminCatalogPath}; do not edit.\nexport const adminCatalog = ${JSON.stringify(body, null, 2)} as const;\nexport const ${keyName} = ${JSON.stringify(keys, null, 2)} as const;\nexport type AdminCatalog = typeof adminCatalog;\nexport type ${face === "platform-admin" ? "Platform" : "Operations"}PageDesignKey = typeof ${keyName}[keyof typeof ${keyName}];\n${actionExports}${userManagementLookup}`;
+  const shellCopyExports = face === "platform-admin"
+    ? `export const platformShellCopyKeys = ${JSON.stringify(shellCopyKeys, null, 2)} as const;\n`
+    : "";
+  return `// Generated from ${adminCatalogPath}; do not edit.\nexport const adminCatalog = ${JSON.stringify(body, null, 2)} as const;\nexport const ${keyName} = ${JSON.stringify(keys, null, 2)} as const;\n${shellCopyExports}export type AdminCatalog = typeof adminCatalog;\nexport type ${face === "platform-admin" ? "Platform" : "Operations"}PageDesignKey = typeof ${keyName}[keyof typeof ${keyName}];\n${actionExports}${userManagementLookup}`;
 }
 function javaString(value) { return JSON.stringify(value); }
 function javaList(values) { return values.length === 0 ? "List.of()" : `List.of(${values.map(javaString).join(", ")})`; }
@@ -692,13 +749,13 @@ function tsHeaderParametersType(operation, components) {
     : `{\n${parameters.map((parameter) => `    ${JSON.stringify(parameter.name)}${parameter.required ? "" : "?"}: ${tsOpenApiParameterType(parameter, components, `${operation.operationId}:header.${parameter.name}`)};`).join("\n")}\n  }`;
 }
 function tsOperationContractEntry(operation, components) {
-  return `  ${JSON.stringify(operation.operationId)}: {\n    request: ${tsTypeIdentifier(operation.requestSchema, `${operation.operationId}:request`)};\n    response: ${tsTypeIdentifier(operation.responseSchema, `${operation.operationId}:response`)};\n    requestRequired: ${operation.openApi.requestRequired ? "true" : "false"};\n    path: ${tsPathParametersType(operation, components)};\n    query: ${tsQueryParametersType(operation, components)};\n    queryRequired: ${operation.openApi.queryParameters.some((parameter) => parameter.required) ? "true" : "false"};\n    headers: ${tsHeaderParametersType(operation, components)};\n    headersRequired: ${operation.openApi.headerParameters.some((parameter) => parameter.required) ? "true" : "false"};\n  };`;
+  return `  ${JSON.stringify(operation.operationId)}: {\n    request: ${tsTypeIdentifier(operation.requestSchema, `${operation.operationId}:request`)};\n    response: ${tsTypeIdentifier(operation.responseSchema, `${operation.operationId}:response`)};\n    requestRequired: ${operation.openApi.requestRequired ? "true" : "false"};\n    requiresSession: ${operation.openApi.requiresSession ? "true" : "false"};\n    path: ${tsPathParametersType(operation, components)};\n    query: ${tsQueryParametersType(operation, components)};\n    queryRequired: ${operation.openApi.queryParameters.some((parameter) => parameter.required) ? "true" : "false"};\n    headers: ${tsHeaderParametersType(operation, components)};\n    headersRequired: ${operation.openApi.headerParameters.some((parameter) => parameter.required) ? "true" : "false"};\n  };`;
 }
 function faceTypeName(face) {
   return face.split("-").map((part) => part[0].toUpperCase() + part.slice(1)).join("");
 }
 function tsClientMethod(operation) {
-  return `    ${operation.operationId}: (pathParameters: FaceOperationContracts[${JSON.stringify(operation.operationId)}]["path"], options: FaceOperationOptions<${JSON.stringify(operation.operationId)}>) => execute({\n      operationId: ${JSON.stringify(operation.operationId)},\n      method: ${JSON.stringify(operation.method)},\n      path: ${JSON.stringify(operation.path)},\n      pathParameters,\n      ...options,\n    })`;
+  return `    ${operation.operationId}: (pathParameters: FaceOperationContracts[${JSON.stringify(operation.operationId)}]["path"], options: FaceOperationOptions<${JSON.stringify(operation.operationId)}>) => execute({\n      operationId: ${JSON.stringify(operation.operationId)},\n      method: ${JSON.stringify(operation.method)},\n      path: ${JSON.stringify(operation.path)},\n      pathParameters,\n      requiresSession: ${operation.openApi.requiresSession},\n      ...options,\n    })`;
 }
 function tsFace(face, operations, codes, components) {
   const selected = operations.filter((operation) => operation.face === face);
@@ -717,7 +774,7 @@ function tsFace(face, operations, codes, components) {
   const jsonValueType = /\bJsonValue\b/.test(componentTypes)
     ? "export type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };"
     : "";
-  return `// Generated from accepted R5 edge catalog; do not edit.\n\nexport const ${operationSymbol} = ${normalized(selected.map(({ operationId, method, path: route, owner }) => ({ operationId, method, path: route, owner }))).trim()} as const;\n\nexport const ${operationIdsSymbol} = ${normalized(Object.fromEntries(selected.map(({operationId}) => [operationId, operationId]))).trim()} as const;\n\nexport const EDGE_PROBLEM_CODES = ${normalized(codes).trim()} as const;\nexport type EdgeProblemCode = (typeof EDGE_PROBLEM_CODES)[number];\nexport type ${operationIdType} = (typeof ${operationSymbol})[number]["operationId"];\n\n${jsonValueType}\n\n${componentTypes}\n\nexport type FaceOperationContracts = {\n${operationContracts}\n};\n\ntype RequestPart<I extends ${operationIdType}> = FaceOperationContracts[I]["requestRequired"] extends true\n  ? {body: FaceOperationContracts[I]["request"]}\n  : {body?: never};\ntype QueryPart<I extends ${operationIdType}> = FaceOperationContracts[I]["queryRequired"] extends true\n  ? {query: FaceOperationContracts[I]["query"]}\n  : {query?: FaceOperationContracts[I]["query"]};\ntype HeaderPart<I extends ${operationIdType}> = FaceOperationContracts[I]["headersRequired"] extends true\n  ? {headers: FaceOperationContracts[I]["headers"]}\n  : {headers?: never};\nexport type FaceOperationOptions<I extends ${operationIdType}> = RequestPart<I> & QueryPart<I> & HeaderPart<I>;\nexport type FaceOperationRequest<I extends ${operationIdType}> = FaceOperationOptions<I> & {\n  operationId: I;\n  method: (typeof ${operationSymbol})[number]["method"];\n  path: (typeof ${operationSymbol})[number]["path"];\n  pathParameters: FaceOperationContracts[I]["path"];\n};\nexport type FaceExecutor = <I extends ${operationIdType}>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;\n\nexport function ${clientFactory}(execute: FaceExecutor) {\n  return {\n${clientMethods}\n  } as const;\n}\n`;
+  return `// Generated from accepted R5 edge catalog; do not edit.\n\nexport const ${operationSymbol} = ${normalized(selected.map((operation) => ({operationId: operation.operationId, method: operation.method, path: operation.path, owner: operation.owner, requiresSession: operation.openApi.requiresSession}))).trim()} as const;\n\nexport const ${operationIdsSymbol} = ${normalized(Object.fromEntries(selected.map(({operationId}) => [operationId, operationId]))).trim()} as const;\n\nexport const EDGE_PROBLEM_CODES = ${normalized(codes).trim()} as const;\nexport type EdgeProblemCode = (typeof EDGE_PROBLEM_CODES)[number];\nexport type ${operationIdType} = (typeof ${operationSymbol})[number]["operationId"];\n\n${jsonValueType}\n\n${componentTypes}\n\nexport type FaceOperationContracts = {\n${operationContracts}\n};\n\ntype RequestPart<I extends ${operationIdType}> = FaceOperationContracts[I]["requestRequired"] extends true\n  ? {body: FaceOperationContracts[I]["request"]}\n  : {body?: never};\ntype QueryPart<I extends ${operationIdType}> = FaceOperationContracts[I]["queryRequired"] extends true\n  ? {query: FaceOperationContracts[I]["query"]}\n  : {query?: FaceOperationContracts[I]["query"]};\ntype HeaderPart<I extends ${operationIdType}> = FaceOperationContracts[I]["headersRequired"] extends true\n  ? {headers: FaceOperationContracts[I]["headers"]}\n  : {headers?: never};\nexport type FaceOperationOptions<I extends ${operationIdType}> = RequestPart<I> & QueryPart<I> & HeaderPart<I>;\nexport type FaceOperationRequest<I extends ${operationIdType}> = FaceOperationOptions<I> & {\n  operationId: I;\n  method: (typeof ${operationSymbol})[number]["method"];\n  path: (typeof ${operationSymbol})[number]["path"];\n  pathParameters: FaceOperationContracts[I]["path"];\n  requiresSession: FaceOperationContracts[I]["requiresSession"];\n};\nexport type FaceExecutor = <I extends ${operationIdType}>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;\n\nexport function ${clientFactory}(execute: FaceExecutor) {\n  return {\n${clientMethods}\n  } as const;\n}\n`;
 }
 /**
  * Emits the only RTK endpoint inventory that an app may bind.  Features receive
@@ -743,7 +800,7 @@ function tsRtkEndpoint(operation) {
  */
 function tsRtkRequestHelper(operation) {
   const operationId = JSON.stringify(operation.operationId);
-  return `    ${operation.operationId}: (pathParameters: FaceOperationContracts[${operationId}]["path"], options: FaceOperationOptions<${operationId}>): FaceOperationRequest<${operationId}> => ({\n      operationId: ${operationId},\n      method: ${JSON.stringify(operation.method)},\n      path: ${JSON.stringify(operation.path)},\n      pathParameters,\n      ...options,\n    })`;
+  return `    ${operation.operationId}: (pathParameters: FaceOperationContracts[${operationId}]["path"], options: FaceOperationOptions<${operationId}>): FaceOperationRequest<${operationId}> => ({\n      operationId: ${operationId},\n      method: ${JSON.stringify(operation.method)},\n      path: ${JSON.stringify(operation.path)},\n      pathParameters,\n      requiresSession: ${operation.openApi.requiresSession},\n      ...options,\n    })`;
 }
 function tsRtkFace(face, operations) {
   const selected = operations.filter((operation) => operation.face === face);
@@ -751,7 +808,7 @@ function tsRtkFace(face, operations) {
   const source = `./${face === "platform-admin" ? "platform-edge" : face === "operations-admin" ? "operations-edge" : "public-edge"}`;
   const endpointFactory = `create${faceType}RtkEndpoints`;
   const requestHelper = `${faceType[0].toLowerCase()}${faceType.slice(1)}RtkRequest`;
-  return `// Generated from accepted R5 edge catalog; do not edit.\n\nimport type {BaseQueryFn, EndpointBuilder, FetchArgs, FetchBaseQueryError, FetchBaseQueryMeta} from "@reduxjs/toolkit/query";\nimport type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest} from ${JSON.stringify(source)};\n\ntype EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;\nexport type ${faceType}OperationId = keyof FaceOperationContracts;\nexport type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs;\n\n/**\n * Operation-shaped request constructors for RTK hooks. Consumers supply only\n * typed path parameters and operation options; catalog id, method and path are\n * frozen here rather than handwritten in pages.\n */\nexport const ${requestHelper} = {\n${selected.map(tsRtkRequestHelper).join(",\n")}\n} as const;\n\n/**\n * Operation-shaped RTK definitions generated from the face catalog.  The app\n * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.\n */\nexport function ${endpointFactory}(\n  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,\n  toWireRequest: ${faceType}RtkWireRequest,\n) {\n  return {\n${selected.map(tsRtkEndpoint).join(",\n")}\n  };\n}\n`;
+  return `// Generated from accepted R5 edge catalog; do not edit.\n\nimport type {BaseQueryFn, EndpointBuilder, FetchArgs, FetchBaseQueryError, FetchBaseQueryMeta} from "@reduxjs/toolkit/query";\nimport type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest} from ${JSON.stringify(source)};\n\ntype EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;\nexport type ${faceType}OperationId = keyof FaceOperationContracts;\nexport type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\n\n/**\n * Operation-shaped request constructors for RTK hooks. Consumers supply only\n * typed path parameters and operation options; catalog id, method and path are\n * frozen here rather than handwritten in pages.\n */\nexport const ${requestHelper} = {\n${selected.map(tsRtkRequestHelper).join(",\n")}\n} as const;\n\n/**\n * Operation-shaped RTK definitions generated from the face catalog.  The app\n * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.\n */\nexport function ${endpointFactory}(\n  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,\n  toWireRequest: ${faceType}RtkWireRequest,\n) {\n  return {\n${selected.map(tsRtkEndpoint).join(",\n")}\n  };\n}\n`;
 }
 function javaMap(entries) {
   const values = Object.entries(entries || {}).sort(([left], [right]) => left.localeCompare(right));
@@ -764,7 +821,9 @@ function javaCapabilityKey(value) {
   return javaString(value);
 }
 function workspaceCapabilityRequirementCatalog(model) {
-  const requirements = [...model.requirements].sort((left, right) => left.requirementId.localeCompare(right.requirementId));
+  const requirements = model.requirements
+    .filter((requirement) => requirement.authorizationMode === "AUTHENTICATED_WORKSPACE")
+    .sort((left, right) => left.requirementId.localeCompare(right.requirementId));
   const entries = requirements.map((requirement) => "        requirement("
     + [requirement.requirementId, requirement.capabilityKey || null, requirement.authorizationMode, requirement.resolverId, requirement.ownerModule, requirement.ownerRecheckId, requirement.typedProblemMappingId, requirement.redFixtureId].map((value, index) => index === 1 ? javaCapabilityKey(value) : javaString(value)).join(", ")
     + ", " + javaMap(requirement.capabilityMapping?.resourceTypeCapabilities) + ")").join(",\n");
@@ -828,7 +887,7 @@ function capabilityResolverRegistry(model) {
     "    public static Optional<ResolverDefinition> resolver(String resolverId) { return resolvers().stream().filter(value -> value.resolverId().equals(resolverId)).findFirst(); }",
     "    public static Optional<String> resolveCapabilityKey(String requirementId, String serverResolvedResourceType) { return WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirementId, serverResolvedResourceType); }",
     "    private static ResolverDefinition resolver(String resolverId, AuthorizationMode authorizationMode, List<String> inputs, List<String> outputs, boolean authenticatedWorkspaceSessionForbidden) { return new ResolverDefinition(resolverId, authorizationMode, inputs, outputs, authenticatedWorkspaceSessionForbidden); }",
-    "    public enum AuthorizationMode { AUTHENTICATED_WORKSPACE, PUBLIC_PROTOCOL }",
+    "    public enum AuthorizationMode { AUTHENTICATED_WORKSPACE, AUTHENTICATED_PLATFORM_SUPER_ADMIN, PUBLIC_PROTOCOL }",
     "    public record ResolverDefinition(String resolverId, AuthorizationMode authorizationMode, List<String> inputs, List<String> outputs, boolean authenticatedWorkspaceSessionForbidden) { }",
     "}",
     "",
@@ -852,7 +911,7 @@ function capabilityOperationCatalog(model) {
     }));
   return normalized({
     schemaVersion: 1,
-    kind: "generated-capability-operation-catalog",
+    kind: "generated-operation-authorization-catalog",
     generatedFrom: "contracts/registry/iam-org-governance-manifest.json",
     closure: {mutatingOperations: requirements.length},
     requirements,
@@ -1088,6 +1147,29 @@ function selfTest() {
     try { assertControlledWriteReceipt(scratch, controlledPackage, "edge-codegen-self-test", controlledChanges); fail("R5_EDGE_CONTROLLED_WRITE_RECEIPT_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_CONTROLLED_WRITE_RECEIPT_HASH_MISMATCH") throw error; }
     try { controlledWriteInvocationId("invalid"); fail("R5_EDGE_CONTROLLED_WRITE_INVOCATION_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_CONTROLLED_WRITE_INVOCATION_INVALID") throw error; }
     writeOutputs(scratch);
+    const rootOpenApiPath = "contracts/openapi/edge.openapi.yaml";
+    const rootOpenApiSource = fs.readFileSync(path.join(scratch, rootOpenApiPath), "utf8");
+    const rootOpenApi = read(rootOpenApiPath, scratch);
+    const releasePath = "/api/platform/assets/staging/{assetRef}/release";
+    if (!rootOpenApi.paths?.[releasePath]?.$ref) fail("R5_EDGE_ROOT_ROUTE_REGISTRY_FIXTURE_INVALID");
+    delete rootOpenApi.paths[releasePath];
+    fs.writeFileSync(path.join(scratch, rootOpenApiPath), normalized(rootOpenApi));
+    try { checkOutputs(scratch); fail("R5_EDGE_ROOT_ROUTE_REGISTRY_MISSING_ROOT_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT") throw error; }
+    fs.writeFileSync(path.join(scratch, rootOpenApiPath), rootOpenApiSource);
+    const wrongRootOpenApi = read(rootOpenApiPath, scratch);
+    wrongRootOpenApi.paths[releasePath].$ref = "./paths/platform-admin/group-workspace-management.paths.yaml#/paths/~1api~1platform~1assets~1staging";
+    fs.writeFileSync(path.join(scratch, rootOpenApiPath), normalized(wrongRootOpenApi));
+    try { checkOutputs(scratch); fail("R5_EDGE_ROOT_ROUTE_REGISTRY_WRONG_REFERENCE_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT") throw error; }
+    fs.writeFileSync(path.join(scratch, rootOpenApiPath), rootOpenApiSource);
+    const operationsAuthPath = "contracts/openapi/paths/operations-admin/workspace-auth.paths.yaml";
+    const operationsAuthSource = read(operationsAuthPath, scratch);
+    const operationsOtpSend = operationsAuthSource.paths["/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send"]?.post;
+    if (!Array.isArray(operationsOtpSend?.security)) fail("R5_EDGE_OPENAPI_SECURITY_FIXTURE_INVALID");
+    delete operationsOtpSend.security;
+    fs.writeFileSync(path.join(scratch, operationsAuthPath), normalized(operationsAuthSource));
+    try { checkOutputs(scratch); fail("R5_EDGE_OPENAPI_SECURITY_REQUIRED_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED") throw error; }
+    fs.writeFileSync(path.join(scratch, operationsAuthPath), fs.readFileSync(path.join(root, operationsAuthPath)));
+    writeOutputs(scratch);
     const mapTarget = wireJavaOutputs(scratch).find(([relative]) => relative.endsWith(".java"))[0];
     fs.appendFileSync(path.join(scratch, mapTarget), "// java.util.Map<String, Object> red mutation\n");
     try { checkOutputs(scratch); fail("R5_EDGE_WIRE_UNTYPED_MAP_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_WIRE_UNTYPED_MAP") throw error; }
@@ -1136,6 +1218,11 @@ function selfTest() {
     actionSource.nodes.find((node) => node.key === "BC-ORG-GROUP-EDIT").key = "BC-FAKE-ACTION";
     fs.writeFileSync(path.join(scratch, adminCatalogPath), normalized(actionSource));
     try { checkOutputs(scratch); fail("R5_ADMIN_CATALOG_ACTION_SET_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_ADMIN_CATALOG_ACTION_SET_DRIFT") throw error; }
+    fs.writeFileSync(path.join(scratch, adminCatalogPath), fs.readFileSync(path.join(root, adminCatalogPath)));
+    const shellCopySource = read(adminCatalogPath, scratch);
+    shellCopySource.nodes = shellCopySource.nodes.filter((node) => node.key !== "PLATFORM-SHELL-LOGOUT");
+    fs.writeFileSync(path.join(scratch, adminCatalogPath), normalized(shellCopySource));
+    try { checkOutputs(scratch); fail("R5_ADMIN_CATALOG_SHELL_COPY_SET_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT") throw error; }
     fs.writeFileSync(path.join(scratch, adminCatalogPath), fs.readFileSync(path.join(root, adminCatalogPath)));
     const bindingSource = read(adminCatalogPath, scratch);
     delete bindingSource.nodes.find((node) => node.key === "BC-IAM-GROUP-INVITE").action.userManagement;
@@ -1223,7 +1310,7 @@ function selfTest() {
     bodyPathDocument.components.requestBodies[bodyRequestReference.slice(bodyRequestPrefix.length)].required = false;
     fs.writeFileSync(path.join(scratch, bodyPathFile), normalized(bodyPathDocument));
     try { checkOutputs(scratch); fail("R5_EDGE_REQUEST_REQUIRED_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_TS_OPERATION_CONTRACT_MISSING") throw error; }
-    process.stdout.write("R5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_CONTROLLED_WRITE_RECEIPT_HASH_MISMATCH,R5_EDGE_CONTROLLED_WRITE_INVOCATION_INVALID,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_ADMIN_CATALOG_ROLE_HOME_RUNTIME_CARDINALITY_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
+    process.stdout.write("R5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_CONTROLLED_WRITE_RECEIPT_HASH_MISMATCH,R5_EDGE_CONTROLLED_WRITE_INVOCATION_INVALID,R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_ADMIN_CATALOG_ROLE_HOME_RUNTIME_CARDINALITY_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
   } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 try {

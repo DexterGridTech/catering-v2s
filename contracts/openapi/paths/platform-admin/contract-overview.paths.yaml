@@ -40,16 +40,25 @@
             }
           },
           {
-            "name": "contractNo",
+            "name": "projectId",
             "in": "query",
             "required": false,
             "schema": {
               "type": "string",
-              "maxLength": 120
+              "format": "uuid"
             }
           },
           {
-            "name": "storeName",
+            "name": "storeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "contractNo",
             "in": "query",
             "required": false,
             "schema": {
@@ -68,15 +77,6 @@
           },
           {
             "name": "tenantName",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "maxLength": 120
-            }
-          },
-          {
-            "name": "itemCode",
             "in": "query",
             "required": false,
             "schema": {

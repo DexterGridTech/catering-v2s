@@ -1,5 +1,5 @@
-import {Alert, Button, Descriptions, Drawer, Space} from 'antd';
-import {adminDrawerSurfaceProps, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
+import {adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -130,6 +130,7 @@ export function BusinessEntityDetailDrawer({
     : kind === 'TENANT'
       ? tenantDetail.error
       : headCompanyDetail.error;
+  const detailReady = Boolean(selected) && !detailLoading && !detailError;
 
   useEffect(() => {
     if (selected) storeLatestDetail(selected);
@@ -146,7 +147,7 @@ export function BusinessEntityDetailDrawer({
     .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0));
 
   const closeThen = (next: (current: BusinessEntity) => void) => {
-    if (!selected) return;
+    if (!detailReady || !selected) return;
     clearLatestDetail();
     onClose();
     next(selected);
@@ -157,16 +158,16 @@ export function BusinessEntityDetailDrawer({
   return <><Drawer
     title={selected ? `${entityLabel}详情：${selected.name}` : `${entityLabel}详情`}
     open={Boolean(entity)}
-    width={640}
+    loading={detailLoading}
+    size={640}
     destroyOnHidden
-    maskClosable={false}
     onClose={() => {
       clearLatestDetail();
       onClose();
     }}
     {...adminDrawerSurfaceProps}
     {...testId('operations-business-entity-detail-drawer')}
-    extra={selected && <Space>
+    extra={detailReady && selected && <Space>
       <Button onClick={() => setAuditOpen(true)} {...testId('operations-business-entity-detail-audit-history')}>操作历史</Button>
       {canEdit && <Button
         onClick={() => closeThen(onEdit)}
@@ -188,12 +189,10 @@ export function BusinessEntityDetailDrawer({
       </Button>}
     </Space>}
   >
-    {detailLoading && <span aria-live="polite">正在加载详情</span>}
-    {detailError && <Alert type="error" showIcon message="详情加载失败" description="请关闭后重新进入详情。"/>}
-    {definitionResult.error && <Alert type="warning" showIcon message="扩展字段加载失败" description="当前仅显示已确认的基础资料。"/>}
-    {selected && <Descriptions bordered column={1} items={[
-      {key: 'code', label: '编码', children: selected.code},
-      {key: 'name', label: '名称', children: selected.name},
+    {detailLoading && <Skeleton active {...testId('operations-business-entity-detail-loading')} />}
+    {detailError && <Alert type="error" showIcon title="详情加载失败" description="请关闭后重新进入详情。"/>}
+    {selected && <Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={[
+      {key: 'identity', label: '名称', children: formatNameCode(selected.name, selected.code)},
       ...typeSpecificItems(selected, kind),
       {key: 'status', label: '状态', children: selected.status === 'ENABLED' ? '已启用' : '已停用'},
       {key: 'remark', label: '备注', children: selected.remark ?? '—'},

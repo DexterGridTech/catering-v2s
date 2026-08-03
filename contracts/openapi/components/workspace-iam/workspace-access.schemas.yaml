@@ -297,12 +297,14 @@
           "id",
           "groupWorkspaceKey",
           "displayName",
-          "maskedMobile",
+          "mobile",
           "loginName",
           "status",
           "credentialStatus",
           "activeAssignmentCount",
+          "lastLoginAt",
           "assignments",
+          "authenticationHistory",
           "invitationHistory",
           "createdAt",
           "updatedAt",
@@ -324,7 +326,7 @@
             "minLength": 1,
             "maxLength": 120
           },
-          "maskedMobile": {
+          "mobile": {
             "type": "string",
             "minLength": 1,
             "maxLength": 32
@@ -449,6 +451,22 @@
                 }
               }
             }
+          },
+          "authenticationHistory": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "authenticatedAt"
+              ],
+              "properties": {
+                "authenticatedAt": {
+                  "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+                }
+              }
+            }
           }
         }
       },
@@ -459,7 +477,9 @@
           "items",
           "page",
           "pageSize",
-          "total"
+          "total",
+          "sort",
+          "direction"
         ],
         "properties": {
           "items": {
@@ -481,8 +501,23 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "sort": {
+            "$ref": "#/components/schemas/WorkspacePlatformAccountSortKey"
+          },
+          "direction": {
+            "$ref": "../common/enum.schemas.yaml#/components/schemas/SortDirection"
           }
         }
+      },
+      "WorkspacePlatformAccountSortKey": {
+        "type": "string",
+        "enum": [
+          "DISPLAY_NAME",
+          "LOGIN_NAME",
+          "LAST_LOGIN_AT",
+          "UPDATED_AT"
+        ]
       },
       "WorkspaceAccountStatus": {
         "type": "string",
@@ -665,6 +700,41 @@
             "type": "string",
             "format": "uri-reference"
           }
+        }
+      },
+      "PlatformWorkspaceInvitation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "groupWorkspaceKey", "mobile", "issuerDisplayName", "targetOrganizationType", "targetOrganizationPath", "roleNames", "status", "generation", "expiresAt", "revision", "createdAt", "invitationPageUrl"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1, "maxLength": 64},
+          "groupWorkspaceKey": {"type": "string", "minLength": 1, "maxLength": 64},
+          "mobile": {"type": "string", "minLength": 8, "maxLength": 32, "description": "Plaintext mobile for platform-admin operations only; never use this schema on operations-admin or public faces."},
+          "issuerDisplayName": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Immutable owner snapshot captured when the invitation was created."},
+          "targetOrganizationType": {"$ref": "../common/enum.schemas.yaml#/components/schemas/ServiceNodeType"},
+          "targetOrganizationPath": {"type": "string", "minLength": 1, "maxLength": 240},
+          "roleNames": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 120}},
+          "status": {"$ref": "#/components/schemas/WorkspaceInvitationStatus"},
+          "generation": {"type": "integer", "format": "int32", "minimum": 1},
+          "expiresAt": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"},
+          "revision": {"type": "integer", "format": "int64", "minimum": 0},
+          "createdAt": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"},
+          "consentedAt": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis", "nullable": true},
+          "completedAt": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis", "nullable": true},
+          "cancelledAt": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis", "nullable": true},
+          "invitationPageUrl": {"type": "string", "format": "uri-reference"}
+        }
+      },
+      "PlatformWorkspaceInvitationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["items", "page", "pageSize", "total", "criteria"],
+        "properties": {
+          "items": {"type": "array", "items": {"$ref": "#/components/schemas/PlatformWorkspaceInvitation"}},
+          "page": {"type": "integer", "minimum": 1},
+          "pageSize": {"type": "integer", "minimum": 1, "maximum": 100},
+          "total": {"type": "integer", "format": "int64", "minimum": 0},
+          "criteria": {"type": "object", "additionalProperties": false, "required": ["sort", "direction"], "properties": {"mobile": {"type": "string", "nullable": true, "minLength": 1, "maxLength": 32}, "organizationQuery": {"type": "string", "nullable": true, "minLength": 1, "maxLength": 240}, "roleQuery": {"type": "string", "nullable": true, "minLength": 1, "maxLength": 120}, "status": {"$ref": "#/components/schemas/WorkspaceInvitationStatus", "nullable": true}, "expiresFrom": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis", "nullable": true}, "expiresTo": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis", "nullable": true}, "sort": {"$ref": "#/components/schemas/WorkspaceInvitationSortKey"}, "direction": {"$ref": "../common/enum.schemas.yaml#/components/schemas/SortDirection"}}}
         }
       },
       "WorkspaceInvitationCancelRequest": {
@@ -1096,7 +1166,8 @@
           "pageSize",
           "total",
           "targetOrganizationType",
-          "contextVersion"
+          "contextVersion",
+          "criteria"
         ],
         "properties": {
           "items": {
@@ -1136,8 +1207,31 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "criteria": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sort",
+              "direction"
+            ],
+            "properties": {
+              "sort": {
+                "$ref": "#/components/schemas/WorkspaceUserSortKey"
+              },
+              "direction": {
+                "$ref": "../common/enum.schemas.yaml#/components/schemas/SortDirection"
+              }
+            }
           }
         }
+      },
+      "WorkspaceUserSortKey": {
+        "type": "string",
+        "enum": [
+          "DISPLAY_NAME",
+          "LOGIN_NAME"
+        ]
       },
       "WorkspaceUserRevokeRequest": {
         "type": "object",
@@ -1654,6 +1748,8 @@
           "page",
           "pageSize",
           "total",
+          "sort",
+          "direction",
           "capabilityCatalog",
           "pageAccessCatalog"
         ],
@@ -1677,6 +1773,12 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "sort": {
+            "$ref": "#/components/schemas/WorkspaceRoleSortKey"
+          },
+          "direction": {
+            "$ref": "../common/enum.schemas.yaml#/components/schemas/SortDirection"
           },
           "capabilityCatalog": {
             "type": "array",
@@ -1820,6 +1922,13 @@
             }
           }
         }
+      },
+      "WorkspaceRoleSortKey": {
+        "type": "string",
+        "enum": [
+          "NAME",
+          "UPDATED_AT"
+        ]
       },
       "WorkspaceRoleStatusTransitionRequest": {
         "type": "object",

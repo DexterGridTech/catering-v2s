@@ -2,21 +2,41 @@ import {describe, expect, it} from 'vitest';
 import {readFile} from 'node:fs/promises';
 import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
 
-const [page, regionCreate, projectCreate, edit, status, phases] = await Promise.all([
+const [page, regionCreate, projectCreate, edit, status, phases, extensionFields] = await Promise.all([
   readFile(new URL('./OrganizationStructurePage.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./RegionCreateDrawer.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./ProjectCreateDrawer.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./OrganizationEditDrawer.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./OrganizationStatusModal.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./ProjectPhaseFieldList.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('./OrganizationExtensionFields.tsx', import.meta.url), 'utf8'),
 ]);
 
 describe('organization structure focused IA contract', () => {
   it('keeps the IA04 organization tree as a fixed three-level tree and detail context, not an action list', () => {
     expect(page).toContain('<Tree aria-label="集团大区项目组织树"');
-    expect(page).toContain('children: childrenOf(null)');
-    expect(page).toContain('children: childrenOf(region.id)');
+    expect(page).toContain('children: rootMatches ? childrenOf(null).map');
+    expect(page).toContain('children: hierarchySearchMatches(region, hierarchySearch) ? childrenOf(region.id).map');
+    expect(page).toContain('<Tag color="cyan">');
+    expect(page).toContain('treeNodeTitle(commercialGroup)');
+    expect(page).toContain('treeNodeTitle(region)');
+    expect(page).toContain('treeNodeTitle(project)');
+    expect(page).toContain('formatNameCode(row.name, row.code)');
+    expect(page).toContain("placeholder=\"按名称或编码搜索\"");
+    expect(page).toContain("testId('operations-organization-hierarchy-search')");
+    expect(page).toContain("new Intl.Collator('zh-CN', {numeric: true, sensitivity: 'base'})");
+    expect(page).toContain('hierarchySearchMatches(project, hierarchySearch)');
+    expect(page).toContain('<Tag color="default">已停用</Tag>');
+    expect(page).toContain('<Card size="small" title="组织架构"');
+    expect(page).toContain('维护集团、大区和项目的组织层级；选择节点查看详情并执行已获授权的管理操作。');
+    expect(page).toContain("selected.nodeType === 'GROUP' && canCreateRegion");
+    expect(page).toContain('extra={detailActions}');
+    expect(page).toContain('size="small" column={1} styles={{label: {width: 164}}}');
+    expect(page).toContain("selected.nodeType === 'GROUP' ? 'COMMERCIAL_GROUP' : 'ORGANIZATION_NODE'");
+    expect(page).not.toContain('<Space style={{marginTop: 16}} wrap>');
+    expect(page).not.toContain('selected.phases');
     expect(page).toContain('organizationStructurePageTitle');
+    expect(page).not.toContain('title={organizationStructurePageTitle}');
     expect(page).not.toMatch(/title:\s*['"]操作['"]/);
   });
 
@@ -40,12 +60,30 @@ describe('organization structure focused IA contract', () => {
     expect(page).toContain('setSelected(rowFromNode(readback));');
     expect(edit).toContain('parentId: node.parentId');
     expect(page).toContain('parentName={editing?.nodeType === \'PROJECT\' ? rows.find((row) => row.id === editing.parentId)?.name : commercialGroup?.name}');
-    expect(edit).toContain('value={parentName ?? \'—\'}');
+    expect(edit).toContain('<Typography.Text>{parentName ?? \'—\'}</Typography.Text>');
+    expect(edit).not.toContain('<Input readOnly value={parentName');
     expect(edit).toContain('phases: node.nodeType === \'PROJECT\' ? projectPhasePayload(values.phaseDrafts) : []');
     expect(edit).toContain('useOverlayLock(Boolean(node))');
     expect(status).toContain('useOverlayLock(Boolean(target))');
     expect(status).toContain('operations-organization-status-cancel');
     expect(status).toContain('operations-organization-status-confirm');
     expect(status).toContain('停用影响由系统在提交后如实提示。');
+  });
+
+  it('uses the generated per-host definition for all three organization extension value surfaces', () => {
+    expect(extensionFields).toContain('getOperationsOrganizationHierarchyExtensionDefinition');
+    expect(extensionFields).toContain("'COMMERCIAL_GROUP' | 'REGION' | 'PROJECT'");
+    expect(extensionFields).toContain('hydrateOrganizationExtensionValues');
+    expect(extensionFields).toContain('serializeOrganizationExtensionValues');
+    expect(extensionFields).toContain('organizationExtensionDetailItems');
+    expect(extensionFields).toContain("field.type === 'DATE'");
+    expect(extensionFields).toContain('<DatePicker');
+    expect(extensionFields).toContain("field.type === 'BOOLEAN'");
+    expect(regionCreate).toContain("entityType: 'REGION'");
+    expect(projectCreate).toContain("entityType: 'PROJECT'");
+    expect(edit).toContain("node?.nodeType === 'PROJECT' ? 'PROJECT' : 'REGION'");
+    expect(page).toContain("selected?.nodeType === 'GROUP' ? 'COMMERCIAL_GROUP'");
+    expect(page).toContain('organizationExtensionDetailItems(definition.data, selected.extensionValues)');
+    expect(regionCreate + projectCreate + edit).toContain('disabled={!definitionReady}');
   });
 });

@@ -44,6 +44,8 @@
 
 所有长运行与动态环境必须使用未来受管 `scripts/` 入口；业务结果与 cleanup 分开，cleanup 非 PASS 不得完成。首败先保留并读取日志，同一 signal 第二次尝试前必须完成边界诊断，禁止用延长 timeout、轮询或魔法等待冒充修复。完整 Heritage 标准冻结于 `doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md`；本条只是压缩入口，不能缩减该标准的 run-scoped manifest、脱敏结构化日志和 `LOG_NOT_AVAILABLE` 处置要求。
 
+**运行资源预算（硬约束）**：每个受管长运行启动前必须只按 run-scoped manifest 的明确所有权做资源预检：本机 PID 必须同时匹配 OS start token；远端 PID 必须同时匹配 host、boot id 与 start ticks。历史受管 tree 仍存活或其 RSS 超出已声明预算时拒绝新 run；不得按端口、命令名猜测归属或杀未知进程。远端 Testcontainers 还必须预检 `org.testcontainers=true` 容器/卷为空，运行中把资源观察写入 manifest/heartbeat，残留资源即 cleanup FAIL。仅当前 runner 明确拥有的 process tree 可受控停止；business PASS 不放宽 cleanup。
+
 **日志、诊断与验收（硬约束）**：所有脚本、业务代码与支撑代码必须在实际运行边界具备统一、结构化、脱敏且可关联的必要日志/诊断能力，用于问题追踪、执行阶段和效率判断；禁止以 audit、异常 response、exit code、测试名称或临时输出替代。受管执行必须有 run-scoped manifest、阶段/心跳、受控 process identity、log path 和 cleanup 证据；测试/动态验证必须实际读取日志，判定 first failure、last known good、broken boundary、business 与 cleanup。无新日志是诊断信号，不得以等待、延长 timeout 或盲目重试掩盖。安全敏感路径不得记录 password/hash、OTP、token、cookie、Authorization、手机号、登录名、原始 IP 或 raw payload。已发现的范围外日志缺口必须在当前工作中补齐，无需另向 Dexter 申请日志授权；仍须遵守 owner、隐私、详设、hook 与 package-exit 边界。规范原文见 `doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md`。
 
 ## 协作进度与结束闸门

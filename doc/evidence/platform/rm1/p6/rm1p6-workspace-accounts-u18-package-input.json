@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-WORKSPACE-ACCOUNTS-U18",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-workspace-accounts-u18-delivery-manifest.json",
+  "deliveryManifestSha256": "8e65735c00998d2726584c876d1b3f7babff0f95d49f39f8a0e2070e36315598",
+  "unitId": "RM1P6-WORKSPACE-ACCOUNTS-U18",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance", "scripts/check/openapi-contracts", "scripts/check/code-layout"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance", "scripts/check/openapi-contracts"],
+  "requiredControlRuleIds": ["WA-OWNER-SAME-ASSIGNMENT-PREDICATE", "WA-AUTHENTICATION-HISTORY-PROVENANCE", "WA-PLATFORM-NO-WORKSPACE-CAPABILITY"],
+  "businessEvidenceObligation": "MANAGED_DEV_OWNER_READBACK_AND_PLATFORM_ADMIN_JOURNEY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U17",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-package-exit.json",
+    "exitSha256": "468d5e3d4aa0b5914d1114626b41ab863c6f1ff49cf41e7ccc3c51f7a4463493"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-workspace-accounts-u18-implementation-amendment.md",
+    "sha256": "a752794e58a0295c9594c0109ccf7590529de7641f8fbb1b16b50ef715374e78"
+  },
+  "authorizationBoundary": "Dexter directly authorized the platform workspace account and permanent invitation centre end-to-end closure. U18 may make the source-bound owner, additive Flyway, contract, generated client, platform edge, platform-admin UI and focused/managed DEV changes declared in its manifest. It must retain separate permanent account and invitation tabs, platform-only authorization without workspace capability mapping, owner command/readback, no raw transport or direct SQL, and distinct static/DEV/L2/UAT/business/cleanup claims."
+}

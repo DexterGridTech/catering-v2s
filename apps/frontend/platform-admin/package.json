@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --test src/tests/architecture/*.test.mjs",
+    "test": "node --test src/tests/architecture/*.test.mjs && vitest run src --exclude \"**/*.mjs\" --exclude \"**/*.spec.ts\"",
     "lint:architecture": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "lint:style": "stylelint \"src/**/*.css\" --max-warnings=0",
     "typecheck": "tsc --project tsconfig.json --noEmit",

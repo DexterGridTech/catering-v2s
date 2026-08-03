@@ -3,13 +3,21 @@ import {
   type FaceOperationRequest,
   type FaceExecutor,
   createPlatformAdminClient,
-  EDGE_PROBLEM_CODES,
   type EdgeProblemCode,
 } from './generated/platform-edge';
 import {abortPlatformRequests, platformApi, platformRefreshSignal, registerPlatformUnauthorizedRecovery} from './PlatformApi';
 import {platformStore} from '../state/PlatformStore';
+import {platformProblemFeedback, isPlatformProblemCode, type ProblemFeedback} from './platformProblemFeedback';
 
-export type PlatformApiProblem = {title: string; detail: string; errorCode: EdgeProblemCode | 'NETWORK_ERROR'};
+export type PlatformApiProblem = ProblemFeedback & {
+  type: string;
+  status: number;
+  errorCode: EdgeProblemCode | 'NETWORK_ERROR';
+  correlationId: string;
+  /** Contract fields are retained for diagnostics, never rendered by UI. */
+  contractTitle?: string;
+  contractDetail?: string;
+};
 /** Every platform transport failure is an Error so boundaries and recovery UI retain a real cause. */
 export class PlatformApiFailure extends Error {
   constructor(public readonly problem: PlatformApiProblem) {
@@ -20,8 +28,6 @@ export class PlatformApiFailure extends Error {
   get detail() { return this.problem.detail; }
   get errorCode() { return this.problem.errorCode; }
 }
-const platformProblemCodes = new Set<string>(EDGE_PROBLEM_CODES);
-
 /**
  * The generated client is the only feature-facing HTTP surface. Operation ids,
  * paths, methods, request bodies, query fields and required headers all remain
@@ -66,11 +72,18 @@ export const platformClient = createPlatformAdminClient(execute);
 function problem(error: unknown): PlatformApiProblem {
   const data = typeof error === 'object' && error !== null && 'data' in error ? (error as {data?: unknown}).data : undefined;
   if (typeof data === 'object' && data !== null) {
-    const candidate = (data as {errorCode?: unknown}).errorCode;
-    const errorCode = typeof candidate === 'string' && platformProblemCodes.has(candidate)
-      ? candidate as EdgeProblemCode
-      : 'NETWORK_ERROR';
-    return {title: '暂时无法完成', detail: '当前操作未完成，请稍后重试。', errorCode};
+    const value = data as {type?: unknown; title?: unknown; status?: unknown; detail?: unknown; errorCode?: unknown; correlationId?: unknown};
+    const errorCode = isPlatformProblemCode(value.errorCode) ? value.errorCode : 'PLATFORM_COMMON_RESULT_UNKNOWN';
+    const feedback = platformProblemFeedback(errorCode);
+    return {
+      ...feedback,
+      type: typeof value.type === 'string' ? value.type : 'about:blank',
+      status: typeof value.status === 'number' ? value.status : 0,
+      errorCode,
+      correlationId: typeof value.correlationId === 'string' ? value.correlationId : '',
+      contractTitle: typeof value.title === 'string' ? value.title : undefined,
+      contractDetail: typeof value.detail === 'string' ? value.detail : undefined,
+    };
   }
-  return {title: '暂时无法完成', detail: '暂时无法连接服务，请稍后重试。', errorCode: 'NETWORK_ERROR'};
+  return {...platformProblemFeedback('NETWORK_ERROR'), type: 'about:blank', status: 0, errorCode: 'NETWORK_ERROR', correlationId: ''};
 }

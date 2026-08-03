@@ -1,11 +1,12 @@
 import {ProTable} from '@ant-design/pro-components';
-import {Alert, Button, Card, Form, Input, Select, Space, Tag, Typography} from 'antd';
-import {testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {Alert, Button, Card, Tag, Typography} from 'antd';
+import {adminListState, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useRef, useState} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformProblemOf, platformRtk, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
+import {usePlatformSessionRefresh} from '../../../app/state/PlatformSession';
 import {adminCatalog, platformPageDesignKeys} from '../../../app/catalog/generatedAdminCatalog';
-import type {PlatformAdminDetail, PlatformAdminPage} from '../../../app/api/generated/platform-edge';
+import type {PlatformAdminDetail, PlatformAdminPage, PlatformAdminSortKey, SortDirection} from '../../../app/api/generated/platform-edge';
 import {AdministratorCreateDrawer} from './AdministratorCreateDrawer';
 import {AdministratorCredentialDrawer} from './AdministratorCredentialDrawer';
 import {AdministratorDetailDrawer} from './AdministratorDetailDrawer';
@@ -21,12 +22,15 @@ const administratorPageTitle = administratorPage.title;
 
 /** IA03 platform-admin governance: list -> owner detail -> one independent action surface. */
 export function AdministratorsPage() {
+  const refreshSession = usePlatformSessionRefresh();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<AdminFilters>({});
-  const [filterForm] = Form.useForm<AdminFilters>();
+  const [sortKey, setSortKey] = useState<PlatformAdminSortKey>('USER_NAME');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('ASC');
   const [commandProblem, setProblem] = useState<PlatformApiProblem>();
   const detail = useDetailDrawer<PlatformAdminDetail>();
+  const detailGeneration = useAsyncGenerationGuard();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<PlatformAdminDetail>();
   const [credentialTarget, setCredentialTarget] = useState<PlatformAdminDetail>();
@@ -36,14 +40,23 @@ export function AdministratorsPage() {
   const pendingActionRef = useRef<typeof pendingAction>(undefined);
   pendingActionRef.current = pendingAction;
   useOverlayLock(detail.isOpen || createOpen || Boolean(editing) || Boolean(credentialTarget) || Boolean(statusTarget) || Boolean(auditTarget));
-  const listRequest = useMemo(() => platformAdminRtkRequest.getPlatformAdminPage({}, {query: {...filters, page, pageSize}}), [filters, page, pageSize]);
+  const listRequest = useMemo(() => platformAdminRtkRequest.getPlatformAdminPage({}, {query: {...filters, page, pageSize, sortKey, sortDirection}}), [filters, page, pageSize, sortDirection, sortKey]);
   const {data: result, error, isLoading} = platformRtk.useGetPlatformAdminPageQuery(listRequest);
   const [loadDetail] = platformRtk.useLazyGetPlatformAdminDetailQuery();
   const problem = error ? platformProblemOf(error) : commandProblem;
 
-  const openDetail = async (row: Admin) => {
-    try { setProblem(undefined); detail.open(await loadDetail(platformAdminRtkRequest.getPlatformAdminDetail({platformAdminId: row.id}, {})).unwrap()); }
-    catch (next) { setProblem(next as PlatformApiProblem); }
+  const openDetail = (row: Admin) => {
+    const request = detailGeneration.begin();
+    setProblem(undefined);
+    detail.openLoading();
+    void loadDetail(platformAdminRtkRequest.getPlatformAdminDetail({platformAdminId: row.id}, {})).unwrap().then((next) => {
+      if (detailGeneration.isCurrent(request)) detail.open(next);
+    }).catch((next) => {
+      if (detailGeneration.isCurrent(request)) {
+        detail.finishLoading();
+        setProblem(platformProblemOf(next));
+      }
+    });
   };
   const returnToDetail = (admin: PlatformAdminDetail) => {
     setEditing(undefined); setCredentialTarget(undefined); setStatusTarget(undefined); detail.open(admin);
@@ -65,30 +78,41 @@ export function AdministratorsPage() {
     setPendingAction(undefined);
   };
 
-  return <Card title={administratorPageTitle} extra={<Button type="primary" onClick={() => setCreateOpen(true)} {...testId('platform-admin-create')}>新建管理员</Button>}>
-    <Typography.Paragraph>通过管理员详情核对资料后，再进入独立的编辑、凭据或状态确认面；密码不会在后续读取中显示。</Typography.Paragraph>
-    {problem && <Alert type="error" showIcon message={problem.title} description={problem.detail} style={{marginBottom: 16}}/>}
-    <Form form={filterForm} layout="inline" onFinish={(value) => { setPage(1); setFilters({userName: value.userName?.trim() || undefined, loginName: value.loginName?.trim() || undefined, status: value.status}); }} style={{marginBottom: 16}}>
-      <Form.Item name="userName" label="姓名"><Input allowClear {...testId('platform-admin-filter-user-name')}/></Form.Item>
-      <Form.Item name="loginName" label="登录账号"><Input allowClear {...testId('platform-admin-filter-login-name')}/></Form.Item>
-      <Form.Item name="status" label="状态"><Select allowClear style={{width: 120}} options={[{value: 'ACTIVE', label: '已启用'}, {value: 'DISABLED', label: '已停用'}]} {...testId('platform-admin-filter-status')}/></Form.Item>
-      <Space><Button htmlType="submit" type="primary" {...testId('platform-admin-filter-submit')}>查询</Button><Button onClick={() => { filterForm.resetFields(); setPage(1); setFilters({}); }} {...testId('platform-admin-filter-reset')}>重置</Button></Space>
-    </Form>
+  const closeDetail = () => { detailGeneration.invalidate(); detail.close(); };
+  const listState = adminListState({loading: isLoading && !result && !error, failed: Boolean(error), emptyText: '暂无管理员', testIdPrefix: 'platform-admin-list'});
+  return <Card title={<Typography.Paragraph aria-label={administratorPageTitle} type="secondary" style={{margin: 0}}>通过管理员详情核对资料后，再进入独立的编辑、凭据或状态确认面；密码不会在后续读取中显示。</Typography.Paragraph>} extra={<Button type="primary" onClick={() => setCreateOpen(true)} {...testId('platform-admin-create')}>新建管理员</Button>}>
+    {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 16}} {...testId('platform-admin-list-error')}/>}
     <div {...testId('platform-admin-table')}><ProTable<Admin>
-      rowKey="id" loading={isLoading && !result && !problem} dataSource={result?.items} search={false} options={false}
+      rowKey="id" loading={listState.loading} locale={listState.locale} dataSource={result?.items} options={false}
+      search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-admin-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setPage(1); setFilters({}); }} {...testId('platform-admin-filter-reset')}>重置</Button>]}}
+      onSubmit={(value) => { setPage(1); setFilters({userName: value.userName?.trim() || undefined, loginName: value.loginName?.trim() || undefined, status: value.status}); }}
       pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }} : false}
       columns={[
-        {title: '姓名', dataIndex: 'userName', render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`platform-admin-detail-${row.id}`)}>{row.userName}</Button>},
-        {title: '账号类型', dataIndex: 'builtIn', render: (_, row) => row.builtIn ? '内置管理员' : '平台管理员'},
-        {title: '登录账号', dataIndex: 'loginName'},
-        {title: '状态', dataIndex: 'status', render: (_, row) => <Tag color={row.status === 'ACTIVE' ? 'success' : 'default'}>{row.status === 'ACTIVE' ? '已启用' : '已停用'}</Tag>},
-        {title: '最近登录', dataIndex: 'lastLoginAt', valueType: 'dateTime'},
-        {title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime'},
+        {key: 'userName', title: '姓名', dataIndex: 'userName', sorter: true, fieldProps: {...testId('platform-admin-filter-user-name'), allowClear: true}, render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`platform-admin-detail-${row.id}`)}>{row.userName}</Button>},
+        {title: '账号类型', dataIndex: 'builtIn', search: false, render: (_, row) => row.builtIn ? '内置管理员' : '平台管理员'},
+        {key: 'loginName', title: '登录账号', dataIndex: 'loginName', sorter: true, fieldProps: {...testId('platform-admin-filter-login-name'), allowClear: true}},
+        {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {ACTIVE: {text: '已启用'}, DISABLED: {text: '已停用'}}, fieldProps: {...testId('platform-admin-filter-status'), style: {width: 120}}, render: (_, row) => <Tag color={row.status === 'ACTIVE' ? 'success' : 'default'}>{row.status === 'ACTIVE' ? '已启用' : '已停用'}</Tag>},
+        {key: 'lastLoginAt', title: '最近登录', dataIndex: 'lastLoginAt', valueType: 'dateTime', sorter: true, search: false},
+        {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
       ]}
+      onChange={(_, __, sorter) => {
+        const current = Array.isArray(sorter) ? sorter[0] : sorter;
+        if (!current?.order) {
+          setSortKey('USER_NAME');
+          setSortDirection('ASC');
+          return;
+        }
+        const nextSort = current?.columnKey === 'userName' ? 'USER_NAME'
+          : current?.columnKey === 'loginName' ? 'LOGIN_NAME'
+            : current?.columnKey === 'lastLoginAt' ? 'LAST_LOGIN_AT' : 'UPDATED_AT';
+        setSortKey(nextSort);
+        setSortDirection(current.order === 'ascend' ? 'ASC' : 'DESC');
+        setPage(1);
+      }}
     /></div>
-    <AdministratorDetailDrawer admin={detail.target} onClose={detail.close} onAfterOpenChange={openPendingActionAfterDetailClosed} onEdit={() => openAction('edit')} onCredential={() => openAction('credential')} onStatus={() => openAction('status')} onAudit={() => detail.target && setAuditTarget({entityType: 'PLATFORM_ADMIN', entityId: detail.target.id, displayName: detail.target.userName})}/>
+    <AdministratorDetailDrawer open={detail.isOpen} loading={detail.loading} problem={problem} admin={detail.target} onClose={closeDetail} onAfterOpenChange={openPendingActionAfterDetailClosed} onEdit={() => openAction('edit')} onCredential={() => openAction('credential')} onStatus={() => openAction('status')} onAudit={() => detail.target && setAuditTarget({entityType: 'PLATFORM_ADMIN', entityId: detail.target.id, displayName: detail.target.userName})}/>
     <AdministratorCreateDrawer open={createOpen} onClose={() => setCreateOpen(false)} onCreated={(admin) => { setCreateOpen(false); detail.open(admin); }}/>
-    <AdministratorEditDrawer admin={editing} onClose={() => setEditing(undefined)} onUpdated={returnToDetail}/>
+    <AdministratorEditDrawer admin={editing} onClose={() => setEditing(undefined)} onUpdated={(admin) => { returnToDetail(admin); void refreshSession(); }}/>
     <AdministratorCredentialDrawer admin={credentialTarget} onClose={() => setCredentialTarget(undefined)} onUpdated={returnToDetail}/>
     <AdministratorStatusModal admin={statusTarget} onClose={() => setStatusTarget(undefined)} onUpdated={returnToDetail} onProblem={setProblem}/>
     <PlatformAuditHistoryModal open={Boolean(auditTarget)} target={auditTarget} onClose={() => setAuditTarget(undefined)}/>

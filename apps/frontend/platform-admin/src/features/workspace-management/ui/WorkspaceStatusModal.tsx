@@ -4,7 +4,7 @@ import {useEffect, useState} from 'react';
 import type {GroupWorkspaceDetail} from '../../../app/api/generated/platform-edge';
 import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 
-export function WorkspaceStatusModal({workspace, onClose, onUpdated, onProblem}: {workspace?: GroupWorkspaceDetail; onClose: () => void; onUpdated: (workspace: GroupWorkspaceDetail) => void; onProblem: (problem: PlatformApiProblem) => void}) {
+export function WorkspaceStatusModal({workspace, onClose, onUpdated, onProblem, onConflict}: {workspace?: GroupWorkspaceDetail; onClose: () => void; onUpdated: (workspace: GroupWorkspaceDetail) => void; onProblem: (problem: PlatformApiProblem) => void; onConflict: (groupWorkspaceKey: string) => void}) {
   const [busy, setBusy] = useState(false);
   const {getIdempotencyKey, reset} = useSubmissionLifecycle();
   const workspaceKey = workspace?.groupWorkspaceKey;
@@ -21,11 +21,7 @@ export function WorkspaceStatusModal({workspace, onClose, onUpdated, onProblem}:
     } catch (error) {
       const currentProblem = platformProblemOf(error);
       if (currentProblem.errorCode !== 'PLATFORM_COMMON_VERSION_CONFLICT') onProblem(currentProblem);
-      else {
-        try {
-          onUpdated(await platformClient.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: workspace.groupWorkspaceKey}, {}));
-        } catch (readbackError) { onProblem(platformProblemOf(readbackError)); }
-      }
+      else { onClose(); onConflict(workspace.groupWorkspaceKey); }
     } finally { setBusy(false); }
   };
   return <Modal title={`确认${action}集团空间？`} open={Boolean(workspace)} onCancel={onClose} onOk={() => void submit()} confirmLoading={busy} okText="确认" cancelText="返回" okButtonProps={testId('platform-workspace-status-confirm')} cancelButtonProps={testId('platform-workspace-status-return')} destroyOnHidden>

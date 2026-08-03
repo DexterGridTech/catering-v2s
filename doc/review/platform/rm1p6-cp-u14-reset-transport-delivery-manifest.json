@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-CP-U14",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-CP-U14",
+      "title": "Managed remote PostgreSQL reset transport",
+      "approvedAssertions": [
+        "RESET_HAS_NO_LOCAL_PSQL_ADMIN_URL_OR_ADMIN_SECRET_DEPENDENCY",
+        "RESET_REUSES_HASH_BOUND_NON_PRODUCTION_REMOTE_POSTGRES_MANAGEMENT",
+        "RESET_ONLY_TERMINATES_DROPS_AND_READS_BACK_THE_EXACT_DERIVED_NAMESPACE_DATABASE",
+        "ACTIVE_DEV_MAY_BE_STOPPED_ONLY_BY_THE_RUNNER_AFTER_MANIFEST_IDENTITY_OWNERSHIP",
+        "START_REMAINS_THE_ONLY_DATABASE_CREATION_PATH"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate CP-U14 only"},
+        {"path": "scripts/dev/r5-reset.mjs", "disposition": "update", "target": "replace bare local psql with run-scoped remote management reset"},
+        {"path": "scripts/dev/r5-reset.test.mjs", "disposition": "create", "target": "focused reset transport red and green proof"},
+        {"path": "scripts/dev/r5-dev-environment.mjs", "disposition": "update", "target": "remove independent administrator URL reset assumption"},
+        {"path": "scripts/README.md", "disposition": "update", "target": "document remote management execution and ownership boundary"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json", "disposition": "update", "target": "remove obsolete administrator URL premise"},
+        {"path": "project-memory/operations/phase-retrospective-and-systemic-repair.md", "disposition": "update", "target": "record reset transport failure family and prevention"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u14-reset-transport-package-input.json", "disposition": "create", "target": "CP-U14 execution binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u14-reset-transport-implementation-amendment.md", "disposition": "create", "target": "source-bound repair design"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u14-reset-transport-problem-family.json", "disposition": "create", "target": "root-cause finite denominator"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u14-reset-transport-package-exit.json", "disposition": "create", "target": "dynamic and cleanup handback"},
+        {"path": "doc/review/platform/rm1p6-cp-u14-reset-transport-delivery-manifest.json", "disposition": "create", "target": "exact source surface declaration"}
+      ],
+      "complianceRoute": {"taskKind": "implementation", "domain": "platform", "consumerFace": "backend", "owner": "platform", "impact": "runtime", "trigger": "failure"},
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": ["project-memory/kernel/05-evidence-runtime-and-git.md", "project-memory/pitfalls/log-first-failure-retry.md"],
+        "APPROVED_ASSERTIONS": ["Dexter 2026-08-03 reset transport ruling", "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json#profile.resetAllowlist"],
+        "FORBIDDEN_PSEUDO_FIXES": ["bare local psql", "administrator URL or password", "manual SQL", "local database/Docker", "self-created tunnel", "remote create", "port/process-name stop"],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": ["doc/evidence/platform/rm1/p6/rm1p6-cp-u14-reset-transport-implementation-amendment.md"],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": ["scripts/dev/r5-reset.mjs", "remote docker exec catering-postgres psql management command", "r5-dev-runner manifest-owned stop"],
+        "DUE_STANDARDS_RULE_IDS": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance"]
+      }
+    }
+  ]
+}

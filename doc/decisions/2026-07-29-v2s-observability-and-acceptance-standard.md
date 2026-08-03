@@ -21,6 +21,7 @@ implementationAuthority: true
 3. 受管脚本必须在开始时创建 run-scoped manifest，并在运行中产生可读取的阶段/心跳、受控 process identity、run-scoped log path 和失败边界。超过 30 秒的执行必须依据这些日志报告进度；无新日志是待诊断信号，不是等待、增大 timeout 或盲目重试的理由。
 4. 测试、动态验证和 package exit 必须实际读取对应 run-scoped 日志，分别判定 firstFailure、lastKnownGood、brokenBoundary、business 与 cleanup。仅有 exit code、全绿测试名、静态 gate 或事后复制的日志都不足以证明执行过程和结果可验收。
 5. 每个新增或修复的日志/诊断路径须有正向证明与敏感字段/缺阶段/失联 runner 的真实 red mutation；纯机械可判定的约束进入既有 machine control，语义充分性进入明确 review checklist，二者不得互相冒充。
+6. 每个受管长运行启动前必须按 manifest 明确 owner 做资源预算预检：本机 PID+OS start token，远端 host+PID+boot id+start ticks；历史 live tree 或累计 RSS 超预算即拒绝启动，绝不按端口/命令名猜测或杀未知资源。远端 Testcontainers 必须先确认 `org.testcontainers=true` 容器/卷为空；运行中记录可用内存与受控 tree 资源样本，run 后残留资源是 cleanup FAIL。只可停止本 run 的精确 process tree。
 
 ## 3. 适用边界与反例
 

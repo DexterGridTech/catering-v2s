@@ -68,4 +68,8 @@ test('operations user recovers a password through the branded anonymous flow and
 
   await page.getByTestId('operations-recovery-return-login').click();
   await expect(page.getByTestId('operations-login-submit')).toBeVisible();
+  await page.getByTestId('operations-login-name').fill(requiredEnvironment('R5_L2_OPERATIONS_RECOVERY_LOGIN_NAME'));
+  await page.getByTestId('operations-login-password').fill(password);
+  await page.getByTestId('operations-login-submit').click();
+  await expect(page.getByTestId('operations-shell-menu').or(page.getByTestId('operations-role-context-select'))).toBeVisible();
 });

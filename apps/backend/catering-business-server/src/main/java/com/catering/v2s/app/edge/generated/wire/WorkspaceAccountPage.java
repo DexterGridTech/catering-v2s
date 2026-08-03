@@ -5,5 +5,7 @@ public record WorkspaceAccountPage(
     java.util.List<WorkspaceAccount> items,
     Long page,
     Long pageSize,
-    Long total
+    Long total,
+    WorkspacePlatformAccountSortKey sort,
+    SortDirection direction
 ) {}

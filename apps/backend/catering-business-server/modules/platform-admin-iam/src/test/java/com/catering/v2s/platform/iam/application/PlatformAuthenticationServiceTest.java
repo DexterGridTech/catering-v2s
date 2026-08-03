@@ -13,10 +13,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -27,6 +30,7 @@ class PlatformAuthenticationServiceTest {
     private static Flyway flyway;
     private static PlatformAuthenticationService service;
     private static PlatformAuthenticationService debugService;
+    private static DriverManagerDataSource dataSource;
     private static JdbcTemplate jdbc;
     private static final long NOW = 1_785_000_000_000L;
     private static final AtomicLong CLOCK = new AtomicLong(NOW);
@@ -34,13 +38,23 @@ class PlatformAuthenticationServiceTest {
     @BeforeAll static void setup() throws Exception {
         flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).locations("filesystem:../../src/main/resources/db/migration").schemas("public").defaultSchema("public").cleanDisabled(false).load();
         flyway.migrate();
-        jdbc = new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
-        UUID id = UUID.randomUUID();
-        jdbc.update("INSERT INTO platform_iam.platform_admin (id, login_name, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, 'ENABLED', 1, ?, ?)", id, "dexter", "dexter", "Dexter", NOW, NOW);
-        jdbc.update("INSERT INTO platform_iam.platform_credential (platform_admin_id, password_hash, algorithm, changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)", id, new BCryptPasswordEncoder().encode("valid-password"), NOW);
+        dataSource = new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+        jdbc = new JdbcTemplate(dataSource);
         TimeProvider time = CLOCK::get;
         service = new PlatformAuthenticationService(jdbc, time);
         debugService = new PlatformAuthenticationService(jdbc, time, new PlatformCommandReceiptService(jdbc, time), "platform-auth-test-hmac", true);
+    }
+
+    @BeforeEach void resetPlatformIamState() {
+        CLOCK.set(NOW);
+        clearPlatformIamState();
+        UUID id = UUID.randomUUID();
+        jdbc.update("INSERT INTO platform_iam.platform_admin (id, login_name, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, 'ENABLED', 1, ?, ?)", id, "dexter", "dexter", "Dexter", NOW, NOW);
+        jdbc.update("INSERT INTO platform_iam.platform_credential (platform_admin_id, password_hash, algorithm, changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)", id, new BCryptPasswordEncoder().encode("valid-password"), NOW);
+    }
+
+    private static void clearPlatformIamState() {
+        jdbc.execute("TRUNCATE TABLE platform_iam.platform_admin, platform_iam.platform_command_receipt, platform_iam.audit_event, platform_iam.platform_login_rate_limit_bucket, platform_iam.platform_public_otp_rate_limit_bucket RESTART IDENTITY CASCADE");
     }
 
     @Test void loginSessionAndLogoutUseOnlyHashedToken() {
@@ -81,6 +95,16 @@ class PlatformAuthenticationServiceTest {
         assertThrows(PlatformAuthenticationService.PlatformAdminVersionConflictException.class, () -> service.updateAdministratorProfile(created.id(), "Stale", created.version()));
     }
 
+    @Test void diagnosticBootstrapCreatesOnlyTheFirstAdministrator() {
+        clearPlatformIamState();
+        var transaction = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
+        var first = transaction.execute(status -> service.bootstrapFirstAdministrator("diagnostic-root", "Diagnostic Root", "diagnostic-password".toCharArray()));
+        assertEquals("diagnostic-root", first.loginName());
+        assertEquals("Diagnostic Root", service.login("diagnostic-root", "diagnostic-password".toCharArray()).session().displayName());
+        assertThrows(PlatformAuthenticationService.DiagnosticBootstrapUnavailableException.class,
+            () -> transaction.execute(status -> service.bootstrapFirstAdministrator("second-root", "Second Root", "diagnostic-password".toCharArray())));
+    }
+
     @Test void administratorPageAcceptsOmittedOptionalFilters() {
         PlatformAuthenticationService.PlatformAdminPage page = service.pageAdministrators(null, null, null, 1, 50, "USER_NAME", "ASC");
         assertEquals(1, page.total());
@@ -92,6 +116,7 @@ class PlatformAuthenticationServiceTest {
         jdbc.update("UPDATE platform_iam.platform_admin SET status='DISABLED' WHERE id=?", disabled.id());
         AuditActor actor = new AuditActor("PLATFORM_ADMIN", disabled.id(), disabled.displayName());
 
+        assertThrows(PlatformAuthenticationService.AccountDisabledException.class, () -> service.createAdministrator("missing-command-actor", "Missing command actor", null, "initial-password".toCharArray(), (AuditActor) null));
         assertThrows(PlatformAuthenticationService.AccountDisabledException.class, () -> service.createAdministrator("denied-command-create", "Denied create", null, "initial-password".toCharArray(), actor));
         assertThrows(PlatformAuthenticationService.AccountDisabledException.class, () -> service.updateAdministratorProfile(disabled.id(), "Denied update", null, disabled.version(), actor));
         assertThrows(PlatformAuthenticationService.AccountDisabledException.class, () -> service.transitionAdministratorStatus(disabled.id(), "DISABLED", disabled.version(), actor));

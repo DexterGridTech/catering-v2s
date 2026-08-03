@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "project-memory-index",
-  "denominatorSha256": "d73db88cb3b3e7afe3cf53424b3a793ca433ce30ab0f1a372d10335cf08a1758",
+  "denominatorSha256": "cca6f31259ae0f5d19496b5972ee7be5836950e868e65b3a98f2a8c99cab4db1",
   "entries": [
     {
       "id": "kernel.workspace-roadmap",
@@ -303,6 +303,7 @@
         "NO_GIT_WRITE",
         "OBSERVABILITY_REQUIRED_FOR_ACCEPTANCE",
         "RUN_SCOPED_LOG_READ_REQUIRED",
+        "MANAGED_RESOURCE_BUDGET_REQUIRED",
         "OUT_OF_SCOPE_OBSERVABILITY_REPAIR_NO_EXTRA_AUTH"
       ],
       "assertionSources": [
@@ -337,6 +338,11 @@
           "anchor": "## 2. 强制执行规则"
         },
         {
+          "assertionKey": "MANAGED_RESOURCE_BUDGET_REQUIRED",
+          "path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+          "anchor": "## 2. 强制执行规则"
+        },
+        {
           "assertionKey": "OUT_OF_SCOPE_OBSERVABILITY_REPAIR_NO_EXTRA_AUTH",
           "path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
           "anchor": "## 1. 裁决"
@@ -349,7 +355,7 @@
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
       ],
-      "sha256": "d0d75e547400145ef7e764d735bc86e2fdaa5ea8a0b19ace213170b527d65a05"
+      "sha256": "f5e219652484338467f0fc03be2bd02d96e09a4a27b812308200673ef720c736"
     },
     {
       "id": "kernel.heritage-change",
@@ -568,6 +574,110 @@
         "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
       ],
       "sha256": "891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf"
+    },
+    {
+      "id": "decisions.http-crud-efficiency-design-redlines",
+      "path": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "platform",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "backend",
+          "platform",
+          "contract",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "architecture",
+          "database",
+          "contract",
+          "evidence"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM",
+        "SET_BASED_COLLECTION_READS",
+        "OWNER_LOCAL_EFFICIENCY_REPAIR",
+        "COMMAND_CORRECTNESS_COST_PRESERVED",
+        "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
+        "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT",
+        "CONTRACT_ROUTE_CLOSURE",
+        "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
+        "EXECUTION_EVIDENCE_TAXONOMY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "# 1. 决策与目标"
+        },
+        {
+          "assertionKey": "SET_BASED_COLLECTION_READS",
+          "path": "PLATFORM-BLUEPRINT.md",
+          "anchor": "## HTTP CRUD 效率设计红线"
+        },
+        {
+          "assertionKey": "OWNER_LOCAL_EFFICIENCY_REPAIR",
+          "path": "PLATFORM-BLUEPRINT.md",
+          "anchor": "## HTTP CRUD 效率设计红线"
+        },
+        {
+          "assertionKey": "COMMAND_CORRECTNESS_COST_PRESERVED",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "# 6. 明确不做"
+        },
+        {
+          "assertionKey": "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### B.6 性能"
+        },
+        {
+          "assertionKey": "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "## 3.3 两层指标"
+        },
+        {
+          "assertionKey": "CONTRACT_ROUTE_CLOSURE",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "## 3.1 契约分母（第一交付单元）"
+        },
+        {
+          "assertionKey": "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "## 5.1 受管执行分类与敏感数据流"
+        },
+        {
+          "assertionKey": "EXECUTION_EVIDENCE_TAXONOMY",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "## 5.1 受管执行分类与敏感数据流"
+        }
+      ],
+      "sourceRefs": [
+        "PLATFORM-BLUEPRINT.md",
+        "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
+      ],
+      "sha256": "15dd44b1f4e8c82e282c48c6db1192fd13d210ff201c8b720090875ca8a4dd76"
     },
     {
       "id": "decisions.distributed-topology-is-not-current",
@@ -865,7 +975,7 @@
         "AGENTS.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
       ],
-      "sha256": "781fea669dbbf59af2ab6740abb8dcfd89abd42bf92ab909983a04b5505917e9"
+      "sha256": "d75229d34422aa70ae1f7506c09633aa9444147932983de3197c5b093414897e"
     },
     {
       "id": "operations.roadmap-control-transfer",
@@ -1093,7 +1203,8 @@
         "taskKinds": [
           "implementation",
           "testing",
-          "review"
+          "review",
+          "runtime-management"
         ],
         "domains": [
           "platform",
@@ -1114,6 +1225,8 @@
         "impacts": [
           "evidence",
           "governance",
+          "runtime",
+          "database",
           "cleanup"
         ],
         "triggers": [
@@ -1131,7 +1244,16 @@
         "USER_REPORTED_PROBLEM_FAMILY_DISCOVERY_REQUIRED",
         "PROBLEM_FAMILY_DENOMINATOR_BEFORE_FIX",
         "ENVIRONMENT_TOPOLOGY_MUST_COME_FROM_GOVERNING_SOURCE",
-        "RETIRED_CONSUMER_REQUIRES_RETAINED_CAPABILITY_DENOMINATOR"
+        "RETIRED_CONSUMER_REQUIRES_RETAINED_CAPABILITY_DENOMINATOR",
+        "IA_RECONCILIATION_MUST_PROVE_USER_OBSERVABLE_CONTROLS",
+        "IA_LEDGER_NEEDS_CURRENT_SOURCE_AND_RUNTIME_LAYERS",
+        "SHELL_AND_SHARED_CONTROLS_ARE_IN_DENOMINATOR",
+        "ANTD_CLI_IS_ADJUNCT_NOT_IA_PROOF",
+        "IA_RECONCILIATION_FAMILY_SUMMARY_CANNOT_CLOSE_PHYSICAL_SCREEN",
+        "IA_RECONCILIATION_SOURCE_BINDING_IS_NOT_SEMANTIC_REVIEW",
+        "ANTD_BATCH_PATCH_MUST_PRESERVE_ONE_CONTROL_ONE_RENDER",
+        "IA_RECONCILIATION_CATALOG_COPY_SCAN_MUST_INCLUDE_SHELL",
+        "PLATFORM_SUPER_ADMIN_MUST_NOT_ENTER_WORKSPACE_CAPABILITY_MODEL"
       ],
       "assertionSources": [
         {
@@ -1178,15 +1300,75 @@
           "assertionKey": "RETIRED_CONSUMER_REQUIRES_RETAINED_CAPABILITY_DENOMINATOR",
           "path": "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
           "anchor": "## 7. Face / owner 对齐矩阵"
+        },
+        {
+          "assertionKey": "IA_RECONCILIATION_MUST_PROVE_USER_OBSERVABLE_CONTROLS",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
+          "anchor": "  \"bindingInterpretation\": {"
+        },
+        {
+          "assertionKey": "IA_LEDGER_NEEDS_CURRENT_SOURCE_AND_RUNTIME_LAYERS",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
+          "anchor": "  \"postProofReview\": {"
+        },
+        {
+          "assertionKey": "IA_RECONCILIATION_MUST_PROVE_USER_OBSERVABLE_CONTROLS",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-ui-ia-implementation-baseline.json",
+          "anchor": "  \"consumerBindings\":["
+        },
+        {
+          "assertionKey": "IA_LEDGER_NEEDS_CURRENT_SOURCE_AND_RUNTIME_LAYERS",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
+          "anchor": "## Proof boundary"
+        },
+        {
+          "assertionKey": "SHELL_AND_SHARED_CONTROLS_ARE_IN_DENOMINATOR",
+          "path": "PLATFORM-BLUEPRINT.md",
+          "anchor": "## AntD CLI 与统一控件基线"
+        },
+        {
+          "assertionKey": "ANTD_CLI_IS_ADJUNCT_NOT_IA_PROOF",
+          "path": "PLATFORM-BLUEPRINT.md",
+          "anchor": "## AntD CLI 与统一控件基线"
+        },
+        {
+          "assertionKey": "IA_RECONCILIATION_FAMILY_SUMMARY_CANNOT_CLOSE_PHYSICAL_SCREEN",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### IA_RECONCILIATION_FAMILY_SUMMARY_CANNOT_CLOSE_PHYSICAL_SCREEN"
+        },
+        {
+          "assertionKey": "IA_RECONCILIATION_SOURCE_BINDING_IS_NOT_SEMANTIC_REVIEW",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### IA_RECONCILIATION_SOURCE_BINDING_IS_NOT_SEMANTIC_REVIEW"
+        },
+        {
+          "assertionKey": "ANTD_BATCH_PATCH_MUST_PRESERVE_ONE_CONTROL_ONE_RENDER",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### ANTD_BATCH_PATCH_MUST_PRESERVE_ONE_CONTROL_ONE_RENDER"
+        },
+        {
+          "assertionKey": "IA_RECONCILIATION_CATALOG_COPY_SCAN_MUST_INCLUDE_SHELL",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### IA_RECONCILIATION_CATALOG_COPY_SCAN_MUST_INCLUDE_SHELL"
+        },
+        {
+          "assertionKey": "PLATFORM_SUPER_ADMIN_MUST_NOT_ENTER_WORKSPACE_CAPABILITY_MODEL",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### PLATFORM_SUPER_ADMIN_MUST_NOT_ENTER_WORKSPACE_CAPABILITY_MODEL"
         }
       ],
       "sourceRefs": [
         "AGENTS.md",
+        "PLATFORM-BLUEPRINT.md",
         "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
         "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
-        "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md"
+        "doc/evidence/platform/rm1/p6/rm1p6-u02-ui-ia-implementation-baseline.json",
+        "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
+        "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
+        "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
+        "project-memory/operations/phase-retrospective-and-systemic-repair.md"
       ],
-      "sha256": "c1e49af3972b2eb3a2ee8d846871337f02bf81575d78781365012e9b430b981d"
+      "sha256": "72c60ae9235079d5b9f3c17052394343723a7f51409b2bd28a3aca391df0fd21"
     },
     {
       "id": "operations.business-corpus-parked-domain-intake",

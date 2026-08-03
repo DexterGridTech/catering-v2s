@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-TEST-FIXTURE-INTEGRITY-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u13-test-fixture-integrity-delivery-manifest.json",
+  "deliveryManifestSha256": "e8212ce85d16b0d3d1d63e4c3c9830a26d776d73dc5bf90e50dbf67b025da6a8",
+  "unitId": "RM1P6-TEST-FIXTURE-INTEGRITY-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/database-boundaries", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/database-boundaries"],
+  "requiredControlRuleIds": ["TF-01", "TF-02"],
+  "businessEvidenceObligation": "NOT_APPLICABLE_TEST_FIXTURE_INTEGRITY_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-INVITATION-SINGLE-LOAD-U13",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-package-exit.json",
+    "exitSha256": "57979d8facfcd07486ea0f353182d29cbae588a1d606eae0b7774a3961970b13"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-implementation-amendment.md",
+    "sha256": "5f336f32c60c12d96a2f72eff8bedf2ed5587a3acdefc99a75041f92222423fd"
+  },
+  "authorizationBoundary": "Dexter authorized U13 implementation. C13 repairs only the two database-backed test fixtures that prevent remote focused proof; it changes no production source, database schema, public contract, Seed/reset, L2 or business claim."
+}

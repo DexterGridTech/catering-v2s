@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-problem-family-evidence",
+  "packageId": "RM1P6-CP-U14",
+  "problemFamilyId": "PF-R5-RESET-REMOTE-MANAGEMENT-TRANSPORT",
+  "status": "CONFIRMED",
+  "firstFailure": "R5_DEV_RESET_COMMAND_FAILED:psql",
+  "rootCause": "The reset entrypoint treated the local tunnel ingress as a local administrator execution plane instead of reusing the existing remote PostgreSQL management path.",
+  "finiteDenominator": ["scripts/dev/r5-reset.mjs"],
+  "workingCounterexamples": ["scripts/dev/r5-dev-runner.mjs#provisionRemote", "scripts/dev/r5-seed-bootstrap.mjs"],
+  "prevention": ["reset focused self-test", "remote host hash/non-production/exact-database validation", "run-scoped manifest and desensitized first-failure event log", "project-memory reset transport rule"],
+  "notApplicable": ["seed executor implementation", "browser L2", "UAT", "local Docker", "administrator credential provisioning"]
+}

@@ -20,6 +20,11 @@
             "minLength": 1,
             "maxLength": 120
           },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
           "idempotencyKey": {
             "type": "string",
             "minLength": 16,
@@ -35,6 +40,8 @@
           "groupWorkspaceKey",
           "groupCode",
           "groupName",
+          "extensionValues",
+          "extensionRuleRevision",
           "version",
           "createdAt",
           "updatedAt"
@@ -59,6 +66,15 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 120
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "version": {
             "type": "integer",

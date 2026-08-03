@@ -5,7 +5,7 @@ import {testId} from '@catering-v2s/admin-ui-foundation';
 export function ProjectPhaseFieldList() {
   return <Form.List name="phaseDrafts">
     {(fields, {add, remove, move}) => <Form.Item label="项目分期名称">
-      <Space direction="vertical" style={{width: '100%'}}>
+      <Space orientation="vertical" style={{width: '100%'}}>
         {fields.map((field, index) => <Space key={field.key} align="start" style={{width: '100%'}}>
           <Form.Item {...field} noStyle rules={[{required: true, whitespace: true, message: '请输入项目分期名称'}]}>
             <Input aria-label={`项目分期名称 ${index + 1}`} maxLength={120}/>

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-SCENARIOS-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u13-http-diagnostic-scenarios-delivery-manifest.json",
+  "deliveryManifestSha256": "96810e441c44da9805518c789c411f0652e2971f575822bd40b11988eeecd711",
+  "unitId": "RM1P6-HTTP-DIAGNOSTIC-SCENARIOS-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["U13-C04-SCENARIO_FACT_EXACT_SET", "U13-C04-SCENARIO_SOURCE_BINDING", "U13-C04-SYMBOLIC_SECRET_HANDLES_ONLY"],
+  "businessEvidenceObligation": "NOT_APPLICABLE_SCENARIO_DECLARATION_ONLY",
+  "serialPredecessor": {"packageId": "RM1P6-HTTP-DIAGNOSTIC-INVENTORY-U13", "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-inventory-package-exit.json", "exitSha256": "495a8cadfe17ebf08dc8ec904855fd4a2b4c8e2dfabd5d8e5d303769116d8211"},
+  "implementationAmendment": {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-implementation-amendment.md", "sha256": "b8387a8dda81a6c06d87082dad9c13f96cefd2df77160f0eed9490fd6bc3b713"},
+  "authorizationBoundary": "Dexter authorized U13 implementation. This package declares the source-derived, non-sensitive scenario facts for all generated route-face tuples. It excludes backend/tunnel start, HTTP calls, DEV, seed/reset, browser L2, performance or business/cleanup claims."
+}

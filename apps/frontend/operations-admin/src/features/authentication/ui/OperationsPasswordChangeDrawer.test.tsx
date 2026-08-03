@@ -12,7 +12,7 @@ describe('operations password change focused contract', () => {
     expect(source).toContain("testId('operations-password-drawer')");
     expect(source).toContain("testId('operations-password-current')");
     expect(source).toContain("testId('operations-password-confirmation')");
-    expect(source).toContain('message="密码修改失败"');
+    expect(source).toContain('title="密码修改失败"');
     expect(source).not.toMatch(/problem\\.detail|description=/);
   });
 });

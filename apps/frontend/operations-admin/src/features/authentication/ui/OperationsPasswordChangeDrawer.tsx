@@ -68,9 +68,8 @@ export function OperationsPasswordChangeDrawer({
   return <Drawer
     title="修改密码"
     open={open}
-    width={480}
+    size={480}
     destroyOnHidden
-    maskClosable={false}
     keyboard={!lifecycle.submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
@@ -81,7 +80,7 @@ export function OperationsPasswordChangeDrawer({
       <Button type="primary" loading={lifecycle.submitting} disabled={lifecycle.submitting} onClick={() => form.submit()} {...testId('operations-password-submit')}>保存</Button>
     </Space>}
   >
-    {failed && <Alert type="error" showIcon message="密码修改失败" style={{marginBottom: 16}}/>}
+    {failed && <Alert type="error" showIcon title="密码修改失败" style={{marginBottom: 16}}/>}
     <Form
       form={form}
       layout="vertical"

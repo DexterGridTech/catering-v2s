@@ -148,9 +148,8 @@ export function BusinessEntityEditDrawer({entity, kind, queryContext, onClose, o
   return <Drawer
     title={entity ? `${editLabel}：${entity.name}` : editLabel}
     open={Boolean(entity)}
-    width={620}
+    size={620}
     destroyOnHidden
-    maskClosable={false}
     keyboard={!lifecycle.submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
@@ -160,7 +159,7 @@ export function BusinessEntityEditDrawer({entity, kind, queryContext, onClose, o
       <Button type="primary" loading={lifecycle.submitting} disabled={!definitionReady} onClick={() => form.submit()} {...testId(`operations-business-entity-edit-submit-${kind.toLowerCase()}`)}>{editLabel}</Button>
     </Space>}
   >
-    {problem && <Alert type="error" showIcon message={`${entityLabel}修改失败`} description={problem} style={{marginBottom: 16}}/>}
+    {problem && <Alert type="error" showIcon title={`${entityLabel}修改失败`} description={problem} style={{marginBottom: 16}}/>}
     <Form
       form={form}
       layout="vertical"

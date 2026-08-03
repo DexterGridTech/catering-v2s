@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-METRICS-U13",
+  "deliveryUnits": [{
+    "id": "RM1P6-HTTP-DIAGNOSTIC-METRICS-U13",
+    "title": "Generic non-production HTTP request metric interceptor",
+    "approvedAssertions": ["ONE_SERVER_CANONICAL_METRIC_INTERCEPTOR_SERVES_SEED_AND_HTTP_DIAGNOSTIC_MODES", "ACTIVATION_IS_STRICTLY_NON_PRODUCTION_AND_RUN_SCOPED", "EVENT_OUTPUT_EXCLUDES_RUNTIME_SECRETS_AND_RAW_REQUEST_CONTENT"],
+    "changeSurfaces": [
+      {"path":".runtime/compliance-control/active-package.json","disposition":"update","target":"activate C05"},
+      {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java","disposition":"update","target":"wire generic interceptor"},
+      {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/SeedRequestMetricsInterceptor.java","disposition":"delete","target":"remove seed-specific implementation name"},
+      {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java","disposition":"create","target":"generic profiled instrumentation"},
+      {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/SeedDiagnosticConfigurationTest.java","disposition":"delete","target":"retire seed-only test shape"},
+      {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/HttpRequestMetricsInterceptorTest.java","disposition":"create","target":"mode and secret focused proof"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-package-input.json","disposition":"create","target":"C05 binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-implementation-amendment.md","disposition":"create","target":"C05 boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-package-exit.json","disposition":"create","target":"C05 path-list exit"},
+      {"path":"doc/review/platform/rm1p6-u13-http-diagnostic-metrics-delivery-manifest.json","disposition":"create","target":"C05 manifest"}
+    ],
+    "complianceRoute":{"taskKind":"implementation","domain":"backend","consumerFace":"backend","owner":"platform","impact":"observability","trigger":"implementation"},
+    "sourceDenominators":{"PROJECT_MEMORY_ASSERTION_OCCURRENCES":["project-memory/decisions/http-crud-efficiency-design-redlines.md","project-memory/kernel/03-transaction-data-and-dependencies.md"],"APPROVED_ASSERTIONS":["doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#3.2","doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#5.1"],"FORBIDDEN_PSEUDO_FIXES":["no Seed report relabeling","no duplicate interceptor","no production activation","no raw secret output"],"DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA":["doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-implementation-amendment.md"],"OWNED_SURFACE_AND_OPERATION_KEYS":["generated edge-route-face registry","generic interceptor modes r5-full and rm1-http-diagnostic"],"DUE_STANDARDS_RULE_IDS":["scripts/check/remediation-compliance","scripts/check/standards-coverage"]}
+  }]
+}

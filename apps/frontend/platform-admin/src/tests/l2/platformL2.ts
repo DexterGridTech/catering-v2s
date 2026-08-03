@@ -11,7 +11,7 @@ export async function signInPlatform(page: Page) {
   await page.getByTestId('platform-login-name').fill(requiredL2Env('R5_L2_PLATFORM_LOGIN_NAME'));
   await page.getByTestId('platform-login-password').fill(requiredL2Env('R5_L2_PLATFORM_LOGIN_PASSWORD'));
   await page.getByTestId('platform-login-submit').click();
-  await expect(page.getByRole('button', {name: '退出登录'})).toBeVisible();
+  await expect(page.getByRole('button', {name: /^平台管理员 /})).toBeVisible();
 }
 
 export async function selectWorkspace(page: Page) {
@@ -21,10 +21,13 @@ export async function selectWorkspace(page: Page) {
   await expect(option).toBeVisible();
   await option.click();
   await page.keyboard.press('Escape');
+  await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible')).toHaveCount(0);
+  await expect(page.getByTestId('platform-workspace-selector')).toContainText(optionLabel);
 }
 
-export async function chooseAntOption(page: Page, label: string, optionLabel: string) {
-  await page.getByLabel(label, {exact: true}).click();
+export async function chooseAntOption(page: Page, label: string, optionLabel: string, testId?: string) {
+  const control = testId ? page.getByTestId(testId) : page.getByLabel(label, {exact: true}).locator('xpath=../..');
+  await control.click();
   const option = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible .ant-select-item-option:visible').filter({hasText: optionLabel}).first();
   await expect(option).toBeVisible();
   await option.click();
@@ -43,9 +46,8 @@ export async function signOutPlatform(page: Page) {
     await page.keyboard.press('Escape');
     await expect(page.locator('[role="dialog"]:visible')).toHaveCount(0);
   }
-  const signOut = page.getByRole('button', {name: '退出登录'});
-  if (await signOut.isVisible()) {
-    await expect(signOut).toBeEnabled();
-    await signOut.click();
-  }
+  const principal = page.getByRole('button', {name: /^平台管理员 /});
+  const signOut = page.getByRole('menuitem', {name: /退出登录$/});
+  if (await principal.isVisible()) await principal.click();
+  if (await signOut.isVisible()) { await expect(signOut).toBeEnabled(); await signOut.click(); }
 }

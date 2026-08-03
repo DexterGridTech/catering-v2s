@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-DIAGNOSTIC-TYPED-FIELDS-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/diagnostic/SecurityDiagnosticEvent.java",
+    "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/diagnostic/Slf4jSecurityDiagnosticRecorder.java",
+    "apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/diagnostic/SecurityDiagnosticEventTest.java",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-diagnostic-typed-fields-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-diagnostic-typed-fields-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-diagnostic-typed-fields-package-exit.json",
+    "doc/review/platform/rm1p6-u13-diagnostic-typed-fields-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "gradle :apps:backend:catering-business-server:modules:foundation:test --tests com.catering.v2s.platform.foundation.diagnostic.SecurityDiagnosticEventTest",
+      "scripts/check/database-boundaries",
+      "scripts/check/database-boundaries --self-test",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/code-layout",
+      "scripts/check/openapi-contracts"
+    ],
+    "assertions": [
+      "the closed diagnostic logging envelope is a typed record rather than an untyped database-row-or-command-shaped map",
+      "nullable status and errorCode preserve the recorder's prior unassigned output while present status remains numeric",
+      "the retained R4 boundary gate still passes its own true-red mutation suite"
+    ]
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "business": "NOT_APPLICABLE_FOUNDATION_DIAGNOSTIC_ONLY",
+  "cleanup": "NOT_APPLICABLE_STATIC_ONLY",
+  "scopeStatement": "This source-level repair removes a diagnostic logging false positive without weakening the R4 typed database-row/command invariant. It does not claim HTTP coverage, business PASS, performance PASS, L2, Seed/reset or UAT."
+}

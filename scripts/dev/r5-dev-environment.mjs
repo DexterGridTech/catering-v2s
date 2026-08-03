@@ -29,7 +29,6 @@ function effectiveEnvironment(env) {
     V2S_DEV_REMOTE_HOST: host,
     V2S_DEV_REMOTE_HOST_SHA256: env.V2S_DEV_REMOTE_HOST_SHA256 ?? crypto.createHash("sha256").update(host).digest("hex"),
     V2S_DEV_DATABASE_URL: env.V2S_DEV_DATABASE_URL ?? `jdbc:postgresql://127.0.0.1:25432/${expectedDatabase}`,
-    V2S_DEV_DATABASE_ADMIN_URL: env.V2S_DEV_DATABASE_ADMIN_URL ?? "jdbc:postgresql://127.0.0.1:25432/postgres",
     V2S_DEV_ASSET_ROOT: env.V2S_DEV_ASSET_ROOT ?? "s3://catering-v2s-r5-assets",
   };
 }
@@ -49,10 +48,6 @@ function validate(input, mode) {
   if (!databaseUrl || productionLike(databaseUrl) || databaseName(databaseUrl) !== expectedDatabase) fail("R5_DEV_DATABASE_URL_INVALID");
   const assetRoot = env.V2S_DEV_ASSET_ROOT ?? "";
   if (!assetRoot || productionLike(assetRoot)) fail("R5_DEV_ASSET_ROOT_INVALID");
-  if (mode === "reset") {
-    const adminUrl = env.V2S_DEV_DATABASE_ADMIN_URL ?? "";
-    if (!adminUrl || productionLike(adminUrl) || databaseName(adminUrl) === expectedDatabase) fail("R5_DEV_DATABASE_ADMIN_URL_INVALID");
-  }
   if (mode === "seed" && requiredSecrets.some((name) => !env[name])) fail("R5_DEV_SEED_SECRET_MISSING");
   return { environment: env, namespace, expectedDatabase, assetPrefix: `${assetRoot.replace(/\/$/, "")}/catering-v2s/dev/${namespace}/` };
 }
@@ -60,7 +55,7 @@ function main() {
   const [, , mode = "start", flag] = process.argv;
   if (!["start", "seed", "reset", "check"].includes(mode)) fail("R5_DEV_USAGE");
   if (flag === "--self-test") {
-    const valid = { V2S_DEV_NAMESPACE: "v2s-dev-alpha", V2S_DEV_PROFILE: "r5-full", V2S_RUNTIME_ENVIRONMENT: "non-production", V2S_DEV_REMOTE_HOST: "dev.example.internal", V2S_DEV_DATABASE_URL: "jdbc:postgresql://dev.example.internal/catering_v2s_dev_alpha", V2S_DEV_DATABASE_ADMIN_URL: "jdbc:postgresql://dev.example.internal/postgres", V2S_DEV_ASSET_ROOT: "s3://dev-assets", ...Object.fromEntries(requiredSecrets.map((name) => [name, "test-only"])) };
+    const valid = { V2S_DEV_NAMESPACE: "v2s-dev-alpha", V2S_DEV_PROFILE: "r5-full", V2S_RUNTIME_ENVIRONMENT: "non-production", V2S_DEV_REMOTE_HOST: "dev.example.internal", V2S_DEV_DATABASE_URL: "jdbc:postgresql://dev.example.internal/catering_v2s_dev_alpha", V2S_DEV_ASSET_ROOT: "s3://dev-assets", ...Object.fromEntries(requiredSecrets.map((name) => [name, "test-only"])) };
     valid.V2S_DEV_REMOTE_HOST_SHA256 = crypto.createHash("sha256").update(valid.V2S_DEV_REMOTE_HOST).digest("hex");
     validate(valid, "seed");
     let red = false;

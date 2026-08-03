@@ -30,4 +30,15 @@ import org.springframework.transaction.annotation.Transactional;
     List<AuditHistoryItem> items = jdbc.query("SELECT id, occurred_at_epoch_millis, actor_display_snapshot, action, entity_type, entity_ref_text, changes_json::text FROM organization.audit_event WHERE workspace_uuid=? AND group_workspace_key=? AND entity_type='GROUP_WORKSPACE' AND entity_ref_text=? AND action='COMMERCIAL_GROUP_INITIALIZED' ORDER BY occurred_at_epoch_millis DESC, id DESC LIMIT ? OFFSET ?", (r, n) -> new AuditHistoryItem(r.getObject("id", UUID.class), r.getLong("occurred_at_epoch_millis"), r.getString("actor_display_snapshot"), r.getString("action"), new AuditTarget(r.getString("entity_type"), r.getString("entity_ref_text")), AuditChangeJson.read(r.getString("changes_json"))), scope.workspaceUuid(), scope.groupWorkspaceKey(), entityRef, pageSize, (page - 1) * pageSize);
     return new AuditHistoryPage(items, page, pageSize, total);
   }
+  /** Reads only the initialization fact owned by the selected commercial group, never the wider workspace history. */
+  @Transactional(readOnly = true)
+  public AuditHistoryPage readCommercialGroup(AuditReadScope scope, AuditTarget target, long page, long pageSize) {
+    if (!"COMMERCIAL_GROUP".equals(target.entityType()) || page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("unsupported commercial-group audit target");
+    List<Long> groupWorkspaceIds = jdbc.query(
+        "SELECT commercial_group.group_workspace_id FROM organization.commercial_group commercial_group JOIN platform_workspace.group_workspace workspace ON workspace.id=commercial_group.group_workspace_id AND workspace.group_workspace_key=commercial_group.group_workspace_key WHERE commercial_group.commercial_group_uuid::text=? AND workspace.workspace_uuid=? AND commercial_group.group_workspace_key=?",
+        statement -> { statement.setString(1, target.entityRef()); statement.setObject(2, scope.workspaceUuid()); statement.setString(3, scope.groupWorkspaceKey()); },
+        (result, row) -> result.getLong(1));
+    if (groupWorkspaceIds.isEmpty()) throw new BusinessEntityService.OrganizationNotFoundException();
+    return readInitializationForGroupWorkspace(scope, String.valueOf(groupWorkspaceIds.getFirst()), page, pageSize);
+  }
 }

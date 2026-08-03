@@ -7,10 +7,10 @@
     "errorCatalog": "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-catalog.json"
   },
   "closure": {
-    "operations": 114,
+    "operations": 122,
     "faceCounts": {
-      "platform-admin": 43,
-      "operations-admin": 56,
+      "platform-admin": 49,
+      "operations-admin": 58,
       "public": 15
     },
     "componentBaseline": 144,
@@ -852,6 +852,18 @@
       "errorSetRef": "AUTHZ_READ"
     },
     {
+      "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
+      "face": "operations-admin",
+      "owner": "organization",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition",
+      "capability": "organization-hierarchy",
+      "pathFile": "paths/operations-admin/organization-hierarchy.paths.yaml",
+      "requestComponentFile": "components/common/empty.schemas.yaml",
+      "responseComponentFile": "components/extension/extension.schemas.yaml",
+      "errorSetRef": "AUTHZ_READ"
+    },
+    {
       "operationId": "getOperationsWorkspaceUser",
       "face": "operations-admin",
       "owner": "workspace-iam",
@@ -958,6 +970,18 @@
       "requestComponentFile": "components/organization/store.schemas.yaml",
       "responseComponentFile": "components/organization/store.schemas.yaml",
       "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "getOperationsOrganizationCandidates",
+      "face": "operations-admin",
+      "owner": "organization",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates",
+      "capability": "store-management",
+      "pathFile": "paths/operations-admin/store-management.paths.yaml",
+      "requestComponentFile": "components/common/empty.schemas.yaml",
+      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "errorSetRef": "AUTHZ_READ"
     },
     {
       "operationId": "getOperationsOrganizationStoreCandidates",
@@ -1280,7 +1304,13 @@
       "requestComponentFile": "components/common/empty.schemas.yaml",
       "responseComponentFile": "components/common/common.schemas.yaml",
       "errorSetRef": "AUTHZ_READ"
-    }
+    },
+    {"operationId":"getWorkspaceInvitations","face":"platform-admin","owner":"workspace-iam","method":"GET","path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations","capability":"workspace-access","pathFile":"paths/platform-admin/workspace-access.paths.yaml","requestComponentFile":"components/common/empty.schemas.yaml","responseComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","errorSetRef":"AUTHZ_READ"},
+    {"operationId":"createWorkspaceInvitation","face":"platform-admin","owner":"workspace-iam","method":"POST","path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations","capability":"workspace-access","pathFile":"paths/platform-admin/workspace-access.paths.yaml","requestComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","responseComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","errorSetRef":"OWNER_COMMAND"},
+    {"operationId":"getWorkspaceInvitation","face":"platform-admin","owner":"workspace-iam","method":"GET","path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}","capability":"workspace-access","pathFile":"paths/platform-admin/workspace-access.paths.yaml","requestComponentFile":"components/common/empty.schemas.yaml","responseComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","errorSetRef":"AUTHZ_READ"},
+    {"operationId":"getWorkspaceInvitationCandidates","face":"platform-admin","owner":"workspace-iam","method":"GET","path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates","capability":"workspace-access","pathFile":"paths/platform-admin/workspace-access.paths.yaml","requestComponentFile":"components/common/empty.schemas.yaml","responseComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","errorSetRef":"AUTHZ_READ"},
+    {"operationId":"cancelWorkspaceInvitation","face":"platform-admin","owner":"workspace-iam","method":"POST","path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel","capability":"workspace-access","pathFile":"paths/platform-admin/workspace-access.paths.yaml","requestComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","responseComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","errorSetRef":"OWNER_COMMAND"},
+    {"operationId":"reissueWorkspaceInvitation","face":"platform-admin","owner":"workspace-iam","method":"POST","path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue","capability":"workspace-access","pathFile":"paths/platform-admin/workspace-access.paths.yaml","requestComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","responseComponentFile":"components/workspace-iam/workspace-access.schemas.yaml","errorSetRef":"OWNER_COMMAND"}
   ],
   "requiredNestedReferenceChecks": [
     {

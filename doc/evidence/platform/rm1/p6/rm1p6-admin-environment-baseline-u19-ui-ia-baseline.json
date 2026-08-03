@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "ui-ia-implementation-baseline",
+  "packageId": "RM1P6-ADMIN-ENVIRONMENT-BASELINE-U19",
+  "status": "PASS",
+  "purpose": "Pre-write binding for the finite management-list initial-page-size, and public invitation welcome/brand/OTP-notice refinements. It admits no business, cleanup, L2 or UAT claim.",
+  "sourceBindings": [
+    {"path": "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md", "sha256": "ab20fe8b35b064d2b9217fe2e58d799cfe55655fc1a958df5bf1f42b07571f7b"},
+    {"path": "doc/decisions/2026-07-29-v2s-rm1-p6-interaction-preparation-and-refreeze-design.md", "sha256": "d12503842fb9e86afb7688fcdbfab7f54312e7f5ecfa5506e96f6b4e5a06db30"},
+    {"path": "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-implementation-amendment.md", "sha256": "361fee24f7165d3b44d34deca33b7a19da3f8f7bbc0a15fd5ef1dad01f33942c"}
+  ],
+  "consumerBindings": [
+    {"consumerPath":"apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx","screenIds":["IA03-AUDIT-HISTORY"],"businessTask":"Read owner audit history ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"App-owned owner query remains unchanged.","page-size":"Initial audit request is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx","screenIds":["IA03-ORGANIZATION-OVERVIEW"],"businessTask":"Read organization and contract lists ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Tabs retain independent app state.","page-size":"Initial contract list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx","screenIds":["IA03-PLATFORM-ADMIN"],"businessTask":"Read platform administrators ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Owner filtering stays generated.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx","screenIds":["IA03-ACCOUNT-TAB"],"businessTask":"Read selected-workspace accounts ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Account tab stays independent.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx","screenIds":["IA03-ACCOUNT-TAB"],"businessTask":"Read permanent invitations ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Invitation tab stays independent.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx","screenIds":["IA03-ROLE-MANAGEMENT"],"businessTask":"Read workspace roles ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Owner sorting stays unchanged.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx","screenIds":["IA03-WORKSPACE-MANAGEMENT"],"businessTask":"Read group workspaces ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Owner filters stay unchanged.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx","screenIds":["IA01-OPERATIONS-AUDIT"],"businessTask":"Read operations audit history ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Owner audit read remains unchanged.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx","screenIds":["IA01-BUSINESS-ENTITY"],"businessTask":"Read business entities ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Role scope remains owner-confirmed.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx","screenIds":["IA01-CONTRACT"],"businessTask":"Read contracts ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Owner query stays generated.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx","screenIds":["IA01-PUBLIC-INVITATION"],"businessTask":"Understand and accept an invitation with concise owner-approved branding.","controlDimensions":["entry-interaction-form","brand-provenance"],"controlFacts":{"entry-interaction-form":"Card welcome and stage Steps remain anonymous.","brand-provenance":"Heading consumes owner logo and operations title only."},"sourceAnchors":["IA01-PUBLIC-INVITATION","U19 section 4"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationOtpStep.tsx","screenIds":["IA01-PUBLIC-INVITATION-OTP"],"businessTask":"Verify invitation-bound mobile and continue.","controlDimensions":["owner-refill","notice-layout","submission-state"],"controlFacts":{"owner-refill":"Only non-empty owner debug code autofills.","notice-layout":"Notices and actions have independent spacing.","submission-state":"Existing invalidation and overlay lock remain."},"sourceAnchors":["IA01-PUBLIC-INVITATION-OTP","U19 section 4"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx","screenIds":["IA01-STORE-MANAGEMENT"],"businessTask":"Read stores ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"App state remains local.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx","screenIds":["IA01-STORE-PROFILE"],"businessTask":"Read store contracts ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Owner contract query remains unchanged.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx","screenIds":["IA01-WORKSPACE-USER"],"businessTask":"Read operations invitations ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Five node routes remain distinct.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]},
+    {"consumerPath":"apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx","screenIds":["IA01-WORKSPACE-USER"],"businessTask":"Read operations users ten rows at a time.","controlDimensions":["query-state","page-size"],"controlFacts":{"query-state":"Five node routes remain distinct.","page-size":"Initial list is 10."},"sourceAnchors":["U19 section 3"]}
+  ],
+  "requiredConsumerPaths": [
+    "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+    "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+    "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+    "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+    "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationOtpStep.tsx",
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx"
+  ]
+}

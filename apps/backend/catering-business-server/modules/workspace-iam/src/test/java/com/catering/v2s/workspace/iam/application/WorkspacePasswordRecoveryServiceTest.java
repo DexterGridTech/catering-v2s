@@ -88,7 +88,7 @@ class WorkspacePasswordRecoveryServiceTest {
             new WorkspaceOtpRateLimitService(jdbc, time),
             new WorkspaceLoginRateLimitService(jdbc, time),
             (workspaceUuid, groupWorkspaceKey) -> true,
-            true
+            new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("test-debug-enabled", true)
         );
         var started = debugRecovery.start(workspaceId, "recovery-flow", "recovery-user", "13800000001", "127.0.0.6");
         var delivered = debugRecovery.sendOtp(workspaceId, "recovery-flow", started.rawFlow(), "127.0.0.6");

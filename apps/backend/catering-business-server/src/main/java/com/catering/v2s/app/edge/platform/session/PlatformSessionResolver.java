@@ -28,7 +28,11 @@ public final class PlatformSessionResolver {
 
     /** Captures the permitted immutable actor snapshot at the authentication boundary. */
     public AuditActor requireActor(EdgeRequestContext request) {
-        PlatformSessionReadback session = require(request);
+        return actor(require(request));
+    }
+
+    /** Reuses an already authenticated session to create the immutable audit actor snapshot. */
+    public AuditActor actor(PlatformSessionReadback session) {
         return new AuditActor("PLATFORM_ADMIN", session.platformAdminId(), session.displayName());
     }
 }

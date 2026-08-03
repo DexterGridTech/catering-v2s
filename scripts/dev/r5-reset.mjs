@@ -1,41 +1,179 @@
 #!/usr/bin/env node
 
 import {spawnSync} from "node:child_process";
+import {appendFileSync, chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync} from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const dryRun = process.argv.includes("--dry-run");
+const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, ".runtime/r5"));
+const managedDevManifestPath = path.join(runtime, "run-manifest.json");
+const resetRoot = path.join(runtime, "reset");
+const expectedManifestKind = "r5-dev-run-manifest";
 
-function fail(code) { process.stderr.write(`R5_DEV_RESET=REFUSED; REASON=${code}\n`); process.exit(2); }
-function databaseFor(namespace) { return `catering_v2s_dev_${namespace.replace(/^v2s-dev-/, "").replaceAll("-", "_")}`; }
-function psqlUrl(jdbcUrl) { return jdbcUrl.replace(/^jdbc:/, ""); }
-function quotedDatabase(name) { return `"${name.replaceAll('"', '""')}"`; }
-function execute(command, args, env = process.env) {
-  const result = spawnSync(command, args, {cwd: root, encoding: "utf8", env});
-  if (result.status !== 0) {
-    process.stderr.write(result.stderr || result.stdout || `R5_DEV_RESET_COMMAND_FAILED:${command}\n`);
-    process.exit(result.status || 1);
+export class ResetFailure extends Error {
+  constructor(code) { super(code); this.code = code; }
+}
+
+const fail = (code) => { throw new ResetFailure(code); };
+const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
+const productionLike = (value) => /(?:^|[._/-])(?:prod|production)(?:$|[._/-])/i.test(value);
+const expectedDatabaseFor = (namespace) => `catering_v2s_dev_${namespace.replace(/^v2s-dev-/, "").replaceAll("-", "_")}`;
+const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const processStartToken = (pid) => spawnSync("ps", ["-o", "lstart=", "-p", String(pid)], {encoding: "utf8"}).stdout.trim();
+
+export function validateResetTopology(resolved) {
+  const namespace = resolved?.namespace;
+  const targetDatabase = resolved?.expectedDatabase;
+  const environment = resolved?.environment;
+  const host = environment?.V2S_DEV_REMOTE_HOST;
+  const hostHash = environment?.V2S_DEV_REMOTE_HOST_SHA256;
+  if (typeof namespace !== "string" || !/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace)) fail("NAMESPACE_INVALID");
+  if (targetDatabase !== expectedDatabaseFor(namespace) || !/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(targetDatabase)) fail("TARGET_DATABASE_ALLOWLIST_INVALID");
+  if (typeof host !== "string" || !/^[a-f0-9]{64}$/i.test(hostHash ?? "") || sha256(host) !== hostHash) fail("REMOTE_HOST_BINDING_INVALID");
+  if (productionLike(host)) fail("REMOTE_HOST_PRODUCTION_LIKE");
+  return {namespace, targetDatabase, host};
+}
+
+export function verifyRemoteResetTranscript(stdout) {
+  const markers = [
+    "R5_REMOTE_RESET_TERMINATE=PASS",
+    "R5_REMOTE_RESET_DROP=PASS",
+    "R5_REMOTE_RESET_READBACK_ABSENT=PASS",
+  ];
+  let cursor = -1;
+  for (const marker of markers) {
+    const next = stdout.indexOf(marker);
+    if (next < 0) fail(marker.includes("READBACK") ? "POST_DROP_READBACK_FAILED" : "REMOTE_EXECUTION_PROTOCOL_INVALID");
+    if (next < cursor) fail("REMOTE_EXECUTION_PROTOCOL_INVALID");
+    cursor = next;
   }
 }
 
-const environment = spawnSync(process.execPath, [path.join(root, "scripts/dev/r5-dev-environment.mjs"), "reset", "--json"], {cwd: root, encoding: "utf8", env: process.env});
-if (environment.status !== 0) fail((environment.stderr || environment.stdout || "R5_DEV_ENVIRONMENT_INVALID").trim());
-const resolved = JSON.parse(environment.stdout);
-
-const namespace = resolved.namespace;
-const targetDatabase = resolved.expectedDatabase;
-const adminUrl = resolved.environment.V2S_DEV_DATABASE_ADMIN_URL ?? "";
-if (!/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(targetDatabase) || !adminUrl) fail("R5_DEV_RESET_TARGET_INVALID");
-if (dryRun) {
-  process.stdout.write(`R5_DEV_RESET_DRY_RUN=PASS; DATABASE=${targetDatabase}; FOLLOW_UP=scripts/dev/start\n`);
-  process.exit(0);
+export function runRemoteReset({host, targetDatabase, executor = spawnSync}) {
+  const script = [
+    "set -euo pipefail",
+    `database='${targetDatabase}'`,
+    "docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -q -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$database' AND pid <> pg_backend_pid()\" >/dev/null",
+    "printf '%s\\n' R5_REMOTE_RESET_TERMINATE=PASS",
+    "docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -q -c \"DROP DATABASE IF EXISTS \\\"$database\\\"\" >/dev/null",
+    "printf '%s\\n' R5_REMOTE_RESET_DROP=PASS",
+    "if docker exec catering-postgres psql -U catering -d postgres -Atqc \"SELECT 1 FROM pg_database WHERE datname = '$database'\" | grep -qx 1; then printf '%s\\n' R5_REMOTE_RESET_READBACK_ABSENT=FAIL; exit 42; fi",
+    "printf '%s\\n' R5_REMOTE_RESET_READBACK_ABSENT=PASS",
+  ].join("\n");
+  const result = executor("ssh", ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8", host, "bash", "-s"], {cwd: root, encoding: "utf8", input: script});
+  if (result?.error || result?.status !== 0) fail("REMOTE_EXECUTION_FAILED");
+  verifyRemoteResetTranscript(result.stdout ?? "");
 }
-if (process.env.R5_RESET_CONFIRMATION !== "EXPLICIT_R5_RESET") fail("EXPLICIT_R5_RESET_CONFIRMATION_REQUIRED");
 
-const environmentForPsql = {...process.env, ...resolved.environment};
-if (process.env.V2S_DEV_DATABASE_ADMIN_PASSWORD) environmentForPsql.PGPASSWORD = process.env.V2S_DEV_DATABASE_ADMIN_PASSWORD;
-execute("psql", [psqlUrl(adminUrl), "-v", "ON_ERROR_STOP=1", "-c", `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${targetDatabase}' AND pid <> pg_backend_pid()`], environmentForPsql);
-execute("psql", [psqlUrl(adminUrl), "-v", "ON_ERROR_STOP=1", "-c", `DROP DATABASE IF EXISTS ${quotedDatabase(targetDatabase)}`], environmentForPsql);
-execute("psql", [psqlUrl(adminUrl), "-v", "ON_ERROR_STOP=1", "-c", `CREATE DATABASE ${quotedDatabase(targetDatabase)}`], environmentForPsql);
-process.stdout.write(`R5_DEV_RESET=PASS; DATABASE=${targetDatabase}; FOLLOW_UP=scripts/dev/start\n`);
+function resolveEnvironment() {
+  const result = spawnSync(process.execPath, [path.join(root, "scripts/dev/r5-dev-environment.mjs"), "reset", "--json"], {cwd: root, encoding: "utf8", env: process.env});
+  if (result.status !== 0) fail("ENVIRONMENT_PREFLIGHT_FAILED");
+  try { return validateResetTopology(JSON.parse(result.stdout)); } catch (error) { if (error instanceof ResetFailure) throw error; fail("ENVIRONMENT_PREFLIGHT_INVALID"); }
+}
+
+function createRun(topology) {
+  const runId = `r5-reset-${crypto.randomUUID()}`;
+  const runDirectory = path.join(resetRoot, runId);
+  mkdirSync(runDirectory, {recursive: true, mode: 0o700});
+  const manifestPath = path.join(runDirectory, "run-manifest.json");
+  const logPath = path.join(runDirectory, "reset-events.jsonl");
+  const state = {
+    schemaVersion: 1,
+    kind: "r5-reset-run-manifest",
+    runId,
+    createdAtEpochMillis: Date.now(),
+    remoteHostSha256: sha256(topology.host),
+    expectedDatabase: topology.targetDatabase,
+    logPath,
+    firstFailure: null,
+    lastKnownGood: "RESET_MANIFEST_CREATED",
+    brokenBoundary: null,
+    managedDevOwnership: "NOT_CHECKED",
+    business: "PENDING",
+    cleanup: "PENDING",
+  };
+  const write = () => { writeFileSync(manifestPath, `${JSON.stringify(state, null, 2)}\n`, {mode: 0o600}); chmodSync(manifestPath, 0o600); };
+  const event = (stage, status, code) => { appendFileSync(logPath, `${JSON.stringify({timestampEpochMillis: Date.now(), stage, status, ...(code ? {code} : {})})}\n`, {mode: 0o600}); chmodSync(logPath, 0o600); };
+  write(); event("RESET_MANIFEST", "PASS");
+  return {state, manifestPath, logPath, write, event};
+}
+
+function verifyManagedDevOwnership(run) {
+  if (!existsSync(managedDevManifestPath)) {
+    run.state.managedDevOwnership = "NO_ACTIVE_MANAGED_DEV";
+    run.state.lastKnownGood = "NO_ACTIVE_MANAGED_DEV";
+    run.write(); run.event("MANAGED_DEV_OWNERSHIP", "PASS", "NO_ACTIVE_MANAGED_DEV");
+    return false;
+  }
+  let manifest;
+  try { manifest = JSON.parse(readFileSync(managedDevManifestPath, "utf8")); } catch { fail("MANAGED_DEV_MANIFEST_INVALID"); }
+  if (manifest.kind !== expectedManifestKind || !Array.isArray(manifest.processes) || manifest.processes.length === 0) fail("MANAGED_DEV_MANIFEST_INVALID");
+  for (const process of manifest.processes) {
+    if (!Number.isInteger(process.pid) || typeof process.startToken !== "string") fail("MANAGED_DEV_MANIFEST_INVALID");
+    if (pidAlive(process.pid) && processStartToken(process.pid) !== process.startToken) fail("MANAGED_DEV_PROCESS_IDENTITY_MISMATCH");
+  }
+  run.state.managedDevOwnership = "PASS_RUNNER_MANIFEST";
+  run.state.managedDevManifestPath = managedDevManifestPath;
+  run.state.lastKnownGood = "MANAGED_DEV_OWNERSHIP_VERIFIED";
+  run.write(); run.event("MANAGED_DEV_OWNERSHIP", "PASS", "RUNNER_MANIFEST");
+  return true;
+}
+
+function stopOwnedManagedDev(run) {
+  const result = spawnSync(process.execPath, [path.join(root, "scripts/dev/r5-dev-runner.mjs"), "stop"], {cwd: root, encoding: "utf8", env: process.env});
+  if (result.status !== 0 || !result.stdout.includes("R5_DEV_STOP=PASS")) fail("MANAGED_DEV_STOP_FAILED");
+  run.state.lastKnownGood = "MANAGED_DEV_STOPPED_BY_OWNING_RUNNER";
+  run.write(); run.event("MANAGED_DEV_STOP", "PASS", "OWNING_RUNNER_MANIFEST");
+}
+
+function recordFailure(run, stage, error) {
+  const code = error instanceof ResetFailure ? error.code : "UNEXPECTED_RESET_FAILURE";
+  run.state.firstFailure ??= {stage, code};
+  run.state.brokenBoundary ??= stage;
+  run.state.business = "FAIL";
+  run.state.cleanup = "PASS_NO_PERSISTENT_RESET_PROCESS";
+  run.write(); run.event(stage, "FAIL", code);
+  process.stderr.write(`R5_DEV_RESET=FAIL; REASON=${code}; RUN_MANIFEST=${run.manifestPath}; LOG=${run.logPath}\n`);
+}
+
+export function selfTest() {
+  const valid = {namespace: "v2s-dev-reset-test", expectedDatabase: "catering_v2s_dev_reset_test", environment: {V2S_DEV_REMOTE_HOST: "dev.example.internal"}};
+  valid.environment.V2S_DEV_REMOTE_HOST_SHA256 = sha256(valid.environment.V2S_DEV_REMOTE_HOST);
+  const expect = (code, callback) => {
+    try { callback(); throw new Error(`SELF_TEST_RED_NOT_DETECTED:${code}`); }
+    catch (error) { if (!(error instanceof ResetFailure) || error.code !== code) throw error; }
+  };
+  validateResetTopology(valid);
+  expect("REMOTE_HOST_BINDING_INVALID", () => validateResetTopology({...valid, environment: {...valid.environment, V2S_DEV_REMOTE_HOST_SHA256: "0".repeat(64)}}));
+  expect("REMOTE_HOST_PRODUCTION_LIKE", () => validateResetTopology({...valid, environment: {...valid.environment, V2S_DEV_REMOTE_HOST: "postgres-prod.internal", V2S_DEV_REMOTE_HOST_SHA256: sha256("postgres-prod.internal")}}));
+  expect("TARGET_DATABASE_ALLOWLIST_INVALID", () => validateResetTopology({...valid, expectedDatabase: "postgres"}));
+  expect("REMOTE_EXECUTION_FAILED", () => runRemoteReset({host: valid.environment.V2S_DEV_REMOTE_HOST, targetDatabase: valid.expectedDatabase, executor: () => ({status: 255, stdout: "", stderr: "redacted"})}));
+  expect("POST_DROP_READBACK_FAILED", () => runRemoteReset({host: valid.environment.V2S_DEV_REMOTE_HOST, targetDatabase: valid.expectedDatabase, executor: () => ({status: 0, stdout: "R5_REMOTE_RESET_TERMINATE=PASS\\nR5_REMOTE_RESET_DROP=PASS\\nR5_REMOTE_RESET_READBACK_ABSENT=FAIL\\n"})}));
+  process.stdout.write("R5_DEV_RESET_SELF_TEST=PASS\nRED_HOST_HASH=PASS\nRED_PRODUCTION_HOST=PASS\nRED_ILLEGAL_DATABASE=PASS\nRED_REMOTE_EXECUTION=PASS\nRED_POST_DROP_READBACK=PASS\nCLEANUP=PASS\n");
+}
+
+function main() {
+  if (process.argv.includes("--self-test")) return selfTest();
+  const topology = resolveEnvironment();
+  if (process.argv.includes("--dry-run")) {
+    process.stdout.write(`R5_DEV_RESET_DRY_RUN=PASS; DATABASE=${topology.targetDatabase}; MANAGEMENT=REMOTE_SSH_EXEC; FOLLOW_UP=scripts/dev/start\n`);
+    return;
+  }
+  if (process.env.R5_RESET_CONFIRMATION !== "EXPLICIT_R5_RESET") fail("EXPLICIT_R5_RESET_CONFIRMATION_REQUIRED");
+  const run = createRun(topology);
+  try {
+    if (verifyManagedDevOwnership(run)) stopOwnedManagedDev(run);
+    runRemoteReset(topology);
+    run.state.lastKnownGood = "REMOTE_DATABASE_ABSENT_READBACK";
+    run.state.business = "PASS_DATABASE_ABSENT_READBACK";
+    run.state.cleanup = "PASS_NO_PERSISTENT_RESET_PROCESS";
+    run.write(); run.event("REMOTE_DATABASE_READBACK", "PASS", "ABSENT");
+    process.stdout.write(`R5_DEV_RESET=PASS; DATABASE=${topology.targetDatabase}; RUN_MANIFEST=${run.manifestPath}; LOG=${run.logPath}; FOLLOW_UP=scripts/dev/start\n`);
+  } catch (error) { recordFailure(run, "RESET_EXECUTION", error); process.exitCode = 2; }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try { main(); } catch (error) { const code = error instanceof ResetFailure ? error.code : "UNEXPECTED_RESET_FAILURE"; process.stderr.write(`R5_DEV_RESET=REFUSED; REASON=${code}\n`); process.exitCode = 2; }
+}

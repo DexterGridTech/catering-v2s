@@ -9,6 +9,10 @@ describe('workspace context focused contract', () => {
     expect(source).toContain('useOverlayLock');
     expect(source).toContain('setRetry((value) => value + 1)');
     expect(source).toContain("testId('platform-workspace-selector')");
+    expect(source).toContain('labelRender={collapsed ?');
+    expect(source).toContain('placeholder={collapsed ? undefined');
+    expect(source).toContain('aria-label="集团空间"');
+    expect(source).toContain('<AppstoreOutlined aria-label="集团空间"/>');
     expect(source).toContain("testId('platform-workspace-scope-required')");
   });
 });

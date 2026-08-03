@@ -3,7 +3,7 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group": {
       "post": {
         "operationId": "initializeCommercialGroup",
-        "x-required-capability": "REQ_INITIALIZE_COMMERCIAL_GROUP",
+        "x-required-platform-authorization": "REQ_INITIALIZE_COMMERCIAL_GROUP",
         "tags": [
           "organization"
         ],

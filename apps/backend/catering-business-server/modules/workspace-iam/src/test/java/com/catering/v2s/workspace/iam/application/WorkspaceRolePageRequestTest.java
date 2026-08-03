@@ -2,6 +2,7 @@ package com.catering.v2s.workspace.iam.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,7 +15,7 @@ class WorkspaceRolePageRequestTest {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceRoleService(jdbc, null);
 
-        var page = service.page(UUID.randomUUID(), "workspace-a", "operator", "PROJECT", "ENABLED", 3, 20);
+        var page = service.page(UUID.randomUUID(), "workspace-a", "operator", "PROJECT", "ENABLED", 3, 20, "UPDATED_AT", "DESC");
 
         assertEquals(73, page.total());
         assertEquals(3, page.page());
@@ -26,16 +27,28 @@ class WorkspaceRolePageRequestTest {
         assertEquals(40, jdbc.listArgs[9]);
         assertEquals(1, occurrences(jdbc.listSql, "LIMIT ? OFFSET ?"));
         assertEquals(3, occurrences(jdbc.listSql, "CAST(? AS text) IS NULL"));
+        assertTrue(jdbc.listSql.contains("ORDER BY updated_at_epoch_millis DESC, id ASC"));
     }
 
     @Test void rejectsInvalidRolePageInputsBeforeAnyQuery() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceRoleService(jdbc, null);
 
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, "UNKNOWN", null, 1, 20));
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, "PENDING", 1, 20));
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 0, 20));
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 101));
+        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, "UNKNOWN", null, 1, 20, "NAME", "ASC"));
+        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, "PENDING", 1, 20, "NAME", "ASC"));
+        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 0, 20, "NAME", "ASC"));
+        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 101, "NAME", "ASC"));
+        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 20, "STATUS", "ASC"));
+        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 20, "NAME", "SIDEWAYS"));
+    }
+
+    @Test void defaultsRoleSortToNameAscendingWithStableIdTieBreaker() {
+        var jdbc = new RecordingJdbcTemplate();
+        var service = new WorkspaceRoleService(jdbc, null);
+
+        service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 20, null, null);
+
+        assertTrue(jdbc.listSql.contains("ORDER BY name ASC, id ASC"));
     }
 
     private static int occurrences(String value, String token) { return value.split(java.util.regex.Pattern.quote(token), -1).length - 1; }

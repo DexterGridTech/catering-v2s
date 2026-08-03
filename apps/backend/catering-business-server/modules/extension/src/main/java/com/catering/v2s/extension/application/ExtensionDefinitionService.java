@@ -10,8 +10,10 @@ import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -21,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
-    private static final List<String> MANAGEMENT_HOST_TYPES = List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT");
+    private static final List<String> MANAGEMENT_HOST_TYPES = List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT");
     private static final Set<String> HOST_TYPES = Set.copyOf(MANAGEMENT_HOST_TYPES);
     private static final Set<String> AUDIT_FIELDS = Set.of("fieldDefinitions", "revision");
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -118,8 +120,9 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         return receipts.execute(idempotencyKey, workspaceUuid, groupWorkspaceKey, hostType, hostType + "|" + expectedVersion + "|" + json(normalized), () -> replace(workspaceUuid, groupWorkspaceKey, hostType, expectedVersion, normalized, actor));
     }
     /**
-     * Edge-facing whole-group replacement. Existing readback keys are opaque stable identities;
-     * a draft omits the key only for a newly added field, whose key is allocated by this owner.
+     * Edge-facing whole-group replacement. Every key is an administrator-defined, stable entity
+     * value anchor. Existing keys are preserved by the UI, while a newly added field must supply
+     * its own valid key; this owner never silently renames or randomly allocates one.
      */
     @Transactional
     public ExtensionDefinitionReadback replaceDraft(UUID workspaceUuid, String groupWorkspaceKey, String hostType, long expectedVersion, List<DraftField> fields, AuditActor actor, String idempotencyKey) {
@@ -127,15 +130,11 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         validateHost(hostType);
         if (fields == null || fields.stream().anyMatch(java.util.Objects::isNull)) throw new DefinitionInvalidException();
         return receipts.execute(idempotencyKey, workspaceUuid, groupWorkspaceKey, hostType, draftRequest(hostType, expectedVersion, fields), () -> {
-            List<ExtensionDefinitionReadback.Field> existing = expectedVersion == 0 ? List.of() : requireDefinition(workspaceUuid, groupWorkspaceKey, hostType).fields();
-            Set<String> existingKeys = existing.stream().map(ExtensionDefinitionReadback.Field::fieldKey).collect(java.util.stream.Collectors.toSet());
-            Set<String> suppliedKeys = new HashSet<>();
             List<Field> ownerFields = new java.util.ArrayList<>();
             for (int index = 0; index < fields.size(); index++) {
                 DraftField field = fields.get(index);
                 String key = field.fieldKey();
-                if (key != null && (!existingKeys.contains(key) || !suppliedKeys.add(key))) throw new DefinitionInvalidException();
-                if (key == null) key = generatedKey(existingKeys, suppliedKeys);
+                if (key == null || key.isBlank()) throw new DefinitionInvalidException();
                 ownerFields.add(new Field(key, field.label(), field.fieldType(), field.required(), field.options(), field.status(), field.displayOrder(), field.displaySuffix()));
             }
             return replace(workspaceUuid, groupWorkspaceKey, hostType, expectedVersion, ownerFields, actor);
@@ -155,13 +154,6 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     private static void requestPart(StringBuilder value, Object part) {
         if (part == null) { value.append("-1:"); return; }
         String text = String.valueOf(part); value.append(text.length()).append(':').append(text);
-    }
-    private static String generatedKey(Set<String> existingKeys, Set<String> suppliedKeys) {
-        String value;
-        do { value = "field_" + UUID.randomUUID().toString().replace("-", ""); }
-        while (existingKeys.contains(value) || suppliedKeys.contains(value));
-        suppliedKeys.add(value);
-        return value;
     }
     private void audit(UUID workspaceUuid, String groupWorkspaceKey, String hostType, Long previousRevision, long revision, List<ExtensionDefinitionReadback.Field> before, List<Field> after, AuditActor actor) { AuditChangePolicy policy = new AuditChangePolicy("EXTENSION_DEFINITION", "EXTENSION_DEFINITION_REPLACED", AUDIT_FIELDS); List<AuditChange> changes = List.of(new AuditChange("fieldDefinitions", summarize(before), summarize(after)), new AuditChange("revision", previousRevision == null ? null : previousRevision.toString(), String.valueOf(revision))).stream().filter(change -> !Objects.equals(change.beforeValue(), change.afterValue())).toList(); jdbc.update("INSERT INTO extension.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'EXTENSION_DEFINITION', ?, ?, ?, ?, 'EXTENSION_DEFINITION_REPLACED', ?, CAST(? AS JSONB))", UUID.randomUUID(), workspaceUuid, groupWorkspaceKey, hostType, actor.actorType(), actor.actorId(), actor.displaySnapshot(), time.currentEpochMillis(), auditJson(policy.allow(changes))); }
     private static String summarize(List<?> fields) { return fields.stream().map(ExtensionDefinitionService::describe).sorted().reduce((left, right) -> left + ";" + right).orElse(""); }
@@ -197,6 +189,54 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         }
         return values.toString();
     }
+    /**
+     * Applies the common extension-field semantics without taking ownership of a business
+     * record. The calling business owner persists the returned JSON in its own transaction.
+     */
+    public static String mergeValues(ExtensionDefinitionReadback definition, String currentValuesJson, Map<String, String> requestedValues) {
+        if (definition == null) throw new DefinitionInvalidException();
+        ObjectNode merged;
+        try {
+            JsonNode parsed = JSON.readTree(currentValuesJson == null ? "{}" : currentValuesJson);
+            if (!parsed.isObject()) throw new DefinitionInvalidException();
+            merged = (ObjectNode) parsed;
+        } catch (java.io.IOException failure) {
+            throw new DefinitionInvalidException();
+        }
+        Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream()
+            .collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field));
+        Map<String, String> requested = requestedValues == null ? Map.of() : requestedValues;
+        for (Map.Entry<String, String> entry : requested.entrySet()) {
+            ExtensionDefinitionReadback.Field field = fields.get(entry.getKey());
+            if (field == null) throw new DefinitionInvalidException();
+            if ("DISABLED".equals(field.status())) continue;
+            if (isJsonNull(entry.getValue())) {
+                merged.remove(entry.getKey());
+                continue;
+            }
+            if (!validJsonValue(field, entry.getValue())) throw new DefinitionInvalidException();
+            try { merged.set(entry.getKey(), JSON.readTree(entry.getValue())); }
+            catch (java.io.IOException failure) { throw new DefinitionInvalidException(); }
+        }
+        if (fields.values().stream().filter(field -> "ENABLED".equals(field.status()) && field.required())
+            .anyMatch(field -> !merged.hasNonNull(field.fieldKey()) || !validJsonValue(field, merged.get(field.fieldKey()).toString()))) {
+            throw new DefinitionInvalidException();
+        }
+        return merged.toString();
+    }
+
+    /** Decodes the durable JSON object into the owner readback representation. */
+    public static Map<String, String> readValues(String source) {
+        try {
+            JsonNode parsed = JSON.readTree(source == null ? "{}" : source);
+            if (!parsed.isObject()) throw new DefinitionInvalidException();
+            Map<String, String> values = new LinkedHashMap<>();
+            parsed.fields().forEachRemaining(entry -> values.put(entry.getKey(), entry.getValue().toString()));
+            return Map.copyOf(values);
+        } catch (java.io.IOException failure) {
+            throw new DefinitionInvalidException();
+        }
+    }
     private static List<ExtensionDefinitionReadback.Field> readFields(String source) {
         try {
             JsonNode values = JSON.readTree(source); if (!values.isArray()) throw new DefinitionInvalidException();
@@ -210,6 +250,21 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             }
             return List.copyOf(fields);
         } catch (java.io.IOException failure) { throw new DefinitionInvalidException(); }
+    }
+    private static boolean isJsonNull(String value) { return value == null || "null".equals(value.trim()); }
+    private static boolean validJsonValue(ExtensionDefinitionReadback.Field field, String value) {
+        if (isJsonNull(value)) return false;
+        try {
+            JsonNode json = JSON.readTree(value);
+            return switch (field.fieldType()) {
+                case "TEXT" -> json.isTextual();
+                case "NUMBER" -> json.isNumber();
+                case "DATE" -> json.isTextual() && json.asText().matches("\\d{4}-\\d{2}-\\d{2}");
+                case "BOOLEAN" -> json.isBoolean();
+                case "SELECT" -> json.isTextual() && field.options().contains(json.asText());
+                default -> false;
+            };
+        } catch (java.io.IOException failure) { return false; }
     }
     public static final class DefinitionNotFoundException extends RuntimeException { }
     public static final class DefinitionVersionConflictException extends RuntimeException { }

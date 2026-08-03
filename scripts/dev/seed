@@ -13,5 +13,4 @@ if [[ "${R5_SEED_CONFIRMATION:-}" != "EXPLICIT_R5_SEED" ]]; then
   echo "R5_SEED=REFUSED; REASON=EXPLICIT_R5_SEED_CONFIRMATION_REQUIRED" >&2
   exit 2
 fi
-echo "R5_SEED=REFUSED; REASON=OWNER_COMMAND_EXECUTOR_NOT_IMPLEMENTED" >&2
-exit 2
+exec node "$root_dir/scripts/dev/owner-command-seed-executor.mjs"

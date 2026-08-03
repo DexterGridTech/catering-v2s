@@ -46,6 +46,7 @@
               "enum": [
                 "WORKSPACE_ACCOUNT",
                 "WORKSPACE_INVITATION",
+                "COMMERCIAL_GROUP",
                 "ORGANIZATION_NODE",
                 "BRAND",
                 "TENANT",

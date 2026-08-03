@@ -1,39 +1,67 @@
-import {Descriptions, Drawer} from 'antd';
-import {adminDrawerSurfaceProps, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
-import {useEffect} from 'react';
-import type {StoreContract} from '../../../app/api/generated/operations-edge';
+import {Alert, Descriptions, Drawer, Skeleton} from 'antd';
+import {adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {useEffect, useMemo} from 'react';
+import {operationsRtk} from '../../../app/api/OperationsTransport';
+import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
+import type {JsonValue, StoreContract} from '../../../app/api/generated/operations-edge';
+import type {OperationsPageContext} from '../../../app/routing/model';
 
 type Props = {
   contract?: StoreContract;
+  queryContext: OperationsPageContext;
   onClose: () => void;
 };
 
 /** Store-profile contract detail is intentionally read-only: this face has no contract mutation capability. */
-export function FixedStoreContractDetailDrawer({contract, onClose}: Props) {
+export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}: Props) {
   const detail = useDetailDrawer<StoreContract>();
   useOverlayLock(Boolean(contract));
-  const selected = detail.target;
+  const {target: selected, open: openDetail, close: closeDetail} = detail;
+
+  const definitionRequest = useMemo(() => operationsAdminRtkRequest.getOperationsContractExtensionDefinition(
+    {groupWorkspaceKey: queryContext.groupWorkspaceKey},
+    {query: {expectedContextVersion: queryContext.expectedContextVersion, projectId: selected?.project.id ?? ''}},
+  ), [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, selected?.project.id]);
+  const definition = operationsRtk.useGetOperationsContractExtensionDefinitionQuery(definitionRequest, {skip: !selected});
+  const extensionItems = [...(definition.data?.definitions ?? [])]
+    .filter((field) => field.status !== 'DISABLED')
+    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
+    .map((field) => ({key: `extension-${field.key}`, label: field.label, children: valueOf(selected?.extensionValues?.[field.key])}));
 
   useEffect(() => {
-    if (contract) detail.open(contract);
-    else detail.close();
-  }, [contract, detail.close, detail.open]);
+    if (contract) openDetail(contract);
+    else closeDetail();
+  }, [contract, closeDetail, openDetail]);
 
   return <Drawer
     title={selected ? `合同详情：${selected.contractNo}` : '合同详情'}
     open={Boolean(contract)}
-    width={640}
+    size={640}
     destroyOnHidden
-    onClose={() => { detail.close(); onClose(); }}
+    onClose={() => { closeDetail(); onClose(); }}
     {...adminDrawerSurfaceProps}
     {...testId('operations-store-profile-contract-detail-drawer')}
   >
-    {selected && <Descriptions bordered column={1} items={[
-      {key: 'contractNo', label: '合同编号', children: selected.contractNo},
-      {key: 'phaseName', label: '项目分期', children: selected.phaseName},
-      {key: 'tenant', label: '经营租户', children: selected.tenant.name},
-      {key: 'effective', label: '起止日期', children: `${selected.effectiveFrom} 至 ${selected.effectiveTo ?? '长期'}`},
-      {key: 'status', label: '状态', children: selected.status === 'VALID' ? '有效' : '已作废'},
-    ]} {...testId('operations-store-profile-contract-detail-fields')}/>} 
+    {selected && <>
+      {definition.isLoading && <Skeleton active {...testId('operations-store-profile-contract-detail-extension-loading')} />}
+      {definition.error && <Alert type="warning" showIcon title="扩展字段读取失败" description="当前仅显示已确认的基础资料。" {...testId('operations-store-profile-contract-detail-extension-error')} />}
+      <Descriptions bordered column={1} items={[
+        {key: 'contractNo', label: '合同编号', children: selected.contractNo},
+        {key: 'store', label: '门店', children: formatNameCode(selected.store.name, selected.store.code)},
+        {key: 'project', label: '项目', children: formatNameCode(selected.project.name, selected.project.code)},
+        {key: 'phaseName', label: '项目分期', children: selected.phaseName},
+        {key: 'tenant', label: '经营租户', children: formatNameCode(selected.tenant.name, selected.tenant.code)},
+        {key: 'items', label: '货号', children: selected.items.map((item) => formatNameCode(item.name, item.code)).join('；') || '—'},
+        {key: 'effective', label: '起止日期', children: `${selected.effectiveFrom} 至 ${selected.effectiveTo ?? '长期'}`},
+        {key: 'status', label: '状态', children: selected.status === 'VALID' ? '有效' : '已作废'},
+        {key: 'note', label: '备注', children: selected.note ?? '—'},
+        {key: 'updatedAt', label: '更新时间', children: new Date(selected.updatedAt).toLocaleString('zh-CN')},
+        ...extensionItems,
+      ]} {...testId('operations-store-profile-contract-detail-fields')}/>
+    </>}
   </Drawer>;
+}
+
+function valueOf(value: JsonValue | undefined) {
+  return value === undefined || value === null || value === '' ? '—' : String(value);
 }

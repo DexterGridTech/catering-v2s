@@ -37,6 +37,8 @@
           "parentId",
           "code",
           "name",
+          "extensionValues",
+          "extensionRuleRevision",
           "status",
           "phases",
           "revision",
@@ -81,6 +83,15 @@
             "type": "string",
             "nullable": true,
             "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "status": {
             "type": "string",
@@ -143,6 +154,11 @@
             "type": "string",
             "nullable": true,
             "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
           }
         }
       },
@@ -215,6 +231,11 @@
             "type": "string",
             "nullable": true,
             "maxLength": 2000
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
           },
           "expectedVersion": {
             "type": "integer",

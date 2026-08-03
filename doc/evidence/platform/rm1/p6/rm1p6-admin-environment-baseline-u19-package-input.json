@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-ADMIN-ENVIRONMENT-BASELINE-U19",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-admin-environment-baseline-u19-delivery-manifest.json",
+  "deliveryManifestSha256": "cf83f81178606e71d4d4bd3d552bcbad7fa81b75fab4162f43a01bae27293974",
+  "unitId": "RM1P6-ADMIN-ENVIRONMENT-BASELINE-U19",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance", "scripts/check/code-layout"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["EB-NON_PRODUCTION-OTP-HARD_LOCK", "EB-TWO_ADMIN-LIST-PAGE_SIZE-DENOMINATOR", "EB-PUBLIC-INVITATION-BRAND-NO-REPEAT"],
+  "businessEvidenceObligation": "MANAGED_DEV_FORMAL_SEED_AND_PUBLIC_INVITATION_OTP_REFILL",
+  "serialPredecessor": {
+    "packageId": "RM1P6-WORKSPACE-ACCOUNTS-U18",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-workspace-accounts-u18-package-exit.json",
+    "exitSha256": "51067c4e1e3a62f6771d9be338e192d320f1d1050e28613f2b47bdd79198fce5"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-implementation-amendment.md",
+    "sha256": "361fee24f7165d3b44d34deca33b7a19da3f8f7bbc0a15fd5ef1dad01f33942c"
+  },
+  "authorizationBoundary": "Dexter authorized only the managed DEV/UAT OTP hard gate, the finite two-admin management-list default-to-ten denominator, and the public invitation welcome/brand/OTP-spacing correction. U19 must not add an OTP protocol, a front-end switch, a workspace capability, a backend pagination policy, direct SQL, raw transport, an L2/UAT claim, or unrelated owner behavior."
+}

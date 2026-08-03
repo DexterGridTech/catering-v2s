@@ -8,8 +8,10 @@ import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.workspace.api.WorkspaceIamSummaryLookup;
 import com.catering.v2s.audit.contract.AuditActor;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,7 +48,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
         } catch (DuplicateKeyException exception) { throw new WorkspaceConflictException(); }
         assets.claim(logoAssetRef, id, normalizedKey, requiredGrant(logoBindGrant));
         WorkspaceAdministrationReadback created = require(normalizedKey);
-        audit(created, "GROUP_WORKSPACE_CREATED", now, actor, "[{\"fieldKey\":\"name\",\"after\":\"" + json(created.name()) + "\"}]");
+        audit(created, "GROUP_WORKSPACE_CREATED", now, actor, "[{\"fieldKey\":\"groupWorkspaceKey\",\"after\":\"" + json(created.groupWorkspaceKey()) + "\"},{\"fieldKey\":\"name\",\"after\":\"" + json(created.name()) + "\"},{\"fieldKey\":\"operationsTitle\",\"after\":\"" + json(created.operationsTitle()) + "\"},{\"fieldKey\":\"logo\",\"after\":\"已配置\"}" + (created.notes() == null ? "]" : ",{\"fieldKey\":\"notes\",\"after\":\"" + json(created.notes()) + "\"}]"));
         return created;
     }
 
@@ -119,7 +121,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
         if (changed == 0) throw new WorkspaceVersionConflictException();
         if (previousLogoAssetRef != null && !previousLogoAssetRef.equals(targetLogo)) assets.release(previousLogoAssetRef, current.workspaceUuid());
         WorkspaceAdministrationReadback updated = require(key);
-        audit(updated, "GROUP_WORKSPACE_UPDATED", time.currentEpochMillis(), actor, "[{\"fieldKey\":\"name\",\"before\":\"" + json(current.name()) + "\",\"after\":\"" + json(updated.name()) + "\"}]");
+        audit(updated, "GROUP_WORKSPACE_UPDATED", time.currentEpochMillis(), actor, updateChanges(current, updated, resolvedIntent));
         return updated;
     }
 
@@ -156,6 +158,19 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
         Long legacyId = jdbc.queryForObject("SELECT id FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?", Long.class, workspace.workspaceUuid(), workspace.groupWorkspaceKey());
         jdbc.update("INSERT INTO platform_workspace.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'GROUP_WORKSPACE', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))", UUID.randomUUID(), workspace.workspaceUuid(), workspace.groupWorkspaceKey(), String.valueOf(legacyId), actor.actorType(), actor.actorId(), actor.displaySnapshot(), action, occurredAt, changesJson);
     }
+    private static String updateChanges(WorkspaceAdministrationReadback before, WorkspaceAdministrationReadback after, String logoIntent) {
+        List<String> changes = new ArrayList<>();
+        if (!Objects.equals(before.name(), after.name())) changes.add(change("name", before.name(), after.name()));
+        if (!Objects.equals(before.operationsTitle(), after.operationsTitle())) changes.add(change("operationsTitle", before.operationsTitle(), after.operationsTitle()));
+        if (!Objects.equals(before.notes(), after.notes())) changes.add(change("notes", before.notes(), after.notes()));
+        if (!Objects.equals(before.logoAssetRef(), after.logoAssetRef())) changes.add(change("logo", before.logoAssetRef() == null ? "未配置" : "已配置", after.logoAssetRef() == null ? "未配置" : "已配置"));
+        if (changes.isEmpty() && "KEEP".equals(logoIntent)) return "[]";
+        return "[" + String.join(",", changes) + "]";
+    }
+    private static String change(String field, String before, String after) {
+        return "{\"fieldKey\":\"" + field + "\",\"before\":" + nullableJson(before) + ",\"after\":" + nullableJson(after) + "}";
+    }
+    private static String nullableJson(String value) { return value == null ? "null" : "\"" + json(value) + "\""; }
     private static String json(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
     private static WorkspaceAdministrationReadback map(java.sql.ResultSet result) throws java.sql.SQLException { return map(result, false); }
     private static WorkspaceAdministrationReadback mapList(java.sql.ResultSet result) throws java.sql.SQLException { return map(result, result.getBoolean("commercial_group_initialized")); }

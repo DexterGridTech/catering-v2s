@@ -9,5 +9,6 @@ public record OrganizationHierarchyTreeNode(
     OrganizationOverviewStatus status,
     String notes,
     Long updatedAt,
-    java.util.List<OrganizationHierarchyTreeNode> children
+    java.util.List<OrganizationHierarchyTreeNode> children,
+    java.util.List<String> phases
 ) {}

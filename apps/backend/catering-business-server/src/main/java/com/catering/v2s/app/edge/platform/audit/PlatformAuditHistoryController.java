@@ -46,7 +46,7 @@ public final class PlatformAuditHistoryController {
         var result = switch (entityType) {
             case "GROUP_WORKSPACE" -> groupWorkspaceAudit.readGroupWorkspace(scope(entityId), target, page, pageSize);
             case "PLATFORM_ADMIN" -> platformIamAudit.read(target, page, pageSize);
-            case "WORKSPACE_ROLE", "WORKSPACE_ACCOUNT" -> workspaceIamAudit.read(scopeForWorkspaceTarget(groupWorkspaceKey), target, page, pageSize);
+            case "WORKSPACE_ROLE", "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION" -> workspaceIamAudit.read(scopeForWorkspaceTarget(groupWorkspaceKey), target, page, pageSize);
             case "EXTENSION_DEFINITION" -> extensionAudit.read(scopeForWorkspaceTarget(groupWorkspaceKey), target, page, pageSize);
             case "STORE_CONTRACT" -> contractAudit.read(scopeForWorkspaceTarget(groupWorkspaceKey), target, page, pageSize);
             default -> throw new InvalidEdgeRequestException("unsupported platform audit target");

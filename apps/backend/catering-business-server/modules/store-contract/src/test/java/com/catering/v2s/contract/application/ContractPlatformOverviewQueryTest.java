@@ -14,14 +14,16 @@ import org.springframework.jdbc.core.RowMapper;
 class ContractPlatformOverviewQueryTest {
     @Test void preservesAllSixBusinessFiltersForSamePredicateCountAndBoundedRead() {
         var jdbc = new RecordingJdbcTemplate();
-        var page = new ContractTaskReadService(jdbc).platformOverview(UUID.randomUUID(), "workspace-a", "CT", "Store", "Phase", "Tenant", "SKU", "VALID", "CONTRACT_NO", "ASC", 3, 20);
+        var page = new ContractTaskReadService(jdbc).platformOverview(UUID.randomUUID(), "workspace-a", UUID.randomUUID(), UUID.randomUUID(), "CT", "Phase", "Tenant", "VALID", "CONTRACT_NO", "ASC", 3, 20);
 
         assertEquals(73, page.metadata().total());
         assertEquals(jdbc.countSql.replace("SELECT COUNT(*)", ""), jdbc.listSql.substring(jdbc.listSql.indexOf(" FROM contract.store_contract"), jdbc.listSql.indexOf(" ORDER BY")));
-        assertEquals(14, jdbc.countArgs.length);
-        assertEquals(16, jdbc.listArgs.length);
-        assertEquals(20, jdbc.listArgs[14]);
-        assertEquals(40, jdbc.listArgs[15]);
+        assertEquals(15, jdbc.countArgs.length);
+        assertEquals(17, jdbc.listArgs.length);
+        assertEquals(20, jdbc.listArgs[15]);
+        assertEquals(40, jdbc.listArgs[16]);
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("p.id=?"));
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("t.code ILIKE"));
         assertEquals(1, occurrences(jdbc.listSql, "LIMIT ? OFFSET ?"));
     }
 

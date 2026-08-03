@@ -7,8 +7,19 @@ import {createAsyncGenerationGuard} from './behavior/asyncGeneration';
 import {AdminErrorBoundary} from './behavior/AdminErrorBoundary';
 import {createRefreshSignal} from './behavior/refreshSignal';
 import {serializeJsonOrMultipartBody} from './http/wireRequestBody';
+import {adminListState} from './list/adminListState';
+import {formatCodeNamePath, formatNameCode} from './presentation/nameCode';
 
 describe('admin UI foundation contract and lifecycle primitives', () => {
+  it('renders a business name and code in the shared 名称(编码) form without inventing missing values', () => {
+    expect(formatNameCode('极光商业集团', 'AURORA-GROUP')).toBe('极光商业集团(AURORA-GROUP)');
+    expect(formatNameCode('极光商业集团', undefined)).toBe('极光商业集团');
+    expect(formatNameCode(undefined, 'AURORA-GROUP')).toBe('AURORA-GROUP');
+  });
+  it('renders owner task paths segment by segment without rewriting malformed transport values', () => {
+    expect(formatCodeNamePath('EAST 东区 / RIVER 河畔项目 / S-OP 河畔茶里店')).toBe('东区(EAST) / 河畔项目(RIVER) / 河畔茶里店(S-OP)');
+    expect(formatCodeNamePath('无编码路径')).toBe('无编码路径');
+  });
   it('exposes the generated shared HTTP protocol without local aliases', () => {
     expect(platformHttpProtocol.CORRELATION_ID).toBeTruthy();
     expect(platformHttpProtocol.REQUEST_ID).toBeTruthy();
@@ -39,6 +50,7 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
   });
 
   it('freezes the cross-admin Drawer surface contract', () => {
+    expect(adminDrawerSurfaceProps.mask?.closable).toBe(true);
     expect(adminDrawerSurfaceProps.styles?.body?.overflowY).toBe('auto');
     expect(adminDrawerSurfaceProps.styles?.body?.minHeight).toBe(0);
     expect(adminDrawerSurfaceProps.styles?.footer?.justifyContent).toBe('flex-end');
@@ -84,5 +96,16 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
     const multipartHeaders = new Headers();
     expect(serializeJsonOrMultipartBody({file: new Blob(['x'], {type: 'text/plain'})}, multipartHeaders)).toBeInstanceOf(FormData);
     expect(multipartHeaders.has('Content-Type')).toBe(false);
+  });
+
+  it('keeps loading, failure and empty table states mutually exclusive and locatable', () => {
+    const loading = adminListState({loading: true, failed: false, emptyText: '暂无记录', testIdPrefix: 'example-list'});
+    const failed = adminListState({loading: false, failed: true, emptyText: '暂无记录', testIdPrefix: 'example-list'});
+    const empty = adminListState({loading: false, failed: false, emptyText: '暂无记录', testIdPrefix: 'example-list'});
+    expect(loading.loading).toMatchObject({spinning: true});
+    expect(loading.locale.emptyText).toBeNull();
+    expect(failed.loading).toBe(false);
+    expect(failed.locale.emptyText).toBeNull();
+    expect(empty.locale.emptyText).toBeTruthy();
   });
 });

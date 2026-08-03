@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-ADMIN-ENVIRONMENT-BASELINE-U19",
+  "kind": "rm1-execution-package-exit",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "scripts/dev/r5-dev-runner.mjs",
+    "scripts/dev/owner-command-seed-executor.mjs",
+    "scripts/dev/owner-command-seed-executor.test.mjs",
+    "scripts/dev/r5-otp-debug-exposure.test.mjs",
+    "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/security/OtpDebugExposurePolicy.java",
+    "apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/security/OtpDebugExposurePolicyTest.java",
+    "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java",
+    "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+    "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewFilters.ts",
+    "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewFilters.test.ts",
+    "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+    "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+    "apps/frontend/platform-admin/src/tests/architecture/default-list-page-size.test.mjs",
+    "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+    "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+    "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationOtpStep.tsx",
+    "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.test.tsx",
+    "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+    "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
+    "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+    "apps/frontend/operations-admin/src/tests/architecture/default-list-page-size.test.mjs",
+    "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-problem-family.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-ui-ia-baseline.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-package-exit.json",
+    "doc/review/platform/rm1p6-admin-environment-baseline-u19-delivery-manifest.json"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "focusedProof": {
+    "static": [
+      "foundation policy test PASS; business-server compile PASS",
+      "two admin typechecks PASS",
+      "U19 pagination architecture tests PASS",
+      "scripts/check/remediation-compliance static-scan PASS"
+    ],
+    "managedDev": {
+      "run": ".runtime/r5/seed/rm1-seed-b1cd32c5-69e0-49ea-b20b-d575c39d4ef5",
+      "otpDebugExposure": true,
+      "business": "PASS",
+      "cleanup": "PASS_NO_PERSISTENT_SEED_PROCESS",
+      "ownerReadback": "accounts=6, invitations=17, contracts=5"
+    }
+  },
+  "scopeStatement": "U19 closes only the DEV/UAT OTP gate, the finite two-admin list default of ten, and the public invitation welcome/brand/OTP-spacing correction. DEV is fresh formal-seed verified; L2 and UAT are not claimed."
+}

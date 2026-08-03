@@ -8,5 +8,7 @@ describe('platform recovery completion focused contract', () => {
     expect(source).toContain('status="success"');
     expect(source).toContain("navigate('/platform/login')");
     expect(source).toContain("testId('platform-recovery-return-login')");
+    expect(source).toContain('className="auth-page"');
+    expect(source).toContain('className="auth-card"');
   });
 });

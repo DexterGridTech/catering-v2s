@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1-C01-ROOT-CONTRACT-REGISTRY-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "contracts/openapi/edge.openapi.yaml",
+    "scripts/generate/edge-codegen.mjs",
+    "tools/compliance-control/cli.mjs",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-c01-root-contract-registry-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-c01-root-contract-registry-implementation-amendment.md",
+    "doc/review/platform/rm1-u13-c01-root-contract-registry-delivery-manifest.json",
+    "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-implementation-adversarial-review-round1.md",
+    "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-implementation-adversarial-review-round2.md",
+    "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-author-resolution.md",
+    "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-implementation-review-request-claude.md"
+  ],
+  "staticProof": {
+    "rootOpenApiTuples": 147,
+    "generatedRouteRegistryTuples": 147,
+    "duplicates": 0,
+    "twoWayDifference": 0,
+    "commands": [
+      "scripts/check/edge-codegen",
+      "scripts/check/edge-codegen --self-test",
+      "scripts/check/openapi-contracts",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/standards-coverage --phase R5"
+    ]
+  },
+  "review": {
+    "round1": "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-implementation-adversarial-review-round1.md",
+    "authorResolution": "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-author-resolution.md",
+    "verdict": "GO_M0_S0_N1",
+    "openNonBlockingFinding": "N-01: CURRENT_STEP phase vocabulary is not a standards-coverage phase; C01 reports only its package-pinned R5 result."
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "legacyBaselineExitValidator": "NOT_INVOKED_DURING_OBSERVATION; its removal is a separate control-plane follow-up, not C01 contract behavior."
+  },
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "scopeStatement": "staticProofStatus=PASS proves only static root OpenAPI/generated route-registry denominator closure and the bounded successor-manifest bootstrap correction. It is not a machine-validated package exit, HTTP workload coverage, CRUD efficiency/performance, DEV, seed/reset, managed L2, user-journey business PASS, cleanup PASS, or Roadmap closure."
+}

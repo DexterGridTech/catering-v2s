@@ -86,7 +86,7 @@
       },
       "post": {
         "operationId": "acceptPublicInvitation",
-        "x-required-capability": "REQ_ACCEPT_PUBLIC_INVITATION",
+        "x-required-owner-protocol": "REQ_ACCEPT_PUBLIC_INVITATION",
         "tags": [
           "workspace-iam"
         ],
@@ -182,7 +182,7 @@
     "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send": {
       "post": {
         "operationId": "sendPublicInvitationOtp",
-        "x-required-capability": "REQ_SEND_PUBLIC_INVITATION_OTP",
+        "x-required-owner-protocol": "REQ_SEND_PUBLIC_INVITATION_OTP",
         "tags": [
           "workspace-iam"
         ],
@@ -288,7 +288,7 @@
     "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify": {
       "post": {
         "operationId": "verifyPublicInvitationOtp",
-        "x-required-capability": "REQ_VERIFY_PUBLIC_INVITATION_OTP",
+        "x-required-owner-protocol": "REQ_VERIFY_PUBLIC_INVITATION_OTP",
         "tags": [
           "workspace-iam"
         ],
@@ -394,7 +394,7 @@
     "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials": {
       "post": {
         "operationId": "savePublicInvitationCredentials",
-        "x-required-capability": "REQ_SAVE_PUBLIC_INVITATION_CREDENTIALS",
+        "x-required-owner-protocol": "REQ_SAVE_PUBLIC_INVITATION_CREDENTIALS",
         "tags": [
           "workspace-iam"
         ],
@@ -500,7 +500,7 @@
     "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete": {
       "post": {
         "operationId": "completePublicInvitation",
-        "x-required-capability": "REQ_COMPLETE_PUBLIC_INVITATION",
+        "x-required-owner-protocol": "REQ_COMPLETE_PUBLIC_INVITATION",
         "tags": [
           "workspace-iam"
         ],

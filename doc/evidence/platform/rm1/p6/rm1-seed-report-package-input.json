@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-SEED-REPORT-U12",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1-seed-report-u12-delivery-manifest.json",
+  "deliveryManifestSha256": "1fc53e381f62473d6e42bc53d014b9a8b4b40a60d204f651ace2f0f5ceec9d18",
+  "unitId": "RM1-SEED-REPORT-U12",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/affected-l2",
+    "scripts/check/openapi-contracts",
+    "scripts/check/remediation-compliance",
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/affected-l2",
+    "scripts/check/remediation-compliance",
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRuleIds": [
+    "U12-SERVER-CANONICAL-SEED-REPORT",
+    "U12-REQUEST-LOCAL-DATABASE-ACCOUNTING",
+    "U12-REDACTED-SEED-REPORT-LIFECYCLE"
+  ],
+  "businessEvidenceObligation": "REQUIRED_CURRENT_BYTE_DYNAMIC_HIERARCHY_AND_CAPABILITY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-JOINT-REMOTE-L2-U11",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-exit.json",
+    "exitSha256": "01d3c056ab555d2e6b738f9322b5e435cf2d67fc4ab4fba40747ec9db3e84a64"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1-seed-report-package-design.md",
+    "sha256": "4deb185fb105fbc828aa2c1c1e75450b28a9cef2c1a3aff0ad172d806921cf0a"
+  },
+  "postRemediationRebind": {
+    "version": "POST_REMEDIATION_V1",
+    "historicalReviewedSha256": "878cd3a4e18ed5180a6f989d844c61e0353ac409fbbcd2569b48fe57fede22f8",
+    "controlledWriteReceiptPath": ".runtime/compliance-control/hook-events/exec-ab02109a-6085-4a5b-8232-4bcda8f69cf8.post.json",
+    "intake": {
+      "path": "doc/review/platform/2026-08-01-rm1-seed-report-u12-current-byte-post-remediation-intake.md",
+      "sha256": "bff228e0ea12f9dfab30f7516476317d7c133abd873b6b89ff3926a43badcfc9"
+    },
+    "currentBytesNotReviewedByOriginalReview": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false
+  },
+  "authorizationBoundary": "Dexter authorizes RM1 remaining seed-report and managed-runtime closure. This package covers only the current minimal owner-command seed/joint L2 execution path, backend request-local database accounting, server-canonical generated-contract operation binding, focused proof and evidence. It excludes reset, Roadmap mutation, future full r5-full 32-scenario owner workflow and UAT. The future r5-full command must emit the same report for every invocation including failure, but is not claimed complete by this package."
+}

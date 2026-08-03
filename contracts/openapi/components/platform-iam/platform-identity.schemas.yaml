@@ -127,7 +127,7 @@
             "type": "string",
             "maxLength": 32,
             "nullable": true,
-            "description": "Governance-authorized edit prefill only; the detail surface must render maskedMobile instead."
+            "description": "Governance-authorized platform-admin edit/detail value; platform-admin renders the plaintext mobile while other consumer faces retain their own masking policy."
           },
           "maskedMobile": {
             "type": "string",

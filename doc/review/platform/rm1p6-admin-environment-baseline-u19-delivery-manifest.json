@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-ADMIN-ENVIRONMENT-BASELINE-U19",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-ADMIN-ENVIRONMENT-BASELINE-U19",
+      "title": "Managed non-production OTP, two-admin list default, and public invitation brand baseline",
+      "approvedAssertions": [
+        "NON_PRODUCTION_AND_UAT_OTP_DEBUG_REFILL_CANNOT_BE_DISABLED",
+        "BOTH_ADMIN_APPS_DEFAULT_EVERY_MANAGEMENT_LIST_TO_TEN_ROWS",
+        "PUBLIC_INVITATION_WELCOME_AND_OPERATIONS_BRANDING_DO_NOT_REPEAT_WORKSPACE_TITLE"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate U19 after U18 exit"},
+        {"path": "scripts/dev/r5-dev-runner.mjs", "disposition": "update", "target": "hard-lock managed DEV OTP exposure"},
+        {"path": "scripts/dev/owner-command-seed-executor.mjs", "disposition": "update", "target": "accept only hard-locked managed OTP manifest"},
+        {"path": "scripts/dev/owner-command-seed-executor.test.mjs", "disposition": "update", "target": "formal seed true-manifest regression"},
+        {"path": "scripts/dev/r5-otp-debug-exposure.test.mjs", "disposition": "create", "target": "managed DEV hard-lock source control"},
+        {"path": "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/security/OtpDebugExposurePolicy.java", "disposition": "create", "target": "non-production/UAT policy without business ownership"},
+        {"path": "apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/security/OtpDebugExposurePolicyTest.java", "disposition": "create", "target": "environment policy red and green proof"},
+        {"path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java", "disposition": "update", "target": "consume shared exposure policy"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java", "disposition": "update", "target": "consume shared exposure policy"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java", "disposition": "update", "target": "consume shared exposure policy"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java", "disposition": "update", "target": "consume shared exposure policy"},
+        {"path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx", "disposition": "update", "target": "platform audit list default"},
+        {"path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewFilters.ts", "disposition": "update", "target": "organization overview tab default"},
+        {"path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewFilters.test.ts", "disposition": "update", "target": "organization overview default proof"},
+        {"path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx", "disposition": "update", "target": "contract overview list default"},
+        {"path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx", "disposition": "update", "target": "administrator list default"},
+        {"path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx", "disposition": "update", "target": "account list default"},
+        {"path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx", "disposition": "update", "target": "invitation list default"},
+        {"path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx", "disposition": "update", "target": "role list default"},
+        {"path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx", "disposition": "update", "target": "workspace list default"},
+        {"path": "apps/frontend/platform-admin/src/tests/architecture/default-list-page-size.test.mjs", "disposition": "create", "target": "platform list denominator guard"},
+        {"path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx", "disposition": "update", "target": "operations audit list default"},
+        {"path": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx", "disposition": "update", "target": "business entity list default"},
+        {"path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx", "disposition": "update", "target": "contract list default"},
+        {"path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx", "disposition": "update", "target": "welcome card and operations brand heading"},
+        {"path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationOtpStep.tsx", "disposition": "update", "target": "notice and action spacing"},
+        {"path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.test.tsx", "disposition": "update", "target": "public invitation brand and OTP layout proof"},
+        {"path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx", "disposition": "update", "target": "store list default"},
+        {"path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx", "disposition": "update", "target": "store profile contract list default"},
+        {"path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx", "disposition": "update", "target": "operations invitation list default"},
+        {"path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx", "disposition": "update", "target": "operations user list default"},
+        {"path": "apps/frontend/operations-admin/src/tests/architecture/default-list-page-size.test.mjs", "disposition": "create", "target": "operations list denominator guard"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-package-input.json", "disposition": "create", "target": "hash-bound execution input"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-implementation-amendment.md", "disposition": "create", "target": "source-bound U19 design"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-problem-family.json", "disposition": "create", "target": "generalized baseline finding family"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-ui-ia-baseline.json", "disposition": "create", "target": "public invitation and list consumer admission"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-admin-environment-baseline-u19-package-exit.json", "disposition": "create", "target": "package exit"},
+        {"path": "doc/review/platform/rm1p6-admin-environment-baseline-u19-delivery-manifest.json", "disposition": "create", "target": "U19 delivery denominator"}
+      ],
+      "complianceRoute": {"taskKind": "implementation", "domain": "platform", "consumerFace": "platform-admin", "owner": "platform", "impact": "architecture", "trigger": "implementation"},
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": ["project-memory/kernel/04-contract-consumer-and-admin.md", "project-memory/kernel/05-evidence-runtime-and-git.md", "project-memory/operations/phase-retrospective-and-systemic-repair.md", "project-memory/decisions/incremental-compliance-hook.md"],
+        "APPROVED_ASSERTIONS": ["IA01 public invitation and OTP", "P6 section 8.1", "Dexter U19 environment, pagination and public-branding rulings"],
+        "FORBIDDEN_PSEUDO_FIXES": ["no client or URL OTP switch", "no production debug response", "no OTP/token logging", "no unenumerated local page-size default", "no public protocol rewrite"],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": ["rm1p6-admin-environment-baseline-u19-implementation-amendment.md sections 2-4"],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": ["platform.otp.debug-code-exposure", "debugVerificationCode", "sendPublicInvitationOtp", "PublicInvitationView", "app-owned management-list query state"],
+        "DUE_STANDARDS_RULE_IDS": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance", "scripts/check/code-layout"]
+      }
+    }
+  ]
+}

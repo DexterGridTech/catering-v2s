@@ -6,6 +6,8 @@ public record GroupWorkspaceDetailCommercialGroupRoot(
     String groupWorkspaceKey,
     String groupCode,
     String groupName,
+    tools.jackson.databind.JsonNode extensionValues,
+    Long extensionRuleRevision,
     Long version,
     Long createdAt,
     Long updatedAt

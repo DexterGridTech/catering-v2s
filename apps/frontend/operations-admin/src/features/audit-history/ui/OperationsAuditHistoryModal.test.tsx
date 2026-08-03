@@ -7,7 +7,7 @@ describe('operations audit history focused IA contract', () => {
   it('uses the generated RTK task-read without a handwritten client or response cache', () => {
     expect(source).toContain('operationsAdminRtkRequest.getOperationsEntityAuditHistory');
     expect(source).toContain('operationsRtk.useGetOperationsEntityAuditHistoryQuery');
-    expect(source).toContain('[groupWorkspaceKey, page, target?.entityId, target?.entityType]');
+    expect(source).toContain('[groupWorkspaceKey, page, targetId, targetType]');
     expect(source).not.toContain('operationsClient.getOperationsEntityAuditHistory');
   });
 
@@ -16,16 +16,24 @@ describe('operations audit history focused IA contract', () => {
     expect(source).toContain('formatOccurredAt(item.occurredAt)');
     expect(source).toContain('query.data.items[0]?.id');
     expect(source).toContain('onClick={() => void query.refetch()}');
-    expect(source).toContain("PLATFORM_COMMON_ACCESS_DENIED");
-    expect(source).toContain("PLATFORM_COMMON_RESOURCE_NOT_FOUND");
+    expect(source).toContain('无法读取操作历史');
+    expect(source).toContain('请稍后重试。');
+    expect(source).not.toContain('problem.detail');
     expect(source).not.toContain('item.target.entityId');
     expect(source).not.toContain('item.target.entityType');
   });
 
   it('renders owner audit vocabulary as readable business labels', () => {
+    expect(source).toContain("COMMERCIAL_GROUP_INITIALIZED: '已初始化商业集团'");
     expect(source).toContain('WORKSPACE_ACCOUNT_CREDENTIAL_RESET_REQUESTED');
     expect(source).toContain("CONTRACT_UPDATED: '已更新合同'");
     expect(source).toContain("phaseName: '项目分期'");
     expect(source).toContain("items: '货号'");
+  });
+
+  it('keeps initial failures retryable and bounds the modal body for long histories', () => {
+    expect(source).toContain('operations-audit-history-initial-error');
+    expect(source).toContain('height: 640');
+    expect(source).toContain('overflowY: \'auto\'');
   });
 });

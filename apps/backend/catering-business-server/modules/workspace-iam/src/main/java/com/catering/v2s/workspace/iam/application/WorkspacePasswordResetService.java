@@ -3,12 +3,14 @@ package com.catering.v2s.workspace.iam.application;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.seed.DevFixedOtpIssuer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,17 +31,23 @@ public class WorkspacePasswordResetService {
     private final WorkspaceOtpRateLimitService otpLimits;
     private final WorkspaceIamCommandReceiptService receipts;
     private final WorkspaceStatusLookup workspaces;
+    private final DevFixedOtpIssuer fixedOtpIssuer;
     private final SecureRandom random = new SecureRandom();
     private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder();
 
-    public WorkspacePasswordResetService(JdbcTemplate jdbc, TimeProvider time) { this(jdbc, time, new WorkspaceOtpRateLimitService(jdbc, time), new WorkspaceIamCommandReceiptService(jdbc, time), localWorkspaceStatus(jdbc)); }
+    public WorkspacePasswordResetService(JdbcTemplate jdbc, TimeProvider time) { this(jdbc, time, new WorkspaceOtpRateLimitService(jdbc, time), new WorkspaceIamCommandReceiptService(jdbc, time), localWorkspaceStatus(jdbc), (DevFixedOtpIssuer) null); }
 
     @org.springframework.beans.factory.annotation.Autowired
-    public WorkspacePasswordResetService(JdbcTemplate jdbc, TimeProvider time, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceStatusLookup workspaces) {
-        this.jdbc = jdbc; this.time = time; this.otpLimits = otpLimits; this.receipts = receipts; this.workspaces = workspaces;
+    public WorkspacePasswordResetService(JdbcTemplate jdbc, TimeProvider time, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceStatusLookup workspaces, ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer) {
+        this(jdbc, time, otpLimits, receipts, workspaces, fixedOtpIssuer.getIfAvailable());
     }
 
-    public WorkspacePasswordResetService(JdbcTemplate jdbc, TimeProvider time, WorkspaceOtpRateLimitService otpLimits) { this(jdbc, time, otpLimits, new WorkspaceIamCommandReceiptService(jdbc, time), localWorkspaceStatus(jdbc)); }
+    public WorkspacePasswordResetService(JdbcTemplate jdbc, TimeProvider time, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceStatusLookup workspaces) { this(jdbc, time, otpLimits, receipts, workspaces, (DevFixedOtpIssuer) null); }
+    public WorkspacePasswordResetService(JdbcTemplate jdbc, TimeProvider time, WorkspaceOtpRateLimitService otpLimits) { this(jdbc, time, otpLimits, new WorkspaceIamCommandReceiptService(jdbc, time), localWorkspaceStatus(jdbc), (DevFixedOtpIssuer) null); }
+
+    private WorkspacePasswordResetService(JdbcTemplate jdbc, TimeProvider time, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceStatusLookup workspaces, DevFixedOtpIssuer fixedOtpIssuer) {
+        this.jdbc = jdbc; this.time = time; this.otpLimits = otpLimits; this.receipts = receipts; this.workspaces = workspaces; this.fixedOtpIssuer = fixedOtpIssuer;
+    }
 
     @Transactional
     public RequestResult request(UUID workspaceUuid, String groupWorkspaceKey, UUID accountId, long expectedVersion) {
@@ -74,7 +82,7 @@ public class WorkspacePasswordResetService {
         otpLimits.beforeSend(account.workspaceUuid(), account.groupWorkspaceKey(), "PASSWORD_RESET_VERIFY", reset.id());
         long expires = Math.min(reset.expiresAt(), time.currentEpochMillis() + OTP_TTL_MILLIS);
         jdbc.update("UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND purpose='PASSWORD_RESET_VERIFY' AND status='ACTIVE'", reset.id());
-        String otp = String.format("%06d", random.nextInt(1_000_000));
+        String otp = fixedOtpIssuer == null ? String.format("%06d", random.nextInt(1_000_000)) : fixedOtpIssuer.issue("PASSWORD_RESET_VERIFY", reset.id());
         jdbc.update("INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, token_hash, subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, 'PASSWORD_RESET_VERIFY', ?, ?, 'ACTIVE', ?)", UUID.randomUUID(), account.workspaceUuid(), account.groupWorkspaceKey(), hash(otp), reset.id(), expires);
         return new OtpDelivery(expires, null);
     }

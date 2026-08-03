@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-AUTH-SURFACE-LAYOUT-U24",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-auth-surface-layout-u24-delivery-manifest.json",
+  "deliveryManifestSha256": "a7ce67da29ba2602509f32b263fb694db3b0419449230191daf7b1efb1c545e9",
+  "unitId": "RM1P6-AUTH-SURFACE-LAYOUT-U24",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": [],
+  "businessEvidenceObligation": "MANAGED_DEV_AUTH_SURFACE_VISUAL_PROOF",
+  "serialPredecessor": {"packageId": "RM1P6-L2-FIXTURE-CONTRACT-U23", "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-l2-fixture-contract-u23-package-exit.json", "exitSha256": "358ad1c0f38a807b9719ed88e921071d460fbf01aa08cfd52c5cd72e658aa9d4"},
+  "implementationAmendment": {"path": "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-implementation-amendment.md", "sha256": "69f6d6b9427341791d306825633bc816fdc1114aa7bf85a527dc3248ea9cfdcd"},
+  "authorizationBoundary": "Authentication surface layout only: center both admin login and recovery surfaces, render recovery in cards, and group OTP input with its send button. No owner, contract, edge, generated client, session, OTP or recovery protocol change."
+}

@@ -161,7 +161,7 @@
       },
       "put": {
         "operationId": "replaceExtensionDefinition",
-        "x-required-capability": "REQ_REPLACE_EXTENSION_DEFINITION",
+        "x-required-platform-authorization": "REQ_REPLACE_EXTENSION_DEFINITION",
         "tags": [
           "extension"
         ],

@@ -10,6 +10,8 @@ import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUserRevokeRequest;
+import com.catering.v2s.app.edge.generated.wire.SortDirection;
+import com.catering.v2s.app.edge.generated.wire.WorkspaceUserSortKey;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
@@ -27,13 +29,29 @@ class OperationsWorkspaceUserServerScopeTest {
     void userPageDelegatesRequestedScopeToOwnerTaskRead() {
         UUID scopeRef = UUID.randomUUID();
         Fixture fixture = fixture();
-        when(fixture.user.pageForOperations(fixture.session, "STORE", scopeRef, null, null, null, null, 1, 20))
-            .thenReturn(new WorkspaceUserService.Page(List.of(), 1, 20, 0L, "STORE", scopeRef.toString(), "group/store", fixture.session.contextVersion()));
+        when(fixture.user.pageForOperations(fixture.session, "STORE", scopeRef, null, null, null, null, 1, 20, "DISPLAY_NAME", "DESC"))
+            .thenReturn(new WorkspaceUserService.Page(List.of(), 1, 20, 0L, "STORE", scopeRef.toString(), "group/store", fixture.session.contextVersion(), "DISPLAY_NAME", "DESC"));
 
-        var result = fixture.controller.storePage(fixture.request, KEY, scopeRef, null, null, null, null, 1, 20, fixture.session.contextVersion());
+        var result = fixture.controller.storePage(fixture.request, KEY, scopeRef, null, null, null, null, WorkspaceUserSortKey.DISPLAY_NAME, SortDirection.DESC, 1, 20, fixture.session.contextVersion());
 
         assertEquals("STORE", result.targetOrganizationType().wire());
-        verify(fixture.user).pageForOperations(fixture.session, "STORE", scopeRef, null, null, null, null, 1, 20);
+        assertEquals(WorkspaceUserSortKey.DISPLAY_NAME, result.criteria().sort());
+        assertEquals(SortDirection.DESC, result.criteria().direction());
+        verify(fixture.user).pageForOperations(fixture.session, "STORE", scopeRef, null, null, null, null, 1, 20, "DISPLAY_NAME", "DESC");
+    }
+
+    @Test
+    void userPageDefaultsToLoginNameAscending() {
+        UUID scopeRef = UUID.randomUUID();
+        Fixture fixture = fixture();
+        when(fixture.user.pageForOperations(fixture.session, "STORE", scopeRef, null, null, null, null, 1, 20, null, null))
+            .thenReturn(new WorkspaceUserService.Page(List.of(), 1, 20, 0L, "STORE", scopeRef.toString(), "group/store", fixture.session.contextVersion(), "LOGIN_NAME", "ASC"));
+
+        var result = fixture.controller.storePage(fixture.request, KEY, scopeRef, null, null, null, null, null, null, 1, 20, fixture.session.contextVersion());
+
+        assertEquals(WorkspaceUserSortKey.LOGIN_NAME, result.criteria().sort());
+        assertEquals(SortDirection.ASC, result.criteria().direction());
+        verify(fixture.user).pageForOperations(fixture.session, "STORE", scopeRef, null, null, null, null, 1, 20, null, null);
     }
 
     @Test

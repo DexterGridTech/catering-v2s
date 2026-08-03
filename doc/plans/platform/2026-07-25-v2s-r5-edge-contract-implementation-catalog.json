@@ -31,11 +31,11 @@
     {"path": "contracts/openapi/components/problem.schemas.yaml", "sha256": "4d9970ac873bb26dce9c5aacb6e9de91a92a6074e11548a20f5e0dd714e5c2fb"}
   ],
   "denominator": {
-    "scenarios": 32,
-    "operations": 114,
+    "scenarios": 33,
+    "operations": 122,
     "faces": {
-      "platform-admin": 43,
-      "operations-admin": 56,
+      "platform-admin": 49,
+      "operations-admin": 58,
       "public": 15
     },
     "owners": [
@@ -143,6 +143,10 @@
   },
   "addedOperations": [
     {
+      "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
+      "reason": "Dexter-authorized dynamic extension definition read for commercial group, region and project"
+    },
+    {
       "operationId": "revokePlatformWorkspaceAssignment",
       "reason": "D04-S03 platform revoke; additions remain invitation-only"
     },
@@ -208,9 +212,9 @@
     "heritageCandidates": 105,
     "deleted": 2,
     "renamed": 3,
-    "added": 1,
-    "target": 104,
-    "equation": "105 - 2 + 1 = 104; rename preserves cardinality"
+    "added": 2,
+    "target": 105,
+    "equation": "105 - 2 + 2 = 105; rename preserves cardinality"
   },
   "errorSets": {
     "AUTHZ_READ": [
@@ -505,6 +509,35 @@
   },
   "operations": [
     {
+      "operationId": "getWorkspaceInvitations",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+      "face": "platform-admin",
+      "owner": "workspace-iam",
+      "scenarioIds": ["D04-S05P"],
+      "pageKey": "PLATFORM-WORKSPACE-ACCOUNTS",
+      "disposition": "ADAPT_V2_SEMANTICS",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [{"name":"mobile","in":"query","required":false,"schema":{"type":"string","maxLength":32}},{"name":"targetOrganizationType","in":"query","required":false,"schema":{"ref":"ServiceNodeType"}},{"name":"targetOrganizationRef","in":"query","required":false,"schema":{"type":"string","minLength":1,"maxLength":64}},{"name":"organizationQuery","in":"query","required":false,"schema":{"type":"string","maxLength":120}},{"name":"roleQuery","in":"query","required":false,"schema":{"type":"string","maxLength":120}},{"name":"status","in":"query","required":false,"schema":{"ref":"WorkspaceInvitationStatus"}},{"name":"expiresFrom","in":"query","required":false,"schema":{"type":"integer","format":"int64","minimum":0}},{"name":"expiresTo","in":"query","required":false,"schema":{"type":"integer","format":"int64","minimum":0}},{"name":"sort","in":"query","required":false,"schema":{"ref":"WorkspaceInvitationSortKey"}},{"name":"direction","in":"query","required":false,"schema":{"ref":"SortDirection"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","minimum":1}},{"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}],
+      "requestSchema": "NoBody", "responseSchema": "PlatformWorkspaceInvitationPage", "successStatus": "200", "idempotency": {"header":"FORBIDDEN","replay":"NOT_APPLICABLE"}, "expectedVersion":"FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef":"AUTHZ_READ", "focusedTestId":"edge.getWorkspaceInvitations"
+    },
+    {
+      "operationId": "createWorkspaceInvitation", "method":"POST", "path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations", "face":"platform-admin", "owner":"workspace-iam", "scenarioIds":["D04-S05P"], "pageKey":"PLATFORM-WORKSPACE-ACCOUNTS", "disposition":"ADAPT_V2_SEMANTICS", "security":"PLATFORM_SESSION_COOKIE", "pathParameters":["groupWorkspaceKey"], "queryParameters":[], "requestSchema":"WorkspaceInvitationCreateRequest", "responseSchema":"PlatformWorkspaceInvitation", "successStatus":"201", "idempotency":{"header":"REQUIRED_16_128","replay":"OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion":"FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef":"OWNER_COMMAND", "focusedTestId":"edge.createWorkspaceInvitation"
+    },
+    {
+      "operationId":"getWorkspaceInvitation", "method":"GET", "path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}", "face":"platform-admin", "owner":"workspace-iam", "scenarioIds":["D04-S05P"], "pageKey":"PLATFORM-WORKSPACE-ACCOUNTS", "disposition":"ADAPT_V2_SEMANTICS", "security":"PLATFORM_SESSION_COOKIE", "pathParameters":["groupWorkspaceKey","invitationId"], "queryParameters":[], "requestSchema":"NoBody", "responseSchema":"PlatformWorkspaceInvitation", "successStatus":"200", "idempotency":{"header":"FORBIDDEN","replay":"NOT_APPLICABLE"}, "expectedVersion":"FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef":"AUTHZ_READ", "focusedTestId":"edge.getWorkspaceInvitation"
+    },
+    {
+      "operationId": "getWorkspaceInvitationCandidates", "method":"GET", "path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates", "face":"platform-admin", "owner":"workspace-iam", "scenarioIds":["D04-S05P"], "pageKey":"PLATFORM-WORKSPACE-ACCOUNTS", "disposition":"ADAPT_V2_SEMANTICS", "security":"PLATFORM_SESSION_COOKIE", "pathParameters":["groupWorkspaceKey"], "queryParameters":[{"name":"targetOrganizationType","in":"query","required":true,"schema":{"ref":"ServiceNodeType"}},{"name":"subjectType","in":"query","required":true,"schema":{"type":"string","enum":["ORGANIZATION","ROLE"]}},{"name":"queryText","in":"query","required":false,"schema":{"type":"string","maxLength":120}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","minimum":1}},{"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}},{"name":"selectedOrganizationRef","in":"query","required":false,"schema":{"type":"string","maxLength":240}}], "requestSchema":"NoBody", "responseSchema":"WorkspaceInvitationCandidatePage", "successStatus":"200", "idempotency":{"header":"FORBIDDEN","replay":"NOT_APPLICABLE"}, "expectedVersion":"FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef":"AUTHZ_READ", "focusedTestId":"edge.getWorkspaceInvitationCandidates"
+    },
+    {
+      "operationId": "cancelWorkspaceInvitation", "method":"POST", "path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel", "face":"platform-admin", "owner":"workspace-iam", "scenarioIds":["D04-S05P"], "pageKey":"PLATFORM-WORKSPACE-ACCOUNTS", "disposition":"ADAPT_V2_SEMANTICS", "security":"PLATFORM_SESSION_COOKIE", "pathParameters":["groupWorkspaceKey","invitationId"], "queryParameters":[], "requestSchema":"WorkspaceInvitationCancelRequest", "responseSchema":"PlatformWorkspaceInvitation", "successStatus":"200", "idempotency":{"header":"REQUIRED_16_128","replay":"OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion":"REQUIRED", "errorSetRef":"OWNER_COMMAND", "focusedTestId":"edge.cancelWorkspaceInvitation"
+    },
+    {
+      "operationId": "reissueWorkspaceInvitation", "method":"POST", "path":"/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue", "face":"platform-admin", "owner":"workspace-iam", "scenarioIds":["D04-S05P"], "pageKey":"PLATFORM-WORKSPACE-ACCOUNTS", "disposition":"ADAPT_V2_SEMANTICS", "security":"PLATFORM_SESSION_COOKIE", "pathParameters":["groupWorkspaceKey","invitationId"], "queryParameters":[], "requestSchema":"WorkspaceInvitationReissueRequest", "responseSchema":"PlatformWorkspaceInvitation", "successStatus":"200", "idempotency":{"header":"REQUIRED_16_128","replay":"OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion":"REQUIRED", "errorSetRef":"OWNER_COMMAND", "focusedTestId":"edge.reissueWorkspaceInvitation"
+    },
+    {
       "operationId": "getPlatformContractOverviewPage",
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview",
@@ -521,16 +554,25 @@
       ],
       "queryParameters": [
         {
-          "name": "contractNo",
+          "name": "projectId",
           "in": "query",
           "required": false,
           "schema": {
             "type": "string",
-            "maxLength": 120
+            "format": "uuid"
           }
         },
         {
-          "name": "storeName",
+          "name": "storeId",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "contractNo",
           "in": "query",
           "required": false,
           "schema": {
@@ -549,15 +591,6 @@
         },
         {
           "name": "tenantName",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "string",
-            "maxLength": 120
-          }
-        },
-        {
-          "name": "itemCode",
           "in": "query",
           "required": false,
           "schema": {
@@ -1252,6 +1285,22 @@
             "minimum": 1,
             "maximum": 100
           }
+        },
+        {
+          "name": "sort",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "WorkspaceRoleSortKey"
+          }
+        },
+        {
+          "name": "direction",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "SortDirection"
+          }
         }
       ],
       "requestSchema": "NoBody",
@@ -1432,6 +1481,24 @@
           }
         },
         {
+          "name": "serviceNodeType",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "ServiceNodeType"
+          }
+        },
+        {
+          "name": "organizationRef",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        {
           "name": "page",
           "in": "query",
           "required": false,
@@ -1448,6 +1515,22 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 100
+          }
+        },
+        {
+          "name": "sort",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "WorkspacePlatformAccountSortKey"
+          }
+        },
+        {
+          "name": "direction",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "SortDirection"
           }
         }
       ],
@@ -3104,6 +3187,22 @@
             "format": "int64",
             "minimum": 0
           }
+        },
+        {
+          "name": "sort",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "WorkspaceInvitationSortKey"
+          }
+        },
+        {
+          "name": "direction",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "SortDirection"
+          }
         }
       ],
       "requestSchema": "NoBody",
@@ -3339,6 +3438,29 @@
       "focusedTestId": "edge.getOperationsOrganizationHierarchy"
     },
     {
+      "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": ["D02-S02"],
+      "pageKey": "OPERATIONS-ORG-STRUCTURE",
+      "disposition": "ADAPT_V2_SEMANTICS",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [
+        {"name": "expectedContextVersion", "in": "query", "required": true, "schema": {"type": "integer", "format": "int64", "minimum": 0}},
+        {"name": "entityType", "in": "query", "required": true, "schema": {"type": "string", "enum": ["COMMERCIAL_GROUP", "REGION", "PROJECT"]}}
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "ExtensionDefinition",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsOrganizationHierarchyExtensionDefinition"
+    },
+    {
       "operationId": "getOperationsWorkspaceUser",
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user",
@@ -3440,6 +3562,22 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        },
+        {
+          "name": "sort",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "WorkspaceUserSortKey"
+          }
+        },
+        {
+          "name": "direction",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "SortDirection"
           }
         }
       ],
@@ -3792,6 +3930,36 @@
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
       "focusedTestId": "edge.createOperationsOrganizationStore"
+    },
+    {
+      "operationId": "getOperationsOrganizationCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": ["D02-S04", "D01-S07O"],
+      "pageKey": "OPERATIONS-STORE-MANAGEMENT",
+      "disposition": "ADAPT_V2_SEMANTICS",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [
+        {"name": "expectedContextVersion", "in": "query", "required": true, "schema": {"type": "integer", "format": "int64", "minimum": 0}},
+        {"name": "subjectType", "in": "query", "required": true, "schema": {"$ref": "../../components/organization/store.schemas.yaml#/components/schemas/OrganizationCandidateQuerySubjectType"}},
+        {"name": "queryText", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120}},
+        {"name": "page", "in": "query", "required": false, "schema": {"type": "integer", "format": "int32", "minimum": 1}},
+        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "format": "int32", "minimum": 1, "maximum": 100}},
+        {"name": "selectedId", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 64}},
+        {"name": "projectId", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 64}},
+        {"name": "brandId", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 64}},
+        {"name": "tenantId", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 64}}
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "OrganizationCandidatePage",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsOrganizationCandidates"
     },
     {
       "operationId": "getOperationsOrganizationStoreCandidates",
@@ -4830,7 +4998,7 @@
       "pathParameters": [],
       "queryParameters": [
         {"name":"groupWorkspaceKey","in":"query","required":true,"schema":{"type":"string","minLength":1,"maxLength":64}},
-        {"name":"entityType","in":"query","required":true,"schema":{"type":"string","enum":["WORKSPACE_ACCOUNT","WORKSPACE_INVITATION","ORGANIZATION_NODE","BRAND","TENANT","HEAD_COMPANY","STORE","STORE_CONTRACT"]}},
+        {"name":"entityType","in":"query","required":true,"schema":{"type":"string","enum":["WORKSPACE_ACCOUNT","WORKSPACE_INVITATION","COMMERCIAL_GROUP","ORGANIZATION_NODE","BRAND","TENANT","HEAD_COMPANY","STORE","STORE_CONTRACT"]}},
         {"name":"entityId","in":"query","required":true,"schema":{"type":"string","minLength":1,"maxLength":128}},
         {"name":"page","in":"query","required":false,"schema":{"type":"integer","minimum":1}},
         {"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
@@ -5521,6 +5689,16 @@
           "disposition": "ADAPT_V2_SEMANTICS",
           "positiveProofRef": "edge.getOperationsOrganizationHierarchy.positive",
           "negativeProofRef": "edge.getOperationsOrganizationHierarchy.negative"
+        },
+        {
+          "stepId": "D02-S02-OP-01A",
+          "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
+          "face": "operations-admin",
+          "owner": "organization",
+          "pageKey": "OPERATIONS-ORG-STRUCTURE",
+          "disposition": "ADAPT_V2_SEMANTICS",
+          "positiveProofRef": "edge.getOperationsOrganizationHierarchyExtensionDefinition.positive",
+          "negativeProofRef": "edge.getOperationsOrganizationHierarchyExtensionDefinition.negative"
         },
         {
           "stepId": "D02-S02-OP-02",
@@ -6594,13 +6772,25 @@
         }
       ],
       "candidateDispositions": []
+    },
+    {
+      "scenarioId": "D04-S05P",
+      "orderedSteps": [
+        {"stepId":"D04-S05P-OP-01","operationId":"getWorkspaceInvitations","face":"platform-admin","owner":"workspace-iam","pageKey":"PLATFORM-WORKSPACE-ACCOUNTS","disposition":"ADAPT_V2_SEMANTICS","positiveProofRef":"edge.getWorkspaceInvitations.positive","negativeProofRef":"edge.getWorkspaceInvitations.negative"},
+        {"stepId":"D04-S05P-OP-02","operationId":"createWorkspaceInvitation","face":"platform-admin","owner":"workspace-iam","pageKey":"PLATFORM-WORKSPACE-ACCOUNTS","disposition":"ADAPT_V2_SEMANTICS","positiveProofRef":"edge.createWorkspaceInvitation.positive","negativeProofRef":"edge.createWorkspaceInvitation.negative"},
+        {"stepId":"D04-S05P-OP-03","operationId":"getWorkspaceInvitation","face":"platform-admin","owner":"workspace-iam","pageKey":"PLATFORM-WORKSPACE-ACCOUNTS","disposition":"ADAPT_V2_SEMANTICS","positiveProofRef":"edge.getWorkspaceInvitation.positive","negativeProofRef":"edge.getWorkspaceInvitation.negative"},
+        {"stepId":"D04-S05P-OP-04","operationId":"getWorkspaceInvitationCandidates","face":"platform-admin","owner":"workspace-iam","pageKey":"PLATFORM-WORKSPACE-ACCOUNTS","disposition":"ADAPT_V2_SEMANTICS","positiveProofRef":"edge.getWorkspaceInvitationCandidates.positive","negativeProofRef":"edge.getWorkspaceInvitationCandidates.negative"},
+        {"stepId":"D04-S05P-OP-05","operationId":"cancelWorkspaceInvitation","face":"platform-admin","owner":"workspace-iam","pageKey":"PLATFORM-WORKSPACE-ACCOUNTS","disposition":"ADAPT_V2_SEMANTICS","positiveProofRef":"edge.cancelWorkspaceInvitation.positive","negativeProofRef":"edge.cancelWorkspaceInvitation.negative"},
+        {"stepId":"D04-S05P-OP-06","operationId":"reissueWorkspaceInvitation","face":"platform-admin","owner":"workspace-iam","pageKey":"PLATFORM-WORKSPACE-ACCOUNTS","disposition":"ADAPT_V2_SEMANTICS","positiveProofRef":"edge.reissueWorkspaceInvitation.positive","negativeProofRef":"edge.reissueWorkspaceInvitation.negative"}
+      ],
+      "candidateDispositions": []
     }
   ]
   ,
   "crosswalkInvariants": {
-    "scenarioRows": 32,
-    "operationRows": 106,
-    "scenarioOperationRows": 104,
+    "scenarioRows": 33,
+    "operationRows": 111,
+    "scenarioOperationRows": 109,
     "forwardEquality": "every non-exempt operations[*].scenarioIds pair appears exactly once in scenarioOperationCrosswalk[*].orderedSteps; acceptedNonScenarioOperations are the only two operations without scenarioIds and must each name exactly one accepted Journey and interaction proof",
     "reverseEquality": "every orderedSteps operationId exists in operations and names the same face, owner and disposition; pageKey equals the operation canonicalPageKey unless the operation is listed in sharedOperationPageKeyExceptions, where each per-step consumer pageKey must be one of the exact allowed bindings",
     "candidateClosure": "deletedCandidates and addedOperations equal the union of candidateDispositions",

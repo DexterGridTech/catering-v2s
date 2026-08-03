@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-METRICS-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u13-http-diagnostic-metrics-delivery-manifest.json",
+  "deliveryManifestSha256": "d7cb80e5e18d58e921b700525e1f95b8e3d42af068bca82e347c821cae179918",
+  "unitId": "RM1P6-HTTP-DIAGNOSTIC-METRICS-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["U13-C05-GENERIC_HTTP_METRICS", "U13-C05-RUN_SECRET_GUARD", "U13-C05-REGISTRY_METADATA_MATCH"],
+  "businessEvidenceObligation": "NOT_APPLICABLE_INSTRUMENTATION_ONLY",
+  "serialPredecessor": {"packageId": "RM1P6-HTTP-DIAGNOSTIC-SCENARIOS-U13", "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-package-exit.json", "exitSha256": "4d3e0911d7c7e9407dabe58d73ba3e4ab6440d44bc95c6d0db1407a3aedfd585"},
+  "implementationAmendment": {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-implementation-amendment.md", "sha256": "899a986296a3cda9787922d3df8f33bca0c3230d7bec8321822fd8dc849fce0a"},
+  "authorizationBoundary": "Dexter authorized U13 implementation. This package replaces the seed-named request metric interceptor with one generic non-production instrument supporting the existing Seed profile and the future RM1 HTTP diagnostic profile. It excludes a runner, backend/tunnel start, HTTP scenario execution, DEV, seed/reset, browser L2 and performance/business/cleanup claims."
+}

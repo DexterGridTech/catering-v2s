@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "ui-ia-implementation-baseline",
+  "packageId": "RM1P6-WORKSPACE-ACCOUNTS-U18",
+  "status": "PASS",
+  "purpose": "Pre-write binding for the permanent platform workspace account and invitation-centre closure. It admits no final business, cleanup, L2 or UAT claim.",
+  "sourceBindings": [
+    {"path": "doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md", "sha256": "ab20fe8b35b064d2b9217fe2e58d799cfe55655fc1a958df5bf1f42b07571f7b"},
+    {"path": "doc/decisions/2026-07-29-v2s-rm1-ia-03-platform-governance-and-self-service-interaction.md", "sha256": "3ad59eeb0cdecf1e4c4068915b5b72e39bb77d166c34850311d719641629eed7"},
+    {"path": "doc/evidence/platform/rm1/p6/rm1p6-workspace-accounts-u18-implementation-amendment.md", "sha256": "a752794e58a0295c9594c0109ccf7590529de7641f8fbb1b16b50ef715374e78"}
+  ],
+  "consumerBindings": [
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "screenIds": ["IA03-ACCOUNT-TAB"],
+      "businessTask": "Within a selected group workspace, independently search accounts or govern invitations; enter details before account actions.",
+      "controlDimensions": ["screen-id", "business-task", "entry-interaction-form", "data-cascade", "permission-state", "refresh-navigation", "test-id-accessibility"],
+      "controlFacts": {
+        "screen-id": "IA03 section 14 and IA01 section 13",
+        "business-task": "Permanent account and invitation tabs are distinct platform governance tasks.",
+        "entry-interaction-form": "ProTable account search, name to detail drawer, invitation panel in a sibling tab.",
+        "data-cascade": "Account type/ref candidates and invitation type/ref/role candidates are owner-backed and tab-local.",
+        "permission-state": "Platform session and enabled workspace only; no workspace capability.",
+        "refresh-navigation": "Latest detail owns account mutation follow-up; invitation command readback refreshes invitation state.",
+        "test-id-accessibility": "Existing account and invitation controls remain independently addressable."
+      },
+      "sourceAnchors": ["IA01 section 13", "IA03 section 14", "workspace accounts brief sections 2-4"]
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+      "screenIds": ["IA03-ACCOUNT-TAB"],
+      "businessTask": "Show account facts, assignments and bounded successful authentication history before opening account action confirmation.",
+      "controlDimensions": ["entry-interaction-form", "data-provenance", "permission-state", "refresh-navigation"],
+      "controlFacts": {
+        "entry-interaction-form": "Name opens loading drawer immediately before detail read.",
+        "data-provenance": "Plain mobile and login history are explicit authenticated platform owner facts; audit and invitation data are excluded.",
+        "permission-state": "Actions use latest detail CAS/idempotency values.",
+        "refresh-navigation": "Action completion returns to owner detail readback."
+      },
+      "sourceAnchors": ["IA03 section 14", "workspace accounts brief section 3.4"]
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+      "screenIds": ["IA03-ACCOUNT-TAB"],
+      "businessTask": "Permanently list, select candidates for, create, cancel and reissue cross-node invitations.",
+      "controlDimensions": ["entry-interaction-form", "data-cascade", "permission-state", "refresh-navigation"],
+      "controlFacts": {
+        "entry-interaction-form": "The sibling invitation tab uses the administrator-list Card header for task explanation and 发出邀请, then its independent ProTable list, details and commands; a labelled link opens the existing public invitation page without exposing its token.",
+        "data-cascade": "Type to opaque organization ref to role; upstream changes clear downstream values.",
+        "permission-state": "Platform session without workspace capability; owner rechecks commands.",
+        "refresh-navigation": "Owner command readback refreshes invitation view without entering public acceptance."
+      },
+      "sourceAnchors": ["IA01 section 13", "IA03 section 14", "workspace accounts brief section 4"]
+    },
+    {
+      "consumerPath": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+      "screenIds": ["IA03-ACCOUNT-TAB"],
+      "businessTask": "Retain the explicitly selected group workspace while navigating into the permanent account and invitation centre.",
+      "controlDimensions": ["entry-interaction-form", "refresh-navigation", "permission-state"],
+      "controlFacts": {
+        "entry-interaction-form": "The shell selector is the only workspace selection source.",
+        "refresh-navigation": "Passive page navigation never clears selection; only an owner-changing refresh rechecks it against the complete enabled list.",
+        "permission-state": "Selection is display context, not authorization."
+      },
+      "sourceAnchors": ["IA03 section 14", "workspace accounts brief sections 2-3"]
+    }
+  ],
+  "requiredConsumerPaths": [
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+    "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx"
+  ]
+}

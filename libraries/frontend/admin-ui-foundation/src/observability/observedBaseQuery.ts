@@ -36,6 +36,7 @@ export const createObservedBaseQuery = (options: ObservedBaseQueryOptions): Base
   return async (rawArgs, api, extraOptions) => {
     const started = performance.now();
     const args = typeof rawArgs === 'string' ? {url: rawArgs} : rawArgs;
+    const {requiresSession = true, ...wireArgs} = args as FetchArgs & {requiresSession?: boolean};
     const headers = new Headers(args.headers as HeadersInit | undefined);
     const correlationId = headers.get(CORRELATION_HEADER) ?? id();
     const requestId = headers.get(REQUEST_HEADER) ?? id();
@@ -51,7 +52,7 @@ export const createObservedBaseQuery = (options: ObservedBaseQueryOptions): Base
       api.signal.addEventListener('abort', abortController, {once: true});
       const unregisterAbortController = options.registerAbortController?.(controller);
       try {
-        return await baseQuery({...args, headers}, api, extraOptions);
+        return await baseQuery({...wireArgs, headers}, api, extraOptions);
       } finally {
         unregisterAbortController?.();
         controller.signal.removeEventListener('abort', abortApiRequest);
@@ -74,11 +75,12 @@ export const createObservedBaseQuery = (options: ObservedBaseQueryOptions): Base
       outcome: result.error ? 'ERROR' : 'SUCCESS',
       attempt: 1,
       status,
+      requiresSession,
       durationMs: Math.round(performance.now() - started),
     };
     if (result.error) options.logger.error({...baseEvent, event: 'frontend.request.failed', errorCode: errorCode(result.error)});
     else options.logger.info({...baseEvent, event: 'frontend.request.completed'});
-    if (status === 401) {
+    if (status === 401 && requiresSession) {
       try {
         await options.onUnauthorized?.();
       } catch (error) {

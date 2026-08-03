@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -63,7 +64,9 @@ public final class OrganizationHierarchyCommandReceiptService {
                 Long.parseLong(read(value, "version")),
                 Long.parseLong(read(value, "createdAtEpochMillis")),
                 Long.parseLong(read(value, "updatedAtEpochMillis")),
-                readList(value, "phaseNames")
+                readList(value, "phaseNames"),
+                readMap(value, "extensionValues"),
+                Long.parseLong(optional(value, "extensionRuleRevision", "0"))
             );
         } catch (RuntimeException exception) {
             throw new OrganizationReceiptCorruptException(exception);
@@ -76,7 +79,8 @@ public final class OrganizationHierarchyCommandReceiptService {
             + field("nodeType", value.nodeType()) + "," + field("code", value.code()) + "," + field("name", value.name()) + ","
             + field("notes", value.notes()) + "," + field("status", value.status()) + "," + field("version", String.valueOf(value.version())) + ","
             + field("createdAtEpochMillis", String.valueOf(value.createdAtEpochMillis())) + "," + field("updatedAtEpochMillis", String.valueOf(value.updatedAtEpochMillis())) + ","
-            + field("phaseNames", encodeList(value.phaseNames())) + "}";
+            + field("phaseNames", encodeList(value.phaseNames())) + "," + field("extensionValues", encodeMap(value.extensionValues())) + ","
+            + field("extensionRuleRevision", String.valueOf(value.extensionRuleRevision())) + "}";
     }
 
     private static String encodeList(List<String> values) {
@@ -89,6 +93,23 @@ public final class OrganizationHierarchyCommandReceiptService {
         List<String> values = new ArrayList<>();
         for (String part : encoded.split(",", -1)) values.add(new String(Base64.getDecoder().decode(part), StandardCharsets.UTF_8));
         return List.copyOf(values);
+    }
+
+    private static String encodeMap(Map<String, String> values) {
+        return values.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry ->
+            Base64.getEncoder().encodeToString(entry.getKey().getBytes(StandardCharsets.UTF_8)) + ":" + Base64.getEncoder().encodeToString(entry.getValue().getBytes(StandardCharsets.UTF_8))
+        ).reduce((left, right) -> left + "," + right).orElse("");
+    }
+
+    private static Map<String, String> readMap(String json, String name) {
+        String encoded = optional(json, name, "");
+        if (encoded.isEmpty()) return Map.of();
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        for (String part : encoded.split(",", -1)) {
+            String[] pair = part.split(":", -1);
+            if (pair.length != 2 || values.put(new String(Base64.getDecoder().decode(pair[0]), StandardCharsets.UTF_8), new String(Base64.getDecoder().decode(pair[1]), StandardCharsets.UTF_8)) != null) throw new IllegalStateException("invalid extension receipt");
+        }
+        return Map.copyOf(values);
     }
 
     private static String requiredKey(String value) {
@@ -109,15 +130,25 @@ public final class OrganizationHierarchyCommandReceiptService {
     }
 
     private static String read(String json, String name) {
-        Matcher matcher = Pattern.compile("\\\"" + Pattern.quote(name) + "\\\":\\\"([^\\\"]*)\\\"").matcher(json);
+        Matcher matcher = stringField(name).matcher(json);
         if (!matcher.find() || "-".equals(matcher.group(1))) throw new IllegalStateException("missing receipt field");
         return new String(Base64.getDecoder().decode(matcher.group(1)), StandardCharsets.UTF_8);
     }
 
     private static String nullable(String json, String name) {
-        Matcher matcher = Pattern.compile("\\\"" + Pattern.quote(name) + "\\\":\\\"([^\\\"]*)\\\"").matcher(json);
+        Matcher matcher = stringField(name).matcher(json);
         if (!matcher.find() || "-".equals(matcher.group(1))) return null;
         return new String(Base64.getDecoder().decode(matcher.group(1)), StandardCharsets.UTF_8);
+    }
+
+    private static String optional(String json, String name, String fallback) {
+        Matcher matcher = stringField(name).matcher(json);
+        return matcher.find() ? new String(Base64.getDecoder().decode(matcher.group(1)), StandardCharsets.UTF_8) : fallback;
+    }
+
+    /** PostgreSQL jsonb canonical text inserts whitespace around separators. */
+    private static Pattern stringField(String name) {
+        return Pattern.compile("\\\"" + Pattern.quote(name) + "\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"");
     }
 
     private static UUID nullableUuid(String json, String name) {

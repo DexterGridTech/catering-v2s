@@ -83,6 +83,22 @@
               "minimum": 1,
               "maximum": 100
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRoleSortKey"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/common/enum.schemas.yaml#/components/schemas/SortDirection"
+            }
           }
         ],
         "responses": {
@@ -121,7 +137,7 @@
       },
       "post": {
         "operationId": "createWorkspaceRole",
-        "x-required-capability": "REQ_CREATE_WORKSPACE_ROLE",
+        "x-required-platform-authorization": "REQ_CREATE_WORKSPACE_ROLE",
         "tags": [
           "workspace-iam"
         ],
@@ -260,7 +276,7 @@
       },
       "patch": {
         "operationId": "updateWorkspaceRole",
-        "x-required-capability": "REQ_UPDATE_WORKSPACE_ROLE",
+        "x-required-platform-authorization": "REQ_UPDATE_WORKSPACE_ROLE",
         "tags": [
           "workspace-iam"
         ],
@@ -379,7 +395,7 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status": {
       "post": {
         "operationId": "transitionWorkspaceRoleStatus",
-        "x-required-capability": "REQ_TRANSITION_WORKSPACE_ROLE_STATUS",
+        "x-required-platform-authorization": "REQ_TRANSITION_WORKSPACE_ROLE_STATUS",
         "tags": [
           "workspace-iam"
         ],

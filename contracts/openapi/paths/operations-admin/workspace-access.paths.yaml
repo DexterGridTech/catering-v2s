@@ -55,6 +55,12 @@
             "$ref": "#/components/parameters/ExpiresTo"
           },
           {
+            "$ref": "#/components/parameters/WorkspaceInvitationSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
+          },
+          {
             "$ref": "#/components/parameters/Page"
           },
           {
@@ -447,6 +453,12 @@
             "$ref": "#/components/parameters/AccountStatus"
           },
           {
+            "$ref": "#/components/parameters/WorkspaceUserSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
+          },
+          {
             "$ref": "#/components/parameters/Page"
           },
           {
@@ -681,6 +693,12 @@
           },
           {
             "$ref": "#/components/parameters/ExpiresTo"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceInvitationSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
           },
           {
             "$ref": "#/components/parameters/Page"
@@ -1075,6 +1093,12 @@
             "$ref": "#/components/parameters/AccountStatus"
           },
           {
+            "$ref": "#/components/parameters/WorkspaceUserSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
+          },
+          {
             "$ref": "#/components/parameters/Page"
           },
           {
@@ -1309,6 +1333,12 @@
           },
           {
             "$ref": "#/components/parameters/ExpiresTo"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceInvitationSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
           },
           {
             "$ref": "#/components/parameters/Page"
@@ -1703,6 +1733,12 @@
             "$ref": "#/components/parameters/AccountStatus"
           },
           {
+            "$ref": "#/components/parameters/WorkspaceUserSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
+          },
+          {
             "$ref": "#/components/parameters/Page"
           },
           {
@@ -1937,6 +1973,12 @@
           },
           {
             "$ref": "#/components/parameters/ExpiresTo"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceInvitationSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
           },
           {
             "$ref": "#/components/parameters/Page"
@@ -2331,6 +2373,12 @@
             "$ref": "#/components/parameters/AccountStatus"
           },
           {
+            "$ref": "#/components/parameters/WorkspaceUserSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
+          },
+          {
             "$ref": "#/components/parameters/Page"
           },
           {
@@ -2565,6 +2613,12 @@
           },
           {
             "$ref": "#/components/parameters/ExpiresTo"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceInvitationSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
           },
           {
             "$ref": "#/components/parameters/Page"
@@ -2959,6 +3013,12 @@
             "$ref": "#/components/parameters/AccountStatus"
           },
           {
+            "$ref": "#/components/parameters/WorkspaceUserSort"
+          },
+          {
+            "$ref": "#/components/parameters/SortDirection"
+          },
+          {
             "$ref": "#/components/parameters/Page"
           },
           {
@@ -3224,6 +3284,30 @@
         "required": false,
         "schema": {
           "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceAccountStatus"
+        }
+      },
+      "WorkspaceUserSort": {
+        "name": "sort",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUserSortKey"
+        }
+      },
+      "WorkspaceInvitationSort": {
+        "name": "sort",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationSortKey"
+        }
+      },
+      "SortDirection": {
+        "name": "direction",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "$ref": "../../components/common/enum.schemas.yaml#/components/schemas/SortDirection"
         }
       },
       "ExpiresFrom": {

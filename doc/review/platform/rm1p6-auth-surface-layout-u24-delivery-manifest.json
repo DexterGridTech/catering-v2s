@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "id": "RM1P6-AUTH-SURFACE-LAYOUT-U24",
+  "deliveryUnits": [{
+    "id": "RM1P6-AUTH-SURFACE-LAYOUT-U24",
+    "title": "Centered authentication surfaces across both admin applications",
+    "approvedAssertions": [
+      "AUTH_LOGIN_SURFACES_ARE_CENTERED",
+      "AUTH_RECOVERY_SURFACES_USE_CENTERED_CARDS",
+      "RECOVERY_OTP_INPUT_AND_SEND_BUTTON_SHARE_A_ROW",
+      "NO_AUTH_PROTOCOL_OR_SESSION_CHANGE"
+    ],
+    "changeSurfaces": [
+      {"path": ".runtime/compliance-control/active-package.json", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/styles.css", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/styles.css", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.tsx", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.tsx", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.tsx", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.tsx", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryCompletePage.tsx", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.test.tsx", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.test.tsx", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.test.tsx", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.test.tsx", "disposition": "update"},
+      {"path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.test.tsx", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.test.tsx", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.test.tsx", "disposition": "update"},
+      {"path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryCompletePage.test.tsx", "disposition": "update"},
+      {"path": "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-package-input.json", "disposition": "create"},
+      {"path": "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-implementation-amendment.md", "disposition": "create"},
+      {"path": "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-problem-family.json", "disposition": "create"},
+      {"path": "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-package-exit.json", "disposition": "create"},
+      {"path": "doc/review/platform/rm1p6-auth-surface-layout-u24-delivery-manifest.json", "disposition": "create"}
+    ],
+    "complianceRoute": {"taskKind": "implementation", "domain": "admin-ui", "consumerFace": "platform-admin", "owner": "frontend-platform", "impact": "session"},
+    "sourceDenominators": {
+      "AUTHENTICATION_SURFACES": [
+        "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+        "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.tsx",
+        "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.tsx",
+        "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.tsx",
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.tsx",
+        "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryCompletePage.tsx"
+      ]
+    },
+    "acceptance": ["both login screens are visually centered", "all recovery screens are centered card surfaces", "recovery OTP send controls share their input row", "authentication protocol and routing are unchanged"]
+  }]
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-INVENTORY-U13",
+  "deliveryUnits": [{
+    "id": "RM1P6-HTTP-DIAGNOSTIC-INVENTORY-U13",
+    "title": "Generated-registry HTTP diagnostic inventory and secret-safe coverage report contract",
+    "approvedAssertions": ["THE_147_OPERATION_REGISTRY_IS_THE_ONLY_DIAGNOSTIC_DENOMINATOR", "NO_SCENARIO_MAY_BE_INFERRED_FROM_ROUTE_METADATA_ALONE", "DIAGNOSTIC_INVENTORY_AND_REPORT_NEVER_PERSIST_SECRETS"],
+    "changeSurfaces": [
+      {"path":".runtime/compliance-control/active-package.json","disposition":"update","target":"activate C03"},
+      {"path":"scripts/test/http-diagnostic-inventory.mjs","disposition":"create","target":"exact registry inventory validator"},
+      {"path":"scripts/test/http-diagnostic-inventory.test.mjs","disposition":"create","target":"inventory red proof"},
+      {"path":"scripts/test/http-diagnostic-report.mjs","disposition":"create","target":"safe coverage and metric aggregation"},
+      {"path":"scripts/test/http-diagnostic-report.test.mjs","disposition":"create","target":"report red proof"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-inventory-package-input.json","disposition":"create","target":"C03 binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-inventory-implementation-amendment.md","disposition":"create","target":"C03 boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-inventory-package-exit.json","disposition":"create","target":"C03 path-list exit"},
+      {"path":"doc/review/platform/rm1p6-u13-http-diagnostic-inventory-delivery-manifest.json","disposition":"create","target":"C03 manifest"}
+    ],
+    "complianceRoute":{"taskKind":"implementation","domain":"backend","consumerFace":"backend","owner":"platform","impact":"evidence","trigger":"implementation"},
+    "sourceDenominators":{"PROJECT_MEMORY_ASSERTION_OCCURRENCES":["project-memory/decisions/http-crud-efficiency-design-redlines.md","project-memory/kernel/02-service-shape-and-owner.md","project-memory/kernel/03-transaction-data-and-dependencies.md"],"APPROVED_ASSERTIONS":["doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#3.2","doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-problem-family.json#PF-HTTP-EFF-10"],"FORBIDDEN_PSEUDO_FIXES":["no route-only inferred legal scenario","no secret in inventory/report/log","no Seed report relabeling","no L2/dev/seed/reset"],"DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA":["doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-inventory-implementation-amendment.md"],"OWNED_SURFACE_AND_OPERATION_KEYS":["generated edge-route-face-registry 147 operations","diagnostic inventory/report scripts"],"DUE_STANDARDS_RULE_IDS":["scripts/check/remediation-compliance","scripts/check/standards-coverage"]}
+  }]
+}

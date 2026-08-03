@@ -52,6 +52,7 @@ public class JdbcGroupWorkspaceRepository implements GroupWorkspaceRepository {
             SELECT gw.id, gw.group_workspace_key, gw.name, gw.status AS workspace_status,
                    CASE WHEN cg.id IS NULL THEN 'NOT_INITIALIZED' ELSE 'INITIALIZED' END AS commercial_group_status,
                    cg.id AS commercial_group_id, cg.commercial_group_code, cg.commercial_group_name,
+                   cg.extension_values::text AS commercial_group_extension_values, cg.extension_rule_revision,
                    cg.version, cg.created_at_epoch_millis
               FROM platform_workspace.group_workspace gw
               LEFT JOIN organization.commercial_group cg
@@ -70,6 +71,8 @@ public class JdbcGroupWorkspaceRepository implements GroupWorkspaceRepository {
             commercialGroupId,
             resultSet.getString("commercial_group_code"),
             resultSet.getString("commercial_group_name"),
+            resultSet.getString("commercial_group_extension_values"),
+            resultSet.getLong("extension_rule_revision"),
             resultSet.getLong("version"),
             resultSet.getLong("created_at_epoch_millis")
         );

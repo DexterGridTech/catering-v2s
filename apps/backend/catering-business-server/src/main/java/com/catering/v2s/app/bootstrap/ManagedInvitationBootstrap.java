@@ -23,8 +23,9 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * Explicit, non-web L2 bootstrap for the invitation HTTP face retired from platform-admin.
- * It is not a component or controller and may only invoke the two owner APIs below.
+ * Explicit, non-web isolated-fixture bootstrap for invitation acceptance verification.
+ * It supplements, and never replaces, the permanent platform-admin invitation centre;
+ * it is not a component or controller and may only invoke the two owner APIs below.
  */
 public final class ManagedInvitationBootstrap {
     private static final Set<String> TARGET_TYPES = Set.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE");

@@ -14,6 +14,8 @@ describe('operations recovery password focused IA contract', () => {
     expect(source).toContain("testId('operations-recovery-new-password')");
     expect(source).toContain("testId('operations-recovery-confirm-password')");
     expect(source).toContain('useOverlayLock');
+    expect(source).toContain('className="auth-login-page"');
+    expect(source).toContain('if (entryState.kind === \'loading\') return <LoginFormPage form={form}');
     expect(source).not.toContain('resetGenerationKey');
   });
 });

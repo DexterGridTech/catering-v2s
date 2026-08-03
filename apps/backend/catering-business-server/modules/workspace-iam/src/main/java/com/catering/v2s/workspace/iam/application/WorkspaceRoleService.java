@@ -123,14 +123,18 @@ public class WorkspaceRoleService {
 
     /** Owner-bounded platform role search; the edge never materializes or slices this list. */
     @Transactional(readOnly = true)
-    public Page page(UUID workspaceUuid, String groupWorkspaceKey, String name, String organizationType, String status, int page, int pageSize) {
+    public Page page(UUID workspaceUuid, String groupWorkspaceKey, String name, String organizationType, String status, int page, int pageSize, String sort, String direction) {
         if (page < 1 || pageSize < 1 || pageSize > 100 || (organizationType != null && !SERVICE_NODE_TYPES.contains(organizationType)) || (status != null && !Set.of("ENABLED", "DISABLED").contains(status))) throw new RoleValidationException();
+        String effectiveSort = sort == null ? "NAME" : sort;
+        String effectiveDirection = direction == null ? "ASC" : direction;
+        if (!Set.of("NAME", "UPDATED_AT").contains(effectiveSort) || !Set.of("ASC", "DESC").contains(effectiveDirection)) throw new RoleValidationException();
         String where = " WHERE workspace_uuid=? AND group_workspace_key=? AND (CAST(? AS text) IS NULL OR name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR service_node_type=?) AND (CAST(? AS text) IS NULL OR status=?)";
         Object[] values = new Object[] {workspaceUuid, groupWorkspaceKey, name, name, organizationType, organizationType, status, status};
         long total = jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.workspace_role" + where, Long.class, values);
         List<Object> pageValues = new ArrayList<>(java.util.Arrays.asList(values)); pageValues.add(pageSize); pageValues.add((page - 1) * pageSize);
-        List<WorkspaceRoleReadback> items = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, name, description, service_node_type, status, version, created_at_epoch_millis, updated_at_epoch_millis, page_access_keys, capability_keys FROM workspace_iam.workspace_role" + where + " ORDER BY name, id LIMIT ? OFFSET ?", (row, index) -> readback(row), pageValues.toArray());
-        return new Page(items, page, pageSize, total);
+        String orderBy = "NAME".equals(effectiveSort) ? "name" : "updated_at_epoch_millis";
+        List<WorkspaceRoleReadback> items = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, name, description, service_node_type, status, version, created_at_epoch_millis, updated_at_epoch_millis, page_access_keys, capability_keys FROM workspace_iam.workspace_role" + where + " ORDER BY " + orderBy + " " + effectiveDirection + ", id ASC LIMIT ? OFFSET ?", (row, index) -> readback(row), pageValues.toArray());
+        return new Page(items, page, pageSize, total, effectiveSort, effectiveDirection);
     }
 
     @Transactional(readOnly = true)
@@ -215,5 +219,5 @@ public class WorkspaceRoleService {
     public static final class RoleCapabilityIncompatibleException extends RoleValidationException { }
     public static final class PageAccessCatalogMismatchException extends RoleValidationException { }
     public static final class RoleCapabilityCatalogDriftException extends RuntimeException { }
-    public record Page(List<WorkspaceRoleReadback> items, int page, int pageSize, long total) { }
+    public record Page(List<WorkspaceRoleReadback> items, int page, int pageSize, long total, String sort, String direction) { }
 }

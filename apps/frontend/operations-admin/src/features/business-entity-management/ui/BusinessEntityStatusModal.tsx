@@ -69,7 +69,7 @@ export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, 
     open={Boolean(entity)}
     destroyOnHidden
     onCancel={submitting ? undefined : onClose}
-    maskClosable={!submitting}
+    mask={{closable: !submitting}}
     keyboard={!submitting}
     footer={[
       <Button key="cancel" onClick={onClose} disabled={submitting} {...testId('operations-business-entity-status-cancel')}>取消</Button>,
@@ -77,6 +77,6 @@ export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, 
     ]}
     {...testId('operations-business-entity-status-modal')}
   >
-    {problem && <Alert type="error" showIcon message="状态操作未完成" description={problem}/>} 
+    {problem && <Alert type="error" showIcon title="状态操作未完成" description={problem}/>}
   </Modal>;
 }

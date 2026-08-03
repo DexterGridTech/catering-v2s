@@ -1,10 +1,10 @@
-import {Alert, Button, DatePicker, Form, Input, Select, Space, Tag} from 'antd';
+import {Alert, Button, DatePicker, Space, Tag} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {contextScopedQueryArgs, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
+import {contextScopedQueryArgs, formatCodeNamePath, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
 import type {Dayjs} from 'dayjs';
 import {useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
-import type {WorkspaceInvitation, WorkspaceInvitationPage, WorkspaceInvitationStatus} from '../../../app/api/generated/operations-edge';
+import type {SortDirection, WorkspaceInvitation, WorkspaceInvitationPage, WorkspaceInvitationSortKey, WorkspaceInvitationStatus} from '../../../app/api/generated/operations-edge';
 import {userManagementFor, type UserManagementPageDesignKey} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -28,8 +28,6 @@ type AppliedFilters = {
   expiresFrom?: number;
   expiresTo?: number;
 };
-type UserManagementTargetType = ReturnType<typeof userManagementFor>['targetOrganizationType'];
-
 const statusLabel: Record<WorkspaceInvitationStatus, string> = {
   ACTIVE: '有效',
   CANCELLED: '已取消',
@@ -60,7 +58,7 @@ function toAppliedFilters(values: InvitationFilterForm): AppliedFilters {
 
 function queryIssue(error: unknown, fallback: string) {
   const problem = operationsProblemOf(error);
-  return problem ? `${problem.errorCode}：${problem.detail}` : fallback;
+  return problem?.detail ?? fallback;
 }
 
 export function WorkspaceInvitationPanel({
@@ -69,9 +67,10 @@ export function WorkspaceInvitationPanel({
   actionCapabilityKeys,
 }: OperationsPageProps & {pageDesignKey: UserManagementPageDesignKey}) {
   const userManagement = userManagementFor(pageDesignKey);
-  const [filterForm] = Form.useForm<InvitationFilterForm>();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
+  const [sort, setSort] = useState<WorkspaceInvitationSortKey>('CREATED_AT');
+  const [direction, setDirection] = useState<SortDirection>('DESC');
   const [filters, setFilters] = useState<AppliedFilters>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [actionKind, setActionKind] = useState<InvitationAction>();
@@ -90,11 +89,13 @@ export function WorkspaceInvitationPanel({
       expiresTo: filters.expiresTo,
       page,
       pageSize,
+      sort,
+      direction,
     }, {
       groupWorkspaceKey: queryContext.groupWorkspaceKey,
       expectedContextVersion: queryContext.expectedContextVersion,
     }),
-  }), [filters.expiresFrom, filters.expiresTo, filters.mobile, filters.organizationQuery, filters.roleQuery, filters.status, page, pageSize, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, queryContext.scopeRef]);
+  }), [direction, filters.expiresFrom, filters.expiresTo, filters.mobile, filters.organizationQuery, filters.roleQuery, filters.status, page, pageSize, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, queryContext.scopeRef, sort]);
   const groupInvitations = operationsRtk.useGetOperationsWorkspaceGroupInvitationsQuery(operationsAdminRtkRequest.getOperationsWorkspaceGroupInvitations(path, invitationOptions), {skip: targetType !== 'GROUP'});
   const regionInvitations = operationsRtk.useGetOperationsWorkspaceRegionInvitationsQuery(operationsAdminRtkRequest.getOperationsWorkspaceRegionInvitations(path, invitationOptions), {skip: targetType !== 'REGION'});
   const projectInvitations = operationsRtk.useGetOperationsWorkspaceProjectInvitationsQuery(operationsAdminRtkRequest.getOperationsWorkspaceProjectInvitations(path, invitationOptions), {skip: targetType !== 'PROJECT'});
@@ -105,67 +106,38 @@ export function WorkspaceInvitationPanel({
   const problem = activeInvitations.error ? queryIssue(activeInvitations.error, '邀请列表读取失败，请稍后重试') : undefined;
   const selected = detail.target;
   const columns = useMemo<ProColumns<WorkspaceInvitation>[]>(() => [
-    {title: '邀请手机号', dataIndex: 'maskedMobile', ellipsis: true, render: (_, value) => <Button type="link" onClick={() => detail.open(value)} {...testId('operations-workspace-invitation-open-detail')}>{value.maskedMobile}</Button>},
-    {title: '任职机构', dataIndex: 'targetOrganizationPath', ellipsis: true},
-    {title: '业务角色', dataIndex: 'roleNames', render: (_, value) => <Space size={[4, 4]} wrap>{value.roleNames.map((role) => <Tag key={role}>{role}</Tag>)}</Space>},
-    {title: '状态', dataIndex: 'status', render: (_, value) => <Tag color={value.status === 'ACTIVE' ? 'blue' : value.status === 'COMPLETED' ? 'green' : 'default'}>{statusLabel[value.status]}</Tag>},
-    {title: '有效期', dataIndex: 'expiresAt', render: (_, value) => time(value.expiresAt)},
+    {title: '邀请手机号', dataIndex: 'maskedMobile', ellipsis: true, search: false, render: (_, value) => <Button type="link" onClick={() => detail.open(value)} {...testId('operations-workspace-invitation-open-detail')}>{value.maskedMobile}</Button>},
+    {title: '邀请手机号', dataIndex: 'mobile', hideInTable: true, fieldProps: {...testId('operations-workspace-invitation-query-mobile'), allowClear: true, placeholder: '请输入邀请手机号'}},
+    {title: '任职机构', dataIndex: 'organizationQuery', hideInTable: true, fieldProps: {...testId('operations-workspace-invitation-query-organization'), allowClear: true, placeholder: '请输入机构名称'}},
+    {title: '业务角色', dataIndex: 'roleQuery', hideInTable: true, fieldProps: {...testId('operations-workspace-invitation-query-role'), allowClear: true, placeholder: '请输入业务角色'}},
+    {title: '任职机构', dataIndex: 'targetOrganizationPath', ellipsis: true, search: false, render: (_, value) => formatCodeNamePath(value.targetOrganizationPath)},
+    {title: '业务角色', dataIndex: 'roleNames', search: false, render: (_, value) => <Space size={[4, 4]} wrap>{value.roleNames.map((role) => <Tag key={role}>{role}</Tag>)}</Space>},
+    {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: Object.fromEntries(Object.entries(statusLabel).map(([value, text]) => [value, {text}])), fieldProps: {...testId('operations-workspace-invitation-query-status'), allowClear: true}, render: (_, value) => <Tag color={value.status === 'ACTIVE' ? 'blue' : value.status === 'COMPLETED' ? 'green' : 'default'}>{statusLabel[value.status]}</Tag>},
+    {title: '有效期', dataIndex: 'expiresRange', hideInTable: true, valueType: 'dateRange', renderFormItem: () => <DatePicker.RangePicker {...testId('operations-workspace-invitation-query-expires-range')}/>},
+    {title: '有效期', dataIndex: 'expiresAt', search: false, sorter: true, render: (_, value) => time(value.expiresAt)},
   ], [detail]);
 
   return <>
-    {problem && <Alert type="error" showIcon message="邀请管理失败" description={problem} style={{marginBottom: 16}}/>}
-    <Form
-      form={filterForm}
-      layout="inline"
-      onFinish={(values) => {
-        setPage(1);
-        setFilters(toAppliedFilters(values));
-      }}
-      style={{marginBottom: 16, rowGap: 12}}
-    >
-      <Form.Item name="mobile" label="邀请手机号">
-        <Input allowClear placeholder="请输入邀请手机号" {...testId('operations-workspace-invitation-query-mobile')}/>
-      </Form.Item>
-      <Form.Item name="organizationQuery" label="任职机构">
-        <Input allowClear placeholder="请输入机构名称" {...testId('operations-workspace-invitation-query-organization')}/>
-      </Form.Item>
-      <Form.Item name="roleQuery" label="业务角色">
-        <Input allowClear placeholder="请输入业务角色" {...testId('operations-workspace-invitation-query-role')}/>
-      </Form.Item>
-      <Form.Item name="status" label="状态">
-        <Select
-          allowClear
-          style={{width: 140}}
-          options={Object.entries(statusLabel).map(([value, label]) => ({value, label}))}
-          {...testId('operations-workspace-invitation-query-status')}
-        />
-      </Form.Item>
-      <Form.Item name="expiresRange" label="有效期">
-        <DatePicker.RangePicker {...testId('operations-workspace-invitation-query-expires-range')}/>
-      </Form.Item>
-      <Form.Item>
-        <Space>
-          <Button type="primary" htmlType="submit" {...testId('operations-workspace-invitation-query-submit')}>查询</Button>
-          <Button
-            onClick={() => {
-              filterForm.resetFields();
-              setPage(1);
-              setFilters({});
-            }}
-            {...testId('operations-workspace-invitation-query-reset')}
-          >
-            重置
-          </Button>
-        </Space>
-      </Form.Item>
-    </Form>
+    {problem && <Alert type="error" showIcon title="邀请管理失败" description={problem} style={{marginBottom: 16}}/>}
     <ProTable<WorkspaceInvitation>
-      search={false}
+      search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-workspace-invitation-query-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setPage(1); setFilters({}); }} {...testId('operations-workspace-invitation-query-reset')}>重置</Button>]}}
+      onSubmit={(values) => { setPage(1); setFilters(toAppliedFilters(values)); }}
       options={false}
       rowKey="id"
       loading={activeInvitations.isLoading && !result}
       dataSource={result?.items ?? []}
       columns={columns}
+      onChange={(_, __, nextSorter) => {
+        const sorter = Array.isArray(nextSorter) ? nextSorter[0] : nextSorter;
+        if (!sorter?.order) {
+          setSort('CREATED_AT');
+          setDirection('DESC');
+          return;
+        }
+        setSort(sorter.columnKey === 'expiresAt' ? 'EXPIRES_AT' : 'CREATED_AT');
+        setDirection(sorter.order === 'ascend' ? 'ASC' : 'DESC');
+        setPage(1);
+      }}
       toolBarRender={() => canInvite ? [<Button key="create" type="primary" onClick={() => setCreateOpen(true)} {...testId('operations-workspace-invitation-create-open')}>发出邀请</Button>] : []}
       pagination={{
         current: page,

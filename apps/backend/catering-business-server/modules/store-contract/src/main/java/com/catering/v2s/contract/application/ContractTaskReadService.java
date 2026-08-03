@@ -76,6 +76,17 @@ public class ContractTaskReadService {
 
     @Transactional(readOnly = true)
     public CandidatePage candidates(UUID workspaceUuid, String key, UUID projectId, String search, int page, int pageSize) {
+        return candidates(workspaceUuid, key, projectId, null, search, page, pageSize);
+    }
+
+    /**
+     * Candidate read keeps the selected value visible even when pagination or a
+     * transient search term would otherwise place it outside the current page.
+     * The selected row remains constrained by the same workspace/project owner
+     * boundary; it is not a client-side fabricated option.
+     */
+    @Transactional(readOnly = true)
+    public CandidatePage candidates(UUID workspaceUuid, String key, UUID projectId, UUID selectedStoreId, String search, int page, int pageSize) {
         Project project = jdbc.query("SELECT id, code, name FROM organization.organization_node WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND node_type='PROJECT'", statement -> { statement.setObject(1, projectId); statement.setObject(2, workspaceUuid); statement.setString(3, key); }, result -> {
             if (!result.next()) throw new ContractCommandService.ContractNotFoundException();
             return new Project(result.getObject(1, UUID.class), result.getString(2), result.getString(3));
@@ -83,6 +94,10 @@ public class ContractTaskReadService {
         int safePage = Math.max(1, page); int safeSize = Math.min(100, Math.max(1, pageSize));
         String term = search == null ? "" : search.trim(); String pattern = "%" + term.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
         List<StoreCandidate> stores = jdbc.query("SELECT id, code, name, status FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? AND project_id=? AND (?='' OR code ILIKE ? ESCAPE '!' OR name ILIKE ? ESCAPE '!') ORDER BY code LIMIT ? OFFSET ?", (row, index) -> new StoreCandidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getString(4)), workspaceUuid, key, projectId, term, pattern, pattern, safeSize, (safePage - 1) * safeSize);
+        if (selectedStoreId != null && stores.stream().noneMatch(store -> selectedStoreId.equals(store.id()))) {
+            List<StoreCandidate> selected = jdbc.query("SELECT id, code, name, status FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND project_id=?", (row, index) -> new StoreCandidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getString(4)), selectedStoreId, workspaceUuid, key, projectId);
+            if (!selected.isEmpty()) stores = java.util.stream.Stream.concat(selected.stream(), stores.stream()).distinct().toList();
+        }
         long total = jdbc.queryForObject("SELECT COUNT(*) FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? AND project_id=? AND (?='' OR code ILIKE ? ESCAPE '!' OR name ILIKE ? ESCAPE '!')", Long.class, workspaceUuid, key, projectId, term, pattern, pattern);
         List<String> phases = jdbc.query("SELECT phase_name FROM organization.project_phase_name WHERE project_id=? ORDER BY display_order", (row, index) -> row.getString(1), projectId);
         return new CandidatePage(key, project, new CandidateMetadata(term.isBlank() ? null : term, safePage, safeSize, total), stores, phases);
@@ -131,11 +146,11 @@ public class ContractTaskReadService {
         int safePage = Math.max(1, page); int safeSize = Math.min(100, Math.max(1, pageSize));
         String where = " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND s.project_id=?"
                 + " AND (?::uuid IS NULL OR c.store_id=?) AND (?::text IS NULL OR c.contract_no ILIKE ? ESCAPE '!')"
-                + " AND (?::text IS NULL OR c.phase_name_snapshot ILIKE ? ESCAPE '!') AND (?::text IS NULL OR t.name ILIKE ? ESCAPE '!')"
+                + " AND (?::text IS NULL OR c.phase_name_snapshot ILIKE ? ESCAPE '!') AND (?::text IS NULL OR (t.code ILIKE ? ESCAPE '!' OR t.name ILIKE ? ESCAPE '!'))"
                 + " AND (?::text IS NULL OR EXISTS (SELECT 1 FROM jsonb_array_elements(c.items_json) ci WHERE ci->>'code' ILIKE ? ESCAPE '!'))"
                 + " AND (?::date IS NULL OR c.effective_from>=?) AND (?::date IS NULL OR c.effective_to IS NULL OR c.effective_to<=?) AND (?::text IS NULL OR c.status=?)";
         String contractPattern = like(contractNo); String phasePattern = like(phaseName); String tenantPattern = like(tenantName); String itemPattern = like(itemCode);
-        List<Object> values = java.util.Arrays.asList(workspaceUuid, key, projectId, storeId, storeId, contractPattern, contractPattern, phasePattern, phasePattern, tenantPattern, tenantPattern, itemPattern, itemPattern, dateFrom, dateFrom, dateTo, dateTo, normalizedStatus, normalizedStatus);
+        List<Object> values = java.util.Arrays.asList(workspaceUuid, key, projectId, storeId, storeId, contractPattern, contractPattern, phasePattern, phasePattern, tenantPattern, tenantPattern, tenantPattern, itemPattern, itemPattern, dateFrom, dateFrom, dateTo, dateTo, normalizedStatus, normalizedStatus);
         String from = " FROM contract.store_contract c JOIN organization.store s ON s.id=c.store_id JOIN organization.organization_node p ON p.id=s.project_id JOIN organization.tenant t ON t.id=c.tenant_id";
         long total = jdbc.queryForObject("SELECT COUNT(*)" + from + where, Long.class, values.toArray());
         List<Object> paged = new java.util.ArrayList<>(values); paged.add(safeSize); paged.add((safePage - 1) * safeSize);
@@ -150,23 +165,25 @@ public class ContractTaskReadService {
 
     /** Platform read-only overview owns its predicates; count and page always share them. */
     @Transactional(readOnly = true)
-    public PlatformOverviewPage platformOverview(UUID workspaceUuid, String key, String contractNo, String storeName, String phaseName, String tenantName, String itemCode, String status, String sort, String direction, int page, int pageSize) {
+    public PlatformOverviewPage platformOverview(UUID workspaceUuid, String key, UUID projectId, UUID storeId, String contractNo, String phaseName, String tenantName, String status, String sort, String direction, int page, int pageSize) {
         int safePage = Math.max(1, page); int safeSize = Math.min(100, Math.max(1, pageSize));
         String normalizedStatus = overviewStatus(status);
         String sortKey = overviewSort(sort);
         String order = switch (sortKey) { case "CONTRACT_NO" -> "c.contract_no"; case "EFFECTIVE_FROM" -> "c.effective_from"; default -> "c.updated_at_epoch_millis"; };
         String orderDirection = overviewDirection(direction);
         String where = " WHERE c.workspace_uuid=? AND c.group_workspace_key=?"
-            + " AND (?::text IS NULL OR c.contract_no ILIKE ? ESCAPE '!') AND (?::text IS NULL OR s.name ILIKE ? ESCAPE '!')"
-            + " AND (?::text IS NULL OR c.phase_name_snapshot ILIKE ? ESCAPE '!') AND (?::text IS NULL OR t.name ILIKE ? ESCAPE '!')"
-            + " AND (?::text IS NULL OR EXISTS (SELECT 1 FROM jsonb_array_elements(c.items_json) ci WHERE ci->>'code' ILIKE ? ESCAPE '!')) AND (?::text IS NULL OR c.status=?)";
-        List<Object> values = java.util.Arrays.asList(workspaceUuid, key, like(contractNo), like(contractNo), like(storeName), like(storeName), like(phaseName), like(phaseName), like(tenantName), like(tenantName), like(itemCode), like(itemCode), normalizedStatus, normalizedStatus);
+            + " AND (?::uuid IS NULL OR p.id=?) AND (?::uuid IS NULL OR s.id=?)"
+            + " AND (?::text IS NULL OR c.contract_no ILIKE ? ESCAPE '!')"
+            + " AND (?::text IS NULL OR c.phase_name_snapshot ILIKE ? ESCAPE '!') AND (?::text IS NULL OR (t.code ILIKE ? ESCAPE '!' OR t.name ILIKE ? ESCAPE '!'))"
+            + " AND (?::text IS NULL OR c.status=?)";
+        List<Object> values = java.util.Arrays.asList(workspaceUuid, key, projectId, projectId, storeId, storeId, like(contractNo), like(contractNo), like(phaseName), like(phaseName), like(tenantName), like(tenantName), like(tenantName), normalizedStatus, normalizedStatus);
         long total = jdbc.queryForObject("SELECT COUNT(*)" + VIEW_FROM + where, Long.class, values.toArray());
         List<Object> paged = new java.util.ArrayList<>(values); paged.add(safeSize); paged.add((safePage - 1) * safeSize);
         List<PlatformOverviewItem> items = jdbc.query(VIEW_SELECT + VIEW_FROM + where + " ORDER BY " + order + " " + orderDirection + ", c.id ASC LIMIT ? OFFSET ?", (row, index) -> platformItem(readView(row), List.of()), paged.toArray());
-        List<FilterOption> filters = jdbc.query("SELECT 'STORE' AS kind, id, name FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT 'TENANT' AS kind, id, name FROM organization.tenant WHERE workspace_uuid=? AND group_workspace_key=? ORDER BY kind, name", (row, index) -> new FilterOption(row.getString(1), row.getObject(2, UUID.class), row.getString(3)), workspaceUuid, key, workspaceUuid, key);
+        List<FilterOption> filters = jdbc.query("SELECT 'PROJECT' AS kind, id, code, name FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND node_type='PROJECT' UNION ALL SELECT 'STORE' AS kind, id, code, name FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? AND (?::uuid IS NULL OR project_id=?) UNION ALL SELECT 'TENANT' AS kind, id, code, name FROM organization.tenant WHERE workspace_uuid=? AND group_workspace_key=? ORDER BY kind, name", (row, index) -> new FilterOption(row.getString(1), row.getObject(2, UUID.class), row.getString(3), row.getString(4)), workspaceUuid, key, workspaceUuid, key, projectId, projectId, workspaceUuid, key);
+        List<String> phaseOptions = projectId == null ? List.of() : jdbc.query("SELECT phase_name FROM organization.project_phase_name WHERE project_id=? ORDER BY display_order", (row, index) -> row.getString(1), projectId);
         Long asOf = jdbc.query("SELECT MAX(c.updated_at_epoch_millis)" + VIEW_FROM + where, statement -> { for (int index = 0; index < values.size(); index++) statement.setObject(index + 1, values.get(index)); }, result -> { result.next(); return (Long) result.getObject(1); });
-        return new PlatformOverviewPage(new OverviewMetadata(key, safePage, safeSize, total, sortKey, orderDirection), items, "AVAILABLE", asOf, List.of(), filters, "AVAILABLE", asOf, List.of());
+        return new PlatformOverviewPage(new OverviewMetadata(key, safePage, safeSize, total, sortKey, orderDirection), items, "AVAILABLE", asOf, List.of(), filters, phaseOptions, "AVAILABLE", asOf, List.of());
     }
 
     @Transactional(readOnly = true)
@@ -186,7 +203,7 @@ public class ContractTaskReadService {
     }
 
     private static PlatformOverviewItem platformItem(StoreContractView value, List<ExtensionDisplayField> fields) {
-        return new PlatformOverviewItem(new ResolvedReference(value.id(), value.contractNo(), value.contractNo(), "RESOLVED"), new ResolvedReference(value.store().id(), value.store().code(), value.store().name(), "RESOLVED"), value.phaseName() == null ? "未设置" : value.phaseName(), new ResolvedReference(value.tenant().id(), value.tenant().code(), value.tenant().name(), "RESOLVED"), value.effectiveFrom(), value.effectiveTo(), null, value.items().stream().map(Item::code).collect(java.util.stream.Collectors.joining(", ")), "VALID".equals(value.status()) ? "VALID" : "INVALID", "MANUAL", value.revision(), value.createdAt(), value.updatedAt(), "RESOLVED", "RESOLVED", fields);
+        return new PlatformOverviewItem(new ResolvedReference(value.id(), value.contractNo(), value.contractNo(), "RESOLVED"), new ResolvedReference(value.project().id(), value.project().code(), value.project().name(), "RESOLVED"), new ResolvedReference(value.store().id(), value.store().code(), value.store().name(), "RESOLVED"), value.phaseName() == null ? "未设置" : value.phaseName(), new ResolvedReference(value.tenant().id(), value.tenant().code(), value.tenant().name(), "RESOLVED"), value.effectiveFrom(), value.effectiveTo(), null, value.items().stream().map(Item::code).collect(java.util.stream.Collectors.joining(", ")), value.items(), "VALID".equals(value.status()) ? "VALID" : "INVALID", "MANUAL", value.revision(), value.createdAt(), value.updatedAt(), "RESOLVED", "RESOLVED", fields);
     }
 
     private List<ExtensionDisplayField> extensionFields(UUID workspaceUuid, String key, Map<String, String> values) {
@@ -210,12 +227,12 @@ public class ContractTaskReadService {
     public record Item(String code, String name) { }
     public record ContractPage(ContractPageMetadata metadata, List<StoreContractView> items) { }
     public record ContractPageMetadata(String groupWorkspaceKey, UUID projectRef, String projectName, int page, int pageSize, long total, String sort, String direction) { }
-    public record PlatformOverviewPage(OverviewMetadata metadata, List<PlatformOverviewItem> items, String itemsSourceStatus, Long itemsAsOf, List<String> itemsUnresolved, List<FilterOption> filterOptions, String filterOptionsSourceStatus, Long filterOptionsAsOf, List<String> filterOptionsUnresolved) { }
+    public record PlatformOverviewPage(OverviewMetadata metadata, List<PlatformOverviewItem> items, String itemsSourceStatus, Long itemsAsOf, List<String> itemsUnresolved, List<FilterOption> filterOptions, List<String> phaseOptions, String filterOptionsSourceStatus, Long filterOptionsAsOf, List<String> filterOptionsUnresolved) { }
     public record OverviewMetadata(String groupWorkspaceKey, int page, int pageSize, long total, String sort, String direction) { }
-    public record PlatformOverviewItem(ResolvedReference contractRef, ResolvedReference storeRef, String phaseName, ResolvedReference tenantRef, LocalDate effectiveFrom, LocalDate effectiveTo, String note, String itemSummary, String status, String source, long revision, long createdAt, long updatedAt, String storeResolutionStatus, String tenantResolutionStatus, List<ExtensionDisplayField> extensionFields) { }
+    public record PlatformOverviewItem(ResolvedReference contractRef, ResolvedReference projectRef, ResolvedReference storeRef, String phaseName, ResolvedReference tenantRef, LocalDate effectiveFrom, LocalDate effectiveTo, String note, String itemSummary, List<Item> items, String status, String source, long revision, long createdAt, long updatedAt, String storeResolutionStatus, String tenantResolutionStatus, List<ExtensionDisplayField> extensionFields) { }
     public record ExtensionDisplayField(String name, String value) { }
     public record ResolvedReference(UUID id, String code, String name, String resolutionStatus) { }
-    public record FilterOption(String kind, UUID id, String name) { }
+    public record FilterOption(String kind, UUID id, String code, String name) { }
     private Project project(UUID workspaceUuid, String key, UUID projectId) { return jdbc.query("SELECT id, code, name FROM organization.organization_node WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND node_type='PROJECT'", statement -> { statement.setObject(1, projectId); statement.setObject(2, workspaceUuid); statement.setString(3, key); }, result -> { if (!result.next()) throw new ContractCommandService.ContractNotFoundException(); return new Project(result.getObject(1, UUID.class), result.getString(2), result.getString(3)); }); }
     private static Map<String, String> jsonObject(String source) { try { JsonNode node = JSON.readTree(source); if (!node.isObject()) throw new ContractCommandService.ContractValidationException(); Map<String, String> values = new LinkedHashMap<>(); node.fields().forEachRemaining(entry -> values.put(entry.getKey(), entry.getValue().toString())); return values; } catch (java.io.IOException failure) { throw new ContractCommandService.ContractValidationException(); } }
     private static List<Item> jsonItems(String source) { try { JsonNode node = JSON.readTree(source); if (!node.isArray()) throw new ContractCommandService.ContractValidationException(); java.util.ArrayList<Item> values = new java.util.ArrayList<>(); for (JsonNode item : node) values.add(new Item(item.path("code").asText(), item.path("name").asText())); return List.copyOf(values); } catch (java.io.IOException failure) { throw new ContractCommandService.ContractValidationException(); } }

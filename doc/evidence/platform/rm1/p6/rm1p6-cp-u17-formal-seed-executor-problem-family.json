@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-FORMAL-OWNER-COMMAND-SEED-20260803",
+  "genericProblem": "A destructive formal seed can appear available when it either terminates at a bootstrap-only boundary, reuses an L2-only debug channel, writes fixture facts outside their owner command/readback path, or assumes a time-driven terminal state has a user command without explicitly realizing its bounded fixture path.",
+  "rootCauseClass": "FORMAL_SEED_EXECUTION_BOUNDARY_AND_DEV_ONLY_PROTOCOL_GAP",
+  "finiteDenominator": [
+    "scripts/dev/seed formal confirmation entry",
+    "scripts/dev/r5-seed-bootstrap.mjs bootstrap-only SQL boundary",
+    "scripts/test/r5-platform-admin-l2-fixture-seed.mjs extracted owner-command reference",
+    "r5-full fixture contract stages, counts and 32 scenario prerequisites",
+    "generated edge route registry and seed report pair",
+    "DEV fixed clock and fixed OTP issuer activation gates",
+    "workspace invitation and password-reset owner OTP issuers",
+    "run manifest, credentials, event log and first-failure report boundary",
+    "all REAL_COMMANDS_OR_TERMINAL_FIXTURE states and their exact terminal allowlist",
+    "the active formal-seed package input and its exact delivery-manifest binding"
+  ],
+  "searchedSurfaces": [
+    "scripts/dev/seed",
+    "scripts/dev/r5-seed-bootstrap.mjs",
+    "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+    "scripts/test/seed-report.mjs",
+    "scripts/dev/r5-dev-runner.mjs",
+    "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json",
+    "WorkspaceInvitationService and WorkspacePasswordResetService"
+  ],
+  "searchQueries": [
+    "OWNER_COMMAND_EXECUTOR_NOT_IMPLEMENTED",
+    "debugVerificationCode",
+    "V2S_SEED_OTP_FIXED_VALUE",
+    "DEV_FIXED_OTP_ISSUER",
+    "fixed clock",
+    "inv-expired",
+    "REAL_COMMANDS_OR_TERMINAL_FIXTURE",
+    "RM1_DELIVERY_MANIFEST_HASH_DRIFT"
+  ],
+  "counterexamples": [
+    "Root bootstrap SQL is permitted only for the built-in platform identity and its audit/receipt facts.",
+    "L2 debug OTP exposure is a separately scoped browser-test transport and cannot establish formal seed capability.",
+    "A dry-run, bootstrap-only pass, or report skeleton is not formal seed PASS.",
+    "Default runtime profile must have no fixed issuer/clock bean and cannot be converted into formal seed by a header or client payload."
+  ],
+  "findings": [
+    {
+      "findingId": "FORMAL-SEED-01",
+      "classification": "CONFIRMED",
+      "evidence": "The formal wrapper refuses with OWNER_COMMAND_EXECUTOR_NOT_IMPLEMENTED while the existing L2 fixture has an owner-command chain and report helper.",
+      "minimumFix": "Extract the common owner-command/report mechanics into the formal executor and invoke it only through scripts/dev/seed."
+    },
+    {
+      "findingId": "FORMAL-SEED-02",
+      "classification": "CONFIRMED",
+      "evidence": "The fixture contract requires DEV_FIXED_OTP_ISSUER but runtime source only exposes debug OTP when the L2 flag is true; the current DEV manifest records false.",
+      "minimumFix": "Install a fail-closed, private fixed issuer at owner OTP generation without exposing the value on an edge response."
+    },
+    {
+      "findingId": "FORMAL-SEED-03",
+      "classification": "CONFIRMED",
+      "evidence": "The fixture contract requires a fixed r5-full clock, while SystemTimeProvider is the only current application bean.",
+      "minimumFix": "Do not advance a global clock for terminal data; retain ordinary time and realize only the separately authorized terminal fixture adapter."
+    },
+    {
+      "findingId": "FORMAL-SEED-04",
+      "classification": "CONFIRMED",
+      "evidence": "The fixture contract declares inv-expired but the owner HTTP surface intentionally has no expiry command because expiry is time-driven.",
+      "minimumFix": "Model every terminal state explicitly; for the sole allowlisted inv-expired case create the normal PENDING invitation through owner HTTP first, then use a managed remote, exact-namespace adapter restricted to its state/timestamps/SYSTEM audit/scoped receipt and read it back through the existing invitation API."
+    },
+    {
+      "findingId": "FORMAL-SEED-05",
+      "classification": "CONFIRMED",
+      "evidence": "The active CP-U17 package input retained an older delivery-manifest SHA-256 after its declared delivery manifest changed, so the fail-closed static admission stopped before a new managed seed could begin.",
+      "minimumFix": "Rebind only the active package input to the verified current delivery-manifest SHA-256 and retain the exact hash-equality control; historical non-active package inputs are evidence counterexamples, not a bulk-rewrite target."
+    }
+  ],
+  "preventionDispositions": [
+    {"findingId": "FORMAL-SEED-01", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/dev/owner-command-seed-executor.test.mjs formal-entry and owner-event assertions"},
+    {"findingId": "FORMAL-SEED-02", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "DevSeedRuntimeConfiguration focused default/missing-condition red tests"},
+    {"findingId": "FORMAL-SEED-03", "preventionDestination": "PROJECT_MEMORY", "owningSourceOrControl": "phase-retrospective formal seed boundary and fixed-time review checklist"},
+    {"findingId": "FORMAL-SEED-04", "preventionDestination": "PROJECT_MEMORY", "owningSourceOrControl": "FORMAL_SEED_TERMINAL_STATES_MUST_BE_EXPLICITLY_REALIZED plus terminal-fixture-state self-test"},
+    {"findingId": "FORMAL-SEED-05", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "tools/compliance-control/cli.mjs#currentRM1ExecutionBinding exact delivery-manifest hash check"}
+  ]
+}

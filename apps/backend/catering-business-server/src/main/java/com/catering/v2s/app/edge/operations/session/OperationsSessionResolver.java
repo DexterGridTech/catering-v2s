@@ -39,7 +39,11 @@ public final class OperationsSessionResolver {
 
     /** Captures the permitted immutable actor snapshot at the authentication boundary. */
     public AuditActor requireActor(EdgeRequestContext request, String groupWorkspaceKey) {
-        WorkspaceSessionReadback session = requireWorkspace(request, groupWorkspaceKey);
+        return actor(requireWorkspace(request, groupWorkspaceKey));
+    }
+
+    /** Reuses an already authenticated and workspace-scoped session without a second owner read. */
+    public AuditActor actor(WorkspaceSessionReadback session) {
         return new AuditActor("WORKSPACE_ACCOUNT", session.accountId(), session.accountDisplayName());
     }
 }

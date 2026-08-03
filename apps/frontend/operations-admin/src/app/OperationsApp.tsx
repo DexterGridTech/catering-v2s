@@ -1,8 +1,9 @@
-import {ApartmentOutlined, BankOutlined, ClusterOutlined, DashboardOutlined, FileTextOutlined, FullscreenExitOutlined, FullscreenOutlined, LogoutOutlined, ReloadOutlined, ShopOutlined, TagsOutlined, TeamOutlined} from '@ant-design/icons';
-import {Alert, App, Button, Layout, Menu, Result, Space, Tabs, Typography} from 'antd';
+import {ApartmentOutlined, BankOutlined, ClusterOutlined, DashboardOutlined, DownOutlined, FileTextOutlined, FullscreenExitOutlined, FullscreenOutlined, LogoutOutlined, ReloadOutlined, ShopOutlined, TagsOutlined, TeamOutlined, UserOutlined} from '@ant-design/icons';
+import {Alert, App, Avatar, Button, Dropdown, Layout, Menu, Result, Space, Tabs, Typography} from 'antd';
 import type {MenuProps} from 'antd';
+import {CollapsedIcon} from '@ant-design/pro-components/es/layout/components/CollapsedIcon';
 import {AdminErrorBoundary, OverlayLockProvider, contextScopedQueryArgs, testId, useShellInteractionLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode} from 'react';
 import {BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams} from 'react-router';
 import {clearOperationsTransportState, operationsClient, operationsRtk, registerOperationsSessionRecovery} from './api/OperationsTransport';
 import {operationsAdminRtkRequest} from './api/generated/operations-edge.rtk';
@@ -20,6 +21,7 @@ import {operationsPageRegistry, parseOperationsPageDesignKey} from './routing/pa
 import type {OperationsPageDesignKey} from './catalog/generatedAdminCatalog';
 import type {OperationsSession as Session} from './state/OperationsSession';
 import type {WorkspaceSessionEntry} from './api/generated/operations-edge';
+import {operationsAdminChromeProps} from './theme/operationsAdminTheme';
 import '../styles.css';
 
 const menuIconByKey = {
@@ -41,6 +43,13 @@ const menuIconByKey = {
   [operationsPageDesignKeys.PgIamStoreUsers]: <TeamOutlined/>,
   [operationsPageDesignKeys.PgStoreProfile]: <ShopOutlined/>,
 } satisfies Partial<Record<OperationsPageDesignKey, ReactNode>>;
+
+const navigationIconByKey = {
+  WORKBENCH: <DashboardOutlined/>,
+  ACCESS: <TeamOutlined/>,
+  ORGANIZATION: <ApartmentOutlined/>,
+  STORE_OPERATIONS: <ShopOutlined/>,
+} as const;
 
 const dirtyDraftPrompt = '请先保存或放弃当前修改';
 
@@ -66,6 +75,7 @@ function Shell({
   const [openPages, setOpenPages] = useState<OperationsPageDesignKey[]>([]);
   const [pageReload, setPageReload] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [brandLogoBroken, setBrandLogoBroken] = useState(false);
   const catalogByKey = useMemo(() => new Map(adminCatalog.operationsPages.map((page) => [page.pageDesignKey, page])), []);
   const accessiblePages = useMemo<Array<{key: OperationsPageDesignKey; page: (typeof adminCatalog.operationsPages)[number]}>>(() => session.pageAccessKeys.flatMap((key) => {
@@ -74,13 +84,18 @@ function Shell({
   }).sort((left, right) => left.page.menuOrder - right.page.menuOrder), [catalogByKey, session.pageAccessKeys]);
   const accessibleMenuPages = useMemo(() => accessiblePages.filter(({key}) => menuIconByKey[key]), [accessiblePages]);
   const menuItems = useMemo<MenuProps['items']>(() => {
-    const groups = new Map<string, Array<{key: OperationsPageDesignKey; icon: ReactNode; label: string; disabled?: boolean}>>();
+    type MenuChild = {key: OperationsPageDesignKey; icon: ReactNode; label: string; disabled?: boolean};
+    const groups = new Map<string, {label: string; icon: ReactNode; children: MenuChild[]}>();
     for (const item of accessibleMenuPages) {
-      const children = groups.get(item.page.menuGroupLabel) ?? [];
-      children.push({key: item.key, icon: menuIconByKey[item.key], label: item.page.menuLabel, disabled: locked});
-      groups.set(item.page.menuGroupLabel, children);
+      const group = groups.get(item.page.menuGroupKey) ?? {
+        label: item.page.menuGroupLabel,
+        icon: navigationIconByKey[item.page.menuGroupIconKey as keyof typeof navigationIconByKey],
+        children: [] as MenuChild[],
+      };
+      group.children.push({key: item.key, icon: menuIconByKey[item.key], label: item.page.menuLabel, disabled: locked});
+      groups.set(item.page.menuGroupKey, group);
     }
-    return [...groups].map(([label, children]) => ({type: 'group' as const, label, children}));
+    return [...groups].map(([key, group]) => ({type: 'submenu' as const, key, icon: group.icon, label: group.label, children: group.children}));
   }, [accessibleMenuPages, locked]);
   const basePath = `/operations/${encodeURIComponent(session.groupWorkspaceKey)}`;
   const routeSegment = location.pathname.startsWith(`${basePath}/`) ? location.pathname.slice(basePath.length + 1) : '';
@@ -104,7 +119,7 @@ function Shell({
     expectedContextVersion: session.contextVersion,
     identityKey: undefined,
     scopeRef: session.visibleDataNodeId ?? undefined,
-  }), [session.assignmentId, session.contextVersion, session.groupWorkspaceKey, session.visibleDataNodeId]);
+  }), [session.contextVersion, session.groupWorkspaceKey, session.visibleDataNodeId]);
   const registration = selected ? operationsPageRegistry[selected] : undefined;
   const selectedCatalogPage = selected ? catalogByKey.get(selected) : undefined;
   const currentPageKey = selected ?? accessiblePages[0]?.key;
@@ -119,23 +134,68 @@ function Shell({
       if (nextKey) void navigate(`${basePath}/${operationsPageRegistry[nextKey].routeSegment}`);
     }
   };
+  const principalMenu: MenuProps = {
+    items: [
+      {key: 'change-password', label: '修改密码'},
+      {key: 'logout', icon: <LogoutOutlined/>, label: '退出登录'},
+    ],
+    onClick: ({key}) => {
+      if (key === 'change-password') setPasswordOpen(true);
+      if (key === 'logout') void onLogout();
+    },
+  };
   const page = registration && selectedCatalogPage
-    ? <><Typography.Title level={2} {...testId('operations-shell-page-title')}>{selectedCatalogPage.pageTitle}</Typography.Title><registration.Component key={session.contextVersion} queryContext={queryContext} actionCapabilityKeys={session.actionCapabilityKeys}/></>
-    : <Alert type="info" message={routeSegment ? '当前角色没有该页面准入' : '当前角色没有页面准入'}/>;
-  return <Layout className="operations-shell" style={{height: '100vh', overflow: 'hidden'}}>
-    {!fullscreen && <Layout.Sider breakpoint="lg" collapsedWidth="0" style={{display: 'flex', flexDirection: 'column'}}>
-      <div className="brand operations-brand" style={{gap: 12}} {...testId('operations-shell-brand')}>
-        {entry.logoUrl && !brandLogoBroken
-          ? <img src={entry.logoUrl} alt="" style={{width: 32, height: 32, objectFit: 'contain'}} onError={() => setBrandLogoBroken(true)}/>
-          : <DashboardOutlined style={{fontSize: 24}}/>}
-        <div style={{minWidth: 0, display: 'flex', flexDirection: 'column'}}>
-          <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{entry.workspaceName}</div>
-          <Typography.Text type="secondary">{entry.operationsTitle}</Typography.Text>
+    ? <registration.Component key={session.contextVersion} queryContext={queryContext} actionCapabilityKeys={session.actionCapabilityKeys}/>
+    : <Alert type="info" title={routeSegment ? '当前角色没有该页面准入' : '当前角色没有页面准入'}/>;
+  return <Layout className="operations-shell" {...operationsAdminChromeProps} style={{height: '100vh', overflow: 'hidden'}}>
+    {!fullscreen && <Layout.Header className="operations-header">
+      <div className="operations-header-leading">
+        <div className="operations-header-brand" {...testId('operations-shell-brand')}>
+          {entry.logoUrl && !brandLogoBroken
+            ? <img className="operations-header-logo" src={entry.logoUrl} alt={`${entry.workspaceName}标识`} onError={() => setBrandLogoBroken(true)}/>
+            : <DashboardOutlined className="operations-header-logo"/>}
+          <Typography.Text className="operations-header-title">{entry.operationsTitle}</Typography.Text>
         </div>
+        {shellLock.dirtyLocked && <Typography.Text type="warning" {...testId('operations-shell-dirty-guard')}>{dirtyDraftPrompt}</Typography.Text>}
       </div>
+      <Space align="center">
+        <RoleContextSelector entry={entry} variant="header" disabled={locked} onSelected={onRoleSelected}/>
+        <Dropdown menu={principalMenu} trigger={['click']} disabled={locked}>
+          <Button type="text" className="operations-principal" disabled={locked} aria-label={`当前账号 ${entry.displayName}`} {...testId('operations-shell-principal')}><Avatar size="small" icon={<UserOutlined/>}/><span>{entry.displayName}</span><DownOutlined aria-hidden="true"/></Button>
+        </Dropdown>
+      </Space>
+    </Layout.Header>}
+    <Layout hasSider>
+    {!fullscreen && <Layout.Sider
+      className="operations-sider"
+      collapsible
+      collapsed={siderCollapsed}
+      onCollapse={(next) => { if (!locked) setSiderCollapsed(next); }}
+      theme="light"
+      trigger={null}
+      styles={{body: {display: 'flex', height: '100%', flexDirection: 'column'}}}
+    >
+      <CollapsedIcon
+        className="operations-sider-collapsed-button"
+        collapsed={siderCollapsed}
+        role="button"
+        tabIndex={locked ? -1 : 0}
+        aria-label={siderCollapsed ? '展开菜单' : '收起菜单'}
+        aria-disabled={locked}
+        onClick={() => { if (!locked) setSiderCollapsed((current) => !current); }}
+        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+          if (!locked && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            setSiderCollapsed((current) => !current);
+          }
+        }}
+        {...testId('operations-shell-toggle-sider')}
+      />
       <Menu
-        theme="dark"
+        theme="light"
         mode="inline"
+        inlineCollapsed={siderCollapsed}
+        style={{flex: 1}}
         selectedKeys={selected ? [selected] : []}
         onClick={({key}) => {
           if (locked) return;
@@ -145,29 +205,20 @@ function Shell({
         items={menuItems}
         {...testId('operations-shell-menu')}
       />
-      <DataScopeSelector
-        entry={entry}
-        page={selectedCatalogPage ? {
-          requiredDataNodeType: selectedCatalogPage.requiredDataNodeType,
-          noDataNodePrompt: selectedCatalogPage.noDataNodePrompt,
-          noCandidatePrompt: selectedCatalogPage.noCandidatePrompt,
-          cascadeLevelLabels: selectedCatalogPage.cascadeLevelLabels,
-        } : undefined}
-        disabled={locked}
-        onChanged={onEntry}
-      />
+      <div className="operations-scope-selector"><DataScopeSelector
+          entry={entry}
+          page={selectedCatalogPage ? {
+            requiredDataNodeType: selectedCatalogPage.requiredDataNodeType,
+            noDataNodePrompt: selectedCatalogPage.noDataNodePrompt,
+            noCandidatePrompt: selectedCatalogPage.noCandidatePrompt,
+            cascadeLevelLabels: selectedCatalogPage.cascadeLevelLabels,
+          } : undefined}
+          collapsed={siderCollapsed}
+          disabled={locked}
+          onChanged={onEntry}
+        /></div>
     </Layout.Sider>}
     <Layout>
-      {!fullscreen && <Layout.Header className="operations-header">
-        <Space direction="vertical" size={0} align="start">
-          <RoleContextSelector entry={entry} variant="header" disabled={locked} onSelected={onRoleSelected}/>
-          {shellLock.dirtyLocked && <Typography.Text type="warning" {...testId('operations-shell-dirty-guard')}>{dirtyDraftPrompt}</Typography.Text>}
-        </Space>
-        <Space>
-          <Button type="text" disabled={locked} onClick={() => setPasswordOpen(true)} {...testId('operations-shell-change-password')}>修改密码</Button>
-          <Button type="text" icon={<LogoutOutlined/>} disabled={locked} onClick={() => void onLogout()} {...testId('operations-shell-logout')}>退出登录</Button>
-        </Space>
-      </Layout.Header>}
       <Layout.Content className="operations-content" style={{minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '12px 16px 16px', overflow: 'hidden'}}>
         <Tabs
           className="operations-content-tabs"
@@ -185,8 +236,8 @@ function Shell({
             if (pageKey) closePage(pageKey);
           }}
           tabBarExtraContent={<Space>
-            <Button type="text" icon={<ReloadOutlined/>} disabled={locked || !currentPageKey} onClick={() => setPageReload((current) => current + 1)} {...testId('operations-shell-refresh-current')}>刷新当前页</Button>
-            <Button type="text" icon={fullscreen ? <FullscreenExitOutlined/> : <FullscreenOutlined/>} disabled={locked} onClick={() => setFullscreen((current) => !current)} {...testId('operations-shell-toggle-fullscreen')}>{fullscreen ? '退出全屏' : '全屏显示当前页面'}</Button>
+            <Button type="text" aria-label="刷新当前页" icon={<ReloadOutlined/>} disabled={locked || !currentPageKey} onClick={() => setPageReload((current) => current + 1)} {...testId('operations-shell-refresh-current')}/>
+            <Button type="text" aria-label={fullscreen ? '退出全屏' : '全屏显示当前页面'} icon={fullscreen ? <FullscreenExitOutlined/> : <FullscreenOutlined/>} disabled={locked} onClick={() => setFullscreen((current) => !current)} {...testId('operations-shell-toggle-fullscreen')}/>
           </Space>}
           items={openPages.flatMap((key) => {
             const pageMeta = catalogByKey.get(key);
@@ -198,6 +249,7 @@ function Shell({
           {page}
         </div>
       </Layout.Content>
+    </Layout>
     </Layout>
     <OperationsPasswordChangeDrawer open={passwordOpen} queryContext={queryContext} onClose={() => setPasswordOpen(false)} onChanged={() => { setPasswordOpen(false); setPasswordChanged(true); }}/>
     <OperationsPasswordChangeResult open={passwordChanged} onReauthenticate={() => { setPasswordChanged(false); void onLogout(); }}/>
@@ -224,18 +276,21 @@ function toSession(entry: WorkspaceSessionEntry): Session | undefined {
 }
 function WorkspaceRoute() {
   const {groupWorkspaceKey} = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [entryOverride, setEntryOverride] = useState<WorkspaceSessionEntry | null>(null);
   const lifecycle = useSubmissionLifecycle();
   const sessionInvalidating = useRef(false);
+  const loginPath = groupWorkspaceKey ? `/operations/${encodeURIComponent(groupWorkspaceKey)}/login` : undefined;
+  const anonymousLoginRoute = location.pathname === loginPath;
   const sessionEntryRequest = useMemo(
-    () => groupWorkspaceKey ? operationsAdminRtkRequest.getOperationsWorkspaceSessionEntry({groupWorkspaceKey}, {}) : undefined,
-    [groupWorkspaceKey],
+    () => groupWorkspaceKey && !anonymousLoginRoute ? operationsAdminRtkRequest.getOperationsWorkspaceSessionEntry({groupWorkspaceKey}, {}) : undefined,
+    [anonymousLoginRoute, groupWorkspaceKey],
   );
   const sessionEntryQuery = operationsRtk.useGetOperationsWorkspaceSessionEntryQuery(sessionEntryRequest!, {skip: !sessionEntryRequest});
   const entry = entryOverride ?? sessionEntryQuery.data ?? null;
   const session = entry ? toSession(entry) : undefined;
-  const sessionEntryLoaded = entryOverride !== null || sessionEntryQuery.isSuccess || sessionEntryQuery.isError;
+  const sessionEntryLoaded = !sessionEntryRequest || entryOverride !== null || sessionEntryQuery.isSuccess || sessionEntryQuery.isError;
   const clearLocalSession = () => {
     clearOperationsTransportState();
     setEntryOverride(null);
@@ -263,14 +318,14 @@ function WorkspaceRoute() {
     }
   };
   if (!groupWorkspaceKey) return <Navigate to="/operations" replace/>;
-  if (!sessionEntryLoaded) return <Alert type="info" message="正在恢复运营上下文"/>;
+  if (!sessionEntryLoaded) return <Alert type="info" title="正在恢复运营上下文"/>;
   const enterSelectedHome = (next: WorkspaceSessionEntry) => {
     setEntryOverride(next);
     const selectedSession = toSession(next);
     const page = selectedSession?.pageAccessKeys[0];
     if (page) void navigate(`/operations/${encodeURIComponent(next.groupWorkspaceKey)}/${operationsPageRegistry[page].routeSegment}`, {replace: true});
   };
-  if (entry && !session) return <RoleContextSelector entry={entry} variant="initial" onSelected={enterSelectedHome}/>;
+  if (entry && !session) return <main className="auth-page"><div className="auth-card"><RoleContextSelector entry={entry} variant="initial" onSelected={enterSelectedHome}/></div></main>;
   return session && entry ? <Shell session={session} entry={entry} onLogout={logout} onEntry={setEntryOverride} onRoleSelected={enterSelectedHome}/> : <OperationsLoginPage groupWorkspaceKey={groupWorkspaceKey} onEntry={(next) => {
     sessionInvalidating.current = false;
     enterSelectedHome(next);
@@ -278,7 +333,7 @@ function WorkspaceRoute() {
 }
 
 function OperationsRoot() { return <App><OverlayLockProvider><AdminErrorBoundary
-  fallback={({error, reset}) => <Result status="error" title="页面出现异常" subTitle={error.message} extra={<Button type="primary" onClick={reset}>重试页面</Button>}/>}
+  fallback={({reset}) => <Result status="error" title="页面暂时无法显示" subTitle="请重试当前页面。" extra={<Button type="primary" onClick={reset}>重试页面</Button>}/>}
 ><Routes>
   <Route path="/operations/invitations/:groupWorkspaceKey/:invitationToken" element={<InvitationRoute/>}/>
   <Route path="/operations/:groupWorkspaceKey/password-recovery" element={<RecoveryVerifyRoute/>}/>

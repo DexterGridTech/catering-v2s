@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-U13-TEST-FIXTURE-PERSISTENCE-INTEGRITY",
+  "genericProblem": "A database-backed integration test can fail before its intended assertion when its fixture helper treats a database-constrained or content-addressed persisted value as arbitrary decoration. Such a failure neither disproves production behavior nor supplies focused proof.",
+  "rootCauseClass": "FIXTURE_DOES_NOT_MODEL_PERSISTENCE_INVARIANTS",
+  "finiteDenominator": [
+    {
+      "surface": "PlatformAssetServiceTest",
+      "helper": "png()",
+      "callers": 7,
+      "invariant": "staged asset storage keys are content-addressed and unique, so two distinct logical staged assets cannot use identical bytes"
+    },
+    {
+      "surface": "WorkspaceUserTaskScopeTest",
+      "helper": "headCompany(String code)",
+      "callers": 2,
+      "invariant": "organization.head_company.credit_code is nonblank, unique per workspace/key, and limited to varchar(32)"
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "TF-01",
+      "status": "CONFIRMED",
+      "finding": "The batch asset test stages two byte-identical 1x1 PNGs. Their shared content digest produces the same storage key and violates staged_asset_storage_key_key before the batch owner read can be tested."
+    },
+    {
+      "findingId": "TF-02",
+      "status": "CONFIRMED",
+      "finding": "The head-company test helper derives credit_code by appending '-credit' to a human-readable code. One valid descriptive test code becomes 34 characters and violates the real varchar(32) persistence constraint."
+    }
+  ],
+  "counterexamples": [
+    "Production content-addressed storage uniqueness is required behavior and must not be weakened for a test.",
+    "Human-readable organization code may remain longer than a derived credit-code limit when the fixture generates the constrained field independently.",
+    "A fixture-only repair does not change public contract, owner authority, database schema or CRUD efficiency claim."
+  ],
+  "minimalReusableFix": "Fixture helpers must generate distinct valid content for distinct logical immutable assets and must derive constrained persisted identifiers from a bounded unique source instead of concatenating display-oriented labels.",
+  "preventionDispositions": [
+    {
+      "findingId": "TF-01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "C13 focused-test review: immutable content fixtures must be distinct whenever the scenario models distinct staged objects"
+    },
+    {
+      "findingId": "TF-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "C13 focused-test review: each SQL fixture field must satisfy its actual schema length, uniqueness and nonblank constraints"
+    }
+  ]
+}

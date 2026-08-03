@@ -133,9 +133,8 @@ export function BusinessEntityCreateDrawer({open, kind, queryContext, onClose, o
   return <Drawer
     title={createLabel}
     open={open}
-    width={620}
+    size={620}
     destroyOnHidden
-    maskClosable={false}
     keyboard={!lifecycle.submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
@@ -145,7 +144,7 @@ export function BusinessEntityCreateDrawer({open, kind, queryContext, onClose, o
       <Button type="primary" loading={lifecycle.submitting} disabled={!definitionReady} onClick={() => form.submit()} {...testId(`operations-business-entity-create-submit-${kind.toLowerCase()}`)}>{createLabel}</Button>
     </Space>}
   >
-    {problem && <Alert type="error" showIcon message={`${entityLabel}创建失败`} description={problem} style={{marginBottom: 16}}/>}
+    {problem && <Alert type="error" showIcon title={`${entityLabel}创建失败`} description={problem} style={{marginBottom: 16}}/>}
     <Form
       form={form}
       layout="vertical"

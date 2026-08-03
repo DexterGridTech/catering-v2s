@@ -48,6 +48,20 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     @Override
     @Transactional(readOnly = true)
     public Map<TaskPathRef, TaskPath> requireTaskPaths(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
+        return resolveTaskPaths(workspaceUuid, key, targets, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<TaskPathRef, TaskPath> describePersistedTaskPaths(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
+        return resolveTaskPaths(workspaceUuid, key, targets, true);
+    }
+
+    /**
+     * The persisted presentation branch is intentionally confined here. Callers must use
+     * requireTaskPaths for enabled authority, candidate, and session decisions.
+     */
+    private Map<TaskPathRef, TaskPath> resolveTaskPaths(UUID workspaceUuid, String key, List<TaskPathRef> targets, boolean includeDisabledFacts) {
         if (workspaceUuid == null || key == null || targets == null) throw new TaskPathNotFoundException();
         LinkedHashSet<TaskPathRef> requested = new LinkedHashSet<>(targets);
         if (requested.isEmpty()) return Map.of();
@@ -58,18 +72,18 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         LinkedHashMap<TaskPathRef, TaskPath> result = new LinkedHashMap<>();
 
         Set<UUID> storeIds = idsFor(requested, "STORE");
-        Map<UUID, Store> stores = stores(workspaceUuid, key, storeIds);
+        Map<UUID, Store> stores = stores(workspaceUuid, key, storeIds, includeDisabledFacts);
         if (stores.size() != storeIds.size()) throw new TaskPathNotFoundException();
 
         Set<UUID> headCompanyIds = idsFor(requested, "HEAD_COMPANY");
-        Map<UUID, Entity> headCompanies = headCompanies(workspaceUuid, key, headCompanyIds);
+        Map<UUID, Entity> headCompanies = headCompanies(workspaceUuid, key, headCompanyIds, includeDisabledFacts);
         if (headCompanies.size() != headCompanyIds.size()) throw new TaskPathNotFoundException();
 
         Set<UUID> nodeIds = new LinkedHashSet<>();
         nodeIds.addAll(idsFor(requested, "REGION"));
         nodeIds.addAll(idsFor(requested, "PROJECT"));
         stores.values().forEach(store -> nodeIds.add(store.projectId()));
-        Map<UUID, NodePath> nodes = nodePaths(workspaceUuid, key, groupId, nodeIds);
+        Map<UUID, NodePath> nodes = nodePaths(workspaceUuid, key, groupId, nodeIds, includeDisabledFacts);
 
         for (TaskPathRef target : requested) {
             switch (target.targetType()) {
@@ -146,24 +160,24 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
             );
             for (Node node : nodes) {
                 TaskPathRef ref = new TaskPathRef(node.type(), node.id());
-                if (requested.contains(ref)) labels.put(ref, node.name());
+                if (requested.contains(ref)) labels.put(ref, nameCode(node.name(), node.code()));
             }
         }
 
         Set<UUID> headCompanyIds = idsFor(requested, "HEAD_COMPANY");
-        for (Entity entity : headCompanies(workspaceUuid, key, headCompanyIds).values()) {
-            labels.put(new TaskPathRef("HEAD_COMPANY", entity.id()), entity.code() + " " + entity.name());
+        for (Entity entity : headCompanies(workspaceUuid, key, headCompanyIds, false).values()) {
+            labels.put(new TaskPathRef("HEAD_COMPANY", entity.id()), nameCode(entity.name(), entity.code()));
         }
 
         Set<UUID> storeIds = idsFor(requested, "STORE");
-        Map<UUID, Store> stores = stores(workspaceUuid, key, storeIds);
+        Map<UUID, Store> stores = stores(workspaceUuid, key, storeIds, false);
         Map<UUID, NodePath> projects = nodePaths(
-            workspaceUuid, key, groupId, stores.values().stream().map(Store::projectId).collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
+            workspaceUuid, key, groupId, stores.values().stream().map(Store::projectId).collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)), false
         );
         for (Store store : stores.values()) {
             NodePath project = projects.get(store.projectId());
             if (project == null || !"PROJECT".equals(project.type())) throw new TaskPathNotFoundException();
-            labels.put(new TaskPathRef("STORE", store.id()), project.taskPath().displayPath() + " / " + store.code() + " " + store.name());
+            labels.put(new TaskPathRef("STORE", store.id()), nameCode(store.name(), store.code()));
         }
         if (labels.size() != requested.size()) throw new TaskPathNotFoundException();
         return Map.copyOf(labels);
@@ -212,10 +226,10 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         return new TaskPath("STORE", target.id(), List.of(groupId, region.id(), project.id(), target.id()), region.code() + " " + region.name() + " / " + project.code() + " " + project.name() + " / " + target.code() + " " + target.name());
     }
 
-    private Map<UUID, Store> stores(UUID workspaceUuid, String key, Set<UUID> ids) {
+    private Map<UUID, Store> stores(UUID workspaceUuid, String key, Set<UUID> ids, boolean includeDisabledFacts) {
         if (ids.isEmpty()) return Map.of();
         List<Store> values = jdbc.query(
-            "SELECT id, project_id, code, name FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN (" + placeholders(ids.size()) + ")",
+            "SELECT id, project_id, code, name FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=?" + enabledOnly(includeDisabledFacts) + " AND id IN (" + placeholders(ids.size()) + ")",
             (row, index) -> new Store(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getString(4)),
             arguments(workspaceUuid, key, ids)
         );
@@ -224,10 +238,10 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         return Map.copyOf(result);
     }
 
-    private Map<UUID, Entity> headCompanies(UUID workspaceUuid, String key, Set<UUID> ids) {
+    private Map<UUID, Entity> headCompanies(UUID workspaceUuid, String key, Set<UUID> ids, boolean includeDisabledFacts) {
         if (ids.isEmpty()) return Map.of();
         List<Entity> values = jdbc.query(
-            "SELECT id, code, name FROM organization.head_company WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN (" + placeholders(ids.size()) + ")",
+            "SELECT id, code, name FROM organization.head_company WHERE workspace_uuid=? AND group_workspace_key=?" + enabledOnly(includeDisabledFacts) + " AND id IN (" + placeholders(ids.size()) + ")",
             (row, index) -> new Entity(row.getObject(1, UUID.class), row.getString(2), row.getString(3)),
             arguments(workspaceUuid, key, ids)
         );
@@ -236,16 +250,16 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         return Map.copyOf(result);
     }
 
-    private Map<UUID, NodePath> nodePaths(UUID workspaceUuid, String key, UUID groupId, Set<UUID> ids) {
+    private Map<UUID, NodePath> nodePaths(UUID workspaceUuid, String key, UUID groupId, Set<UUID> ids, boolean includeDisabledFacts) {
         if (ids.isEmpty()) return Map.of();
         Map<UUID, NodePath> values = jdbc.query(
             "WITH RECURSIVE ancestry AS (" +
                 "SELECT node.id AS target_id, node.id, node.parent_id, node.node_type, node.code, node.name, 0 AS depth " +
-                "FROM organization.organization_node node WHERE node.workspace_uuid=? AND node.group_workspace_key=? AND node.status='ENABLED' AND node.id IN (" + placeholders(ids.size()) + ") " +
+                "FROM organization.organization_node node WHERE node.workspace_uuid=? AND node.group_workspace_key=?" + enabledOnly("node", includeDisabledFacts) + " AND node.id IN (" + placeholders(ids.size()) + ") " +
                 "UNION ALL " +
                 "SELECT ancestry.target_id, parent.id, parent.parent_id, parent.node_type, parent.code, parent.name, ancestry.depth + 1 " +
                 "FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id " +
-                "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=? AND parent.status='ENABLED'" +
+                "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?" + enabledOnly("parent", includeDisabledFacts) +
             ") SELECT target_id, max(node_type) FILTER (WHERE depth=0) AS target_type, array_agg(id ORDER BY depth DESC) AS ancestor_ids, string_agg(code || ' ' || name, ' / ' ORDER BY depth DESC) AS display_path FROM ancestry GROUP BY target_id",
             statement -> bind(statement, workspaceUuid, key, ids, workspaceUuid, key),
             result -> {
@@ -296,6 +310,11 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     }
 
     private static String placeholders(int count) { return String.join(",", java.util.Collections.nCopies(count, "?")); }
+
+    private static String nameCode(String name, String code) { return name + "（" + code + "）"; }
+
+    private static String enabledOnly(boolean includeDisabledFacts) { return includeDisabledFacts ? "" : " AND status='ENABLED'"; }
+    private static String enabledOnly(String table, boolean includeDisabledFacts) { return includeDisabledFacts ? "" : " AND " + table + ".status='ENABLED'"; }
 
     private static Object[] arguments(UUID workspaceUuid, String key, Set<UUID> ids) {
         List<Object> values = new ArrayList<>(); values.add(workspaceUuid); values.add(key); values.addAll(ids); return values.toArray();

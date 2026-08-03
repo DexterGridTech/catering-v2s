@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "confirmed-problem-family",
+  "problem": "Authentication entry surfaces use inconsistent, viewport-anchored layout primitives.",
+  "rootCauseLayer": "frontend presentation composition",
+  "finiteApplicabilityDenominator": [
+    "platform login", "operations login",
+    "platform recovery verify", "platform recovery password", "platform recovery complete",
+    "operations recovery verify", "operations recovery password", "operations recovery complete"
+  ],
+  "counterexampleBoundary": "Invitation acceptance is a separate public journey and is excluded.",
+  "minimalRepair": "Center existing authentication forms, use cards for recovery surfaces, and group OTP input/send controls with Space.Compact.",
+  "preventionDestination": "U24 focused source assertions cover every denominator member."
+}

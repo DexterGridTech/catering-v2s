@@ -5,7 +5,7 @@ import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest}
 
 type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
 export type PlatformAdminOperationId = keyof FaceOperationContracts;
-export type PlatformAdminRtkWireRequest = <I extends PlatformAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs;
+export type PlatformAdminRtkWireRequest = <I extends PlatformAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};
 
 /**
  * Operation-shaped request constructors for RTK hooks. Consumers supply only
@@ -13,11 +13,20 @@ export type PlatformAdminRtkWireRequest = <I extends PlatformAdminOperationId>(r
  * frozen here rather than handwritten in pages.
  */
 export const platformAdminRtkRequest = {
+    cancelWorkspaceInvitation: (pathParameters: FaceOperationContracts["cancelWorkspaceInvitation"]["path"], options: FaceOperationOptions<"cancelWorkspaceInvitation">): FaceOperationRequest<"cancelWorkspaceInvitation"> => ({
+      operationId: "cancelWorkspaceInvitation",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     changeCurrentPlatformPassword: (pathParameters: FaceOperationContracts["changeCurrentPlatformPassword"]["path"], options: FaceOperationOptions<"changeCurrentPlatformPassword">): FaceOperationRequest<"changeCurrentPlatformPassword"> => ({
       operationId: "changeCurrentPlatformPassword",
       method: "POST",
       path: "/api/platform/auth/password",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     completePlatformPasswordRecovery: (pathParameters: FaceOperationContracts["completePlatformPasswordRecovery"]["path"], options: FaceOperationOptions<"completePlatformPasswordRecovery">): FaceOperationRequest<"completePlatformPasswordRecovery"> => ({
@@ -25,6 +34,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/auth/password-recovery/complete",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     createPlatformAdmin: (pathParameters: FaceOperationContracts["createPlatformAdmin"]["path"], options: FaceOperationOptions<"createPlatformAdmin">): FaceOperationRequest<"createPlatformAdmin"> => ({
@@ -32,6 +42,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/admin-users",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createPlatformGroupWorkspace: (pathParameters: FaceOperationContracts["createPlatformGroupWorkspace"]["path"], options: FaceOperationOptions<"createPlatformGroupWorkspace">): FaceOperationRequest<"createPlatformGroupWorkspace"> => ({
@@ -39,6 +50,15 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/group-workspaces",
       pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    createWorkspaceInvitation: (pathParameters: FaceOperationContracts["createWorkspaceInvitation"]["path"], options: FaceOperationOptions<"createWorkspaceInvitation">): FaceOperationRequest<"createWorkspaceInvitation"> => ({
+      operationId: "createWorkspaceInvitation",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createWorkspaceRole: (pathParameters: FaceOperationContracts["createWorkspaceRole"]["path"], options: FaceOperationOptions<"createWorkspaceRole">): FaceOperationRequest<"createWorkspaceRole"> => ({
@@ -46,6 +66,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getCurrentPlatformSession: (pathParameters: FaceOperationContracts["getCurrentPlatformSession"]["path"], options: FaceOperationOptions<"getCurrentPlatformSession">): FaceOperationRequest<"getCurrentPlatformSession"> => ({
@@ -53,6 +74,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/auth/session",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getExtensionDefinition: (pathParameters: FaceOperationContracts["getExtensionDefinition"]["path"], options: FaceOperationOptions<"getExtensionDefinition">): FaceOperationRequest<"getExtensionDefinition"> => ({
@@ -60,6 +82,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getExtensionEntityCatalog: (pathParameters: FaceOperationContracts["getExtensionEntityCatalog"]["path"], options: FaceOperationOptions<"getExtensionEntityCatalog">): FaceOperationRequest<"getExtensionEntityCatalog"> => ({
@@ -67,6 +90,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformAdminDetail: (pathParameters: FaceOperationContracts["getPlatformAdminDetail"]["path"], options: FaceOperationOptions<"getPlatformAdminDetail">): FaceOperationRequest<"getPlatformAdminDetail"> => ({
@@ -74,6 +98,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/admin-users/{platformAdminId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformAdminPage: (pathParameters: FaceOperationContracts["getPlatformAdminPage"]["path"], options: FaceOperationOptions<"getPlatformAdminPage">): FaceOperationRequest<"getPlatformAdminPage"> => ({
@@ -81,6 +106,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/admin-users",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformContractOverviewDetail: (pathParameters: FaceOperationContracts["getPlatformContractOverviewDetail"]["path"], options: FaceOperationOptions<"getPlatformContractOverviewDetail">): FaceOperationRequest<"getPlatformContractOverviewDetail"> => ({
@@ -88,6 +114,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformContractOverviewPage: (pathParameters: FaceOperationContracts["getPlatformContractOverviewPage"]["path"], options: FaceOperationOptions<"getPlatformContractOverviewPage">): FaceOperationRequest<"getPlatformContractOverviewPage"> => ({
@@ -95,6 +122,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformEntityAuditHistory: (pathParameters: FaceOperationContracts["getPlatformEntityAuditHistory"]["path"], options: FaceOperationOptions<"getPlatformEntityAuditHistory">): FaceOperationRequest<"getPlatformEntityAuditHistory"> => ({
@@ -102,6 +130,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/audit-history",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformGroupWorkspaceDetail: (pathParameters: FaceOperationContracts["getPlatformGroupWorkspaceDetail"]["path"], options: FaceOperationOptions<"getPlatformGroupWorkspaceDetail">): FaceOperationRequest<"getPlatformGroupWorkspaceDetail"> => ({
@@ -109,6 +138,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformOrganizationHierarchyTree: (pathParameters: FaceOperationContracts["getPlatformOrganizationHierarchyTree"]["path"], options: FaceOperationOptions<"getPlatformOrganizationHierarchyTree">): FaceOperationRequest<"getPlatformOrganizationHierarchyTree"> => ({
@@ -116,6 +146,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformOrganizationOverviewDetail: (pathParameters: FaceOperationContracts["getPlatformOrganizationOverviewDetail"]["path"], options: FaceOperationOptions<"getPlatformOrganizationOverviewDetail">): FaceOperationRequest<"getPlatformOrganizationOverviewDetail"> => ({
@@ -123,6 +154,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformOrganizationOverviewPage: (pathParameters: FaceOperationContracts["getPlatformOrganizationOverviewPage"]["path"], options: FaceOperationOptions<"getPlatformOrganizationOverviewPage">): FaceOperationRequest<"getPlatformOrganizationOverviewPage"> => ({
@@ -130,6 +162,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getWorkspaceAccount: (pathParameters: FaceOperationContracts["getWorkspaceAccount"]["path"], options: FaceOperationOptions<"getWorkspaceAccount">): FaceOperationRequest<"getWorkspaceAccount"> => ({
@@ -137,6 +170,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getWorkspaceAccounts: (pathParameters: FaceOperationContracts["getWorkspaceAccounts"]["path"], options: FaceOperationOptions<"getWorkspaceAccounts">): FaceOperationRequest<"getWorkspaceAccounts"> => ({
@@ -144,6 +178,31 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts",
       pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getWorkspaceInvitation: (pathParameters: FaceOperationContracts["getWorkspaceInvitation"]["path"], options: FaceOperationOptions<"getWorkspaceInvitation">): FaceOperationRequest<"getWorkspaceInvitation"> => ({
+      operationId: "getWorkspaceInvitation",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getWorkspaceInvitationCandidates: (pathParameters: FaceOperationContracts["getWorkspaceInvitationCandidates"]["path"], options: FaceOperationOptions<"getWorkspaceInvitationCandidates">): FaceOperationRequest<"getWorkspaceInvitationCandidates"> => ({
+      operationId: "getWorkspaceInvitationCandidates",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getWorkspaceInvitations: (pathParameters: FaceOperationContracts["getWorkspaceInvitations"]["path"], options: FaceOperationOptions<"getWorkspaceInvitations">): FaceOperationRequest<"getWorkspaceInvitations"> => ({
+      operationId: "getWorkspaceInvitations",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getWorkspaceRole: (pathParameters: FaceOperationContracts["getWorkspaceRole"]["path"], options: FaceOperationOptions<"getWorkspaceRole">): FaceOperationRequest<"getWorkspaceRole"> => ({
@@ -151,6 +210,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getWorkspaceRoles: (pathParameters: FaceOperationContracts["getWorkspaceRoles"]["path"], options: FaceOperationOptions<"getWorkspaceRoles">): FaceOperationRequest<"getWorkspaceRoles"> => ({
@@ -158,6 +218,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     initializeCommercialGroup: (pathParameters: FaceOperationContracts["initializeCommercialGroup"]["path"], options: FaceOperationOptions<"initializeCommercialGroup">): FaceOperationRequest<"initializeCommercialGroup"> => ({
@@ -165,6 +226,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     listPlatformGroupWorkspaces: (pathParameters: FaceOperationContracts["listPlatformGroupWorkspaces"]["path"], options: FaceOperationOptions<"listPlatformGroupWorkspaces">): FaceOperationRequest<"listPlatformGroupWorkspaces"> => ({
@@ -172,6 +234,7 @@ export const platformAdminRtkRequest = {
       method: "GET",
       path: "/api/platform/group-workspaces",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     platformLogout: (pathParameters: FaceOperationContracts["platformLogout"]["path"], options: FaceOperationOptions<"platformLogout">): FaceOperationRequest<"platformLogout"> => ({
@@ -179,6 +242,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/auth/logout",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     platformPasswordLogin: (pathParameters: FaceOperationContracts["platformPasswordLogin"]["path"], options: FaceOperationOptions<"platformPasswordLogin">): FaceOperationRequest<"platformPasswordLogin"> => ({
@@ -186,6 +250,15 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/auth/password-login",
       pathParameters,
+      requiresSession: false,
+      ...options,
+    }),
+    reissueWorkspaceInvitation: (pathParameters: FaceOperationContracts["reissueWorkspaceInvitation"]["path"], options: FaceOperationOptions<"reissueWorkspaceInvitation">): FaceOperationRequest<"reissueWorkspaceInvitation"> => ({
+      operationId: "reissueWorkspaceInvitation",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     releasePlatformStagedAsset: (pathParameters: FaceOperationContracts["releasePlatformStagedAsset"]["path"], options: FaceOperationOptions<"releasePlatformStagedAsset">): FaceOperationRequest<"releasePlatformStagedAsset"> => ({
@@ -193,6 +266,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/assets/staging/{assetRef}/release",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     replaceExtensionDefinition: (pathParameters: FaceOperationContracts["replaceExtensionDefinition"]["path"], options: FaceOperationOptions<"replaceExtensionDefinition">): FaceOperationRequest<"replaceExtensionDefinition"> => ({
@@ -200,6 +274,7 @@ export const platformAdminRtkRequest = {
       method: "PUT",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     requestWorkspaceCredentialReset: (pathParameters: FaceOperationContracts["requestWorkspaceCredentialReset"]["path"], options: FaceOperationOptions<"requestWorkspaceCredentialReset">): FaceOperationRequest<"requestWorkspaceCredentialReset"> => ({
@@ -207,6 +282,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     resetPlatformAdminCredential: (pathParameters: FaceOperationContracts["resetPlatformAdminCredential"]["path"], options: FaceOperationOptions<"resetPlatformAdminCredential">): FaceOperationRequest<"resetPlatformAdminCredential"> => ({
@@ -214,6 +290,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/admin-users/{platformAdminId}/credential-reset",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokePlatformWorkspaceAssignment: (pathParameters: FaceOperationContracts["revokePlatformWorkspaceAssignment"]["path"], options: FaceOperationOptions<"revokePlatformWorkspaceAssignment">): FaceOperationRequest<"revokePlatformWorkspaceAssignment"> => ({
@@ -221,6 +298,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     sendPlatformLoginOtp: (pathParameters: FaceOperationContracts["sendPlatformLoginOtp"]["path"], options: FaceOperationOptions<"sendPlatformLoginOtp">): FaceOperationRequest<"sendPlatformLoginOtp"> => ({
@@ -228,6 +306,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/auth/login-otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     sendPlatformPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["sendPlatformPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"sendPlatformPasswordRecoveryOtp">): FaceOperationRequest<"sendPlatformPasswordRecoveryOtp"> => ({
@@ -235,6 +314,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/auth/password-recovery/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     stagePlatformAsset: (pathParameters: FaceOperationContracts["stagePlatformAsset"]["path"], options: FaceOperationOptions<"stagePlatformAsset">): FaceOperationRequest<"stagePlatformAsset"> => ({
@@ -242,6 +322,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/assets/staging",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     startPlatformPasswordRecovery: (pathParameters: FaceOperationContracts["startPlatformPasswordRecovery"]["path"], options: FaceOperationOptions<"startPlatformPasswordRecovery">): FaceOperationRequest<"startPlatformPasswordRecovery"> => ({
@@ -249,6 +330,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/auth/password-recovery/start",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     transitionPlatformAdminStatus: (pathParameters: FaceOperationContracts["transitionPlatformAdminStatus"]["path"], options: FaceOperationOptions<"transitionPlatformAdminStatus">): FaceOperationRequest<"transitionPlatformAdminStatus"> => ({
@@ -256,6 +338,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/admin-users/{platformAdminId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionPlatformGroupWorkspaceStatus: (pathParameters: FaceOperationContracts["transitionPlatformGroupWorkspaceStatus"]["path"], options: FaceOperationOptions<"transitionPlatformGroupWorkspaceStatus">): FaceOperationRequest<"transitionPlatformGroupWorkspaceStatus"> => ({
@@ -263,6 +346,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionWorkspaceAccountStatus: (pathParameters: FaceOperationContracts["transitionWorkspaceAccountStatus"]["path"], options: FaceOperationOptions<"transitionWorkspaceAccountStatus">): FaceOperationRequest<"transitionWorkspaceAccountStatus"> => ({
@@ -270,6 +354,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionWorkspaceRoleStatus: (pathParameters: FaceOperationContracts["transitionWorkspaceRoleStatus"]["path"], options: FaceOperationOptions<"transitionWorkspaceRoleStatus">): FaceOperationRequest<"transitionWorkspaceRoleStatus"> => ({
@@ -277,6 +362,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updatePlatformAdminProfile: (pathParameters: FaceOperationContracts["updatePlatformAdminProfile"]["path"], options: FaceOperationOptions<"updatePlatformAdminProfile">): FaceOperationRequest<"updatePlatformAdminProfile"> => ({
@@ -284,6 +370,7 @@ export const platformAdminRtkRequest = {
       method: "PATCH",
       path: "/api/platform/admin-users/{platformAdminId}/profile",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updatePlatformGroupWorkspaceDisplay: (pathParameters: FaceOperationContracts["updatePlatformGroupWorkspaceDisplay"]["path"], options: FaceOperationOptions<"updatePlatformGroupWorkspaceDisplay">): FaceOperationRequest<"updatePlatformGroupWorkspaceDisplay"> => ({
@@ -291,6 +378,7 @@ export const platformAdminRtkRequest = {
       method: "PATCH",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateWorkspaceRole: (pathParameters: FaceOperationContracts["updateWorkspaceRole"]["path"], options: FaceOperationOptions<"updateWorkspaceRole">): FaceOperationRequest<"updateWorkspaceRole"> => ({
@@ -298,6 +386,7 @@ export const platformAdminRtkRequest = {
       method: "PATCH",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     verifyPlatformLoginOtp: (pathParameters: FaceOperationContracts["verifyPlatformLoginOtp"]["path"], options: FaceOperationOptions<"verifyPlatformLoginOtp">): FaceOperationRequest<"verifyPlatformLoginOtp"> => ({
@@ -305,6 +394,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/auth/login-otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     verifyPlatformPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["verifyPlatformPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"verifyPlatformPasswordRecoveryOtp">): FaceOperationRequest<"verifyPlatformPasswordRecoveryOtp"> => ({
@@ -312,6 +402,7 @@ export const platformAdminRtkRequest = {
       method: "POST",
       path: "/api/platform/auth/password-recovery/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     })
 } as const;
@@ -325,6 +416,10 @@ export function createPlatformAdminRtkEndpoints(
   toWireRequest: PlatformAdminRtkWireRequest,
 ) {
   return {
+    cancelWorkspaceInvitation: build.mutation<FaceOperationContracts["cancelWorkspaceInvitation"]["response"], FaceOperationRequest<"cancelWorkspaceInvitation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
     changeCurrentPlatformPassword: build.mutation<FaceOperationContracts["changeCurrentPlatformPassword"]["response"], FaceOperationRequest<"changeCurrentPlatformPassword">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
@@ -338,6 +433,10 @@ export function createPlatformAdminRtkEndpoints(
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
     createPlatformGroupWorkspace: build.mutation<FaceOperationContracts["createPlatformGroupWorkspace"]["response"], FaceOperationRequest<"createPlatformGroupWorkspace">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    createWorkspaceInvitation: build.mutation<FaceOperationContracts["createWorkspaceInvitation"]["response"], FaceOperationRequest<"createWorkspaceInvitation">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
@@ -401,6 +500,18 @@ export function createPlatformAdminRtkEndpoints(
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
+    getWorkspaceInvitation: build.query<FaceOperationContracts["getWorkspaceInvitation"]["response"], FaceOperationRequest<"getWorkspaceInvitation">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getWorkspaceInvitationCandidates: build.query<FaceOperationContracts["getWorkspaceInvitationCandidates"]["response"], FaceOperationRequest<"getWorkspaceInvitationCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getWorkspaceInvitations: build.query<FaceOperationContracts["getWorkspaceInvitations"]["response"], FaceOperationRequest<"getWorkspaceInvitations">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
     getWorkspaceRole: build.query<FaceOperationContracts["getWorkspaceRole"]["response"], FaceOperationRequest<"getWorkspaceRole">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
@@ -422,6 +533,10 @@ export function createPlatformAdminRtkEndpoints(
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
     platformPasswordLogin: build.mutation<FaceOperationContracts["platformPasswordLogin"]["response"], FaceOperationRequest<"platformPasswordLogin">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    reissueWorkspaceInvitation: build.mutation<FaceOperationContracts["reissueWorkspaceInvitation"]["response"], FaceOperationRequest<"reissueWorkspaceInvitation">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),

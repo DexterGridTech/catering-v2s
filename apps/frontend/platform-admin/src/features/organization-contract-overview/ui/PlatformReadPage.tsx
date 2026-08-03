@@ -1,118 +1,227 @@
 import {ProTable} from '@ant-design/pro-components';
-import {Alert, Button, Descriptions, Form, Input, Select, Space, Spin, Tabs, Tree, Typography} from 'antd';
-import {contextScopedQueryArgs, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {Alert, Button, Card, Descriptions, Empty, Input, Spin, Tabs, Tag, Tree} from 'antd';
+import {adminListState, contextScopedQueryArgs, formatNameCode, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState, type ReactNode} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformProblemOf, platformRtk, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
-import {adminCatalog, platformPageDesignKeys} from '../../../app/catalog/generatedAdminCatalog';
-import type {ContractOverviewItem, OrganizationHierarchyTreeNode, OrganizationOverviewItem, StoreContractStatus} from '../../../app/api/generated/platform-edge';
+import type {ContractOverviewItem, ContractOverviewPage, OrganizationHierarchyTreeNode, OrganizationOverviewItem, OrganizationOverviewStatus, StoreContractSortDirection, StoreContractSortKey, StoreContractStatus} from '../../../app/api/generated/platform-edge';
 import {ContractOverviewDetailDrawer} from './ContractOverviewDetailDrawer';
 import {OrganizationOverviewDetailDrawer} from './OrganizationOverviewDetailDrawer';
-import {filtersForOrganizationTab, organizationOverviewQuery, ownerFilterOptions, type OrganizationFilters, type OrganizationTab} from './OrganizationOverviewFilters';
+import {defaultOrganizationTabQueryState, filtersForOrganizationTab, organizationOverviewQuery, ownerFilterOptions, updateOrganizationTabQueryState, type OrganizationFilters, type OrganizationTab, type OrganizationTabQueryState} from './OrganizationOverviewFilters';
 import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-history';
+import {organizationOverviewExtensionItems} from './OrganizationOverviewPresentation';
 
-type ContractFilters = {contractNo?: string; storeName?: string; phaseName?: string; tenantName?: string; itemCode?: string; status?: StoreContractStatus};
+type ContractFilters = {projectId?: string; storeId?: string; contractNo?: string; phaseName?: string; tenantName?: string; status?: StoreContractStatus};
 
 const organizationTabs: OrganizationTab[] = [
   {key: 'HIERARCHY', label: '组织架构', category: 'HIERARCHY'}, {key: 'BRAND', label: '品牌', category: 'BUSINESS_ENTITY', type: 'BRAND'},
   {key: 'TENANT', label: '经营租户', category: 'BUSINESS_ENTITY', type: 'TENANT'}, {key: 'HEAD_COMPANY', label: '总公司', category: 'BUSINESS_ENTITY', type: 'HEAD_COMPANY'},
   {key: 'STORE', label: '门店', category: 'STORE', type: 'STORE'},
 ];
-const statusOptions = [{value: 'ENABLED', label: '已启用'}, {value: 'DISABLED', label: '已停用'}];
-const sourceOptions = [{value: 'MANUAL', label: '人工维护'}, {value: 'SYSTEM', label: '系统生成'}];
-const contractStatusOptions = [{value: 'VALID', label: '生效中'}, {value: 'INVALID', label: '已失效'}];
 const statusLabel = (value: string) => value === 'ENABLED' ? '已启用' : value === 'DISABLED' ? '已停用' : value === 'VALID' ? '生效中' : '已失效';
-const organizationOverviewPage = adminCatalog.platformPages.find((page) => page.pageDesignKey === platformPageDesignKeys.PlatformOrganizationOverview);
-const contractOverviewPage = adminCatalog.platformPages.find((page) => page.pageDesignKey === platformPageDesignKeys.PlatformContractOverview);
-if (!organizationOverviewPage || !contractOverviewPage) throw new Error('Missing generated platform overview page');
-const organizationOverviewPageTitle = organizationOverviewPage.title;
-const contractOverviewPageTitle = contractOverviewPage.title;
-
+const contractFilterOptions = (options: ContractOverviewPage['filterOptions'] | undefined, kind: 'PROJECT' | 'STORE' | 'TENANT') => (options ?? []).filter((option) => option.kind === kind).map((option) => ({value: option.id, label: formatNameCode(option.name, option.code)}));
 export function PlatformReadPage({kind}: {kind: 'organization' | 'contracts'}) {
   return <WorkspaceScope>{(groupWorkspaceKey) => <PlatformReadForWorkspace key={`${groupWorkspaceKey}-${kind}`} groupWorkspaceKey={groupWorkspaceKey} kind={kind}/>}</WorkspaceScope>;
 }
 
 type OrganizationTreeData = {key: string; title: ReactNode; children: OrganizationTreeData[]};
+type OrganizationHierarchyDetail = Omit<OrganizationOverviewItem, 'extensionFields'> & {extensionFields: ReturnType<typeof organizationOverviewExtensionItems>};
 
-function treeNodes(nodes: OrganizationHierarchyTreeNode[], open: (id: string) => void): OrganizationTreeData[] {
-  return nodes.map((node) => ({key: node.id, title: <Button type="link" onClick={() => open(node.id)}>{node.name}</Button>, children: treeNodes(node.children, open)}));
+const hierarchyTypeLabels = {GROUP: '集团', REGION: '大区', PROJECT: '项目'} as const;
+const hierarchyNameCollator = new Intl.Collator('zh-CN', {numeric: true, sensitivity: 'base'});
+
+function hierarchyNodeTitle(type: keyof typeof hierarchyTypeLabels, name: string, code: string, status: OrganizationOverviewStatus): ReactNode {
+  return <span><Tag color="cyan">{hierarchyTypeLabels[type]}</Tag><span>{formatNameCode(name, code)}</span>{status === 'DISABLED' && <Tag color="default">已停用</Tag>}</span>;
+}
+
+function treeNodes(nodes: OrganizationHierarchyTreeNode[]): OrganizationTreeData[] {
+  return [...nodes].sort((left, right) => hierarchyNameCollator.compare(left.name, right.name)).map((node) => ({key: node.id, title: hierarchyNodeTitle(node.type, node.name, node.code, node.status), children: treeNodes(node.children)}));
+}
+
+function hierarchySearchMatches(node: Pick<OrganizationHierarchyTreeNode, 'name' | 'code'>, query: string) {
+  const normalized = query.trim().toLocaleLowerCase('zh-CN');
+  return !normalized || node.name.toLocaleLowerCase('zh-CN').includes(normalized) || node.code.toLocaleLowerCase('zh-CN').includes(normalized);
+}
+
+function filterHierarchyNodes(nodes: OrganizationHierarchyTreeNode[], query: string): OrganizationHierarchyTreeNode[] {
+  return [...nodes].sort((left, right) => hierarchyNameCollator.compare(left.name, right.name)).flatMap((node) => {
+    const children = filterHierarchyNodes(node.children, query);
+    return hierarchySearchMatches(node, query) || children.length ? [{...node, children}] : [];
+  });
+}
+
+function findHierarchyNode(nodes: OrganizationHierarchyTreeNode[], id: string): OrganizationHierarchyTreeNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const child = findHierarchyNode(node.children, id);
+    if (child) return child;
+  }
+  return undefined;
+}
+
+function hierarchyDetailPresentation(item: OrganizationOverviewItem): OrganizationHierarchyDetail {
+  return {...item, extensionFields: (item.extensionFields ?? []).map((field) => ({key: `extension-${field.name}`, label: field.name, children: field.value || '—'}))};
 }
 
 function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey: string; kind: 'organization' | 'contracts'}) {
   const [organizationTab, setOrganizationTab] = useState('HIERARCHY');
-  const [organizationFilters, setOrganizationFilters] = useState<OrganizationFilters>({});
+  const [organizationTabStates, setOrganizationTabStates] = useState<Record<string, OrganizationTabQueryState>>({});
   const [contractFilters, setContractFilters] = useState<ContractFilters>({});
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
+  const [contractSort, setContractSort] = useState<StoreContractSortKey>('UPDATED_AT');
+  const [contractDirection, setContractDirection] = useState<StoreContractSortDirection>('DESC');
   const [commandProblem, setProblem] = useState<PlatformApiProblem>();
-  const [organizationForm] = Form.useForm<OrganizationFilters>();
-  const [contractForm] = Form.useForm<ContractFilters>();
   const organizationDetail = useDetailDrawer<OrganizationOverviewItem>();
-  const [hierarchyDetail, setHierarchyDetail] = useState<OrganizationOverviewItem>();
+  const [hierarchyDetail, setHierarchyDetail] = useState<OrganizationHierarchyDetail>();
+  const [hierarchyNodeId, setHierarchyNodeId] = useState<string>();
+  const [hierarchySearch, setHierarchySearch] = useState('');
   const contractDetail = useDetailDrawer<ContractOverviewItem>();
+  const organizationDetailGeneration = useAsyncGenerationGuard();
+  const contractDetailGeneration = useAsyncGenerationGuard();
   const [auditTarget, setAuditTarget] = useState<PlatformAuditTarget>();
   useOverlayLock(organizationDetail.isOpen || contractDetail.isOpen || Boolean(auditTarget));
   const tab = organizationTabs.find((item) => item.key === organizationTab) ?? organizationTabs[0];
+  const organizationTabState = organizationTabStates[tab.key] ?? defaultOrganizationTabQueryState;
   const context = useMemo(() => contextScopedQueryArgs({}, {groupWorkspaceKey}), [groupWorkspaceKey]);
-  const organizationRequest = useMemo(() => platformAdminRtkRequest.getPlatformOrganizationOverviewPage({groupWorkspaceKey: context.groupWorkspaceKey}, {query: organizationOverviewQuery(tab, organizationFilters, page, pageSize)}), [context.groupWorkspaceKey, organizationFilters, page, pageSize, tab]);
-  const contractRequest = useMemo(() => platformAdminRtkRequest.getPlatformContractOverviewPage({groupWorkspaceKey: context.groupWorkspaceKey}, {query: {...contractFilters, page, pageSize}}), [context.groupWorkspaceKey, contractFilters, page, pageSize]);
+  const workspaceDetailRequest = useMemo(() => platformAdminRtkRequest.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: context.groupWorkspaceKey}, {}), [context.groupWorkspaceKey]);
+  const organizationRequest = useMemo(() => platformAdminRtkRequest.getPlatformOrganizationOverviewPage({groupWorkspaceKey: context.groupWorkspaceKey}, {query: organizationOverviewQuery(tab, organizationTabState.filters, organizationTabState.page, organizationTabState.pageSize, organizationTabState.sort, organizationTabState.direction)}), [context.groupWorkspaceKey, organizationTabState, tab]);
+  const contractRequest = useMemo(() => platformAdminRtkRequest.getPlatformContractOverviewPage({groupWorkspaceKey: context.groupWorkspaceKey}, {query: {...contractFilters, sort: contractSort, direction: contractDirection, page, pageSize}}), [context.groupWorkspaceKey, contractDirection, contractFilters, contractSort, page, pageSize]);
   const treeRequest = useMemo(() => platformAdminRtkRequest.getPlatformOrganizationHierarchyTree({groupWorkspaceKey: context.groupWorkspaceKey}, {}), [context.groupWorkspaceKey]);
+  const commercialGroupDefinitionRequest = useMemo(() => platformAdminRtkRequest.getExtensionDefinition({groupWorkspaceKey: context.groupWorkspaceKey, entityType: 'COMMERCIAL_GROUP'}, {}), [context.groupWorkspaceKey]);
   const organizationQuery = platformRtk.useGetPlatformOrganizationOverviewPageQuery(organizationRequest, {skip: kind !== 'organization' || tab.category === 'HIERARCHY'});
-  const hierarchyQuery = platformRtk.useGetPlatformOrganizationHierarchyTreeQuery(treeRequest, {skip: kind !== 'organization' || tab.category !== 'HIERARCHY'});
+  const workspaceDetailQuery = platformRtk.useGetPlatformGroupWorkspaceDetailQuery(workspaceDetailRequest, {skip: kind !== 'organization' || tab.category !== 'HIERARCHY'});
+  const workspaceIsInitialized = workspaceDetailQuery.data?.commercialGroup?.initialized === true;
+  // A selected enabled workspace can legitimately be awaiting commercial-group
+  // initialization. Its hierarchy has no owner root, so do not issue task reads
+  // whose documented owner response is not-found for that state.
+  const hierarchyQuery = platformRtk.useGetPlatformOrganizationHierarchyTreeQuery(treeRequest, {skip: kind !== 'organization' || tab.category !== 'HIERARCHY' || !workspaceIsInitialized});
+  const commercialGroupDefinitionQuery = platformRtk.useGetExtensionDefinitionQuery(commercialGroupDefinitionRequest, {skip: kind !== 'organization' || tab.category !== 'HIERARCHY' || !workspaceIsInitialized});
   const contractQuery = platformRtk.useGetPlatformContractOverviewPageQuery(contractRequest, {skip: kind !== 'contracts'});
   const [loadOrganizationDetail] = platformRtk.useLazyGetPlatformOrganizationOverviewDetailQuery();
   const [loadContractDetail] = platformRtk.useLazyGetPlatformContractOverviewDetailQuery();
   const openOrganizationDetail = (itemId: string, category = tab.category) => {
+    const request = organizationDetailGeneration.begin();
     setProblem(undefined);
+    if (category === 'HIERARCHY') setHierarchyNodeId(itemId);
+    if (category !== 'HIERARCHY') organizationDetail.openLoading();
     void loadOrganizationDetail(platformAdminRtkRequest.getPlatformOrganizationOverviewDetail({groupWorkspaceKey: context.groupWorkspaceKey, category, itemId}, {})).unwrap().then((detail) => {
-      if (category === 'HIERARCHY') setHierarchyDetail(detail);
+      if (!organizationDetailGeneration.isCurrent(request)) return;
+      if (category === 'HIERARCHY') setHierarchyDetail(hierarchyDetailPresentation(detail));
       else organizationDetail.open(detail);
-    }).catch((error) => setProblem(platformProblemOf(error)));
+    }).catch((error) => {
+      if (organizationDetailGeneration.isCurrent(request)) { organizationDetail.finishLoading(); setProblem(platformProblemOf(error)); }
+    });
   };
   const openContractDetail = (contractId: string) => {
+    const request = contractDetailGeneration.begin();
     setProblem(undefined);
-    void loadContractDetail(platformAdminRtkRequest.getPlatformContractOverviewDetail({groupWorkspaceKey: context.groupWorkspaceKey, contractId}, {})).unwrap().then(contractDetail.open).catch((error) => setProblem(platformProblemOf(error)));
+    contractDetail.openLoading();
+    void loadContractDetail(platformAdminRtkRequest.getPlatformContractOverviewDetail({groupWorkspaceKey: context.groupWorkspaceKey, contractId}, {})).unwrap().then((detail) => {
+      if (contractDetailGeneration.isCurrent(request)) contractDetail.open(detail);
+    }).catch((error) => {
+      if (contractDetailGeneration.isCurrent(request)) { contractDetail.finishLoading(); setProblem(platformProblemOf(error)); }
+    });
   };
-  const queryError = kind === 'contracts' ? contractQuery.error : tab.category === 'HIERARCHY' ? hierarchyQuery.error : organizationQuery.error;
+  const closeOrganizationDetail = () => { organizationDetailGeneration.invalidate(); organizationDetail.close(); };
+  const closeContractDetail = () => { contractDetailGeneration.invalidate(); contractDetail.close(); };
+  const hierarchyError = workspaceDetailQuery.error ?? (workspaceIsInitialized ? hierarchyQuery.error ?? commercialGroupDefinitionQuery.error : undefined);
+  const queryError = kind === 'contracts' ? contractQuery.error : tab.category === 'HIERARCHY' ? hierarchyError : organizationQuery.error;
   const problem = queryError ? platformProblemOf(queryError) : commandProblem;
   const organizationPage = organizationQuery.data;
   const contractPage = contractQuery.data;
-  const refresh = () => { if (kind === 'contracts') void contractQuery.refetch(); else if (tab.category === 'HIERARCHY') void hierarchyQuery.refetch(); else void organizationQuery.refetch(); };
-  const submitOrganizationFilters = (next: OrganizationFilters) => { setOrganizationFilters(filtersForOrganizationTab(tab, next)); setPage(1); };
-  const resetOrganizationFilters = () => { organizationForm.resetFields(); setOrganizationFilters({}); setPage(1); };
+  const hierarchyLoading = (workspaceDetailQuery.isLoading || (workspaceIsInitialized && (hierarchyQuery.isLoading || commercialGroupDefinitionQuery.isLoading))) && !queryError;
+  // This is a presentation projection of two real owner readbacks, not a persisted or synthetic GROUP node.
+  const workspaceDetail = workspaceDetailQuery.data;
+  const hierarchyRoot = workspaceDetail?.commercialGroup?.root;
+  const selectedHierarchyNode = hierarchyNodeId && hierarchyQuery.data ? findHierarchyNode(hierarchyQuery.data.regions, hierarchyNodeId) : undefined;
+  const hierarchyRootProjection = workspaceDetail && hierarchyRoot && hierarchyQuery.data ? {
+    id: hierarchyRoot.id,
+    groupWorkspaceKey: hierarchyRoot.groupWorkspaceKey,
+    category: 'HIERARCHY' as const,
+    type: 'GROUP' as const,
+    code: hierarchyRoot.groupCode,
+    name: hierarchyRoot.groupName,
+    path: [{id: hierarchyRoot.id, code: hierarchyRoot.groupCode, name: hierarchyRoot.groupName, resolved: true}],
+    status: workspaceDetail.status,
+    source: 'MANUAL' as const,
+    version: hierarchyRoot.version,
+    createdAt: hierarchyRoot.createdAt,
+    updatedAt: hierarchyRoot.updatedAt,
+    notes: undefined,
+    unresolvedReferences: [],
+    extensionFields: organizationOverviewExtensionItems(commercialGroupDefinitionQuery.data, hierarchyRoot.extensionValues),
+  } : undefined;
+  const filteredHierarchyRegions = hierarchyQuery.data ? filterHierarchyNodes(hierarchyQuery.data.regions, hierarchySearch) : [];
+  const hierarchyRootMatchesSearch = hierarchyRootProjection ? hierarchySearchMatches(hierarchyRootProjection, hierarchySearch) : false;
+  const hierarchyTreeData = hierarchyRootProjection && (!hierarchySearch.trim() || hierarchyRootMatchesSearch || filteredHierarchyRegions.length) ? [{key: hierarchyRootProjection.id, title: hierarchyNodeTitle('GROUP', hierarchyRootProjection.name, hierarchyRootProjection.code, hierarchyRootProjection.status), children: treeNodes(hierarchyRootMatchesSearch ? hierarchyQuery?.data?.regions ?? [] : filteredHierarchyRegions)}] : [];
+  const displayedHierarchyDetail = hierarchyNodeId === hierarchyRootProjection?.id ? hierarchyRootProjection : hierarchyDetail;
+  const organizationListState = adminListState({loading: organizationQuery.isLoading && !organizationPage && !organizationQuery.error, failed: Boolean(organizationQuery.error), emptyText: `暂无${tab.label}`, testIdPrefix: 'platform-organization-list'});
+  const contractListState = adminListState({loading: contractQuery.isLoading && !contractPage && !contractQuery.error, failed: Boolean(contractQuery.error), emptyText: '暂无合同', testIdPrefix: 'platform-contract-list'});
+  const updateOrganizationTabState = (key: string, patch: Partial<OrganizationTabQueryState>) => {
+    setOrganizationTabStates((current) => updateOrganizationTabQueryState(current, key, patch));
+  };
+  const submitOrganizationFilters = (next: OrganizationFilters) => { updateOrganizationTabState(tab.key, {filters: filtersForOrganizationTab(tab, next), page: 1}); };
+  const resetOrganizationFilters = () => { updateOrganizationTabState(tab.key, {filters: {}, page: 1}); };
   const submitContractFilters = (next: ContractFilters) => { setContractFilters(next); setPage(1); };
-  const resetContractFilters = () => { contractForm.resetFields(); setContractFilters({}); setPage(1); };
+  const resetContractFilters = () => { setContractFilters({}); setPage(1); };
   return <>
-    <Space style={{width: '100%', justifyContent: 'space-between', marginBottom: 12}}><Typography.Title level={4} style={{margin: 0}}>{kind === 'organization' ? organizationOverviewPageTitle : contractOverviewPageTitle}</Typography.Title><Button onClick={refresh} {...testId(`platform-${kind}-refresh`)}>刷新</Button></Space>
-    {problem && <Alert type="error" showIcon message={problem.title} description={problem.detail} style={{marginBottom: 12}}/>}
-    {kind === 'organization' && <Tabs activeKey={organizationTab} onChange={(key) => { const nextTab = organizationTabs.find((item) => item.key === key) ?? organizationTabs[0]; const nextFilters = filtersForOrganizationTab(nextTab, organizationForm.getFieldsValue()); setOrganizationTab(key); setOrganizationFilters(nextFilters); organizationForm.setFieldsValue(nextTab.category === 'STORE' ? nextFilters : {...nextFilters, projectId: undefined, brandId: undefined, tenantId: undefined}); setPage(1); }} items={organizationTabs.map((item) => ({key: item.key, label: item.label}))} {...testId('platform-organization-tabs')}/>} 
-    {kind === 'organization' && tab.category !== 'HIERARCHY' && <Form form={organizationForm} layout="inline" onFinish={submitOrganizationFilters} style={{marginBottom: 12}}>
-      <Form.Item name="name" label="名称"><Input allowClear placeholder="输入名称" {...testId('platform-organization-filter-name')}/></Form.Item><Form.Item name="code" label="编码"><Input allowClear placeholder="输入编码" {...testId('platform-organization-filter-code')}/></Form.Item><Form.Item name="status" label="状态"><Select allowClear style={{width: 120}} placeholder="全部" options={statusOptions} {...testId('platform-organization-filter-status')}/></Form.Item><Form.Item name="source" label="来源"><Select allowClear style={{width: 120}} placeholder="全部" options={sourceOptions} {...testId('platform-organization-filter-source')}/></Form.Item>
-      {tab.category === 'STORE' && <><Form.Item name="projectId" label="项目"><Select allowClear showSearch optionFilterProp="label" style={{width: 180}} placeholder="全部" options={ownerFilterOptions(organizationPage?.filterOptions, 'PROJECT')} {...testId('platform-organization-filter-project')}/></Form.Item><Form.Item name="brandId" label="品牌"><Select allowClear showSearch optionFilterProp="label" style={{width: 180}} placeholder="全部" options={ownerFilterOptions(organizationPage?.filterOptions, 'BRAND')} {...testId('platform-organization-filter-brand')}/></Form.Item><Form.Item name="tenantId" label="经营租户"><Select allowClear showSearch optionFilterProp="label" style={{width: 180}} placeholder="全部" options={ownerFilterOptions(organizationPage?.filterOptions, 'TENANT')} {...testId('platform-organization-filter-tenant')}/></Form.Item></>}
-      <Form.Item><Space><Button type="primary" htmlType="submit" {...testId('platform-organization-filter-submit')}>查询</Button><Button onClick={resetOrganizationFilters} {...testId('platform-organization-filter-reset')}>重置</Button></Space></Form.Item>
-    </Form>}
+    {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 12}} {...testId(`platform-${kind}-list-error`)}/>}
+    {kind === 'organization' && <Tabs activeKey={organizationTab} onChange={setOrganizationTab} items={organizationTabs.map((item) => ({key: item.key, label: item.label}))} {...testId('platform-organization-tabs')}/>}
     {kind === 'organization' && tab.category === 'HIERARCHY' && <div style={{display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) minmax(340px, 1.35fr)', gap: 16}}>
-      <Spin spinning={hierarchyQuery.isLoading}><Tree showLine defaultExpandAll treeData={[{key: 'commercial-group', title: hierarchyQuery.data?.groupName ?? '商业集团', children: treeNodes(hierarchyQuery.data?.regions ?? [], (id) => openOrganizationDetail(id, 'HIERARCHY'))}]}/></Spin>
-      <Descriptions title="组织详情" bordered size="small" column={1} items={hierarchyDetail ? [
-        {key: 'name', label: '名称', children: hierarchyDetail.name}, {key: 'code', label: '编码', children: hierarchyDetail.code},
-        {key: 'organization', label: '所属机构', children: hierarchyDetail.path.map((part) => part.name).join(' / ') || '—'},
-        {key: 'status', label: '状态', children: statusLabel(hierarchyDetail.status)}, {key: 'notes', label: '备注', children: hierarchyDetail.notes || '—'},
-        {key: 'updatedAt', label: '更新时间', children: new Date(hierarchyDetail.updatedAt).toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'})},
-        ...(hierarchyDetail.extensionFields?.map((field) => ({key: `extension-${field.name}`, label: field.name, children: field.value || '—'})) ?? []),
-      ] : [{key: 'empty', label: '提示', children: '请选择左侧组织查看详情。'}]}/>
+      {hierarchyLoading ? <Spin description={<span {...testId('platform-organization-hierarchy-loading')}>正在加载</span>}/> : problem ? null : !workspaceIsInitialized ? <Empty description={<span {...testId('platform-organization-hierarchy-uninitialized')}>当前集团空间尚未初始化商业集团</span>}/> : !hierarchyQuery.data || !hierarchyRootProjection ? <Empty description={<span {...testId('platform-organization-hierarchy-empty')}>暂无组织架构</span>}/> : <Card size="small" title="组织架构" style={{minWidth: 0}} styles={{body: {display: 'flex', flexDirection: 'column', gap: 12, minHeight: 360}}}><Input allowClear placeholder="按名称或编码搜索" value={hierarchySearch} onChange={(event) => setHierarchySearch(event.target.value)} {...testId('platform-organization-hierarchy-search')}/><div style={{flex: 1, minHeight: 0, maxHeight: 440, overflow: 'auto', paddingRight: 4}}>{hierarchyTreeData.length ? <Tree showLine defaultExpandAll selectedKeys={hierarchyNodeId ? [hierarchyNodeId] : []} onSelect={(keys) => { const id = String(keys[0] ?? ''); if (!id) return; if (id === hierarchyRootProjection.id) { setHierarchyNodeId(id); setHierarchyDetail(hierarchyRootProjection); return; } openOrganizationDetail(id, 'HIERARCHY'); }} treeData={hierarchyTreeData} {...testId('platform-organization-hierarchy-tree')}/> : <Empty description="未找到匹配的组织"/>}</div></Card>}
+      <Card size="small" title="组织详情" style={{minWidth: 0, alignSelf: 'start'}}><Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={displayedHierarchyDetail ? [
+        {key: 'identity', label: '名称', children: formatNameCode(displayedHierarchyDetail.name, displayedHierarchyDetail.code)},
+        {key: 'status', label: '状态', children: statusLabel(displayedHierarchyDetail.status)}, {key: 'notes', label: '备注', children: displayedHierarchyDetail.notes || '—'},
+        ...(displayedHierarchyDetail.type === 'PROJECT' ? [{key: 'phases', label: '项目分期名称', children: selectedHierarchyNode?.phases?.join('、') || '—'}] : []),
+        {key: 'updatedAt', label: '更新时间', children: new Date(displayedHierarchyDetail.updatedAt).toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'})},
+        ...displayedHierarchyDetail.extensionFields,
+      ] : [{key: 'empty', label: '提示', children: '请选择左侧组织查看详情。'}]}/></Card>
     </div>}
-    {kind === 'organization' && tab.category !== 'HIERARCHY' && <ProTable<OrganizationOverviewItem> rowKey="id" loading={organizationQuery.isLoading} dataSource={organizationPage?.items ?? []} search={false} options={false} pagination={organizationPage ? {current: organizationPage.metadata.page, pageSize: organizationPage.metadata.pageSize, total: organizationPage.metadata.total, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }} : false} columns={[
-      {title: '名称', dataIndex: 'name', render: (_, row) => <Button type="link" onClick={() => openOrganizationDetail(row.id)}>{row.name}</Button>}, {title: '编码', dataIndex: 'code'}, {title: '状态', dataIndex: 'status', render: (_, row) => statusLabel(row.status)}, {title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime'},
-    ]}/>} 
-    {kind === 'contracts' && <><Form form={contractForm} layout="inline" onFinish={submitContractFilters} style={{marginBottom: 12}}>
-      <Form.Item name="contractNo" label="合同编号"><Input allowClear {...testId('platform-contract-filter-number')}/></Form.Item><Form.Item name="storeName" label="门店"><Input allowClear {...testId('platform-contract-filter-store')}/></Form.Item><Form.Item name="phaseName" label="分期"><Input allowClear {...testId('platform-contract-filter-phase')}/></Form.Item><Form.Item name="tenantName" label="经营租户"><Input allowClear {...testId('platform-contract-filter-tenant')}/></Form.Item><Form.Item name="itemCode" label="货号"><Input allowClear {...testId('platform-contract-filter-item')}/></Form.Item><Form.Item name="status" label="状态"><Select allowClear style={{width: 120}} placeholder="全部" options={contractStatusOptions} {...testId('platform-contract-filter-status')}/></Form.Item>
-      <Form.Item><Space><Button type="primary" htmlType="submit" {...testId('platform-contract-filter-submit')}>查询</Button><Button onClick={resetContractFilters} {...testId('platform-contract-filter-reset')}>重置</Button></Space></Form.Item>
-    </Form><ProTable<ContractOverviewItem> rowKey={(row) => row.contractRef.id} loading={contractQuery.isLoading} dataSource={contractPage?.items ?? []} search={false} options={false} pagination={contractPage ? {current: contractPage.metadata.page, pageSize: contractPage.metadata.pageSize, total: contractPage.metadata.total, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }} : false} columns={[
-      {title: '合同编号', render: (_, row) => <Button type="link" onClick={() => openContractDetail(row.contractRef.id)}>{row.contractRef.code}</Button>}, {title: '门店', render: (_, row) => row.storeRef.name}, {title: '分期', dataIndex: 'phaseName'}, {title: '经营租户', render: (_, row) => row.tenantRef.name}, {title: '货号摘要', dataIndex: 'itemSummary', render: (_, row) => row.itemSummary || '—'}, {title: '状态', render: (_, row) => statusLabel(row.status)}, {title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime'},
-    ]}/></>}
-    <OrganizationOverviewDetailDrawer item={organizationDetail.target} onClose={organizationDetail.close}/>
-    <ContractOverviewDetailDrawer item={contractDetail.target} onClose={contractDetail.close} onAudit={() => contractDetail.target && setAuditTarget({entityType: 'STORE_CONTRACT', entityId: contractDetail.target.contractRef.id, displayName: contractDetail.target.contractRef.code})}/>
+    {kind === 'organization' && tab.category !== 'HIERARCHY' && <div {...testId('platform-organization-table')}><ProTable<OrganizationOverviewItem> key={tab.key} rowKey="id" loading={organizationListState.loading} locale={organizationListState.locale} dataSource={organizationPage?.items ?? []} options={false}
+       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-organization-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); resetOrganizationFilters(); }} {...testId('platform-organization-filter-reset')}>重置</Button>]}}
+       form={{initialValues: organizationTabState.filters}}
+       onSubmit={(value) => submitOrganizationFilters({name: value.name?.trim() || undefined, code: value.code?.trim() || undefined, status: value.status, source: value.source, projectId: value.projectId, brandId: value.brandId, tenantId: value.tenantId})}
+      pagination={organizationPage ? {current: organizationPage.metadata.page, pageSize: organizationPage.metadata.pageSize, total: organizationPage.metadata.total, onChange: (nextPage, nextPageSize) => updateOrganizationTabState(tab.key, {page: nextPage, pageSize: nextPageSize})} : false}
+      onChange={(_, __, sorter) => { const current = Array.isArray(sorter) ? sorter[0] : sorter; if (!current?.order) { updateOrganizationTabState(tab.key, {sort: 'UPDATED_AT', direction: 'DESC'}); return; } const nextSort = current.columnKey === 'name' ? 'NAME' : current.columnKey === 'code' ? 'CODE' : 'UPDATED_AT'; updateOrganizationTabState(tab.key, {sort: nextSort, direction: current.order === 'ascend' ? 'ASC' : 'DESC', page: 1}); }}
+      columns={[
+        {key: 'name', title: '名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('platform-organization-filter-name'), allowClear: true, placeholder: '输入名称'}, render: (_, row) => <Button type="link" onClick={() => openOrganizationDetail(row.id)} {...testId(`platform-organization-detail-${row.id}`)}>{formatNameCode(row.name, row.code)}</Button>},
+        {key: 'code', title: '编码', dataIndex: 'code', sorter: true, fieldProps: {...testId('platform-organization-filter-code'), allowClear: true, placeholder: '输入编码'}},
+        {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {ENABLED: {text: '已启用'}, DISABLED: {text: '已停用'}}, fieldProps: {...testId('platform-organization-filter-status'), allowClear: true, placeholder: '全部'}, render: (_, row) => statusLabel(row.status)},
+        {title: '来源', dataIndex: 'source', valueType: 'select', valueEnum: {MANUAL: {text: '人工维护'}, SYSTEM: {text: '系统生成'}}, hideInTable: true, fieldProps: {...testId('platform-organization-filter-source'), allowClear: true, placeholder: '全部'}},
+        ...(tab.category === 'STORE' ? [
+          {title: '项目', dataIndex: 'projectId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-project'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'PROJECT'), placeholder: '全部'}},
+          {title: '品牌', dataIndex: 'brandId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-brand'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'BRAND'), placeholder: '全部'}},
+          {title: '经营租户', dataIndex: 'tenantId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-tenant'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'TENANT'), placeholder: '全部'}},
+        ] : []),
+        {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
+      ]}
+    /></div>}
+    {kind === 'contracts' && <div {...testId('platform-contract-table')}><ProTable<ContractOverviewItem> rowKey={(row) => row.contractRef.id} loading={contractListState.loading} locale={contractListState.locale} dataSource={contractPage?.items ?? []} options={false}
+       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-contract-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); resetContractFilters(); }} {...testId('platform-contract-filter-reset')}>重置</Button>]}}
+       form={{initialValues: contractFilters}}
+       onSubmit={(value) => submitContractFilters({projectId: value.projectId, storeId: value.storeId, contractNo: value.contractNo?.trim() || undefined, phaseName: value.phaseName || undefined, tenantName: value.tenantName?.trim() || undefined, status: value.status})}
+      pagination={contractPage ? {current: contractPage.metadata.page, pageSize: contractPage.metadata.pageSize, total: contractPage.metadata.total, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }} : false}
+      onChange={(_, __, sorter) => { const current = Array.isArray(sorter) ? sorter[0] : sorter; if (!current?.order) { setContractSort('UPDATED_AT'); setContractDirection('DESC'); return; } const nextSort = current.columnKey === 'contractNo' ? 'CONTRACT_NO' : current.columnKey === 'effectiveFrom' ? 'EFFECTIVE_FROM' : 'UPDATED_AT'; setContractSort(nextSort); setContractDirection(current.order === 'ascend' ? 'ASC' : 'DESC'); setPage(1); }}
+      columns={[
+        {title: '项目', dataIndex: 'projectId', hideInTable: true, valueType: 'select', fieldProps: {...testId('platform-contract-filter-project'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: contractFilterOptions(contractPage?.filterOptions, 'PROJECT'), placeholder: '请选择项目'}},
+        {key: 'contractNo', title: '合同编号', dataIndex: 'contractNo', sorter: true, fieldProps: {...testId('platform-contract-filter-number'), allowClear: true}, render: (_, row) => <Button type="link" onClick={() => openContractDetail(row.contractRef.id)} {...testId(`platform-contract-detail-${row.contractRef.id}`)}>{row.contractRef.code}</Button>},
+        {title: '门店', dataIndex: 'storeId', hideInTable: true, valueType: 'select', fieldProps: {...testId('platform-contract-filter-store'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: contractFilterOptions(contractPage?.filterOptions, 'STORE'), disabled: !contractFilters.projectId, placeholder: '请选择门店'}},
+        {title: '分期', dataIndex: 'phaseName', hideInTable: true, valueType: 'select', fieldProps: {...testId('platform-contract-filter-phase'), allowClear: true, options: (contractPage?.phaseOptions ?? []).map((phase) => ({value: phase, label: phase})), disabled: !contractFilters.projectId, placeholder: '请选择分期'}},
+        {title: '经营租户', dataIndex: 'tenantName', hideInTable: true, fieldProps: {...testId('platform-contract-filter-tenant'), allowClear: true, placeholder: '输入租户名称或编码'}},
+        {title: '项目', dataIndex: 'projectRef', search: false, render: (_, row) => formatNameCode(row.projectRef.name, row.projectRef.code)},
+        {title: '门店', dataIndex: 'storeRef', search: false, render: (_, row) => formatNameCode(row.storeRef.name, row.storeRef.code)},
+        {title: '分期', dataIndex: 'phaseName', search: false},
+        {title: '经营租户', dataIndex: 'tenantRef', search: false, render: (_, row) => formatNameCode(row.tenantRef.name, row.tenantRef.code)},
+        {title: '起止日期', key: 'effectiveFrom', search: false, sorter: true, render: (_, row) => `${row.effectiveFrom} 至 ${row.effectiveTo ?? '长期'}`},
+        {title: '货号数量', dataIndex: 'items', search: false, render: (_, row) => String(row.items?.length ?? 0)},
+        {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {VALID: {text: '生效中'}, INVALID: {text: '已失效'}}, fieldProps: {...testId('platform-contract-filter-status'), allowClear: true, placeholder: '全部'}, render: (_, row) => statusLabel(row.status)},
+        {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
+      ]}
+    /></div>}
+    <OrganizationOverviewDetailDrawer open={organizationDetail.isOpen} loading={organizationDetail.loading} problem={problem} item={organizationDetail.target} onClose={closeOrganizationDetail}/>
+    <ContractOverviewDetailDrawer open={contractDetail.isOpen} loading={contractDetail.loading} problem={problem} item={contractDetail.target} onClose={closeContractDetail} onAudit={() => contractDetail.target && setAuditTarget({entityType: 'STORE_CONTRACT', entityId: contractDetail.target.contractRef.id, displayName: contractDetail.target.contractRef.code})}/>
     <PlatformAuditHistoryModal open={Boolean(auditTarget)} target={auditTarget} groupWorkspaceKey={groupWorkspaceKey} onClose={() => setAuditTarget(undefined)}/>
   </>;
 }

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-CP-U17",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-CP-U17",
+      "title": "Formal owner-command r5-full seed executor",
+      "approvedAssertions": [
+        "FORMAL_SEED_REMAINS_AN_EXPLICIT_CONFIRMED_DESTRUCTIVE_ENTRY",
+        "ROOT_BOOTSTRAP_AND_THE_CONTRACT_ALLOWLISTED_TIME_DRIVEN_TERMINAL_FIXTURE_ARE_THE_ONLY_DIRECT_SQL_STAGES",
+        "POST_BOOTSTRAP_FIXTURES_USE_OWNER_HTTP_COMMANDS_AND_READBACKS",
+        "FORMAL_SEED_DOES_NOT_DEPEND_ON_L2_DEBUG_OTP_EXPOSURE",
+        "FIXED_CLOCK_AND_FIXED_OTP_ARE_EXACTLY_GATED_TO_NON_PRODUCTION_R5_FULL_DEV",
+        "REPORTS_PROVE_PER_OPERATION_HTTP_AND_DATABASE_METRICS_WITHOUT_SECRET_OUTPUT"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate CP-U17"},
+        {"path": "scripts/dev/seed", "disposition": "update", "target": "invoke formal executor after confirmation"},
+        {"path": "scripts/dev/owner-command-seed-executor.mjs", "disposition": "create", "target": "formal owner-command seed engine and report"},
+        {"path": "scripts/dev/owner-command-seed-executor.test.mjs", "disposition": "create", "target": "focused formal executor red and green proof"},
+        {"path": "scripts/dev/terminal-fixture-state.mjs", "disposition": "create", "target": "allowlisted managed remote terminal-state adapter"},
+        {"path": "scripts/dev/terminal-fixture-state.test.mjs", "disposition": "create", "target": "terminal allowlist and no-new-surface red proof"},
+        {"path": "scripts/dev/r5-dev-runner.mjs", "disposition": "update", "target": "pass private fixed-seed value and exact runtime markers only to local backend"},
+        {"path": "scripts/dev/profiles/r5-full.json", "disposition": "update", "target": "declare the exact non-production formal-seed profile markers"},
+        {"path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs", "disposition": "update", "target": "reuse common mechanics without making formal seed depend on L2"},
+        {"path": "scripts/README.md", "disposition": "update", "target": "document formal seed/run/report semantics"},
+        {"path": "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json", "disposition": "update", "target": "record executable owner-command implementation boundary"},
+        {"path": "apps/backend/catering-business-server/src/main/resources/application.yaml", "disposition": "update", "target": "declare private dev-only configuration keys"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/DevSeedRuntimeConfiguration.java", "disposition": "create", "target": "fail-closed r5-full private fixed issuer wiring without a clock override"},
+        {"path": "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/seed/DevFixedOtpIssuer.java", "disposition": "create", "target": "purpose-bound private OTP issuer contract"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java", "disposition": "update", "target": "use fixed issuer at invitation owner issuance only"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java", "disposition": "update", "target": "use fixed issuer at password-reset owner issuance only"},
+        {"path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/DevSeedRuntimeConfigurationTest.java", "disposition": "create", "target": "configuration red and green control"},
+        {"path": "project-memory/operations/phase-retrospective-and-systemic-repair.md", "disposition": "update", "target": "durable formal seed failure family"},
+        {"path": "project-memory/index.json", "disposition": "update", "target": "deterministic index after routed memory body update"},
+        {"path": "project-memory/index.md", "disposition": "update", "target": "deterministic index after routed memory body update"},
+        {"path": ".runtime/compliance-control/problem-family-dispositions/9d25308eb1e458c86d2cd6f11d0ae9929ae3a348e513a116b071a56245e07030.json", "disposition": "create", "target": "current prompt disposition"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-package-input.json", "disposition": "create", "target": "execution binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-implementation-amendment.md", "disposition": "create", "target": "source-bound design"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-problem-family.json", "disposition": "create", "target": "generalized root cause"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-package-exit.json", "disposition": "create", "target": "runtime handback"},
+        {"path": "doc/review/platform/rm1p6-cp-u17-formal-seed-executor-delivery-manifest.json", "disposition": "create", "target": "exact change-surface declaration"}
+      ],
+      "complianceRoute": {"taskKind": "implementation", "domain": "platform", "consumerFace": "backend", "owner": "platform", "impact": "runtime", "trigger": "failure"},
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": ["project-memory/kernel/05-evidence-runtime-and-git.md", "project-memory/pitfalls/log-first-failure-retry.md", "project-memory/operations/phase-retrospective-and-systemic-repair.md"],
+        "APPROVED_ASSERTIONS": ["Dexter 2026-08-03 formal seed ruling", "r5-full fixture contract#bootstrapBoundary", "r5-full fixture contract#devFixedOtpIssuer", "r5-full fixture contract#seedStages"],
+        "FORBIDDEN_PSEUDO_FIXES": ["manual fixture SQL outside the exact terminal allowlist", "moving root bootstrap into reset", "direct seed process", "L2 debug OTP dependency", "new invitation-expiry HTTP/capability/UI feature", "global fixed clock", "secret report output", "dry-run/bootstrp claimed as seed PASS"],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": ["doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-implementation-amendment.md"],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": ["scripts/dev/seed", "scripts/dev/r5-seed-bootstrap.mjs", "generated edge route registry", "WorkspaceInvitationService", "WorkspacePasswordResetService"],
+        "DUE_STANDARDS_RULE_IDS": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance"]
+      }
+    }
+  ]
+}

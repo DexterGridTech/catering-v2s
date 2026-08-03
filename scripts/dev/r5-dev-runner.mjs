@@ -9,6 +9,8 @@ const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.ru
 const manifestPath = path.join(runtime, 'run-manifest.json');
 const portLockPath = path.join(root, '.runtime/r5/managed-port-lock');
 const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const startToken = (pid) => run('ps', ['-o', 'lstart=', '-p', String(pid)]).trim();
+const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const fail = (reason) => { process.stderr.write(`R5_DEV_RUNNER=REFUSED; REASON=${reason}\n`); process.exit(2); };
 const run = (command, args, options = {}) => {
   const result = spawnSync(command, args, {cwd: root, encoding: 'utf8', ...options});
@@ -43,6 +45,7 @@ function credentials() {
     if (!entries.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET) entries.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET = secret();
     if (!entries.CATERING_ASSET_S3_ACCESS_KEY) entries.CATERING_ASSET_S3_ACCESS_KEY = `r5asset${crypto.randomBytes(8).toString('hex')}`;
     if (!entries.CATERING_ASSET_S3_SECRET_KEY) entries.CATERING_ASSET_S3_SECRET_KEY = secret();
+    if (!entries.V2S_SEED_REPORT_SECRET) entries.V2S_SEED_REPORT_SECRET = secret();
     entries.V2S_SEED_PLATFORM_ROOT_PASSWORD = 'root';
     delete entries.V2S_SEED_PLATFORM_BOOTSTRAP_PASSWORD;
     writeFileSync(target, `${Object.entries(entries).map(([name, value]) => `${name}=${value}`).join('\n')}\n`, {mode: 0o600});
@@ -62,6 +65,7 @@ function credentials() {
     CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: secret(),
     CATERING_ASSET_S3_ACCESS_KEY: `r5asset${crypto.randomBytes(8).toString('hex')}`,
     CATERING_ASSET_S3_SECRET_KEY: secret(),
+    V2S_SEED_REPORT_SECRET: secret(),
   };
   writeFileSync(target, `${Object.entries(values).map(([name, value]) => `${name}=${value}`).join('\n')}\n`, {mode: 0o600});
   chmodSync(target, 0o600);
@@ -91,14 +95,28 @@ function provisionObjectStorage(env, secrets) {
 }
 function openTunnel(env) {
   const log = path.join(runtime, 'remote-postgres-tunnel.log');
-  const logFd = openSync(log, 'a');
+  const logFd = openSync(log, 'w');
   const tunnel = spawn('ssh', ['-N', '-o', 'BatchMode=yes', '-o', 'ExitOnForwardFailure=yes', '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=3', '-L', '25432:127.0.0.1:5432', '-L', '29000:127.0.0.1:19000', env.environment.V2S_DEV_REMOTE_HOST], {cwd: root, detached: true, stdio: ['ignore', 'ignore', logFd]});
   if (!tunnel.pid) fail('REMOTE_TUNNEL_START_FAILED');
   tunnel.unref();
   return {name: 'remote-dev-tunnels', pid: tunnel.pid, log, command: ['ssh', '-N', '-L', '25432:127.0.0.1:5432', '-L', '29000:127.0.0.1:19000', env.environment.V2S_DEV_REMOTE_HOST]};
 }
 
-function start() {
+async function waitForBusinessReady(processValue) {
+  const deadline = Date.now() + 120_000;
+  let attempts = 0;
+  while (Date.now() < deadline) {
+    attempts += 1;
+    if (!pidAlive(processValue.pid) || startToken(processValue.pid) !== processValue.startToken) fail('BUSINESS_SERVER_IDENTITY_DRIFT');
+    const log = existsSync(processValue.log) ? readFileSync(processValue.log, 'utf8') : '';
+    if (log.includes('Started CateringV2sApplication')) return {attempts, readiness: 'SPRING_BOOT_STARTED_AFTER_FLYWAY'};
+    await delay(1_000);
+  }
+  fail('BUSINESS_SERVER_READINESS_TIMEOUT');
+}
+
+async function start() {
+  run(path.join(root, 'scripts/env/check-runtime-resource-budget'), [path.join(root, '.runtime')]);
   if (existsSync(manifestPath)) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     if ((manifest.processes ?? []).some((value) => pidAlive(value.pid))) fail('MANAGED_RUN_ALREADY_ACTIVE');
@@ -109,38 +127,51 @@ function start() {
   const freshFlag = process.env.V2S_R5_REQUIRE_FRESH_DATABASE;
   if (freshFlag !== undefined && freshFlag !== 'true' && freshFlag !== 'false') fail('FRESH_DATABASE_FLAG_INVALID');
   const requireFreshDatabase = freshFlag === 'true';
-  const otpDebugFlag = process.env.V2S_R5_L2_OTP_DEBUG_EXPOSURE;
-  if (otpDebugFlag !== undefined && otpDebugFlag !== 'true' && otpDebugFlag !== 'false') fail('L2_OTP_DEBUG_FLAG_INVALID');
-  const otpDebugExposure = otpDebugFlag === 'true';
+  const otpDebugExposure = true;
   const credential = credentials();
+  const runId = `rm1-seed-${crypto.randomUUID()}`;
+  const seedEventsPath = path.join(runtime, 'evidence', 'seed-request-events.jsonl');
   const provision = provisionRemote(env, credential.values, requireFreshDatabase);
   if (requireFreshDatabase && !provision.freshDatabase) fail('FRESH_DATABASE_PROOF_MISSING');
   const objectStorage = provisionObjectStorage(env, credential.values);
   const portLock = acquirePortLock();
+  let processes = [];
   try {
   const tunnel = openTunnel(env);
   const commands = [
-    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: otpDebugExposure ? 'true' : 'false', CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: 'http://127.0.0.1:29000', CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: 'http://127.0.0.1:29000', CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
+    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: 'http://127.0.0.1:29000', CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: 'http://127.0.0.1:29000', CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
     {name: 'platform-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/platform-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_PLATFORM_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
     {name: 'operations-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/operations-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_OPERATIONS_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
   ];
-  const processes = [tunnel, ...commands.map((entry) => {
+  processes = [tunnel, ...commands.map((entry) => {
     const log = path.join(runtime, `${entry.name}.log`);
-    const logFd = openSync(log, 'a');
+    const logFd = openSync(log, 'w');
     const child = spawn(entry.command, entry.args, {cwd: root, detached: true, stdio: ['ignore', logFd, logFd], env: {...process.env, ...entry.env}});
     child.unref();
     return {name: entry.name, pid: child.pid, log, command: [entry.command, ...entry.args]};
-  })];
-  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), database: env.environment.V2S_DEV_DATABASE_URL, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, portLock, processes}, null, 2) + '\n');
+  })].map((value) => ({...value, startToken: startToken(value.pid)}));
+  const businessServer = processes.find((value) => value.name === 'business-server');
+  const readiness = await waitForBusinessReady(businessServer);
+  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, database: env.environment.V2S_DEV_DATABASE_URL, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, portLock, processes, readiness}, null, 2) + '\n');
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
-  } catch (error) { releasePortLock(portLock); throw error; }
+  } catch (error) {
+    for (const value of processes) {
+      if (Number.isInteger(value.pid) && pidAlive(value.pid) && startToken(value.pid) === value.startToken) {
+        try { process.kill(-value.pid, 'SIGTERM'); } catch { try { process.kill(value.pid, 'SIGTERM'); } catch { /* owned process already exited */ } }
+      }
+    }
+    releasePortLock(portLock); throw error;
+  }
 }
 function stop() {
   if (!existsSync(manifestPath)) { process.stdout.write('R5_DEV_STOP=NO_MANAGED_PROCESS\n'); return; }
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   if (manifest.kind !== 'r5-dev-run-manifest' || !Array.isArray(manifest.processes)) fail('MANIFEST_INVALID');
-  for (const value of manifest.processes) if (Number.isInteger(value.pid) && pidAlive(value.pid)) { try { process.kill(-value.pid, 'SIGTERM'); } catch { process.kill(value.pid, 'SIGTERM'); } }
+  for (const value of manifest.processes) if (Number.isInteger(value.pid) && pidAlive(value.pid)) {
+    if (typeof value.startToken !== 'string' || startToken(value.pid) !== value.startToken) fail(`PROCESS_IDENTITY_MISMATCH:${value.name}`);
+    try { process.kill(-value.pid, 'SIGTERM'); } catch { process.kill(value.pid, 'SIGTERM'); }
+  }
   releasePortLock(manifest.portLock); rmSync(manifestPath); process.stdout.write('R5_DEV_STOP=PASS\n');
 }
 const mode = process.argv[2];
-if (mode === 'start') start(); else if (mode === 'stop') stop(); else fail('USAGE_START_OR_STOP');
+if (mode === 'start') start().catch((error) => fail(error?.message ?? 'START_FAILED')); else if (mode === 'stop') stop(); else fail('USAGE_START_OR_STOP');

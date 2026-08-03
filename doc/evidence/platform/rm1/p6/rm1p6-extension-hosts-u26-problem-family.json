@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "confirmed-problem-family",
+  "problem": "A configurable extension host is incomplete when its definition type is added without the same owner-owned value lifecycle, generated contract, form input, durable readback, formal fixture coverage, and every approved detail read projection as existing hosts.",
+  "rootCauseLayer": "cross-layer extension-host completeness",
+  "finiteApplicabilityDenominator": [
+    "COMMERCIAL_GROUP",
+    "REGION",
+    "PROJECT"
+  ],
+  "counterexampleBoundary": "Existing hosts retain their current owners and UI paths; this package neither introduces a generic cross-owner value writer nor changes unrelated organization types.",
+  "minimalRepair": "Extend the existing definition/value model at the owning commercial-group and hierarchy services, expose it through generated edge contracts, and reuse one operations organization-extension field renderer for region/project form and detail paths. Reuse the generated platform definition query to map the commercial-group root readback in the platform hierarchy; keep region/project detail mapping owner-side. Seed through owner HTTP commands and assert owner readback.",
+  "preventionDestination": "U26 focused owner/contract/codegen/UI tests cover all three hierarchy details; the fresh r5-full owner-command seed covers durable owner facts."
+}

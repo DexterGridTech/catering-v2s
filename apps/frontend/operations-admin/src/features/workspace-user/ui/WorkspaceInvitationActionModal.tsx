@@ -75,7 +75,7 @@ export function WorkspaceInvitationActionModal({open, kind, invitation, queryCon
     open={open}
     onCancel={submitting ? undefined : onCancel}
     destroyOnHidden
-    maskClosable={!submitting}
+    mask={{closable: !submitting}}
     keyboard={!submitting}
     footer={[
       <Button key="cancel" onClick={onCancel} disabled={submitting} {...testId('operations-workspace-invitation-action-back')}>返回</Button>,
@@ -83,7 +83,7 @@ export function WorkspaceInvitationActionModal({open, kind, invitation, queryCon
     ]}
     {...testId('operations-workspace-invitation-action-modal')}
   >
-    {problem && <Alert type="error" showIcon message={problem} style={{marginBottom: 16}}/>}
+    {problem && <Alert type="error" showIcon title={problem} style={{marginBottom: 16}}/>}
     <Typography.Paragraph>{description}</Typography.Paragraph>
   </Modal>;
 }

@@ -1,10 +1,10 @@
-import {Alert, Button, Form, Input, Select, Space, Tag} from 'antd';
+import {Alert, Button, Tag} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {contextScopedQueryArgs, testId} from '@catering-v2s/admin-ui-foundation';
+import {contextScopedQueryArgs, formatNameCode, testId} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
-import {type BusinessEntityStatus, type HeadCompany, type Tenant} from '../../../app/api/generated/operations-edge';
+import {type BusinessEntitySortDirection, type BusinessEntitySortKey, type BusinessEntityStatus, type HeadCompany, type Tenant} from '../../../app/api/generated/operations-edge';
 import {ACTION_CAPABILITIES, adminCatalog, operationsPageDesignKeys, type OperationsPageDesignKey} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {BusinessEntityCreateDrawer} from './BusinessEntityCreateDrawer';
@@ -28,9 +28,10 @@ const actionLabel = new Map(adminCatalog.actions.map((action) => [action.actionK
 export function BusinessEntityManagementPage({pageDesignKey, queryContext, actionCapabilityKeys}: Props) {
   const config = configByKey[pageDesignKey];
   const [filters, setFilters] = useState<Filters>({});
-  const [draft, setDraft] = useState<Filters>({});
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
+  const [sort, setSort] = useState<BusinessEntitySortKey>('NAME');
+  const [direction, setDirection] = useState<BusinessEntitySortDirection>('ASC');
   const [creating, setCreating] = useState(false);
   const [detail, setDetail] = useState<BusinessEntity>();
   const [editing, setEditing] = useState<BusinessEntity>();
@@ -39,9 +40,11 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
   const query = useMemo(() => contextScopedQueryArgs({
     name: filters.name?.trim() || undefined,
     status: filters.status,
+    sort,
+    direction,
     page,
     pageSize,
-  }, queryContext), [filters.name, filters.status, page, pageSize, queryContext]);
+  }, queryContext), [direction, filters.name, filters.status, page, pageSize, queryContext, sort]);
   const path = useMemo(() => ({groupWorkspaceKey: queryContext.groupWorkspaceKey}), [queryContext.groupWorkspaceKey]);
   const brandQuery = operationsRtk.useGetOperationsOrganizationBrandsQuery(
     operationsAdminRtkRequest.getOperationsOrganizationBrands(path, {query}), {skip: config.kind !== 'BRAND'},
@@ -60,32 +63,36 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
   if (!createLabel) throw new Error('ADMIN_CATALOG_BUSINESS_ENTITY_ACTION_MISSING');
 
   const columns: ProColumns<BusinessEntity>[] = [
-    {title: '名称', dataIndex: 'name', render: (_, entity) => <Button type="link" onClick={() => setDetail(entity)} {...testId(`operations-business-entity-detail-${entity.id}`)}>{entity.name}</Button>},
-    {title: config.kind === 'TENANT' ? '统一标识' : '编码', dataIndex: config.kind === 'TENANT' ? 'unifiedSocialCreditCode' : 'code', render: (_, entity) => config.kind === 'TENANT' ? (entity as Tenant).unifiedSocialCreditCode : entity.code},
-    {title: '状态', dataIndex: 'status', render: (_, entity) => <Tag color={entity.status === 'ENABLED' ? 'green' : 'default'}>{entity.status === 'ENABLED' ? '启用' : '停用'}</Tag>},
-    {title: '更新时间', dataIndex: 'updatedAt', render: (_, entity) => new Date(entity.updatedAt).toLocaleString()},
+    {key: 'name', title: config.kind === 'BRAND' ? '品牌名称' : '名称', dataIndex: 'name', sorter: true, fieldProps: {...testId(`operations-business-entity-filter-name-${config.kind.toLowerCase()}`), allowClear: true}, render: (_, entity) => <Button type="link" onClick={() => setDetail(entity)} {...testId(`operations-business-entity-detail-${entity.id}`)}>{formatNameCode(entity.name, entity.code)}</Button>},
+    {key: 'code', title: config.kind === 'TENANT' ? '统一标识' : '编码', dataIndex: config.kind === 'TENANT' ? 'unifiedSocialCreditCode' : 'code', sorter: config.kind !== 'TENANT', search: false, render: (_, entity) => config.kind === 'TENANT' ? (entity as Tenant).unifiedSocialCreditCode : entity.code},
+    {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {ENABLED: {text: '启用'}, DISABLED: {text: '停用'}}, fieldProps: {...testId(`operations-business-entity-filter-status-${config.kind.toLowerCase()}`), allowClear: true}, render: (_, entity) => <Tag color={entity.status === 'ENABLED' ? 'green' : 'default'}>{entity.status === 'ENABLED' ? '启用' : '停用'}</Tag>},
+    {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', sorter: true, search: false, render: (_, entity) => new Date(entity.updatedAt).toLocaleString()},
   ];
 
   return <>
-    {activeQuery.error && <Alert type="error" showIcon message="经营实体加载失败" style={{marginBottom: 16}}/>}
-    <Form layout="inline" onFinish={() => { setFilters(draft); setPage(1); }} style={{marginBottom: 16}}>
-      <Form.Item label={config.kind === 'BRAND' ? '品牌名称' : '名称'}>
-        <Input aria-label={config.kind === 'BRAND' ? '品牌名称' : '名称'} value={draft.name} onChange={(event) => setDraft((value) => ({...value, name: event.target.value}))}/>
-      </Form.Item>
-      <Form.Item label="状态">
-        <Select aria-label="状态" allowClear placeholder="全部" value={draft.status} onChange={(status) => setDraft((value) => ({...value, status}))} options={[{value: 'ENABLED', label: '启用'}, {value: 'DISABLED', label: '停用'}]} style={{width: 120}}/>
-      </Form.Item>
-      <Space><Button htmlType="submit">查询</Button><Button onClick={() => { setDraft({}); setFilters({}); setPage(1); }}>重置</Button></Space>
-    </Form>
+    {activeQuery.error && <Alert type="error" showIcon title="经营实体加载失败" style={{marginBottom: 16}}/>}
     <ProTable<BusinessEntity>
       rowKey="id"
-      search={false}
+      search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId(`operations-business-entity-filter-submit-${config.kind.toLowerCase()}`)}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId(`operations-business-entity-filter-reset-${config.kind.toLowerCase()}`)}>重置</Button>]}}
+      onSubmit={(value) => { setFilters({name: value.name?.trim() || undefined, status: value.status}); setPage(1); }}
       options={false}
       columns={columns}
       dataSource={rows}
       loading={activeQuery.isLoading}
       toolBarRender={() => canCreate ? [<Button key="create" type="primary" onClick={() => setCreating(true)} {...testId(`operations-business-entity-create-${config.kind.toLowerCase()}`)}>{createLabel}</Button>] : []}
       pagination={{current: page, pageSize, total: result?.metadata.total ?? 0, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }}}
+      onChange={(_, __, sorter) => {
+        const current = Array.isArray(sorter) ? sorter[0] : sorter;
+        if (!current?.order) {
+          setSort('NAME');
+          setDirection('ASC');
+          return;
+        }
+        const nextSort = current?.columnKey === 'name' ? 'NAME' : current?.columnKey === 'code' ? 'CODE' : 'UPDATED_AT';
+        setSort(nextSort);
+        setDirection(current.order === 'ascend' ? 'ASC' : 'DESC');
+        setPage(1);
+      }}
       {...testId(`operations-business-entity-${config.kind.toLowerCase()}-page`)}
     />
     <BusinessEntityDetailDrawer entity={detail} kind={config.kind} queryContext={queryContext} actionCapabilityKeys={actionCapabilityKeys} onClose={() => setDetail(undefined)} onEdit={(entity) => { setDetail(undefined); setEditing(entity); }} onStatus={(entity) => { setDetail(undefined); setTransitioning(entity); }} onAuthorizeBrands={(entity) => { setDetail(undefined); setAuthorizing(entity); }}/>

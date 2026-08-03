@@ -1,7 +1,8 @@
+import {AppstoreOutlined} from '@ant-design/icons';
 import {Alert, Button, Form, Result, Select} from 'antd';
-import {testId, useAsyncGenerationGuard, useOverlayLock, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
-import {Fragment, createContext, useContext, useEffect, useState, type ReactNode} from 'react';
-import {platformClient, platformRefreshSignal, type PlatformApiProblem} from '../api/PlatformTransport';
+import {formatNameCode, testId, useAsyncGenerationGuard, useOverlayLock, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
+import {Fragment, createContext, useContext, useEffect, useRef, useState, type ReactNode} from 'react';
+import {platformClient, platformProblemOf, platformRefreshSignal, type PlatformApiProblem} from '../api/PlatformTransport';
 import type {GroupWorkspacePage} from '../api/generated/platform-edge';
 
 type WorkspaceScopeValue = {
@@ -24,6 +25,7 @@ export function WorkspaceScopeProvider({children}: {children: ReactNode}) {
   const [retry, setRetry] = useState(0);
   const generation = useAsyncGenerationGuard();
   const refreshVersion = useRefreshVersion(platformRefreshSignal);
+  const confirmedRefreshVersion = useRef(refreshVersion);
 
   // A successful platform mutation is the authoritative point to re-check the
   // last confirmed selection against the complete enabled owner result, not a
@@ -31,15 +33,17 @@ export function WorkspaceScopeProvider({children}: {children: ReactNode}) {
   useEffect(() => { setSearch(''); }, [refreshVersion]);
 
   useEffect(() => {
+    const shouldReconcileSelection = confirmedRefreshVersion.current !== refreshVersion;
+    confirmedRefreshVersion.current = refreshVersion;
     const request = generation.begin();
     setProblem(undefined);
-    void platformClient.listPlatformGroupWorkspaces({}, {query: {name: search.trim() || undefined, status: 'ENABLED', page: 1, pageSize: 100}})
+    void platformClient.listPlatformGroupWorkspaces({}, {query: {name: shouldReconcileSelection ? undefined : search.trim() || undefined, status: 'ENABLED', page: 1, pageSize: 100}})
       .then((value) => {
         if (!generation.isCurrent(request)) return;
         setResult(value);
-        if (!search.trim() && selectedGroupWorkspaceKey && !value.items.some((item) => item.groupWorkspaceKey === selectedGroupWorkspaceKey)) setSelectedGroupWorkspaceKey(undefined);
+        if (shouldReconcileSelection && selectedGroupWorkspaceKey && !value.items.some((item) => item.groupWorkspaceKey === selectedGroupWorkspaceKey)) setSelectedGroupWorkspaceKey(undefined);
       })
-      .catch((error) => { if (generation.isCurrent(request)) setProblem(error as PlatformApiProblem); });
+      .catch((error) => { if (generation.isCurrent(request)) setProblem(platformProblemOf(error)); });
   }, [generation, refreshVersion, retry, search, selectedGroupWorkspaceKey]);
 
   return <WorkspaceScopeContext.Provider value={{result, selectedGroupWorkspaceKey, setSelectedGroupWorkspaceKey, setSearch, problem, refresh: () => setRetry((value) => value + 1)}}>{children}</WorkspaceScopeContext.Provider>;
@@ -52,23 +56,24 @@ export function useWorkspaceScope() {
 }
 
 /** This is the sole UI selector, hosted in the authenticated shell side-bar footer. */
-export function WorkspaceScopeSelector() {
+export function WorkspaceScopeSelector({collapsed = false}: {collapsed?: boolean}) {
   const {result, selectedGroupWorkspaceKey, setSelectedGroupWorkspaceKey, setSearch, problem, refresh} = useWorkspaceScope();
   const locked = useOverlayLock();
   return <>
-    {problem && <Alert type="error" showIcon message="暂时无法获取集团空间" description={<><span>{problem.detail}</span><Button type="link" size="small" onClick={refresh}>重试</Button></>}/>} 
-    <Form.Item label="集团空间" required>
+    {problem && <Alert type="error" showIcon title="暂时无法获取集团空间" description={<><span>{problem.detail}</span><Button type="link" size="small" onClick={refresh}>重试</Button></>}/>}
+    <Form.Item style={{marginBottom: 0}} label={collapsed ? undefined : <AppstoreOutlined aria-label="集团空间"/>}>
       <Select
         loading={!result && !problem}
         disabled={locked}
-        placeholder="请选择集团空间"
+        aria-label="集团空间"
+        placeholder={collapsed ? undefined : '请选择集团空间'}
+        labelRender={collapsed ? () => <AppstoreOutlined aria-hidden="true"/> : undefined}
+        style={collapsed ? {width: 40} : undefined}
         value={selectedGroupWorkspaceKey}
         onSelect={(value) => { setSelectedGroupWorkspaceKey(value); setSearch(''); }}
-        showSearch
-        filterOption={false}
-        onSearch={(value) => setSearch(value)}
+        showSearch={{filterOption: false, onSearch: (value) => setSearch(value)}}
         notFoundContent={result && result.items.length === 0 ? '暂无可选择的集团空间' : undefined}
-        options={(result?.items ?? []).map((row) => ({value: row.groupWorkspaceKey, label: row.name}))}
+        options={(result?.items ?? []).map((row) => ({value: row.groupWorkspaceKey, label: formatNameCode(row.name, row.groupWorkspaceKey)}))}
         {...testId('platform-workspace-selector')}
       />
     </Form.Item>

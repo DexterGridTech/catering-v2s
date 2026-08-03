@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-BOOTSTRAP-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/api/PlatformDiagnosticBootstrap.java",
+    "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+    "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-bootstrap-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-bootstrap-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-bootstrap-package-exit.json",
+    "doc/review/platform/rm1p6-u13-http-diagnostic-bootstrap-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "gradle :apps:backend:catering-business-server:modules:platform-admin-iam:testClasses",
+      "node scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:platform-admin-iam:test",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/code-layout",
+      "scripts/check/openapi-contracts"
+    ],
+    "remoteTestcontainersRun": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785573509440-86768",
+    "remoteTestcontainersResult": "14 tests passed; run-scoped log read; firstFailure=null; technical-run cleanup PASS",
+    "ownerAssertions": [
+      "empty platform-admin state admits exactly one bootstrap administrator",
+      "a second bootstrap attempt is rejected with DiagnosticBootstrapUnavailableException",
+      "normal administrator creation still rejects a missing or disabled actor",
+      "each PlatformAuthenticationServiceTest case starts from an isolated current-schema platform-IAM baseline"
+    ],
+    "nonHttpSurfaceScan": "PlatformDiagnosticBootstrap/bootstrapFirstAdministrator occurs only in platform-iam API, owner implementation and focused test; zero OpenAPI, edge controller, generated consumer or frontend occurrences"
+  },
+  "knownUnrelatedGateState": {
+    "scripts/check/database-boundaries": "FAIL at pre-existing foundation diagnostic SecurityDiagnosticEvent; not caused by this package and not used as C02 PASS evidence"
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "legacyBaselineExitValidator": "NOT_INVOKED_DURING_OBSERVATION; this package records only its actual changed-path list and focused proof."
+  },
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "scopeStatement": "staticProofStatus=PASS proves only the bounded owner-owned diagnostic bootstrap implementation and its focused current-schema database proof. It is not HTTP workload coverage, an efficiency/performance result, DEV, seed/reset, browser L2, user-journey business PASS, cleanup PASS, or Roadmap closure."
+}

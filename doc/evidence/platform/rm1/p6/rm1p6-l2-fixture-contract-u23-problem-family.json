@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-L2-FIXTURE-CONTRACT-U23",
+  "problemFamily": "L2_FIXTURE_CONTRACT_PRESENTATION_AND_SHARED_STATE_DRIFT",
+  "rootCause": "the platform L2 fixture read a non-existent generic name property from an initializeCommercialGroup response whose accepted contract exposes groupName, fixture producers drifted from the canonical name(code) formatter, the browser suite concurrently reused one mutable root/fixture while asserting hidden, collapsed, transient, or ambiguous presentation nodes, its editable GROUP role violated the real form's required owner-catalog page-selection invariant, and three searchable ProTable panels relied on default actions that did not invoke their controlled filter-state transition",
+  "denominator": [
+    "platform L2 commercial-group response consumer",
+    "platform L2 and joint L2 name/code label producers",
+    "all platform L2 fixture roles used by an editable form",
+    "all platform L2 files that sign in as root",
+    "all platform L2 mutable journey files",
+    "all generic detail-text and Ant Design Select locators",
+    "all collapsed QueryFilter fields and workspace Select transitions",
+    "all platform-admin and operations-admin searchable ProTable panels"
+  ],
+  "counterexamples": [
+    "joint L2 does not read the commercial-group response",
+    "workspace creation response intentionally uses name",
+    "read-only test suites with independent principals may remain parallel",
+    "scalar query input may intentionally use bare name while result navigation must use its rendered canonical label",
+    "read-only definition tables intentionally use search=false and are not QueryFilter surfaces"
+  ],
+  "invariant": "each fixture response projection uses its generated OpenAPI field, each fixture label matches the shared canonical formatter, each editable fixture role satisfies the same owner-catalog form invariants as production input, every shared-fixture browser journey runs serially with a visible, expanded, settled and exact locator, and every controlled searchable ProTable explicitly submits its form",
+  "minimalFix": "replace group.json.name with group.json.groupName, emit name(code) from every fixture producer, create the editable GROUP role with a valid owner-catalog page key, set the shared platform L2 suite to one worker, expand before accessing collapsed QueryFilter fields, await Select closure, scope every affected locator to its exact visible surface, and give every affected ProTable explicit form.submit and reset actions"
+}

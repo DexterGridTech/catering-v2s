@@ -127,7 +127,7 @@
       },
       "post": {
         "operationId": "createPlatformAdmin",
-        "x-required-capability": "REQ_CREATE_PLATFORM_ADMIN",
+        "x-required-platform-authorization": "REQ_CREATE_PLATFORM_ADMIN",
         "tags": [
           "platform-iam"
         ],
@@ -294,7 +294,7 @@
     "/api/platform/admin-users/{platformAdminId}/profile": {
       "patch": {
         "operationId": "updatePlatformAdminProfile",
-        "x-required-capability": "REQ_UPDATE_PLATFORM_ADMIN_PROFILE",
+        "x-required-platform-authorization": "REQ_UPDATE_PLATFORM_ADMIN_PROFILE",
         "tags": [
           "platform-iam"
         ],
@@ -396,7 +396,7 @@
     "/api/platform/admin-users/{platformAdminId}/status": {
       "post": {
         "operationId": "transitionPlatformAdminStatus",
-        "x-required-capability": "REQ_TRANSITION_PLATFORM_ADMIN_STATUS",
+        "x-required-platform-authorization": "REQ_TRANSITION_PLATFORM_ADMIN_STATUS",
         "tags": [
           "platform-iam"
         ],
@@ -497,7 +497,7 @@
     "/api/platform/admin-users/{platformAdminId}/credential-reset": {
       "post": {
         "operationId": "resetPlatformAdminCredential",
-        "x-required-capability": "REQ_RESET_PLATFORM_ADMIN_CREDENTIAL",
+        "x-required-platform-authorization": "REQ_RESET_PLATFORM_ADMIN_CREDENTIAL",
         "tags": [
           "platform-iam"
         ],

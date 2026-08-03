@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U14",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-cp-u14-reset-transport-delivery-manifest.json",
+  "deliveryManifestSha256": "14416fd9635d9b0e8f5a926a0eaaee429f173662c10000d0d741c02b18ea3235",
+  "unitId": "RM1P6-CP-U14",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["PF-R5-RESET-REMOTE-MANAGEMENT-TRANSPORT"],
+  "businessEvidenceObligation": "CONTROL_PLANE_NOT_APPLICABLE",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U09",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u09-package-exit.json",
+    "exitSha256": "ffc4bb95dc76af32e601b62e493d2c9ced474509bab345750e657086965bb052"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u14-reset-transport-implementation-amendment.md",
+    "sha256": "d4880f978a57dfb6fff5b0248de278e29c35dbe4d484f9181ffa9528dbfd5a4b"
+  },
+  "authorizationBoundary": "Dexter authorized CP-U14 only for remote reset transport correction and its evidence. No U13 source, seed executor, browser L2, UAT, business contract or Roadmap state change is authorized."
+}

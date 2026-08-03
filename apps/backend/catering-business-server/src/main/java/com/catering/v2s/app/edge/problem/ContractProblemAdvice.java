@@ -173,9 +173,11 @@ public final class ContractProblemAdvice {
         return problem(HttpStatus.UNAUTHORIZED, exception instanceof PlatformAuthenticationService.SessionExpiredException ? "PLATFORM_IAM_SESSION_EXPIRED" : "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "会话不可用或已过期", request);
     }
 
-    @ExceptionHandler({PlatformAuthenticationService.AccountDisabledException.class, WorkspaceAdministrationService.WorkspaceDisabledException.class, WorkspaceAdministrationService.WorkspaceStatusInvalidException.class, WorkspaceAccountService.WorkspaceDisabledException.class, WorkspaceRoleService.WorkspaceDisabledException.class})
+    @ExceptionHandler({PlatformAuthenticationService.AccountDisabledException.class, WorkspaceAuthenticationService.AccountDisabledException.class, WorkspaceAuthenticationService.WorkspaceDisabledException.class, WorkspaceAdministrationService.WorkspaceDisabledException.class, WorkspaceAdministrationService.WorkspaceStatusInvalidException.class, WorkspaceAccountService.WorkspaceDisabledException.class, WorkspaceRoleService.WorkspaceDisabledException.class})
     ResponseEntity<Problem> disabled(RuntimeException exception, HttpServletRequest request) {
         String code = exception instanceof PlatformAuthenticationService.AccountDisabledException ? "PLATFORM_IAM_ACCOUNT_DISABLED"
+            : exception instanceof WorkspaceAuthenticationService.AccountDisabledException ? "WORKSPACE_IAM_ACCOUNT_DISABLED"
+            : exception instanceof WorkspaceAuthenticationService.WorkspaceDisabledException ? "WORKSPACE_IAM_WORKSPACE_DISABLED"
             : exception instanceof WorkspaceAdministrationService.WorkspaceDisabledException || exception instanceof WorkspaceAccountService.WorkspaceDisabledException || exception instanceof WorkspaceRoleService.WorkspaceDisabledException ? "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED"
             : "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID";
         return problem(HttpStatus.FORBIDDEN, code, "当前主体不可执行该操作", request);
@@ -186,14 +188,14 @@ public final class ContractProblemAdvice {
         return problem(HttpStatus.FORBIDDEN, "PLATFORM_COMMON_ACCESS_DENIED", "当前主体无权执行该操作", request);
     }
 
-    @ExceptionHandler(PlatformAuthenticationService.CredentialLockedException.class)
+    @ExceptionHandler({PlatformAuthenticationService.CredentialLockedException.class, WorkspaceAuthenticationService.CredentialLockedException.class})
     ResponseEntity<Problem> credentialLocked(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.LOCKED, "PLATFORM_IAM_CREDENTIAL_LOCKED", "凭据已被临时锁定", request);
+        return problem(HttpStatus.LOCKED, exception instanceof PlatformAuthenticationService.CredentialLockedException ? "PLATFORM_IAM_CREDENTIAL_LOCKED" : "WORKSPACE_IAM_CREDENTIAL_LOCKED", "凭据已被临时锁定", request);
     }
 
     @ExceptionHandler({PlatformAuthenticationService.LoginRateLimitedException.class, PlatformAuthenticationService.OtpRateLimitedException.class, WorkspaceAuthenticationService.LoginRateLimitedException.class, WorkspaceAuthenticationService.OtpRateLimitedException.class})
     ResponseEntity<Problem> rateLimited(RuntimeException exception, HttpServletRequest request) {
-        String code = exception instanceof PlatformAuthenticationService.LoginRateLimitedException ? "PLATFORM_IAM_RATE_LIMITED" : "WORKSPACE_IAM_RATE_LIMITED";
+        String code = exception instanceof PlatformAuthenticationService.LoginRateLimitedException || exception instanceof PlatformAuthenticationService.OtpRateLimitedException ? "PLATFORM_IAM_RATE_LIMITED" : "WORKSPACE_IAM_RATE_LIMITED";
         return problem(HttpStatus.TOO_MANY_REQUESTS, code, "尝试次数过多，请稍后再试", request);
     }
 

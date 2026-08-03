@@ -42,7 +42,7 @@ class PlatformAssetServiceTest {
     }
 
     @Test void onlyActiveAssetExposesPublicReferenceAfterOneTimeClaim() {
-        byte[] png = png();
+        byte[] png = png(0xff1a365d);
         var staged = assets.stageContent("GROUP_WORKSPACE_LOGO", "image/png", png.length, new ByteArrayInputStream(png));
         assertThrows(PlatformAssetService.AssetNotFoundException.class, () -> assets.requireActivePublicReference(staged.assetRef()));
         assets.claim(staged.assetRef(), workspaceId, "asset-flow", staged.bindGrant());
@@ -52,14 +52,29 @@ class PlatformAssetServiceTest {
         assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.claim(staged.assetRef(), workspaceId, "asset-flow", staged.bindGrant()));
     }
 
+    @Test void batchPublicReferencesUseTheOwnerReadAndPreserveMissingAssetFailure() {
+        byte[] firstPng = png(0xff0f172a);
+        byte[] secondPng = png(0xff2c5282);
+        var first = assets.stageContent("GROUP_WORKSPACE_LOGO", "image/png", firstPng.length, new ByteArrayInputStream(firstPng));
+        var second = assets.stageContent("GROUP_WORKSPACE_LOGO", "image/png", secondPng.length, new ByteArrayInputStream(secondPng));
+        assets.claim(first.assetRef(), workspaceId, "asset-flow", first.bindGrant());
+        assets.claim(second.assetRef(), workspaceId, "asset-flow", second.bindGrant());
+        var references = assets.requireActivePublicReferences(java.util.List.of(first.assetRef(), second.assetRef(), first.assetRef()));
+        assertEquals(2, references.size());
+        assertEquals("image/png", references.get(first.assetRef()).contentType());
+        assertThrows(PlatformAssetService.AssetNotFoundException.class, () -> assets.requireActivePublicReferences(java.util.List.of(first.assetRef(), UUID.randomUUID())));
+    }
+
     @Test void rejectsUnsupportedOrOversizedContent() {
+        byte[] png = png(0xff3b82f6);
         assertThrows(PlatformAssetService.AssetInputInvalidException.class, () -> assets.stageContent("GROUP_WORKSPACE_LOGO", "text/plain", 1, new ByteArrayInputStream(new byte[]{1})));
         assertThrows(PlatformAssetService.AssetInputInvalidException.class, () -> assets.stageContent("GROUP_WORKSPACE_LOGO", "image/png", 4, new ByteArrayInputStream(new byte[]{1, 2, 3, 4})));
-        assertThrows(PlatformAssetService.AssetInputInvalidException.class, () -> assets.stageContent("GROUP_WORKSPACE_LOGO", "image/png", png().length + 1L, new ByteArrayInputStream(png())));
+        assertThrows(PlatformAssetService.AssetInputInvalidException.class, () -> assets.stageContent("GROUP_WORKSPACE_LOGO", "image/png", png.length + 1L, new ByteArrayInputStream(png)));
     }
 
     @Test void stagingReleaseRequiresTheLiveOneTimeProof() {
-        var staged = assets.stageContent("GROUP_WORKSPACE_LOGO", "image/png", png().length, new ByteArrayInputStream(png()));
+        byte[] png = png(0xff4c51bf);
+        var staged = assets.stageContent("GROUP_WORKSPACE_LOGO", "image/png", png.length, new ByteArrayInputStream(png));
         assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.releaseStaged(staged.assetRef(), "wrong-proof"));
         assets.releaseStaged(staged.assetRef(), staged.bindGrant());
         assertEquals("RELEASED", assets.require(staged.assetRef()).status());
@@ -68,10 +83,12 @@ class PlatformAssetServiceTest {
 
     @AfterAll static void cleanup() { if (flyway != null) flyway.clean(); }
 
-    private static byte[] png() {
+    private static byte[] png(int argb) {
         try {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
-            if (!javax.imageio.ImageIO.write(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), "png", output)) throw new IllegalStateException("PNG_WRITER_UNAVAILABLE");
+            BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+            image.setRGB(0, 0, argb);
+            if (!javax.imageio.ImageIO.write(image, "png", output)) throw new IllegalStateException("PNG_WRITER_UNAVAILABLE");
             return output.toByteArray();
         } catch (java.io.IOException failure) { throw new IllegalStateException(failure); }
     }

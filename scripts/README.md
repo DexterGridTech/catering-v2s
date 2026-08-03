@@ -67,7 +67,11 @@ When the local host has no Docker daemon, execute focused R5 Testcontainers from
 scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:asset:test
 ```
 
-The entry creates a per-run temporary source and Gradle snapshot on that host, reuses only a fixed remote dependency cache, returns the test report under `.runtime/r5/evidence/remote-testcontainers/`, compares Testcontainers resources before and after the run, and deletes its exact temporary directory. It neither starts DEV nor uses the DEV database as a Testcontainers substitute.
+The entry creates a per-run temporary source and Gradle snapshot on that host, reuses only a fixed remote dependency cache, returns the test report under `.runtime/r5/evidence/remote-testcontainers/`, compares Testcontainers resources before and after the run, and deletes its exact temporary directory. Before source sync it rejects identity-matching prior managed processes, prior RSS above 2048 MiB, or any stale `org.testcontainers=true` container/volume; those observations are written into the run manifest. It neither starts DEV nor uses the DEV database as a Testcontainers substitute.
+
+The root Gradle build has a fail-closed guard for every test source that imports or constructs Testcontainers. Such a task must receive `V2S_TESTCONTAINERS_EXECUTION_PLANE=remote`, which only the managed remote runner exports immediately before the remote JVM starts. Direct local Gradle execution therefore stops with `V2S_TESTCONTAINERS_REMOTE_REQUIRED` before Testcontainers can invoke `DockerClientProviderStrategy`; no local Colima or Docker socket fallback is permitted.
+
+All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-budget <runtime-root>` before starting processes. The checker only recognizes manifest PID plus OS start token, refuses prior live managed work or RSS above 2048 MiB, and never kills a process.
 
 ## 环境执行矩阵
 
@@ -76,6 +80,35 @@ The entry creates a per-run temporary source and Gradle snapshot on that host, r
 - **后续 UAT**：仅在 Dexter 单独授权后，应用与浏览器执行面均部署并运行在远端；本机 runtime、DEV 数据库或静态检查不能替代 UAT。
 
 远端 Testcontainers 保持其 JVM/Docker 同平面的技术验证边界，不能被解释为上述浏览器 L2 或 UAT。
+
+### DEV 拓扑显式读回（必须先确认）
+
+DEV 的固定拓扑标记是：
+
+```text
+TOPOLOGY=LOCAL_APPLICATIONS_REMOTE_NON_PRODUCTION_MIDDLEWARE
+APPLICATIONS=LOCAL_HOST
+MIDDLEWARE=REMOTE_NON_PRODUCTION
+TRANSPORT=MANAGED_SSH_TUNNEL
+```
+
+具体映射由 `scripts/dev/r5-dev-runner.mjs` 的受管 runner 建立：本机
+`127.0.0.1:25432` 只是 SSH 转发入口，实际目标是远端非生产主机上的 PostgreSQL；本机
+`127.0.0.1:29000` 只是 SSH 转发入口，实际目标是远端非生产主机上的对象存储。因而
+`V2S_DEV_DATABASE_URL=jdbc:postgresql://127.0.0.1:25432/...` 不能解释为“本机数据库”，
+`CATERING_ASSET_OBJECT_STORAGE_ENDPOINT=http://127.0.0.1:29000` 也不能解释为“本机
+对象存储”。这两个本机地址只有在 manifest 中存在受管 tunnel identity 时才有效。
+本段是执行入口约束；后续获批的 runner 变更还必须把上述四个字段、remote host binding
+与 tunnel identity 同时写入 run-scoped manifest 和启动 stdout，不能把本段文档存在误报成
+runtime 已经输出拓扑字段。
+
+`reset` 不依赖本机 `psql`、`V2S_DEV_DATABASE_ADMIN_URL` 或管理员秘密。它先复用
+`r5-dev-environment` 的远端 host hash、非生产检查和精确 namespace 数据库派生，再以
+`ssh -o BatchMode=yes` 在已绑定远端主机执行 `docker exec catering-postgres psql -U catering -d postgres`。
+受管顺序固定为 terminate connections → drop 精确数据库 → 远端 readback 确认不存在；reset
+不会在本机连接数据库、启动临时 tunnel、使用本机 Docker 或自行 create 数据库。随后 `scripts/dev/start`
+复用既有远端 provision 路径创建业务库。实际 reset 写入独立 `reset/<run-id>/run-manifest.json`
+和脱敏事件日志；如有当前 DEV，只能先核验其 own manifest 与 start token，再委托既有 runner stop。
 
 ## 验证工作的通用规则
 

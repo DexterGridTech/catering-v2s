@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -47,11 +48,16 @@ class ContractCommandServiceTest {
         var project = hierarchy.create(workspaceId, "contract-test", "PROJECT", region.id(), "project", "Project");
         hierarchy.replaceProjectPhaseNames(workspaceId, "contract-test", project.id(), project.version(), List.of("筹备", "营运"));
         var brand = entities.createEntity("BRAND", workspaceId, "contract-test", "brand", "Brand", null, null, Map.of());
-        var tenant = entities.createEntity("TENANT", workspaceId, "contract-test", "tenant", "Tenant", "Tenant legal", "91310000TEST", Map.of());
+        var tenant = entities.createEntity("TENANT", workspaceId, "contract-test", "tenant-code", "Tenant", "Tenant legal", "91310000TEST", Map.of());
         tenantId = tenant.id();
-        storeId = entities.createStore(workspaceId, "contract-test", project.id(), tenant.id(), brand.id(), null, "store", "Store", Map.of()).id();
+        storeId = entities.createStore(workspaceId, "contract-test", project.id(), tenant.id(), brand.id(), null, "store-code", "Store", Map.of()).id();
         contracts = new ContractCommandService(jdbc, time, new BusinessDateProvider(time), entities, definitions);
         reads = new ContractTaskReadService(jdbc);
+    }
+
+    @AfterEach void isolateSharedFixtureRows() {
+        jdbc().update("DELETE FROM contract.store_contract WHERE workspace_uuid=?", workspaceId);
+        jdbc().update("DELETE FROM organization.store WHERE workspace_uuid=? AND id<>?", workspaceId, storeId);
     }
 
     @Test void createsUpdatesInvalidatesAndDerivesStoreStatusFromBusinessDate() {
@@ -83,6 +89,16 @@ class ContractCommandServiceTest {
         assertEquals(List.of("筹备", "营运"), page.phases());
     }
 
+    @Test void candidateReadPreservesSelectedStoreOutsideCurrentPage() {
+        JdbcTemplate jdbc = jdbc();
+        UUID projectId = jdbc.queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
+        UUID secondStore = UUID.randomUUID();
+        jdbc.update("INSERT INTO organization.store (id, workspace_uuid, group_workspace_key, project_id, tenant_id, brand_id, code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis) SELECT ?, workspace_uuid, group_workspace_key, project_id, tenant_id, brand_id, 'store-second', 'Second store', 'ENABLED', 1, ?, ? FROM organization.store WHERE id=?", secondStore, now, now, storeId);
+        var page = reads.candidates(workspaceId, "contract-test", projectId, secondStore, "nomatch", 1, 1);
+        assertEquals(0, page.metadata().total());
+        assertEquals(secondStore, page.stores().getFirst().id());
+    }
+
     @Test void taskPageKeepsTheSelectedProjectAndFiltersByBusinessFields() {
         UUID projectId = jdbc().queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
         contracts.create(workspaceId, "contract-test", "CT-page", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", List.of(new ContractCommandService.ItemInput("tea-001", "茉莉茶")), Map.of());
@@ -103,6 +119,13 @@ class ContractCommandServiceTest {
         assertEquals(first, replay);
         assertEquals(first.id(), reads.view(workspaceId, "contract-test", first.id()).id());
         assertEquals("VALID", reads.platformOverview(workspaceId, "contract-test", 1, 20).items().stream().filter(item -> item.contractRef().id().equals(first.id())).findFirst().orElseThrow().status());
+        var byProjectAndStore = reads.platformOverview(workspaceId, "contract-test", projectId, storeId, "CT-owner-receipt", null, null, null, "CONTRACT_NO", "ASC", 1, 20);
+        var byTenantCode = reads.platformOverview(workspaceId, "contract-test", null, null, "CT-owner-receipt", null, "tenant-code", null, "CONTRACT_NO", "ASC", 1, 20);
+        var projectAndStoreItem = byProjectAndStore.items().stream().filter(item -> item.contractRef().id().equals(first.id())).findFirst().orElseThrow();
+        assertEquals(first.id(), projectAndStoreItem.contractRef().id());
+        assertEquals(projectId, projectAndStoreItem.projectRef().id());
+        assertEquals("tea-owner", projectAndStoreItem.items().getFirst().code());
+        assertEquals(first.id(), byTenantCode.items().stream().filter(item -> item.contractRef().id().equals(first.id())).findFirst().orElseThrow().contractRef().id());
     }
 
     private static JdbcTemplate jdbc() { return new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())); }

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-RUNNER-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "scripts/dev/http-diagnostic-runner.mjs",
+    "scripts/dev/http-diagnostic-runner.test.mjs",
+    "scripts/test/http-diagnostic-report.mjs",
+    "scripts/test/http-diagnostic-report.test.mjs",
+    "scripts/test/rm1-http-diagnostic.mjs",
+    "scripts/test/rm1-http-diagnostic.test.mjs",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-runner-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-runner-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-runner-package-exit.json",
+    "doc/review/platform/rm1p6-u13-http-diagnostic-runner-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "node --test scripts/dev/http-diagnostic-runner.test.mjs scripts/test/http-diagnostic-report.test.mjs scripts/test/rm1-http-diagnostic.test.mjs",
+      "node scripts/dev/http-diagnostic-runner.mjs --self-test",
+      "node scripts/test/rm1-http-diagnostic.mjs --self-test",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/code-layout",
+      "scripts/check/openapi-contracts"
+    ],
+    "assertions": [
+      "the report consumes server routeTemplate and only then projects it to generated registry path identity",
+      "a managed diagnostic run uses only a local backend and local tunnel to isolated remote middleware, never a frontend, browser, remote application, Seed or reset",
+      "the manifest retains only process identity, phase and cleanup facts while private runtime credentials remain in a 0600 private file",
+      "production-like remote targets, port 8080 and raw secret output fail closed"
+    ]
+  },
+  "harnessTrimObservation": {"pathListRetained": true, "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION", "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"},
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "scopeStatement": "staticProofStatus=PASS proves the runner implementation boundary, not a started environment or HTTP scenario result. It is not Seed/reset, browser L2, UAT, business PASS, cleanup PASS or performance evidence."
+}

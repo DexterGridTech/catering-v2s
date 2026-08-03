@@ -4,5 +4,6 @@ package com.catering.v2s.app.edge.generated.wire;
 public record OrganizationNodeCreateRequest(
     String code,
     String name,
-    String notes
+    String notes,
+    tools.jackson.databind.JsonNode extensionValues
 ) {}

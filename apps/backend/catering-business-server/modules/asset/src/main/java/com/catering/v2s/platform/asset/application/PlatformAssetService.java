@@ -10,7 +10,12 @@ import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Collection;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -137,6 +142,31 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
         });
         if (!objects.exists(asset.objectKey())) throw new AssetNotFoundException();
         return new PublicAssetReference(objects.publicUrl(asset.objectKey()), asset.contentType(), asset.sha256());
+    }
+
+    /** Bounded owner task read for a collection surface; absent/inactive/object-missing remains a failure. */
+    @Transactional(readOnly = true)
+    public Map<UUID, PublicAssetReference> requireActivePublicReferences(Collection<UUID> assetRefs) {
+        LinkedHashSet<UUID> distinct = new LinkedHashSet<>(assetRefs == null ? List.of() : assetRefs);
+        if (distinct.isEmpty()) return Map.of();
+        if (distinct.contains(null)) throw new AssetNotFoundException();
+        String placeholders = String.join(",", java.util.Collections.nCopies(distinct.size(), "?"));
+        List<UUID> ids = List.copyOf(distinct);
+        Map<UUID, ActiveAsset> active = jdbc.query("SELECT asset_ref, object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE status='ACTIVE' AND asset_ref IN (" + placeholders + ")", statement -> {
+            for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index));
+        }, result -> {
+            Map<UUID, ActiveAsset> resultById = new LinkedHashMap<>();
+            while (result.next()) resultById.put(result.getObject("asset_ref", UUID.class), new ActiveAsset(result.getString("object_key"), result.getString("content_type"), result.getString("sha256")));
+            return resultById;
+        });
+        if (active.size() != ids.size()) throw new AssetNotFoundException();
+        Map<UUID, PublicAssetReference> references = new LinkedHashMap<>();
+        for (UUID id : ids) {
+            ActiveAsset asset = active.get(id);
+            if (asset == null || !objects.exists(asset.objectKey())) throw new AssetNotFoundException();
+            references.put(id, new PublicAssetReference(objects.publicUrl(asset.objectKey()), asset.contentType(), asset.sha256()));
+        }
+        return Map.copyOf(references);
     }
 
     private static boolean validUsageContentType(String usage, String contentType) {

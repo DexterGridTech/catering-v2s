@@ -9,5 +9,6 @@ public record WorkspaceUserPage(
     ServiceNodeType targetOrganizationType,
     String scopeRef,
     String scopeName,
-    Long contextVersion
+    Long contextVersion,
+    WorkspaceUserPageCriteria criteria
 ) {}

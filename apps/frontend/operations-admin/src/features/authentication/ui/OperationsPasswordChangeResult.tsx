@@ -7,7 +7,7 @@ export function OperationsPasswordChangeResult({open, onReauthenticate}: {open: 
     title="修改成功"
     open={open}
     closable={false}
-    maskClosable={false}
+    mask={{closable: false}}
     footer={<Button type="primary" onClick={onReauthenticate} {...testId('operations-password-relogin')}>重新登录</Button>}
     {...testId('operations-password-change-result')}
   >

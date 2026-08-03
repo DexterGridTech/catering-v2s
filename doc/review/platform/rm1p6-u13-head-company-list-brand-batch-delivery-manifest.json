@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-HEAD-COMPANY-LIST-BRAND-BATCH-U13",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-HEAD-COMPANY-LIST-BRAND-BATCH-U13",
+      "title": "Owner-local head-company-list authorized-brand batch read",
+      "approvedAssertions": [
+        "HEAD_COMPANY_LIST_BRANDS_USE_ONE_OWNER_BATCH_READ",
+        "WORKSPACE_KEY_AND_BRAND_STATUS_PREDICATES_REMAIN_OWNER_LOCAL",
+        "SINGLE_HEAD_COMPANY_AUTHORIZED_BRANDS_SEMANTICS_ARE_UNCHANGED"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate C11"},
+        {"path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java", "disposition": "update", "target": "batch authorized-brand owner task read"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java", "disposition": "update", "target": "page-level owner batch mapping"},
+        {"path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityControllerTest.java", "disposition": "update", "target": "one/twenty/fifty page bounded-owner-read proof"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-package-input.json", "disposition": "create", "target": "C11 binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-implementation-amendment.md", "disposition": "create", "target": "C11 detail design"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-package-exit.json", "disposition": "create", "target": "C11 exit"},
+        {"path": "doc/review/platform/rm1p6-u13-head-company-list-brand-batch-delivery-manifest.json", "disposition": "create", "target": "C11 manifest"}
+      ],
+      "complianceRoute": {
+        "taskKind": "implementation",
+        "domain": "backend",
+        "consumerFace": "operations-admin",
+        "owner": "organization",
+        "impact": "database",
+        "trigger": "implementation"
+      },
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+          "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+          "project-memory/kernel/02-service-shape-and-owner.md"
+        ],
+        "APPROVED_ASSERTIONS": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#Batch A",
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-implementation-amendment.md"
+        ],
+        "FORBIDDEN_PSEUDO_FIXES": [
+          "no edge-side brand query or grouping from raw rows",
+          "no removal of detail or mutation single-object existence checks",
+          "no unbounded list replacement or cross-workspace join"
+        ],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-implementation-amendment.md"
+        ],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": [
+          "getOperationsOrganizationHeadCompanies",
+          "BusinessEntityService authorized brand task reads"
+        ],
+        "DUE_STANDARDS_RULE_IDS": [
+          "scripts/check/database-boundaries",
+          "scripts/check/standards-coverage"
+        ]
+      }
+    }
+  ]
+}

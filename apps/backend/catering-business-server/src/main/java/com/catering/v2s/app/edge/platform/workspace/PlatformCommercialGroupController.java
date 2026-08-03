@@ -18,6 +18,8 @@ import com.catering.v2s.platform.workspace.api.PlatformWorkspaceCoordinator;
 import com.catering.v2s.platform.workspace.application.PlatformWorkspaceService.GroupWorkspaceNotEligibleException;
 import com.catering.v2s.platform.workspace.application.PlatformWorkspaceService.GroupWorkspaceNotFoundException;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/platform/group-workspaces")
 public final class PlatformCommercialGroupController {
+    private static final tools.jackson.databind.ObjectMapper JSON = new tools.jackson.databind.ObjectMapper();
     private final PlatformWorkspaceCoordinator coordinator;
     private final PlatformSessionResolver sessions;
     private final SecurityDiagnosticRecorder diagnostics;
@@ -54,9 +57,9 @@ public final class PlatformCommercialGroupController {
         try {
             if (headerIdempotencyKey == null || !headerIdempotencyKey.equals(body.idempotencyKey()) || headerIdempotencyKey.length() < 16 || headerIdempotencyKey.length() > 128) throw new InvalidRequestException();
             PlatformSessionReadback session = sessions.require(request);
-            CommercialGroupReadback readback = coordinator.initializeCommercialGroup(context(request, session), groupWorkspaceKey, headerIdempotencyKey, body.groupCode(), body.groupName(), new com.catering.v2s.audit.contract.AuditActor("PLATFORM_ADMIN", session.platformAdminId(), session.displayName()));
+            CommercialGroupReadback readback = coordinator.initializeCommercialGroup(context(request, session), groupWorkspaceKey, headerIdempotencyKey, body.groupCode(), body.groupName(), extensionValues(body.extensionValues()), new com.catering.v2s.audit.contract.AuditActor("PLATFORM_ADMIN", session.platformAdminId(), session.displayName()));
             recordDiagnostic(diagnostics, request, startedAtNanos, HttpStatus.CREATED.value(), null);
-            return ResponseEntity.status(HttpStatus.CREATED).body(new CommercialGroupRoot(String.valueOf(readback.id()), readback.groupWorkspaceKey(), readback.commercialGroupCode(), readback.commercialGroupName(), readback.revision(), readback.createdAtEpochMillis(), readback.updatedAtEpochMillis()));
+            return ResponseEntity.status(HttpStatus.CREATED).body(new CommercialGroupRoot(String.valueOf(readback.id()), readback.groupWorkspaceKey(), readback.commercialGroupCode(), readback.commercialGroupName(), extensionValues(readback.extensionValues()), readback.extensionRuleRevision(), readback.revision(), readback.createdAtEpochMillis(), readback.updatedAtEpochMillis()));
         } catch (RuntimeException exception) {
             DiagnosticFailure failure = diagnosticFailure(exception);
             recordDiagnostic(diagnostics, request, startedAtNanos, failure.status(), failure.errorCode());
@@ -66,6 +69,24 @@ public final class PlatformCommercialGroupController {
 
     private PlatformExecutionContext context(EdgeRequestContext request, PlatformSessionReadback session) {
         return new PlatformExecutionContext(session.platformAdminId().toString(), "platform-admin", Instant.ofEpochMilli(session.expiresAtEpochMillis()), request.correlationId() == null ? "platform-session" : request.correlationId());
+    }
+    private static Map<String, String> extensionValues(tools.jackson.databind.JsonNode values) {
+        if (values == null || values.isNull()) return Map.of();
+        if (!values.isObject()) throw new InvalidRequestException();
+        Map<String, String> result = new LinkedHashMap<>();
+        values.properties().forEach(entry -> {
+            try { result.put(entry.getKey(), JSON.writeValueAsString(entry.getValue())); }
+            catch (Exception exception) { throw new InvalidRequestException(); }
+        });
+        return Map.copyOf(result);
+    }
+    private static tools.jackson.databind.JsonNode extensionValues(Map<String, String> values) {
+        tools.jackson.databind.node.ObjectNode result = JSON.createObjectNode();
+        values.forEach((key, raw) -> {
+            try { result.set(key, JSON.readTree(raw)); }
+            catch (Exception exception) { throw new IllegalStateException("organization owner emitted invalid extension JSON", exception); }
+        });
+        return result;
     }
 
     @ExceptionHandler(GroupWorkspaceNotFoundException.class)

@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import {appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
+import {buildSeedReport, loadGeneratedOperationRegistry, resolveGeneratedOperation, writeSeedReportPair} from './seed-report.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? '');
@@ -15,14 +16,29 @@ const diagnosticPath = path.join(runtime, 'evidence', 'fixture-command-diagnosti
 const fixturePhasePath = path.join(runtime, 'evidence', 'fixture-phases.jsonl');
 const fixturePath = path.join(resultDir, 'fixture.json');
 const privateEnvPath = path.join(resultDir, 'private.env');
-const fail = (reason) => { process.stderr.write(`RM1P6_JOINT_L2_FIXTURE=REFUSED; REASON=${reason}\n`); process.exit(2); };
+const seedReportPath = path.join(resultDir, 'seed-report.json');
+let firstFailure = null;
+let reportWritten = false;
+const calls = [];
+const nonApiStages = [];
+const expectedNonApiStageIds = ['frozenRootBootstrap', 'createWorkspaceInvitation', 'createRecoveryWorkspaceInvitation', 'createStoreProfileInvitation', 'createREGIONInvitation', 'createPROJECTInvitation', 'createHEAD_COMPANYInvitation', 'createPublicInvitation'];
+const startedAt = new Date().toISOString();
+const fail = (reason) => {
+  if (!firstFailure) firstFailure = String(reason).replaceAll(/[^A-Z0-9_:. -]/g, '').slice(0, 256);
+  process.stderr.write(`RM1P6_JOINT_L2_FIXTURE=REFUSED; REASON=${firstFailure}\n`);
+  process.exit(2);
+};
 if (!runtime || !existsSync(manifestPath)) fail('MANAGED_RUN_MANIFEST_REQUIRED');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 if (manifest.freshDatabase !== true || manifest.otpDebugExposure !== true || !manifest.credentialsFile) fail('FRESH_DATABASE_AND_SCOPED_OTP_REQUIRED');
 const credentials = Object.fromEntries(readFileSync(manifest.credentialsFile, 'utf8').trim().split('\n').filter(Boolean).map((line) => line.split('=', 2)));
 const base = 'http://127.0.0.1:8080';
-const phases = [];
 const required = (value, name) => { if (value === null || value === undefined || value === '') fail(`${name}_MISSING`); return value; };
+const runId = required(manifest.runId, 'SEED_REPORT_RUN_ID');
+const seedReportSecret = required(credentials.V2S_SEED_REPORT_SECRET, 'SEED_REPORT_SECRET');
+const registry = loadGeneratedOperationRegistry(path.join(root, 'apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json'));
+const eventsPath = required(manifest.seedEventsPath, 'SEED_REPORT_EVENTS_PATH');
+const phases = [];
 const key = (name) => `rm1p6-u11-${name}-${crypto.randomUUID()}`;
 const log = (phase, status, extra = {}) => {
   const record = {atEpochMillis: Date.now(), phase, status, ...extra};
@@ -30,6 +46,43 @@ const log = (phase, status, extra = {}) => {
   mkdirSync(path.dirname(fixturePhasePath), {recursive: true, mode: 0o700});
   appendFileSync(fixturePhasePath, `${JSON.stringify(record)}\n`, {mode: 0o600});
 };
+const readSeedEvents = () => existsSync(eventsPath)
+  ? readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).flatMap((line) => {
+    try { return [JSON.parse(line)]; } catch { return []; }
+  }) : [];
+const finalizeSeedReport = (exitCode = 0) => {
+  if (reportWritten) return;
+  reportWritten = true;
+  const finishedAt = new Date().toISOString();
+  try {
+    const report = buildSeedReport({
+      runId,
+      seedProfile: 'r5-full',
+      startedAt,
+      finishedAt,
+      status: exitCode === 0 && !firstFailure ? 'PASS' : 'FAIL',
+      calls,
+      events: readSeedEvents(),
+      nonApiStages,
+      expectedNonApiStageIds,
+      firstFailure,
+    });
+    writeSeedReportPair(seedReportPath, report);
+  } catch (error) {
+    const fallback = {
+      kind: 'r5-full-seed-report', schemaVersion: 1, runId, seedProfile: 'r5-full',
+      status: 'FAIL', startedAt, finishedAt, durationMs: Math.max(0, Date.parse(finishedAt) - Date.parse(startedAt)),
+      apiEndpoints: [], nonApiStages, completeness: {apiCallCount: calls.length, reportedApiCallCount: 0, endpointGroupCount: 0, unmatchedHttpEvents: [], unmatchedDatabaseEvents: []},
+      firstFailure: 'SEED_REPORT_FINALIZATION_FAILED',
+    };
+    try { writeSeedReportPair(seedReportPath, fallback); } catch { /* process exit remains failed */ }
+    if (!firstFailure) firstFailure = String(error?.message ?? 'SEED_REPORT_FINALIZATION_FAILED').replaceAll(/[^A-Z0-9_:. -]/g, '').slice(0, 256);
+  }
+};
+process.on('exit', (code) => finalizeSeedReport(code));
+process.on('SIGTERM', () => { if (!firstFailure) firstFailure = 'SIGTERM'; finalizeSeedReport(2); process.exitCode = 2; });
+process.on('uncaughtException', (error) => { if (!firstFailure) firstFailure = 'UNCAUGHT_EXCEPTION'; finalizeSeedReport(2); process.exitCode = 2; });
+process.on('unhandledRejection', () => { if (!firstFailure) firstFailure = 'UNHANDLED_REJECTION'; finalizeSeedReport(2); process.exitCode = 2; });
 const safeDiagnostic = (value) => String(value ?? '')
   .replaceAll(/(?:password|secret|token|authorization|cookie)=[^\s]+/gi, '$1=[REDACTED]')
   .replaceAll(/jdbc:postgresql:\/\/[^\s]+/gi, 'jdbc:postgresql://[REDACTED]')
@@ -50,26 +103,52 @@ const command = (binary, args, {failureDetails, ...options} = {}) => {
 };
 async function request(phase, method, pathname, {cookie, body, form, expected = [200], idempotency = method !== 'GET'} = {}) {
   const requestIdempotencyKey = idempotency ? (body?.idempotencyKey ?? key(phase)) : undefined;
-  const headers = {Accept: 'application/json'};
+  const operation = resolveGeneratedOperation(registry, method, pathname);
+  const correlationId = `seed-${crypto.randomUUID()}`;
+  const headers = {
+    Accept: 'application/json',
+    'X-Seed-Operation-Id': operation.operationId,
+    'X-Seed-Route-Template': operation.path,
+    'X-Seed-Run-Id': runId,
+    'X-Seed-Report-Secret': seedReportSecret,
+    'X-Correlation-Id': correlationId,
+  };
   if (cookie) headers.Cookie = cookie;
   if (requestIdempotencyKey) headers['Idempotency-Key'] = requestIdempotencyKey;
   let payload;
   if (form) payload = form;
   else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
-  const response = await fetch(`${base}${pathname}`, {method, headers, body: payload, signal: AbortSignal.timeout(10_000)});
+  const started = performance.now();
+  let response;
+  try {
+    response = await fetch(`${base}${pathname}`, {method, headers, body: payload, signal: AbortSignal.timeout(10_000)});
+  } catch {
+    const durationMs = Math.max(0, performance.now() - started);
+    calls.push({stageId: phase, owner: operation.owner, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs, status: 0, outcome: 'FAILED', correlationId, requestId: null});
+    firstFailure ??= `${phase}_NETWORK_FAILURE`;
+    log(phase, 'FAIL', {operationId: operation.operationId, httpStatus: 0, correlationId, requestId: null});
+    fail(firstFailure);
+  }
+  const durationMs = Math.max(0, performance.now() - started);
   const text = await response.text(); let json;
   try { json = text ? JSON.parse(text) : null; } catch { json = null; }
   const accepted = expected.includes(response.status);
-  log(phase, accepted ? 'PASS' : 'FAIL', {operation: phase, httpStatus: response.status, correlationId: response.headers.get('x-correlation-id') ?? null});
+  const responseCorrelationId = response.headers.get('x-correlation-id');
+  const responseRequestId = response.headers.get('x-request-id');
+  calls.push({stageId: phase, owner: operation.owner, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'FAILED', correlationId: responseCorrelationId ?? correlationId, requestId: responseRequestId});
+  log(phase, accepted ? 'PASS' : 'FAIL', {operationId: operation.operationId, httpStatus: response.status, correlationId: responseCorrelationId ?? correlationId, requestId: responseRequestId});
   if (!accepted) {
     mkdirSync(path.dirname(diagnosticPath), {recursive: true, mode: 0o700});
-    appendFileSync(diagnosticPath, `${new Date().toISOString()} phase=${phase} httpStatus=${response.status} errorCode=${json?.errorCode ?? 'UNCLASSIFIED'} correlationId=${response.headers.get('x-correlation-id') ?? 'NONE'}\n${boundedDiagnostic(text)}\n`, {mode: 0o600});
+    const errorCode = typeof json?.errorCode === 'string' && /^[A-Z0-9_]{1,96}$/.test(json.errorCode) ? json.errorCode : 'UNCLASSIFIED';
+    const errorShape = json && typeof json === 'object' && !Array.isArray(json) ? Object.keys(json).sort().slice(0, 32) : [];
+    appendFileSync(diagnosticPath, `${new Date().toISOString()} phase=${phase} operationId=${operation.operationId} httpStatus=${response.status} errorCode=${errorCode} errorShape=${errorShape.join(',') || 'NONE'} correlationId=${responseCorrelationId ?? correlationId} requestId=${responseRequestId ?? 'NONE'}\n`, {mode: 0o600});
     fail(`${phase}_HTTP_${response.status}_${json?.errorCode ?? 'UNCLASSIFIED'}`);
   }
   return {json, cookie: response.headers.get('set-cookie')?.split(';', 1)[0] ?? null};
 }
 function route(groupWorkspaceKey, segment) { return `/operations/${encodeURIComponent(groupWorkspaceKey)}/${segment}`; }
 function createManagedInvitation(phase, {mobile, targetType, targetRef, roleId}) {
+  const started = performance.now();
   mkdirSync(resultDir, {recursive: true, mode: 0o700});
   const output = path.join(resultDir, `.managed-invitation-${crypto.randomUUID()}.json`);
   const failureOutput = `${output}.failure.json`;
@@ -108,6 +187,7 @@ function createManagedInvitation(phase, {mobile, targetType, targetRef, roleId})
     const token = required(invitation?.invitationToken, `${phase}_INVITATION_TOKEN`);
     required(invitation?.invitationId, `${phase}_INVITATION_ID`);
     if (invitation?.status !== 'PENDING') fail(`${phase}_INVITATION_STATUS_INVALID`);
+    nonApiStages.push({stageId: phase, status: 'PASS', durationMs: Math.max(0, performance.now() - started), summary: 'managed-owner-command-bootstrap'});
     log(phase, 'PASS', {operation: 'MANAGED_OWNER_BOOTSTRAP', invitationStatus: invitation.status});
     return token;
   } finally {
@@ -117,7 +197,7 @@ function createManagedInvitation(phase, {mobile, targetType, targetRef, roleId})
 }
 function writeFixture(values, privateValues, ownerReadbackKeys, testInputKeys) {
   const expectedBrowserInputKeys = [
-    'R5_L2_BRAND_NAME', 'R5_L2_BUSINESS_ENTITY_ROUTE', 'R5_L2_CONTRACT_CURRENT_LABEL', 'R5_L2_CONTRACT_HISTORY_LABEL', 'R5_L2_CONTRACT_INVALID_LABEL', 'R5_L2_CONTRACT_NO', 'R5_L2_CONTRACT_PENDING_LABEL', 'R5_L2_CONTRACT_ROUTE', 'R5_L2_HEAD_COMPANY_NAME', 'R5_L2_OPERATIONS_LOGIN_NAME', 'R5_L2_OPERATIONS_LOGIN_PASSWORD', 'R5_L2_OPERATIONS_LOGIN_ROUTE', 'R5_L2_OPERATIONS_RECOVERY_LOGIN_NAME', 'R5_L2_OPERATIONS_RECOVERY_MOBILE', 'R5_L2_OPERATIONS_RECOVERY_PASSWORD', 'R5_L2_OPERATIONS_ROLE_LABEL', 'R5_L2_ORGANIZATION_REGION_NAME', 'R5_L2_PLATFORM_ACCOUNT_NAME', 'R5_L2_PLATFORM_ADMIN_NAME', 'R5_L2_PLATFORM_CONTRACT_NO', 'R5_L2_PLATFORM_EXTENSION_ENTITY_NAME', 'R5_L2_PLATFORM_LOGIN_NAME', 'R5_L2_PLATFORM_LOGIN_PASSWORD', 'R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_NAME', 'R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_SOURCE', 'R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL', 'R5_L2_PLATFORM_ROLE_NAME', 'R5_L2_PLATFORM_WORKSPACE_LABEL', 'R5_L2_PLATFORM_WORKSPACE_NAME', 'R5_L2_PUBLIC_INVITATION_LOGIN_NAME', 'R5_L2_PUBLIC_INVITATION_MOBILE', 'R5_L2_PUBLIC_INVITATION_PASSWORD', 'R5_L2_PUBLIC_INVITATION_ROUTE', 'R5_L2_PUBLIC_INVITATION_USER_NAME', 'R5_L2_STORE_NAME', 'R5_L2_STORE_PROFILE_LOGIN_NAME', 'R5_L2_STORE_PROFILE_LOGIN_PASSWORD', 'R5_L2_STORE_PROFILE_ROLE_LABEL', 'R5_L2_STORE_PROFILE_ROUTE', 'R5_L2_STORE_ROUTE', 'R5_L2_USER_DISPLAY_NAME', 'R5_L2_USER_ROUTE',
+    'R5_L2_BRAND_NAME', 'R5_L2_BUSINESS_ENTITY_ROUTE', 'R5_L2_CONTRACT_CURRENT_LABEL', 'R5_L2_CONTRACT_HISTORY_LABEL', 'R5_L2_CONTRACT_INVALID_LABEL', 'R5_L2_CONTRACT_NO', 'R5_L2_CONTRACT_PENDING_LABEL', 'R5_L2_CONTRACT_ROUTE', 'R5_L2_HEAD_COMPANY_NAME', 'R5_L2_OPERATIONS_LOGIN_NAME', 'R5_L2_OPERATIONS_LOGIN_PASSWORD', 'R5_L2_OPERATIONS_LOGIN_ROUTE', 'R5_L2_OPERATIONS_RECOVERY_LOGIN_NAME', 'R5_L2_OPERATIONS_RECOVERY_MOBILE', 'R5_L2_OPERATIONS_RECOVERY_PASSWORD', 'R5_L2_OPERATIONS_ROLE_LABEL', 'R5_L2_ORGANIZATION_REGION_NAME', 'R5_L2_PLATFORM_ACCOUNT_NAME', 'R5_L2_PLATFORM_ADMIN_NAME', 'R5_L2_PLATFORM_CONTRACT_NO', 'R5_L2_PLATFORM_EXTENSION_ENTITY_NAME', 'R5_L2_PLATFORM_LOGIN_NAME', 'R5_L2_PLATFORM_LOGIN_PASSWORD', 'R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_NAME', 'R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_SOURCE', 'R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL', 'R5_L2_PLATFORM_ROLE_NAME', 'R5_L2_PLATFORM_WORKSPACE_LABEL', 'R5_L2_PLATFORM_WORKSPACE_NAME', 'R5_L2_PUBLIC_INVITATION_LOGIN_NAME', 'R5_L2_PUBLIC_INVITATION_MOBILE', 'R5_L2_PUBLIC_INVITATION_PASSWORD', 'R5_L2_PUBLIC_INVITATION_ROUTE', 'R5_L2_PUBLIC_INVITATION_USER_NAME', 'R5_L2_STORE_NAME', 'R5_L2_STORE_PROFILE_LOGIN_NAME', 'R5_L2_STORE_PROFILE_LOGIN_PASSWORD', 'R5_L2_STORE_PROFILE_ROLE_LABEL', 'R5_L2_STORE_PROFILE_ROUTE', 'R5_L2_STORE_ROUTE', 'R5_L2_USER_DISPLAY_NAME', 'R5_L2_USER_ROUTE',
   ].sort();
   const actualInputKeys = Object.keys(privateValues).sort();
   const missingInputKeys = expectedBrowserInputKeys.filter((name) => !actualInputKeys.includes(name));
@@ -142,7 +222,9 @@ function writeFixture(values, privateValues, ownerReadbackKeys, testInputKeys) {
   writeFileSync(privateEnvPath, `${Object.entries(privateValues).map(([name, value]) => `${name}=${String(value).replaceAll('\n', '')}`).join('\n')}\n`, {mode: 0o600});
 }
 
+const bootstrapStarted = performance.now();
 command(process.execPath, [path.join(root, 'scripts/dev/r5-seed-bootstrap.mjs')]);
+nonApiStages.push({stageId: 'frozenRootBootstrap', status: 'PASS', durationMs: Math.max(0, performance.now() - bootstrapStarted), summary: 'seed-bootstrap-command'});
 log('frozenRootBootstrap', 'PASS');
 const platformLogin = await request('platformPasswordLogin', 'POST', '/api/platform/auth/password-login', {body: {accountName: 'root', password: credentials.V2S_SEED_PLATFORM_ROOT_PASSWORD}});
 const platformCookie = required(platformLogin.cookie, 'PLATFORM_SESSION_COOKIE');
@@ -264,15 +346,16 @@ const values = {
   R5_L2_CONTRACT_INVALID_LABEL: required(invalidContract.json?.contractNo, 'INVALID_CONTRACT_LABEL'),
   R5_L2_STORE_PROFILE_ROLE_LABEL: required(storeRole.json?.name, 'STORE_PROFILE_ROLE_NAME'),
   R5_L2_PLATFORM_WORKSPACE_NAME: required(workspace.json?.name, 'PLATFORM_WORKSPACE_NAME'),
-  R5_L2_PLATFORM_WORKSPACE_LABEL: required(workspace.json?.name, 'PLATFORM_WORKSPACE_LABEL'),
+  R5_L2_PLATFORM_WORKSPACE_LABEL: `${required(workspace.json?.name, 'PLATFORM_WORKSPACE_LABEL')}(${workspaceKey})`,
   R5_L2_PLATFORM_ROLE_NAME: required(role.json?.name, 'PLATFORM_ROLE_NAME'),
   R5_L2_PLATFORM_CONTRACT_NO: required(currentContract.json?.contractNo, 'PLATFORM_CONTRACT_NO'),
   R5_L2_PLATFORM_EXTENSION_ENTITY_NAME: required(brandExtensionEntity.displayName, 'PLATFORM_EXTENSION_ENTITY_NAME'),
   R5_L2_PLATFORM_ORGANIZATION_NAME: required(store.json?.name, 'PLATFORM_ORGANIZATION_NAME'),
+  R5_L2_PLATFORM_ORGANIZATION_LABEL: `${required(store.json?.name, 'PLATFORM_ORGANIZATION_NAME')}(${required(store.json?.code, 'PLATFORM_ORGANIZATION_CODE')})`,
   R5_L2_PLATFORM_ORGANIZATION_SOURCE: '人工维护',
-  R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL: `${required(project.json?.name, 'PLATFORM_PROJECT_NAME')}（${required(project.json?.code, 'PLATFORM_PROJECT_CODE')}）`,
-  R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL: `${required(brand.json?.name, 'PLATFORM_BRAND_NAME')}（${required(brand.json?.code, 'PLATFORM_BRAND_CODE')}）`,
-  R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL: `${required(tenant.json?.name, 'PLATFORM_TENANT_NAME')}（${required(tenant.json?.code, 'PLATFORM_TENANT_CODE')}）`,
+  R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL: `${required(project.json?.name, 'PLATFORM_PROJECT_NAME')}(${required(project.json?.code, 'PLATFORM_PROJECT_CODE')})`,
+  R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL: `${required(brand.json?.name, 'PLATFORM_BRAND_NAME')}(${required(brand.json?.code, 'PLATFORM_BRAND_CODE')})`,
+  R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL: `${required(tenant.json?.name, 'PLATFORM_TENANT_NAME')}(${required(tenant.json?.code, 'PLATFORM_TENANT_CODE')})`,
 };
 const privateValues = {
   ...Object.fromEntries(Object.entries(values).filter(([name]) => name !== 'R5_L2_OPERATIONS_WORKSPACE_KEY')),
@@ -298,7 +381,7 @@ const ownerReadbackKeys = [
   'R5_L2_OPERATIONS_ROLE_LABEL', 'R5_L2_ORGANIZATION_REGION_NAME', 'R5_L2_HEAD_COMPANY_NAME', 'R5_L2_BRAND_NAME', 'R5_L2_STORE_NAME', 'R5_L2_CONTRACT_NO', 'R5_L2_USER_DISPLAY_NAME', 'R5_L2_CONTRACT_CURRENT_LABEL', 'R5_L2_CONTRACT_PENDING_LABEL', 'R5_L2_CONTRACT_HISTORY_LABEL', 'R5_L2_CONTRACT_INVALID_LABEL', 'R5_L2_STORE_PROFILE_ROLE_LABEL', 'R5_L2_PLATFORM_WORKSPACE_NAME', 'R5_L2_PLATFORM_ROLE_NAME', 'R5_L2_PLATFORM_CONTRACT_NO', 'R5_L2_PLATFORM_EXTENSION_ENTITY_NAME', 'R5_L2_PLATFORM_ORGANIZATION_NAME', 'R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL', 'R5_L2_PLATFORM_ADMIN_NAME', 'R5_L2_PLATFORM_ACCOUNT_NAME',
 ];
 const testInputKeys = [
-  'R5_L2_BRAND_NAME', 'R5_L2_BUSINESS_ENTITY_ROUTE', 'R5_L2_CONTRACT_CURRENT_LABEL', 'R5_L2_CONTRACT_HISTORY_LABEL', 'R5_L2_CONTRACT_INVALID_LABEL', 'R5_L2_CONTRACT_NO', 'R5_L2_CONTRACT_PENDING_LABEL', 'R5_L2_CONTRACT_ROUTE', 'R5_L2_HEAD_COMPANY_NAME', 'R5_L2_OPERATIONS_LOGIN_NAME', 'R5_L2_OPERATIONS_LOGIN_PASSWORD', 'R5_L2_OPERATIONS_LOGIN_ROUTE', 'R5_L2_OPERATIONS_RECOVERY_LOGIN_NAME', 'R5_L2_OPERATIONS_RECOVERY_MOBILE', 'R5_L2_OPERATIONS_RECOVERY_PASSWORD', 'R5_L2_OPERATIONS_ROLE_LABEL', 'R5_L2_ORGANIZATION_REGION_NAME', 'R5_L2_PLATFORM_ACCOUNT_NAME', 'R5_L2_PLATFORM_ADMIN_NAME', 'R5_L2_PLATFORM_CONTRACT_NO', 'R5_L2_PLATFORM_EXTENSION_ENTITY_NAME', 'R5_L2_PLATFORM_LOGIN_NAME', 'R5_L2_PLATFORM_LOGIN_PASSWORD', 'R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_NAME', 'R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_SOURCE', 'R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL', 'R5_L2_PLATFORM_ROLE_NAME', 'R5_L2_PLATFORM_WORKSPACE_LABEL', 'R5_L2_PLATFORM_WORKSPACE_NAME', 'R5_L2_PUBLIC_INVITATION_LOGIN_NAME', 'R5_L2_PUBLIC_INVITATION_MOBILE', 'R5_L2_PUBLIC_INVITATION_PASSWORD', 'R5_L2_PUBLIC_INVITATION_ROUTE', 'R5_L2_PUBLIC_INVITATION_USER_NAME', 'R5_L2_STORE_NAME', 'R5_L2_STORE_PROFILE_LOGIN_NAME', 'R5_L2_STORE_PROFILE_LOGIN_PASSWORD', 'R5_L2_STORE_PROFILE_ROLE_LABEL', 'R5_L2_STORE_PROFILE_ROUTE', 'R5_L2_STORE_ROUTE', 'R5_L2_USER_DISPLAY_NAME', 'R5_L2_USER_ROUTE',
+  'R5_L2_BRAND_NAME', 'R5_L2_BUSINESS_ENTITY_ROUTE', 'R5_L2_CONTRACT_CURRENT_LABEL', 'R5_L2_CONTRACT_HISTORY_LABEL', 'R5_L2_CONTRACT_INVALID_LABEL', 'R5_L2_CONTRACT_NO', 'R5_L2_CONTRACT_PENDING_LABEL', 'R5_L2_CONTRACT_ROUTE', 'R5_L2_HEAD_COMPANY_NAME', 'R5_L2_OPERATIONS_LOGIN_NAME', 'R5_L2_OPERATIONS_LOGIN_PASSWORD', 'R5_L2_OPERATIONS_LOGIN_ROUTE', 'R5_L2_OPERATIONS_RECOVERY_LOGIN_NAME', 'R5_L2_OPERATIONS_RECOVERY_MOBILE', 'R5_L2_OPERATIONS_RECOVERY_PASSWORD', 'R5_L2_OPERATIONS_ROLE_LABEL', 'R5_L2_ORGANIZATION_REGION_NAME', 'R5_L2_PLATFORM_ACCOUNT_NAME', 'R5_L2_PLATFORM_ADMIN_NAME', 'R5_L2_PLATFORM_CONTRACT_NO', 'R5_L2_PLATFORM_EXTENSION_ENTITY_NAME', 'R5_L2_PLATFORM_LOGIN_NAME', 'R5_L2_PLATFORM_LOGIN_PASSWORD', 'R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_NAME', 'R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_SOURCE', 'R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL', 'R5_L2_PLATFORM_ROLE_NAME', 'R5_L2_PLATFORM_WORKSPACE_LABEL', 'R5_L2_PLATFORM_WORKSPACE_NAME', 'R5_L2_PUBLIC_INVITATION_LOGIN_NAME', 'R5_L2_PUBLIC_INVITATION_MOBILE', 'R5_L2_PUBLIC_INVITATION_PASSWORD', 'R5_L2_PUBLIC_INVITATION_ROUTE', 'R5_L2_PUBLIC_INVITATION_USER_NAME', 'R5_L2_STORE_NAME', 'R5_L2_STORE_PROFILE_LOGIN_NAME', 'R5_L2_STORE_PROFILE_LOGIN_PASSWORD', 'R5_L2_STORE_PROFILE_ROLE_LABEL', 'R5_L2_STORE_PROFILE_ROUTE', 'R5_L2_STORE_ROUTE', 'R5_L2_USER_DISPLAY_NAME', 'R5_L2_USER_ROUTE',
 ];
 writeFixture(values, privateValues, ownerReadbackKeys, testInputKeys);
 process.stdout.write(`RM1P6_JOINT_L2_FIXTURE=PASS; FIXTURE=${fixturePath}; PUBLIC_KEYS=${Object.keys(values).length}; PRIVATE_KEYS=${Object.keys(privateValues).length}\n`);

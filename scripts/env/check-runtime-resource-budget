@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+runtime="${1:-$root/.runtime}"
+if [[ "${1:-}" == "--self-test" ]]; then
+  temp="$(mktemp -d)"; trap 'rm -rf "$temp"' EXIT
+  mkdir -p "$temp/r"; token="$(ps -o lstart= -p "$$" | xargs)"
+  SELF_PID="$$" SELF_TOKEN="$token" node - "$temp/r/run-manifest.json" <<'NODE'
+const fs=require('fs');fs.writeFileSync(process.argv[2],JSON.stringify({runId:'red',processes:[{pid:+process.env.SELF_PID,startToken:process.env.SELF_TOKEN}]}));
+NODE
+  if "$0" "$temp" >/dev/null; then echo 'STATUS=FAIL'; exit 1; fi
+  echo 'STATUS=PASS'; echo 'RED_LIVE_MANAGED_PROCESS=PASS'; exit 0
+fi
+[[ -d "$runtime" ]] || { echo 'STATUS=PASS'; echo 'LIVE_MANAGED_PROCESSES=0'; exit 0; }
+live=0; rss=0
+while IFS=$'\t' read -r pid token file; do
+  [[ -n "$pid" ]] || continue
+  if kill -0 "$pid" 2>/dev/null && [[ "$(ps -o lstart= -p "$pid" | xargs)" == "$token" ]]; then
+    value="$(ps -o rss= -p "$pid" | xargs)"; live=$((live+1)); rss=$((rss+${value:-0})); echo "LIVE_PROCESS=pid=$pid rssKiB=${value:-0} manifest=$file"
+  fi
+done < <(RUNTIME="$runtime" node -e 'const fs=require("fs"),path=require("path");const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):(e.name==="run-manifest.json"||e.name==="manifest.json")?[path.join(d,e.name)]:[]);for(const f of walk(process.env.RUNTIME)){try{const m=JSON.parse(fs.readFileSync(f));for(const p of m.processes||[])if(Number.isInteger(p.pid)&&typeof p.startToken==="string")console.log([p.pid,p.startToken,f].join("\t"));}catch{}}')
+mb=$(((rss+1023)/1024)); echo "LIVE_MANAGED_PROCESSES=$live"; echo "MANAGED_RSS_MB=$mb"
+if ((live>0 || mb>2048)); then echo 'STATUS=FAIL'; echo 'FAILURE=MANAGED_RESOURCE_BUDGET_EXCEEDED'; exit 1; fi
+echo 'STATUS=PASS'

@@ -67,7 +67,18 @@ public class OrganizationOverviewTaskReadService {
             if (!result.next()) throw new BusinessEntityService.OrganizationNotFoundException();
             return new TreeRoot(result.getString(1), result.getString(2));
         });
-        List<TreeRow> rows = jdbc.query("SELECT id, parent_id, node_type, code, name, status, notes, updated_at_epoch_millis FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND node_type IN ('REGION','PROJECT') ORDER BY node_type, code, id", (row, index) -> new TreeRow(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getString(4), row.getString(5), row.getString(6), row.getString(7), row.getLong(8)), workspaceUuid, key);
+        List<TreeRow> baseRows = jdbc.query("SELECT id, parent_id, node_type, code, name, status, notes, updated_at_epoch_millis FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND node_type IN ('REGION','PROJECT') ORDER BY node_type, code, id", (row, index) -> new TreeRow(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getString(4), row.getString(5), row.getString(6), row.getString(7), row.getLong(8), List.of()), workspaceUuid, key);
+        Map<UUID, List<String>> phases = new LinkedHashMap<>();
+        List<UUID> projectIds = baseRows.stream().filter(row -> "PROJECT".equals(row.type())).map(TreeRow::id).toList();
+        if (!projectIds.isEmpty()) {
+            List<PhaseRow> phaseRows = jdbc.query(
+                "SELECT project_id, phase_name FROM organization.project_phase_name WHERE project_id IN (" + placeholders(projectIds.size()) + ") ORDER BY project_id, display_order",
+                (row, index) -> new PhaseRow(row.getObject("project_id", UUID.class), row.getString("phase_name")),
+                projectIds.toArray()
+            );
+            phaseRows.forEach(row -> phases.computeIfAbsent(row.projectId(), ignored -> new ArrayList<>()).add(row.name()));
+        }
+        List<TreeRow> rows = baseRows.stream().map(row -> new TreeRow(row.id(), row.parentId(), row.type(), row.code(), row.name(), row.status(), row.notes(), row.updatedAt(), phases.getOrDefault(row.id(), List.of()))).toList();
         Map<UUID, List<TreeRow>> projectsByRegion = new LinkedHashMap<>();
         rows.stream().filter(row -> "PROJECT".equals(row.type())).forEach(row -> projectsByRegion.computeIfAbsent(row.parentId(), ignored -> new ArrayList<>()).add(row));
         List<TreeNode> regions = rows.stream().filter(row -> "REGION".equals(row.type())).map(row -> treeNode(row, projectsByRegion.getOrDefault(row.id(), List.of()))).toList();
@@ -77,7 +88,7 @@ public class OrganizationOverviewTaskReadService {
     private List<Item> hierarchyPage(UUID workspaceUuid, String key, Query query, int size, long offset) {
         String where = " WHERE workspace_uuid=? AND group_workspace_key=?" + baseFilters("", "node_type", query) + (query.projectId() == null ? "" : " AND node_type='PROJECT' AND id=?");
         List<Object> values = baseValues(workspaceUuid, key, query); if (query.projectId() != null) values.add(query.projectId()); values.add(size); values.add(offset);
-        List<Item> rows = jdbc.query("SELECT id, node_type, code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.organization_node" + where + " ORDER BY " + hierarchyOrder(query) + " " + query.direction() + ", id DESC LIMIT ? OFFSET ?", (row, index) -> new Item(row.getObject(1, UUID.class), key, "HIERARCHY", row.getString(2), row.getString(3), row.getString(4), List.of(), row.getString(5), "MANUAL", row.getLong(6), row.getLong(7), row.getLong(8), null, null, null, null, List.of(), List.of()), values.toArray());
+        List<Item> rows = jdbc.query("SELECT id, node_type, code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis, notes FROM organization.organization_node" + where + " ORDER BY " + hierarchyOrder(query) + " " + query.direction() + ", id DESC LIMIT ? OFFSET ?", (row, index) -> new Item(row.getObject(1, UUID.class), key, "HIERARCHY", row.getString(2), row.getString(3), row.getString(4), List.of(), row.getString(5), "MANUAL", row.getLong(6), row.getLong(7), row.getLong(8), row.getString(9), null, null, null, null, List.of(), List.of()), values.toArray());
         Map<UUID, List<Reference>> paths = nodePaths(workspaceUuid, key, rows.stream().map(Item::id).toList());
         return rows.stream().map(item -> withPath(item, paths.get(item.id()))).toList();
     }
@@ -101,14 +112,15 @@ public class OrganizationOverviewTaskReadService {
 
     private Item hierarchyDetail(UUID workspaceUuid, String key, UUID itemId) {
         String sql = "WITH RECURSIVE ancestry AS (" +
-            "SELECT node.id AS target_id, node.id, node.parent_id, node.node_type, node.code, node.name, node.status, node.version, node.created_at_epoch_millis, node.updated_at_epoch_millis, 0 AS depth FROM organization.organization_node node WHERE node.workspace_uuid=? AND node.group_workspace_key=? AND node.id=? " +
-            "UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id, parent.node_type, parent.code, parent.name, parent.status, parent.version, parent.created_at_epoch_millis, parent.updated_at_epoch_millis, ancestry.depth + 1 FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?" +
-            ") SELECT target_id, max(node_type) FILTER (WHERE depth=0) AS node_type, max(code) FILTER (WHERE depth=0) AS code, max(name) FILTER (WHERE depth=0) AS name, max(status) FILTER (WHERE depth=0) AS status, max(version) FILTER (WHERE depth=0) AS version, max(created_at_epoch_millis) FILTER (WHERE depth=0) AS created_at, max(updated_at_epoch_millis) FILTER (WHERE depth=0) AS updated_at, array_agg(id ORDER BY depth DESC) AS path_ids, array_agg(code ORDER BY depth DESC) AS path_codes, array_agg(name ORDER BY depth DESC) AS path_names FROM ancestry GROUP BY target_id";
+            "SELECT node.id AS target_id, node.id, node.parent_id, node.node_type, node.code, node.name, node.status, node.version, node.created_at_epoch_millis, node.updated_at_epoch_millis, node.notes, 0 AS depth FROM organization.organization_node node WHERE node.workspace_uuid=? AND node.group_workspace_key=? AND node.id=? " +
+            "UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id, parent.node_type, parent.code, parent.name, parent.status, parent.version, parent.created_at_epoch_millis, parent.updated_at_epoch_millis, parent.notes, ancestry.depth + 1 FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?" +
+            ") SELECT target_id, max(node_type) FILTER (WHERE depth=0) AS node_type, max(code) FILTER (WHERE depth=0) AS code, max(name) FILTER (WHERE depth=0) AS name, max(status) FILTER (WHERE depth=0) AS status, max(version) FILTER (WHERE depth=0) AS version, max(created_at_epoch_millis) FILTER (WHERE depth=0) AS created_at, max(updated_at_epoch_millis) FILTER (WHERE depth=0) AS updated_at, max(notes) FILTER (WHERE depth=0) AS notes, array_agg(id ORDER BY depth DESC) AS path_ids, array_agg(code ORDER BY depth DESC) AS path_codes, array_agg(name ORDER BY depth DESC) AS path_names FROM ancestry GROUP BY target_id";
         Item item = jdbc.query(sql, statement -> { statement.setObject(1, workspaceUuid); statement.setString(2, key); statement.setObject(3, itemId); statement.setObject(4, workspaceUuid); statement.setString(5, key); }, result -> {
             if (!result.next()) return null;
-            return new Item(result.getObject("target_id", UUID.class), key, "HIERARCHY", result.getString("node_type"), result.getString("code"), result.getString("name"), references(result.getArray("path_ids"), result.getArray("path_codes"), result.getArray("path_names")), result.getString("status"), "MANUAL", result.getLong("version"), result.getLong("created_at"), result.getLong("updated_at"), null, null, null, null, List.of(), List.of());
+            return new Item(result.getObject("target_id", UUID.class), key, "HIERARCHY", result.getString("node_type"), result.getString("code"), result.getString("name"), references(result.getArray("path_ids"), result.getArray("path_codes"), result.getArray("path_names")), result.getString("status"), "MANUAL", result.getLong("version"), result.getLong("created_at"), result.getLong("updated_at"), result.getString("notes"), null, null, null, null, List.of(), List.of());
         });
-        return required(item);
+        Item required = required(item);
+        return withExtensionFields(required, extensionFields(workspaceUuid, key, required.type(), required.id()));
     }
 
     private Item entityDetail(UUID workspaceUuid, String key, UUID itemId) {
@@ -180,20 +192,20 @@ public class OrganizationOverviewTaskReadService {
     }
 
     private static String entityRowsSql() {
-        return "SELECT id, entity_type, code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis FROM (SELECT id, 'BRAND' AS entity_type, code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.brand WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT id, 'TENANT', code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.tenant WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT id, 'HEAD_COMPANY', code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.head_company WHERE workspace_uuid=? AND group_workspace_key=?) entities WHERE true";
+        return "SELECT id, entity_type, code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis, notes FROM (SELECT id, 'BRAND' AS entity_type, code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis, remark AS notes FROM organization.brand WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT id, 'TENANT', code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis, remark FROM organization.tenant WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT id, 'HEAD_COMPANY', code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis, remark FROM organization.head_company WHERE workspace_uuid=? AND group_workspace_key=?) entities WHERE true";
     }
 
     private static String storeRowsSql() {
-        return "SELECT s.id, s.code, s.name, s.status, s.version, s.created_at_epoch_millis, s.updated_at_epoch_millis, p.id AS project_id, p.code AS project_code, p.name AS project_name, b.id AS brand_id, b.code AS brand_code, b.name AS brand_name, t.id AS tenant_id, t.code AS tenant_code, t.name AS tenant_name, h.id AS head_id, h.code AS head_code, h.name AS head_name FROM organization.store s JOIN organization.organization_node p ON p.id=s.project_id JOIN organization.brand b ON b.id=s.brand_id JOIN organization.tenant t ON t.id=s.tenant_id LEFT JOIN organization.head_company h ON h.id=s.head_company_id WHERE s.workspace_uuid=? AND s.group_workspace_key=?";
+        return "SELECT s.id, s.code, s.name, s.status, s.version, s.created_at_epoch_millis, s.updated_at_epoch_millis, s.notes, p.id AS project_id, p.code AS project_code, p.name AS project_name, b.id AS brand_id, b.code AS brand_code, b.name AS brand_name, t.id AS tenant_id, t.code AS tenant_code, t.name AS tenant_name, h.id AS head_id, h.code AS head_code, h.name AS head_name FROM organization.store s JOIN organization.organization_node p ON p.id=s.project_id JOIN organization.brand b ON b.id=s.brand_id JOIN organization.tenant t ON t.id=s.tenant_id LEFT JOIN organization.head_company h ON h.id=s.head_company_id WHERE s.workspace_uuid=? AND s.group_workspace_key=?";
     }
 
     private static Item entityItem(String key, ResultSet row) throws SQLException {
         Reference self = new Reference(row.getObject(1, UUID.class), row.getString(3), row.getString(4), true);
-        return new Item(self.id(), key, "BUSINESS_ENTITY", row.getString(2), self.code(), self.name(), List.of(self), row.getString(5), "MANUAL", row.getLong(6), row.getLong(7), row.getLong(8), null, null, null, null, List.of(), List.of());
+        return new Item(self.id(), key, "BUSINESS_ENTITY", row.getString(2), self.code(), self.name(), List.of(self), row.getString(5), "MANUAL", row.getLong(6), row.getLong(7), row.getLong(8), row.getString(9), null, null, null, null, List.of(), List.of());
     }
 
     private static TreeNode treeNode(TreeRow row, List<TreeRow> children) {
-        return new TreeNode(row.id(), row.type(), row.code(), row.name(), row.status(), row.notes(), row.updatedAt(), children.stream().map(child -> treeNode(child, List.of())).toList());
+        return new TreeNode(row.id(), row.type(), row.code(), row.name(), row.status(), row.notes(), row.updatedAt(), children.stream().map(child -> treeNode(child, List.of())).toList(), row.phases());
     }
 
     private static Item storeItem(String key, ResultSet row, List<Reference> path) throws SQLException {
@@ -202,16 +214,16 @@ public class OrganizationOverviewTaskReadService {
         Reference tenant = new Reference(row.getObject("tenant_id", UUID.class), row.getString("tenant_code"), row.getString("tenant_name"), true);
         UUID headId = row.getObject("head_id", UUID.class);
         Reference head = headId == null ? null : new Reference(headId, row.getString("head_code"), row.getString("head_name"), true);
-        return new Item(row.getObject("id", UUID.class), key, "STORE", "STORE", row.getString("code"), row.getString("name"), path, row.getString("status"), "MANUAL", row.getLong("version"), row.getLong("created_at_epoch_millis"), row.getLong("updated_at_epoch_millis"), project, brand, tenant, head, List.of(), List.of());
+        return new Item(row.getObject("id", UUID.class), key, "STORE", "STORE", row.getString("code"), row.getString("name"), path, row.getString("status"), "MANUAL", row.getLong("version"), row.getLong("created_at_epoch_millis"), row.getLong("updated_at_epoch_millis"), row.getString("notes"), project, brand, tenant, head, List.of(), List.of());
     }
 
     private static Item withPath(Item item, List<Reference> path) {
         if (path == null) throw new BusinessEntityService.OrganizationNotFoundException();
-        return new Item(item.id(), item.groupWorkspaceKey(), item.category(), item.type(), item.code(), item.name(), path, item.status(), item.source(), item.version(), item.createdAt(), item.updatedAt(), item.project(), item.brand(), item.tenant(), item.headCompany(), item.unresolvedReferences(), item.extensionFields());
+        return new Item(item.id(), item.groupWorkspaceKey(), item.category(), item.type(), item.code(), item.name(), path, item.status(), item.source(), item.version(), item.createdAt(), item.updatedAt(), item.notes(), item.project(), item.brand(), item.tenant(), item.headCompany(), item.unresolvedReferences(), item.extensionFields());
     }
 
     private Item withExtensionFields(Item item, List<ExtensionDisplayField> fields) {
-        return new Item(item.id(), item.groupWorkspaceKey(), item.category(), item.type(), item.code(), item.name(), item.path(), item.status(), item.source(), item.version(), item.createdAt(), item.updatedAt(), item.project(), item.brand(), item.tenant(), item.headCompany(), item.unresolvedReferences(), fields);
+        return new Item(item.id(), item.groupWorkspaceKey(), item.category(), item.type(), item.code(), item.name(), item.path(), item.status(), item.source(), item.version(), item.createdAt(), item.updatedAt(), item.notes(), item.project(), item.brand(), item.tenant(), item.headCompany(), item.unresolvedReferences(), fields);
     }
 
     private List<ExtensionDisplayField> extensionFields(UUID workspaceUuid, String key, String hostType, UUID id) {
@@ -219,7 +231,7 @@ public class OrganizationOverviewTaskReadService {
         ExtensionDefinitionReadback definition;
         try { definition = definitions.requireDefinition(workspaceUuid, key, hostType); }
         catch (ExtensionDefinitionService.DefinitionNotFoundException absent) { return List.of(); }
-        String table = switch (hostType) { case "BRAND" -> "brand"; case "TENANT" -> "tenant"; case "HEAD_COMPANY" -> "head_company"; case "STORE" -> "store"; default -> throw new BusinessEntityService.OrganizationNotFoundException(); };
+        String table = switch (hostType) { case "BRAND" -> "brand"; case "TENANT" -> "tenant"; case "HEAD_COMPANY" -> "head_company"; case "STORE" -> "store"; case "REGION", "PROJECT" -> "organization_node"; default -> throw new BusinessEntityService.OrganizationNotFoundException(); };
         String raw = jdbc.query("SELECT extension_values::text FROM organization." + table + " WHERE id=? AND workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, id); statement.setObject(2, workspaceUuid); statement.setString(3, key); }, result -> result.next() ? result.getString(1) : null);
         Map<String, String> values = jsonObject(raw);
         return definition.fields().stream().filter(field -> "ENABLED".equals(field.status())).sorted(java.util.Comparator.comparingInt(ExtensionDefinitionReadback.Field::displayOrder)).map(field -> new ExtensionDisplayField(field.label(), displayValue(values.get(field.fieldKey())))).toList();
@@ -260,8 +272,8 @@ public class OrganizationOverviewTaskReadService {
         static Query empty() { return new Query(null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", null); }
         Query validated(String category) {
             String safeSort = sort == null ? "UPDATED_AT" : sort;
-            String safeDirection = "ASC".equals(direction) ? "ASC" : "DESC";
-            if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort) || (status != null && !List.of("ENABLED", "DISABLED").contains(status)) || (source != null && !List.of("MANUAL", "SYSTEM").contains(source))) throw new IllegalArgumentException("invalid overview query");
+            String safeDirection = direction == null ? "DESC" : direction;
+            if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort) || !List.of("ASC", "DESC").contains(safeDirection) || (status != null && !List.of("ENABLED", "DISABLED").contains(status)) || (source != null && !List.of("MANUAL", "SYSTEM").contains(source))) throw new IllegalArgumentException("invalid overview query");
             if ("HIERARCHY".equals(category)) { if (type != null && !List.of("GROUP", "REGION", "PROJECT").contains(type) || brandId != null || tenantId != null) throw new IllegalArgumentException("invalid hierarchy query"); }
             else if ("BUSINESS_ENTITY".equals(category)) { if (type != null && !List.of("BRAND", "TENANT", "HEAD_COMPANY").contains(type) || projectId != null || brandId != null || tenantId != null) throw new IllegalArgumentException("invalid entity query"); }
             else if ("STORE".equals(category)) { if (type != null && !"STORE".equals(type)) throw new IllegalArgumentException("invalid store query"); }
@@ -270,12 +282,13 @@ public class OrganizationOverviewTaskReadService {
         }
     }
     public record HierarchyTree(String groupCode, String groupName, List<TreeNode> regions) { }
-    public record TreeNode(UUID id, String type, String code, String name, String status, String notes, long updatedAt, List<TreeNode> children) { }
+    public record TreeNode(UUID id, String type, String code, String name, String status, String notes, long updatedAt, List<TreeNode> children, List<String> phases) { }
     private record TreeRoot(String code, String name) { }
-    private record TreeRow(UUID id, UUID parentId, String type, String code, String name, String status, String notes, long updatedAt) { }
+    private record PhaseRow(UUID projectId, String name) { }
+    private record TreeRow(UUID id, UUID parentId, String type, String code, String name, String status, String notes, long updatedAt, List<String> phases) { }
     public record Page(Metadata metadata, List<Item> items, String itemsSourceStatus, long itemsAsOf, List<String> itemsUnresolved, List<FilterOption> filterOptions, String filterOptionsSourceStatus, long filterOptionsAsOf, List<String> filterOptionsUnresolved) { }
     public record Metadata(String groupWorkspaceKey, String category, int page, int pageSize, long total, String sort, String direction) { }
-    public record Item(UUID id, String groupWorkspaceKey, String category, String type, String code, String name, List<Reference> path, String status, String source, long version, long createdAt, long updatedAt, Reference project, Reference brand, Reference tenant, Reference headCompany, List<String> unresolvedReferences, List<ExtensionDisplayField> extensionFields) { }
+    public record Item(UUID id, String groupWorkspaceKey, String category, String type, String code, String name, List<Reference> path, String status, String source, long version, long createdAt, long updatedAt, String notes, Reference project, Reference brand, Reference tenant, Reference headCompany, List<String> unresolvedReferences, List<ExtensionDisplayField> extensionFields) { }
     public record ExtensionDisplayField(String name, String value) { }
     public record Reference(UUID id, String code, String name, boolean resolved) { }
     public record FilterOption(String kind, UUID id, String code, String name) { }

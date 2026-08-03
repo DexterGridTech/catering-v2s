@@ -10,6 +10,7 @@ import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.StoreAssignmentLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.seed.DevFixedOtpIssuer;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog.UserManagementAction;
@@ -18,6 +19,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -26,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,21 +51,30 @@ public class WorkspaceInvitationService {
     private final OrganizationTaskPathLookup taskPaths;
     private final OrganizationAssignmentCandidateLookup candidates;
     private final boolean debugCodeExposure;
+    private final DevFixedOtpIssuer fixedOtpIssuer;
     private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder();
     private final SecureRandom random = new SecureRandom();
 
     public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities) {
-        this(jdbc, time, roles, nodes, stores, entities, legacyGroups(nodes), new WorkspaceOtpRateLimitService(jdbc, time), new WorkspaceIamCommandReceiptService(jdbc, time), new WorkspaceCommandAuthorizationService(jdbc), null, null, null, false);
+        this(jdbc, time, roles, nodes, stores, entities, legacyGroups(nodes), new WorkspaceOtpRateLimitService(jdbc, time), new WorkspaceIamCommandReceiptService(jdbc, time), new WorkspaceCommandAuthorizationService(jdbc), null, null, null, false, (DevFixedOtpIssuer) null);
     }
 
     /** Compatibility constructor for owner-focused tests; production must inject the exposure policy. */
     public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceCommandAuthorizationService commandAuthorization, WorkspaceUserService user, OrganizationTaskPathLookup taskPaths, OrganizationAssignmentCandidateLookup candidates) {
-        this(jdbc, time, roles, nodes, stores, entities, groups, otpLimits, receipts, commandAuthorization, user, taskPaths, candidates, false);
+        this(jdbc, time, roles, nodes, stores, entities, groups, otpLimits, receipts, commandAuthorization, user, taskPaths, candidates, false, (DevFixedOtpIssuer) null);
+    }
+
+    public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceCommandAuthorizationService commandAuthorization, WorkspaceUserService user, OrganizationTaskPathLookup taskPaths, OrganizationAssignmentCandidateLookup candidates, boolean debugCodeExposure) {
+        this(jdbc, time, roles, nodes, stores, entities, groups, otpLimits, receipts, commandAuthorization, user, taskPaths, candidates, debugCodeExposure, (DevFixedOtpIssuer) null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
-    public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceCommandAuthorizationService commandAuthorization, WorkspaceUserService user, OrganizationTaskPathLookup taskPaths, OrganizationAssignmentCandidateLookup candidates, @Value("${platform.otp.debug-code-exposure:false}") boolean debugCodeExposure) {
-        this.jdbc = jdbc; this.time = time; this.roles = roles; this.nodes = nodes; this.stores = stores; this.entities = entities; this.groups = groups; this.otpLimits = otpLimits; this.receipts = receipts; this.commandAuthorization = commandAuthorization; this.user = user; this.taskPaths = taskPaths; this.candidates = candidates; this.debugCodeExposure = debugCodeExposure;
+    public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceCommandAuthorizationService commandAuthorization, WorkspaceUserService user, OrganizationTaskPathLookup taskPaths, OrganizationAssignmentCandidateLookup candidates, com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy, ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer) {
+        this(jdbc, time, roles, nodes, stores, entities, groups, otpLimits, receipts, commandAuthorization, user, taskPaths, candidates, otpDebugExposurePolicy.enabled(), fixedOtpIssuer.getIfAvailable());
+    }
+
+    private WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceCommandAuthorizationService commandAuthorization, WorkspaceUserService user, OrganizationTaskPathLookup taskPaths, OrganizationAssignmentCandidateLookup candidates, boolean debugCodeExposure, DevFixedOtpIssuer fixedOtpIssuer) {
+        this.jdbc = jdbc; this.time = time; this.roles = roles; this.nodes = nodes; this.stores = stores; this.entities = entities; this.groups = groups; this.otpLimits = otpLimits; this.receipts = receipts; this.commandAuthorization = commandAuthorization; this.user = user; this.taskPaths = taskPaths; this.candidates = candidates; this.debugCodeExposure = debugCodeExposure; this.fixedOtpIssuer = fixedOtpIssuer;
     }
 
     @Transactional
@@ -115,8 +127,10 @@ public class WorkspaceInvitationService {
     @Transactional
     public WorkspaceInvitationReadback create(UUID workspaceUuid, String groupWorkspaceKey, String mobile, List<AssignmentIntent> intents, long expiresAtEpochMillis, AuditActor actor) {
         if (expiresAtEpochMillis <= time.currentEpochMillis() || intents == null || intents.isEmpty()) throw new InvitationValidationException();
+        singleTargetType(intents);
+        singleTargetId(intents);
         String normalizedMobile = normalizedMobile(mobile); String raw = randomToken(); UUID invitationId = UUID.randomUUID(); long now = time.currentEpochMillis();
-        jdbc.update("INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, mobile_normalized, status, expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?, 'PENDING', ?, 1, ?)", invitationId, workspaceUuid, groupWorkspaceKey, sha256(raw), normalizedMobile, expiresAtEpochMillis, now);
+        jdbc.update("INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, invitation_token, mobile_normalized, issuer_display_name_snapshot, status, expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, 1, ?)", invitationId, workspaceUuid, groupWorkspaceKey, sha256(raw), raw, normalizedMobile, actor.displaySnapshot(), expiresAtEpochMillis, now);
         for (AssignmentIntent intent : intents) {
             var role = roles.require(workspaceUuid, groupWorkspaceKey, intent.roleId());
             if (!role.serviceNodeType().equals(intent.serviceNodeType())) throw new InvitationValidationException();
@@ -137,34 +151,39 @@ public class WorkspaceInvitationService {
     public ManagementInvitationPage managementPageForOperations(WorkspaceSessionReadback session, String expectedTargetType, UUID requestedScopeRef, ManagementInvitationPageRequest request) {
         if (user == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
         OrganizationTaskPathLookup.TaskPath scope = user.resolveTaskScope(session, expectedTargetType, requestedScopeRef);
-        return managementPage(session.workspaceUuid(), session.groupWorkspaceKey(), request, expectedTargetType, scope.targetId(), scope.displayPath());
+        boolean aggregate = "GROUP".equals(scope.targetType()) && "HEAD_COMPANY".equals(expectedTargetType);
+        return managementPage(session.workspaceUuid(), session.groupWorkspaceKey(), request, expectedTargetType, aggregate ? null : scope.targetId(), aggregate ? null : scope.displayPath());
     }
 
     private ManagementInvitationPage managementPage(UUID workspaceUuid, String key, ManagementInvitationPageRequest request, String fixedTargetType, UUID fixedTargetId, String fixedTargetPath) {
         PageRequest page = PageRequest.from(request);
         List<OrganizationTaskPathLookup.TaskPathRef> organizationMatches = fixedTargetType == null
-            ? matchingOrganizationTargets(workspaceUuid, key, request.organizationQuery()) : List.of();
+            ? matchingOrganizationTargets(workspaceUuid, key, request.organizationQuery(), null)
+            : fixedTargetId == null
+                ? matchingOrganizationTargets(workspaceUuid, key, request.organizationQuery(), fixedTargetType)
+                : List.of();
         if (fixedTargetType == null && request.organizationQuery() != null && organizationMatches.isEmpty()) {
             return new ManagementInvitationPage(List.of(), page.page(), page.pageSize(), 0L, page.criteria());
         }
-        if (fixedTargetType != null && request.organizationQuery() != null && !contains(fixedTargetPath, request.organizationQuery())) {
+        if (fixedTargetId != null && request.organizationQuery() != null && !contains(fixedTargetPath, request.organizationQuery())) {
             return new ManagementInvitationPage(List.of(), page.page(), page.pageSize(), 0L, page.criteria());
         }
         InvitationPageSql sql = invitationPageSql(workspaceUuid, key, request, fixedTargetType, fixedTargetId, organizationMatches);
         long total = jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.invitation i WHERE " + sql.where(), Long.class, sql.arguments().toArray());
         if (total == 0) return new ManagementInvitationPage(List.of(), page.page(), page.pageSize(), 0L, page.criteria());
         List<WorkspaceInvitationReadback> rows = jdbc.query(
-            "SELECT i.id, i.mobile_normalized, i.status, i.expires_at_epoch_millis, i.version, i.created_at_epoch_millis, i.consented_at_epoch_millis, i.completed_at_epoch_millis, i.cancelled_at_epoch_millis FROM workspace_iam.invitation i WHERE " + sql.where() + " ORDER BY i." + page.orderColumn() + " " + page.direction() + ", i.id " + page.direction() + " LIMIT ? OFFSET ?",
-            (row, index) -> new WorkspaceInvitationReadback(row.getObject(1, UUID.class), workspaceUuid, key, row.getString(2), row.getString(3), row.getLong(4), row.getLong(5), row.getLong(6), row.getObject(7, Long.class), row.getObject(8, Long.class), row.getObject(9, Long.class), null),
+            "SELECT i.id, i.mobile_normalized, i.status, i.expires_at_epoch_millis, i.version, i.created_at_epoch_millis, i.consented_at_epoch_millis, i.completed_at_epoch_millis, i.cancelled_at_epoch_millis, i.invitation_token FROM workspace_iam.invitation i WHERE " + sql.where() + " ORDER BY i." + page.orderColumn() + " " + page.direction() + ", i.id ASC LIMIT ? OFFSET ?",
+            (row, index) -> new WorkspaceInvitationReadback(row.getObject(1, UUID.class), workspaceUuid, key, row.getString(2), row.getString(3), row.getLong(4), row.getLong(5), row.getLong(6), row.getObject(7, Long.class), row.getObject(8, Long.class), row.getObject(9, Long.class), row.getString(10)),
             arguments(sql.arguments(), page.pageSize(), (page.page() - 1) * page.pageSize())
         );
         return new ManagementInvitationPage(managementViews(rows), page.page(), page.pageSize(), total, page.criteria());
     }
 
-    private List<OrganizationTaskPathLookup.TaskPathRef> matchingOrganizationTargets(UUID workspaceUuid, String key, String query) {
+    private List<OrganizationTaskPathLookup.TaskPathRef> matchingOrganizationTargets(UUID workspaceUuid, String key, String query, String onlyType) {
         if (query == null || query.isBlank()) return List.of();
         if (candidates == null) throw new InvitationStateException();
         return List.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE").stream()
+            .filter(type -> onlyType == null || onlyType.equals(type))
             .flatMap(type -> candidates.listEnabled(workspaceUuid, key, type).stream())
             .filter(candidate -> contains(candidate.path(), query))
             .map(candidate -> new OrganizationTaskPathLookup.TaskPathRef(candidate.serviceNodeType(), candidate.organizationRef()))
@@ -174,22 +193,38 @@ public class WorkspaceInvitationService {
     private static InvitationPageSql invitationPageSql(UUID workspaceUuid, String key, ManagementInvitationPageRequest request, String fixedType, UUID fixedId, List<OrganizationTaskPathLookup.TaskPathRef> organizationMatches) {
         List<String> clauses = new ArrayList<>(List.of("i.workspace_uuid=?", "i.group_workspace_key=?"));
         List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, key));
-        if (request.mobile() != null) { clauses.add("LOWER(" + maskedMobileSql() + ") LIKE ?"); arguments.add("%" + request.mobile().toLowerCase(java.util.Locale.ROOT) + "%"); }
+        String mobileQuery = normalizedMobileQuery(request.mobile());
+        if (mobileQuery != null) { clauses.add("i.mobile_normalized LIKE ?"); arguments.add("%" + mobileQuery + "%"); }
         if (request.status() != null) { clauses.add("i.status=?"); arguments.add(request.status()); }
         if (request.expiresFrom() != null) { clauses.add("i.expires_at_epoch_millis>=?"); arguments.add(request.expiresFrom()); }
         if (request.expiresTo() != null) { clauses.add("i.expires_at_epoch_millis<=?"); arguments.add(request.expiresTo()); }
-        if (request.roleQuery() != null) { clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent JOIN workspace_iam.workspace_role role ON role.id=intent.role_id WHERE intent.invitation_id=i.id AND LOWER(role.name) LIKE ?)"); arguments.add("%" + request.roleQuery().toLowerCase(java.util.Locale.ROOT) + "%"); }
-        if (fixedType != null) { clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE intent.invitation_id=i.id AND intent.service_node_type=? AND intent.service_node_id=?)"); arguments.add(fixedType); arguments.add(fixedId); }
+        if (request.targetOrganizationType() != null || request.targetOrganizationRef() != null || request.roleQuery() != null) {
+            clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent JOIN workspace_iam.workspace_role role ON role.id=intent.role_id WHERE intent.invitation_id=i.id AND (CAST(? AS text) IS NULL OR intent.service_node_type=?) AND (CAST(? AS uuid) IS NULL OR intent.service_node_id=?) AND (CAST(? AS text) IS NULL OR LOWER(role.name) LIKE ?))");
+            arguments.add(request.targetOrganizationType()); arguments.add(request.targetOrganizationType()); arguments.add(request.targetOrganizationRef()); arguments.add(request.targetOrganizationRef()); arguments.add(request.roleQuery()); arguments.add(request.roleQuery() == null ? null : "%" + request.roleQuery().toLowerCase(java.util.Locale.ROOT) + "%");
+        }
+        if (fixedType != null) {
+            if (fixedId == null) {
+                clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE intent.invitation_id=i.id AND intent.service_node_type=?)");
+                arguments.add(fixedType);
+            } else {
+                clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE intent.invitation_id=i.id AND intent.service_node_type=? AND intent.service_node_id=?)");
+                arguments.add(fixedType); arguments.add(fixedId);
+            }
+        }
         if (!organizationMatches.isEmpty()) {
             List<String> pairs = new ArrayList<>();
             for (OrganizationTaskPathLookup.TaskPathRef ref : organizationMatches) { pairs.add("(intent.service_node_type=? AND intent.service_node_id=?)"); arguments.add(ref.targetType()); arguments.add(ref.targetId()); }
             clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE intent.invitation_id=i.id AND (" + String.join(" OR ", pairs) + "))");
         }
-        return new InvitationPageSql(String.join(" AND ", clauses), List.copyOf(arguments));
+        // JDBC intentionally needs null placeholders for independently optional
+        // type/ref/role filters; List.copyOf rejects those nulls.
+        return new InvitationPageSql(String.join(" AND ", clauses), Collections.unmodifiableList(new ArrayList<>(arguments)));
     }
 
-    private static String maskedMobileSql() {
-        return "CASE WHEN length(i.mobile_normalized)<=4 THEN '****' ELSE substring(i.mobile_normalized from 1 for LEAST(3, length(i.mobile_normalized))) || '****' || substring(i.mobile_normalized from GREATEST(4, length(i.mobile_normalized)-3)) END";
+    private static String normalizedMobileQuery(String value) {
+        if (value == null || value.isBlank()) return null;
+        String normalized = value.replace(" ", "").replace("-", "");
+        return normalized.startsWith("+") ? normalized.substring(1) : normalized;
     }
 
     private static Object[] arguments(List<Object> values, Object... tail) { List<Object> result = new ArrayList<>(values); result.addAll(List.of(tail)); return result.toArray(); }
@@ -197,6 +232,12 @@ public class WorkspaceInvitationService {
     @Transactional(readOnly = true)
     public ManagementInvitationView managementView(WorkspaceInvitationReadback invitation) {
         return managementViews(List.of(invitation)).getFirst();
+    }
+
+    /** Owner read used by the platform detail before a CAS command; it is scoped to one workspace. */
+    @Transactional(readOnly = true)
+    public ManagementInvitationView managementInvitation(UUID workspaceUuid, String groupWorkspaceKey, UUID invitationId) {
+        return managementView(readback(workspaceUuid, groupWorkspaceKey, invitationId));
     }
 
     private List<ManagementInvitationView> managementViews(List<WorkspaceInvitationReadback> invitations) {
@@ -208,12 +249,13 @@ public class WorkspaceInvitationService {
     private List<ManagementInvitationView> managementViews(List<WorkspaceInvitationReadback> invitations, Map<UUID, List<AssignmentIntent>> intentsByInvitation) {
         if (invitations.isEmpty()) return List.of();
         Map<UUID, List<String>> roleNamesByInvitation = roleNamesByInvitation(invitations);
+        Map<UUID, String> issuerNamesByInvitation = issuerNamesByInvitation(invitations);
         Invitation owner = owner(invitations.getFirst());
         Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths = paths(owner, invitations.stream().flatMap(invitation -> intentsByInvitation.getOrDefault(invitation.id(), List.of()).stream()).toList());
-        return invitations.stream().map(invitation -> managementView(invitation, intentsByInvitation.get(invitation.id()), roleNamesByInvitation.get(invitation.id()), paths)).toList();
+        return invitations.stream().map(invitation -> managementView(invitation, intentsByInvitation.get(invitation.id()), roleNamesByInvitation.get(invitation.id()), issuerNamesByInvitation.get(invitation.id()), paths)).toList();
     }
 
-    private ManagementInvitationView managementView(WorkspaceInvitationReadback invitation, List<AssignmentIntent> intents, List<String> roleNames, Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths) {
+    private ManagementInvitationView managementView(WorkspaceInvitationReadback invitation, List<AssignmentIntent> intents, List<String> roleNames, String issuerDisplayName, Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths) {
         if (intents.isEmpty() || roleNames.isEmpty()) throw new InvitationStateException();
         String type = intents.getFirst().serviceNodeType();
         if (intents.stream().anyMatch(intent -> !type.equals(intent.serviceNodeType()))) {
@@ -226,6 +268,7 @@ public class WorkspaceInvitationService {
                 + "/" + rawInvitationToken;
         return new ManagementInvitationView(
             invitation.id(), invitation.groupWorkspaceKey(), maskMobile(invitation.mobileNormalized()),
+            invitation.mobileNormalized(), issuerDisplayName,
             type, targetPath, roleNames, invitation.status(), 1L,
             invitation.expiresAtEpochMillis(), invitation.version(), invitation.createdAtEpochMillis(),
             invitation.consentedAtEpochMillis(), invitation.completedAtEpochMillis(),
@@ -368,7 +411,7 @@ public class WorkspaceInvitationService {
         requireInvitationMobile(invitation, mobile);
         otpLimits.beforeSend(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), "INVITATION_MOBILE_VERIFY", invitation.id());
         long expires = Math.min(invitation.expiresAtEpochMillis(), time.currentEpochMillis() + 5 * 60 * 1000L);
-        String otp = issueMobileVerificationOtp(groupWorkspaceKey, rawInvitationToken, expires);
+        String otp = issueMobileVerificationOtp(invitation, expires);
         return new PublicOtpDelivery("delivery-pending-" + invitation.id(), expires, debugCodeExposure ? otp : null);
     }
 
@@ -420,22 +463,25 @@ public class WorkspaceInvitationService {
     @Transactional
     public String issueMobileVerificationOtp(UUID invitationId, long expiresAtEpochMillis) {
         Invitation invitation = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, version FROM workspace_iam.invitation WHERE id=?", statement -> statement.setObject(1, invitationId), result -> { if (!result.next()) throw new InvitationNotFoundException(); return new Invitation(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getString(5), result.getLong(6), result.getLong(7)); });
+        return issueMobileVerificationOtp(invitation, expiresAtEpochMillis);
+    }
+
+    private String issueMobileVerificationOtp(Invitation invitation, long expiresAtEpochMillis) {
         if (!"ACCEPT_INTENT_RECORDED".equals(invitation.status()) || expiresAtEpochMillis <= time.currentEpochMillis() || expiresAtEpochMillis > invitation.expiresAtEpochMillis()) throw new InvitationStateException();
-        jdbc.update("UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND purpose='INVITATION_MOBILE_VERIFY' AND status='ACTIVE'", invitationId);
-        String otp = String.format("%06d", random.nextInt(1_000_000));
-        jdbc.update("INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, token_hash, subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, 'INVITATION_MOBILE_VERIFY', ?, ?, 'ACTIVE', ?)", UUID.randomUUID(), invitation.workspaceUuid(), invitation.groupWorkspaceKey(), sha256(otp), invitationId, expiresAtEpochMillis);
+        jdbc.update("UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND purpose='INVITATION_MOBILE_VERIFY' AND status='ACTIVE'", invitation.id());
+        String otp = fixedOtpIssuer == null ? String.format("%06d", random.nextInt(1_000_000)) : fixedOtpIssuer.issue("INVITATION_MOBILE_VERIFY", invitation.id());
+        jdbc.update("INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, token_hash, subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, 'INVITATION_MOBILE_VERIFY', ?, ?, 'ACTIVE', ?)", UUID.randomUUID(), invitation.workspaceUuid(), invitation.groupWorkspaceKey(), sha256(otp), invitation.id(), expiresAtEpochMillis);
         return otp;
     }
 
     @Transactional
     public String issueMobileVerificationOtp(String rawInvitationToken, long expiresAtEpochMillis) {
-        return issueMobileVerificationOtp(read(rawInvitationToken).id(), expiresAtEpochMillis);
+        return issueMobileVerificationOtp(read(rawInvitationToken), expiresAtEpochMillis);
     }
 
     @Transactional
     public String issueMobileVerificationOtp(String groupWorkspaceKey, String rawInvitationToken, long expiresAtEpochMillis) {
-        requireGroup(groupWorkspaceKey, rawInvitationToken);
-        return issueMobileVerificationOtp(rawInvitationToken, expiresAtEpochMillis);
+        return issueMobileVerificationOtp(requireGroupInvitation(groupWorkspaceKey, rawInvitationToken), expiresAtEpochMillis);
     }
 
 
@@ -529,13 +575,25 @@ public class WorkspaceInvitationService {
         return Map.copyOf(result);
     }
 
+    private Map<UUID, String> issuerNamesByInvitation(List<WorkspaceInvitationReadback> invitations) {
+        List<UUID> ids = invitations.stream().map(WorkspaceInvitationReadback::id).toList();
+        Map<UUID, String> result = new LinkedHashMap<>();
+        jdbc.query(
+            "SELECT id, issuer_display_name_snapshot FROM workspace_iam.invitation WHERE id IN (" + placeholders(ids.size()) + ")",
+            statement -> { for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index)); },
+            (org.springframework.jdbc.core.RowCallbackHandler) row -> result.put(row.getObject(1, UUID.class), row.getString(2))
+        );
+        if (result.size() != ids.size()) throw new InvitationStateException();
+        return Map.copyOf(result);
+    }
+
     private Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths(Invitation invitation, List<AssignmentIntent> intents) {
         if (taskPaths == null) return Map.of();
         List<OrganizationTaskPathLookup.TaskPathRef> refs = intents.stream()
             .map(intent -> new OrganizationTaskPathLookup.TaskPathRef(intent.serviceNodeType(), intent.serviceNodeId()))
             .distinct()
             .toList();
-        return taskPaths.requireTaskPaths(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), refs);
+        return taskPaths.describePersistedTaskPaths(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), refs);
     }
 
     private String targetPath(Invitation invitation, List<AssignmentIntent> intents, Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths) {
@@ -578,7 +636,7 @@ public class WorkspaceInvitationService {
         return jdbc.query(
             "SELECT id, mobile_normalized, status, expires_at_epoch_millis, version, "
                 + "created_at_epoch_millis, consented_at_epoch_millis, completed_at_epoch_millis, "
-                + "cancelled_at_epoch_millis FROM workspace_iam.invitation "
+                + "cancelled_at_epoch_millis, invitation_token FROM workspace_iam.invitation "
                 + "WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
             statement -> {
                 statement.setObject(1, invitationId);
@@ -591,7 +649,7 @@ public class WorkspaceInvitationService {
                     result.getObject(1, UUID.class), workspaceUuid, key, result.getString(2),
                     result.getString(3), result.getLong(4), result.getLong(5), result.getLong(6),
                     result.getObject(7, Long.class), result.getObject(8, Long.class),
-                    result.getObject(9, Long.class), null
+                    result.getObject(9, Long.class), result.getString(10)
                 );
             }
         );
@@ -603,11 +661,10 @@ public class WorkspaceInvitationService {
     private boolean validGrant(UUID invitationId, String rawGrant) { return rawGrant != null && jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.invitation_public_progress WHERE invitation_id=? AND verification_grant_hash=? AND verification_grant_expires_at_epoch_millis>?", Integer.class, invitationId, sha256(rawGrant), time.currentEpochMillis()) == 1; }
     private Progress progress(UUID invitationId) { return jdbc.query("SELECT login_name_normalized, display_name, password_hash, completion_account_id FROM workspace_iam.invitation_public_progress WHERE invitation_id=?", statement -> statement.setObject(1, invitationId), result -> { if (!result.next()) throw new InvitationStateException(); return new Progress(result.getString(1), result.getString(2), result.getString(3), result.getObject(4, UUID.class)); }); }
     private PublicCompletion completion(Invitation invitation) { Progress progress = progress(invitation.id()); if (!"COMPLETED".equals(invitation.status()) || progress.accountId() == null) throw new InvitationStateException(); return new PublicCompletion(invitation.id(), "COMPLETED", "邀请已完成", "/operations/" + invitation.groupWorkspaceKey() + "/login"); }
-    private Invitation requireGroupInvitation(String groupWorkspaceKey, String rawInvitationToken) { requireGroup(groupWorkspaceKey, rawInvitationToken); return read(rawInvitationToken); }
+    private Invitation requireGroupInvitation(String groupWorkspaceKey, String rawInvitationToken) { Invitation invitation = read(rawInvitationToken); if (!groupWorkspaceKey.equals(invitation.groupWorkspaceKey())) throw new InvitationNotFoundException(); return invitation; }
     private static void requireInvitationMobile(Invitation invitation, String requestedMobile) { if (!invitation.mobile().equals(normalizedMobile(requestedMobile))) throw new InvitationValidationException(); }
 
     private Invitation read(String raw) { return jdbc.query("SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, version FROM workspace_iam.invitation WHERE token_hash=?", statement -> statement.setString(1, sha256(raw)), result -> { if (!result.next()) throw new InvitationNotFoundException(); return new Invitation(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getString(5), result.getLong(6), result.getLong(7)); }); }
-    private void requireGroup(String groupWorkspaceKey, String rawInvitationToken) { if (!groupWorkspaceKey.equals(read(rawInvitationToken).groupWorkspaceKey())) throw new InvitationNotFoundException(); }
     private String randomToken() { byte[] bytes = new byte[32]; random.nextBytes(bytes); return HexFormat.of().formatHex(bytes); }
     private static String sha256(String value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); } catch (Exception failure) { throw new IllegalStateException(failure); } }
     private static String canonical(String operation, Object... values) {
@@ -642,6 +699,8 @@ public class WorkspaceInvitationService {
         UUID id,
         String groupWorkspaceKey,
         String maskedMobile,
+        String mobile,
+        String issuerDisplayName,
         String targetOrganizationType,
         String targetOrganizationPath,
         List<String> roleNames,
@@ -655,7 +714,9 @@ public class WorkspaceInvitationService {
         Long cancelledAt,
         String invitationPageUrl
     ) { }
-    public record ManagementInvitationPageRequest(String mobile, String organizationQuery, String roleQuery, String status, Long expiresFrom, Long expiresTo, String sort, String direction, int page, int pageSize) { }
+    public record ManagementInvitationPageRequest(String mobile, String targetOrganizationType, UUID targetOrganizationRef, String organizationQuery, String roleQuery, String status, Long expiresFrom, Long expiresTo, String sort, String direction, int page, int pageSize) {
+        public ManagementInvitationPageRequest(String mobile, String organizationQuery, String roleQuery, String status, Long expiresFrom, Long expiresTo, String sort, String direction, int page, int pageSize) { this(mobile, null, null, organizationQuery, roleQuery, status, expiresFrom, expiresTo, sort, direction, page, pageSize); }
+    }
     public record ManagementInvitationPage(List<ManagementInvitationView> items, int page, int pageSize, long total, ManagementInvitationPageRequest criteria) { public ManagementInvitationPage { items = List.copyOf(items); } }
     private record InvitationPageSql(String where, List<Object> arguments) { }
     private record PageRequest(int page, int pageSize, String orderColumn, String direction, ManagementInvitationPageRequest criteria) {
@@ -665,7 +726,7 @@ public class WorkspaceInvitationService {
             String direction = request.direction() == null ? "DESC" : request.direction();
             String column = switch (sort) { case "CREATED_AT" -> "created_at_epoch_millis"; case "EXPIRES_AT" -> "expires_at_epoch_millis"; default -> throw new InvitationValidationException(); };
             if (!Set.of("ASC", "DESC").contains(direction)) throw new InvitationValidationException();
-            return new PageRequest(request.page(), request.pageSize(), column, direction, new ManagementInvitationPageRequest(request.mobile(), request.organizationQuery(), request.roleQuery(), request.status(), request.expiresFrom(), request.expiresTo(), sort, direction, request.page(), request.pageSize()));
+            return new PageRequest(request.page(), request.pageSize(), column, direction, new ManagementInvitationPageRequest(request.mobile(), request.targetOrganizationType(), request.targetOrganizationRef(), request.organizationQuery(), request.roleQuery(), request.status(), request.expiresFrom(), request.expiresTo(), sort, direction, request.page(), request.pageSize()));
         }
     }
     private record Invitation(UUID id, UUID workspaceUuid, String groupWorkspaceKey, String mobile, String status, long expiresAtEpochMillis, long version) { }

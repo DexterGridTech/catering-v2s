@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-WORKSPACE-LIST-ASSET-BATCH-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+    "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java",
+    "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceBatchReferenceTest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationControllerTest.java",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-list-asset-batch-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-list-asset-batch-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-list-asset-batch-package-exit.json",
+    "doc/review/platform/rm1p6-u13-workspace-list-asset-batch-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "gradle :apps:backend:catering-business-server:modules:asset:test --tests com.catering.v2s.platform.asset.application.PlatformAssetServiceBatchReferenceTest",
+      "gradle :apps:backend:catering-business-server:test --tests com.catering.v2s.app.edge.platform.workspace.PlatformWorkspaceAdministrationControllerTest",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/database-boundaries",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/openapi-contracts",
+      "scripts/check/code-layout"
+    ],
+    "assertions": [
+      "one distinct page logo set produces one bounded active-asset metadata query with the requested asset references bound exactly once",
+      "the asset owner still rejects absent or inactive metadata and missing objects before constructing public URLs",
+      "one three-item workspace page with two unique logos invokes the batch owner read once and invokes the single-reference owner read zero times",
+      "detail and every other single-reference consumer retain the original owner method"
+    ],
+    "unavailableEnvironmentProof": {
+      "command": "gradle :apps:backend:catering-business-server:modules:asset:test --tests com.catering.v2s.platform.asset.application.PlatformAssetServiceTest",
+      "status": "NOT_RUN_TO_ASSERTION",
+      "reason": "Testcontainers cannot initialize because the local environment has no Docker provider; this is an execution-environment limitation, not a product assertion or a substitute for the focused non-Docker proof."
+    },
+    "dynamicBoundary": "No browser L2, Seed/reset, all-route HTTP coverage, business PASS, cleanup PASS or performance benchmark is claimed by this owner-local static package."
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "business": "NOT_APPLICABLE_OWNER_LOCAL_EFFICIENCY_ONLY",
+  "cleanup": "NOT_APPLICABLE_STATIC_ONLY",
+  "scopeStatement": "C10 removes only the confirmed platform workspace list asset N+1 while retaining asset owner truth and single-object semantics. It does not establish runtime workload coverage or a performance claim."
+}

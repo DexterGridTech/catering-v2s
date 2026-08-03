@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-WORKSPACE-ACCOUNT-OWNER-READ-MODEL-20260803",
+  "genericProblem": "A governance account page can appear functional while it filters or sorts facts outside the owner, combines separate assignments into one false match, or labels invitation/audit/update data as authentication history.",
+  "rootCauseClass": "OWNER_READ_MODEL_AND_UI_FACT_PROVENANCE_GAP",
+  "finiteDenominator": ["platform account query contract and generated client", "WorkspaceUserService platform count and page-ID predicates", "WorkspaceAuthenticationService successful-session creation", "platform account edge mapper and session boundary", "PLATFORM-WORKSPACE-ACCOUNTS account and invitation tabs"],
+  "searchedSurfaces": ["AccountsPage.tsx", "WorkspaceAccountDetailDrawer.tsx", "PlatformInvitationPanel.tsx", "PlatformWorkspaceAccountController.java", "WorkspaceUserService.java", "WorkspaceAuthenticationService.java", "workspace-access.paths.yaml", "workspace-access.schemas.yaml"],
+  "counterexamples": ["Invitation/public mobile stays masked although authenticated platform account mobile is plain.", "Operations-admin invitation tabs remain separate consumers.", "Platform super-admin authorization is not a workspace capability mapping."],
+  "findings": [
+    {"findingId": "WA-01", "classification": "CONFIRMED", "evidence": "Account UI disables standard search and owner page lacks type/ref filters.", "minimumFix": "owner-backed query contract and ProTable QueryFilter state."},
+    {"findingId": "WA-02", "classification": "CONFIRMED", "evidence": "Platform page joins role assignments and maps lastLoginAt absent.", "minimumFix": "same-assignment EXISTS plus owner authentication fact."},
+    {"findingId": "WA-03", "classification": "CONFIRMED", "evidence": "Assignment/role UI joins values into one string.", "minimumFix": "paired multi-line TD rendering."},
+    {"findingId": "WA-04", "classification": "CONFIRMED", "evidence": "Platform invitation pagination treated an absent sorter as a sort transition and reset the requested page.", "minimumFix": "guard page reset by sorter.order; use a Card header for task explanation/action and a labelled existing public invitation-page link."},
+    {"findingId": "WA-05", "classification": "CONFIRMED", "evidence": "A type-only invitation filter can look healthy when its fixture has only one type or the browser proof asserts only a 200 response; neither proves that nonmatching assignment intents are excluded.", "minimumFix": "owner proof creates competing types and asserts exclusion; L2 reads the type-only owner page and asserts every returned item has the selected type."},
+    {"findingId": "WA-06", "classification": "CONFIRMED", "evidence": "Invitation creation accepted mixed target type/ref intents even though public and management presentation require one target; the resulting validly persisted record became unrenderable and polluted later list reads.", "minimumFix": "owner create validates a single target type and ref before the first persistence write; the same-intent read predicate keeps an explicit malformed-row counterexample."}
+  ],
+  "preventionDispositions": [
+    {"findingId": "WA-01", "preventionDestination": "FOCUSED_TEST", "owningSourceOrControl": "platform account owner edge UI focused tests"},
+    {"findingId": "WA-02", "preventionDestination": "FOCUSED_TEST", "owningSourceOrControl": "same-assignment count/page and authentication-history tests"},
+    {"findingId": "WA-03", "preventionDestination": "FOCUSED_TEST", "owningSourceOrControl": "AccountsPage component test"},
+    {"findingId": "WA-04", "preventionDestination": "FOCUSED_TEST", "owningSourceOrControl": "PlatformInvitationPanel component test and sibling ProTable sorter scan"},
+    {"findingId": "WA-05", "preventionDestination": "FOCUSED_OWNER_AND_L2_TEST", "owningSourceOrControl": "WorkspaceInvitationPublicFlowTest discriminating type/ref/role cases and workspace-account-management Playwright owner-result assertion"},
+    {"findingId": "WA-06", "preventionDestination": "FOCUSED_OWNER_TEST", "owningSourceOrControl": "WorkspaceInvitationPublicFlowTest owner create rejection and malformed persisted-row same-intent counterexample"}
+  ]
+}

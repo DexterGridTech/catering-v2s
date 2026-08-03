@@ -19,6 +19,15 @@ public interface OrganizationTaskPathLookup {
     }
 
     /**
+     * Resolves display paths for persisted assignment or invitation references, including
+     * disabled organization facts. This is presentation-only and must not be used for
+     * authority, candidates, or session scope.
+     */
+    default Map<TaskPathRef, TaskPath> describePersistedTaskPaths(UUID workspaceUuid, String groupWorkspaceKey, List<TaskPathRef> targets) {
+        throw new UnsupportedOperationException("persisted task path display is not provided by this test double");
+    }
+
+    /**
      * Owner-owned, non-throwing availability read for persisted role assignments.
      * Missing or disabled targets are deliberately absent, so session assembly can
      * discard them without turning one stale assignment into a request failure.

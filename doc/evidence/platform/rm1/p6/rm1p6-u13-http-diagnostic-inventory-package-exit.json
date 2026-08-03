@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-INVENTORY-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "scripts/test/http-diagnostic-inventory.mjs",
+    "scripts/test/http-diagnostic-inventory.test.mjs",
+    "scripts/test/http-diagnostic-report.mjs",
+    "scripts/test/http-diagnostic-report.test.mjs",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-inventory-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-inventory-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-inventory-package-exit.json",
+    "doc/review/platform/rm1p6-u13-http-diagnostic-inventory-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "node --test scripts/test/http-diagnostic-inventory.test.mjs scripts/test/http-diagnostic-report.test.mjs",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/code-layout",
+      "scripts/check/openapi-contracts"
+    ],
+    "assertions": [
+      "the generated 147-operation route-face registry is the only inventory denominator and produces identity-only skeletons",
+      "every declared route-face tuple requires exactly one explicit positive or typed expected-rejection scenario; missing, duplicate and unknown tuples fail closed",
+      "the report correlates every request with one current-run server completion whose operation metadata and status match",
+      "positive completions require successful HTTP/server outcomes, expected rejections require the declared typed 4xx result, and normal zero-database-work completions remain valid",
+      "each unexecuted declared tuple requires an opaque reason and explicit disposition; otherwise the report fails rather than claiming coverage",
+      "inventory, calls, events and report reject sensitive field names; only metadata, opaque handles, timing and database count/duration are retained"
+    ],
+    "wordingCheck": "the new report kind is rm1-http-diagnostic-report; it does not reuse or relabel the R5 Seed report"
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "legacyBaselineExitValidator": "NOT_INVOKED_DURING_OBSERVATION; this package records only its actual changed-path list and focused proof."
+  },
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "scopeStatement": "staticProofStatus=PASS proves only C03's script-contract inventory and report behavior. It does not prove that any of the 147 operations has yet received a legal scenario, executed against a backend, achieved efficiency, started DEV, run Seed/reset, completed browser L2, or achieved business or cleanup PASS."
+}

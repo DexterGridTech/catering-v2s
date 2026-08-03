@@ -9,7 +9,7 @@ export function OrganizationStatusModal({target, submitting, onCancel, onConfirm
   onConfirm: (target: HierarchyRow) => void;
 }) {
   useOverlayLock(Boolean(target));
-  return <Modal title={target ? `确认${target.status === 'ENABLED' ? '停用' : '启用'}“${target.name}”？` : '确认状态操作'} open={Boolean(target)} onCancel={submitting ? undefined : onCancel} maskClosable={!submitting} keyboard={!submitting} destroyOnHidden footer={[<Button key="cancel" onClick={onCancel} disabled={submitting} {...testId('operations-organization-status-cancel')}>取消</Button>, <Button key="confirm" type="primary" loading={submitting} onClick={() => { if (target) onConfirm(target); }} {...testId('operations-organization-status-confirm')}>确认</Button>]} {...testId('operations-organization-status-modal')}>
+  return <Modal title={target ? `确认${target.status === 'ENABLED' ? '停用' : '启用'}“${target.name}”？` : '确认状态操作'} open={Boolean(target)} onCancel={submitting ? undefined : onCancel} mask={{closable: !submitting}} keyboard={!submitting} destroyOnHidden footer={[<Button key="cancel" onClick={onCancel} disabled={submitting} {...testId('operations-organization-status-cancel')}>取消</Button>, <Button key="confirm" type="primary" loading={submitting} onClick={() => { if (target) onConfirm(target); }} {...testId('operations-organization-status-confirm')}>确认</Button>]} {...testId('operations-organization-status-modal')}>
     <p>停用影响由系统在提交后如实提示。</p>
   </Modal>;
 }

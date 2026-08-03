@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-L2-FIXTURE-CONTRACT-U23",
+  "kind": "rm1-execution-package-exit",
+  "staticProofStatus": "PASS",
+  "businessEvidence": {
+    "kind": "PLATFORM_L2_FIXTURE_AND_BROWSER_PROOF",
+    "runId": "p6l2-1785736455772-7e9b24f4",
+    "resultPath": ".runtime/r5/l2/p6l2-1785736455772-7e9b24f4/platform-admin-l2/result.json",
+    "business": "PASS",
+    "cleanup": "PASS"
+  },
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.test.tsx",
+    "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+    "apps/frontend/platform-admin/playwright.config.ts",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.test.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+    "apps/frontend/platform-admin/src/tests/l2/authentication.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/contract-overview.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/organization-overview.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/platformL2.ts",
+    "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
+    "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+    "doc/evidence/platform/rm1/p6/rm1p6-l2-fixture-contract-u23-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-l2-fixture-contract-u23-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-l2-fixture-contract-u23-problem-family.json",
+    "doc/review/platform/rm1p6-l2-fixture-contract-u23-delivery-manifest.json",
+    "scripts/test/r5-joint-remote-l2-fixture.mjs",
+    "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+    "scripts/test/r5-platform-admin-l2-fixture-seed.test.mjs"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  }
+}

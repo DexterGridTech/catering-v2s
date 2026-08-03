@@ -2,8 +2,117 @@
   "schemaVersion": 1,
   "packageId": "RM1P6-JOINT-REMOTE-L2-U11",
   "status": "PASS",
+  "inheritedDebts": [
+    {
+      "id": "P1_AUTHORITY_SOURCE_LEDGER",
+      "state": "FAIL",
+      "source": "doc/evidence/platform/rm1/p1/authority-ledger.json",
+      "rows": [
+        "ST-11"
+      ],
+      "causedByPackage": false,
+      "closure": "Must be closed by a correctly baselined authority-ledger package; U11 static or browser PASS does not change this state."
+    }
+  ],
   "changedPaths": [
+    ".runtime/compliance-control/problem-family-dispositions/79700a70547dc3ed0dd88e16ed8232132d3e5719ca3b2ac0c74f3926b6742087.json",
+    "doc/review/platform/2026-08-01-v2s-rm1p6-u11-post-remediation-review-claude.md",
+    ".runtime/compliance-control/problem-family-dispositions/08256c2bafc1c1a58c47f58ffcbcbdc3cc1623fad25e0b6109efbddd43fb78ac.json",
+    ".runtime/compliance-control/problem-family-dispositions/12548a997aab64af9dd93d17011e22a748900bac69bcca5e01bb0afe52dc7e8d.json",
+    ".runtime/compliance-control/problem-family-dispositions/12ad524b3b6ddc495038c0260c20f3670b326fb7a7ffcc2cc747746e772500ba.json",
+    ".runtime/compliance-control/problem-family-dispositions/1d3c25cf3ebd181613f1c6d8108bcca47a93f1057b9788896625c1e8ee3eb508.json",
+    ".runtime/compliance-control/problem-family-dispositions/23adffcae03f9d633d2708f2c10bede587ba8bb05d27f202651856b19d955c7b.json",
+    ".runtime/compliance-control/problem-family-dispositions/24bb05096a5fdf68879b4f343c78b753176909ba218fbe0f2aa944ac033673c0.json",
+    ".runtime/compliance-control/problem-family-dispositions/28901948ca8c415cc77516a855bc9572fead7524418f53f5e5afffa9c5b00f51.json",
+    ".runtime/compliance-control/problem-family-dispositions/2eda63d7431213450a6ba1f473876505cba8a75c3c8c08e6dbd1822169de68fe.json",
+    ".runtime/compliance-control/problem-family-dispositions/341294cb1a08ac0d21b6f453fdf4a1a953eb3dd8169e783f06b01c0d018a87d9.json",
+    ".runtime/compliance-control/problem-family-dispositions/357f733922a24a755e95ae4263e014c83be544ca5ad79cdce3f4768320fb1abc.json",
+    ".runtime/compliance-control/problem-family-dispositions/35edf038b45e1b1048bc37d565212140b39ef307a8700b3efd4d658a7e80599f.json",
+    ".runtime/compliance-control/problem-family-dispositions/363f52a2e92ec93f316159a3a70ef900e7acf1de12b4aba29d80039dd823ed87.json",
+    ".runtime/compliance-control/problem-family-dispositions/380fd4f65b12279b6bfbfbe50d017d8f16a67d932f8f8d540a052522f5fa9738.json",
+    ".runtime/compliance-control/problem-family-dispositions/38287781365a8729f590d280b6976743be107fa17be4d88c12707bd3b1129a60.json",
+    ".runtime/compliance-control/problem-family-dispositions/3a1a23bf35fce78eb0bfaed7c31468d7fd6dcd40b73c1beb24343aa5303fec2c.json",
+    ".runtime/compliance-control/problem-family-dispositions/3c3d2ec8a6f1739dd5ea610e12a553fe1c15e56fbf8e3a464923af7e37c6e649.json",
+    ".runtime/compliance-control/problem-family-dispositions/43eae0a4e00cfe1208404c47b4389627bec4dc41eb3d89ce06ad1c7c748e83ed.json",
+    ".runtime/compliance-control/problem-family-dispositions/443043d81293a61f943a0f5a7bc2f92755331f9d3a2498ead908d1520033845f.json",
+    ".runtime/compliance-control/problem-family-dispositions/460d58fce52e6c8e6016855cf93c1d9e52ad27cb89dbce0dbc7bb40aaa174034.json",
+    ".runtime/compliance-control/problem-family-dispositions/468f4815f4f972d111b408f125c35ffa24bfd408f1c45e31c96cb24409f20f77.json",
+    ".runtime/compliance-control/problem-family-dispositions/4d9dbcac9ec53cd71c0187003b31de9a9f0306d9899ae2e67a3be78ecf8c77f5.json",
+    ".runtime/compliance-control/problem-family-dispositions/4ea38c382d4cd63e6329220a554e583fd4c86e47b457c325d210124c81445d52.json",
+    ".runtime/compliance-control/problem-family-dispositions/53459afacf77b486ef847ab2835e3fa098cc29a785b67a04f79123fed377b7c9.json",
+    ".runtime/compliance-control/problem-family-dispositions/54b925d5c712c0336d75d327056b7a6645d5add539ab68e95c5c4d10074b878f.json",
+    ".runtime/compliance-control/problem-family-dispositions/554500f2556a214a867b0de541d49b4f5cb40012ab5e628123e7592c3b8568d8.json",
+    ".runtime/compliance-control/problem-family-dispositions/55bd297c693a875a3a00ff1029e11a8b3fca210e3c225a0938eca9b223c26df7.json",
+    ".runtime/compliance-control/problem-family-dispositions/567fadc84d9f9183eee1e00a2648c1260130c4e52d48137e1af6bdea139ff8f7.json",
+    ".runtime/compliance-control/problem-family-dispositions/577a6531a8d6cab9e5eaa41ce78621bee9938e8d43c5e9efcff548d144ea9b24.json",
+    ".runtime/compliance-control/problem-family-dispositions/59dc47c17a6ae5be660fdde59f345367dea75f202bc842d41085c91e6fcf07f7.json",
+    ".runtime/compliance-control/problem-family-dispositions/5d0c8be4ae6122da67f42c42395c3cb658bfa47fcb14096e42ea76fcbfa743fd.json",
+    ".runtime/compliance-control/problem-family-dispositions/5fe7a7717df893f612b1adb7c332d4d98879ce528a94c55e82cdc879f5b7211a.json",
+    ".runtime/compliance-control/problem-family-dispositions/6275411fd9d4aba43d58a586bc4d19e3f1bdd694f9cc153df9b7fe1890f6f947.json",
+    ".runtime/compliance-control/problem-family-dispositions/6a0757b5c599789619161223b2eec5c9eacf4459af547ff093aeec2058711fca.json",
+    ".runtime/compliance-control/problem-family-dispositions/6df25711c50846a748a2b9dbbbe4d9c07a7705fbbdca6bac25f7987bcca56876.json",
+    ".runtime/compliance-control/problem-family-dispositions/704c654dcd80e7ffeec7729b2d86c48dfbace3e6b48774bcef3e1c2b0777ec37.json",
+    ".runtime/compliance-control/problem-family-dispositions/7410b1e6a89e7113058a299478f56e64de6420df9d887d64e40babfb0a10882a.json",
+    ".runtime/compliance-control/problem-family-dispositions/7624c490061d114baa5869a5b8a88b30149f8d7d4b8de9cfad57ce64e7b4f5ae.json",
+    ".runtime/compliance-control/problem-family-dispositions/76db7412b5fe627632e960be5c72450f9431ca2ea38be83211ca57fb3a286659.json",
+    ".runtime/compliance-control/problem-family-dispositions/788f75ddd97cecaaf4054bd7ae235759ac5592faafa50078e22ca86a1bafa91c.json",
+    ".runtime/compliance-control/problem-family-dispositions/7b1fd23f32658c5dfa04223d4283442a473741832227fe1621b14068a655c672.json",
+    ".runtime/compliance-control/problem-family-dispositions/7f16678bf4fb1b062ee5a8cda23af5a2d6ae11a3046547a1f0cf87e6cee7a349.json",
+    ".runtime/compliance-control/problem-family-dispositions/84acc055bb253186c895fceb985c63f5189542ab14ec4400656ad18d94f25165.json",
+    ".runtime/compliance-control/problem-family-dispositions/88d52801a66ceeadc8fab6db394af0b3258351019cd11e8a6973a372be9fb0ba.json",
+    ".runtime/compliance-control/problem-family-dispositions/905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230.json",
+    ".runtime/compliance-control/problem-family-dispositions/906b3bc3d38189d61879c629592dfb01a019fb6997c5cfbe172877c957ac22e2.json",
+    ".runtime/compliance-control/problem-family-dispositions/94271be8bf3612c080e76e1e200dff3939cfa3828429d473b570d073dc5fd014.json",
+    ".runtime/compliance-control/problem-family-dispositions/95501f0eb4077928adb03a3bb1cfe20a2b59a2b072aa7cdacf8770cb4fb8a1e6.json",
+    ".runtime/compliance-control/problem-family-dispositions/a09de2920dfb1336bf4733558be25c7224a959342e3226d0e03800fa6907e9b5.json",
+    ".runtime/compliance-control/problem-family-dispositions/a263de936128e7f12ae0a045dae850ef5e33673d9e4bdb8a5f2adcecf03d5d34.json",
+    ".runtime/compliance-control/problem-family-dispositions/a4f176a3ef7c7f543495dc63f02ac484fb48bbf8cc40ca94ed5e4fe7cfbb245a.json",
+    ".runtime/compliance-control/problem-family-dispositions/a5bc6a6bde9b9107006a42413b72f97771040b6435ee7769f1762aa6d723b0cf.json",
+    ".runtime/compliance-control/problem-family-dispositions/a5c63dca1b0be5bfa4c6cc80b3a55550559df5f272ab9579f307e9a9261044c2.json",
+    ".runtime/compliance-control/problem-family-dispositions/a714b43d2fdbb2d6c6b7f491af29df51ba0959813a5001095c07f676ea43e11d.json",
+    ".runtime/compliance-control/problem-family-dispositions/a9f7bec17168e7318de12b7bb2d7ace67cd70ffb605cbc351e7446bd1f54ab2f.json",
+    ".runtime/compliance-control/problem-family-dispositions/af779b89e5120dfd2367a158385e18e37dfad511329379b6de473ff211be3efa.json",
+    ".runtime/compliance-control/problem-family-dispositions/b188addef113484419edf7fb90e91117f263f80bf03b2cabbe96eff851427129.json",
+    ".runtime/compliance-control/problem-family-dispositions/b8f3f1a587483481f4a52369db7ec6ca22ef4e5ad5b98454d476d42f6e4ac454.json",
+    ".runtime/compliance-control/problem-family-dispositions/bbcc9c74fe4db2975d64c79bde76e45b405d7fda51b3bb27d32036c93d87909d.json",
+    ".runtime/compliance-control/problem-family-dispositions/bdf8c79ca8048e6e2c65c242baaef3cab9b692a10ce494c96afb009fa411131a.json",
+    ".runtime/compliance-control/problem-family-dispositions/bed0c25cebf3473436f6047aa7b2fe30551f277167dacf614be3545d88d43b08.json",
+    ".runtime/compliance-control/problem-family-dispositions/bf96915132945cd71ce07605ffed1f9a7d3de0435c52518184361a396901f944.json",
+    ".runtime/compliance-control/problem-family-dispositions/bfbf1d00636091c1a8928a5d043c02ab2c6099f357d5746cd75e081613c2f426.json",
+    ".runtime/compliance-control/problem-family-dispositions/c14adeb92bb72b6cb00759a24af592367131571b6e2f9971481f30cef8bab4c5.json",
+    ".runtime/compliance-control/problem-family-dispositions/c38822372e124adb367ac56c5fdef11949f2250cfadc16b8c6f733fdbe629aac.json",
+    ".runtime/compliance-control/problem-family-dispositions/c63e7b8d4dc2df823dae6fea63e8d9c524814a96d23edca305f2652be5ebb352.json",
+    ".runtime/compliance-control/problem-family-dispositions/c7a2cce76189c91c39f6dca832ef42ba938b1fc2a4123eb4dd35536e8e352c4e.json",
+    ".runtime/compliance-control/problem-family-dispositions/cb514972fe666fb1bf4115faf11dfee888f406ac0d03083114be905cfdbf2b67.json",
+    ".runtime/compliance-control/problem-family-dispositions/ce3cea23a7f9f71688ed9e12d898ff47bb6b024e9cc4edce006fb234888c4e4f.json",
+    ".runtime/compliance-control/problem-family-dispositions/ce4659cb2be452c20aa47def729f50a3fd5a2f42d73b34945d90cbc8b310fe32.json",
+    ".runtime/compliance-control/problem-family-dispositions/d218210dccff6a4b0a3287f70b736b8c98a0db98959b92b8d22c8272024606ca.json",
+    ".runtime/compliance-control/problem-family-dispositions/d7e21df5bf6bc2632e022ef654a82413a30fc3a30b76cd2984bf1caf6f08509c.json",
+    ".runtime/compliance-control/problem-family-dispositions/e1e0d0442e956d55a81919fbe5c0c79e4eb0de1bdea65c6a929ca878945f6df5.json",
+    ".runtime/compliance-control/problem-family-dispositions/e25b07031479b6dbdcf05682449b69e27b297e2e8637584ce0742902459d6034.json",
+    ".runtime/compliance-control/problem-family-dispositions/e557e3c3f71d4f98e4a892ce16fa5eee13cbdf0979fa104fbbef54cba4fa83aa.json",
+    ".runtime/compliance-control/problem-family-dispositions/e8b832b875eab69873611589329177f9524ad283518223d8ce7f52f45c78c193.json",
+    ".runtime/compliance-control/problem-family-dispositions/ee3baf1ae5082e8137f3f0eab2b1c808ea2a9832f5c9310cba54d61df3f08cbe.json",
+    ".runtime/compliance-control/problem-family-dispositions/f02b10063443c47b9877bc18947acd2aaa384a207023e133374175dfcd535085.json",
+    ".runtime/compliance-control/problem-family-dispositions/f07f30d4fb0719582fedad5ab9ac8fe9333500f03c263299fbaf1ce65e6c66fe.json",
+    ".runtime/compliance-control/problem-family-dispositions/f51442a1fb5f1ebc9f0258cd9cd4c5c583f316a4d884c200eeb1ed79b52f9aae.json",
+    ".runtime/compliance-control/problem-family-dispositions/f808fa760dff3810cac87ca201e9f7f1aebb19a8b6d23207c6152c4b1c5e9ddc.json",
+    ".runtime/compliance-control/problem-family-dispositions/fa70ba82fd6e5eacf0b3b3a0776c8f9459ceb87ac44453ed806428915dbcbf77.json",
+    ".runtime/compliance-control/problem-family-dispositions/fd1b0bff35b2f83a1cb358dfa17cab02860343655a9dfc1ef93a1827fd95f5fd.json",
+    ".runtime/compliance-control/problem-family-dispositions/fd6f3a478745f56f0a0d4ad825bb013c9bbb26cac48e602fd273abc005907857.json",
+    ".runtime/compliance-control/problem-family-dispositions/fe90e642ead6f0d4a13fdb8676b23bb21bacaa4dba73019fba9b325f8b1e9ab0.json",
+    ".runtime/compliance-control/problem-family-dispositions/fef52f067d30d4f9c01ab65a27bcdfd29b3cfbd9846113e0ecc790472e9292af.json",
+    ".runtime/compliance-control/problem-family-dispositions/576cfab6a00f7155a2708b69daa67b45eb47cb406944a31af9bb4d62b0be7874.json",
+    "doc/review/platform/2026-08-01-v2s-rm1p6-u11-joint-l2-post-remediation-author-resolution.md",
+    ".runtime/compliance-control/problem-family-dispositions/992c340ebdc8685c52e75adfc18f0b84a39b87c3c7fcba13e7be1f14fc189bb9.json",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+    "apps/frontend/operations-admin/package.json",
+    "apps/frontend/platform-admin/package.json",
+    "doc/review/platform/2026-08-01-v2s-rm1p6-u11-joint-l2-implementation-review-claude.md",
+    "project-memory/decisions/r5-full-seed-report-api-db-accounting.md",
     ".runtime/compliance-control/active-package.json",
+    ".runtime/compliance-control/problem-family-dispositions/2cdfd1e90a755319bfd960bcac709baeab2a486675c2a817d6b84ebf89d14237.json",
     ".runtime/compliance-control/problem-family-dispositions/034aa2054885cf007689d4703e424295f1f8289488f406f147509edb0775a132.json",
     ".runtime/compliance-control/problem-family-dispositions/180daebd09cc94ae1b13e42ee202915ae673bdbfd12c7ad9982f3e85e782721f.json",
     ".runtime/compliance-control/problem-family-dispositions/1b4462fc25bcdb5716291f37ad8baa7939bff7da28ba6a59aae716a3741a52c3.json",
@@ -26,6 +135,7 @@
     ".runtime/compliance-control/problem-family-dispositions/95b13be075a92b5cfa56924eab366be7a630923683305c1936770d0958c62092.json",
     ".runtime/compliance-control/problem-family-dispositions/965ba40410bfeec2659008c9622807a70ac4b2a9db382a4e9ff0447be13ac271.json",
     ".runtime/compliance-control/problem-family-dispositions/979923044ac1c80e39c4ef1107313be2066046e7018dedbe11f9db131c9a6356.json",
+    ".runtime/compliance-control/problem-family-dispositions/9887734387ab4ed0d7b26293953fb8e5c61f45a1d698e6e2c0052b4fad721c58.json",
     ".runtime/compliance-control/problem-family-dispositions/9e74e3f1cc9a511221c6191f71231c79e9853d66b41b1ce45cf5e6e9b51a423a.json",
     ".runtime/compliance-control/problem-family-dispositions/a5b855818dcec4836f90de111cf9d2fbee8c8079b95c95f6399c9c256ec4a055.json",
     ".runtime/compliance-control/problem-family-dispositions/a9905f8fa5630b372d08666a981112e9f020d28327aae817c6778ae2fec50c0f.json",
@@ -42,6 +152,9 @@
     ".runtime/compliance-control/problem-family-dispositions/ea0ea16bb62377c2f920f4a418f2267473c24f6a3ac9f5f09008699f0ca9b918.json",
     ".runtime/compliance-control/problem-family-dispositions/f8700be13b2dbf1113e379c02a06a796c2a51a0e26f41538ab8796fd2d97abbd.json",
     "AGENTS.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u01-contract-face-denominator-problem-family.json",
+    "tools/platform-boundary-gates/cli.mjs",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
     "PLATFORM-BLUEPRINT.md",
     "apps/backend/catering-business-server/build.gradle.kts",
     "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
@@ -220,13 +333,13 @@
       "suite": "PLATFORM_AND_OPERATIONS_19_SPEC_JOINT_LOCAL_L2",
       "result": "PASS",
       "cleanup": "PASS",
-      "runId": "rm1p6-joint-local-l2-1785531940251-78105-88376fed",
-      "reportPath": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785531940251-78105-88376fed/evidence/terminal-report.json",
-      "reportSha256": "b098e5619f905ee8b9378248204f03ce102f0c62d72ac5f7fe98e310c8f45a23",
+      "runId": "rm1p6-joint-local-l2-1785554796000-76279-b2747f8c",
+      "reportPath": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785554796000-76279-b2747f8c/evidence/terminal-report.json",
+      "reportSha256": "98b5b14534c01a2c90bef7d315a9c1a200847eafa494a0cc12339b1fd79febb3",
       "currentSourceHashes": [
         {
           "path": "scripts/test/r5-joint-remote-l2.mjs",
-          "sha256": "b065b1e0a9ef0926a3cfc47785d615292b5a29fcb402038dd53e56122822742e"
+          "sha256": "6a6560be30f62e6d7bc4c3801e9450bbc04ee3258847cb4027701dcc3129232a"
         },
         {
           "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
@@ -250,11 +363,11 @@
         },
         {
           "path": "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
-          "sha256": "6f2f2a0c7dfe78d0852c37d7ecf4fcbc34862844158cc83c5ca77b06ada9ce32"
+          "sha256": "8ceac597c3e44c18fdd9af4960f220641bbac5380e197d990549878a43b734d5"
         },
         {
           "path": "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts",
-          "sha256": "f00f1c2953cbc93a76e6746ab467e9c6432490b713c23b381d420288b7396d66"
+          "sha256": "5470151b93238f3be3d6f462d39a929ea3d6d9f517fa1628daf3d72a3923ae61"
         },
         {
           "path": "apps/frontend/platform-admin/src/tests/l2/workspace-overview.spec.ts",
@@ -270,7 +383,7 @@
         },
         {
           "path": "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts",
-          "sha256": "44fda8459cf1ffc2491ed88ca75058f4c487f3e03b5045684fa570c0e235d73e"
+          "sha256": "fafb5ff49d476d9e243c17fea3f78f3fe11368b8c94261ea55711b4501e2977d"
         },
         {
           "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
@@ -282,7 +395,7 @@
         },
         {
           "path": "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
-          "sha256": "6c0866f4177806db95a56714b8f8b5ccd8611f3d0922bca30579cdd6d5a43f07"
+          "sha256": "89344c96da84f74d40797011aa2a0c4fa05a1093426619192c310c439050c3f5"
         },
         {
           "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
@@ -294,7 +407,7 @@
         },
         {
           "path": "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts",
-          "sha256": "4a40e36891d4e08a1fa634149ada6e9698b4f2e99f87509de7b72d92684b0668"
+          "sha256": "a9d090e2211080bfe3411ff5a179e9a53cc6c45df38d31a053e1439de6b6c9c6"
         },
         {
           "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
@@ -318,7 +431,7 @@
         },
         {
           "path": "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
-          "sha256": "900f48c5a137c2f11f10d2ce4729e986863724fb1018a44af119fc08985ab6b5"
+          "sha256": "e9b4e467abf7d4d54edb2890f9050f8cccf25c80647ebdf9d9758b358a434d0d"
         },
         {
           "path": "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts",
@@ -342,7 +455,7 @@
         },
         {
           "path": "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
-          "sha256": "98c91bc774b04f7983c0d4dd8e299ce800b56081bb4d54470346fe6f9ba7612b"
+          "sha256": "c6905fe32db48a8aa9475854739d69608c06e1877fe7d83732981b0656858cdb"
         },
         {
           "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
@@ -382,11 +495,11 @@
         },
         {
           "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
-          "sha256": "654e4b3d9600ff582d372998ac5c2d845a8cb62607d41e0d116a5f432e8f3c29"
+          "sha256": "78e20e99645dcdc786f5a93e05c499d0e551e031e4964c4d16a8ca7c77a4990e"
         },
         {
           "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
-          "sha256": "adc32116047a2bb344d62bc4c751d8550f03cbb1f309085084600902f86a0a40"
+          "sha256": "4f6fa85ea7a7d46b4b87fc6c59fc64af47211d3249cd5f6fd6f537a187a1f8af"
         },
         {
           "path": "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
@@ -402,8 +515,8 @@
         }
       ],
       "log": {
-        "path": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785531940251-78105-88376fed/evidence/commands/operations_playwright.log",
-        "sha256": "e3d5c9add17d70331631b0cc8065221e0c426810d0cf130d79abf3eaace605fd"
+        "path": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785554796000-76279-b2747f8c/evidence/commands/operations_playwright.log",
+        "sha256": "fdcc2abec3e8a33a1ebe71b6f14e7e1c03f92025c035e593d7dc0918ab93597c"
       }
     }
   ],
@@ -413,5 +526,19 @@
     "operationsSpecCount": 10,
     "executionPlane": "LOCAL_APPS_AND_PLAYWRIGHT_REMOTE_NON_PRODUCTION_MIDDLEWARE"
   },
-  "businessBoundary": "Fresh managed local Spring Boot + two local Vite apps + local Playwright over isolated remote non-production middleware; not UAT and not a Roadmap status change."
+  "businessBoundary": "Fresh managed local Spring Boot + two local Vite apps + local Playwright over isolated remote non-production middleware; not UAT and not a Roadmap status change.",
+  "finalRun": {
+    "runId": "rm1p6-joint-local-l2-1785554796000-76279-b2747f8c",
+    "specCount": 19,
+    "platformSpecs": 9,
+    "operationsSpecs": 10,
+    "business": "PASS",
+    "cleanup": "PASS",
+    "firstFailure": null,
+    "remoteNamespace": {
+      "databaseAbsentAfterCleanup": true,
+      "roleAbsentAfterCleanup": true,
+      "assetAbsentAfterCleanup": true
+    }
+  }
 }

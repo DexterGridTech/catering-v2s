@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-INVITATION-SINGLE-LOAD-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u13-invitation-single-load-delivery-manifest.json",
+  "deliveryManifestSha256": "8ea09ed461ec73c92b323d2e75a454cca50af17ffd917a65cc1e299d3bc6f81f",
+  "unitId": "RM1P6-INVITATION-SINGLE-LOAD-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/database-boundaries", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/database-boundaries"],
+  "requiredControlRuleIds": ["PF-HTTP-EFF-03"],
+  "businessEvidenceObligation": "NOT_APPLICABLE_OWNER_LOCAL_EFFICIENCY_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-HEAD-COMPANY-LIST-BRAND-BATCH-U13",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-package-exit.json",
+    "exitSha256": "8696cec5b274fbb0cc558bf0849c86f8a7c0ce997a93f689536399f600cf5661"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-implementation-amendment.md",
+    "sha256": "0b6a90fcdc59cc232434f8c1db5664a55c77ee5705eb7174997e4b2259c63dec"
+  },
+  "authorizationBoundary": "Dexter authorized U13 implementation. C12 removes only duplicate typed invitation loads within workspace-iam public invitation commands; it changes no public contract, Seed/reset, L2 or business claim."
+}

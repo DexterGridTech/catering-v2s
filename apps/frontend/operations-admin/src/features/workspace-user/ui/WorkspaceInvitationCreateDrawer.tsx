@@ -1,5 +1,5 @@
 import {Alert, Button, Drawer, Form, Input, Select, Space} from 'antd';
-import {adminDrawerSurfaceProps, contextScopedQueryArgs, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, contextScopedQueryArgs, formatCodeNamePath, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import type {WorkspaceInvitation, WorkspaceInvitationCandidatePage} from '../../../app/api/generated/operations-edge';
@@ -26,7 +26,7 @@ function issue() {
 
 function queryIssue(error: unknown, fallback: string) {
   const problem = operationsProblemOf(error);
-  return problem ? `${problem.errorCode}：${problem.detail}` : fallback;
+  return problem?.detail ?? fallback;
 }
 
 function appendUnique(current: CandidateOption[], incoming: CandidateOption[]) {
@@ -111,7 +111,7 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
     if (!open) return;
     const nextOptions = (organizationPageResult?.organizations ?? [])
       .filter((candidate) => candidate.serviceNodeType === targetType)
-      .map((candidate) => ({value: candidate.organizationRef, label: candidate.path}));
+      .map((candidate) => ({value: candidate.organizationRef, label: formatCodeNamePath(candidate.path)}));
     setOrganizationOptions((current) => organizationPage === 1 ? nextOptions : appendUnique(current, nextOptions));
   }, [open, organizationPage, organizationPageResult?.organizations, targetType]);
 
@@ -148,6 +148,7 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
               : await operationsClient.createOperationsWorkspaceStoreInvitation(path, options);
       lifecycle.setDirty(false);
       onCreated(created);
+      lifecycle.closeAfterSuccess();
     } catch (error) {
       void error;
       setSubmitProblem(issue());
@@ -163,7 +164,7 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
   return <Drawer
     title="发出邀请"
     open={open}
-    width={600}
+    size={600}
     destroyOnHidden
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
@@ -174,8 +175,8 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
       <Button type="primary" loading={lifecycle.submitting} onClick={() => form.submit()} {...testId('operations-workspace-invitation-create-submit')}>发出邀请</Button>
     </Space>}
   >
-    {submitProblem && <Alert type="error" showIcon message={submitProblem} style={{marginBottom: 16}}/>}
-    {combinedProblem && <Alert type="warning" showIcon message="候选读取受限" description={combinedProblem} style={{marginBottom: 16}}/>}
+    {submitProblem && <Alert type="error" showIcon title={submitProblem} style={{marginBottom: 16}}/>}
+    {combinedProblem && <Alert type="error" showIcon title={combinedProblem} action={<Button type="link" onClick={() => void (organizationProblem ? organizationResult.refetch() : roleResult.refetch())} {...testId(organizationProblem ? 'operations-workspace-invitation-organization-retry' : 'operations-workspace-invitation-role-retry')}>重试</Button>} style={{marginBottom: 16}} {...testId('operations-workspace-invitation-candidate-problem')}/>}
     <Form
       form={form}
       layout="vertical"
@@ -198,13 +199,11 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
       </Form.Item>
       <Form.Item name="targetOrganizationRef" label="任职机构" rules={[{required: true, message: '请选择任职机构'}]}>
         <Select
-          showSearch
-          filterOption={false}
+          showSearch={{filterOption: false, onSearch: (value) => { setOrganizationQueryText(value); setOrganizationPage(1); }}}
           placeholder="搜索机构名称或路径..."
           options={organizationOptions}
           loading={organizationResult.isFetching && organizationOptions.length === 0}
           notFoundContent={organizationResult.isFetching ? '加载中...' : organizationProblem ? '机构候选读取失败，请重试' : '当前范围内没有可邀请的机构'}
-          onSearch={(value) => { setOrganizationQueryText(value); setOrganizationPage(1); }}
           onPopupScroll={(event) => {
             const target = event.target as HTMLElement;
             if (!organizationResult.isFetching && organizationOptions.length < organizationTotal && target.scrollTop + target.clientHeight >= target.scrollHeight - 24) {
@@ -217,14 +216,12 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
       <Form.Item name="roleIds" label="业务角色" rules={[{required: true, message: '请选择业务角色'}]}>
         <Select
           mode="multiple"
-          showSearch
-          filterOption={false}
+          showSearch={{filterOption: false, onSearch: (value) => { setRoleQueryText(value); setRolePage(1); }}}
           disabled={!selectedOrganizationRef}
           placeholder={selectedOrganizationRef ? '请选择业务角色' : '请先选择任职机构'}
           options={roleOptions}
           loading={roleResult.isFetching && roleOptions.length === 0}
           notFoundContent={!selectedOrganizationRef ? '请先选择任职机构' : roleResult.isFetching ? '加载中...' : roleProblem ? '角色候选读取失败，请重试' : '当前范围内没有可选业务角色'}
-          onSearch={(value) => { setRoleQueryText(value); setRolePage(1); }}
           onPopupScroll={(event) => {
             const target = event.target as HTMLElement;
             if (!roleResult.isFetching && roleOptions.length < roleTotal && target.scrollTop + target.clientHeight >= target.scrollHeight - 24) {

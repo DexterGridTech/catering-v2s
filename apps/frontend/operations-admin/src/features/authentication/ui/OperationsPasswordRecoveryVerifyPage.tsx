@@ -1,6 +1,6 @@
 import {LockOutlined} from '@ant-design/icons';
 import {LoginFormPage} from '@ant-design/pro-components';
-import {Alert, Button, Form, Input, Result, Steps, Typography} from 'antd';
+import {Alert, Button, Form, Input, Result, Space, Steps} from 'antd';
 import {testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router';
@@ -20,6 +20,7 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
   const [codeFieldKey, setCodeFieldKey] = useState(0);
   const [failed, setFailed] = useState(false);
   const [pending, setPending] = useState(false);
+  const [form] = Form.useForm<Fields>();
   const lifecycle = useSubmissionLifecycle();
   const generation = useAsyncGenerationGuard();
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
     setSent(false);
     setDebugCode(undefined);
     setVerificationCode(undefined);
+    form.setFieldValue('code', undefined);
     setCodeFieldKey((value) => value + 1);
   };
 
@@ -60,10 +62,11 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
       await publicClient.startOperationsPasswordRecovery({groupWorkspaceKey}, {body: {loginName, mobile}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
       lifecycle.markBusinessIntentChanged();
       const dispatched = await publicClient.sendOperationsPasswordRecoveryOtp({groupWorkspaceKey}, {body: {}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
+      const debugCode = dispatched.debugVerificationCode ?? undefined;
       setSent(true);
-      setDebugCode(dispatched.debugVerificationCode ?? undefined);
-      setVerificationCode(undefined);
-      setCodeFieldKey((value) => value + 1);
+      setDebugCode(debugCode);
+      setVerificationCode(debugCode);
+      form.setFieldValue('code', debugCode);
     } catch {
       invalidateOtp();
       setFailed(true);
@@ -86,6 +89,7 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
       await navigate(`/operations/${encodeURIComponent(groupWorkspaceKey)}/password-recovery/password`);
     } catch {
       setVerificationCode(undefined);
+      form.setFieldValue('code', undefined);
       setCodeFieldKey((value) => value + 1);
       setFailed(true);
     } finally {
@@ -93,14 +97,16 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
     }
   };
 
-  if (entryState.kind === 'loading') return <LoginFormPage logo={<LockOutlined/>}><Steps current={0} items={[{title: '验证身份'}, {title: '设置新密码'}, {title: '完成'}]}/></LoginFormPage>;
+  if (entryState.kind === 'loading') return <LoginFormPage form={form} logo={<LockOutlined/>}><Steps current={0} items={[{title: '验证身份'}, {title: '设置新密码'}, {title: '完成'}]}/></LoginFormPage>;
   if (entryState.kind === 'unavailable') return <Result status="error" title="暂时无法打开恢复入口，请稍后重试" extra={<Button onClick={() => setEntryReload((value) => value + 1)} {...testId('operations-recovery-retry-entry')}>重试</Button>}/>;
   const {branding} = entryState;
   return <LoginFormPage<Fields>
+    className="auth-login-page"
     logo={branding.logoUrl ? <img src={branding.logoUrl} alt=""/> : <LockOutlined/>}
     title={branding.workspaceName}
     subTitle={branding.operationsTitle}
-    message={<Alert type={failed ? 'error' : 'info'} showIcon message="如果信息匹配，验证码将发送到该手机号"/>}
+    form={form}
+    message={<Alert type={failed ? 'error' : 'info'} showIcon title="如果信息匹配，验证码将发送到该手机号"/>}
     onValuesChange={(changed, values) => {
       if ('loginName' in changed || 'mobile' in changed) {
         setIdentityFields({loginName: values.loginName, mobile: values.mobile});
@@ -113,12 +119,10 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
     onFinish={async (values) => { await verify(values.code); return false; }}
     actions={<Button type="link" disabled={locked || pending} onClick={() => void navigate(`/operations/${encodeURIComponent(groupWorkspaceKey)}/login`)} {...testId('operations-recovery-back-login')}>返回登录</Button>}
   >
-    <Typography.Title level={3}>找回{branding.operationsTitle}密码</Typography.Title>
-    <Steps current={0} items={[{title: '验证身份'}, {title: '设置新密码'}, {title: '完成'}]}/>
+    <Steps current={0} items={[{title: '验证身份'}, {title: '设置新密码'}, {title: '完成'}]} style={{margin: '15px 0'}}/>
     <Form.Item name="loginName" label="登录名"><Input disabled={locked || pending} {...testId('operations-recovery-login-name')}/></Form.Item>
     <Form.Item name="mobile" label="手机号"><Input disabled={locked || pending} {...testId('operations-recovery-mobile')}/></Form.Item>
-    <Form.Item key={codeFieldKey} name="code" label="验证码"><Input disabled={!sent || pending || locked} {...testId('operations-recovery-otp')}/></Form.Item>
-    <Button onClick={() => void send()} loading={pending} disabled={locked || pending} {...testId('operations-recovery-send-otp')}>获取验证码</Button>
-    {debugCode && <Alert type="info" showIcon message={`当前为测试环境，验证码：${debugCode}`}/>} 
+    <Form.Item label="验证码" required><Space.Compact block><Form.Item key={codeFieldKey} name="code" noStyle><Input disabled={!sent || pending || locked} {...testId('operations-recovery-otp')}/></Form.Item><Button htmlType="button" onClick={() => void send()} loading={pending} disabled={locked || pending} {...testId('operations-recovery-send-otp')}>获取验证码</Button></Space.Compact></Form.Item>
+    {debugCode && <Alert type="info" showIcon title={`当前为测试环境，验证码：${debugCode}`}/>}
   </LoginFormPage>;
 }

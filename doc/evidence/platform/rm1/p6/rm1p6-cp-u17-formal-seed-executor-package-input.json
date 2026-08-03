@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U17",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-cp-u17-formal-seed-executor-delivery-manifest.json",
+  "deliveryManifestSha256": "02f1c626348458274c488d6b5cd0978f9b76faba9d7ac0b75920c2771d9a7fa6",
+  "unitId": "RM1P6-CP-U17",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["PF-R5-FORMAL-OWNER-COMMAND-SEED"],
+  "businessEvidenceObligation": "FORMAL_SEED_OWNER_COMMAND_READBACK_AND_REPORT",
+  "serialPredecessor": {
+    "packageId": "RM1P6-CP-U09",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-cp-u09-package-exit.json",
+    "exitSha256": "ffc4bb95dc76af32e601b62e493d2c9ced474509bab345750e657086965bb052"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u17-formal-seed-executor-implementation-amendment.md",
+    "sha256": "a9306528c67e4a7dc07322d217c025db65d79544ab06e5e4328496ce998fbc67"
+  },
+  "authorizationBoundary": "Dexter directly authorized CP-U17 for the formal r5-full owner-command seed executor. Existing bootstrap SQL is invoked only by scripts/dev/seed after DEV start; every subsequent fixture is created and read back over generated owner HTTP operations except the contract-allowlisted inv-expired terminal state. That adapter may only change the already owner-created pending invitation into its time-driven expired state, write its SYSTEM audit and same-workspace receipt, and execute only over the existing managed remote control plane in exact non-production r5-full namespace. It adds no HTTP operation, capability, UI feature, generic direct-write channel or global fixed clock. The package excludes U13 diagnostics, browser L2, UAT, local middleware, manual SQL outside this exact allowlist, and Roadmap state changes."
+}

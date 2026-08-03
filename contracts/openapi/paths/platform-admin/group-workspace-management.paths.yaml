@@ -79,7 +79,7 @@
       },
       "patch": {
         "operationId": "updatePlatformGroupWorkspaceDisplay",
-        "x-required-capability": "REQ_UPDATE_PLATFORM_GROUP_WORKSPACE_DISPLAY",
+        "x-required-platform-authorization": "REQ_UPDATE_PLATFORM_GROUP_WORKSPACE_DISPLAY",
         "tags": [
           "platform-workspace"
         ],
@@ -182,7 +182,7 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/status": {
       "post": {
         "operationId": "transitionPlatformGroupWorkspaceStatus",
-        "x-required-capability": "REQ_TRANSITION_PLATFORM_GROUP_WORKSPACE_STATUS",
+        "x-required-platform-authorization": "REQ_TRANSITION_PLATFORM_GROUP_WORKSPACE_STATUS",
         "tags": [
           "platform-workspace"
         ],
@@ -420,7 +420,7 @@
       },
       "post": {
         "operationId": "createPlatformGroupWorkspace",
-        "x-required-capability": "REQ_CREATE_PLATFORM_GROUP_WORKSPACE",
+        "x-required-platform-authorization": "REQ_CREATE_PLATFORM_GROUP_WORKSPACE",
         "tags": [
           "platform-workspace"
         ],
@@ -513,7 +513,7 @@
     "/api/platform/assets/staging": {
       "post": {
         "operationId": "stagePlatformAsset",
-        "x-required-capability": "REQ_STAGE_PLATFORM_ASSET",
+        "x-required-platform-authorization": "REQ_STAGE_PLATFORM_ASSET",
         "tags": ["platform-asset"],
         "x-consumer-faces": ["platform-admin"],
         "x-owner-module": "platform-asset",
@@ -534,7 +534,7 @@
     "/api/platform/assets/staging/{assetRef}/release": {
       "post": {
         "operationId": "releasePlatformStagedAsset",
-        "x-required-capability": "REQ_RELEASE_PLATFORM_STAGED_ASSET",
+        "x-required-platform-authorization": "REQ_RELEASE_PLATFORM_STAGED_ASSET",
         "tags": ["platform-asset"],
         "x-consumer-faces": ["platform-admin"],
         "x-owner-module": "platform-asset",

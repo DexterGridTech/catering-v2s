@@ -15,9 +15,12 @@ const receiptKey = 'r5-v1-bootstrap-root';
 const fixedEpochMillis = 1784908800000;
 
 const fail = (reason) => { process.stderr.write(`R5_SEED_BOOTSTRAP=REFUSED; REASON=${reason}\n`); process.exit(2); };
+const safeFailure = (value) => String(value ?? 'FAILED')
+  .replaceAll(/(?:password|secret|token|cookie|authorization|jdbc:postgresql:\/\/)[^\s]*/gi, '[REDACTED]')
+  .replaceAll(/\s+/g, '_').replaceAll(/[^A-Za-z0-9_.:-]/g, '').slice(0, 200);
 const command = (binary, args, options = {}) => {
   const result = spawnSync(binary, args, {cwd: root, encoding: 'utf8', ...options});
-  if (result.status !== 0) fail(`${binary}:${(result.stderr || result.stdout || 'FAILED').trim().replace(/\s+/g, '_').slice(0, 200)}`);
+  if (result.status !== 0) fail(`${binary}:EXECUTION_FAILED:${safeFailure(result.stderr || result.stdout)}`);
   return result.stdout;
 };
 const sqlLiteral = (value) => `'${String(value).replaceAll("'", "''")}'`;
@@ -51,5 +54,5 @@ VALUES (${sqlLiteral(receiptKey)}, ${sqlLiteral(receiptHash)}, jsonb_build_objec
 COMMIT;
 `;
 const remote = spawnSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', environment.environment.V2S_DEV_REMOTE_HOST, `docker exec -i catering-postgres psql -U catering -d ${environment.expectedDatabase} -v ON_ERROR_STOP=1 -q`], {cwd: root, encoding: 'utf8', input: sql});
-if (remote.status !== 0) fail(`BOOTSTRAP_SQL:${(remote.stderr || remote.stdout || 'FAILED').trim().replace(/\s+/g, '_').slice(0, 200)}`);
-process.stdout.write(`R5_SEED_BOOTSTRAP=PASS; LOGIN=root; PLATFORM_ADMIN_ID=${rootId}; AUDIT=PASS; RECEIPT=PASS\n`);
+if (remote.status !== 0) fail(`BOOTSTRAP_SQL:EXECUTION_FAILED:${safeFailure(remote.stderr || remote.stdout)}`);
+process.stdout.write('R5_SEED_BOOTSTRAP=PASS; STAGE=bootstrap; AUDIT=PASS; RECEIPT=PASS\n');

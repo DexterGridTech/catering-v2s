@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1-C01-ROOT-CONTRACT-REGISTRY-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1-u13-c01-root-contract-registry-delivery-manifest.json",
+  "deliveryManifestSha256": "544fcfea814ca0e310983c4db7195336b81acc4364dfa4c679f5c26febd4a0b8",
+  "unitId": "RM1-C01-ROOT-CONTRACT-REGISTRY-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": [
+    "scripts/check/openapi-contracts",
+    "scripts/check/edge-codegen",
+    "scripts/check/remediation-compliance",
+    "scripts/check/standards-coverage"
+  ],
+  "requiredControlRefs": [
+    "scripts/check/openapi-contracts",
+    "scripts/check/edge-codegen",
+    "scripts/check/remediation-compliance"
+  ],
+  "requiredControlRuleIds": [
+    "U13-C01-ROOT_ROUTE_REGISTRY_EXACT_SET",
+    "U13-C01-ROOT_REFERENCE_RED_MUTATION"
+  ],
+  "businessEvidenceObligation": "NOT_APPLICABLE_STATIC_CONTRACT_DENOMINATOR",
+  "serialPredecessor": {
+    "packageId": "RM1-SEED-REPORT-U12",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1-seed-report-package-exit.json",
+    "exitSha256": "ec48d5498682c5ce110af656fad72c12a6d0a18e6dd36c07b5453bf5d73c892f"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-c01-root-contract-registry-implementation-amendment.md",
+    "sha256": "0971213edeab3088c0173725ba68009f58e5da4b0a8c195ea16dc01df789b326"
+  },
+  "postRemediationRebind": {
+    "version": "POST_REMEDIATION_V1",
+    "historicalClaudeReview": {
+      "path": "doc/review/platform/2026-08-01-v2s-rm1-u13-c01-root-contract-registry-review-claude.md",
+      "sha256": "1ef2745154058d90490fd4ceeb53be605e551658c2c58309bd55d8aa85764051"
+    },
+    "intake": {
+      "path": "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-author-resolution.md",
+      "sha256": "9e05c7b0771450b315b8f60df14ce9f432d91a4d6260423e178ac6719ea2b064"
+    },
+    "currentBytesNotReviewedByOriginalReview": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false
+  },
+  "authorizationBoundary": "Dexter authorizes only C01 static root OpenAPI denominator closure: the existing staged-asset release root reference, edge-codegen exact-set enforcement, focused self-test and static evidence. It excludes handler/owner/UI behavior, generated artifact hand edits, DEV, seed/reset, managed L2, business PASS, cleanup PASS, performance claims and Roadmap mutation."
+}

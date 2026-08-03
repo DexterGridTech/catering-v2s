@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-INVITATION-SINGLE-LOAD-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-package-exit.json",
+    "doc/review/platform/rm1p6-u13-invitation-single-load-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "gradle :apps:backend:catering-business-server:modules:workspace-iam:testClasses",
+      "node scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:workspace-iam:test",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/database-boundaries",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/openapi-contracts",
+      "scripts/check/code-layout"
+    ],
+    "remoteRun": {
+      "manifest": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785577939996-77743/run-manifest.json",
+      "targetXml": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785577939996-77743/TEST-com.catering.v2s.workspace.iam.application.WorkspaceInvitationPublicFlowTest.xml",
+      "targetClassStatus": "PASS_6_OF_6",
+      "cleanup": "PASS",
+      "moduleSuiteStatus": "FAIL_UNRELATED_TEST_FIXTURE",
+      "moduleSuiteFirstFailure": "WorkspaceUserTaskScopeTest.commandTargetResolverUsesTheExplicitHeadCompanyTargetInsteadOfTheVisibleScope writes a code longer than the database varchar(32) constraint; this test-fixture defect is outside C12 and is carried to its own successor package."
+    },
+    "assertions": [
+      "each public invitation command loads and workspace-key-validates one typed invitation at its owner boundary; nested OTP issuing receives that invitation rather than re-reading its token",
+      "expired invitations, invalid pre-accept state, wrong OTP and OTP replay retain typed rejection",
+      "completion replay retains one assignment and returns the owner completion readback",
+      "OTP rate limiting, CAS, audit, raw-token validation and final completion readback remain in workspace-iam"
+    ],
+    "dynamicBoundary": "The remote JVM/Docker run is focused Testcontainers technical proof only. It is not browser L2, Seed/reset, all-route HTTP coverage, business PASS or a measured performance result."
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "business": "NOT_APPLICABLE_OWNER_LOCAL_EFFICIENCY_ONLY",
+  "cleanup": "PASS_REMOTE_TESTCONTAINERS_TECHNICAL_PROOF_ONLY",
+  "scopeStatement": "C12 removes only duplicate typed invitation loads in the public invitation owner flow and adds state-machine regression proof. It does not claim a green workspace-iam module suite while its unrelated user-task-scope test fixture is red, and it does not establish browser or business evidence."
+}

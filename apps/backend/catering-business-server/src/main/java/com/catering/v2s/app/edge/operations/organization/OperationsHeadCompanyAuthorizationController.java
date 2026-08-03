@@ -30,14 +30,14 @@ public final class OperationsHeadCompanyAuthorizationController {
     @PostMapping("/{headCompanyId}/brand-authorizations")
     ResponseEntity<Void> add(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody HeadCompanyBrandAuthorizationAddRequest body) {
         var session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        entities.addHeadCompanyBrandAuthorization(session.workspaceUuid(), groupWorkspaceKey, headCompanyId, requiredUuid(body == null ? null : body.brandId()), idempotencyKey, sessions.requireActor(request, groupWorkspaceKey));
+        entities.addHeadCompanyBrandAuthorization(session.workspaceUuid(), groupWorkspaceKey, headCompanyId, requiredUuid(body == null ? null : body.brandId()), idempotencyKey, sessions.actor(session));
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{headCompanyId}/brand-authorizations/{brandId}")
     ResponseEntity<Void> remove(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @PathVariable String brandId, @RequestHeader("Idempotency-Key") String idempotencyKey) {
         var session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        entities.removeHeadCompanyBrandAuthorization(session.workspaceUuid(), groupWorkspaceKey, headCompanyId, requiredUuid(brandId), idempotencyKey, sessions.requireActor(request, groupWorkspaceKey));
+        entities.removeHeadCompanyBrandAuthorization(session.workspaceUuid(), groupWorkspaceKey, headCompanyId, requiredUuid(brandId), idempotencyKey, sessions.actor(session));
         return ResponseEntity.noContent().build();
     }
 

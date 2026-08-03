@@ -5,5 +5,6 @@ public record OrganizationProjectCreateRequest(
     String code,
     String name,
     String notes,
+    tools.jackson.databind.JsonNode extensionValues,
     java.util.List<OrganizationProjectCreateRequestPhasesItem> phases
 ) {}

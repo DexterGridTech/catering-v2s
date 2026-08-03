@@ -54,14 +54,15 @@ export function OperationsPasswordRecoveryPasswordPage({groupWorkspaceKey}: {gro
     }
   };
 
-  if (entryState.kind === 'loading') return <LoginFormPage logo={<LockOutlined/>}><Steps current={1} items={[{title: '验证身份'}, {title: '设置新密码'}, {title: '完成'}]}/></LoginFormPage>;
+  if (entryState.kind === 'loading') return <LoginFormPage form={form} logo={<LockOutlined/>}><Steps current={1} items={[{title: '验证身份'}, {title: '设置新密码'}, {title: '完成'}]}/></LoginFormPage>;
   if (entryState.kind === 'unavailable') return <Result status="error" title="暂时无法打开恢复入口，请稍后重试" extra={<Button onClick={() => setEntryReload((value) => value + 1)} {...testId('operations-recovery-retry-entry')}>重试</Button>}/>;
   const {branding} = entryState;
   return <LoginFormPage<Fields>
+    className="auth-login-page"
     logo={branding.logoUrl ? <img src={branding.logoUrl} alt=""/> : <LockOutlined/>}
     title={branding.workspaceName}
     subTitle={branding.operationsTitle}
-    message={problem ? <Alert type="error" showIcon message={problem}/> : false}
+    message={problem ? <Alert type="error" showIcon title={problem}/> : false}
     form={form}
     submitter={{searchConfig: {submitText: '提交'}, submitButtonProps: {loading: pending, disabled: locked || pending, ...testId('operations-recovery-complete-submit')}}}
     onFinish={async (value) => { await complete(value); return false; }}

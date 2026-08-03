@@ -53,6 +53,9 @@
     "/api/platform/assets/staging": {
       "$ref": "./paths/platform-admin/group-workspace-management.paths.yaml#/paths/~1api~1platform~1assets~1staging"
     },
+    "/api/platform/assets/staging/{assetRef}/release": {
+      "$ref": "./paths/platform-admin/group-workspace-management.paths.yaml#/paths/~1api~1platform~1assets~1staging~1{assetRef}~1release"
+    },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview": {
       "$ref": "./paths/platform-admin/organization-overview.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview"
     },
@@ -73,6 +76,21 @@
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts": {
       "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitation-candidates"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1reissue"
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}": {
       "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}"
@@ -272,6 +290,9 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy": {
       "$ref": "./paths/operations-admin/organization-hierarchy.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy"
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1hierarchy~1extension-definition"
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions": {
       "$ref": "./paths/operations-admin/organization-hierarchy.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1regions"
     },
@@ -286,6 +307,9 @@
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores": {
       "$ref": "./paths/operations-admin/store-management.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates": {
+      "$ref": "./paths/operations-admin/store-management.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1candidates"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates": {
       "$ref": "./paths/operations-admin/store-management.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1candidates"
@@ -687,6 +711,9 @@
       "WorkspaceAccountPage": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceAccountPage"
       },
+      "WorkspacePlatformAccountSortKey": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePlatformAccountSortKey"
+      },
       "WorkspaceAccountStatus": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceAccountStatus"
       },
@@ -728,6 +755,9 @@
       },
       "WorkspaceUserPage": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUserPage"
+      },
+      "WorkspaceUserSortKey": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUserSortKey"
       },
       "WorkspaceUserRevokeRequest": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUserRevokeRequest"
@@ -776,6 +806,9 @@
       },
       "WorkspaceRolePage": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRolePage"
+      },
+      "WorkspaceRoleSortKey": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRoleSortKey"
       },
       "WorkspaceRoleStatusTransitionRequest": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRoleStatusTransitionRequest"

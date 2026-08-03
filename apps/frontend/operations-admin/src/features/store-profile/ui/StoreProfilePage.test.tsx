@@ -10,6 +10,8 @@ describe('store profile focused contract', () => {
     expect(pageSource).toContain("key: 'PENDING_EFFECTIVE'");
     expect(pageSource).toContain('operationsAdminRtkRequest.getOperationsFixedStoreContracts');
     expect(pageSource).toContain('operations-store-profile-contract-state-tabs');
+    expect(pageSource).toContain('operations-store-profile-retry');
+    expect(pageSource).toContain('profile.error');
     expect(pageSource).not.toMatch(/createOperations|updateOperations|invalidateOperations|transitionOperations/);
   });
 
@@ -18,5 +20,13 @@ describe('store profile focused contract', () => {
     expect(detailSource).toContain('useOverlayLock(Boolean(contract))');
     expect(detailSource).toContain('operations-store-profile-contract-detail');
     expect(detailSource).not.toMatch(/<Button|createOperations|updateOperations|invalidateOperations/);
+  });
+
+  it('keeps the fixed-store contract detail field set aligned with the contract detail IA', () => {
+    for (const label of ['门店', '项目', '项目分期', '经营租户', '货号', '起止日期', '状态', '备注', '更新时间']) {
+      expect(detailSource).toContain(`label: '${label}'`);
+    }
+    expect(detailSource).toContain(['getOperations', 'ContractExtensionDefinition'].join(''));
+    expect(detailSource).toContain('extensionItems');
   });
 });

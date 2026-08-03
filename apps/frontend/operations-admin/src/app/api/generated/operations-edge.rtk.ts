@@ -5,7 +5,7 @@ import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest}
 
 type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
 export type OperationsAdminOperationId = keyof FaceOperationContracts;
-export type OperationsAdminRtkWireRequest = <I extends OperationsAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs;
+export type OperationsAdminRtkWireRequest = <I extends OperationsAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};
 
 /**
  * Operation-shaped request constructors for RTK hooks. Consumers supply only
@@ -18,6 +18,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceGroupInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceGroupInvitation"> => ({
@@ -25,6 +26,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceHeadCompanyInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceHeadCompanyInvitation"> => ({
@@ -32,6 +34,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceProjectInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceProjectInvitation"> => ({
@@ -39,6 +42,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceRegionInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceRegionInvitation"> => ({
@@ -46,6 +50,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     cancelOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceStoreInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceStoreInvitation"> => ({
@@ -53,6 +58,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     changeCurrentWorkspacePassword: (pathParameters: FaceOperationContracts["changeCurrentWorkspacePassword"]["path"], options: FaceOperationOptions<"changeCurrentWorkspacePassword">): FaceOperationRequest<"changeCurrentWorkspacePassword"> => ({
@@ -60,6 +66,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsContract: (pathParameters: FaceOperationContracts["createOperationsContract"]["path"], options: FaceOperationOptions<"createOperationsContract">): FaceOperationRequest<"createOperationsContract"> => ({
@@ -67,6 +74,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["createOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"createOperationsOrganizationBrand">): FaceOperationRequest<"createOperationsOrganizationBrand"> => ({
@@ -74,6 +82,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["createOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"createOperationsOrganizationHeadCompany">): FaceOperationRequest<"createOperationsOrganizationHeadCompany"> => ({
@@ -81,6 +90,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationProject: (pathParameters: FaceOperationContracts["createOperationsOrganizationProject"]["path"], options: FaceOperationOptions<"createOperationsOrganizationProject">): FaceOperationRequest<"createOperationsOrganizationProject"> => ({
@@ -88,6 +98,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationRegion: (pathParameters: FaceOperationContracts["createOperationsOrganizationRegion"]["path"], options: FaceOperationOptions<"createOperationsOrganizationRegion">): FaceOperationRequest<"createOperationsOrganizationRegion"> => ({
@@ -95,6 +106,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationStore: (pathParameters: FaceOperationContracts["createOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"createOperationsOrganizationStore">): FaceOperationRequest<"createOperationsOrganizationStore"> => ({
@@ -102,6 +114,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["createOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"createOperationsOrganizationTenant">): FaceOperationRequest<"createOperationsOrganizationTenant"> => ({
@@ -109,6 +122,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceGroupInvitation">): FaceOperationRequest<"createOperationsWorkspaceGroupInvitation"> => ({
@@ -116,6 +130,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceHeadCompanyInvitation">): FaceOperationRequest<"createOperationsWorkspaceHeadCompanyInvitation"> => ({
@@ -123,6 +138,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceProjectInvitation">): FaceOperationRequest<"createOperationsWorkspaceProjectInvitation"> => ({
@@ -130,6 +146,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceRegionInvitation">): FaceOperationRequest<"createOperationsWorkspaceRegionInvitation"> => ({
@@ -137,6 +154,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceStoreInvitation">): FaceOperationRequest<"createOperationsWorkspaceStoreInvitation"> => ({
@@ -144,6 +162,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsContract: (pathParameters: FaceOperationContracts["getOperationsContract"]["path"], options: FaceOperationOptions<"getOperationsContract">): FaceOperationRequest<"getOperationsContract"> => ({
@@ -151,6 +170,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsContractCandidates: (pathParameters: FaceOperationContracts["getOperationsContractCandidates"]["path"], options: FaceOperationOptions<"getOperationsContractCandidates">): FaceOperationRequest<"getOperationsContractCandidates"> => ({
@@ -158,6 +178,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsContractExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsContractExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsContractExtensionDefinition">): FaceOperationRequest<"getOperationsContractExtensionDefinition"> => ({
@@ -165,6 +186,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsContracts: (pathParameters: FaceOperationContracts["getOperationsContracts"]["path"], options: FaceOperationOptions<"getOperationsContracts">): FaceOperationRequest<"getOperationsContracts"> => ({
@@ -172,6 +194,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsEntityAuditHistory: (pathParameters: FaceOperationContracts["getOperationsEntityAuditHistory"]["path"], options: FaceOperationOptions<"getOperationsEntityAuditHistory">): FaceOperationRequest<"getOperationsEntityAuditHistory"> => ({
@@ -179,6 +202,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/audit-history",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsFixedStoreContracts: (pathParameters: FaceOperationContracts["getOperationsFixedStoreContracts"]["path"], options: FaceOperationOptions<"getOperationsFixedStoreContracts">): FaceOperationRequest<"getOperationsFixedStoreContracts"> => ({
@@ -186,6 +210,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["getOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBrand">): FaceOperationRequest<"getOperationsOrganizationBrand"> => ({
@@ -193,6 +218,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationBrands: (pathParameters: FaceOperationContracts["getOperationsOrganizationBrands"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBrands">): FaceOperationRequest<"getOperationsOrganizationBrands"> => ({
@@ -200,6 +226,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationBusinessEntityExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationBusinessEntityExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationBusinessEntityExtensionDefinition">): FaceOperationRequest<"getOperationsOrganizationBusinessEntityExtensionDefinition"> => ({
@@ -207,6 +234,15 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition",
       pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsOrganizationCandidates: (pathParameters: FaceOperationContracts["getOperationsOrganizationCandidates"]["path"], options: FaceOperationOptions<"getOperationsOrganizationCandidates">): FaceOperationRequest<"getOperationsOrganizationCandidates"> => ({
+      operationId: "getOperationsOrganizationCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationHeadCompanies: (pathParameters: FaceOperationContracts["getOperationsOrganizationHeadCompanies"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHeadCompanies">): FaceOperationRequest<"getOperationsOrganizationHeadCompanies"> => ({
@@ -214,6 +250,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["getOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHeadCompany">): FaceOperationRequest<"getOperationsOrganizationHeadCompany"> => ({
@@ -221,6 +258,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationHierarchy: (pathParameters: FaceOperationContracts["getOperationsOrganizationHierarchy"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHierarchy">): FaceOperationRequest<"getOperationsOrganizationHierarchy"> => ({
@@ -228,6 +266,15 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
       pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsOrganizationHierarchyExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationHierarchyExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationHierarchyExtensionDefinition">): FaceOperationRequest<"getOperationsOrganizationHierarchyExtensionDefinition"> => ({
+      operationId: "getOperationsOrganizationHierarchyExtensionDefinition",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationStore: (pathParameters: FaceOperationContracts["getOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStore">): FaceOperationRequest<"getOperationsOrganizationStore"> => ({
@@ -235,6 +282,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationStoreCandidates: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreCandidates">): FaceOperationRequest<"getOperationsOrganizationStoreCandidates"> => ({
@@ -242,6 +290,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationStoreExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreExtensionDefinition">): FaceOperationRequest<"getOperationsOrganizationStoreExtensionDefinition"> => ({
@@ -249,6 +298,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationStores: (pathParameters: FaceOperationContracts["getOperationsOrganizationStores"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStores">): FaceOperationRequest<"getOperationsOrganizationStores"> => ({
@@ -256,6 +306,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["getOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"getOperationsOrganizationTenant">): FaceOperationRequest<"getOperationsOrganizationTenant"> => ({
@@ -263,6 +314,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsOrganizationTenants: (pathParameters: FaceOperationContracts["getOperationsOrganizationTenants"]["path"], options: FaceOperationOptions<"getOperationsOrganizationTenants">): FaceOperationRequest<"getOperationsOrganizationTenants"> => ({
@@ -270,6 +322,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsStoreProfile: (pathParameters: FaceOperationContracts["getOperationsStoreProfile"]["path"], options: FaceOperationOptions<"getOperationsStoreProfile">): FaceOperationRequest<"getOperationsStoreProfile"> => ({
@@ -277,6 +330,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceGroupInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceGroupInvitationCandidates"> => ({
@@ -284,6 +338,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceGroupInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitations">): FaceOperationRequest<"getOperationsWorkspaceGroupInvitations"> => ({
@@ -291,6 +346,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceGroupUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupUser">): FaceOperationRequest<"getOperationsWorkspaceGroupUser"> => ({
@@ -298,6 +354,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceGroupUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupUserAccount">): FaceOperationRequest<"getOperationsWorkspaceGroupUserAccount"> => ({
@@ -305,6 +362,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceHeadCompanyInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceHeadCompanyInvitationCandidates"> => ({
@@ -312,6 +370,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceHeadCompanyInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyInvitations">): FaceOperationRequest<"getOperationsWorkspaceHeadCompanyInvitations"> => ({
@@ -319,6 +378,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceHeadCompanyUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyUser">): FaceOperationRequest<"getOperationsWorkspaceHeadCompanyUser"> => ({
@@ -326,6 +386,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceHeadCompanyUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceHeadCompanyUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceHeadCompanyUserAccount">): FaceOperationRequest<"getOperationsWorkspaceHeadCompanyUserAccount"> => ({
@@ -333,6 +394,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceLoginEntry: (pathParameters: FaceOperationContracts["getOperationsWorkspaceLoginEntry"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceLoginEntry">): FaceOperationRequest<"getOperationsWorkspaceLoginEntry"> => ({
@@ -340,6 +402,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     getOperationsWorkspaceProjectInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceProjectInvitationCandidates"> => ({
@@ -347,6 +410,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceProjectInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectInvitations">): FaceOperationRequest<"getOperationsWorkspaceProjectInvitations"> => ({
@@ -354,6 +418,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceProjectUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectUser">): FaceOperationRequest<"getOperationsWorkspaceProjectUser"> => ({
@@ -361,6 +426,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceProjectUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceProjectUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceProjectUserAccount">): FaceOperationRequest<"getOperationsWorkspaceProjectUserAccount"> => ({
@@ -368,6 +434,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceRegionInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceRegionInvitationCandidates"> => ({
@@ -375,6 +442,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceRegionInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionInvitations">): FaceOperationRequest<"getOperationsWorkspaceRegionInvitations"> => ({
@@ -382,6 +450,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceRegionUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionUser">): FaceOperationRequest<"getOperationsWorkspaceRegionUser"> => ({
@@ -389,6 +458,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceRegionUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceRegionUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceRegionUserAccount">): FaceOperationRequest<"getOperationsWorkspaceRegionUserAccount"> => ({
@@ -396,6 +466,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceSessionEntry: (pathParameters: FaceOperationContracts["getOperationsWorkspaceSessionEntry"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceSessionEntry">): FaceOperationRequest<"getOperationsWorkspaceSessionEntry"> => ({
@@ -403,6 +474,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceStoreInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceStoreInvitationCandidates"> => ({
@@ -410,6 +482,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceStoreInvitations: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreInvitations"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreInvitations">): FaceOperationRequest<"getOperationsWorkspaceStoreInvitations"> => ({
@@ -417,6 +490,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceStoreUser: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreUser"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreUser">): FaceOperationRequest<"getOperationsWorkspaceStoreUser"> => ({
@@ -424,6 +498,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getOperationsWorkspaceStoreUserAccount: (pathParameters: FaceOperationContracts["getOperationsWorkspaceStoreUserAccount"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceStoreUserAccount">): FaceOperationRequest<"getOperationsWorkspaceStoreUserAccount"> => ({
@@ -431,6 +506,7 @@ export const operationsAdminRtkRequest = {
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     invalidateOperationsContract: (pathParameters: FaceOperationContracts["invalidateOperationsContract"]["path"], options: FaceOperationOptions<"invalidateOperationsContract">): FaceOperationRequest<"invalidateOperationsContract"> => ({
@@ -438,6 +514,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     operationsWorkspaceLogout: (pathParameters: FaceOperationContracts["operationsWorkspaceLogout"]["path"], options: FaceOperationOptions<"operationsWorkspaceLogout">): FaceOperationRequest<"operationsWorkspaceLogout"> => ({
@@ -445,6 +522,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     operationsWorkspacePasswordLogin: (pathParameters: FaceOperationContracts["operationsWorkspacePasswordLogin"]["path"], options: FaceOperationOptions<"operationsWorkspacePasswordLogin">): FaceOperationRequest<"operationsWorkspacePasswordLogin"> => ({
@@ -452,6 +530,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     reissueOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceGroupInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceGroupInvitation"> => ({
@@ -459,6 +538,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceHeadCompanyInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceHeadCompanyInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceHeadCompanyInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceHeadCompanyInvitation"> => ({
@@ -466,6 +546,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceProjectInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceProjectInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceProjectInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceProjectInvitation"> => ({
@@ -473,6 +554,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceRegionInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceRegionInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceRegionInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceRegionInvitation"> => ({
@@ -480,6 +562,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceStoreInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceStoreInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceStoreInvitation">): FaceOperationRequest<"reissueOperationsWorkspaceStoreInvitation"> => ({
@@ -487,6 +570,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     removeOperationsOrganizationHeadCompanyBrandAuthorization: (pathParameters: FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["path"], options: FaceOperationOptions<"removeOperationsOrganizationHeadCompanyBrandAuthorization">): FaceOperationRequest<"removeOperationsOrganizationHeadCompanyBrandAuthorization"> => ({
@@ -494,6 +578,7 @@ export const operationsAdminRtkRequest = {
       method: "DELETE",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceGroupUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceGroupUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceGroupUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceGroupUserAssignment"> => ({
@@ -501,6 +586,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceHeadCompanyUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceHeadCompanyUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceHeadCompanyUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceHeadCompanyUserAssignment"> => ({
@@ -508,6 +594,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceProjectUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceProjectUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceProjectUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceProjectUserAssignment"> => ({
@@ -515,6 +602,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceRegionUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceRegionUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceRegionUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceRegionUserAssignment"> => ({
@@ -522,6 +610,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokeOperationsWorkspaceStoreUserAssignment: (pathParameters: FaceOperationContracts["revokeOperationsWorkspaceStoreUserAssignment"]["path"], options: FaceOperationOptions<"revokeOperationsWorkspaceStoreUserAssignment">): FaceOperationRequest<"revokeOperationsWorkspaceStoreUserAssignment"> => ({
@@ -529,6 +618,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     selectOperationsWorkspaceSessionContext: (pathParameters: FaceOperationContracts["selectOperationsWorkspaceSessionContext"]["path"], options: FaceOperationOptions<"selectOperationsWorkspaceSessionContext">): FaceOperationRequest<"selectOperationsWorkspaceSessionContext"> => ({
@@ -536,6 +626,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     selectOperationsWorkspaceSessionDataNode: (pathParameters: FaceOperationContracts["selectOperationsWorkspaceSessionDataNode"]["path"], options: FaceOperationOptions<"selectOperationsWorkspaceSessionDataNode">): FaceOperationRequest<"selectOperationsWorkspaceSessionDataNode"> => ({
@@ -543,6 +634,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     sendOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["sendOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"sendOperationsWorkspaceOtp">): FaceOperationRequest<"sendOperationsWorkspaceOtp"> => ({
@@ -550,6 +642,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     transitionOperationsOrganizationBrandStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationBrandStatus">): FaceOperationRequest<"transitionOperationsOrganizationBrandStatus"> => ({
@@ -557,6 +650,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsOrganizationHeadCompanyStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationHeadCompanyStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationHeadCompanyStatus">): FaceOperationRequest<"transitionOperationsOrganizationHeadCompanyStatus"> => ({
@@ -564,6 +658,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsOrganizationNodeStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationNodeStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationNodeStatus">): FaceOperationRequest<"transitionOperationsOrganizationNodeStatus"> => ({
@@ -571,6 +666,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsOrganizationStoreStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationStoreStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationStoreStatus">): FaceOperationRequest<"transitionOperationsOrganizationStoreStatus"> => ({
@@ -578,6 +674,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsOrganizationTenantStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationTenantStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationTenantStatus">): FaceOperationRequest<"transitionOperationsOrganizationTenantStatus"> => ({
@@ -585,6 +682,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsContract: (pathParameters: FaceOperationContracts["updateOperationsContract"]["path"], options: FaceOperationOptions<"updateOperationsContract">): FaceOperationRequest<"updateOperationsContract"> => ({
@@ -592,6 +690,7 @@ export const operationsAdminRtkRequest = {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationBrand: (pathParameters: FaceOperationContracts["updateOperationsOrganizationBrand"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationBrand">): FaceOperationRequest<"updateOperationsOrganizationBrand"> => ({
@@ -599,6 +698,7 @@ export const operationsAdminRtkRequest = {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationHeadCompany: (pathParameters: FaceOperationContracts["updateOperationsOrganizationHeadCompany"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationHeadCompany">): FaceOperationRequest<"updateOperationsOrganizationHeadCompany"> => ({
@@ -606,6 +706,7 @@ export const operationsAdminRtkRequest = {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationNode: (pathParameters: FaceOperationContracts["updateOperationsOrganizationNode"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationNode">): FaceOperationRequest<"updateOperationsOrganizationNode"> => ({
@@ -613,6 +714,7 @@ export const operationsAdminRtkRequest = {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationStore: (pathParameters: FaceOperationContracts["updateOperationsOrganizationStore"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationStore">): FaceOperationRequest<"updateOperationsOrganizationStore"> => ({
@@ -620,6 +722,7 @@ export const operationsAdminRtkRequest = {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateOperationsOrganizationTenant: (pathParameters: FaceOperationContracts["updateOperationsOrganizationTenant"]["path"], options: FaceOperationOptions<"updateOperationsOrganizationTenant">): FaceOperationRequest<"updateOperationsOrganizationTenant"> => ({
@@ -627,6 +730,7 @@ export const operationsAdminRtkRequest = {
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     verifyOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["verifyOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"verifyOperationsWorkspaceOtp">): FaceOperationRequest<"verifyOperationsWorkspaceOtp"> => ({
@@ -634,6 +738,7 @@ export const operationsAdminRtkRequest = {
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     })
 } as const;
@@ -759,6 +864,10 @@ export function createOperationsAdminRtkEndpoints(
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
+    getOperationsOrganizationCandidates: build.query<FaceOperationContracts["getOperationsOrganizationCandidates"]["response"], FaceOperationRequest<"getOperationsOrganizationCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
     getOperationsOrganizationHeadCompanies: build.query<FaceOperationContracts["getOperationsOrganizationHeadCompanies"]["response"], FaceOperationRequest<"getOperationsOrganizationHeadCompanies">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
@@ -768,6 +877,10 @@ export function createOperationsAdminRtkEndpoints(
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
     getOperationsOrganizationHierarchy: build.query<FaceOperationContracts["getOperationsOrganizationHierarchy"]["response"], FaceOperationRequest<"getOperationsOrganizationHierarchy">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getOperationsOrganizationHierarchyExtensionDefinition: build.query<FaceOperationContracts["getOperationsOrganizationHierarchyExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsOrganizationHierarchyExtensionDefinition">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),

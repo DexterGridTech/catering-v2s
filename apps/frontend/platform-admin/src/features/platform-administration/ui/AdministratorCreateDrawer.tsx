@@ -1,7 +1,7 @@
 import {Alert, Button, Drawer, Form, Input, Space} from 'antd';
 import {adminDrawerSurfaceProps, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
-import {platformClient, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
+import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 import {PLATFORM_ADMIN_OPERATION_IDS, type PlatformAdminCreateRequest, type PlatformAdminDetail} from '../../../app/api/generated/platform-edge';
 
 type Fields = Omit<PlatformAdminCreateRequest, 'idempotencyKey'> & {confirmation: string};
@@ -20,10 +20,10 @@ export function AdministratorCreateDrawer({open, onClose, onCreated}: {open: boo
       const {confirmation: _confirmation, ...request} = value;
       const admin = await platformClient.createPlatformAdmin({}, {body: {...request, loginName: request.loginName.trim(), userName: request.userName.trim(), mobile: request.mobile?.trim() || null, idempotencyKey: lifecycle.getIdempotencyKey()}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
       clearSecrets(); lifecycle.setDirty(false); onCreated(admin);
-    } catch (error) { clearSecrets(); setProblem(error as PlatformApiProblem); } finally { lifecycle.setSubmitting(false); }
+    } catch (error) { clearSecrets(); setProblem(platformProblemOf(error)); } finally { lifecycle.setSubmitting(false); }
   };
-  return <Drawer title="新建管理员" open={open} width={520} destroyOnHidden onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} maskClosable keyboard={!lifecycle.submitting} {...adminDrawerSurfaceProps} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('platform-admin-create-cancel')}>取消</Button><Button type="primary" loading={lifecycle.submitting} onClick={() => form.submit()} {...testId('platform-admin-create-submit')}>创建</Button></Space>}>
-    {problem && <Alert type="error" showIcon message={problem.title} description={problem.detail} style={{marginBottom: 16}}/>}
+  return <Drawer title="新建管理员" open={open} size={520} destroyOnHidden onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} mask={{closable: true}} keyboard={!lifecycle.submitting} {...adminDrawerSurfaceProps} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('platform-admin-create-cancel')}>取消</Button><Button type="primary" loading={lifecycle.submitting} onClick={() => form.submit()} {...testId('platform-admin-create-submit')}>创建</Button></Space>}>
+    {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 16}} {...testId('platform-admin-create-error')}/>}
     <Form form={form} layout="vertical" onFinish={(value) => void submit(value)} onValuesChange={() => { lifecycle.setDirty(true); lifecycle.markBusinessIntentChanged(); }} disabled={lifecycle.submitting}>
       <Form.Item name="loginName" label="登录账号" rules={[{required: true, whitespace: true}]}><Input autoComplete="username" {...testId('platform-admin-create-login-name')}/></Form.Item>
       <Form.Item name="userName" label="姓名" rules={[{required: true, whitespace: true}]}><Input {...testId('platform-admin-create-user-name')}/></Form.Item>

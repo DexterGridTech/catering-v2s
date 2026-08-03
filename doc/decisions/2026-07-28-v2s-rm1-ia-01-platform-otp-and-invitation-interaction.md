@@ -648,6 +648,19 @@ consistency token；具体 owner endpoint 仅可作为 adapter 后端实现；
   4. platform invitation management 退役，邀请管理保留在五个 target-specific operations 用户页。
 - 允许作为 implementation-facing design 输入：`是，Dexter 于 2026-07-29 接受`；这不是 implementation authority。
 
+## 13. 2026-08-02 Dexter 永久平台邀请中心修订（supersedes invitation ownership wording）
+
+Dexter 于 2026-08-02 明确裁决：平台管理员必须永久拥有邀请中心，不能退役邀请 Tab，也不能把首个运营用户的产生交给仅 L2 可调用的 owner bootstrap。平台邀请中心覆盖任意组织节点（集团、大区、项目、总公司、门店）的邀请发起、列表查询、候选级联、取消与重发；它与 operations-admin 五个 target-specific 用户页并存，前者是跨节点治理入口，后者是当前运营任职范围内的局部入口，二者都调用同一 workspace-IAM owner command/read model，不得互相复制事实或通过前端推导权限。
+
+因此，本稿 §1、§2、`IA01-USER-INVITATION-ACTIONS` 中“platform-face invitation management 必须退役”以及仅保留 operations invitation 的表述全部被本节 supersede。公开 invitation acceptance 仍归 operations-admin 所属 public face；platform-admin 只发起和治理邀请，不建立匿名 session，也不绕过公开接受流程。平台账号页恢复为两个内容 Tab：`账号` 与 `邀请`；邀请 Tab 的候选查询必须先选组织节点类型，再按 owner 候选接口搜索节点，节点变化级联清理角色并重载角色候选。
+
+新实现的最小闭环必须同时具备：
+
+1. platform OpenAPI 五个 operation：`getWorkspaceInvitations`、`createWorkspaceInvitation`、`getWorkspaceInvitationCandidates`、`cancelWorkspaceInvitation`、`reissueWorkspaceInvitation`；
+2. owner 侧以 opaque organization reference、role id、expected version 和 idempotency key 重核验任意节点及角色，不接受前端拼接路径或直接 SQL；
+3. invitation list/detail 只显示脱敏手机号、节点类型、节点路径、角色、状态、有效期和审计入口；token 不进入页面、日志或证据；
+4. 首个运营用户也必须通过同一平台邀请中心→公开接受→OTP/凭据完成链路产生，L2 owner bootstrap 只能作为受管测试辅助，不能替代产品能力。
+
 ## 12. 接受后的严格设计输入
 
 Dexter 接受后，P6 implementation-facing 详设必须重开当前 source 并冻结：IA 本稿 path+hash+

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-EXECUTOR-U13",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-HTTP-DIAGNOSTIC-EXECUTOR-U13",
+      "title": "Server-correlated local HTTP diagnostic executor",
+      "approvedAssertions": [
+        "HTTP_REQUESTS_ARE_EXECUTED_AGAINST_THE_LOCAL_MANAGED_BACKEND_ONLY",
+        "SERVER_CANONICAL_METADATA_AND_CLIENT_OBSERVATION_MUST_CORRELATE_PER_REQUEST",
+        "SECRETS_STAY_IN_MEMORY_AND_THE_REPORT_REMAINS_SECRET_FREE"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate C09"},
+        {"path": "scripts/test/rm1-http-diagnostic.mjs", "disposition": "update", "target": "real in-memory HTTP request and event correlation executor"},
+        {"path": "scripts/test/rm1-http-diagnostic.test.mjs", "disposition": "update", "target": "executor focused proof and secret-output red proof"},
+        {"path": "scripts/test/http-diagnostic-report.mjs", "disposition": "update", "target": "export the one shared secret-safe event validator"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java", "disposition": "update", "target": "emit generated canonical consumer face with each server event"},
+        {"path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/HttpRequestMetricsInterceptorTest.java", "disposition": "update", "target": "server completion consumer-face proof"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-package-input.json", "disposition": "create", "target": "C09 binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-implementation-amendment.md", "disposition": "create", "target": "C09 boundary"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-package-exit.json", "disposition": "create", "target": "C09 path-list exit"},
+        {"path": "doc/review/platform/rm1p6-u13-http-diagnostic-executor-delivery-manifest.json", "disposition": "create", "target": "C09 manifest"}
+      ],
+      "complianceRoute": {
+        "taskKind": "implementation",
+        "domain": "backend",
+        "consumerFace": "backend",
+        "owner": "platform",
+        "impact": "runtime",
+        "trigger": "implementation"
+      },
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+          "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+          "project-memory/kernel/05-evidence-runtime-and-git.md"
+        ],
+        "APPROVED_ASSERTIONS": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#3.2",
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-implementation-amendment.md"
+        ],
+        "FORBIDDEN_PSEUDO_FIXES": [
+          "no direct SQL or seed fixture",
+          "no client-declared operation metadata accepted without server correlation",
+          "no persistence or output of credential/token/cookie/OTP/Authorization values",
+          "no browser L2 or performance/business claim"
+        ],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-implementation-amendment.md"
+        ],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": [
+          "rm1-http-diagnostic managed manifest",
+          "generated edge-route-face-registry.json",
+          "HttpRequestMetricsInterceptor completion event"
+        ],
+        "DUE_STANDARDS_RULE_IDS": [
+          "scripts/check/remediation-compliance",
+          "scripts/check/standards-coverage"
+        ]
+      }
+    }
+  ]
+}

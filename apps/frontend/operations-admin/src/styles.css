@@ -11,7 +11,12 @@ body {
 }
 
 .operations-shell {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.operations-sider {
+  position: relative;
 }
 
 .operations-header {
@@ -21,9 +26,62 @@ body {
   padding-inline: 24px;
 }
 
+.operations-header-leading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 16px;
+}
+
+.operations-header-brand {
+  display: flex;
+  height: 64px;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.operations-header-logo {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  color: var(--operations-admin-color-primary);
+  object-fit: contain;
+}
+
+.operations-header-title {
+  overflow: hidden;
+  color: var(--operations-admin-color-text) !important;
+  font-size: 18px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operations-principal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .operations-content {
   min-width: 0;
-  padding: 24px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 16px;
+  overflow: hidden;
+}
+
+.operations-content-tabs {
+  flex: 0 0 auto;
+}
+
+.operations-tab-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 4px;
 }
 
 .brand {
@@ -31,10 +89,100 @@ body {
   height: 64px;
   align-items: center;
   padding-inline: 24px;
+  color: var(--operations-admin-color-text);
+  font-size: 18px;
+  letter-spacing: 0.02em;
   font-weight: 700;
 }
 
+.operations-scope-selector {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--operations-admin-color-border);
+}
+
+.auth-page,
+.login-layout {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card,
 .login-card {
-  max-width: 480px;
-  margin: 48px auto;
+  width: min(100%, 520px);
+}
+
+body:has(.auth-login-page) .ant-pro-form-login-page-notice {
+  display: none;
+}
+
+body:has(.auth-login-page) .ant-pro-form-login-page-left {
+  display: block;
+  flex: 0 1 auto;
+  width: min(calc(100vw - 48px), 520px);
+}
+
+body:has(.auth-login-page) .ant-pro-form-login-page {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+}
+
+body:has(.auth-login-page) .ant-pro-form-login-page-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 !important;
+  padding: 32px;
+  border: 1px solid var(--operations-admin-color-border);
+  border-radius: 12px;
+  background: var(--operations-admin-color-bg-container);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 8%);
+}
+
+/* Keep the workspace mark inside the existing LoginFormPage brand block, but
+ * let it use the full block height instead of the default 44px header icon. */
+body:has(.operations-login-page) .ant-pro-form-login-page-top {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-rows: 44px 20px;
+  column-gap: 16px;
+  row-gap: 12px;
+  margin-bottom: 20px;
+}
+
+body:has(.operations-login-page) .ant-pro-form-login-page-header {
+  display: contents;
+}
+
+body:has(.operations-login-page) .ant-pro-form-login-page-logo {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 76px;
+  height: 76px;
+  margin: 0;
+}
+
+body:has(.operations-login-page) .ant-pro-form-login-page-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+body:has(.operations-login-page) .ant-pro-form-login-page-title {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: left;
+}
+
+body:has(.operations-login-page) .ant-pro-form-login-page-desc {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0;
+  text-align: left;
 }

@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-EXTENSION-HOSTS-U26",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-EXTENSION-HOSTS-U26",
+      "title": "Commercial group, region and project extension hosts",
+      "approvedAssertions": [
+        "EIGHT_EXTENSION_HOSTS_HAVE_DEFINITION_AND_VALUE_LIFECYCLES",
+        "COMMERCIAL_GROUP_AND_ORGANIZATION_NODE_KEEP_SEPARATE_OWNER_BOUNDARIES",
+        "FORMS_AND_DETAILS_USE_GENERATED_OWNER_READBACK",
+        "PLATFORM_HIERARCHY_DETAILS_RENDER_ALL_THREE_NEW_HOSTS_FROM_OWNER_READBACK"
+      ],
+      "changeSurfaces": [
+        {
+          "path": ".runtime/compliance-control/active-package.json",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/decisions/2026-08-03-v2s-extension-hosts-commercial-group-region-project.md",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/decisions/2026-08-03-v2s-extension-hosts-ui-interaction.md",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/review/platform/rm1p6-extension-hosts-u26-delivery-manifest.json",
+          "disposition": "create"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-package-input.json",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-problem-family.json",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-package-exit.json",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json",
+          "disposition": "update"
+        },
+        {
+          "path": "scripts/dev/profiles/r5-full.json",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+          "disposition": "update"
+        },
+        {
+          "path": "contracts/openapi/components/extension/extension.schemas.yaml",
+          "disposition": "update"
+        },
+        {
+          "path": "contracts/openapi/components/organization/commercial-group.schemas.yaml",
+          "disposition": "update"
+        },
+        {
+          "path": "contracts/openapi/components/organization/organization-hierarchy.schemas.yaml",
+          "disposition": "update"
+        },
+        {
+          "path": "contracts/openapi/paths/platform-admin/commercial-group.paths.yaml",
+          "disposition": "update"
+        },
+        {
+          "path": "contracts/openapi/paths/operations-admin/organization-hierarchy.paths.yaml",
+          "disposition": "update"
+        },
+        {
+          "path": "contracts/openapi/edge.openapi.yaml",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/CommercialGroupReadback.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/InitializeCommercialGroupCommand.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationNodeReadback.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java",
+          "disposition": "update"
+        },
+          {
+            "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyCommandReceiptService.java",
+            "disposition": "update"
+          },
+          {
+            "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+            "disposition": "update"
+          },
+        {
+          "path": "apps/backend/catering-business-server/src/main/resources/db/migration/V20260803_080000_000__organization_extension_hosts.sql",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationExtensionController.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OrganizationHierarchyWireMapper.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/api/CommercialGroupSummary.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/adapter/JdbcGroupWorkspaceRepository.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/api/PlatformWorkspaceCoordinator.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceService.java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/extension/src/test/java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/test/java",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.rtk.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.test.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionEditDrawer.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionDefinitionEditDrawer.test.tsx",
+          "disposition": "update"
+        },
+          {
+            "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewPresentation.ts",
+            "disposition": "create"
+          },
+          {
+            "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewPresentation.test.ts",
+            "disposition": "create"
+          },
+          {
+            "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+            "disposition": "update"
+          },
+          {
+            "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.test.tsx",
+            "disposition": "update"
+          },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/generated/operations-edge.rtk.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/organization-structure",
+          "disposition": "update"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/presentation/nameCode.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/index.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/state/WorkspaceScope.test.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user",
+          "disposition": "update"
+        },
+        {
+          "path": "scripts/dev/owner-command-seed-executor.mjs",
+          "disposition": "update"
+        },
+        {
+          "path": "scripts/dev/owner-command-seed-executor.test.mjs",
+          "disposition": "update"
+        }
+      ],
+      "complianceRoute": {
+        "taskKind": "implementation",
+        "domain": "organization-extension",
+        "consumerFace": "platform-admin-and-operations-admin",
+        "owner": "organization-and-extension",
+        "impact": "contract"
+      },
+      "sourceDenominators": {
+        "HOST_CATALOG": [
+          "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+          "contracts/openapi/components/extension/extension.schemas.yaml"
+        ],
+        "COMMERCIAL_GROUP_OWNER": [
+          "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java",
+          "apps/backend/catering-business-server/modules/organization/src/main/resources/db/migration"
+        ],
+        "HIERARCHY_OWNER": [
+          "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java",
+          "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+          "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java"
+        ],
+        "GENERATED_CONTRACT": [
+          "contracts/openapi/components/organization/commercial-group.schemas.yaml",
+          "contracts/openapi/components/organization/organization-hierarchy.schemas.yaml",
+          "contracts/openapi/paths/platform-admin/commercial-group.paths.yaml",
+          "contracts/openapi/paths/operations-admin/organization-hierarchy.paths.yaml"
+        ],
+        "PLATFORM_FORM_AND_DETAIL": [
+          "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.tsx",
+          "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewPresentation.ts",
+          "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+          "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx"
+        ],
+        "OPERATIONS_FORM_AND_DETAIL": [
+          "apps/frontend/operations-admin/src/features/organization-structure"
+        ],
+        "ADMIN_ORGANIZATION_PATH_PRESENTATION": [
+          "libraries/frontend/admin-ui-foundation/src/presentation/nameCode.ts",
+          "apps/frontend/platform-admin/src/features/workspace-iam",
+          "apps/frontend/operations-admin/src/features/workspace-user"
+        ],
+        "SEED": [
+          "scripts/dev/owner-command-seed-executor.mjs"
+        ]
+      }
+    }
+  ]
+}

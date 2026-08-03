@@ -25,3 +25,7 @@ IA03 的 `IA03-ACCOUNT-TAB` 中邀请 Tab 是与 IA01、物理 import contract �
 逐个写点必须先重开 IA01/IA03、全部六维 memory 命中、当前源码、physical/roster 和本详设；focused proof 后同样逐点回读。静态顺序是 IA/hash refreeze → handwritten/contract retirement → controlled generation → platform/operations typecheck and focused proof → dual-admin production importer scan → final control-level IA alignment。静态通过不得称为 business、cleanup 或 L2 PASS。
 
 禁止只隐藏 Tab、仅删 UI、为 fixture 保留 production HTTP、吞并 operations/public flow、更新 IA03 而不更新所有 hash-bound consumer，或以历史 U03 receipt 伪造 U07 receipt。U07 从新 baseline 开始；U03 历史 receipt-chain finding 保持独立未被掩盖。
+
+## Dexter 2026-08-02 permanent correction
+
+本 U07 退役裁定被 Dexter 永久产品决策 supersede：平台管理员必须能够从空间账号页的永久邀请 Tab 对任意组织节点发起、查询、取消和重发邀请，首个运营用户也必须沿同一真实产品链路产生。U07 不再是当前实施授权或删除依据；其历史 receipt、hash、无邀请 IA selector 和“仅 operations invitation”结论均不得被引用为当前 PASS。后续 serial package 必须以新的 IA/contract/owner/readback/source set 重新冻结，不得把历史 U07 的删除结果隐式恢复或伪装成未发生。

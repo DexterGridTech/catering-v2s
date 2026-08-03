@@ -22,7 +22,9 @@ export function abortPlatformRequests() {
   activeControllers.clear();
 }
 
-function toWireRequest<I extends keyof FaceOperationContracts>(request: FaceOperationRequest<I>): FetchArgs {
+type ObservedFetchArgs<RequiresSession extends boolean> = FetchArgs & {requiresSession: RequiresSession};
+
+function toWireRequest<I extends keyof FaceOperationContracts>(request: FaceOperationRequest<I>): ObservedFetchArgs<FaceOperationContracts[I]['requiresSession']> {
   const path = expandPath(request.path, request.pathParameters);
   const query = new URLSearchParams(
     Object.entries(request.query ?? {})
@@ -36,6 +38,7 @@ function toWireRequest<I extends keyof FaceOperationContracts>(request: FaceOper
     method: request.method.toUpperCase(),
     headers,
     body: serializeJsonOrMultipartBody(request.body, headers),
+    requiresSession: request.requiresSession,
   };
 }
 

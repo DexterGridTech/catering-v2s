@@ -24,9 +24,9 @@ const routeByPageDesignKey = {
   [platformPageDesignKeys.PlatformExtensionFields]: {path: '/platform/extension-fields', element: <ExtensionsPage/>},
 } satisfies Record<PlatformPageDesignKey, RouteRegistration>;
 
-export const platformPageRegistry = Object.fromEntries(adminCatalog.platformPages.map((page) => {
+export const platformPageRegistry = Object.fromEntries([...adminCatalog.platformPages].sort((left, right) => left.menuOrder - right.menuOrder).map((page) => {
   const pageDesignKey = page.pageDesignKey as PlatformPageDesignKey;
   const route = routeByPageDesignKey[pageDesignKey];
   if (!route) throw new Error(`Missing platform route registration: ${pageDesignKey}`);
-  return [pageDesignKey, {...route, pageDesignKey, title: page.title, iconKey: page.iconKey, workspaceRequirement: page.workspaceRequirement}];
-})) as Record<PlatformPageDesignKey, RouteRegistration & {pageDesignKey: PlatformPageDesignKey; title: string; iconKey: string; workspaceRequirement: string}>;
+  return [pageDesignKey, {...route, pageDesignKey, title: page.title, iconKey: page.iconKey, menuOrder: page.menuOrder, workspaceRequirement: page.workspaceRequirement}];
+})) as Record<PlatformPageDesignKey, RouteRegistration & {pageDesignKey: PlatformPageDesignKey; title: string; iconKey: string; menuOrder: number; workspaceRequirement: string}>;

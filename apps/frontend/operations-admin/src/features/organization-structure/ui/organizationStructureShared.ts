@@ -1,4 +1,4 @@
-import {type OrganizationHierarchySnapshot, type OrganizationNode} from '../../../app/api/generated/operations-edge';
+import {type JsonValue, type OrganizationHierarchySnapshot, type OrganizationNode} from '../../../app/api/generated/operations-edge';
 import {ApiFailure} from '../../../app/api/OperationsTransport';
 import {
   ACTION_CAPABILITIES,
@@ -13,6 +13,7 @@ export type HierarchyRow = {
   code: string;
   name: string;
   notes?: string | null;
+  extensionValues: Record<string, JsonValue>;
   status?: 'ENABLED' | 'DISABLED';
   phases: string[];
   revision?: number;
@@ -58,7 +59,7 @@ export const organizationProjectEditLabel = actionLabelFor(
 
 export function issue(error: unknown) {
   return error instanceof ApiFailure
-    ? `${error.problem.errorCode}：${error.problem.detail}`
+    ? error.problem.detail
     : '无法完成组织结构操作';
 }
 
@@ -71,6 +72,7 @@ export function rowsOf(snapshot?: OrganizationHierarchySnapshot): HierarchyRow[]
       parentId: null,
       code: snapshot.commercialGroup.groupCode,
       name: snapshot.commercialGroup.groupName,
+      extensionValues: snapshot.commercialGroup.extensionValues,
       phases: [],
       revision: snapshot.commercialGroup.version,
     },
@@ -86,6 +88,7 @@ export function rowFromNode(node: OrganizationNode): HierarchyRow {
     code: node.code,
     name: node.name,
     notes: node.notes,
+    extensionValues: node.extensionValues,
     status: node.status,
     phases: node.phases.map((phase) => phase.name),
     revision: node.revision,

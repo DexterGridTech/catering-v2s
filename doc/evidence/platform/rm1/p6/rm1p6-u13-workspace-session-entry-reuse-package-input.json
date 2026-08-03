@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-WORKSPACE-SESSION-ENTRY-REUSE-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u13-workspace-session-entry-reuse-delivery-manifest.json",
+  "deliveryManifestSha256": "f9b5349c05701f99eeb8c545475baf019c8f1e1381b45e25cd86871b6375e2c5",
+  "unitId": "RM1P6-WORKSPACE-SESSION-ENTRY-REUSE-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/database-boundaries", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/database-boundaries"],
+  "requiredControlRuleIds": ["PF-HTTP-EFF-04"],
+  "businessEvidenceObligation": "NOT_APPLICABLE_OWNER_LOCAL_EFFICIENCY_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-TEST-FIXTURE-INTEGRITY-U13",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-package-exit.json",
+    "exitSha256": "57f4544ea0e1f568e60b87c37d6d924e2ec8fbdda44a110e0f76dd36db5090e0"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-implementation-amendment.md",
+    "sha256": "cbacc8ff19eacb161c58e3fc711f26b3db5293ac3f7123fbfce1a100543a98e6"
+  },
+  "authorizationBoundary": "Dexter authorized U13 implementation. C14 removes only duplicate workspace session-entry composition inside the owner result and key-bound entry read; it changes no HTTP contract, Seed/reset, browser L2, UAT or business claim."
+}

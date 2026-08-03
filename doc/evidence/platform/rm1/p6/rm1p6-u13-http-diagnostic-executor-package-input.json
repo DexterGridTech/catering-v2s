@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-EXECUTOR-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u13-http-diagnostic-executor-delivery-manifest.json",
+  "deliveryManifestSha256": "23b78eabcd604b382e887bc4e4c4ba9c93864f55b63cda900edd5a0b98fc8f4b",
+  "unitId": "RM1P6-HTTP-DIAGNOSTIC-EXECUTOR-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["HTTP_DIAGNOSTIC_EVENT_MISMATCH", "HTTP_DIAGNOSTIC_SECRET_FIELD"],
+  "businessEvidenceObligation": "NOT_APPLICABLE_HTTP_DIAGNOSTIC_EXECUTOR_ONLY",
+  "serialPredecessor": {
+    "packageId": "RM1P6-DIAGNOSTIC-TYPED-FIELDS-U13",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u13-diagnostic-typed-fields-package-exit.json",
+    "exitSha256": "2b57201b1784a9b88c5eeac829dccfc2bb3ca5647a3b173e7c247aedf17ac22b"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-implementation-amendment.md",
+    "sha256": "eff5c76f1db781541f3471c4ee4cd853ad7aacd4e0432e31e0f77cc62d09c5f7"
+  },
+  "authorizationBoundary": "Dexter authorized U13 implementation. C09 only executes client requests through the existing managed local diagnostic backend and correlates them with server events; it does not change owner behavior, call direct SQL, seed/reset, start browser L2 or claim business/performance completion."
+}

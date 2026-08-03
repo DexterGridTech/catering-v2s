@@ -7,7 +7,11 @@ import com.catering.v2s.organization.api.OrganizationProblem;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
+import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
+import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.nio.charset.StandardCharsets;
@@ -22,11 +26,18 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
     private final JdbcTemplate jdbcTemplate;
     private final WorkspaceStatusLookup workspaces;
     private final TimeProvider time;
+    private final ExtensionDefinitionLookup definitions;
 
     public OrganizationCommandService(JdbcTemplate jdbcTemplate, WorkspaceStatusLookup workspaces, TimeProvider time) {
+        this(jdbcTemplate, workspaces, time, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public OrganizationCommandService(JdbcTemplate jdbcTemplate, WorkspaceStatusLookup workspaces, TimeProvider time, ExtensionDefinitionLookup definitions) {
         this.jdbcTemplate = jdbcTemplate;
         this.workspaces = workspaces;
         this.time = time;
+        this.definitions = definitions;
     }
 
     @Override
@@ -41,12 +52,43 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
         String commercialGroupName,
         AuditActor actor
     ) {
+        return initialize(context, workspaceUuid, groupWorkspaceKey, groupWorkspaceId, idempotencyKey, commercialGroupCode, commercialGroupName, Map.of(), actor);
+    }
+
+    @Override
+    @Transactional
+    public CommercialGroupReadback execute(
+        PlatformExecutionContext context,
+        UUID workspaceUuid,
+        String groupWorkspaceKey,
+        long groupWorkspaceId,
+        String idempotencyKey,
+        String commercialGroupCode,
+        String commercialGroupName,
+        Map<String, String> extensionValues,
+        AuditActor actor
+    ) {
+        return initialize(context, workspaceUuid, groupWorkspaceKey, groupWorkspaceId, idempotencyKey, commercialGroupCode, commercialGroupName, extensionValues, actor);
+    }
+
+    private CommercialGroupReadback initialize(
+        PlatformExecutionContext context,
+        UUID workspaceUuid,
+        String groupWorkspaceKey,
+        long groupWorkspaceId,
+        String idempotencyKey,
+        String commercialGroupCode,
+        String commercialGroupName,
+        Map<String, String> extensionValues,
+        AuditActor actor
+    ) {
         if (!"platform-admin".equals(context.consumerFace())) {
             throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "consumer face is not allowed");
         }
         String code = normalize(commercialGroupCode, 64);
         String name = normalize(commercialGroupName, 120);
-        String requestFingerprint = fingerprint(groupWorkspaceKey, code, name);
+        ExtensionValues extensions = extensionValues(workspaceUuid, groupWorkspaceKey, "{}", extensionValues);
+        String requestFingerprint = fingerprint(groupWorkspaceKey, code, name, extensionValues);
         IdempotencyRow existing = jdbcTemplate.query(
             "SELECT group_workspace_key, request_fingerprint, commercial_group_id, commercial_group_code, commercial_group_name FROM organization.commercial_group_idempotency WHERE workspace_uuid = ? AND idempotency_key = ?",
             (resultSet, rowNum) -> new IdempotencyRow(
@@ -81,8 +123,8 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
             long id = jdbcTemplate.queryForObject(
                 """
                 INSERT INTO organization.commercial_group
-                    (group_workspace_key, group_workspace_id, commercial_group_code, commercial_group_name, created_by_platform_subject, commercial_group_uuid, created_at_epoch_millis)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (group_workspace_key, group_workspace_id, commercial_group_code, commercial_group_name, created_by_platform_subject, commercial_group_uuid, created_at_epoch_millis, extension_values, extension_rule_revision)
+                VALUES (?, ?, ?, ?, ?, ?, ?, CAST(? AS JSONB), ?)
                 RETURNING id
                 """,
                 Long.class,
@@ -92,7 +134,9 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
                 name,
                 actor.displaySnapshot(),
                 commercialGroupUuid,
-                createdAtEpochMillis
+                createdAtEpochMillis,
+                extensions.json(),
+                extensions.revision()
             );
             jdbcTemplate.update(
                 "UPDATE organization.commercial_group_idempotency SET commercial_group_id = ?, commercial_group_code = ?, commercial_group_name = ? WHERE workspace_uuid = ? AND idempotency_key = ?",
@@ -124,12 +168,12 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
     @Transactional(readOnly = true)
     public CommercialGroupReadback requireCommercialGroup(String groupWorkspaceKey) {
         return jdbcTemplate.query(
-            "SELECT commercial_group_uuid, commercial_group_code, commercial_group_name, version, created_by_platform_subject, created_at_epoch_millis FROM organization.commercial_group WHERE group_workspace_key=?",
+            "SELECT commercial_group_uuid, commercial_group_code, commercial_group_name, version, created_by_platform_subject, created_at_epoch_millis, extension_values::text, extension_rule_revision FROM organization.commercial_group WHERE group_workspace_key=?",
             statement -> statement.setString(1, groupWorkspaceKey),
             result -> {
                 if (!result.next()) throw new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group is required before organization hierarchy work");
                 long createdAt = result.getLong("created_at_epoch_millis");
-                return new CommercialGroupReadback(result.getObject("commercial_group_uuid", UUID.class), groupWorkspaceKey, result.getString("commercial_group_code"), result.getString("commercial_group_name"), result.getLong("version"), result.getString("created_by_platform_subject"), createdAt, createdAt);
+                return new CommercialGroupReadback(result.getObject("commercial_group_uuid", UUID.class), groupWorkspaceKey, result.getString("commercial_group_code"), result.getString("commercial_group_name"), result.getLong("version"), result.getString("created_by_platform_subject"), createdAt, createdAt, ExtensionDefinitionService.readValues(result.getString("extension_values")), result.getLong("extension_rule_revision"));
             }
         );
     }
@@ -181,7 +225,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
                 if (!result.next()) {
                     throw new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group is unavailable");
                 }
-                return result.getString(1) + " " + result.getString(2);
+                return nameCode(result.getString(2), result.getString(1));
             }
         );
     }
@@ -196,23 +240,45 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
         return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 
+    private static String nameCode(String name, String code) {
+        return name + "（" + code + "）";
+    }
+
     private CommercialGroupReadback readback(long id, String groupWorkspaceKey, String code, String name, String subject) {
         return jdbcTemplate.query(
-            "SELECT commercial_group_uuid, version, created_at_epoch_millis FROM organization.commercial_group WHERE id=?",
+            "SELECT commercial_group_uuid, version, created_at_epoch_millis, extension_values::text, extension_rule_revision FROM organization.commercial_group WHERE id=?",
             statement -> statement.setLong(1, id),
             result -> {
                 if (!result.next()) throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "commercial group readback unavailable");
                 long createdAt = result.getLong("created_at_epoch_millis");
-                return new CommercialGroupReadback(result.getObject("commercial_group_uuid", UUID.class), groupWorkspaceKey, code, name, result.getLong("version"), subject, createdAt, createdAt);
+                return new CommercialGroupReadback(result.getObject("commercial_group_uuid", UUID.class), groupWorkspaceKey, code, name, result.getLong("version"), subject, createdAt, createdAt, ExtensionDefinitionService.readValues(result.getString("extension_values")), result.getLong("extension_rule_revision"));
             }
         );
     }
 
 
-    private static String fingerprint(String groupWorkspaceKey, String code, String name) {
+    private ExtensionValues extensionValues(UUID workspaceUuid, String groupWorkspaceKey, String currentValuesJson, Map<String, String> requestedValues) {
+        Map<String, String> requested = requestedValues == null ? Map.of() : requestedValues;
+        if (definitions == null) {
+            if (requested.isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
+            throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "extension definition lookup is unavailable");
+        }
         try {
+            ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, "COMMERCIAL_GROUP");
+            return new ExtensionValues(ExtensionDefinitionService.mergeValues(definition, currentValuesJson, requested), definition.version());
+        } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
+            if (requested.isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
+            throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "commercial group extension values are invalid");
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "commercial group extension values are invalid");
+        }
+    }
+
+    private static String fingerprint(String groupWorkspaceKey, String code, String name, Map<String, String> extensionValues) {
+        try {
+            String extensions = extensionValues == null ? "" : extensionValues.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> entry.getKey() + "=" + entry.getValue()).collect(java.util.stream.Collectors.joining("\u001f"));
             byte[] digest = MessageDigest.getInstance("SHA-256")
-                .digest((groupWorkspaceKey + "\u0000initialize-commercial-group\u0000" + code + "\u0000" + name)
+                .digest((groupWorkspaceKey + "\u0000initialize-commercial-group\u0000" + code + "\u0000" + name + (extensions.isEmpty() ? "" : "\u0000" + extensions))
                     .getBytes(StandardCharsets.UTF_8));
             StringBuilder result = new StringBuilder(64);
             for (byte value : digest) result.append(String.format("%02x", value));
@@ -224,6 +290,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
 
     private record IdempotencyRow(String groupWorkspaceKey, String requestFingerprint, Long commercialGroupId, String commercialGroupCode, String commercialGroupName) {
     }
+    private record ExtensionValues(String json, long revision) { }
 
     private static String normalize(String value, int maxLength) {
         String normalized = Objects.requireNonNullElse(value, "").trim();

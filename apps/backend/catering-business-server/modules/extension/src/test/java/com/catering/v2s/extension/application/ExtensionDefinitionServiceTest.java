@@ -44,28 +44,39 @@ class ExtensionDefinitionServiceTest {
     }
 
     @Test void rejectsUnsupportedHostAndInvalidSelectConfiguration() {
-        assertThrows(ExtensionDefinitionService.DefinitionInvalidException.class, () -> service.replace(workspaceId, "extension-test", "PROJECT", 0, List.of()));
+        assertThrows(ExtensionDefinitionService.DefinitionInvalidException.class, () -> service.replace(workspaceId, "extension-test", "UNKNOWN_HOST", 0, List.of()));
         assertThrows(ExtensionDefinitionService.DefinitionInvalidException.class, () -> service.replace(workspaceId, "extension-test", "BRAND", 0, List.of(new ExtensionDefinitionService.Field("kind", "Kind", "SELECT", false, List.of(), "ENABLED", 0, null))));
     }
-    @Test void firstConfigurationIsReceiptBackedAndOwnerGeneratesNewDraftKeyButRejectsClientInventedStableKey() {
-        var first = service.replaceDraft(workspaceId, "extension-test", "CONTRACT", 0, List.of(new ExtensionDefinitionService.DraftField(null, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)), com.catering.v2s.audit.contract.AuditActor.system(), "extension-draft-key-0001");
+    @Test void firstConfigurationRequiresAdministratorDefinedStableKeyAndPreservesItAcrossReplacement() {
+        var first = service.replaceDraft(workspaceId, "extension-test", "CONTRACT", 0, List.of(new ExtensionDefinitionService.DraftField("floorArea", "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)), com.catering.v2s.audit.contract.AuditActor.system(), "extension-draft-key-0001");
         String ownerKey = first.fields().getFirst().fieldKey();
-        assertTrue(ownerKey.startsWith("field_"));
-        var replay = service.replaceDraft(workspaceId, "extension-test", "CONTRACT", 0, List.of(new ExtensionDefinitionService.DraftField(null, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)), com.catering.v2s.audit.contract.AuditActor.system(), "extension-draft-key-0001");
+        assertEquals("floorArea", ownerKey);
+        var replay = service.replaceDraft(workspaceId, "extension-test", "CONTRACT", 0, List.of(new ExtensionDefinitionService.DraftField("floorArea", "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)), com.catering.v2s.audit.contract.AuditActor.system(), "extension-draft-key-0001");
         assertEquals(first, replay);
-        assertThrows(ExtensionCommandReceiptService.ExtensionIdempotencyConflictException.class, () -> service.replaceDraft(workspaceId, "extension-test", "CONTRACT", 0, List.of(new ExtensionDefinitionService.DraftField(null, "Different request", "NUMBER", true, List.of(), "ENABLED", 0, null)), AuditActor.system(), "extension-draft-key-0001"));
-        var second = service.replaceDraft(workspaceId, "extension-test", "CONTRACT", first.version(), List.of(new ExtensionDefinitionService.DraftField(ownerKey, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)), com.catering.v2s.audit.contract.AuditActor.system(), "extension-draft-key-0002");
+        assertThrows(ExtensionCommandReceiptService.ExtensionIdempotencyConflictException.class, () -> service.replaceDraft(workspaceId, "extension-test", "CONTRACT", 0, List.of(new ExtensionDefinitionService.DraftField("floorArea", "Different request", "NUMBER", true, List.of(), "ENABLED", 0, null)), AuditActor.system(), "extension-draft-key-0001"));
+        var second = service.replaceDraft(workspaceId, "extension-test", "CONTRACT", first.version(), List.of(new ExtensionDefinitionService.DraftField(ownerKey, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null), new ExtensionDefinitionService.DraftField("seatCount", "Seat count", "NUMBER", false, List.of(), "ENABLED", 1, null)), com.catering.v2s.audit.contract.AuditActor.system(), "extension-draft-key-0002");
         assertEquals(ownerKey, second.fields().getFirst().fieldKey());
-        assertThrows(ExtensionDefinitionService.DefinitionInvalidException.class, () -> service.replaceDraft(workspaceId, "extension-test", "CONTRACT", second.version(), List.of(new ExtensionDefinitionService.DraftField("field_client_invented", "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)), com.catering.v2s.audit.contract.AuditActor.system(), "extension-draft-key-0003"));
+        assertEquals("seatCount", second.fields().get(1).fieldKey());
+        assertThrows(ExtensionDefinitionService.DefinitionInvalidException.class, () -> service.replaceDraft(workspaceId, "extension-test", "CONTRACT", second.version(), List.of(new ExtensionDefinitionService.DraftField(null, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)), com.catering.v2s.audit.contract.AuditActor.system(), "extension-draft-key-0003"));
     }
 
     @Test void managementReadExposesEveryBusinessObjectBeforeFirstConfigurationWithoutWeakeningOperationsLookup() {
         var catalog = service.listManagementDefinitions(workspaceId, "extension-test");
-        assertEquals(List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT"), catalog.stream().map(value -> value.hostType()).toList());
+        assertEquals(List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT"), catalog.stream().map(value -> value.hostType()).toList());
         var brand = service.managementDefinition(workspaceId, "extension-test", "BRAND");
         assertEquals(0, brand.version());
         assertTrue(brand.fields().isEmpty());
         assertThrows(ExtensionDefinitionService.DefinitionNotFoundException.class, () -> service.requireDefinition(workspaceId, "extension-test", "BRAND"));
+    }
+
+    @Test void sharedOwnerValueMergeKeepsTypedRequiredAndDisabledSemantics() {
+        var definition = service.replace(workspaceId, "extension-test", "REGION", 0, List.of(
+            new ExtensionDefinitionService.Field("area", "Area", "NUMBER", true, List.of(), "ENABLED", 0, null),
+            new ExtensionDefinitionService.Field("hidden", "Hidden", "TEXT", false, List.of(), "DISABLED", 1, null)
+        ));
+        String merged = ExtensionDefinitionService.mergeValues(definition, "{}", java.util.Map.of("area", "120", "hidden", "\"ignored\""));
+        assertEquals(java.util.Map.of("area", "120"), ExtensionDefinitionService.readValues(merged));
+        assertThrows(ExtensionDefinitionService.DefinitionInvalidException.class, () -> ExtensionDefinitionService.mergeValues(definition, merged, java.util.Map.of("area", "\"wrong type\"")));
     }
 
     @Test void disabledPlatformActorIsRejectedBeforeReceiptDefinitionOrAuditMutation() {
@@ -79,9 +90,9 @@ class ExtensionDefinitionServiceTest {
 
     @Test void unreadableReceiptIsTypedResultUnknownInsteadOfRawIllegalState() {
         String key = "extension-corrupt-key-0001";
-        List<ExtensionDefinitionService.DraftField> draft = List.of(new ExtensionDefinitionService.DraftField(null, "Receipt field", "TEXT", true, List.of(), "ENABLED", 0, null));
+        List<ExtensionDefinitionService.DraftField> draft = List.of(new ExtensionDefinitionService.DraftField("receiptField", "Receipt field", "TEXT", true, List.of(), "ENABLED", 0, null));
         service.replaceDraft(workspaceId, "extension-test", "HEAD_COMPANY", 0, draft, AuditActor.system(), key);
-        jdbc.update("UPDATE extension.extension_command_receipt SET response_json=CAST(? AS JSONB) WHERE workspace_uuid=? AND idempotency_key=?", "[]", workspaceId, key);
+        jdbc.update("UPDATE extension.extension_command_receipt SET response_json=CAST(? AS JSONB) WHERE workspace_uuid=? AND idempotency_key=?", "{\"hostType\":[]}", workspaceId, key);
 
         assertThrows(ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class, () -> service.replaceDraft(workspaceId, "extension-test", "HEAD_COMPANY", 0, draft, AuditActor.system(), key));
     }

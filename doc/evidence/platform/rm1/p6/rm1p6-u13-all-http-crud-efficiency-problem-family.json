@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1-ALL-HTTP-CRUD-EFFICIENCY-20260801",
+  "genericProblem": "A successful seed exercises only a small, fixture-shaped subset of HTTP operations. Treating its database statement counts as the CRUD optimization denominator hides unmeasured route families and encourages removing correctness work rather than eliminating repeated owner-local reads, N+1 fan-out, and unnecessary write cycles.",
+  "rootCauseClass": "PARTIAL_WORKLOAD_DENOMINATOR_AND_OWNER_LOCAL_REDUNDANCY",
+  "finiteDenominator": [
+    "generated runtime edge-route-face-registry.json: 147 HTTP operations",
+    "28 production edge controllers and their 147 handlers",
+    "root OpenAPI plus referenced path shards and generated consumer contracts",
+    "all owner application paths reached by the 147 operations",
+    "P4 canonical service-call-path ledger: 26 paths/51 SQL cases as a non-route-level counterexample",
+    "latest Seed observation: 26 endpoint groups/63 calls as a diagnostic-only subset"
+  ],
+  "operationInventory": {
+    "authoritativeRuntimeRouteRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+    "operationCount": 147,
+    "consumerFaces": {
+      "platform-admin": 43,
+      "operations-admin": 89,
+      "public": 15
+    },
+    "methods": {
+      "GET": 61,
+      "COMMAND": 86
+    },
+    "owners": {
+      "workspace-iam": 73,
+      "organization": 35,
+      "platform-iam": 16,
+      "contract": 10,
+      "platform-workspace": 7,
+      "extension": 3,
+      "platform-asset": 3
+    },
+    "seedObservationOnly": {
+      "endpointGroups": 26,
+      "calls": 63,
+      "statementThresholdCandidates": 23,
+      "reasonNotACompletionDenominator": "The successful r5-full Seed report observed 26 of 147 route groups (17.7 percent); statement count is a diagnostic signal, not a latency, throughput, or all-interface result."
+    }
+  },
+  "searchedSurfaces": [
+    "generated route registry, root OpenAPI and path shards",
+    "28 production edge controllers and their 147 handlers",
+    "owner application services for workspace-iam, organization, extension, platform-workspace and platform-asset",
+    "CountingDataSource, DatabaseOperationTracker, SeedRequestMetricsInterceptor and seed report",
+    "P4 canonical PostgreSQL SQL-operation ledger and focused budget test",
+    "RM1 Seed database-operation review and Claude review"
+  ],
+  "counterexamples": [
+    {
+      "surface": "PublicSecurityOperationRegistry",
+      "reason": "It covers 22 security operations, not the complete 26 anonymous routes or the 147-route HTTP denominator."
+    },
+    {
+      "surface": "P4SqlOperationBudgetTest",
+      "reason": "It proves 26 owner service call paths and 51 SQL cases, not every HTTP route; stable bulk task reads above three statements are not automatically N+1 defects."
+    },
+    {
+      "surface": "Workspace account, store-list and organization task-path reads",
+      "reason": "They already use bounded IN/batch loading; a repeated method name or loop is not sufficient evidence of N+1."
+    },
+    {
+      "surface": "Commands with idempotency, CAS, audit, authorization recheck or owner readback",
+      "reason": "Those facts remain required even when their JDBC count exceeds a list-read budget."
+    },
+    {
+      "surface": "Platform detail and head-company detail/create/update",
+      "reason": "A single authorized-brand or asset lookup for one object is not list N+1."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-HTTP-EFF-01",
+      "status": "CONFIRMED",
+      "surface": "contracts/openapi/edge.openapi.yaml",
+      "finding": "The expanded root OpenAPI has 146 operations while the generated runtime registry has 147. The root omits the top-level reference for releasePlatformStagedAsset, although its path shard, controller, generated client and registry contain it. Existing edge-codegen --check therefore does not prove root-contract-to-runtime exact equality."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-02",
+      "status": "CONFIRMED",
+      "surface": "platform workspace page and operations head-company page",
+      "finding": "Two list routes perform true per-item owner calls: platform workspace list resolves each logo through PlatformAssetService.requireActivePublicReference; operations head-company list calls BusinessEntityService.authorizedBrands once per row, including an owner existence read."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-03",
+      "status": "CONFIRMED",
+      "surface": "workspace-iam public invitation flows",
+      "finding": "accept, send OTP, verify OTP, save credentials and complete re-load the same invitation token through nested helpers. The safe repair is private owner-local reuse of one typed invitation load; rate limiting, CAS, audit and completion readback remain."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-04",
+      "status": "CONFIRMED",
+      "surface": "workspace-iam login/session-entry flows",
+      "finding": "operations password login, OTP verify and session-entry paths can compose the same workspace session entry after an already successful session resolution/login. Canonical entry composition must remain inside workspace-iam rather than moving authorization facts into edge controllers."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-05",
+      "status": "CONFIRMED",
+      "surface": "extension initial create/definition-replace paths",
+      "finding": "Six create-handler families and definition replacement use a validate/read, write, then merge/re-read/update shape where canonical extension values and revision can be returned by a narrow extension owner API and written on the initial host insert. The API and its typed failures must reside in the extension declared command-api package."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-06",
+      "status": "CONFIRMED",
+      "surface": "organization hierarchy create/update phase paths",
+      "finding": "Region and Project phase work is not uniformly shaped: Region still enters phase replacement and Project phase insertion is per-row update. The repair is owner-local node-type branching and a bounded batch write, retaining CAS, audit and Project readback."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-07",
+      "status": "CONFIRMED",
+      "surface": "platform mutation controllers",
+      "finding": "Nine platform workspace/role/account mutations read a platform session and then independently re-read it to derive an actor. A single immutable PlatformSessionReadback may derive the edge actor; owner authorization/object-state rechecks remain mandatory."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-08",
+      "status": "CONFIRMED_NEEDS_CLASSIFICATION",
+      "surface": "P4 task-read ledger",
+      "finding": "Ten stable task-read source surfaces exceed the default three-statement guidance (including invitations, users, assignment candidates, overviews and session entry). The 100-item evidence indicates bounded bulk loading rather than N+1, so each requires an explicit task/read-model justification or an owner-local consolidation decision, not a mechanical ceiling."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-09",
+      "status": "HYPOTHESIS_REQUIRES_WORKLOAD",
+      "surface": "multi-intent invitation completion",
+      "finding": "Per-intent role and enterability decisions grow linearly. Current Seed is single-intent; multi-intent success, typed-failure and concurrency workloads are required before deciding whether a role-owner requireAll API is justified."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-10",
+      "status": "CONFIRMED",
+      "surface": "future all-route workload inventory and runner",
+      "finding": "A request template that declares credentials, OTPs, invitation tokens, cookies or authorization without an explicit in-memory secret flow can leak them through inventory, fixture receipt, logs, report, stderr or failure artifacts. Report-side redaction alone is insufficient."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-11",
+      "status": "CONFIRMED",
+      "surface": "dynamic verification taxonomy",
+      "finding": "Raw HTTP coverage/diagnostic execution and browser Journey L2 prove different things. Treating 147 HTTP calls as a browser L2 would add fixed frontend/Playwright cost without a user interaction oracle and misstate business evidence."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-12",
+      "status": "CONFIRMED",
+      "surface": "extension public type boundary",
+      "finding": "The extension module declares com.catering.v2s.extension.api as its command API package, yet six production locations directly use ExtensionDefinitionService.DefinitionNotFoundException from application: four cross-module consumers, ContractProblemAdvice and ExtensionAuditHistoryService. A new normalize API must publish its result and typed failures in api and include the full direct-reference migration denominator."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-HTTP-EFF-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/generate/edge-codegen.mjs --check",
+      "reason": "A root OpenAPI expanded operation set and generated route registry exact-set comparison is mechanical, source-driven and has an immediate real red mutation."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-02",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "owner task-read tests plus 50-item page statement-count tests",
+      "reason": "Only an exercised page cardinality distinguishes real N+1 from a legitimate single-object lookup."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "WorkspaceInvitationService tests",
+      "reason": "Tests must preserve each typed failure, OTP/rate-limit behavior, CAS, audit and final readback while demonstrating the duplicate token load disappears."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "WorkspaceAuthenticationService and operations authentication controller tests",
+      "reason": "A focused proof must show canonical owner composition for password, OTP and existing-session entry rather than only reduced statement count."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-05",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "module-dependency-registry commandApiPackages plus extension/host owner tests",
+      "reason": "The repair is valid only when the typed validation/normalization result and failure are public extension-api types and the host owner performs its own insert."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-06",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "organization owner tests for REGION, PROJECT and update phase variants",
+      "reason": "The real red cases are node-type-specific phase behavior, not a generic statement threshold."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-07",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "platform session/controller tests",
+      "reason": "The proof must distinguish safe immutable edge context reuse from forbidden removal of owner rechecks."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-08",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "canonical-performance-ledger.json",
+      "reason": "Every above-default task read needs a declared bounded-data explanation, an owner/read-model rationale and a measured cardinality case; it is not a global hard gate."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-09",
+      "preventionDestination": "NOT_APPLICABLE_WITH_REASON",
+      "owningSourceOrControl": "future multi-intent workload",
+      "reason": "No current multi-intent observation supports an implementation change; retain as an explicitly bounded research hypothesis."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-10",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "reason": "Future diagnostic designs must declare secret origin, in-memory use, output exclusion, disposal and output-surface red proof before they name a workload scenario."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-11",
+      "preventionDestination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "reason": "Every dynamic plan must name whether it is HTTP diagnostic integration, browser L2 or controlled performance study and state the evidence it cannot claim."
+    },
+    {
+      "findingId": "PF-HTTP-EFF-12",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "contracts/policy/module-dependency-registry.json",
+      "reason": "A public cross-owner API is closed only when its result and typed failures both reside in the owner declared commandApiPackages and every cross-owner, edge and owner-internal direct consumer is migrated or intentionally retired."
+    }
+  ]
+}

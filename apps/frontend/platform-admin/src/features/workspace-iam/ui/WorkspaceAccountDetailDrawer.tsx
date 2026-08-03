@@ -1,6 +1,5 @@
 import {Button, Descriptions, Drawer, Space, Table, Tag, Typography} from 'antd';
-import {adminDrawerSurfaceProps, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useState} from 'react';
+import {adminDrawerSurfaceProps, formatCodeNamePath, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceAccount} from '../../../app/api/generated/platform-edge';
 
 export type WorkspaceAccountAction =
@@ -20,18 +19,16 @@ type Props = {
 
 const accountStatusLabel = (status: WorkspaceAccount['status']) => status === 'ENABLED' ? '启用' : '停用';
 const assignmentStatusLabel = (status: WorkspaceAccount['assignments'][number]['status']) => status === 'ACTIVE' ? '有效' : '已撤销';
+const time = (value: number | null | undefined) => value ? new Date(value).toLocaleString('zh-CN') : '—';
 
 /** The detail readback is the only source for account and assignment actions. */
 export function WorkspaceAccountDetailDrawer({open, loading, account, onClose, onAfterOpenChange, onOpenAction, onAudit}: Props) {
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>();
-  useEffect(() => setSelectedAssignmentId(undefined), [account?.id, account?.revision]);
   useOverlayLock(open);
-  const selectedAssignment = account?.assignments.find((assignment) => assignment.id === selectedAssignmentId && assignment.status === 'ACTIVE');
   return <Drawer
     title="账号详情"
     open={open}
     loading={loading}
-    width={640}
+    size={640}
     onClose={onClose}
     afterOpenChange={onAfterOpenChange}
     {...adminDrawerSurfaceProps}
@@ -42,14 +39,15 @@ export function WorkspaceAccountDetailDrawer({open, loading, account, onClose, o
       <Button onClick={() => onOpenAction({kind: 'STATUS', targetStatus: account.status === 'ENABLED' ? 'DISABLED' : 'ENABLED'})} {...testId('workspace-account-transition-status')}>
         {account.status === 'ENABLED' ? '停用账号' : '启用账号'}
       </Button>
-      <Button danger disabled={!selectedAssignment} onClick={() => selectedAssignment && onOpenAction({kind: 'REVOKE_ASSIGNMENT', assignment: selectedAssignment})} {...testId('workspace-account-revoke-selected-assignment')}>撤销所选任职</Button>
     </Space>}
   >
     {account && <>
       <Descriptions bordered size="small" column={1} items={[
         {key: 'name', label: '姓名', children: account.displayName},
+        {key: 'mobile', label: '手机号', children: account.mobile},
         {key: 'login-name', label: '登录账号', children: account.loginName},
         {key: 'status', label: '状态', children: accountStatusLabel(account.status)},
+        {key: 'last-login', label: '最后登录时间', children: time(account.lastLoginAt)},
       ]}/>
       <Typography.Title level={5}>任职</Typography.Title>
       <div {...testId('workspace-account-assignment-table')}><Table<WorkspaceAccount['assignments'][number]>
@@ -57,12 +55,21 @@ export function WorkspaceAccountDetailDrawer({open, loading, account, onClose, o
         size="small"
         pagination={false}
         dataSource={account.assignments}
-        rowSelection={{type: 'radio', selectedRowKeys: selectedAssignmentId ? [selectedAssignmentId] : [], onChange: (keys) => setSelectedAssignmentId(keys.length ? String(keys[0]) : undefined), getCheckboxProps: (assignment) => ({disabled: assignment.status !== 'ACTIVE'})}}
         columns={[
-          {title: '任职机构', dataIndex: 'organizationPath'},
+          {title: '任职机构', dataIndex: 'organizationPath', render: (_, assignment) => formatCodeNamePath(assignment.organizationPath)},
           {title: '业务角色', dataIndex: 'roleName'},
           {title: '状态', render: (_, assignment) => <Tag>{assignmentStatusLabel(assignment.status)}</Tag>},
+          {title: '撤销任职', key: 'revoke', render: (_, assignment) => assignment.status === 'ACTIVE' ? <Button type="link" danger size="small" onClick={() => onOpenAction({kind: 'REVOKE_ASSIGNMENT', assignment})} {...testId(`workspace-account-revoke-assignment-${assignment.id}`)}>撤销任职</Button> : null},
         ]}
+      /></div>
+      <Typography.Title level={5}>登录历史</Typography.Title>
+      <div {...testId('workspace-account-authentication-history')}><Table<WorkspaceAccount['authenticationHistory'][number]>
+        rowKey={(_, index) => `${index}`}
+        size="small"
+        pagination={false}
+        dataSource={account.authenticationHistory}
+        locale={{emptyText: '暂无登录历史'}}
+        columns={[{title: '成功登录时间', dataIndex: 'authenticatedAt', render: (_, history) => time(history.authenticatedAt)}]}
       /></div>
     </>}
   </Drawer>;

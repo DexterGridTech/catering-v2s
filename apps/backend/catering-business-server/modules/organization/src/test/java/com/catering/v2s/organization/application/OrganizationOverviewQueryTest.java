@@ -2,6 +2,7 @@ package com.catering.v2s.organization.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,12 +22,17 @@ class OrganizationOverviewQueryTest {
         assertEquals(16, jdbc.listArgs.length);
         assertEquals(20, jdbc.listArgs[14]);
         assertEquals(20L, jdbc.listArgs[15]);
+        assertEquals("NAME", page.metadata().sort());
+        assertEquals("ASC", page.metadata().direction());
+        assertTrue(jdbc.listSql.contains("ORDER BY s.name ASC, s.id DESC LIMIT ? OFFSET ?"));
+        assertTrue(jdbc.listSql.contains("s.notes"), "store detail/list projection must carry the contract-declared notes field");
     }
 
     @Test void rejectsUnsupportedCategoryFiltersAndOrderingBeforeQuerying() {
         var service = new OrganizationOverviewTaskReadService(new RecordingJdbcTemplate());
         assertThrows(IllegalArgumentException.class, () -> service.page(UUID.randomUUID(), "workspace-a", "BUSINESS_ENTITY", new OrganizationOverviewTaskReadService.Query("BRAND", null, null, null, null, null, UUID.randomUUID(), null, "NAME", "ASC"), 1, 20));
         assertThrows(IllegalArgumentException.class, () -> service.page(UUID.randomUUID(), "workspace-a", "STORE", new OrganizationOverviewTaskReadService.Query("STORE", null, null, null, null, null, null, null, "CREATED_AT", "ASC"), 1, 20));
+        assertThrows(IllegalArgumentException.class, () -> service.page(UUID.randomUUID(), "workspace-a", "STORE", new OrganizationOverviewTaskReadService.Query("STORE", null, null, null, null, null, null, null, "NAME", "SIDEWAYS"), 1, 20));
     }
 
     private static final class RecordingJdbcTemplate extends JdbcTemplate {

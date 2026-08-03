@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-AUTH-SURFACE-LAYOUT-U24",
+  "kind": "rm1-execution-package-exit",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/frontend/platform-admin/src/styles.css",
+    "apps/frontend/operations-admin/src/styles.css",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.tsx",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.tsx",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryCompletePage.tsx",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.test.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.test.tsx",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryVerifyPage.test.tsx",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryPasswordPage.test.tsx",
+    "apps/frontend/platform-admin/src/features/authentication/ui/PlatformPasswordRecoveryCompletePage.test.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.test.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.test.tsx",
+    "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryCompletePage.test.tsx",
+    "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-problem-family.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-auth-surface-layout-u24-package-exit.json",
+    "doc/review/platform/rm1p6-auth-surface-layout-u24-delivery-manifest.json"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "focusedProof": {
+    "platformAdmin": "typecheck PASS; 4 authentication focused tests PASS",
+    "operationsAdmin": "typecheck PASS; 4 authentication focused tests PASS",
+    "governance": "STANDARDS_COVERAGE=PASS; REMEDIATION_COMPLIANCE=PASS",
+    "dev": "managed DEV check PASS; both login and recovery routes return HTTP 200; HMR recorded all intended source updates"
+  },
+  "business": "PASS_FOR_AUTH_SURFACE_PRESENTATION",
+  "cleanup": "NOT_APPLICABLE_DEV_REMAINS_RUNNING",
+  "scopeStatement": "U24 changes only authenticated and recovery presentation layout. Existing owner, session, OTP, recovery, routing and generated-client behavior are unchanged."
+}

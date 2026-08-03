@@ -293,8 +293,8 @@ class P4SqlOperationBudgetTest {
             () -> assertEquals(5, countedDefinitions.listDefinitions(workspace, KEY).size()),
             () -> assertEquals(5, countedDefinitions.listDefinitions(workspace, KEY).size()));
         assertFixed(executed, "M12", 2,
-            () -> assertEquals("p4-group P4 group", organizationCommands.describeCommercialGroup(workspace, KEY, commercialGroupId)),
-            () -> assertEquals("p4-group P4 group", organizationCommands.describeCommercialGroup(workspace, KEY, commercialGroupId)));
+            () -> assertEquals("P4 group（p4-group）", organizationCommands.describeCommercialGroup(workspace, KEY, commercialGroupId)),
+            () -> assertEquals("P4 group（p4-group）", organizationCommands.describeCommercialGroup(workspace, KEY, commercialGroupId)));
         assertFixed(executed, "M11", 2,
             () -> assertTrue(visibility.listVisibleDataNodeCandidates(workspace, KEY, "REGION", regionId).size() >= 100),
             () -> assertTrue(visibility.listVisibleDataNodeCandidates(workspace, KEY, "REGION", regionId).size() >= 100));

@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-L2-FIXTURE-CONTRACT-U23",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-L2-FIXTURE-CONTRACT-U23",
+      "title": "Platform L2 fixture and shared browser-suite alignment",
+      "approvedAssertions": [
+        "L2_FIXTURE_READS_GENERATED_COMMERCIAL_GROUP_RESPONSE_FIELD",
+        "L2_FIXTURES_EMIT_CANONICAL_NAME_CODE_LABELS",
+        "SHARED_ROOT_MUTATION_SUITE_RUNS_SERIAL",
+        "L2_LOCATORS_TARGET_VISIBLE_EXACT_SURFACES",
+        "NO_OWNER_OR_CONTRACT_BEHAVIOR_CHANGE",
+        "FAILED_L2_RUN_IS_NOT_REUSED",
+        "DEFAULT_PROTABLE_SEARCH_ACTIONS_USE_EXPLICIT_FORM_SUBMIT_ACROSS_BOTH_ADMINS"
+      ],
+      "changeSurfaces": [
+        {
+          "path": ".runtime/compliance-control/active-package.json",
+          "disposition": "update"
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+          "disposition": "update"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
+          "disposition": "update"
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2-fixture-seed.test.mjs",
+          "disposition": "create"
+        },
+        {
+          "path": "apps/frontend/platform-admin/playwright.config.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/platformL2.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/authentication.spec.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/organization-overview.spec.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/contract-overview.spec.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
+          "disposition": "update"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-l2-fixture-contract-u23-package-input.json",
+          "disposition": "create"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-l2-fixture-contract-u23-implementation-amendment.md",
+          "disposition": "create"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-l2-fixture-contract-u23-problem-family.json",
+          "disposition": "create"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-l2-fixture-contract-u23-package-exit.json",
+          "disposition": "create"
+        },
+        {
+          "path": "doc/review/platform/rm1p6-l2-fixture-contract-u23-delivery-manifest.json",
+          "disposition": "create"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.test.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+          "disposition": "update"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.test.tsx",
+          "disposition": "update"
+        }
+      ],
+      "complianceRoute": {
+        "taskKind": "testing",
+        "domain": "platform",
+        "consumerFace": "platform-admin",
+        "owner": "backend",
+        "impact": "evidence"
+      },
+      "sourceDenominators": {
+        "OWNER_CONTRACT": [
+          "contracts/openapi/components/organization/commercial-group.schemas.yaml#/components/schemas/CommercialGroupRoot",
+          "PlatformCommercialGroupController.initialize"
+        ],
+        "CANONICAL_PRESENTATION": [
+          "libraries/frontend/admin-ui-foundation/src/presentation/nameCode.ts"
+        ],
+        "FIXTURE_CONSUMERS": [
+          "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+          "scripts/test/r5-joint-remote-l2-fixture.mjs"
+        ],
+        "SHARED_BROWSER_SUITE": [
+          "apps/frontend/platform-admin/playwright.config.ts",
+          "apps/frontend/platform-admin/src/tests/l2/*.spec.ts",
+          "apps/frontend/platform-admin/src/tests/l2/platformL2.ts"
+        ],
+        "FORBIDDEN_PSEUDO_FIXES": [
+          "no owner response alias",
+          "no test-only database write",
+          "no L2 rerun on failed namespace"
+        ],
+        "DUE_STANDARDS_RULE_IDS": [
+          "scripts/check/standards-coverage",
+          "scripts/check/remediation-compliance"
+        ]
+      }
+    }
+  ]
+}

@@ -183,10 +183,28 @@ const remoteNamespaceCleanup = (identity) => {
   const hostHash = process.env.V2S_DEV_REMOTE_HOST_SHA256 ?? sha256(host);
   if (sha256(host) !== hostHash || !/^catering_v2s_dev_[a-z0-9_]+$/.test(database) || !/^catering_v2s_r5_dev$|^r5l2_[a-zA-Z0-9]+$/.test(role)) fail('REMOTE_NAMESPACE_IDENTITY_INVALID', 'REMOTE_CLEANUP');
   const prefix = `catering-v2s/dev/${namespace}/`;
-  const script = `set -euo pipefail\ndatabase=${shellQuote(database)}\nrole=${shellQuote(role)}\nprefix=${shellQuote(prefix)}\ndatabase_present=$(docker exec catering-postgres psql -U catering -d postgres -Atqc "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = '$database')")\nrole_present=$(docker exec catering-postgres psql -U catering -d postgres -Atqc "SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = '$role')")\nif [ "$database_present" = t ]; then docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$database' AND pid <> pg_backend_pid();" >/dev/null; docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -c "DROP DATABASE $database;" >/dev/null; fi\nif [ "$role_present" = t ]; then docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -c "DROP ROLE $role;" >/dev/null; fi\nif docker inspect catering-v2s-r5-minio >/dev/null 2>&1; then access=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' catering-v2s-r5-minio | sed -n 's/^MINIO_ROOT_USER=//p'); secret=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' catering-v2s-r5-minio | sed -n 's/^MINIO_ROOT_PASSWORD=//p'); docker run --rm --network host -e "MC_HOST_r5=http://$access:$secret@127.0.0.1:19000" minio/mc rm --recursive --force "r5/catering-v2s-r5-assets/$prefix" >/dev/null; fi\nprintf 'REMOTE_DATABASE_PRESENT=%s\\nREMOTE_ROLE_PRESENT=%s\\nREMOTE_NAMESPACE_REMOVED=PASS\\n' "$database_present" "$role_present"`;
+  const script = [
+    'set -euo pipefail',
+    `database=${shellQuote(database)}`,
+    `role=${shellQuote(role)}`,
+    `prefix=${shellQuote(prefix)}`,
+    `database_present=$(docker exec catering-postgres psql -U catering -d postgres -Atqc "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = '$database')")`,
+    `role_present=$(docker exec catering-postgres psql -U catering -d postgres -Atqc "SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = '$role')")`,
+    `if [ "$database_present" = t ]; then docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$database' AND pid <> pg_backend_pid();" >/dev/null; docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -c "DROP DATABASE $database;" >/dev/null; fi`,
+    `if [ "$role_present" = t ]; then docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -c "DROP ROLE $role;" >/dev/null; fi`,
+    `if ! docker inspect catering-v2s-r5-minio >/dev/null 2>&1; then echo 'REMOTE_ASSET_CLEANUP=FAIL; REASON=MINIO_CONTAINER_UNAVAILABLE' >&2; exit 24; fi`,
+    `access=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' catering-v2s-r5-minio | sed -n 's/^MINIO_ROOT_USER=//p')`,
+    `secret=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' catering-v2s-r5-minio | sed -n 's/^MINIO_ROOT_PASSWORD=//p')`,
+    `docker run --rm --network host -e "MC_HOST_r5=http://$access:$secret@127.0.0.1:19000" minio/mc rm --recursive --force "r5/catering-v2s-r5-assets/$prefix" >/dev/null`,
+    `asset_present=$(docker run --rm --network host -e "MC_HOST_r5=http://$access:$secret@127.0.0.1:19000" minio/mc ls --recursive "r5/catering-v2s-r5-assets/$prefix" | head -n 1)`,
+    `database_present_after=$(docker exec catering-postgres psql -U catering -d postgres -Atqc "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = '$database')")`,
+    `role_present_after=$(docker exec catering-postgres psql -U catering -d postgres -Atqc "SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = '$role')")`,
+    `[ "$database_present_after" = f ] && [ "$role_present_after" = f ] && [ -z "$asset_present" ]`,
+    `printf 'REMOTE_DATABASE_PRESENT=%s\\nREMOTE_ROLE_PRESENT=%s\\nREMOTE_DATABASE_PRESENT_AFTER=%s\\nREMOTE_ROLE_PRESENT_AFTER=%s\\nREMOTE_ASSET_PRESENT_AFTER=%s\\nREMOTE_NAMESPACE_REMOVED=PASS\\n' "$database_present" "$role_present" "$database_present_after" "$role_present_after" "\${asset_present:-false}"`,
+  ].join('\n');
   const result = run('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', host, 'bash', '-s'], {input: script});
   if (result.status !== 0 || !result.stdout.includes('REMOTE_NAMESPACE_REMOVED=PASS')) fail(`REMOTE_NAMESPACE_CLEANUP_FAILED:${compact(result.stderr || result.stdout)}`, 'REMOTE_CLEANUP');
-  return {hostSha256: hostHash, database, role, assetBucket: 'catering-v2s-r5-assets', assetPrefix: prefix, databasePresentBeforeCleanup: result.stdout.includes('REMOTE_DATABASE_PRESENT=t'), rolePresentBeforeCleanup: result.stdout.includes('REMOTE_ROLE_PRESENT=t'), removed: true};
+  return {hostSha256: hostHash, database, role, assetBucket: 'catering-v2s-r5-assets', assetPrefix: prefix, databasePresentBeforeCleanup: result.stdout.includes('REMOTE_DATABASE_PRESENT=t'), rolePresentBeforeCleanup: result.stdout.includes('REMOTE_ROLE_PRESENT=t'), databaseAbsentAfterCleanup: result.stdout.includes('REMOTE_DATABASE_PRESENT_AFTER=f'), roleAbsentAfterCleanup: result.stdout.includes('REMOTE_ROLE_PRESENT_AFTER=f'), assetAbsentAfterCleanup: result.stdout.includes('REMOTE_ASSET_PRESENT_AFTER=false'), removed: true};
 };
 const stopAndVerifyLocal = async () => {
   command('LOCAL_STOP', process.execPath, [path.join(root, 'scripts/dev/r5-dev-runner.mjs'), 'stop'], {env: localBaseEnvironment()});

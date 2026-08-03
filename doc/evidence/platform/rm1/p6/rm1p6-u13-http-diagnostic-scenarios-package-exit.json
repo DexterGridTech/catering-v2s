@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-SCENARIOS-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "scripts/test/http-diagnostic-scenarios.mjs",
+    "scripts/test/http-diagnostic-scenarios.test.mjs",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-scenarios-package-exit.json",
+    "doc/review/platform/rm1p6-u13-http-diagnostic-scenarios-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "node --test scripts/test/http-diagnostic-inventory.test.mjs scripts/test/http-diagnostic-report.test.mjs scripts/test/http-diagnostic-scenarios.test.mjs",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/code-layout",
+      "scripts/check/openapi-contracts"
+    ],
+    "assertions": [
+      "all 147 generated route-face tuples map once to source-bound scenario facts: platform-admin=43, operations-admin=89, public=15",
+      "the declaration carries real business task, controller/owner source references and an owner readback or explicit no-body state result",
+      "missing, duplicated, fabricated, source-less and secret-field facts fail closed",
+      "all sensitive runtime material remains represented only by symbolic handles and no static copied registry is accepted"
+    ]
+  },
+  "harnessTrimObservation": {"pathListRetained": true, "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION", "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"},
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "scopeStatement": "staticProofStatus=PASS proves source-bound workload declarations only. It is not execution of any declared scenario, HTTP diagnostic coverage, performance evidence, DEV, Seed/reset, browser L2, business PASS or cleanup PASS."
+}

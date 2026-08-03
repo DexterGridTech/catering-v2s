@@ -100,7 +100,8 @@ test("operations details and login alternatives consume every approved generated
   assert.match(login, /operationsClient\.sendOperationsWorkspaceOtp/);
   assert.match(login, /operationsClient\.verifyOperationsWorkspaceOtp/);
   for (const target of ["Group", "Region", "Project", "HeadCompany", "Store"]) {
-    assert.match(user, new RegExp(`operationsClient\\.getOperationsWorkspace${target}UserAccount`));
+    assert.match(user, new RegExp(`operationsAdminRtkRequest\\.getOperationsWorkspace${target}UserAccount`));
+    assert.match(user, new RegExp(`operationsRtk\\.useGetOperationsWorkspace${target}UserAccountQuery`));
   }
   assert.doesNotMatch(user, /operationsClient\.getOperationsWorkspaceUserAccount/);
   assert.match(profile, /operationsAdminRtkRequest\.getOperationsFixedStoreContracts/);
@@ -129,13 +130,13 @@ test("operations password change uses the approved authentication consumers and 
   assert.match(result, /重新登录/);
 });
 
-test("operations shell is owner-branded, catalog-titled, tab-hosted, and icon-mapped", () => {
+test("operations shell is owner-branded, catalog-tabbed, and icon-mapped", () => {
   const app = fs.readFileSync(new URL("../../app/OperationsApp.tsx", import.meta.url), "utf8");
   assert.match(app, /entry\.workspaceName/);
   assert.match(app, /entry\.operationsTitle/);
   assert.match(app, /entry\.logoUrl/);
-  assert.match(app, /selectedCatalogPage\.pageTitle/);
   assert.match(app, /pageMeta\.contentTabLabel/);
+  assert.doesNotMatch(app, /operations-shell-page-title/);
   assert.match(app, /<Tabs/);
   assert.match(app, /operations-shell-refresh-current/);
   assert.match(app, /operations-shell-toggle-fullscreen/);
@@ -144,4 +145,58 @@ test("operations shell is owner-branded, catalog-titled, tab-hosted, and icon-ma
   assert.match(app, /ApartmentOutlined/);
   assert.match(app, /ShopOutlined/);
   assert.doesNotMatch(app, />运营管理后台</);
+});
+
+test("operations Drawers use the common mask-close surface, and immutable form facts are not inputs", () => {
+  const drawerFiles = [
+    "authentication/ui/OperationsPasswordChangeDrawer.tsx",
+    "business-entity-management/ui/BusinessEntityCreateDrawer.tsx",
+    "business-entity-management/ui/BusinessEntityDetailDrawer.tsx",
+    "business-entity-management/ui/BusinessEntityEditDrawer.tsx",
+    "business-entity-management/ui/HeadCompanyBrandAuthorizationDrawer.tsx",
+    "contract-management/ui/ContractCreateDrawer.tsx",
+    "contract-management/ui/ContractDetailDrawer.tsx",
+    "contract-management/ui/ContractEditDrawer.tsx",
+    "organization-structure/ui/OrganizationEditDrawer.tsx",
+    "organization-structure/ui/ProjectCreateDrawer.tsx",
+    "organization-structure/ui/RegionCreateDrawer.tsx",
+    "store-management/ui/StoreCreateDrawer.tsx",
+    "store-management/ui/StoreDetailDrawer.tsx",
+    "store-management/ui/StoreEditDrawer.tsx",
+    "store-profile/ui/FixedStoreContractDetailDrawer.tsx",
+    "workspace-user/ui/WorkspaceInvitationCreateDrawer.tsx",
+    "workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx",
+    "workspace-user/ui/WorkspaceUserDetailDrawer.tsx",
+  ];
+  for (const path of drawerFiles) assert.match(fs.readFileSync(new URL(`../../features/${path}`, import.meta.url), "utf8"), /adminDrawerSurfaceProps/, path);
+  const draftFiles = [
+    "authentication/ui/OperationsPasswordChangeDrawer.tsx",
+    "business-entity-management/ui/BusinessEntityCreateDrawer.tsx",
+    "business-entity-management/ui/BusinessEntityEditDrawer.tsx",
+    "contract-management/ui/ContractCreateDrawer.tsx",
+    "contract-management/ui/ContractEditDrawer.tsx",
+    "organization-structure/ui/OrganizationEditDrawer.tsx",
+    "organization-structure/ui/ProjectCreateDrawer.tsx",
+    "organization-structure/ui/RegionCreateDrawer.tsx",
+    "store-management/ui/StoreCreateDrawer.tsx",
+    "store-management/ui/StoreEditDrawer.tsx",
+    "workspace-user/ui/WorkspaceInvitationCreateDrawer.tsx",
+  ];
+  for (const path of draftFiles) {
+    const source = fs.readFileSync(new URL(`../../features/${path}`, import.meta.url), "utf8");
+    assert.match(source, /useDrawerFormLifecycle/, path);
+    assert.match(source, /onClose=\{lifecycle\.requestClose\}/, path);
+  }
+  const immutableValueFiles = [
+    "organization-structure/ui/RegionCreateDrawer.tsx",
+    "organization-structure/ui/ProjectCreateDrawer.tsx",
+    "organization-structure/ui/OrganizationEditDrawer.tsx",
+    "contract-management/ui/ContractCreateDrawer.tsx",
+    "contract-management/ui/ContractEditDrawer.tsx",
+    "store-management/ui/StoreEditDrawer.tsx",
+    "workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx",
+  ];
+  for (const path of immutableValueFiles) assert.doesNotMatch(fs.readFileSync(new URL(`../../features/${path}`, import.meta.url), "utf8"), /<Input(?:\.TextArea)?\b[^>]*\breadOnly\b/, path);
+  const drawerSurface = fs.readFileSync(new URL("../../../../../../libraries/frontend/admin-ui-foundation/src/overlay/drawerSurface.ts", import.meta.url), "utf8");
+  assert.match(drawerSurface, /mask: \{closable: true\}/);
 });

@@ -14,20 +14,36 @@ describe('workspace user focused IA contract', () => {
   });
 
   it('opens user detail from owner readback instead of list-row residue', () => {
-    expect(page).toMatch(/detail\.open\(await loadUserDetail/);
+    expect(page).toMatch(/detail\.openLoading\(\)/);
+    expect(page).toMatch(/useGetOperationsWorkspaceGroupUserAccountQuery/);
+    expect(page).toMatch(/useGetOperationsWorkspaceRegionUserAccountQuery/);
+    expect(page).toMatch(/useGetOperationsWorkspaceProjectUserAccountQuery/);
+    expect(page).toMatch(/useGetOperationsWorkspaceHeadCompanyUserAccountQuery/);
+    expect(page).toMatch(/useGetOperationsWorkspaceStoreUserAccountQuery/);
+    expect(page).not.toMatch(/loadUserDetail/);
+    expect(page).not.toMatch(/useAsyncGenerationGuard/);
     expect(page).not.toMatch(/detail\.open\(user\);/);
   });
 
   it('keeps the detail and revoke copy aligned with the current user-management target', () => {
     expect(detail).toMatch(/pageTitle\.endsWith\('用户管理'\)/);
     expect(detail).toMatch(/任职详情/);
+    expect(detail).toMatch(/formatCodeNamePath\(assignment\.organizationPath\)/);
     expect(revoke).toMatch(/const confirmation = `确认撤销“/);
+    expect(revoke).toMatch(/formatCodeNamePath\(organizationPath\)/);
     expect(revoke).toMatch(/title=\{confirmation\}/);
   });
 
   it('keeps revoke failures inside the modal with fixed safe copy', () => {
     expect(page).toMatch(/setRevokeProblem\('撤销任职未完成，请检查后重试'\)/);
     expect(page).toMatch(/problem=\{revokeProblem\}/);
-    expect(revoke).toMatch(/problem && <Alert type="error" showIcon message=\{problem\}/);
+    expect(revoke).toMatch(/problem && <Alert type="error" showIcon title=\{problem\}/);
+  });
+
+  it('sorts only owner-backed scalar account facts through generated queries', () => {
+    expect(page).toMatch(/useState<WorkspaceUserSortKey>\('LOGIN_NAME'\)/);
+    expect(page).toMatch(/sort,\n      direction/);
+    expect(page).toMatch(/sorter\.columnKey === 'displayName' \? 'DISPLAY_NAME' : 'LOGIN_NAME'/);
+    expect(page).not.toMatch(/title: '业务角色'[^}]*sorter:\s*true/);
   });
 });

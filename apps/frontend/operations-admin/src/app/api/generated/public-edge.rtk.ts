@@ -5,7 +5,7 @@ import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest}
 
 type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
 export type PublicOperationId = keyof FaceOperationContracts;
-export type PublicRtkWireRequest = <I extends PublicOperationId>(request: FaceOperationRequest<I>) => FetchArgs;
+export type PublicRtkWireRequest = <I extends PublicOperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};
 
 /**
  * Operation-shaped request constructors for RTK hooks. Consumers supply only
@@ -18,6 +18,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     completeOperationsPasswordRecovery: (pathParameters: FaceOperationContracts["completeOperationsPasswordRecovery"]["path"], options: FaceOperationOptions<"completeOperationsPasswordRecovery">): FaceOperationRequest<"completeOperationsPasswordRecovery"> => ({
@@ -25,6 +26,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     completePublicInvitation: (pathParameters: FaceOperationContracts["completePublicInvitation"]["path"], options: FaceOperationOptions<"completePublicInvitation">): FaceOperationRequest<"completePublicInvitation"> => ({
@@ -32,6 +34,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     completeWorkspacePasswordReset: (pathParameters: FaceOperationContracts["completeWorkspacePasswordReset"]["path"], options: FaceOperationOptions<"completeWorkspacePasswordReset">): FaceOperationRequest<"completeWorkspacePasswordReset"> => ({
@@ -39,6 +42,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/password-reset/{resetGenerationKey}/complete",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     getPublicAssetContent: (pathParameters: FaceOperationContracts["getPublicAssetContent"]["path"], options: FaceOperationOptions<"getPublicAssetContent">): FaceOperationRequest<"getPublicAssetContent"> => ({
@@ -46,6 +50,7 @@ export const publicRtkRequest = {
       method: "GET",
       path: "/api/public/assets/{assetRef}/content",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     getPublicInvitationCompletion: (pathParameters: FaceOperationContracts["getPublicInvitationCompletion"]["path"], options: FaceOperationOptions<"getPublicInvitationCompletion">): FaceOperationRequest<"getPublicInvitationCompletion"> => ({
@@ -53,6 +58,7 @@ export const publicRtkRequest = {
       method: "GET",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     getPublicInvitationView: (pathParameters: FaceOperationContracts["getPublicInvitationView"]["path"], options: FaceOperationOptions<"getPublicInvitationView">): FaceOperationRequest<"getPublicInvitationView"> => ({
@@ -60,6 +66,7 @@ export const publicRtkRequest = {
       method: "GET",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     savePublicInvitationCredentials: (pathParameters: FaceOperationContracts["savePublicInvitationCredentials"]["path"], options: FaceOperationOptions<"savePublicInvitationCredentials">): FaceOperationRequest<"savePublicInvitationCredentials"> => ({
@@ -67,6 +74,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     sendOperationsPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["sendOperationsPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"sendOperationsPasswordRecoveryOtp">): FaceOperationRequest<"sendOperationsPasswordRecoveryOtp"> => ({
@@ -74,6 +82,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     sendPublicInvitationOtp: (pathParameters: FaceOperationContracts["sendPublicInvitationOtp"]["path"], options: FaceOperationOptions<"sendPublicInvitationOtp">): FaceOperationRequest<"sendPublicInvitationOtp"> => ({
@@ -81,6 +90,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     sendWorkspacePasswordResetOtp: (pathParameters: FaceOperationContracts["sendWorkspacePasswordResetOtp"]["path"], options: FaceOperationOptions<"sendWorkspacePasswordResetOtp">): FaceOperationRequest<"sendWorkspacePasswordResetOtp"> => ({
@@ -88,6 +98,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/password-reset/{resetGenerationKey}/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     startOperationsPasswordRecovery: (pathParameters: FaceOperationContracts["startOperationsPasswordRecovery"]["path"], options: FaceOperationOptions<"startOperationsPasswordRecovery">): FaceOperationRequest<"startOperationsPasswordRecovery"> => ({
@@ -95,6 +106,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     verifyOperationsPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["verifyOperationsPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"verifyOperationsPasswordRecoveryOtp">): FaceOperationRequest<"verifyOperationsPasswordRecoveryOtp"> => ({
@@ -102,6 +114,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     verifyPublicInvitationOtp: (pathParameters: FaceOperationContracts["verifyPublicInvitationOtp"]["path"], options: FaceOperationOptions<"verifyPublicInvitationOtp">): FaceOperationRequest<"verifyPublicInvitationOtp"> => ({
@@ -109,6 +122,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     verifyWorkspacePasswordResetOtp: (pathParameters: FaceOperationContracts["verifyWorkspacePasswordResetOtp"]["path"], options: FaceOperationOptions<"verifyWorkspacePasswordResetOtp">): FaceOperationRequest<"verifyWorkspacePasswordResetOtp"> => ({
@@ -116,6 +130,7 @@ export const publicRtkRequest = {
       method: "POST",
       path: "/api/public/password-reset/{resetGenerationKey}/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     })
 } as const;

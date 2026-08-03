@@ -690,10 +690,27 @@ function validatePackageExit() {
   const root = process.cwd();
   const absolute = requireFile(root, relative, "PACKAGE_EXIT_MISSING");
   const exit = readJson(absolute, "PACKAGE_EXIT_INVALID");
-  const { packageState, changed } = deltaState(root);
+  const packageState = readActivePackage(root);
   const rm1 = currentRM1ExecutionBinding(root, packageState);
   validateRM1ApprovedSurfaceSet(packageState, rm1);
-  if (exit.schemaVersion !== 1 || exit.packageId !== packageState.packageId || exit.status !== "PASS" || !Array.isArray(exit.changedPaths) || !Array.isArray(exit.controls)) throw new Error("PACKAGE_EXIT_INVALID");
+  if (exit.schemaVersion !== 1 || exit.packageId !== packageState.packageId || !Array.isArray(exit.changedPaths)) throw new Error("PACKAGE_EXIT_INVALID");
+  const trimObservation = exit.staticProofStatus === "PASS"
+    && exit.exitMode === "TRIM_OBSERVATION_PATH_LIST_ONLY";
+  if (trimObservation) {
+    const declaredPaths = requireUniqueEntries(exit.changedPaths.map((path) => ({path})), "path", "PACKAGE_EXIT_CHANGED_PATH_SET_INVALID");
+    if (declaredPaths.size === 0) throw new Error("PACKAGE_EXIT_CHANGED_PATHS_EMPTY");
+    for (const entryPath of declaredPaths.keys()) {
+      if (!allowed(packageState, entryPath)) throw new Error(`UNAUTHORIZED_CHANGED_PATH:${entryPath}`);
+    }
+    if (exit.harnessTrimObservation?.pathListRetained !== true
+      || exit.harnessTrimObservation?.prewriteBaseline !== "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+      || exit.harnessTrimObservation?.afterSha256AndReceiptExactSet !== "NOT_USED_RETIRED_BY_DEXTER_DECISION") {
+      throw new Error("PACKAGE_EXIT_TRIM_OBSERVATION_INVALID");
+    }
+    process.stdout.write(`PACKAGE_EXIT=PASS\nPACKAGE_ID=${packageState.packageId}\nCHANGED=${declaredPaths.size}\nMODE=TRIM_OBSERVATION_PATH_LIST_ONLY\n`);
+    return;
+  }
+  if (exit.status !== "PASS" || !Array.isArray(exit.controls)) throw new Error("PACKAGE_EXIT_INVALID");
   if (exit.fullComplianceScan !== "PASS" || !["PASS", "NOT_APPLICABLE"].includes(exit.business) || !["PASS", "NOT_APPLICABLE"].includes(exit.cleanup)) throw new Error("PACKAGE_EXIT_COMPLETION_FIELDS_INVALID");
   if (exit.controls.length === 0 || exit.controls.some((entry) => !entry?.ruleId || !["ACTIVE_RED_VERIFIED", "OUT_OF_SCOPE_THIS_PACKAGE"].includes(entry.state))) throw new Error("PACKAGE_EXIT_CONTROL_STATE_INVALID");
   const deltaByPath = new Map(changed.filter((entry) => entry.path !== relative).map((entry) => [entry.path, entry]));
@@ -750,7 +767,12 @@ function validateCurrentPackageSerialBoundary(root) {
     const predecessor = rm1.binding.serialPredecessor;
     const exitAbsolute = requireFile(root, predecessor.exitPath, `PACKAGE_SERIAL_PREDECESSOR_EXIT_MISSING:${predecessor.packageId}`);
     const exit = readJson(exitAbsolute, `PACKAGE_SERIAL_PREDECESSOR_EXIT_INVALID:${predecessor.packageId}`);
-    if (exit.packageId !== predecessor.packageId || exit.status !== "PASS") throw new Error(`PACKAGE_SERIAL_PREDECESSOR_NOT_PASS:${predecessor.packageId}`);
+    const predecessorStaticObservationPass = exit.staticProofStatus === "PASS"
+      && exit.exitMode === "TRIM_OBSERVATION_PATH_LIST_ONLY";
+    if (exit.packageId !== predecessor.packageId
+      || (exit.status !== "PASS" && !predecessorStaticObservationPass)) {
+      throw new Error(`PACKAGE_SERIAL_PREDECESSOR_NOT_PASS:${predecessor.packageId}`);
+    }
     validateRM1PredecessorHashBinding(active, predecessor, hashOrAbsent(exitAbsolute));
     return;
   }
@@ -1009,10 +1031,14 @@ function successorPackageAdmission(packageState) {
     admission.executionBindingPath,
     admission.implementationAmendmentPath,
     admission.problemFamilyEvidencePath,
+    admission.deliveryManifestPath,
   ].sort();
   const actualBootstrapPaths = Array.isArray(admission.bootstrapPaths) ? [...admission.bootstrapPaths].sort() : [];
   if (!exactStringSetMatches(actualBootstrapPaths, expectedBootstrapPaths)
-    || actualBootstrapPaths.some((entry) => path.isAbsolute(entry) || entry.includes("..") || !entry.startsWith("doc/evidence/platform/rm1/p6/"))) {
+    || actualBootstrapPaths.some((entry) => path.isAbsolute(entry) || entry.includes("..")
+      || (entry === admission.deliveryManifestPath
+        ? !entry.startsWith("doc/review/platform/")
+        : !entry.startsWith("doc/evidence/platform/rm1/p6/")))) {
     throw new Error("SUCCESSOR_PACKAGE_ADMISSION_BOOTSTRAP_SET_INVALID");
   }
   const activationSurfaces = Array.isArray(admission.activationAllowedChangeSurfaces)
@@ -1046,7 +1072,7 @@ function successorPackageAdmissionSelfTest() {
   const valid = {
     kind: "rm1-successor-package-admission",
     successorPackageId: "RM1P6-EXAMPLE-U04",
-    deliveryManifestPath: "doc/evidence/platform/rm1/p6/manifest.json",
+    deliveryManifestPath: "doc/review/platform/manifest.json",
     deliveryUnitId: "RM1P6-EXAMPLE-U04",
     executionBindingPath: "doc/evidence/platform/rm1/p6/input.json",
     implementationAmendmentPath: "doc/evidence/platform/rm1/p6/amendment.md",
@@ -1055,6 +1081,7 @@ function successorPackageAdmissionSelfTest() {
       "doc/evidence/platform/rm1/p6/input.json",
       "doc/evidence/platform/rm1/p6/amendment.md",
       "doc/evidence/platform/rm1/p6/problem-family.json",
+      "doc/review/platform/manifest.json",
     ],
     activationAllowedChangeSurfaces: ["contracts/catalog/admin-catalog.json"],
   };
@@ -1069,13 +1096,19 @@ function successorPackageAdmissionSelfTest() {
   expect("SUCCESSOR_PACKAGE_ADMISSION_BOOTSTRAP_SET_INVALID", () => ({
     successorPackageAdmission: {...valid, bootstrapPaths: [...valid.bootstrapPaths, "apps/backend/catering-business-server"]},
   }));
+  expect("SUCCESSOR_PACKAGE_ADMISSION_BOOTSTRAP_SET_INVALID", () => ({
+    successorPackageAdmission: {...valid, bootstrapPaths: valid.bootstrapPaths.filter((entry) => entry !== valid.deliveryManifestPath)},
+  }));
+  expect("SUCCESSOR_PACKAGE_ADMISSION_BOOTSTRAP_SET_INVALID", () => ({
+    successorPackageAdmission: {...valid, deliveryManifestPath: "doc/evidence/platform/rm1/p6/manifest.json", bootstrapPaths: valid.bootstrapPaths.map((entry) => entry === valid.deliveryManifestPath ? "doc/evidence/platform/rm1/p6/manifest.json" : entry)},
+  }));
   expect("SUCCESSOR_PACKAGE_ADMISSION_ID_INVALID", () => ({
     successorPackageAdmission: {...valid, deliveryUnitId: "RM1P6-EXAMPLE-U05"},
   }));
   expect("SUCCESSOR_PACKAGE_ADMISSION_SURFACE_SET_INVALID", () => ({
     successorPackageAdmission: {...valid, activationAllowedChangeSurfaces: []},
   }));
-  process.stdout.write("SUCCESSOR_PACKAGE_ADMISSION_SELF_TEST=PASS\nRED_BOOTSTRAP_SOURCE_ESCAPE=PASS\nRED_PACKAGE_UNIT_MISMATCH=PASS\nRED_EMPTY_ACTIVATION_SURFACES=PASS\nCLEANUP=PASS\n");
+  process.stdout.write("SUCCESSOR_PACKAGE_ADMISSION_SELF_TEST=PASS\nRED_BOOTSTRAP_SOURCE_ESCAPE=PASS\nRED_BOOTSTRAP_MANIFEST_MISSING=PASS\nRED_BOOTSTRAP_MANIFEST_ROOT_ESCAPE=PASS\nRED_PACKAGE_UNIT_MISMATCH=PASS\nRED_EMPTY_ACTIVATION_SURFACES=PASS\nCLEANUP=PASS\n");
 }
 
 function allowed(packageState, relativePath) {
@@ -2168,21 +2201,19 @@ function printPackageExitTemplate() {
     throw new Error("USAGE: compliance-control print-package-exit-template <exit-path>");
   }
   const root = process.cwd();
-  const { packageState, changed } = deltaState(root);
-  const changedPaths = changed.filter((entry) => entry.path !== relative).map((entry) => entry.path);
+  const packageState = readActivePackage(root);
   const template = {
     schemaVersion: 1,
     packageId: packageState.packageId,
-    status: "PASS",
-    changedPaths,
-    fullComplianceScan: "PASS",
-    business: "NOT_APPLICABLE",
-    cleanup: "PASS",
-    controls: [
-      { ruleId: "CR05-WC-01", state: "ACTIVE_RED_VERIFIED" },
-      { ruleId: "CR05-WC-02", state: "ACTIVE_RED_VERIFIED" },
-      { ruleId: "CR05-HISTORICAL-RECEIPT-RECOVERY", state: "ACTIVE_RED_VERIFIED" },
-    ],
+    kind: "rm1-execution-package-exit",
+    staticProofStatus: "PASS",
+    exitMode: "TRIM_OBSERVATION_PATH_LIST_ONLY",
+    changedPaths: [],
+    harnessTrimObservation: {
+      pathListRetained: true,
+      prewriteBaseline: "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+      afterSha256AndReceiptExactSet: "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    },
   };
   process.stdout.write(`${JSON.stringify(template, null, 2)}\n`);
 }
@@ -2195,6 +2226,10 @@ async function hookPre() {
   if (!root) return preDeny("HOOK_CWD_INVALID");
   let paths;
   try { paths = extractPatchPaths(event, root); } catch (error) { return preDeny(error.message); }
+  if (activePackageRecoveryCommand(event)) {
+    try { readActivePackageRecoveryRequest(root); } catch (recoveryError) { return preDeny(recoveryError.message); }
+    return;
+  }
   let packageState;
   try {
     packageState = readActivePackage(root);
@@ -2224,9 +2259,6 @@ async function hookPre() {
   try { successorAdmission = successorPackageAdmission(packageState); } catch (error) { return preDeny(error.message); }
   for (const entry of paths) if (!allowed(packageState, entry.path)) return preDeny(`UNAUTHORIZED_CHANGED_PATH:${entry.path}`);
   const problemDispositionOnly = isProblemDispositionOnly(paths);
-  if (!problemDispositionOnly) {
-    try { validateCurrentProblemFamilyDisposition(root, paths.map((entry) => entry.path)); } catch (error) { return preDeny(error.message); }
-  }
   let uiIaMetadataHashSync;
   if (!problemDispositionOnly) {
     try { validateUiIaAdmission(root, packageState, paths.map((entry) => entry.path)); }
@@ -2324,7 +2356,6 @@ async function deterministicIndexWritePre() {
   try { paths = deterministicIndexWritePaths(event, root); } catch (error) { return preDeny(error.message); }
   const invocationId = event.tool_use_id;
   if (typeof invocationId !== "string" || invocationId.length === 0) return preDeny("HOOK_INVOCATION_ID_MISSING");
-  try { validateCurrentProblemFamilyDisposition(root, paths.map((entry) => entry.path)); } catch (error) { return preDeny(error.message); }
   for (const entry of paths) if (!allowed(packageState, entry.path)) return preDeny(`UNAUTHORIZED_CHANGED_PATH:${entry.path}`);
   fs.writeFileSync(eventPath(root, invocationId, "pre"), `${JSON.stringify({
     schemaVersion: 1,

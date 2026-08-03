@@ -5,7 +5,11 @@ import zhCN from 'antd/locale/zh_CN';
 import {ProConfigProvider} from '@ant-design/pro-components';
 import {OperationsApp} from './app/OperationsApp';
 import {operationsStore} from './app/state/OperationsStore';
-import {operationsAdminTheme} from './app/theme/operationsAdminTheme';
+import {operationsAdminTheme, operationsAdminThemeProfile} from './app/theme/operationsAdminTheme';
+
+document.documentElement.dataset.chromeProfile = operationsAdminThemeProfile.id;
+document.documentElement.dataset.consumerFace = operationsAdminThemeProfile.consumerFace;
+document.documentElement.style.colorScheme = operationsAdminThemeProfile.colorScheme;
 
 createRoot(document.querySelector('#app')!).render(
   <ConfigProvider locale={zhCN} theme={operationsAdminTheme}>

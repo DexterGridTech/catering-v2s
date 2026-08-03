@@ -9,6 +9,7 @@ describe('operations recovery completion focused IA contract', () => {
     expect(source).toContain("testId('operations-recovery-retry-entry')");
     expect(source).toContain("setEntryState({kind: 'unavailable'})");
     expect(source).toContain('useOverlayLock');
+    expect(source).toContain('className="auth-login-page"');
     expect(source).not.toMatch(/operationsWorkspacePasswordLogin|assignmentId|resetGenerationKey|localStorage|sessionStorage/);
   });
 });

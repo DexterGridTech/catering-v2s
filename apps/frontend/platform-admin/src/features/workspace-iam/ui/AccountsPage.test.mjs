@@ -14,7 +14,8 @@ test('workspace account page reaches a fresh owner detail only from the name lin
   assert.match(page, /useOverlayLock\(detail\.isOpen \|\| action !== undefined \|\| Boolean\(auditTarget\)\)/);
   assert.doesNotMatch(page, /onRow=/);
   assert.doesNotMatch(page, /<Drawer|<Modal/);
-  assert.doesNotMatch(page, /InvitationsPage|label: '邀请'|workspace-account-tabs/);
+  assert.match(page, /PlatformInvitationPanel/);
+  assert.match(page, /label: '邀请'/);
 });
 
 test('account commands remain separate confirmations and revoke has no client reason', () => {
@@ -26,8 +27,7 @@ test('account commands remain separate confirmations and revoke has no client re
   assert.doesNotMatch(page + detail + action, /撤销原因|reason:/);
 });
 
-test('platform invitation audit dispatch retires without damaging retained platform or operations audit paths', () => {
-  assert.doesNotMatch(platformAudit, /WORKSPACE_INVITATION/);
-  assert.match(platformAudit, /case "WORKSPACE_ROLE", "WORKSPACE_ACCOUNT" -> workspaceIamAudit\.read/);
+test('platform invitation audit dispatch is retained with the permanent platform invitation centre', () => {
+  assert.match(platformAudit, /"WORKSPACE_ROLE", "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION"/);
   assert.match(operationsAudit, /case "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION" -> workspaceIamAudit\.read/);
 });

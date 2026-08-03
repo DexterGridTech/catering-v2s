@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-BOOTSTRAP-U13",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-u13-http-diagnostic-bootstrap-delivery-manifest.json",
+  "deliveryManifestSha256": "410d84fea0bdd3093bada784afc600bcdec97ebf657e25b1a2f86aea68831d00",
+  "unitId": "RM1P6-HTTP-DIAGNOSTIC-BOOTSTRAP-U13",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["U13-C02-OWNER_BOOTSTRAP_EMPTY_STATE_ONLY"],
+  "businessEvidenceObligation": "NOT_APPLICABLE_DIAGNOSTIC_BOOTSTRAP",
+  "serialPredecessor": {"packageId": "RM1-C01-ROOT-CONTRACT-REGISTRY-U13", "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-u13-c01-root-contract-registry-package-exit.json", "exitSha256": "66dd1097deee8767b7949f314924c7c887d9eb1c21d4c63df8da02a30fc94421"},
+  "implementationAmendment": {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-bootstrap-implementation-amendment.md", "sha256": "eee07b6227d584cda6ac9044a4b0cdddd1b87e665b7ab577fbd5d13c3c09121d"},
+  "authorizationBoundary": "Dexter authorized U13 implementation. This package is only the platform-iam owner command necessary to establish one first platform actor for a future isolated HTTP diagnostic. It excludes HTTP exposure, generated artifacts, runner, DEV/seed/reset/L2, workload coverage, performance, business and cleanup claims."
+}

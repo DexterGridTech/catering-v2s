@@ -1,14 +1,15 @@
-import {Alert, Button, Descriptions, Empty, List, Modal, Pagination, Spin, Table, Typography} from 'antd';
+import {Alert, Button, Descriptions, Empty, List, Modal, Pagination, Space, Spin, Table, Typography} from 'antd';
 import {testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
-import type {AuditChange, AuditHistoryItem} from '../../../app/api/generated/operations-edge';
+import type {AuditChange, AuditHistoryItem, AuditHistoryPage} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 
 type AuditEntityType = Parameters<typeof operationsAdminRtkRequest.getOperationsEntityAuditHistory>[1]['query']['entityType'];
 export type OperationsAuditTarget = {entityType: AuditEntityType; entityId: string; displayName?: string};
 
 const actionLabels: Record<string, string> = {
+  COMMERCIAL_GROUP_INITIALIZED: '已初始化商业集团',
   ORGANIZATION_NODE_CREATED: '已创建组织节点', ORGANIZATION_NODE_UPDATED: '已更新组织节点', ORGANIZATION_NODE_STATUS_CHANGED: '已更新组织节点状态', PROJECT_PHASE_NAMES_REPLACED: '已更新项目分期名称',
   BRAND_CREATED: '已创建品牌', BRAND_UPDATED: '已更新品牌', BRAND_STATUS_CHANGED: '已更新品牌状态',
   TENANT_CREATED: '已创建经营租户', TENANT_UPDATED: '已更新经营租户', TENANT_STATUS_CHANGED: '已更新经营租户状态',
@@ -37,21 +38,31 @@ const field = (value: string) => fieldLabels[value] ?? '字段变更';
 export function OperationsAuditHistoryModal({open, target, groupWorkspaceKey, onClose}: {open: boolean; target?: OperationsAuditTarget; groupWorkspaceKey: string; onClose: () => void}) {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string>();
+  const [lastSuccessful, setLastSuccessful] = useState<{page: number; data: AuditHistoryPage}>();
   useOverlayLock(open);
 
-  useEffect(() => { if (!open) { setPage(1); setSelectedId(undefined); } }, [open, target?.entityId, target?.entityType]);
-  const request = useMemo(() => target ? operationsAdminRtkRequest.getOperationsEntityAuditHistory({}, {query: {groupWorkspaceKey, entityType: target.entityType, entityId: target.entityId, page, pageSize: 20}}) : undefined, [groupWorkspaceKey, page, target?.entityId, target?.entityType]);
+  useEffect(() => { if (!open) { setPage(1); setSelectedId(undefined); setLastSuccessful(undefined); } }, [open, target?.entityId, target?.entityType]);
+  const targetType = target?.entityType;
+  const targetId = target?.entityId;
+  const request = useMemo(() => targetType && targetId ? operationsAdminRtkRequest.getOperationsEntityAuditHistory({}, {query: {groupWorkspaceKey, entityType: targetType, entityId: targetId, page, pageSize: 10}}) : undefined, [groupWorkspaceKey, page, targetId, targetType]);
   const query = operationsRtk.useGetOperationsEntityAuditHistoryQuery(request!, {skip: !open || !request});
   const problem = query.error ? operationsProblemOf(query.error) : undefined;
-  const inaccessible = problem?.errorCode === 'PLATFORM_COMMON_ACCESS_DENIED' || problem?.errorCode === 'PLATFORM_COMMON_RESOURCE_NOT_FOUND';
-  useEffect(() => { if (open && inaccessible) onClose(); }, [inaccessible, onClose, open]);
-  useEffect(() => { if (query.data?.items) setSelectedId(query.data.items[0]?.id); }, [query.data?.items]);
-  const selected = query.data?.items.find((item) => item.id === selectedId) ?? query.data?.items[0];
+  const boundaryFailure = problem && (problem.status === 403 || problem.status === 404 || problem.errorCode === 'PLATFORM_COMMON_ACCESS_DENIED' || problem.errorCode === 'PLATFORM_COMMON_RESOURCE_NOT_FOUND');
+  useEffect(() => {
+    if (boundaryFailure) { onClose(); return; }
+    if (!query.data || query.error) return;
+    setLastSuccessful({page: query.data.page, data: query.data});
+    const firstItemId = query.data.items[0]?.id;
+    if (query.data.items.length && !query.data.items.some((item) => item.id === selectedId)) setSelectedId(firstItemId);
+  }, [boundaryFailure, onClose, query.data, query.error, selectedId]);
+  const visibleData = query.data ?? lastSuccessful?.data;
+  const selected = visibleData?.items.find((item) => item.id === selectedId) ?? visibleData?.items[0];
 
-  return <Modal title={target?.displayName ? `操作历史 · ${target.displayName}` : '操作历史'} open={open} onCancel={onClose} width={980} destroyOnHidden footer={<Button onClick={onClose}>关闭</Button>} {...testId('operations-audit-history-modal')}>
-    {problem && !inaccessible && <Alert type="error" showIcon message="无法读取操作历史" description={<Button type="link" onClick={() => void query.refetch()} {...testId('operations-audit-history-retry')}>重试</Button>} style={{marginBottom: 16}}/>}
-    {query.isLoading && !query.data ? <Spin {...testId('operations-audit-history-loading')}/> : !query.data ? null : query.data.items.length === 0 ? <Empty description="暂无操作历史" {...testId('operations-audit-history-empty')}/> : <div style={{display: 'grid', gridTemplateColumns: '330px minmax(0, 1fr)', gap: 20}}>
-      <section aria-label="操作历史时间列表" {...testId('operations-audit-history-list')}><List dataSource={query.data.items} renderItem={(item) => <List.Item style={{padding: 0}}><button type="button" onClick={() => setSelectedId(item.id)} {...testId(`operations-audit-history-item-${item.id}`)} style={{width: '100%', border: 0, background: item.id === selected?.id ? '#e6f4ff' : 'transparent', textAlign: 'left', padding: '12px 10px', cursor: 'pointer'}}><Typography.Text strong>{formatOccurredAt(item.occurredAt)}</Typography.Text><br/><Typography.Text>{item.actorDisplayName} · {action(item.action)}</Typography.Text></button></List.Item>}/><Pagination current={query.data.page} pageSize={query.data.pageSize} total={query.data.total} showSizeChanger={false} onChange={setPage} style={{marginTop: 12}} {...testId('operations-audit-history-pagination')}/></section>
+  return <Modal title={target?.displayName ? `操作历史 · ${target.displayName}` : '操作历史'} open={open} onCancel={onClose} width={980} centered styles={{body: {height: 640, overflowY: 'auto'}}} destroyOnHidden footer={<Button onClick={onClose}>关闭</Button>} {...testId('operations-audit-history-modal')}>
+    {query.isLoading && !visibleData ? <Spin {...testId('operations-audit-history-loading')}/> : !visibleData ? problem && !boundaryFailure ? <Alert type="error" showIcon title="无法读取操作历史" description={<Space><Typography.Text>请稍后重试。</Typography.Text><Button type="link" onClick={() => void query.refetch()} {...testId('operations-audit-history-retry')}>重试</Button></Space>} {...testId('operations-audit-history-initial-error')}/> : null : visibleData.items.length === 0 ? <Empty description="暂无操作历史" {...testId('operations-audit-history-empty')}/> : <div style={{display: 'grid', gridTemplateColumns: '330px minmax(0, 1fr)', gap: 20}}>
+      <section aria-label="操作历史时间列表" {...testId('operations-audit-history-list')}>
+        {problem && !boundaryFailure && <Alert type="error" showIcon title="无法读取操作历史" description={<Space><Typography.Text>请稍后重试。已保留上一页记录。</Typography.Text><Button type="link" onClick={() => void query.refetch()} {...testId('operations-audit-history-retry')}>重试</Button></Space>} style={{marginBottom: 16}}/>}
+        <List dataSource={visibleData.items} renderItem={(item) => <List.Item style={{padding: 0}}><button type="button" onClick={() => setSelectedId(item.id)} {...testId(`operations-audit-history-item-${item.id}`)} style={{width: '100%', border: 0, background: item.id === selected?.id ? 'var(--operations-admin-color-primary-bg)' : 'transparent', textAlign: 'left', padding: '12px 10px', cursor: 'pointer'}}><Typography.Text strong>{formatOccurredAt(item.occurredAt)}</Typography.Text><br/><Typography.Text>{item.actorDisplayName} · {action(item.action)}</Typography.Text></button></List.Item>}/><Pagination current={visibleData.page} pageSize={visibleData.pageSize} total={visibleData.total} showSizeChanger={false} onChange={setPage} style={{marginTop: 12}} {...testId('operations-audit-history-pagination')}/></section>
       <section aria-label="操作历史详情" {...testId('operations-audit-history-detail')}>{selected ? <AuditDetail item={selected}/> : <Empty description="请选择一条操作历史"/>}</section>
     </div>}
   </Modal>;

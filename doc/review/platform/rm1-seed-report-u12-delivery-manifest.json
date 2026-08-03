@@ -1,0 +1,899 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1-SEED-REPORT-U12",
+  "deliveryUnits": [
+    {
+      "id": "RM1-SEED-REPORT-U12",
+      "title": "RM1 seed report accounting and managed closure",
+      "approvedAssertions": [
+        "SERVER_CANONICAL_OPERATION_BINDING",
+        "REQUEST_LOCAL_DATABASE_ACCOUNTING",
+        "SEED_REPORT_LIFECYCLE_FAIL_CLOSED",
+        "REDACTED_SEED_REPORT"
+      ],
+      "changeSurfaces": [
+        {
+          "path": ".runtime/compliance-control/active-package.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "project-memory/operations/dev-command-separation.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "project-memory/index.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "project-memory/index.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/README.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "PLATFORM-BLUEPRINT.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "AGENTS.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "project-memory/required-inventory.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "tools/project-memory/cli.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "tools/compliance-control/cli.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "tools/platform-boundary-gates/cli.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-execution-deviation-memory-baseline-addendum.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-predecessor-platform-audit-codegen-baseline-addendum.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-platform-invitation-bootstrap-baseline-addendum.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-frontend-json-transport-baseline-addendum.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-platform-l2-ia-locator-baseline-addendum.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "contracts/openapi/edge.openapi.yaml",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "contracts/policy/affected-l2-registry.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "contracts/openapi/paths/platform-admin/audit-history.paths.yaml",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/platformL2.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-overview.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-account-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/role-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/contract-overview.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/organization-overview.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/platform-admin-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/l2/extension-field-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/architecture/commercial-group-boundary.test.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/PlatformApi.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/api/OperationsApi.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/http/wireRequestBody.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/index.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/build.gradle.kts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/store-contract/build.gradle.kts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace/src/test/java/com/catering/v2s/platform/workspace/api/WorkspaceAdministrationPageRequestTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrap.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/contract/OperationsContractControllerScopeAndCandidateTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/generate/edge-codegen.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Brand.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandCreateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/BrandUpdateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompany.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyCreateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/HeadCompanyUpdateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStore.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreCreateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/OrganizationStoreUpdateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContract.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractCreateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/StoreContractUpdateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/Tenant.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantCreateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/TenantUpdateRequest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntry.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/ContractWireMapper.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/BusinessEntityWireMapper.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileController.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileControllerTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/WorkspaceSessionWireMapper.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementControllerCandidateScopeTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrapTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/access-recovery.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryVerifyPage.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordRecoveryPasswordPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/authentication/ui/PlatformLoginPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "contracts/catalog/admin-catalog.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/operationsL2.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/authentication.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/invitation-acceptance.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/work-context.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/organization-hierarchy.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/business-entity-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/store-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/contract-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-input.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-implementation-amendment.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-problem-family.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u01-contract-face-denominator-problem-family.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-source-compliance-disposition.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-dexter-authorized-historical-receipt-recovery.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-package-exit.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/review/platform/rm1p6-u11-joint-remote-l2-delivery-manifest.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/review/platform",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-design.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/review/platform/rm1p6-u11-joint-remote-l2-design-adversarial-review-round1.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/review/platform/rm1p6-u11-joint-remote-l2-implementation-adversarial-review-round1.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-platform-audit-history-ui-ia-baseline.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/audit-history/index.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RoleDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.test.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.test.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/tests/architecture/platform-administration-boundary.test.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/store-profile/ui/FixedStoreContractDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserDetailDrawer.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.test.tsx",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapper.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapperTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/platform-admin/package.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/frontend/operations-admin/package.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/dev/r5-dev-runner.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/BusinessDataConfiguration.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/SeedRequestMetricsInterceptor.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTracker.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/persistence/CountingDataSource.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/SeedDiagnosticConfigurationTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTrackerTest.java",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/test/seed-report.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/test/seed-report.test.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "scripts/dev/r5-seed-bootstrap.mjs",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "project-memory/decisions/r5-full-seed-report-api-db-accounting.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-seed-report-and-rm1-closure-problem-family.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-seed-report-package-design.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/evidence/platform/rm1/p6/rm1-seed-report-package-input.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/review/platform/2026-08-01-rm1-seed-report-design-adversarial-review-round1.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/review/platform/2026-08-01-rm1-seed-report-design-adversarial-review-round2.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/review/platform/2026-08-01-rm1-seed-report-design-author-resolution.md",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "doc/review/platform/rm1-seed-report-u12-delivery-manifest.json",
+          "disposition": "update",
+          "target": "RM1 seed report and managed closure implementation"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/foundation/build.gradle.kts",
+          "disposition": "update",
+          "target": "foundation focused test dependency"
+        },
+        {
+          "path": "doc/review/platform/2026-08-01-rm1-seed-report-u12-implementation-adversarial-review-round1.md",
+          "disposition": "create",
+          "target": "independent implementation review"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-U01-CONTRACT-FACE-DENOMINATOR-20260801",
+  "genericProblem": "A contract-face gate reuses a denominator owned by a different closure and hardcodes historical values, so an accepted catalog/report or generated projection can drift while the gate reports the wrong failure.",
+  "rootCauseClass": "CROSS_CLOSURE_DENOMINATOR_ALIASING_AND_HARDCODED_GATE_BASELINE",
+  "finiteDenominator": [
+    "tools/platform-boundary-gates/cli.mjs validatePostGate0ContractFace",
+    "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json denominator and operations",
+    "doc/evidence/platform/r5-u01-edge-placement-resolution.json closure and operations",
+    "scripts/generate/edge-codegen.mjs current overlays and error-code closure",
+    "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json generated projection"
+  ],
+  "searchedSurfaces": [
+    "contract-face gate source",
+    "U01 accepted implementation catalog",
+    "U01 placement resolution report",
+    "edge codegen overlay and error closure",
+    "generated route-face registry",
+    "R5/RM1 design and remediation decisions"
+  ],
+  "searchQueries": [
+    "106 114 147 faceCounts operations contract-face",
+    "R5_CONTRACT_FACE_OPERATION_CLOSURE_INVALID",
+    "r24Overlay p3CUserManagementOperationOverlay",
+    "106 active error codes versus operation closure"
+  ],
+  "counterexamples": [
+    {
+      "surface": "scripts/generate/edge-codegen.mjs",
+      "finding": "106 is the active error-code closure and must remain owned by the error-code gate, not operation-face validation."
+    },
+    {
+      "surface": "generated route-face registry",
+      "finding": "147 operations (43/89/15) is a post-overlay projection and is not the U01 base placement report denominator."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-U01-01",
+      "surface": "tools/platform-boundary-gates/cli.mjs",
+      "confirmedRootCause": "The gate hardcodes 106 and 39/56/11, conflating the error-code closure with the U01 operation-face closure."
+    },
+    {
+      "findingId": "PF-U01-02",
+      "surface": "U01 catalog/report and codegen projection",
+      "confirmedRootCause": "The accepted base catalog/report is 114 and 43/56/15; R24 and P3-C overlays intentionally project 147 and 43/89/15 for generated consumers."
+    },
+    {
+      "findingId": "PF-U01-03",
+      "surface": "OperationsWorkspaceInvitationServerScopeTest",
+      "confirmedRootCause": "The controller now resolves command targets through WorkspaceUserService.resolveCommandTarget, but the focused test still stubs the retired resolveTaskScope method, so Mockito returns null and the test dereferences it."
+    },
+    {
+      "findingId": "PF-U01-04",
+      "surface": "PlatformAuthenticationServiceTest",
+      "confirmedRootCause": "The optional-filter page test hardcodes a total of one even though @BeforeAll shares a database across tests that create additional administrators, making the assertion depend on test execution order."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-U01-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/platform-boundary-gates/cli.mjs#validatePostGate0ContractFace"
+    },
+    {
+      "findingId": "PF-U01-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/generate/edge-codegen.mjs#load"
+    },
+    {
+      "findingId": "PF-U01-03",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java"
+    },
+    {
+      "findingId": "PF-U01-04",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java"
+    }
+  ]
+}

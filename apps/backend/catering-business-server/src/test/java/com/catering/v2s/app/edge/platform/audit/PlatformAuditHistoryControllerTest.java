@@ -1,16 +1,13 @@
 package com.catering.v2s.app.edge.platform.audit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
-import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.audit.contract.AuditHistoryPage;
 import com.catering.v2s.audit.contract.AuditReadScope;
@@ -28,20 +25,31 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** Guards the retired platform invitation audit dispatch while retaining account audit owner reads. */
+/** Guards platform-session-authorized workspace-IAM audit dispatch, including permanent invitation governance. */
 class PlatformAuditHistoryControllerTest {
     private static final String WORKSPACE_KEY = "platform-audit-test";
 
     @Test
-    void retiredInvitationTargetIsRejectedBeforeAnyOwnerRead() {
+    void workspaceInvitationTargetUsesPlatformSessionAndWorkspaceIamOwnerRead() {
         Fixture fixture = fixture();
+        UUID workspaceUuid = UUID.randomUUID();
+        UUID invitationId = UUID.randomUUID();
+        WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(
+            workspaceUuid, WORKSPACE_KEY, "Test workspace", "Operations", null, null,
+            "ENABLED", 1L, 1L, 1L, 1L, true);
+        AuditReadScope scope = new AuditReadScope(workspaceUuid, WORKSPACE_KEY);
+        AuditTarget target = new AuditTarget("WORKSPACE_INVITATION", invitationId.toString());
+        when(fixture.workspaces.requireEnabled(WORKSPACE_KEY)).thenReturn(workspace);
+        when(fixture.workspaceIamAudit.read(eq(scope), eq(target), eq(1L), eq(20L)))
+            .thenReturn(new AuditHistoryPage(List.of(), 1L, 20L, 0L));
 
-        assertThrows(InvalidEdgeRequestException.class, () -> fixture.controller.history(
-            fixture.request, WORKSPACE_KEY, "WORKSPACE_INVITATION", UUID.randomUUID().toString(), 1, 20));
+        var result = fixture.controller.history(
+            fixture.request, WORKSPACE_KEY, "WORKSPACE_INVITATION", invitationId.toString(), 1, 20);
 
+        assertEquals(0L, result.total());
         verify(fixture.authentication).requireActiveSession("platform-session");
-        verifyNoInteractions(fixture.groupWorkspaceAudit, fixture.workspaces, fixture.platformIamAudit,
-            fixture.workspaceIamAudit, fixture.extensionAudit, fixture.contractAudit);
+        verify(fixture.workspaces).requireEnabled(WORKSPACE_KEY);
+        verify(fixture.workspaceIamAudit).read(scope, target, 1, 20);
     }
 
     @Test

@@ -1,6 +1,5 @@
 package com.catering.v2s.platform.foundation.diagnostic;
 
-import java.util.Map;
 import java.util.Objects;
 
 /** A closed, secret-safe event envelope emitted by the platform diagnostic boundary. */
@@ -23,17 +22,29 @@ public record SecurityDiagnosticEvent(
         if (errorCode != null) errorCode = allowed(errorCode, "errorCode");
     }
 
-    public Map<String, Object> fields() {
-        return Map.ofEntries(
-                Map.entry("correlationId", context.correlationId()),
-                Map.entry("requestId", context.requestId()),
-                Map.entry("operationId", context.operationId()),
-                Map.entry("routeTemplate", context.routeTemplate()),
-                Map.entry("owner", context.owner()),
-                Map.entry("event", event), Map.entry("phase", phase),
-                Map.entry("outcome", outcome), Map.entry("durationMillis", durationMillis),
-                Map.entry("status", status == null ? "unassigned" : status),
-                Map.entry("errorCode", errorCode == null ? "unassigned" : errorCode));
+    /**
+     * Closed logging fields only. This is deliberately not an untyped map: the event has a fixed,
+     * secret-safe schema and cannot be confused with a database row or command payload.
+     */
+    public Fields fields() {
+        return new Fields(
+                context.correlationId(), context.requestId(), context.operationId(), context.routeTemplate(), context.owner(),
+                event, phase, outcome, durationMillis, status, errorCode);
+    }
+
+    public record Fields(
+            String correlationId,
+            String requestId,
+            String operationId,
+            String routeTemplate,
+            String owner,
+            String event,
+            String phase,
+            String outcome,
+            long durationMillis,
+            Integer status,
+            String errorCode
+    ) {
     }
 
     private static String allowed(String value, String name) {

@@ -9,6 +9,8 @@ public record OrganizationNode(
     String code,
     String name,
     String notes,
+    tools.jackson.databind.JsonNode extensionValues,
+    Long extensionRuleRevision,
     String status,
     java.util.List<OrganizationNodePhasesItem> phases,
     Long revision,

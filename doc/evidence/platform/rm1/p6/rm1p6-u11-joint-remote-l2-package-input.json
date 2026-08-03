@@ -4,7 +4,7 @@
   "packageId": "RM1P6-JOINT-REMOTE-L2-U11",
   "status": "ACTIVE_NOT_EXIT",
   "deliveryManifestPath": "doc/review/platform/rm1p6-u11-joint-remote-l2-delivery-manifest.json",
-  "deliveryManifestSha256": "6b819669684dfb8aa8c7325f4746427804206e770e35a95894016d738d69ddf7",
+  "deliveryManifestSha256": "ffb579ea17f6721277a08b56389f2937800c9c01aedc105e62c9b3e259e9b25c",
   "unitId": "RM1P6-JOINT-REMOTE-L2-U11",
   "standardsPhase": "R5",
   "requiredStandardsRefs": [
@@ -32,7 +32,7 @@
   },
   "implementationAmendment": {
     "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-implementation-amendment.md",
-    "sha256": "b753540faa2dc059f3902d715779d91d592154990dc170fdef89b55ab1bb412c"
+      "sha256": "72a8b10e6f044922f30ae5c72d84972ecaede2f2116125fc58621d4c05ada2eb"
   },
   "authorizationBoundary": "Direct local-execution, remote-middleware joint L2 under Dexter P6 authorization; managed local Spring Boot/two Web/Playwright and tunnel are permitted. A short-lived WebApplicationType.NONE owner bootstrap may replace the retired platform invitation fixture calls only through WorkspaceAdministrationService.requireEnabled and WorkspaceInvitationService.create with exactly one explicit GROUP, REGION, PROJECT, HEAD_COMPANY or STORE assignment intent; the MVC-only EdgeWebConfiguration may be servlet-conditioned solely so this bootstrap stays non-web. Platform invitation Controller/OpenAPI restoration, servlet-listener fallback, business SQL, remote app/browser runtime and reset are not permitted."
 }

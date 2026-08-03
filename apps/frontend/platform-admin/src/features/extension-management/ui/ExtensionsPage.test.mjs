@@ -18,13 +18,13 @@ test('extension definition uses the approved page-to-edit path and no unapproved
   assert.match(drawer, /useSubmissionLifecycle/);
   assert.match(drawer, /replaceExtensionDefinition/);
   assert.match(drawer, /headers: \{'Idempotency-Key': getIdempotencyKey\(\)\}/);
-  assert.match(drawer, /field\.key \? \{key: field\.key\}/);
+  assert.match(drawer, /key: field\.key\.trim\(\)/);
   assert.doesNotMatch(drawer, /randomUUID|crypto\.random/);
   assert.match(drawer, /type === 'SELECT' &&/);
   assert.match(drawer, /清除单选选项/);
   assert.match(drawer, /isExisting \? <Input/);
   assert.doesNotMatch(drawer, /显示后缀/);
-  assert.match(drawer, /extension-definition-move-up-/);
+  assert.doesNotMatch(drawer, /extension-definition-move-up-/);
   assert.match(modal, /useOverlayLock/);
   assert.match(modal, /字段配置已更新。/);
   assert.match(modal, /查看最新配置/);

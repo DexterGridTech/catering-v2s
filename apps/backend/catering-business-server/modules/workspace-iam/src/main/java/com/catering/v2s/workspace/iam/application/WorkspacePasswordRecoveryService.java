@@ -33,7 +33,7 @@ public class WorkspacePasswordRecoveryService {
 
     /** Compatibility constructor for focused owner tests; production injects all guards. */
     public WorkspacePasswordRecoveryService(JdbcTemplate jdbc, TimeProvider time) {
-        this(jdbc, time, new WorkspaceOtpRateLimitService(jdbc, time), new WorkspaceLoginRateLimitService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, false);
+        this(jdbc, time, new WorkspaceOtpRateLimitService(jdbc, time), new WorkspaceLoginRateLimitService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("", false));
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -43,14 +43,14 @@ public class WorkspacePasswordRecoveryService {
         WorkspaceOtpRateLimitService otpLimits,
         WorkspaceLoginRateLimitService recoveryLimits,
         WorkspaceStatusLookup workspaces,
-        @org.springframework.beans.factory.annotation.Value("${platform.otp.debug-code-exposure:false}") boolean debugCodeExposure
+        com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy
     ) {
         this.jdbc = jdbc;
         this.time = time;
         this.otpLimits = otpLimits;
         this.recoveryLimits = recoveryLimits;
         this.workspaces = workspaces;
-        this.debugCodeExposure = debugCodeExposure;
+        this.debugCodeExposure = otpDebugExposurePolicy.enabled();
     }
 
     @Transactional(noRollbackFor = WorkspaceAuthenticationService.LoginRateLimitedException.class)

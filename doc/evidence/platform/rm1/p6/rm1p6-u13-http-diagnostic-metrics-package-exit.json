@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-METRICS-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/EdgeWebConfiguration.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/SeedRequestMetricsInterceptor.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/SeedDiagnosticConfigurationTest.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/HttpRequestMetricsInterceptorTest.java",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-metrics-package-exit.json",
+    "doc/review/platform/rm1p6-u13-http-diagnostic-metrics-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "gradle :apps:backend:catering-business-server:test --tests com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptorTest",
+      "node --test scripts/test/http-diagnostic-inventory.test.mjs scripts/test/http-diagnostic-report.test.mjs scripts/test/http-diagnostic-scenarios.test.mjs",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/code-layout",
+      "scripts/check/openapi-contracts"
+    ],
+    "assertions": [
+      "the Seed-named implementation and test shape are removed; configuration has one generic interceptor",
+      "r5-full preserves Seed-specific run variable/header compatibility and server-canonical metadata",
+      "rm1-http-diagnostic has an isolated profile/header set and safe metadata-mismatch event",
+      "invalid production activation remains off and event output excludes the per-run secret"
+    ]
+  },
+  "harnessTrimObservation": {"pathListRetained": true, "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION", "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"},
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "scopeStatement": "staticProofStatus=PASS proves only the bounded generic instrumentation. It is not an HTTP workload run, full interface coverage, performance, DEV, Seed/reset, browser L2, business PASS or cleanup PASS."
+}

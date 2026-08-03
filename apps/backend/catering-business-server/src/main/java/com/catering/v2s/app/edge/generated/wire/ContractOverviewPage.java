@@ -8,6 +8,7 @@ public record ContractOverviewPage(
     Long itemsAsOf,
     java.util.List<String> itemsUnresolved,
     java.util.List<ContractOverviewPageFilterOptionsItem> filterOptions,
+    java.util.List<String> phaseOptions,
     String filterOptionsSourceStatus,
     Long filterOptionsAsOf,
     java.util.List<String> filterOptionsUnresolved

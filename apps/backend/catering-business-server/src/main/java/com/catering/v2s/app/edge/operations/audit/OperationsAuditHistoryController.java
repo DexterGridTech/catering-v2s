@@ -58,6 +58,7 @@ public final class OperationsAuditHistoryController {
         requireHostAuthorization(session, entityType, entityId);
         var result = switch (entityType) {
             case "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION" -> workspaceIamAudit.read(scope, target, page, pageSize);
+            case "COMMERCIAL_GROUP" -> organizationAudit.readCommercialGroup(scope, target, page, pageSize);
             case "ORGANIZATION_NODE", "BRAND", "TENANT", "HEAD_COMPANY", "STORE" -> organizationAudit.read(scope, target, page, pageSize);
             case "STORE_CONTRACT" -> contractAudit.read(scope, target, page, pageSize);
             default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
@@ -74,6 +75,7 @@ public final class OperationsAuditHistoryController {
         switch (entityType) {
             case "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION" ->
                 authorization.requireWorkspaceSubject(session, entityType, id);
+            case "COMMERCIAL_GROUP" -> authorization.requireGroupHost(session, PageDesignKeys.PG_ORG_STRUCTURE);
             case "ORGANIZATION_NODE" -> {
                 var item = organizationOverview.detail(
                     session.workspaceUuid(), session.groupWorkspaceKey(), "HIERARCHY", id

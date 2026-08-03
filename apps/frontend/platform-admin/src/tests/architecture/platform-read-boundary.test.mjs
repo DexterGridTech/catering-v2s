@@ -17,8 +17,8 @@ test('platform organization and contract overview use generated RTK reads and ow
   assert.match(source, /'组织架构'.*'品牌'.*'经营租户'.*'总公司'.*'门店'/s);
   assert.match(source, /gridTemplateColumns/);
   assert.match(source, /请选择左侧组织查看详情/);
-  assert.match(source, /<Button type="link" onClick=\{\(\) => openOrganizationDetail\(row\.id\)\}>/);
-  assert.match(source, /<Button type="link" onClick=\{\(\) => openContractDetail\(row\.contractRef\.id\)\}>/);
+  assert.match(source, /<Button type="link" onClick=\{\(\) => openOrganizationDetail\(row\.id\)\}[^>]*>/);
+  assert.match(source, /<Button type="link" onClick=\{\(\) => openContractDetail\(row\.contractRef\.id\)\}[^>]*>/);
   assert.doesNotMatch(source, /platformClient\.|\bfetch\(|createApi\(|createSlice\(|useDispatch\(|useSelector\(/);
   assert.doesNotMatch(source, /onRow=/);
 });

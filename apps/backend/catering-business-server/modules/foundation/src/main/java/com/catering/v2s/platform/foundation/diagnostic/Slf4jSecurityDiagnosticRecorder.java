@@ -11,18 +11,18 @@ public final class Slf4jSecurityDiagnosticRecorder implements SecurityDiagnostic
     public void record(SecurityDiagnosticEvent event) {
         var fields = event.fields();
         LOG.atInfo()
-                .addKeyValue("correlationId", fields.get("correlationId"))
-                .addKeyValue("requestId", fields.get("requestId"))
-                .addKeyValue("operationId", fields.get("operationId"))
-                .addKeyValue("routeTemplate", fields.get("routeTemplate"))
-                .addKeyValue("owner", fields.get("owner"))
-                .addKeyValue("event", fields.get("event"))
-                .addKeyValue("phase", fields.get("phase"))
-                .addKeyValue("outcome", fields.get("outcome"))
-                .addKeyValue("durationMillis", fields.get("durationMillis"))
-                .addKeyValue("status", fields.get("status"))
-                .addKeyValue("errorCode", fields.get("errorCode"))
-                .log("security-diagnostic");
+                .addKeyValue("correlationId", fields.correlationId())
+                .addKeyValue("requestId", fields.requestId())
+                .addKeyValue("operationId", fields.operationId())
+                .addKeyValue("routeTemplate", fields.routeTemplate())
+                .addKeyValue("owner", fields.owner())
+                .addKeyValue("event", fields.event())
+                .addKeyValue("phase", fields.phase())
+                .addKeyValue("outcome", fields.outcome())
+                .addKeyValue("durationMillis", fields.durationMillis())
+                .addKeyValue("status", fields.status() == null ? "unassigned" : fields.status())
+                .addKeyValue("errorCode", fields.errorCode() == null ? "unassigned" : fields.errorCode())
+                .log(render(fields));
     }
 
     @Override
@@ -31,6 +31,20 @@ public final class Slf4jSecurityDiagnosticRecorder implements SecurityDiagnostic
         LOG.atWarn()
                 .addKeyValue("event", "DIAGNOSTIC_WRITE_FAILED")
                 .addKeyValue("operationId", failedEvent.context().operationId())
-                .log("security-diagnostic");
+                .log("security-diagnostic event=DIAGNOSTIC_WRITE_FAILED operationId={}", failedEvent.context().operationId());
+    }
+
+    static String render(SecurityDiagnosticEvent.Fields fields) {
+        return "security-diagnostic correlationId=" + fields.correlationId()
+                + " requestId=" + fields.requestId()
+                + " operationId=" + fields.operationId()
+                + " routeTemplate=" + fields.routeTemplate()
+                + " owner=" + fields.owner()
+                + " event=" + fields.event()
+                + " phase=" + fields.phase()
+                + " outcome=" + fields.outcome()
+                + " durationMillis=" + fields.durationMillis()
+                + " status=" + (fields.status() == null ? "unassigned" : fields.status())
+                + " errorCode=" + (fields.errorCode() == null ? "unassigned" : fields.errorCode());
     }
 }

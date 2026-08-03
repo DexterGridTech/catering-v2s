@@ -1,5 +1,5 @@
 import {Alert, Button, Drawer, Select, Space, Tag} from 'antd';
-import {adminDrawerSurfaceProps, testId, useAsyncGenerationGuard, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, formatNameCode, testId, useAsyncGenerationGuard, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type HeadCompany} from '../../../app/api/generated/operations-edge';
 import {ACTION_CAPABILITIES, adminCatalog} from '../../../app/catalog/generatedAdminCatalog';
@@ -55,7 +55,7 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     lifecycle.reset();
     void adapter.searchEnabledBrands(searchContext, undefined).then((page) => {
       if (!candidatesGeneration.isCurrent(request)) return;
-      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: `${brand.name}（${brand.code}）`})));
+      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: formatNameCode(brand.name, brand.code)})));
       setCandidateProblem(undefined);
     }).catch(() => {
       if (candidatesGeneration.isCurrent(request)) setCandidateProblem('候选品牌加载失败。');
@@ -67,7 +67,7 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     setCandidateProblem(undefined);
     void adapter.searchEnabledBrands(searchContext, value).then((page) => {
       if (!candidatesGeneration.isCurrent(request)) return;
-      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: `${brand.name}（${brand.code}）`})));
+      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: formatNameCode(brand.name, brand.code)})));
     }).catch(() => {
       if (candidatesGeneration.isCurrent(request)) setCandidateProblem('候选品牌加载失败。');
     });
@@ -98,26 +98,23 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
   return <Drawer
     title={`${authorizationActionLabel}：${headCompany?.name ?? ''}`}
     open={Boolean(headCompany)}
-    width={600}
+    size={600}
     destroyOnHidden
-    maskClosable={false}
     keyboard={!submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
     {...adminDrawerSurfaceProps}
     footer={<Button onClick={lifecycle.requestClose} disabled={submitting}>关闭</Button>}
   >
-    {commandProblem && <Alert type="error" showIcon message={authorizationActionLabel} description={commandProblem} style={{marginBottom: 16}}/>}
+    {commandProblem && <Alert type="error" showIcon title={authorizationActionLabel} description={commandProblem} style={{marginBottom: 16}}/>}
     <Space.Compact block style={{marginBottom: 16}}>
       <Select
         aria-label="候选品牌"
-        showSearch
-        filterOption={false}
+        showSearch={{filterOption: false, onSearch: searchCandidates}}
         value={selectedBrandId}
         placeholder="搜索并选择可授权品牌"
         loading={submitting}
         options={candidateChoices}
-        onSearch={searchCandidates}
         onChange={setSelectedBrandId}
         notFoundContent={candidateProblem ?? undefined}
         {...testId('operations-head-company-brand-candidate')}
@@ -132,9 +129,9 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
         添加
       </Button>
     </Space.Compact>
-    {headCompany?.authorizedBrands.length ? <Space direction="vertical" style={{width: '100%'}}>
+    {headCompany?.authorizedBrands.length ? <Space orientation="vertical" style={{width: '100%'}}>
       {headCompany.authorizedBrands.map((brand) => <Space key={brand.id} style={{justifyContent: 'space-between', width: '100%'}}>
-        <Tag>{brand.name}（{brand.code}）</Tag>
+        <Tag>{formatNameCode(brand.name, brand.code)}</Tag>
         <Button
           danger
           disabled={submitting}
@@ -145,12 +142,12 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
           移除
         </Button>
       </Space>)}
-    </Space> : <Alert type="info" showIcon message="当前没有已授权品牌。"/>}
+    </Space> : <Alert type="info" showIcon title="当前没有已授权品牌。"/>}
   </Drawer>;
 }
 
 function messageFor(result: Extract<HeadCompanyBrandAuthorizationResult, {kind: 'failure'}>) {
   return result.errorCode === 'ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE'
     ? '该品牌仍被门店使用。'
-    : '操作未完成，请根据错误码检查后重试。';
+    : '操作未完成，请稍后重试。';
 }

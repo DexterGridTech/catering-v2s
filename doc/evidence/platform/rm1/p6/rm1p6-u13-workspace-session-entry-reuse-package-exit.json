@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-WORKSPACE-SESSION-ENTRY-REUSE-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    ".runtime/compliance-control/problem-family-dispositions/b8277f5bf6319fa200b61a59be60022cd8d3112a1f5d9d578967c26461265c36.json",
+    "AGENTS.md",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationControllerTest.java",
+    "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-package-exit.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-package-input.json",
+    "doc/review/platform/rm1p6-u13-workspace-session-entry-reuse-delivery-manifest.json",
+    "project-memory/index.json",
+    "project-memory/index.md",
+    "project-memory/kernel/05-evidence-runtime-and-git.md",
+    "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+    "project-memory/required-inventory.json",
+    "scripts/README.md",
+    "scripts/dev/r5-dev-runner.mjs",
+    "scripts/env/check-runtime-resource-budget",
+    "scripts/test/r5-remote-testcontainers.mjs",
+    "tools/compliance-control/cli.mjs",
+    "tools/project-memory/cli.mjs"
+  ],
+  "focusedProof": {
+    "commands": [
+      "gradle :apps:backend:catering-business-server:testClasses",
+      "node scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:test",
+      "node scripts/test/r5-remote-testcontainers.mjs --self-test",
+      "scripts/env/check-runtime-resource-budget --self-test",
+      "scripts/check/project-memory",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/remediation-compliance static-scan"
+    ],
+    "remoteRun": {
+      "manifest": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785580180074-28828/run-manifest.json",
+      "task": ":apps:backend:catering-business-server:test",
+      "technicalTestStatus": "PASS",
+      "cleanup": "PASS"
+    },
+    "assertions": [
+      "password and OTP operations return the workspace-iam composed session entry, avoiding a second canonical session-entry read at the edge",
+      "the session-entry owner read validates groupWorkspaceKey before returning canonical entry facts",
+      "the remote runner refuses identity-matching prior managed work, excessive prior RSS, and stale Testcontainers resources before it starts; it reports residual owned Testcontainers resources as cleanup failure",
+      "package exit retains only a reviewable actual-path list; prewrite baseline and hash/receipt exact-set accounting are retired by Dexter decision"
+    ],
+    "dynamicBoundary": "The remote run is a managed Testcontainers technical backend suite. PASS proves Gradle test and owned cleanup only; it is not browser L2, UAT, Seed/reset, CRUD performance, or user-business PASS."
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "business": "NOT_APPLICABLE_OWNER_LOCAL_EFFICIENCY_ONLY",
+  "cleanup": "PASS_REMOTE_TESTCONTAINERS_TECHNICAL_PROOF_ONLY",
+  "scopeStatement": "C14 removes duplicate owner session-entry composition and adds managed-runtime resource budget controls. It changes no HTTP schema, browser journey, Seed/reset or UAT claim."
+}

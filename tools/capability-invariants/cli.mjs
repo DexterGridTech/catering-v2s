@@ -10,6 +10,7 @@ const OPENAPI_ROOT = "contracts/openapi";
 const REGISTRY_PATH = "contracts/registry/iam-org-governance-manifest.json";
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const AUTHENTICATED_MODE = "AUTHENTICATED_WORKSPACE";
+const PLATFORM_SUPER_ADMIN_MODE = "AUTHENTICATED_PLATFORM_SUPER_ADMIN";
 const PUBLIC_MODE = "PUBLIC_PROTOCOL";
 const R24_SHARED_BUSINESS_CAPABILITY = "BC-ORG-HEAD-COMPANY-BRAND";
 const R24_OPERATION_REQUIREMENTS = new Map([
@@ -312,15 +313,25 @@ export function mutatingOperationInventory(root = process.cwd()) {
         if (typeof operation["x-owner-module"] !== "string" || operation["x-owner-module"].length === 0) {
           fail(`CAPABILITY_OWNER_MODULE_MISSING:${operation.operationId}`);
         }
+        const anonymousProtocol = Array.isArray(operation.security) && operation.security.length === 0;
+        const authorizationMode = consumerFaces[0] === "platform-admin" && !anonymousProtocol
+          ? PLATFORM_SUPER_ADMIN_MODE
+          : anonymousProtocol ? PUBLIC_MODE : AUTHENTICATED_MODE;
+        const requiredCapability = authorizationMode === PLATFORM_SUPER_ADMIN_MODE
+          ? operation["x-required-platform-authorization"]
+          : authorizationMode === PUBLIC_MODE
+            ? operation["x-required-owner-protocol"] ?? operation["x-required-capability"]
+            : operation["x-required-capability"];
         rows.push({
           sourcePath,
           operationId: operation.operationId,
           method: String(method).toUpperCase(),
           path: route,
           consumerFace: consumerFaces[0],
-          anonymousProtocol: Array.isArray(operation.security) && operation.security.length === 0,
+          anonymousProtocol,
+          authorizationMode,
           ownerModule: operation["x-owner-module"],
-          requiredCapability: operation["x-required-capability"],
+          requiredCapability,
         });
       }
     }
@@ -359,10 +370,10 @@ function indexBy(values, key, duplicateReason) {
 
 function validateResolver(resolver) {
   expectObject(resolver, "CAPABILITY_RESOLVER_INVALID");
-  if (!["AUTHENTICATED_WORKSPACE_TARGET_SCOPE", "PUBLIC_PROTOCOL_TOKEN", "PUBLIC_PROTOCOL_OWNER_FACT"].includes(resolver.resolverId)) {
+  if (!["AUTHENTICATED_WORKSPACE_TARGET_SCOPE", "PLATFORM_SESSION_ENABLED_ADMIN", "PUBLIC_PROTOCOL_TOKEN", "PUBLIC_PROTOCOL_OWNER_FACT"].includes(resolver.resolverId)) {
     fail(`CAPABILITY_RESOLVER_ID_INVALID:${resolver.resolverId || "UNSET"}`);
   }
-  if (![AUTHENTICATED_MODE, PUBLIC_MODE].includes(resolver.authorizationMode)) fail(`CAPABILITY_RESOLVER_MODE_INVALID:${resolver.resolverId}`);
+  if (![AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE].includes(resolver.authorizationMode)) fail(`CAPABILITY_RESOLVER_MODE_INVALID:${resolver.resolverId}`);
   if (!Array.isArray(resolver.inputs) || !Array.isArray(resolver.outputs) || !Array.isArray(resolver.clientDerivedInputsForbidden)) {
     fail(`CAPABILITY_RESOLVER_SHAPE_INVALID:${resolver.resolverId}`);
   }
@@ -374,6 +385,11 @@ function validateResolver(resolver) {
   if (resolver.authorizationMode === AUTHENTICATED_MODE
     && !exactSet(resolver.inputs, ["authenticatedWorkspaceSession", "serverResolvedResourceTypeAndId", "assignmentNode"])) {
     fail(`CAPABILITY_WORKSPACE_RESOLVER_INPUT_INVALID:${resolver.resolverId}`);
+  }
+  if (resolver.authorizationMode === PLATFORM_SUPER_ADMIN_MODE
+    && (!exactSet(resolver.inputs, ["activePlatformSession", "enabledPlatformAdministrator"])
+      || resolver.authenticatedWorkspaceSessionForbidden !== true)) {
+    fail(`CAPABILITY_PLATFORM_RESOLVER_INPUT_INVALID:${resolver.resolverId}`);
   }
   if (resolver.authorizationMode === PUBLIC_MODE
     && (!exactSet(resolver.inputs, resolver.resolverId === "PUBLIC_PROTOCOL_OWNER_FACT"
@@ -561,7 +577,7 @@ export function validateCapabilityInvariants(root = process.cwd()) {
   expectObject(manifest, "CAPABILITY_REGISTRY_INVALID");
   if (manifest.schemaVersion !== 1 || manifest.kind !== "iam-org-governance-manifest"
     || !exactSet(manifest.operationIdentityKey || [], ["operationId", "method", "path", "consumerFace"])
-    || !exactSet(manifest.authorizationModes || [], [AUTHENTICATED_MODE, PUBLIC_MODE])) {
+    || !exactSet(manifest.authorizationModes || [], [AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE])) {
     fail("CAPABILITY_REGISTRY_HEADER_INVALID");
   }
   if (!manifest.generationTargets || typeof manifest.generationTargets !== "object"
@@ -632,6 +648,7 @@ export function validateCapabilityInvariants(root = process.cwd()) {
       && mapping.resourceTypeCapabilities.REGION === "BC-ORG-REGION-EDIT"
       && mapping.resourceTypeCapabilities.PROJECT === "BC-ORG-PROJECT-EDIT";
     const validFixedCapability = !orgNodeEdit
+      && row.authorizationMode === AUTHENTICATED_MODE
       && typeof requirement.capabilityKey === "string"
       && (r24RequirementId
         ? requirement.capabilityKey === R24_SHARED_BUSINESS_CAPABILITY
@@ -652,7 +669,13 @@ export function validateCapabilityInvariants(root = process.cwd()) {
     if (!r24RequirementId && requirement.capabilityKey === R24_SHARED_BUSINESS_CAPABILITY) {
       failures.push(`CAPABILITY_R24_BUSINESS_CAPABILITY_OVERBROAD:${row.operationId}`);
     }
-    if ((!orgNodeEdit && !validFixedCapability)
+    const noWorkspaceCapability = row.authorizationMode !== AUTHENTICATED_MODE
+      && requirement.capabilityKey === undefined
+      && requirement.capabilityMapping === undefined;
+    if (row.consumerFace === "platform-admin" && (requirement.capabilityKey !== undefined || requirement.capabilityMapping !== undefined)) {
+      failures.push(`CAPABILITY_PLATFORM_CAPABILITY_FORBIDDEN:${row.operationId}`);
+    }
+    if ((!orgNodeEdit && !validFixedCapability && !noWorkspaceCapability)
       || typeof requirement.ownerModule !== "string" || requirement.ownerModule !== row.ownerModule
       || typeof requirement.ownerRecheckId !== "string" || typeof requirement.typedProblemMappingId !== "string"
       || typeof requirement.redFixtureId !== "string" || requirement.noClientDerivedAuthorization !== true) {
@@ -660,7 +683,7 @@ export function validateCapabilityInvariants(root = process.cwd()) {
       continue;
     }
     const publicOperation = row.anonymousProtocol === true;
-    const expectedMode = publicOperation ? PUBLIC_MODE : AUTHENTICATED_MODE;
+    const expectedMode = row.authorizationMode;
     if (requirement.authorizationMode !== expectedMode) failures.push(`CAPABILITY_AUTHORIZATION_MODE_DRIFT:${row.operationId}`);
     const resolver = resolvers.get(requirement.resolverId);
     if (!resolver || resolver.authorizationMode !== expectedMode) failures.push(`CAPABILITY_RESOLVER_BINDING_DRIFT:${row.operationId}`);
@@ -676,6 +699,7 @@ export function validateCapabilityInvariants(root = process.cwd()) {
     }
     if (publicOperation && requirement.authorizationMode !== PUBLIC_MODE) failures.push(`CAPABILITY_PUBLIC_PROTOCOL_REQUIRED:${row.operationId}`);
     if (!publicOperation && requirement.authorizationMode === PUBLIC_MODE) failures.push(`CAPABILITY_PUBLIC_PROTOCOL_OVERBROAD:${row.operationId}`);
+    if (row.consumerFace === "platform-admin" && !publicOperation && requirement.authorizationMode !== PLATFORM_SUPER_ADMIN_MODE) failures.push(`CAPABILITY_PLATFORM_SUPER_ADMIN_REQUIRED:${row.operationId}`);
   }
   if (failures.length) fail(failures.join("\n"));
   return {inventory, manifest, requirements: [...requirements.values()]};
@@ -689,21 +713,28 @@ function writeFixture(root, operation) {
   const orgNodeEdit = requirementId === "ORG_NODE_EDIT";
   const method = (operation.method || "POST").toLowerCase();
   const anonymousProtocol = Array.isArray(operation.security) ? operation.security.length === 0 : operation.consumerFace === "public";
+  const platformSuperAdmin = operation.consumerFace === "platform-admin" && !anonymousProtocol;
+  const contractAuthorization = platformSuperAdmin
+    ? {"x-required-platform-authorization": requirementId}
+    : anonymousProtocol
+      ? {"x-required-owner-protocol": requirementId}
+      : {"x-required-capability": requirementId};
   fs.writeFileSync(path.join(root, "contracts/openapi/fixture.yaml"), JSON.stringify({paths: {[operation.path]: {[method]: {
     operationId: operation.operationId,
     security: operation.security ?? (operation.consumerFace === "public" ? [] : [{session: []}]),
     "x-consumer-faces": [operation.consumerFace],
     "x-owner-module": operation.ownerModule,
-    "x-required-capability": requirementId,
+    ...contractAuthorization,
   }}}}, null, 2));
   fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify({
     schemaVersion: 1,
     kind: "iam-org-governance-manifest",
     authority: "fixture",
     operationIdentityKey: ["operationId", "method", "path", "consumerFace"],
-    authorizationModes: [AUTHENTICATED_MODE, PUBLIC_MODE],
+    authorizationModes: [AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE],
     resolvers: [
       {resolverId: "AUTHENTICATED_WORKSPACE_TARGET_SCOPE", authorizationMode: AUTHENTICATED_MODE, inputs: ["authenticatedWorkspaceSession", "serverResolvedResourceTypeAndId", "assignmentNode"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"]},
+      {resolverId: "PLATFORM_SESSION_ENABLED_ADMIN", authorizationMode: PLATFORM_SUPER_ADMIN_MODE, inputs: ["activePlatformSession", "enabledPlatformAdministrator"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
       {resolverId: "PUBLIC_PROTOCOL_TOKEN", authorizationMode: PUBLIC_MODE, inputs: ["serverValidatedInvitationOrResetToken", "serverResolvedResourceTypeAndId"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
     ],
     ownerRechecks: [{ownerRecheckId: "OWNER_RECHECK_" + ownerId, ownerModule: operation.ownerModule, requiredInOwnerCommand: true, transactionRequirement: "REQUIRED", crossOwnerWritesUsePublicCommandApi: true}],
@@ -712,9 +743,9 @@ function writeFixture(root, operation) {
     requirements: [{
       requirementId,
       operationIdentity: {operationId: operation.operationId, method: method.toUpperCase(), path: operation.path, consumerFace: operation.consumerFace},
-      authorizationMode: anonymousProtocol ? PUBLIC_MODE : AUTHENTICATED_MODE,
-      ...(orgNodeEdit ? {capabilityMapping: {kind: "SERVER_RESOLVED_RESOURCE_TYPE", resourceTypeCapabilities: {REGION: "BC-ORG-REGION-EDIT", PROJECT: "BC-ORG-PROJECT-EDIT"}, unsupportedResourceTypeDecision: "DENY"}} : {capabilityKey: operation.capabilityKey || "CAP_" + requirementId.replace(/^REQ_/, "")}),
-      resolverId: anonymousProtocol ? "PUBLIC_PROTOCOL_TOKEN" : "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      authorizationMode: platformSuperAdmin ? PLATFORM_SUPER_ADMIN_MODE : anonymousProtocol ? PUBLIC_MODE : AUTHENTICATED_MODE,
+      ...(!platformSuperAdmin && !anonymousProtocol && (orgNodeEdit ? {capabilityMapping: {kind: "SERVER_RESOLVED_RESOURCE_TYPE", resourceTypeCapabilities: {REGION: "BC-ORG-REGION-EDIT", PROJECT: "BC-ORG-PROJECT-EDIT"}, unsupportedResourceTypeDecision: "DENY"}} : {capabilityKey: operation.capabilityKey || "CAP_" + requirementId.replace(/^REQ_/, "")})),
+      resolverId: platformSuperAdmin ? "PLATFORM_SESSION_ENABLED_ADMIN" : anonymousProtocol ? "PUBLIC_PROTOCOL_TOKEN" : "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       ownerModule: operation.ownerModule,
       ownerRecheckId: "OWNER_RECHECK_" + ownerId,
       typedProblemMappingId: "PROBLEM_" + ownerId + "_TYPED_OWNER_EXCEPTION",
@@ -907,11 +938,18 @@ function selfTest() {
     try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_PROTECTED_SESSION_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("CAPABILITY_AUTHORIZATION_MODE_DRIFT:changeCurrentPlatformPassword")) throw error; }
 
+    writeFixture(root, protectedSessionOperation);
+    const platformCapabilityRegistry = governanceManifest(root);
+    platformCapabilityRegistry.requirements[0].capabilityKey = "CAP_CHANGE_CURRENT_PLATFORM_PASSWORD";
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(platformCapabilityRegistry));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_PLATFORM_CAPABILITY_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_PLATFORM_CAPABILITY_FORBIDDEN:changeCurrentPlatformPassword")) throw error; }
+
     writeFixture(root, publicOperation);
 
     const openApi = path.join(root, "contracts/openapi/fixture.yaml");
     const document = JSON.parse(fs.readFileSync(openApi, "utf8"));
-    delete document.paths[publicOperation.path].post["x-required-capability"];
+    delete document.paths[publicOperation.path].post["x-required-owner-protocol"];
     fs.writeFileSync(openApi, JSON.stringify(document));
     try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_REQUIRED_MISSING_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("CAPABILITY_REQUIRED_MISSING:acceptPublicInvitation")) throw error; }
@@ -1046,7 +1084,7 @@ function selfTest() {
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_PROBLEM_ADVICE_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("P3_A_TYPED_PROBLEM_ADVICE_HANDLER_MISSING")) throw error; }
 
-    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
+    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

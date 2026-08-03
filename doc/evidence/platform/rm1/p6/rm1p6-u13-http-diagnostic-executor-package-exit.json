@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-EXECUTOR-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/HttpRequestMetricsInterceptorTest.java",
+    "scripts/test/http-diagnostic-report.mjs",
+    "scripts/test/http-diagnostic-report.test.mjs",
+    "scripts/test/rm1-http-diagnostic.mjs",
+    "scripts/test/rm1-http-diagnostic.test.mjs",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-executor-package-exit.json",
+    "doc/review/platform/rm1p6-u13-http-diagnostic-executor-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "node --test scripts/test/http-diagnostic-report.test.mjs scripts/test/rm1-http-diagnostic.test.mjs scripts/test/http-diagnostic-inventory.test.mjs scripts/test/http-diagnostic-scenarios.test.mjs scripts/dev/http-diagnostic-runner.test.mjs",
+      "gradle :apps:backend:catering-business-server:test --tests com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptorTest",
+      "scripts/check/database-boundaries",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/openapi-contracts",
+      "scripts/check/code-layout"
+    ],
+    "dynamicDiagnosticSample": ".runtime/rm1/http-diagnostic/rm1-http-diagnostic-1785576265041-0f59882a/run-manifest.json",
+    "assertions": [
+      "the local managed backend accepted platformPasswordLogin and the server completion event matched operation, route template, owner, consumer face, status, correlation and request identity",
+      "the partial report truthfully reports one executed route and 146 explicitly deferred routes",
+      "runId and opaque request IDs use the actual runner syntax while typed rejection/disposition handles remain constrained",
+      "unrelated earlier/setup events in the same run are not counted as proof and do not block correlation of the supplied client call set",
+      "the report contains no credential, secret, grant, cookie, Authorization, OTP or raw response/body values"
+    ],
+    "dynamicBoundary": "one HTTP diagnostic integration sample only; not 147-route coverage, Seed/reset, browser L2, business PASS, performance PASS or UAT"
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "business": "NOT_APPLICABLE_HTTP_DIAGNOSTIC",
+  "cleanup": "PASS_FOR_ISOLATED_DIAGNOSTIC_SAMPLE_ONLY",
+  "scopeStatement": "C09 proves the server-correlated executor mechanics and its isolated cleanup only. The report's 1/147 result explicitly leaves 146 route families unexecuted, so it does not close the U13 denominator or any business/performance/L2 obligation."
+}

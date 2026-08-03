@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1-C01-ROOT-CONTRACT-REGISTRY-U13",
+  "deliveryUnits": [
+    {
+      "id": "RM1-C01-ROOT-CONTRACT-REGISTRY-U13",
+      "title": "Root OpenAPI and generated route registry exact-set closure",
+      "approvedAssertions": [
+        "ROOT_OPENAPI_OPERATION_SET_EQUALS_GENERATED_ROUTE_REGISTRY",
+        "EXISTING_STAGED_ASSET_RELEASE_ROUTE_IS_RETAINED",
+        "ROOT_REFERENCE_DRIFT_HAS_A_REAL_RED_MUTATION"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate the C01 implementation package"},
+        {"path": "contracts/openapi/edge.openapi.yaml", "disposition": "update", "target": "reference the existing staged-asset release path from the root contract"},
+        {"path": "scripts/generate/edge-codegen.mjs", "disposition": "update", "target": "verify root OpenAPI and generated route-registry operation exact-set"},
+        {"path": "tools/compliance-control/cli.mjs", "disposition": "update", "target": "allow a successor delivery manifest as its one additional bootstrap artifact"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-c01-root-contract-registry-package-input.json", "disposition": "create", "target": "C01 execution binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-c01-root-contract-registry-implementation-amendment.md", "disposition": "create", "target": "C01 detail design and proof boundary"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-c01-root-contract-registry-package-exit.json", "disposition": "create", "target": "C01 changed-path and static proof result"},
+        {"path": "doc/review/platform/rm1-u13-c01-root-contract-registry-delivery-manifest.json", "disposition": "create", "target": "C01 approved surface denominator"},
+        {"path": "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-implementation-adversarial-review-round1.md", "disposition": "create", "target": "independent implementation review round 1"},
+        {"path": "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-implementation-adversarial-review-round2.md", "disposition": "create", "target": "independent implementation review round 2 if needed"},
+        {"path": "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-author-resolution.md", "disposition": "create", "target": "author disposition of independent findings"},
+        {"path": "doc/review/platform/2026-08-01-rm1-u13-c01-root-contract-registry-implementation-review-request-claude.md", "disposition": "create", "target": "copyable Claude implementation-review handoff"}
+      ],
+      "complianceRoute": {
+        "taskKind": "implementation",
+        "domain": "platform",
+        "consumerFace": "platform-admin",
+        "owner": "platform",
+        "impact": "contract",
+        "trigger": "http-crud-efficiency"
+      },
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": ["project-memory/decisions/http-crud-efficiency-design-redlines.md"],
+        "APPROVED_ASSERTIONS": ["doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#3.1"],
+        "FORBIDDEN_PSEUDO_FIXES": ["do not retire the existing route or alter handler behavior"],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": ["doc/evidence/platform/rm1/p6/rm1p6-u13-c01-root-contract-registry-implementation-amendment.md"],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": ["releasePlatformStagedAsset", "POST /api/platform/assets/staging/{assetRef}/release"],
+        "DUE_STANDARDS_RULE_IDS": ["scripts/check/openapi-contracts", "scripts/check/edge-codegen", "scripts/check/remediation-compliance"]
+      }
+    }
+  ]
+}

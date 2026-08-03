@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-TEST-FIXTURE-INTEGRITY-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-problem-family.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-package-exit.json",
+    "doc/review/platform/rm1p6-u13-test-fixture-integrity-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "gradle :apps:backend:catering-business-server:modules:asset:testClasses :apps:backend:catering-business-server:modules:workspace-iam:testClasses",
+      "node scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:asset:test",
+      "node scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:workspace-iam:test",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/database-boundaries",
+      "scripts/check/standards-coverage --phase R5"
+    ],
+    "remoteRuns": [
+      {
+        "manifest": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785578345051-85885/run-manifest.json",
+        "task": ":apps:backend:catering-business-server:modules:asset:test",
+        "technicalTestStatus": "PASS",
+        "cleanup": "PASS"
+      },
+      {
+        "manifest": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785578430440-87617/run-manifest.json",
+        "task": ":apps:backend:catering-business-server:modules:workspace-iam:test",
+        "technicalTestStatus": "PASS",
+        "cleanup": "PASS"
+      }
+    ],
+    "assertions": [
+      "the asset batch test stages two distinct valid content-addressed objects and reaches its intended owner batch-read assertion without relaxing storage-key uniqueness",
+      "the workspace user task-scope test derives bounded nonblank unique persisted credit codes while retaining its descriptive head-company test cases",
+      "the two affected remote module suites now pass with their Testcontainers resources and remote scratch directories reclaimed"
+    ],
+    "dynamicBoundary": "These are remote Testcontainers technical tests. Their runner business field means Gradle test outcome only; this package does not claim browser L2, UAT, Seed/reset, CRUD performance, or user-business PASS."
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "business": "NOT_APPLICABLE_TEST_FIXTURE_INTEGRITY_ONLY",
+  "cleanup": "PASS_REMOTE_TESTCONTAINERS_TECHNICAL_PROOF_ONLY",
+  "scopeStatement": "C13 changes only test data construction so the real database invariants remain enforced and the intended focused assertions execute. It does not alter production behavior or any user-facing acceptance claim."
+}

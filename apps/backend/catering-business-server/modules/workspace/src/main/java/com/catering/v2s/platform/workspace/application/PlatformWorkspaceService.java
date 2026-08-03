@@ -10,6 +10,7 @@ import com.catering.v2s.platform.workspace.api.GroupWorkspaceSummary;
 import com.catering.v2s.platform.workspace.api.GroupWorkspaceTaskQuery;
 import com.catering.v2s.platform.workspace.api.PlatformWorkspaceCoordinator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -55,6 +56,7 @@ public class PlatformWorkspaceService implements GroupWorkspaceTaskQuery, Platfo
         String idempotencyKey,
         String commercialGroupCode,
         String commercialGroupName,
+        Map<String, String> extensionValues,
         AuditActor actor
     ) {
         GroupWorkspaceDetail workspace = repository.detail(context, groupWorkspaceKey)
@@ -71,6 +73,7 @@ public class PlatformWorkspaceService implements GroupWorkspaceTaskQuery, Platfo
             idempotencyKey,
             commercialGroupCode,
             commercialGroupName,
+            extensionValues,
             actor
         );
     }

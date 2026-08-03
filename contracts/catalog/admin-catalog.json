@@ -18,7 +18,8 @@
         "label": "工作台"
       },
       "navigation": {
-        "order": 100
+        "order": 100,
+        "iconKey": "WORKBENCH"
       }
     },
     {
@@ -29,7 +30,8 @@
         "label": "用户与权限"
       },
       "navigation": {
-        "order": 200
+        "order": 200,
+        "iconKey": "ACCESS"
       }
     },
     {
@@ -40,7 +42,8 @@
         "label": "组织管理"
       },
       "navigation": {
-        "order": 300
+        "order": 300,
+        "iconKey": "ORGANIZATION"
       }
     },
     {
@@ -51,7 +54,8 @@
         "label": "门店经营"
       },
       "navigation": {
-        "order": 400
+        "order": 400,
+        "iconKey": "STORE_OPERATIONS"
       }
     },
     {
@@ -88,11 +92,35 @@
       "key": "STORE_CONTRACT_MANAGEMENT",
       "kind": "ACTION_GROUP",
       "display": {
-        "label": "门店合同"
+        "label": "门店合同管理"
       },
       "actionGroup": {
         "order": 400
       }
+    },
+    {
+      "key": "PLATFORM-SHELL-BRAND",
+      "kind": "SHELL_COPY",
+      "consumerFace": "platform-admin",
+      "display": {"label": "运维管理后台"}
+    },
+    {
+      "key": "PLATFORM-SHELL-WORKSPACE-DETAIL-GROUP",
+      "kind": "SHELL_COPY",
+      "consumerFace": "platform-admin",
+      "display": {"label": "集团空间详细信息"}
+    },
+    {
+      "key": "PLATFORM-SHELL-CHANGE-PASSWORD",
+      "kind": "SHELL_COPY",
+      "consumerFace": "platform-admin",
+      "display": {"label": "修改密码"}
+    },
+    {
+      "key": "PLATFORM-SHELL-LOGOUT",
+      "kind": "SHELL_COPY",
+      "consumerFace": "platform-admin",
+      "display": {"label": "退出登录"}
     },
     {
       "key": "PLATFORM-WORKSPACES",
@@ -535,7 +563,7 @@
       "kind": "PAGE",
       "consumerFace": "operations-admin",
       "display": {
-        "label": "门店合同"
+        "label": "门店合同管理"
       },
       "page": {
         "kind": "BUSINESS"

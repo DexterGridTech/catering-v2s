@@ -1,3 +1,4 @@
+import {ApartmentOutlined} from '@ant-design/icons';
 import {Alert, Button, Popover, Select, Space, Typography} from 'antd';
 import {testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
@@ -17,6 +18,7 @@ type DataScopePage = {
 type DataScopeSelectorProps = {
   entry: WorkspaceSessionEntry;
   page?: DataScopePage;
+  collapsed?: boolean;
   disabled?: boolean;
   onChanged: (entry: WorkspaceSessionEntry) => void;
 };
@@ -25,7 +27,7 @@ const scopeProblem = '暂时无法设置可查看范围，请重试';
 const nameAt = (candidate: Candidate, index: number) => candidate.ancestorPath[index] ?? candidate.dataNodeName;
 const distinct = (values: Array<{value?: string | null; label: string}>): Option[] => [...new Map(values.filter((value): value is {value: string; label: string} => Boolean(value.value)).map((value) => [value.value, value])).values()];
 
-export function DataScopeSelector({entry, page, disabled = false, onChanged}: DataScopeSelectorProps) {
+export function DataScopeSelector({entry, page, collapsed = false, disabled = false, onChanged}: DataScopeSelectorProps) {
   const requiredDataNodeType = page?.requiredDataNodeType ?? 'NONE';
   const [open, setOpen] = useState(false);
   const [regionRef, setRegionRef] = useState<string>();
@@ -35,7 +37,7 @@ export function DataScopeSelector({entry, page, disabled = false, onChanged}: Da
   const lifecycle = useSubmissionLifecycle();
   const generation = useAsyncGenerationGuard();
   const locked = useOverlayLock();
-  const candidates = entry.dataNodeCandidates ?? [];
+  const candidates = useMemo(() => entry.dataNodeCandidates ?? [], [entry.dataNodeCandidates]);
   const regions = useMemo(() => distinct(candidates.map((candidate) => ({value: candidate.regionRef ?? (candidate.dataNodeType === 'REGION' ? candidate.dataNodeRef : undefined), label: nameAt(candidate, 0)}))), [candidates]);
   const projects = useMemo(() => distinct(candidates.filter((candidate) => (candidate.regionRef ?? (candidate.dataNodeType === 'REGION' ? candidate.dataNodeRef : undefined)) === regionRef).map((candidate) => ({value: candidate.projectRef ?? (candidate.dataNodeType === 'PROJECT' ? candidate.dataNodeRef : undefined), label: nameAt(candidate, 1)}))), [candidates, regionRef]);
   const finalCandidates = useMemo(() => candidates.filter((candidate) => candidate.dataNodeType === requiredDataNodeType && (requiredDataNodeType === 'REGION' || candidate.regionRef === regionRef) && (requiredDataNodeType !== 'STORE' || candidate.projectRef === projectRef)), [candidates, projectRef, regionRef, requiredDataNodeType]);
@@ -74,12 +76,12 @@ export function DataScopeSelector({entry, page, disabled = false, onChanged}: Da
 
   if (requiredDataNodeType === 'NONE') return null;
   const selectedName = entry.selectedDataNode?.dataNodeName ?? noDataNodePrompt;
-  const selector = <Space direction="vertical" style={{minWidth: 300}}>
+  const selector = <Space orientation="vertical" style={{minWidth: 300}}>
     <Typography.Title level={5}>选择可查看范围</Typography.Title>
     <Typography.Text>请选择本次需要查看的机构</Typography.Text>
-    {problem && <Alert type="error" showIcon message={scopeProblem}/>}
+    {problem && <Alert type="error" showIcon title={scopeProblem}/>}
     {regions.length === 0
-      ? <Alert type="info" showIcon message={noCandidatePrompt}/>
+      ? <Alert type="info" showIcon title={noCandidatePrompt}/>
       : <>
         <Typography.Text>{regionLabel}</Typography.Text>
         <Select showSearch aria-label={regionLabel} value={regionRef} options={regions} placeholder={`选择${regionLabel}`} disabled={submitting || locked || disabled} onChange={(value) => { setRegionRef(value); setProjectRef(undefined); }} {...testId('operations-data-scope-region')}/>
@@ -95,5 +97,5 @@ export function DataScopeSelector({entry, page, disabled = false, onChanged}: Da
           : <Select showSearch aria-label="最终可查看机构" options={finalOptions} placeholder={requiredDataNodeType === 'REGION' ? `选择${regionLabel}` : regionRef ? `选择${projectLabel}` : `请先选择${regionLabel}`} disabled={(requiredDataNodeType === 'PROJECT' && !regionRef) || submitting || locked || disabled} onChange={(value) => void submit(value)} {...testId('operations-data-scope-final')}/>}
       </>}
   </Space>;
-  return <Popover open={open} onOpenChange={setOpen} placement="rightBottom" trigger="click" content={selector}><Button type="text" disabled={!entry.selected || disabled || locked || submitting} {...testId('operations-data-scope-trigger')}>可查看范围：{selectedName}</Button></Popover>;
+  return <Popover open={open} onOpenChange={setOpen} placement="rightBottom" trigger="click" content={selector}><Button type="text" aria-label={collapsed ? `可查看范围：${selectedName}` : undefined} icon={collapsed ? <ApartmentOutlined/> : undefined} disabled={!entry.selected || disabled || locked || submitting} {...testId('operations-data-scope-trigger')}>{collapsed ? null : <>可查看范围：{selectedName}</>}</Button></Popover>;
 }

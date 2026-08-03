@@ -10,6 +10,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortDirection;
+import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortKey;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -84,7 +86,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             List.of()
         ));
 
-        fixture.controller.list(fixture.request, KEY, fixture.session.contextVersion(), "门店", projectId, "STORE-01", null, 2, 20);
+        fixture.controller.list(fixture.request, KEY, fixture.session.contextVersion(), "门店", projectId, "STORE-01", null, null, null, 2, 20);
 
         verify(fixture.user).resolveTaskScope(fixture.session, "PROJECT", projectId);
         verify(fixture.overview).page(
@@ -112,7 +114,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             List.of(), "AVAILABLE", 0L, List.of(), List.of(), "AVAILABLE", 0L, List.of()
         ));
 
-        fixture.controller.list(fixture.request, KEY, fixture.session.contextVersion(), null, null, null, null, 1, 20);
+        fixture.controller.list(fixture.request, KEY, fixture.session.contextVersion(), null, null, null, null, null, null, 1, 20);
 
         verify(fixture.overview).page(
             fixture.workspaceId,
@@ -135,10 +137,50 @@ class OperationsStoreManagementControllerCandidateScopeTest {
 
         assertThrows(
             WorkspaceAuthenticationService.SessionInvalidException.class,
-            () -> fixture.controller.list(fixture.request, KEY, session.contextVersion(), null, null, null, null, 1, 20)
+            () -> fixture.controller.list(fixture.request, KEY, session.contextVersion(), null, null, null, null, null, null, 1, 20)
         );
 
         verifyNoInteractions(fixture.overview, fixture.user);
+    }
+
+    @Test
+    void listPassesGeneratedSortAndDirectionToOwnerWithoutChangingScopePredicate() {
+        Fixture fixture = fixture();
+        when(fixture.overview.page(
+            eq(fixture.workspaceId),
+            eq(KEY),
+            eq("STORE"),
+            any(OrganizationOverviewTaskReadService.Query.class),
+            eq(1),
+            eq(20)
+        )).thenReturn(new OrganizationOverviewTaskReadService.Page(
+            new OrganizationOverviewTaskReadService.Metadata(KEY, "STORE", 1, 20, 0L, "CODE", "ASC"),
+            List.of(), "AVAILABLE", 0L, List.of(), List.of(), "AVAILABLE", 0L, List.of()
+        ));
+
+        fixture.controller.list(
+            fixture.request,
+            KEY,
+            fixture.session.contextVersion(),
+            null,
+            null,
+            null,
+            null,
+            OrganizationStoreSortKey.CODE,
+            OrganizationStoreSortDirection.ASC,
+            1,
+            20
+        );
+
+        verify(fixture.overview).page(
+            fixture.workspaceId,
+            KEY,
+            "STORE",
+            new OrganizationOverviewTaskReadService.Query("STORE", null, null, null, null, null, null, null, "CODE", "ASC", fixture.session.visibleDataNodeId()),
+            1,
+            20
+        );
+        verifyNoInteractions(fixture.user);
     }
 
     @Test
@@ -179,6 +221,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             3L,
             10L,
             11L,
+            "备注",
             new OrganizationOverviewTaskReadService.Reference(scopedProjectId, "PRJ-01", "项目一", true),
             new OrganizationOverviewTaskReadService.Reference(brandId, "BR-01", "品牌一", true),
             new OrganizationOverviewTaskReadService.Reference(tenantId, "TEN-01", "经营主体一", true),

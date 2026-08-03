@@ -48,25 +48,29 @@ public final class OperationsOrganizationHierarchyController {
 
     @PostMapping("/regions")
     ResponseEntity<OrganizationNode> createRegion(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody OrganizationNodeCreateRequest body) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(OrganizationHierarchyWireMapper.node(hierarchy.createRegion(workspace(request, groupWorkspaceKey), groupWorkspaceKey, body.code(), body.name(), body.notes(), idempotencyKey, sessions.requireActor(request, groupWorkspaceKey))));
+        var session = sessions.requireWorkspace(request, groupWorkspaceKey);
+        return ResponseEntity.status(HttpStatus.CREATED).body(OrganizationHierarchyWireMapper.node(hierarchy.createRegion(session.workspaceUuid(), groupWorkspaceKey, body.code(), body.name(), body.notes(), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey, sessions.actor(session))));
     }
 
     @PostMapping("/regions/{regionId}/projects")
     ResponseEntity<OrganizationNode> createProject(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID regionId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody OrganizationProjectCreateRequest body) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(OrganizationHierarchyWireMapper.node(hierarchy.createProject(workspace(request, groupWorkspaceKey), groupWorkspaceKey, regionId, body.code(), body.name(), body.notes(), projectPhaseNames(body.phases()), idempotencyKey, sessions.requireActor(request, groupWorkspaceKey))));
+        var session = sessions.requireWorkspace(request, groupWorkspaceKey);
+        return ResponseEntity.status(HttpStatus.CREATED).body(OrganizationHierarchyWireMapper.node(hierarchy.createProject(session.workspaceUuid(), groupWorkspaceKey, regionId, body.code(), body.name(), body.notes(), projectPhaseNames(body.phases()), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey, sessions.actor(session))));
     }
 
     @PostMapping("/{nodeId}/status")
     OrganizationNode transition(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID nodeId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody OrganizationNodeStatusTransitionRequest body) {
         if (body.expectedVersion() == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("expected version is required");
-        return OrganizationHierarchyWireMapper.node(hierarchy.transitionStatus(workspace(request, groupWorkspaceKey), groupWorkspaceKey, nodeId, body.expectedVersion(), body.targetStatus(), idempotencyKey, sessions.requireActor(request, groupWorkspaceKey)));
+        var session = sessions.requireWorkspace(request, groupWorkspaceKey);
+        return OrganizationHierarchyWireMapper.node(hierarchy.transitionStatus(session.workspaceUuid(), groupWorkspaceKey, nodeId, body.expectedVersion(), body.targetStatus(), idempotencyKey, sessions.actor(session)));
     }
 
     @PatchMapping("/{nodeId}")
     OrganizationNode update(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID nodeId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody OrganizationNodeUpdateRequest body) {
         if (body.expectedVersion() == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("expected version is required");
         UUID parentId = body.parentId() == null ? null : UUID.fromString(body.parentId());
-        return OrganizationHierarchyWireMapper.node(hierarchy.update(workspace(request, groupWorkspaceKey), groupWorkspaceKey, nodeId, body.code(), body.name(), parentId, body.notes(), updatePhaseNames(body.phases()), body.expectedVersion(), idempotencyKey, sessions.requireActor(request, groupWorkspaceKey)));
+        var session = sessions.requireWorkspace(request, groupWorkspaceKey);
+        return OrganizationHierarchyWireMapper.node(hierarchy.update(session.workspaceUuid(), groupWorkspaceKey, nodeId, body.code(), body.name(), parentId, body.notes(), updatePhaseNames(body.phases()), body.expectedVersion(), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey, sessions.actor(session)));
     }
 
     private UUID workspace(EdgeRequestContext request, String groupWorkspaceKey) {

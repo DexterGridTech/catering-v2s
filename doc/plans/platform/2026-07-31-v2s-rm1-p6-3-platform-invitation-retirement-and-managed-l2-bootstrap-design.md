@@ -54,3 +54,9 @@ active package 必须一次纳入上述 handwritten、contract、catalog/report�
 The first five categories are the static retirement receipt set. The L2 dependency category is a later serial set: it begins only after static retirement and final control alignment PASS. Its existing `scripts/check/affected-l2` red (`OPERATIONS-PASSWORD` still names the old work-context directory) is a pre-L2 admission defect that must be corrected from the current authentication Drawer physical path in the same L2 design set; it is not waived by this platform retirement.
 
 The later package must reject direct SQL, controller/route/OpenAPI exposure, bootstrap output in logs or evidence, missing managed/fresh/private inputs, wrong role/root, multiple intents, duplicate idempotency key, and any restoration of fixture row 7's platform HTTP operation. Those are future executable red criteria, not evidence claimed by this static package.
+
+## 2026-08-02 Dexter superseding product correction
+
+本详设的“平台邀请面退役”结论已被 Dexter 永久业务裁决推翻。平台管理员必须保有跨任意组织节点的邀请中心；不能以 operations-admin 五个局部用户页或 L2 owner bootstrap 替代。该裁定意味着本文件不是当前可执行设计，U07 的删除分母、五 operation removal、无邀请 Tab 的 IA03 refreeze 和相关 package-exit 均不得继续作为实现依据。
+
+后续必须新建 serial implementation design，恢复并核验 platform 五 operation、平台账号页邀请 Tab、任意节点候选级联、邀请列表与动作闭环；同时保留 operations/public invitation flow。旧 U07 仅作为历史误判记录，不能用于删除或证明平台邀请缺失。

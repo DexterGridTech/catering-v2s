@@ -6,6 +6,7 @@
         "additionalProperties": false,
         "required": [
           "contractRef",
+          "projectRef",
           "storeRef",
           "phaseName",
           "tenantRef",
@@ -16,6 +17,7 @@
           "updatedAt",
           "storeResolutionStatus",
           "tenantResolutionStatus"
+          ,"items"
         ],
         "properties": {
           "contractRef": {
@@ -86,6 +88,17 @@
               }
             }
           },
+          "projectRef": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "code", "name", "resolutionStatus"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1, "maxLength": 64},
+              "code": {"type": "string", "minLength": 1, "maxLength": 64},
+              "name": {"type": "string", "minLength": 1, "maxLength": 120},
+              "resolutionStatus": {"type": "string", "enum": ["RESOLVED", "UNRESOLVED"]}
+            }
+          },
           "phaseName": {
             "type": "string",
             "minLength": 1,
@@ -141,6 +154,12 @@
           "itemSummary": {
             "type": "string",
             "maxLength": 2000
+          },
+          "items": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/StoreContractItem"},
+            "minItems": 0,
+            "maxItems": 100
           },
           "status": {
             "$ref": "#/components/schemas/StoreContractStatus"
@@ -205,6 +224,7 @@
           "itemsAsOf",
           "itemsUnresolved",
           "filterOptions",
+          "phaseOptions",
           "filterOptionsSourceStatus",
           "filterOptionsAsOf",
           "filterOptionsUnresolved"
@@ -281,20 +301,22 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "kind",
-                "id",
-                "name"
-              ],
+              "required": ["kind", "id", "code", "name"],
               "properties": {
                 "kind": {
                   "type": "string",
                   "enum": [
+                    "PROJECT",
                     "STORE",
                     "TENANT"
                   ]
                 },
                 "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "code": {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 64
@@ -307,6 +329,11 @@
               }
             },
             "maxItems": 500
+          },
+          "phaseOptions": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 120},
+            "maxItems": 100
           },
           "filterOptionsSourceStatus": {
             "type": "string",

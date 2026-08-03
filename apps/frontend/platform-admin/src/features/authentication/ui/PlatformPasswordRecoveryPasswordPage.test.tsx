@@ -9,5 +9,7 @@ describe('platform recovery password focused contract', () => {
     expect(source).toContain("form.resetFields(['newPassword', 'confirmation'])");
     expect(source).toContain("navigate('/platform/password-recovery/complete')");
     expect(source).toContain("testId('platform-recovery-complete')");
+    expect(source).toContain('className="auth-page"');
+    expect(source).toContain('className="auth-card"');
   });
 });

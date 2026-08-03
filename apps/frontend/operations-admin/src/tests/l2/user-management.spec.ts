@@ -1,4 +1,5 @@
 import {expect, test, type Page} from '@playwright/test';
+import {selectOperationsDataScope} from './operationsL2';
 
 function requiredL2Env(name: string) {
   const value = process.env[name];
@@ -37,7 +38,20 @@ test('operations administrator uses target-scoped user detail, guarded revoke, a
   const detailDrawer = page.getByTestId('operations-workspace-user-detail-drawer');
   await detailDrawer.getByRole('button', {name: /关闭|close/i}).click();
   await expect(detailDrawer).toBeHidden();
+  await page.goto(requiredL2Env('R5_L2_STORE_ROUTE'));
+  await selectOperationsDataScope(page);
+  const groupUserResponsePromise = page.waitForResponse((response) => response.url().includes('/user-management/group/user') && response.request().method() === 'GET');
+  await page.goto(requiredL2Env('R5_L2_USER_ROUTE'));
+  const groupUserResponse = await groupUserResponsePromise;
+  expect(groupUserResponse.status()).toBe(200);
+  const groupUserPage = await groupUserResponse.json() as {targetOrganizationType?: string; items?: unknown[]; total?: number};
+  expect(groupUserPage.targetOrganizationType).toBe('GROUP');
+  expect(groupUserPage.total).toBeGreaterThan(0);
+  await expect(page.getByTestId('operations-workspace-user-table')).toBeVisible();
+  const groupInvitationResponsePromise = page.waitForResponse((response) => response.url().includes('/user-management/group/invitations') && response.request().method() === 'GET');
   await page.getByTestId('operations-workspace-user-tab-invitations').click();
+  const groupInvitationResponse = await groupInvitationResponsePromise;
+  expect(groupInvitationResponse.status()).toBe(200);
   await expect(page.getByTestId('operations-workspace-invitation-table')).toBeVisible();
 
   const headCompanyRoute = requiredL2Env('R5_L2_USER_ROUTE').replace('/access/group-users', '/access/head-company-users');

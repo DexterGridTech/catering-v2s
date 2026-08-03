@@ -5,10 +5,10 @@
     "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
   ],
   "closure": {
-    "operations": 147,
+    "operations": 155,
     "faceCounts": {
-      "platform-admin": 43,
-      "operations-admin": 89,
+      "platform-admin": 49,
+      "operations-admin": 91,
       "public": 15
     }
   },
@@ -73,6 +73,15 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
       "consumerFaces": [
         "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "cancelWorkspaceInvitation",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel",
+      "consumerFaces": [
+        "platform-admin"
       ],
       "owner": "workspace-iam"
     },
@@ -257,6 +266,15 @@
       "owner": "platform-workspace"
     },
     {
+      "operationId": "createWorkspaceInvitation",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
       "operationId": "createWorkspaceRole",
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
@@ -374,6 +392,15 @@
       "owner": "organization"
     },
     {
+      "operationId": "getOperationsOrganizationCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
       "operationId": "getOperationsOrganizationHeadCompanies",
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
@@ -395,6 +422,15 @@
       "operationId": "getOperationsOrganizationHierarchy",
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition",
       "consumerFaces": [
         "operations-admin"
       ],
@@ -788,6 +824,33 @@
       "owner": "workspace-iam"
     },
     {
+      "operationId": "getWorkspaceInvitation",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getWorkspaceInvitationCandidates",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "getWorkspaceInvitations",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
       "operationId": "getWorkspaceRole",
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
@@ -910,6 +973,15 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
       "consumerFaces": [
         "operations-admin"
+      ],
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "reissueWorkspaceInvitation",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue",
+      "consumerFaces": [
+        "platform-admin"
       ],
       "owner": "workspace-iam"
     },

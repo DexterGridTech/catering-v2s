@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "RM1P6-HEAD-COMPANY-LIST-BRAND-BATCH-U13",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityControllerTest.java",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-u13-head-company-list-brand-batch-package-exit.json",
+    "doc/review/platform/rm1p6-u13-head-company-list-brand-batch-delivery-manifest.json"
+  ],
+  "focusedProof": {
+    "commands": [
+      "gradle :apps:backend:catering-business-server:test --tests com.catering.v2s.app.edge.operations.organization.OperationsBusinessEntityControllerTest",
+      "scripts/check/remediation-compliance static-scan",
+      "scripts/check/database-boundaries",
+      "scripts/check/standards-coverage --phase R5",
+      "scripts/check/openapi-contracts",
+      "scripts/check/code-layout"
+    ],
+    "assertions": [
+      "organization owner validates all requested head companies in the supplied workspace/key and performs one bounded left-joined task read",
+      "the owner returns an empty authorized-brand list for a valid head company with no authorizations",
+      "one, twenty and fifty row operations head-company pages call the batch owner read once and call the single-head-company owner read zero times",
+      "detail/create/update/status retain the existing single-head-company read path"
+    ],
+    "dynamicBoundary": "No browser L2, Seed/reset, all-route HTTP coverage, business PASS, cleanup PASS or performance benchmark is claimed by this owner-local static package."
+  },
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "business": "NOT_APPLICABLE_OWNER_LOCAL_EFFICIENCY_ONLY",
+  "cleanup": "NOT_APPLICABLE_STATIC_ONLY",
+  "scopeStatement": "C11 removes only the confirmed operations head-company list per-row owner read. It preserves owner-local workspace membership and the original single-object behavior, and does not establish runtime workload coverage or a performance claim."
+}

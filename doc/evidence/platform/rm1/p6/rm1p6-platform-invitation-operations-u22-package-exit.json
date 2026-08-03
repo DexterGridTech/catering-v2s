@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RM1P6-PLATFORM-INVITATION-OPERATIONS-U22",
+  "kind": "rm1-execution-package-exit",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryServiceTest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformWorkspaceInvitation.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformWorkspaceInvitationPage.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PlatformWorkspaceInvitationPageCriteria.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationPageWireMapper.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationWireMapper.java",
+    "apps/backend/catering-business-server/src/main/resources/db/migration/V20260803_070000_000__workspace_invitation_issuer_snapshot.sql",
+    "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+    "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+    "apps/frontend/platform-admin/src/app/api/generated/platform-edge.rtk.ts",
+    "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+    "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorDetailDrawer.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.test.tsx",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+    "contracts/openapi/components/platform-iam/platform-identity.schemas.yaml",
+    "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+    "contracts/openapi/edge.openapi.yaml",
+    "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml",
+    "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-platform-invitation-operations-u22-implementation-amendment.md",
+    "doc/evidence/platform/rm1/p6/rm1p6-platform-invitation-operations-u22-package-input.json",
+    "doc/evidence/platform/rm1/p6/rm1p6-platform-invitation-operations-u22-problem-family.json",
+    "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+    "doc/review/platform/rm1p6-platform-invitation-operations-u22-delivery-manifest.json"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  }
+}

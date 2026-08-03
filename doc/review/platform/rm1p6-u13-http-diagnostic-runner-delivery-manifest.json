@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-RUNNER-U13",
+  "deliveryUnits": [{
+    "id": "RM1P6-HTTP-DIAGNOSTIC-RUNNER-U13",
+    "title": "Local-backend-only managed HTTP diagnostic runner and server event alignment",
+    "approvedAssertions": ["SERVER_ROUTE_TEMPLATE_IS_THE_ONLY_COMPLETION_ROUTE_FIELD", "HTTP_DIAGNOSTIC_STARTS_LOCAL_BACKEND_AND_TUNNEL_ONLY", "HTTP_DIAGNOSTIC_NEVER_BECOMES_SEED_OR_BROWSER_L2"],
+    "changeSurfaces": [
+      {"path":".runtime/compliance-control/active-package.json","disposition":"update","target":"activate C06"},
+      {"path":"scripts/dev/http-diagnostic-runner.mjs","disposition":"create","target":"managed local backend/tunnel lifecycle"},
+      {"path":"scripts/dev/http-diagnostic-runner.test.mjs","disposition":"create","target":"runner boundary red proof"},
+      {"path":"scripts/test/http-diagnostic-report.mjs","disposition":"update","target":"server routeTemplate completion alignment"},
+      {"path":"scripts/test/http-diagnostic-report.test.mjs","disposition":"update","target":"real event contract red proof"},
+      {"path":"scripts/test/rm1-http-diagnostic.mjs","disposition":"create","target":"diagnostic manifest/report orchestration"},
+      {"path":"scripts/test/rm1-http-diagnostic.test.mjs","disposition":"create","target":"orchestration red proof"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-runner-package-input.json","disposition":"create","target":"C06 binding"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-runner-implementation-amendment.md","disposition":"create","target":"C06 boundary"},
+      {"path":"doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-runner-package-exit.json","disposition":"create","target":"C06 path-list exit"},
+      {"path":"doc/review/platform/rm1p6-u13-http-diagnostic-runner-delivery-manifest.json","disposition":"create","target":"C06 manifest"}
+    ],
+    "complianceRoute":{"taskKind":"implementation","domain":"backend","consumerFace":"backend","owner":"platform","impact":"runtime","trigger":"implementation"},
+    "sourceDenominators":{"PROJECT_MEMORY_ASSERTION_OCCURRENCES":["project-memory/decisions/http-crud-efficiency-design-redlines.md","project-memory/operations/business-corpus-adoption-and-read-policy.md"],"APPROVED_ASSERTIONS":["doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#3.2","doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#5.1"],"FORBIDDEN_PSEUDO_FIXES":["no path-field fixture fiction","no frontend/Playwright","no remote application runtime","no seed/reset or direct SQL","no secret persistence"],"DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA":["doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-runner-implementation-amendment.md"],"OWNED_SURFACE_AND_OPERATION_KEYS":["HttpRequestMetricsInterceptor routeTemplate events","generated 147 route-face tuples","local backend and remote middleware tunnel only"],"DUE_STANDARDS_RULE_IDS":["scripts/check/remediation-compliance","scripts/check/standards-coverage"]}
+  }]
+}

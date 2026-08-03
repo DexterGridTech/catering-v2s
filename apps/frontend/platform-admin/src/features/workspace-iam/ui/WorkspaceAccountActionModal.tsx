@@ -1,5 +1,5 @@
 import {Modal} from 'antd';
-import {testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {formatCodeNamePath, testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceAccount} from '../../../app/api/generated/platform-edge';
 import type {WorkspaceAccountAction} from './WorkspaceAccountDetailDrawer';
 
@@ -22,7 +22,7 @@ function copy(action: WorkspaceAccountAction, account: WorkspaceAccount) {
     confirm: '确认',
   };
   return {
-    title: `确认撤销“${account.displayName}”在“${action.assignment.organizationPath}”的任职？`,
+    title: `确认撤销“${account.displayName}”在“${formatCodeNamePath(action.assignment.organizationPath)}”的任职？`,
     confirm: '确认',
   };
 }

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-HTTP-DIAGNOSTIC-BOOTSTRAP-U13",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-HTTP-DIAGNOSTIC-BOOTSTRAP-U13",
+      "title": "Owner-owned first platform administrator bootstrap for isolated HTTP diagnostics",
+      "approvedAssertions": [
+        "FIRST_PLATFORM_ACTOR_IS_CREATED_ONLY_BY_PLATFORM_IAM_OWNER",
+        "BOOTSTRAP_IS_NON_HTTP_AND_REJECTS_NONEMPTY_ADMIN_STATE",
+        "DIAGNOSTIC_BOOTSTRAP_DOES_NOT_REUSE_SEED_DIRECT_SQL"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate the C02 implementation package"},
+        {"path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/api/PlatformDiagnosticBootstrap.java", "disposition": "create", "target": "declare narrow public owner bootstrap command and readback"},
+        {"path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java", "disposition": "update", "target": "implement zero-administrator guarded, transactional bootstrap"},
+        {"path": "apps/backend/catering-business-server/modules/platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java", "disposition": "update", "target": "prove empty-only, no actor bypass and typed rejection behavior"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-bootstrap-package-input.json", "disposition": "create", "target": "C02 execution binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-bootstrap-implementation-amendment.md", "disposition": "create", "target": "C02 implementation boundary"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-bootstrap-package-exit.json", "disposition": "create", "target": "C02 changed-path and focused-proof record"},
+        {"path": "doc/review/platform/rm1p6-u13-http-diagnostic-bootstrap-delivery-manifest.json", "disposition": "create", "target": "C02 bounded delivery surface"}
+      ],
+      "complianceRoute": {"taskKind": "implementation", "domain": "backend", "consumerFace": "backend", "owner": "platform", "impact": "database", "trigger": "http-crud-efficiency"},
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": ["project-memory/decisions/http-crud-efficiency-design-redlines.md", "project-memory/kernel/02-service-shape-and-owner.md", "project-memory/kernel/03-transaction-data-and-dependencies.md"],
+        "APPROVED_ASSERTIONS": ["doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#3.2", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-problem-family.json#PF-HTTP-EFF-10"],
+        "FORBIDDEN_PSEUDO_FIXES": ["no seed direct SQL reuse", "no anonymous HTTP route", "no application-layer direct call or AuditActor.system bypass", "no persisted diagnostic secret"],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": ["doc/evidence/platform/rm1/p6/rm1p6-u13-http-diagnostic-bootstrap-implementation-amendment.md"],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": ["platform-iam first administrator trust root", "PlatformAuthenticationService.createAdministrator actor guard"],
+        "DUE_STANDARDS_RULE_IDS": ["scripts/check/remediation-compliance", "scripts/check/standards-coverage"]
+      }
+    }
+  ]
+}

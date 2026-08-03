@@ -5,91 +5,106 @@ export const PUBLIC_OPERATIONS = [
     "operationId": "acceptPublicInvitation",
     "method": "POST",
     "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "completeOperationsPasswordRecovery",
     "method": "POST",
     "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "completePublicInvitation",
     "method": "POST",
     "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "completeWorkspacePasswordReset",
     "method": "POST",
     "path": "/api/public/password-reset/{resetGenerationKey}/complete",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "getPublicAssetContent",
     "method": "GET",
     "path": "/api/public/assets/{assetRef}/content",
-    "owner": "platform-asset"
+    "owner": "platform-asset",
+    "requiresSession": false
   },
   {
     "operationId": "getPublicInvitationCompletion",
     "method": "GET",
     "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "getPublicInvitationView",
     "method": "GET",
     "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "savePublicInvitationCredentials",
     "method": "POST",
     "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "sendOperationsPasswordRecoveryOtp",
     "method": "POST",
     "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "sendPublicInvitationOtp",
     "method": "POST",
     "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "sendWorkspacePasswordResetOtp",
     "method": "POST",
     "path": "/api/public/password-reset/{resetGenerationKey}/otp/send",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "startOperationsPasswordRecovery",
     "method": "POST",
     "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "verifyOperationsPasswordRecoveryOtp",
     "method": "POST",
     "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "verifyPublicInvitationOtp",
     "method": "POST",
     "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   },
   {
     "operationId": "verifyWorkspacePasswordResetOtp",
     "method": "POST",
     "path": "/api/public/password-reset/{resetGenerationKey}/otp/verify",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": false
   }
 ] as const;
 
@@ -306,6 +321,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: PublicInvitationAcceptIntent;
     requestRequired: false;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
@@ -321,6 +337,7 @@ export type FaceOperationContracts = {
     request: OperationsPasswordRecoveryCompleteRequest;
     response: OperationsPasswordRecoveryCompletion;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
   };
@@ -335,6 +352,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: PublicInvitationCompletion;
     requestRequired: false;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
@@ -350,6 +368,7 @@ export type FaceOperationContracts = {
     request: WorkspacePasswordResetCompleteRequest;
     response: WorkspacePasswordResetCompletion;
     requestRequired: true;
+    requiresSession: false;
     path: {
     resetGenerationKey: string;
   };
@@ -364,6 +383,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: PublicAssetReference;
     requestRequired: false;
+    requiresSession: false;
     path: {
     assetRef: string;
   };
@@ -376,6 +396,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: PublicInvitationCompletion;
     requestRequired: false;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
@@ -389,6 +410,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: PublicInvitationView;
     requestRequired: false;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
@@ -402,6 +424,7 @@ export type FaceOperationContracts = {
     request: PublicInvitationCredentialRequest;
     response: PublicInvitationCredentialResponse;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
@@ -417,6 +440,7 @@ export type FaceOperationContracts = {
     request: OperationsPasswordRecoveryOtpSendRequest;
     response: OperationsPasswordRecoveryOtpSendResponse;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
   };
@@ -431,6 +455,7 @@ export type FaceOperationContracts = {
     request: PublicInvitationOtpSendRequest;
     response: PublicInvitationOtpSendResponse;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
@@ -446,6 +471,7 @@ export type FaceOperationContracts = {
     request: WorkspacePasswordResetOtpSendRequest;
     response: WorkspacePasswordResetOtpSendResponse;
     requestRequired: true;
+    requiresSession: false;
     path: {
     resetGenerationKey: string;
   };
@@ -460,6 +486,7 @@ export type FaceOperationContracts = {
     request: OperationsPasswordRecoveryStartRequest;
     response: OperationsPasswordRecoveryStartResponse;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
   };
@@ -474,6 +501,7 @@ export type FaceOperationContracts = {
     request: OperationsPasswordRecoveryOtpVerifyRequest;
     response: OperationsPasswordRecoveryVerification;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
   };
@@ -488,6 +516,7 @@ export type FaceOperationContracts = {
     request: PublicInvitationOtpVerifyRequest;
     response: PublicInvitationReadiness;
     requestRequired: true;
+    requiresSession: false;
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
@@ -503,6 +532,7 @@ export type FaceOperationContracts = {
     request: WorkspacePasswordResetOtpVerifyRequest;
     response: WorkspacePasswordResetReadiness;
     requestRequired: true;
+    requiresSession: false;
     path: {
     resetGenerationKey: string;
   };
@@ -530,6 +560,7 @@ export type FaceOperationRequest<I extends PublicOperationId> = FaceOperationOpt
   method: (typeof PUBLIC_OPERATIONS)[number]["method"];
   path: (typeof PUBLIC_OPERATIONS)[number]["path"];
   pathParameters: FaceOperationContracts[I]["path"];
+  requiresSession: FaceOperationContracts[I]["requiresSession"];
 };
 export type FaceExecutor = <I extends PublicOperationId>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;
 
@@ -540,6 +571,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     completeOperationsPasswordRecovery: (pathParameters: FaceOperationContracts["completeOperationsPasswordRecovery"]["path"], options: FaceOperationOptions<"completeOperationsPasswordRecovery">) => execute({
@@ -547,6 +579,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     completePublicInvitation: (pathParameters: FaceOperationContracts["completePublicInvitation"]["path"], options: FaceOperationOptions<"completePublicInvitation">) => execute({
@@ -554,6 +587,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     completeWorkspacePasswordReset: (pathParameters: FaceOperationContracts["completeWorkspacePasswordReset"]["path"], options: FaceOperationOptions<"completeWorkspacePasswordReset">) => execute({
@@ -561,6 +595,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/password-reset/{resetGenerationKey}/complete",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     getPublicAssetContent: (pathParameters: FaceOperationContracts["getPublicAssetContent"]["path"], options: FaceOperationOptions<"getPublicAssetContent">) => execute({
@@ -568,6 +603,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/public/assets/{assetRef}/content",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     getPublicInvitationCompletion: (pathParameters: FaceOperationContracts["getPublicInvitationCompletion"]["path"], options: FaceOperationOptions<"getPublicInvitationCompletion">) => execute({
@@ -575,6 +611,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     getPublicInvitationView: (pathParameters: FaceOperationContracts["getPublicInvitationView"]["path"], options: FaceOperationOptions<"getPublicInvitationView">) => execute({
@@ -582,6 +619,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     savePublicInvitationCredentials: (pathParameters: FaceOperationContracts["savePublicInvitationCredentials"]["path"], options: FaceOperationOptions<"savePublicInvitationCredentials">) => execute({
@@ -589,6 +627,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     sendOperationsPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["sendOperationsPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"sendOperationsPasswordRecoveryOtp">) => execute({
@@ -596,6 +635,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     sendPublicInvitationOtp: (pathParameters: FaceOperationContracts["sendPublicInvitationOtp"]["path"], options: FaceOperationOptions<"sendPublicInvitationOtp">) => execute({
@@ -603,6 +643,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     sendWorkspacePasswordResetOtp: (pathParameters: FaceOperationContracts["sendWorkspacePasswordResetOtp"]["path"], options: FaceOperationOptions<"sendWorkspacePasswordResetOtp">) => execute({
@@ -610,6 +651,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/password-reset/{resetGenerationKey}/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     startOperationsPasswordRecovery: (pathParameters: FaceOperationContracts["startOperationsPasswordRecovery"]["path"], options: FaceOperationOptions<"startOperationsPasswordRecovery">) => execute({
@@ -617,6 +659,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     verifyOperationsPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["verifyOperationsPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"verifyOperationsPasswordRecoveryOtp">) => execute({
@@ -624,6 +667,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     verifyPublicInvitationOtp: (pathParameters: FaceOperationContracts["verifyPublicInvitationOtp"]["path"], options: FaceOperationOptions<"verifyPublicInvitationOtp">) => execute({
@@ -631,6 +675,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     verifyWorkspacePasswordResetOtp: (pathParameters: FaceOperationContracts["verifyWorkspacePasswordResetOtp"]["path"], options: FaceOperationOptions<"verifyWorkspacePasswordResetOtp">) => execute({
@@ -638,6 +683,7 @@ export function createPublicClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/public/password-reset/{resetGenerationKey}/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     })
   } as const;

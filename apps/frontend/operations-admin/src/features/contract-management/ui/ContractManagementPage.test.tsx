@@ -10,11 +10,23 @@ const invalidateSource = await readFile(new URL('./ContractInvalidateModal.tsx',
 describe('contract management focused contract', () => {
   it('keeps the catalog page read-only except for approved overlay entry points', () => {
     expect(source).toContain('contractPageTitle');
+    expect(source).not.toContain('headerTitle={contractPageTitle}');
     expect(source).toContain('contextScopedQueryArgs');
     expect(source).toContain('operationsAdminRtkRequest.getOperationsContracts');
     expect(source).toContain('operationsRtk.useGetOperationsContractsQuery');
+    expect(source).toContain("useState<StoreContractSortKey>('UPDATED_AT')");
+    expect(source).toContain("useState<StoreContractSortDirection>('DESC')");
+    expect(source).toContain('sort, direction, page, pageSize');
+    expect(source).toContain("key: 'contractNo'");
+    expect(source).toContain("key: 'effectiveFrom'");
+    expect(source).toContain("current?.columnKey === 'contractNo' ? 'CONTRACT_NO'");
+    expect(source).toContain("current?.columnKey === 'effectiveFrom' ? 'EFFECTIVE_FROM' : 'UPDATED_AT'");
     expect(source).toContain('showOwnerReadback');
-    expect(source).not.toContain('refetch(');
+    expect(source).toContain('operations-contract-page-retry');
+    expect(source).toContain("testId('operations-contract-filter-submit')");
+    expect(source).toContain("searchConfig.form?.submit()");
+    expect(source).toContain("testId('operations-contract-filter-reset')");
+    expect(source).toContain('operations-contract-page-retry');
     expect(source).not.toMatch(/title:\s*['"]操作['"]/);
   });
 
@@ -23,7 +35,8 @@ describe('contract management focused contract', () => {
     expect(createSource).toContain('selectedStoreTenant');
     expect(createSource).toContain('placeholder="随门店确定"');
     expect(createSource).toContain('operations-contract-create-project');
-    expect(createSource).toContain('onSearch={setStoreSearch}');
+    expect(createSource).toContain('showSearch={{filterOption: false, onSearch: candidates.setStoreSearch}}');
+    expect(createSource).toContain('onPopupScroll={candidates.onPopupScroll}');
     expect(createSource).toContain('Form.List name="items"');
     expect(createSource).toContain('货号编码不能重复');
     expect(createSource).toContain('operationsClient.createOperationsContract');
@@ -40,6 +53,10 @@ describe('contract management focused contract', () => {
     expect(detailSource).toContain("operations-contract-detail-error");
     expect(detailSource).toContain("operations-contract-detail-extension-error");
     expect(detailSource).toContain('operationsAdminRtkRequest.getOperationsContract');
+    expect(detailSource).toContain('const selected = detailQuery.error ? undefined : detailQuery.data;');
+    expect(detailSource).toContain('const detailReady = Boolean(selected) && !detailQuery.isLoading;');
+    expect(detailSource).toContain('extra={detailReady && selected && <Space>');
+    expect(detailSource).not.toContain('detailQuery.data ?? contract');
     expect(invalidateSource).toContain('useSubmissionLifecycle');
     expect(invalidateSource).toContain('operationsClient.invalidateOperationsContract');
     expect(invalidateSource).toContain('作废后保留历史记录。');

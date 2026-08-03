@@ -10,7 +10,7 @@ const workspaceOverviewPage = adminCatalog.platformPages.find((page) => page.pag
 if (!workspaceOverviewPage) throw new Error('Missing generated workspace overview page');
 const workspaceOverviewPageTitle = workspaceOverviewPage.title;
 const unavailableSource = (status?: 'AVAILABLE' | 'UNAVAILABLE') => status === 'UNAVAILABLE';
-const sourceUnavailable = (onRetry: () => void, testIdValue: string) => <Alert type="warning" showIcon message="资料暂时无法获取" description={<Button type="link" onClick={onRetry} {...testId(testIdValue)}>重试</Button>}/>;
+const sourceUnavailable = (onRetry: () => void, testIdValue: string) => <Alert type="warning" showIcon title="资料暂时无法获取" description={<Button type="link" onClick={onRetry} {...testId(testIdValue)}>重试</Button>}/>;
 
 /** IA02 read-only selected-workspace overview. Management actions intentionally live on the separate management page. */
 export function WorkspaceAdministrationPage() {
@@ -22,12 +22,12 @@ function WorkspaceOverviewForSelection({groupWorkspaceKey}: {groupWorkspaceKey: 
   const request = useMemo(() => platformAdminRtkRequest.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: context.groupWorkspaceKey}, {}), [context]);
   const {data, error, isLoading, refetch} = platformRtk.useGetPlatformGroupWorkspaceDetailQuery(request);
   const problem = error ? platformProblemOf(error) : undefined;
-  if (isLoading && !data) return <Card title={workspaceOverviewPageTitle}><Spin/></Card>;
-  if (problem) return <Card title={workspaceOverviewPageTitle} extra={<Button onClick={() => void refetch()} {...testId('workspace-overview-retry')}>重试</Button>}><Alert type="error" showIcon message="资料暂时无法获取" description={problem.detail}/></Card>;
-  if (!data) return <Card title={workspaceOverviewPageTitle}><Alert type="info" message="暂无可读取的集团空间资料"/></Card>;
-  return <Card title={workspaceOverviewPageTitle} extra={<Button onClick={() => void refetch()} {...testId('workspace-overview-refresh')}>刷新</Button>}>
-    <Typography.Paragraph>阅读当前已选择集团空间的业务概况。此页不提供创建、编辑、启停或更换集团空间的入口。</Typography.Paragraph>
-    <Space direction="vertical" size="large" style={{width: '100%'}}>
+  const pageDescription = <Typography.Paragraph aria-label={workspaceOverviewPageTitle} type="secondary" style={{margin: 0}}>阅读当前已选择集团空间的业务概况。此页不提供创建、编辑、启停或更换集团空间的入口。</Typography.Paragraph>;
+  if (isLoading && !data) return <Card title={pageDescription}><Spin/></Card>;
+  if (problem) return <Card title={pageDescription} extra={<Button onClick={() => void refetch()} {...testId('workspace-overview-retry')}>重试</Button>}><Alert type="error" showIcon title="资料暂时无法获取" description={problem.detail}/></Card>;
+  if (!data) return <Card title={pageDescription}><Alert type="info" title="暂无可读取的集团空间资料"/></Card>;
+  return <Card title={pageDescription}>
+    <Space orientation="vertical" size="large" style={{width: '100%'}}>
       <section><Typography.Title level={5}>空间概览</Typography.Title>{unavailableSource(data.workspaceSourceStatus) ? sourceUnavailable(() => void refetch(), 'workspace-overview-workspace-retry') : <Descriptions bordered size="small" column={1} items={[
         {key: 'name', label: '集团空间名称', children: data.name},
         {key: 'key', label: '集团空间编码', children: data.groupWorkspaceKey},

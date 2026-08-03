@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-ADMIN-ENVIRONMENT-BASELINE-20260803",
+  "genericProblem": "A non-production usability or list baseline can appear implemented while a local environment flag disables it, or while duplicate page-local defaults and repeated brand regions drift across consumers.",
+  "rootCauseClass": "SHARED_POLICY_AND_CONSUMER_BASELINE_FRAGMENTATION",
+  "finiteDenominator": [
+    "managed r5 DEV runner and formal seed manifest admission",
+    "the four OTP owner services that serialize debugVerificationCode",
+    "platform-foundation environment policy",
+    "all platform-admin and operations-admin management-list initial page-size sources",
+    "PublicInvitationEntry and PublicInvitationOtpStep"
+  ],
+  "searchedSurfaces": [
+    "scripts/dev/r5-dev-runner.mjs",
+    "scripts/dev/owner-command-seed-executor.mjs",
+    "PlatformAuthenticationService.java",
+    "WorkspaceAuthenticationService.java",
+    "WorkspaceInvitationService.java",
+    "WorkspacePasswordRecoveryService.java",
+    "platform-admin/src/features",
+    "operations-admin/src/features",
+    "admin-ui-foundation",
+    "PublicInvitationEntry.tsx",
+    "PublicInvitationOtpStep.tsx"
+  ],
+  "counterexamples": [
+    "Production must keep debugVerificationCode absent even after the non-production hard lock.",
+    "Candidate Select page sizes are not management-list initial page sizes.",
+    "Public invitation still requires the invite-bound mobile OTP; a retained invitation token is not authorization."
+  ],
+  "findings": [
+    {
+      "findingId": "EB-01",
+      "classification": "CONFIRMED",
+      "evidence": "The managed DEV runner maps an optional environment variable to false and the formal seed executor previously requires false, so a genuine owner debug response can be suppressed before the public UI receives it.",
+      "minimumFix": "A foundation policy forces true for non-production/UAT, and managed runner/seed manifest enforce the same true state."
+    },
+    {
+      "findingId": "EB-02",
+      "classification": "CONFIRMED",
+      "evidence": "The two apps contain a finite set of local useState(20) and pageSize:20 management-list defaults.",
+      "minimumFix": "One foundation constant imported by every enumerated management list plus per-app denominator tests."
+    },
+    {
+      "findingId": "EB-03",
+      "classification": "CONFIRMED",
+      "evidence": "Public invitation card header and h1 independently concatenate workspace and operations labels, while OTP notice/action surfaces have no grouping spacing.",
+      "minimumFix": "Fixed welcome header, logo plus operations-title heading, and grouped notices/right-aligned actions without changing owner protocol."
+    }
+  ],
+  "preventionDispositions": [
+    {"findingId": "EB-01", "preventionDestination": "FOCUSED_UNIT_AND_MANAGED_SEED", "owningSourceOrControl": "OtpDebugExposurePolicyTest, r5 OTP gate test, formal seed manifest and public invitation DEV proof"},
+    {"findingId": "EB-02", "preventionDestination": "STATIC_DENOMINATOR_TEST", "owningSourceOrControl": "one architecture test in each admin app and foundation constant test"},
+    {"findingId": "EB-03", "preventionDestination": "FOCUSED_UI_TEST", "owningSourceOrControl": "PublicInvitationEntry.test.tsx and DEV public invitation visual readback"}
+  ]
+}

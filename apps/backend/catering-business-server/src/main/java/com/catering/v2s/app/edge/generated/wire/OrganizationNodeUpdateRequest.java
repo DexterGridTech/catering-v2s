@@ -7,5 +7,6 @@ public record OrganizationNodeUpdateRequest(
     String parentId,
     java.util.List<OrganizationNodeUpdateRequestPhasesItem> phases,
     String notes,
+    tools.jackson.databind.JsonNode extensionValues,
     Long expectedVersion
 ) {}

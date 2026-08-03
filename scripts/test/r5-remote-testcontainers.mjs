@@ -5,11 +5,13 @@
  */
 import {createHash, randomUUID} from 'node:crypto';
 import {spawn, spawnSync} from 'node:child_process';
-import {appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync} from 'node:fs';
+import {appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '../..');
-const task = process.argv[2] ?? ':apps:backend:catering-business-server:modules:asset:test';
+const gradleArguments = process.argv.slice(2);
+const task = gradleArguments[0] ?? ':apps:backend:catering-business-server:modules:asset:test';
+const extraGradleArguments = gradleArguments.slice(1);
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
 const evidence = path.join(runtime, 'evidence', 'remote-testcontainers');
 const gradleHome = process.env.V2S_GRADLE_HOME ?? '/opt/homebrew/Cellar/gradle/9.6.1/libexec';
@@ -22,6 +24,7 @@ const remoteResults = `${remoteRoot}/results`;
 const remoteDependencyCache = '/tmp/catering-v2s-r5-gradle-cache';
 const requiredPhases = ['PREPARED', 'SOURCE_SYNCED', 'GRADLE_SYNCED', 'PROCESS_STARTED', 'RUNNING', 'COLLECTED', 'CLEANUP'];
 const requiredLifecycleEvents = ['LAUNCHED', 'RECONNECTED_CONTROL', 'COLLECTED_ARTIFACTS'];
+const resourceLimits = {maxPreviousLive: 0, maxPreviousRssMiB: 2048};
 const now = () => new Date().toISOString();
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -61,6 +64,22 @@ const atomicWrite = (target, value) => {
   const temporary = `${target}.${process.pid}.${randomUUID()}.tmp`;
   writeFileSync(temporary, value);
   renameSync(temporary, target);
+};
+const previousControls = () => existsSync(evidence) ? readdirSync(evidence).flatMap((entry) => {
+  try { const manifest = JSON.parse(readFileSync(path.join(evidence, entry, 'run-manifest.json'), 'utf8')); const value = manifest.controlRecord?.value; return manifest.remote?.hostAlias === remoteHost && value?.pid && value?.bootId && value?.processStartTicks ? [{runId: manifest.runId, ...value}] : []; } catch { return []; }
+}) : [];
+const preflightResources = () => {
+  const candidates = previousControls();
+  const probes = candidates.map((value) => `probe ${quote(value.runId)} ${quote(value.pid)} ${quote(value.bootId)} ${quote(value.processStartTicks)}`).join('\n');
+  const result = remoteResult(script('set -euo pipefail', 'probe(){ local id="$1" pid="$2" boot="$3" start="$4"; if kill -0 "$pid" 2>/dev/null && test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" && test "$(awk \'{print $22}\' /proc/$pid/stat)" = "$start"; then printf "LIVE\\t%s\\t%s\\t%s\\n" "$id" "$pid" "$(ps -o rss= -p "$pid" | tr -d \' \')"; fi; }', probes, 'awk \'/MemAvailable:/ {print "MEM\\t" int($2/1024)}\' /proc/meminfo', 'docker ps -aq --filter label=org.testcontainers=true | sed "s/^/CONTAINER\\t/" || true', 'docker volume ls -q --filter label=org.testcontainers=true | sed "s/^/VOLUME\\t/" || true'));
+  if (result.status !== 0) fail('REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE', 'ENVIRONMENT_BOUNDARY');
+  const rows = result.stdout.trim().split('\n').filter(Boolean).map((line) => line.split('\t'));
+  const live = rows.filter(([kind]) => kind === 'LIVE'); const rssMiB = Math.ceil(live.reduce((sum, row) => sum + Number(row[3] || 0), 0) / 1024);
+  const containers = rows.filter(([kind]) => kind === 'CONTAINER').map((row) => row[1]); const volumes = rows.filter(([kind]) => kind === 'VOLUME').map((row) => row[1]);
+  const snapshot = {limits: resourceLimits, observedAt: now(), previousLive: live.map((row) => ({runId: row[1], pid: Number(row[2]), rssKiB: Number(row[3])})), previousRssMiB: rssMiB, memoryAvailableMiB: Number(rows.find(([kind]) => kind === 'MEM')?.[1] ?? 0), staleTestcontainers: {containers, volumes}};
+  if (live.length > resourceLimits.maxPreviousLive || rssMiB > resourceLimits.maxPreviousRssMiB) fail('REMOTE_RESOURCE_BUDGET_EXCEEDED', 'ENVIRONMENT_BOUNDARY');
+  if (containers.length || volumes.length) fail('REMOTE_TESTCONTAINERS_STALE_RESOURCE', 'ENVIRONMENT_BOUNDARY');
+  return snapshot;
 };
 
 const validateControlRecord = (control, expected) => {
@@ -106,6 +125,7 @@ class ManagedRun {
       sourceSha256: sha256(readFileSync(process.argv[1], 'utf8')), logPath: expected.logPath,
       phaseEvents: [], lifecycleEvents: [], heartbeats: [], stallDiagnostics: [], logInspection: {readCount: 0, observedBytes: 0, status: 'PENDING'},
       controlRecord: {expected, verified: false, reusedAfterReconnect: false},
+      resourceBudget: {preflight: {status: 'PENDING'}, samples: []},
       firstFailure: null, lastKnownGood: 'PREPARED', brokenBoundary: null,
       business: {status: 'NOT_APPLICABLE'}, cleanup: {status: 'NOT_ATTEMPTED', reaped: false},
     };
@@ -129,7 +149,7 @@ class ManagedRun {
     this.manifest.controlRecord.reconnect = {readAt: now(), identityReadback};
     this.persist();
   }
-  heartbeat(event) { this.manifest.heartbeats.push({...event, observedAt: now()}); this.persist(); }
+  heartbeat(event) { this.manifest.heartbeats.push({...event, observedAt: now()}); this.manifest.resourceBudget.samples.push({observedAt: now(), ...event.resource}); this.persist(); }
   failure(error) {
     if (!this.manifest.firstFailure) this.manifest.firstFailure = error instanceof Error ? error.message : String(error);
     this.manifest.brokenBoundary = error instanceof RunnerFailure ? error.boundary : 'RUNNER';
@@ -173,10 +193,14 @@ const remoteRunScript = (commandSha256) => script(
   '#!/usr/bin/env bash', 'set -uo pipefail', `root=${quote(remoteRoot)}`, `task=${quote(task)}`,
   `command_sha=${quote(commandSha256)}`, 'phase_file="$root/results/phase.jsonl"', 'log_file="$root/results/gradle.log"',
   `emit() { printf '{"timestamp":"%s","phase":"%s","outcome":"%s","pid":%s,"pgid":%s,"bootId":"%s","processStartTicks":%s,"commandSha256":"%s","logBytes":%s}\\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" "$$" "$(ps -o pgid= -p $$ | tr -d ' ')" "$(cat /proc/sys/kernel/random/boot_id)" "$(awk '{print $22}' /proc/$$/stat)" "$command_sha" "$(wc -c < "$log_file" 2>/dev/null || printf 0)" >> "$phase_file"; }`,
-  'emit PROCESS_STARTED PASS', `export GRADLE_USER_HOME=${quote(remoteDependencyCache)}`, 'export TESTCONTAINERS_RYUK_DISABLED=true', 'cd "$root/workspace"',
-  '"$root/gradle/bin/gradle" "$task" --no-daemon > "$log_file" 2>&1 &', 'gradle_pid=$!', 'emit RUNNING PASS',
+  'emit PROCESS_STARTED PASS', `export GRADLE_USER_HOME=${quote(remoteDependencyCache)}`,
+  // The remote JVM must opt in before Gradle loads any Testcontainers class. This prevents the
+  // repository build guard from falling back to the developer's local DockerClientProviderStrategy.
+  'export V2S_TESTCONTAINERS_EXECUTION_PLANE=remote', `export V2S_TESTCONTAINERS_REMOTE_HOST=${quote(remoteHost)}`,
+  'export TESTCONTAINERS_RYUK_DISABLED=true', 'cd "$root/workspace"',
+  `"$root/gradle/bin/gradle" "$task" ${extraGradleArguments.map(quote).join(' ')} --no-daemon > "$log_file" 2>&1 &`, 'gradle_pid=$!', 'emit RUNNING PASS',
   'while kill -0 "$gradle_pid" 2>/dev/null; do emit RUNNING HEARTBEAT; sleep 15; done', 'wait "$gradle_pid"; gradle_status=$?',
-  `docker ps -aq --filter label=org.testcontainers=true --format '{{.ID}} {{.Label "org.testcontainers.ryuk"}}' | awk '$2 != "true" { print $1 }' | sort > "$root/after-container-ids"`,
+    `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/after-container-ids"`,
   'comm -13 "$root/before-container-ids" "$root/after-container-ids" > "$root/results/uncollected-container-ids"',
   'container_status=PASS; if [ -s "$root/results/uncollected-container-ids" ]; then container_status=FAIL; fi',
   `find "$root/workspace" -type f -path '*/build/test-results/test/TEST-*.xml' -exec cp {} "$root/results/" \\; 2>/dev/null || true`,
@@ -346,7 +370,8 @@ const execute = async () => {
   const run = new ManagedRun(directory, expected);
   let control; let lifecycle; let artifactsCollected = false; let remotePrepared = false; let failure;
   try {
-    remote(script('set -euo pipefail', `root=${quote(remoteRoot)}`, `cache=${quote(remoteDependencyCache)}`, 'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac', 'case "$cache" in /tmp/catering-v2s-r5-gradle-cache) ;; *) exit 64 ;; esac', 'mkdir -p "$root/workspace" "$root/results" "$cache"', `docker ps -aq --filter label=org.testcontainers=true --format '{{.ID}} {{.Label "org.testcontainers.ryuk"}}' | awk '$2 != "true" { print $1 }' | sort > "$root/before-container-ids"`)); remotePrepared = true;
+    const preflight = preflightResources(); run.manifest.resourceBudget.preflight = {status: 'PASS', ...preflight}; run.manifest.resourceBudget.samples.push({observedAt: now(), memoryAvailableMiB: preflight.memoryAvailableMiB, previousRssMiB: preflight.previousRssMiB}); run.persist();
+    remote(script('set -euo pipefail', `root=${quote(remoteRoot)}`, `cache=${quote(remoteDependencyCache)}`, 'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac', 'case "$cache" in /tmp/catering-v2s-r5-gradle-cache) ;; *) exit 64 ;; esac', 'mkdir -p "$root/workspace" "$root/results" "$cache"', `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/before-container-ids"`)); remotePrepared = true;
     await uploadSource(); run.phase('SOURCE_SYNCED', 'PASS');
     await syncGradle(run); run.phase('GRADLE_SYNCED', 'PASS');
     lifecycle = createLifecycleHarness(run, {launch, reconnect: reconnectControl, collect: () => collectArtifacts(run)});
@@ -359,7 +384,7 @@ const execute = async () => {
       const log = incrementalRead(run, expected.logPath, 'gradle.log', logOffset, 'log'); logOffset = log.size;
       run.manifest.logInspection = {readCount: run.manifest.logInspection.readCount + 1, observedBytes: logOffset, lastReadAt: now(), status: 'READ'}; run.persist();
       phaseOffset = collectPhase(run, phaseOffset);
-      const identity = remoteIdentity(control); run.heartbeat({phase: 'RUNNING', identity: identity.state, logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes});
+      const identity = remoteIdentity(control); run.heartbeat({phase: 'RUNNING', identity: identity.state, logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes, resource: {}});
       if (identity.state === 'REAPED') break;
       const observation = workloadObservationKey({logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes});
       stalls = observation === previousObservation ? stalls + 1 : 0; previousObservation = observation;
@@ -369,7 +394,10 @@ const execute = async () => {
     }
     lifecycle.collect(); artifactsCollected = true;
     const result = JSON.parse(readFileSync(path.join(directory, 'remote-result.json'), 'utf8'));
-    if (result.gradleStatus !== 0 || result.containerCleanup !== 'PASS') fail('REMOTE_TEST_OR_CONTAINER_CLEANUP_FAILED', 'REMOTE_TEST');
+    if (result.gradleStatus !== 0 || result.containerCleanup !== 'PASS') {
+      run.manifest.residualTestcontainers = result.containerCleanup !== 'PASS'; run.persist();
+      fail('REMOTE_TEST_OR_CONTAINER_CLEANUP_FAILED', 'REMOTE_TEST');
+    }
     run.manifest.business = {status: 'PASS', remoteGradleStatus: result.gradleStatus};
   } catch (error) {
     failure = error instanceof Error ? error : new RunnerFailure(String(error));
@@ -377,6 +405,7 @@ const execute = async () => {
     try { if (control && !artifactsCollected) { lifecycle?.collect(); artifactsCollected = true; } } catch (collectionError) { run.failure(collectionError); }
   } finally {
     if (control) reap(run, control); else if (remotePrepared) reapUnlaunched(run); else run.manifest.cleanup = {status: 'FAIL', reaped: false, reason: 'REMOTE_SCRATCH_NOT_PREPARED'};
+    if (run.manifest.residualTestcontainers === true) run.manifest.cleanup = {...run.manifest.cleanup, status: 'FAIL', reaped: false, reason: 'TESTCONTAINERS_RESIDUAL_RESOURCE'};
     run.persist();
   }
   try { parseAndValidateRunManifest(run.manifest); } catch (error) { if (!failure) failure = error; }

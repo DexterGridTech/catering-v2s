@@ -27,6 +27,7 @@ export type FrontendLogEvent = {
   outcome: string;
   level: FrontendLogLevel;
   status?: number | string;
+  requiresSession?: boolean;
   errorCode?: string;
   durationMs?: number;
 };
@@ -96,10 +97,11 @@ export const createSafeLogger = (options?: {service?: string; enabled?: boolean;
     events.push(safe);
     if (events.length > maxEvents) events.shift();
     if (!enabled) return;
-    if (level === 'ERROR') console.error('[platform]', safe);
-    else if (level === 'WARN') console.warn('[platform]', safe);
-    else if (level === 'INFO') console.info('[platform]', safe);
-    else console.debug('[platform]', safe);
+    const line = `[${service}] ${JSON.stringify(safe)}`;
+    if (level === 'ERROR') console.error(line);
+    else if (level === 'WARN') console.warn(line);
+    else if (level === 'INFO') console.info(line);
+    else console.debug(line);
   };
 
   return {

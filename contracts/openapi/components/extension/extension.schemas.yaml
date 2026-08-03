@@ -107,6 +107,7 @@
               "type": "object",
               "additionalProperties": false,
               "required": [
+                "key",
                 "label",
                 "type",
                 "required",
@@ -212,9 +213,12 @@
       "ExtensionEntityType": {
         "type": "string",
         "enum": [
+          "COMMERCIAL_GROUP",
           "BRAND",
           "TENANT",
           "HEAD_COMPANY",
+          "REGION",
+          "PROJECT",
           "STORE",
           "CONTRACT"
         ]

@@ -271,7 +271,7 @@
     },
     {
       "packageId": "RM1P6-U03",
-      "implementationState": "PENDING_FUTURE_UNIT",
+      "implementationState": "ACTIVE_REQUIRED",
       "surfaceIds": [
         "OPERATIONS-AUTH",
         "PUBLIC-INVITATION",
@@ -298,7 +298,7 @@
         "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
         "apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts"
       ],
-      "requirement": "Each future P6-3 business surface must be exercised by a non-empty real browser L2 case through a managed run before P6-3 can exit. This is a future obligation only and does not authorize P6-3 implementation now."
+      "requirement": "Each P6-3 business surface is exercised by a non-empty real browser L2 case through the current managed run (joint local run); the package exit must bind the run-scoped business PASS and independent cleanup PASS. This evidence does not authorize UAT, DEV seed/reset or Roadmap status mutation."
     }
   ],
   "legacyDeferredTestCount": 0,

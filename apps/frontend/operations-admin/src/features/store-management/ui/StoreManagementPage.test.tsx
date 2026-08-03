@@ -12,8 +12,8 @@ describe('store management focused contract', () => {
     expect(source).toContain("from './StoreCreateDrawer'");
     expect(source).toContain("from './StoreEditDrawer'");
     expect(source).toContain("from './StoreStatusModal'");
-    expect(source).toContain('operationsAdminRtkRequest.getOperationsOrganizationStoreCandidates');
-    expect(source).toContain('useGetOperationsOrganizationStoreCandidatesQuery');
+    expect(source).toContain('useOrganizationCandidates');
+    expect(source).toContain('useOrganizationCandidates');
     expect(source).toContain('contextScopedQueryArgs');
     expect(source).toContain('queryContext={queryContext}');
     expect(source).toContain('operations-store-page');
@@ -25,12 +25,21 @@ describe('store management focused contract', () => {
     expect(source).toContain('operations-store-open-detail-${row.id}');
     expect(source).toContain('operations-store-create-open');
     expect(source).toContain('operations-store-table');
+    expect(source).toContain("useState<OrganizationStoreSortKey>('UPDATED_AT')");
+    expect(source).toContain("useState<OrganizationStoreSortDirection>('DESC')");
+    expect(source).toContain('sort, direction, page: current, pageSize');
+    expect(source).toContain("key: 'name'");
+    expect(source).toContain("key: 'code'");
+    expect(source).toContain("'NAME'");
+    expect(source).toContain("'CODE'");
+    expect(source).toContain("'UPDATED_AT'");
     expect(source).not.toContain('LegacyStore');
     expect(source).not.toMatch(/title:\s*['"]操作['"]/);
     expect(detail).toContain('useGetOperationsOrganizationStoreQuery');
     expect(detail).toContain('useGetOperationsOrganizationStoreExtensionDefinitionQuery');
     expect(detail).toContain('operations-store-detail-loading');
     expect(detail).toContain('operations-store-detail-problem');
+    expect(detail).toContain('size="small" column={1} styles={{label: {width: 164}}}');
   });
 
   it('keeps definition-driven, safe-to-submit create and edit forms', () => {

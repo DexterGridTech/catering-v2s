@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationActionRequest;
+import com.catering.v2s.app.edge.generated.wire.SortDirection;
+import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationSortKey;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -34,13 +36,29 @@ class OperationsWorkspaceInvitationServerScopeTest {
     void invitationListDelegatesRequestedScopeToOwnerTaskRead() {
         Fixture fixture = fixture();
         UUID scopeRef = UUID.randomUUID();
-        when(fixture.invitations.managementPageForOperations(eq(fixture.session), eq("PROJECT"), eq(scopeRef), org.mockito.ArgumentMatchers.any()))
-            .thenReturn(new WorkspaceInvitationService.ManagementInvitationPage(List.of(), 1, 20, 0L, new WorkspaceInvitationService.ManagementInvitationPageRequest(null, null, null, null, null, null, "CREATED_AT", "DESC", 1, 20)));
+        when(fixture.invitations.managementPageForOperations(eq(fixture.session), eq("PROJECT"), eq(scopeRef), argThat(page -> "EXPIRES_AT".equals(page.sort()) && "ASC".equals(page.direction()))))
+            .thenReturn(new WorkspaceInvitationService.ManagementInvitationPage(List.of(), 1, 20, 0L, new WorkspaceInvitationService.ManagementInvitationPageRequest(null, null, null, null, null, null, "EXPIRES_AT", "ASC", 1, 20)));
 
-        var result = fixture.controller.projectList(fixture.request, KEY, scopeRef.toString(), null, null, null, null, null, null, 1, 20, fixture.session.contextVersion());
+        var result = fixture.controller.projectList(fixture.request, KEY, scopeRef.toString(), null, null, null, null, null, null, WorkspaceInvitationSortKey.EXPIRES_AT, SortDirection.ASC, 1, 20, fixture.session.contextVersion());
 
         assertEquals(List.of(), result.items());
-        verify(fixture.invitations).managementPageForOperations(eq(fixture.session), eq("PROJECT"), eq(scopeRef), org.mockito.ArgumentMatchers.any());
+        assertEquals(WorkspaceInvitationSortKey.EXPIRES_AT, result.criteria().sort());
+        assertEquals(SortDirection.ASC, result.criteria().direction());
+        verify(fixture.invitations).managementPageForOperations(eq(fixture.session), eq("PROJECT"), eq(scopeRef), argThat(page -> "EXPIRES_AT".equals(page.sort()) && "ASC".equals(page.direction())));
+    }
+
+    @Test
+    void invitationListDefaultsToCreatedAtDescending() {
+        Fixture fixture = fixture();
+        UUID scopeRef = UUID.randomUUID();
+        when(fixture.invitations.managementPageForOperations(eq(fixture.session), eq("PROJECT"), eq(scopeRef), argThat(page -> "CREATED_AT".equals(page.sort()) && "DESC".equals(page.direction()))))
+            .thenReturn(new WorkspaceInvitationService.ManagementInvitationPage(List.of(), 1, 20, 0L, new WorkspaceInvitationService.ManagementInvitationPageRequest(null, null, null, null, null, null, "CREATED_AT", "DESC", 1, 20)));
+
+        var result = fixture.controller.projectList(fixture.request, KEY, scopeRef.toString(), null, null, null, null, null, null, null, null, 1, 20, fixture.session.contextVersion());
+
+        assertEquals(WorkspaceInvitationSortKey.CREATED_AT, result.criteria().sort());
+        assertEquals(SortDirection.DESC, result.criteria().direction());
+        verify(fixture.invitations).managementPageForOperations(eq(fixture.session), eq("PROJECT"), eq(scopeRef), argThat(page -> "CREATED_AT".equals(page.sort()) && "DESC".equals(page.direction())));
     }
 
     @Test
@@ -49,17 +67,18 @@ class OperationsWorkspaceInvitationServerScopeTest {
         UUID scopeRef = UUID.randomUUID();
         UUID targetId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
-        when(fixture.user.resolveTaskScope(fixture.session, "STORE", scopeRef))
+        when(fixture.user.resolveCommandTarget(fixture.session, "STORE", scopeRef))
             .thenReturn(new OrganizationTaskPathLookup.TaskPath("STORE", targetId, List.of(targetId), "group/store"));
         WorkspaceInvitationReadback created = new WorkspaceInvitationReadback(UUID.randomUUID(), fixture.session.workspaceUuid(), KEY, "13800000000", "PENDING", 100L, 1L, 10L, null, null, null, null);
         when(fixture.invitations.createForOperations(eq(fixture.session.workspaceUuid()), eq(KEY), eq(fixture.session.currentAssignmentId()), eq("13800000000"), argThat(intents -> intents.size() == 1 && intents.getFirst().roleId().equals(roleId) && intents.getFirst().serviceNodeType().equals("STORE") && intents.getFirst().serviceNodeId().equals(targetId)), eq(IDEMPOTENCY_KEY), eq(fixture.actor)))
             .thenReturn(created);
-        when(fixture.invitations.managementView(created)).thenReturn(new WorkspaceInvitationService.ManagementInvitationView(created.id(), KEY, "138****0000", "STORE", "group/store", List.of("Store manager"), "PENDING", 1L, 100L, 1L, 10L, null, null, null, null));
+        when(fixture.invitations.managementView(created)).thenReturn(new WorkspaceInvitationService.ManagementInvitationView(created.id(), KEY, "138****0000", "13800000000", "平台管理员", "STORE", "group/store", List.of("Store manager"), "PENDING", 1L, 100L, 1L, 10L, null, null, null, null));
 
         var response = fixture.controller.storeCreate(fixture.request, KEY, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationCreateRequest(scopeRef.toString(), "13800000000", List.of(roleId.toString()), fixture.session.contextVersion(), IDEMPOTENCY_KEY));
 
         assertEquals(201, response.getStatusCode().value());
-        verify(fixture.user).resolveTaskScope(fixture.session, "STORE", scopeRef);
+        verify(fixture.authentication).session("operations-session");
+        verify(fixture.user).resolveCommandTarget(fixture.session, "STORE", scopeRef);
         verify(fixture.invitations).createForOperations(eq(fixture.session.workspaceUuid()), eq(KEY), eq(fixture.session.currentAssignmentId()), eq("13800000000"), argThat(intents -> intents.size() == 1 && intents.getFirst().serviceNodeType().equals("STORE") && intents.getFirst().serviceNodeId().equals(targetId)), eq(IDEMPOTENCY_KEY), eq(fixture.actor));
     }
 
@@ -92,8 +111,8 @@ class OperationsWorkspaceInvitationServerScopeTest {
         WorkspaceInvitationService invitations = mock(WorkspaceInvitationService.class);
         WorkspaceUserService user = mock(WorkspaceUserService.class);
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
-        return new Fixture(new OperationsWorkspaceInvitationController(sessions, invitations, user), sessions, invitations, user, request, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), session);
+        return new Fixture(new OperationsWorkspaceInvitationController(sessions, invitations, user), sessions, authentication, invitations, user, request, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), session);
     }
 
-    private record Fixture(OperationsWorkspaceInvitationController controller, OperationsSessionResolver sessions, WorkspaceInvitationService invitations, WorkspaceUserService user, EdgeRequestContext request, AuditActor actor, WorkspaceSessionReadback session) { }
+    private record Fixture(OperationsWorkspaceInvitationController controller, OperationsSessionResolver sessions, WorkspaceAuthenticationService authentication, WorkspaceInvitationService invitations, WorkspaceUserService user, EdgeRequestContext request, AuditActor actor, WorkspaceSessionReadback session) { }
 }

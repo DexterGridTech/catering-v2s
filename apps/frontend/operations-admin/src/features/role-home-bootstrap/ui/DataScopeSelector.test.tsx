@@ -13,6 +13,9 @@ describe('operations data-scope focused IA contract', () => {
     expect(source).toContain("page?.noDataNodePrompt ?? '请选择可查看范围'");
     expect(source).toContain("page?.noCandidatePrompt ?? '当前任职没有可查看范围'");
     expect(source).toContain("testId('operations-data-scope-trigger')");
+    expect(source).toContain('collapsed = false');
+    expect(source).toContain('icon={collapsed ? <ApartmentOutlined/> : undefined}');
+    expect(source).toContain('aria-label={collapsed ? `可查看范围：${selectedName}` : undefined}');
   });
 
   it('derives the region-project-store cascade only from owner candidates and submits the final owner candidate immediately', () => {

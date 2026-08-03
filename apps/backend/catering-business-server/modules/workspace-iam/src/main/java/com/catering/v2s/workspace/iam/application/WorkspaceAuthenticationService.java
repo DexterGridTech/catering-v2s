@@ -35,27 +35,37 @@ public class WorkspaceAuthenticationService {
     private static final long OTP_TTL_MILLIS = 5 * 60 * 1000L;
     private final JdbcTemplate jdbc; private final TimeProvider time; private final WorkspaceRoleService roles; private final OrganizationNodeLookup nodes; private final StoreAssignmentLookup stores; private final OrganizationEntityLookup entities; private final CommercialGroupLookup groups; private final WorkspaceLoginRateLimitService loginLimits; private final WorkspaceOtpRateLimitService otpLimits; private final WorkspaceStatusLookup workspaces; private final OrganizationVisibilityLookup visibility; private final WorkspaceSessionRequestCache sessionCache; private final OrganizationTaskPathLookup taskPaths; private final boolean debugCodeExposure;
     private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder(); private final SecureRandom random = new SecureRandom();
-    public WorkspaceAuthenticationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities) { this(jdbc, time, roles, nodes, stores, entities, legacyGroups(nodes), new WorkspaceLoginRateLimitService(jdbc, time), new WorkspaceOtpRateLimitService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, (workspaceUuid, groupWorkspaceKey, assignmentNodeType, assignmentNodeId, visibleNodeId) -> true, new WorkspaceSessionRequestCache(false), null, false); }
+    public WorkspaceAuthenticationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities) { this(jdbc, time, roles, nodes, stores, entities, legacyGroups(nodes), new WorkspaceLoginRateLimitService(jdbc, time), new WorkspaceOtpRateLimitService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, (workspaceUuid, groupWorkspaceKey, assignmentNodeType, assignmentNodeId, visibleNodeId) -> true, new WorkspaceSessionRequestCache(false), null, new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("", false)); }
     /** Compatibility constructor for owner-focused tests; production must inject the exposure policy. */
-    public WorkspaceAuthenticationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceLoginRateLimitService loginLimits, WorkspaceOtpRateLimitService otpLimits, WorkspaceStatusLookup workspaces, OrganizationVisibilityLookup visibility, WorkspaceSessionRequestCache sessionCache, OrganizationTaskPathLookup taskPaths) { this(jdbc, time, roles, nodes, stores, entities, groups, loginLimits, otpLimits, workspaces, visibility, sessionCache, taskPaths, false); }
+    public WorkspaceAuthenticationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceLoginRateLimitService loginLimits, WorkspaceOtpRateLimitService otpLimits, WorkspaceStatusLookup workspaces, OrganizationVisibilityLookup visibility, WorkspaceSessionRequestCache sessionCache, OrganizationTaskPathLookup taskPaths) { this(jdbc, time, roles, nodes, stores, entities, groups, loginLimits, otpLimits, workspaces, visibility, sessionCache, taskPaths, new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("", false)); }
     @org.springframework.beans.factory.annotation.Autowired
-    public WorkspaceAuthenticationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceLoginRateLimitService loginLimits, WorkspaceOtpRateLimitService otpLimits, WorkspaceStatusLookup workspaces, OrganizationVisibilityLookup visibility, WorkspaceSessionRequestCache sessionCache, OrganizationTaskPathLookup taskPaths, @Value("${platform.otp.debug-code-exposure:false}") boolean debugCodeExposure) { this.jdbc = jdbc; this.time = time; this.roles = roles; this.nodes = nodes; this.stores = stores; this.entities = entities; this.groups = groups; this.loginLimits = loginLimits; this.otpLimits = otpLimits; this.workspaces = workspaces; this.visibility = visibility; this.sessionCache = sessionCache; this.taskPaths = taskPaths; this.debugCodeExposure = debugCodeExposure; }
+    public WorkspaceAuthenticationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceLoginRateLimitService loginLimits, WorkspaceOtpRateLimitService otpLimits, WorkspaceStatusLookup workspaces, OrganizationVisibilityLookup visibility, WorkspaceSessionRequestCache sessionCache, OrganizationTaskPathLookup taskPaths, com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy) { this.jdbc = jdbc; this.time = time; this.roles = roles; this.nodes = nodes; this.stores = stores; this.entities = entities; this.groups = groups; this.loginLimits = loginLimits; this.otpLimits = otpLimits; this.workspaces = workspaces; this.visibility = visibility; this.sessionCache = sessionCache; this.taskPaths = taskPaths; this.debugCodeExposure = otpDebugExposurePolicy.enabled(); }
 
-    @Transactional(noRollbackFor = {InvalidCredentialsException.class, LoginRateLimitedException.class, OtpInvalidException.class, OtpRateLimitedException.class})
+    @Transactional(noRollbackFor = {InvalidCredentialsException.class, AccountDisabledException.class, CredentialLockedException.class, WorkspaceDisabledException.class, LoginRateLimitedException.class, OtpInvalidException.class, OtpRateLimitedException.class})
     public LoginResult login(String groupWorkspaceKey, String loginName, char[] password) {
         return login(groupWorkspaceKey, loginName, password, "legacy-test-source");
     }
 
-    @Transactional(noRollbackFor = {InvalidCredentialsException.class, LoginRateLimitedException.class, OtpInvalidException.class, OtpRateLimitedException.class})
+    @Transactional(noRollbackFor = {InvalidCredentialsException.class, AccountDisabledException.class, CredentialLockedException.class, WorkspaceDisabledException.class, LoginRateLimitedException.class, OtpInvalidException.class, OtpRateLimitedException.class})
     public LoginResult login(String groupWorkspaceKey, String loginName, char[] password, String sourceAddress) {
+        return createSession(authenticatePassword(groupWorkspaceKey, loginName, password, sourceAddress));
+    }
+
+    @Transactional(noRollbackFor = {InvalidCredentialsException.class, AccountDisabledException.class, CredentialLockedException.class, WorkspaceDisabledException.class, LoginRateLimitedException.class, OtpInvalidException.class, OtpRateLimitedException.class})
+    public LoginEntryResult loginWithSessionEntry(String groupWorkspaceKey, String loginName, char[] password, String sourceAddress) {
+        return createSessionEntry(authenticatePassword(groupWorkspaceKey, loginName, password, sourceAddress));
+    }
+
+    private Account authenticatePassword(String groupWorkspaceKey, String loginName, char[] password, String sourceAddress) {
         WorkspaceLoginRateLimitService.Attempt attempt = loginLimits.begin(groupWorkspaceKey, loginName, sourceAddress);
-        Account account = jdbc.query("SELECT a.id, a.workspace_uuid, a.group_workspace_key FROM workspace_iam.workspace_account a JOIN workspace_iam.workspace_credential c ON c.account_id=a.id WHERE a.group_workspace_key=? AND a.login_name_normalized=? AND a.status='ENABLED' AND (c.locked_until_epoch_millis IS NULL OR c.locked_until_epoch_millis<?)", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, loginName == null ? "" : loginName.toLowerCase()); statement.setLong(3, time.currentEpochMillis()); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3)) : null);
-        if (account != null && !workspaces.isEnabled(account.workspaceUuid(), account.key())) account = null;
+        Account account = jdbc.query("SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_hash, c.locked_until_epoch_millis FROM workspace_iam.workspace_account a JOIN workspace_iam.workspace_credential c ON c.account_id=a.id WHERE a.group_workspace_key=? AND a.login_name_normalized=?", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, loginName == null ? "" : loginName.toLowerCase()); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getString(5), result.getObject(6, Long.class)) : null);
         if (account == null) { loginLimits.recordInvalid(groupWorkspaceKey, attempt); throw new InvalidCredentialsException(); }
-        String hash = jdbc.queryForObject("SELECT password_hash FROM workspace_iam.workspace_credential WHERE account_id=?", String.class, account.id());
-        if (!passwords.matches(new String(password == null ? new char[0] : password), hash)) { loginLimits.recordInvalid(groupWorkspaceKey, attempt); jdbc.update("UPDATE workspace_iam.workspace_credential SET failed_attempts=failed_attempts+1, locked_until_epoch_millis=CASE WHEN failed_attempts+1>=10 THEN ? ELSE locked_until_epoch_millis END, version=version+1 WHERE account_id=?", time.currentEpochMillis() + 15 * 60 * 1000L, account.id()); throw new InvalidCredentialsException(); }
+        if (!"ENABLED".equals(account.status())) { loginLimits.recordSourceFailure(groupWorkspaceKey, attempt); throw new AccountDisabledException(); }
+        if (!workspaces.isEnabled(account.workspaceUuid(), account.key())) { loginLimits.recordSourceFailure(groupWorkspaceKey, attempt); throw new WorkspaceDisabledException(); }
+        if (account.lockedUntilEpochMillis() != null && account.lockedUntilEpochMillis() > time.currentEpochMillis()) throw new CredentialLockedException();
+        if (!passwords.matches(new String(password == null ? new char[0] : password), account.passwordHash())) { loginLimits.recordInvalid(groupWorkspaceKey, attempt); jdbc.update("UPDATE workspace_iam.workspace_credential SET failed_attempts=failed_attempts+1, locked_until_epoch_millis=CASE WHEN failed_attempts+1>=10 THEN ? ELSE locked_until_epoch_millis END, version=version+1 WHERE account_id=?", time.currentEpochMillis() + 15 * 60 * 1000L, account.id()); throw new InvalidCredentialsException(); }
         loginLimits.clearAccount(groupWorkspaceKey, attempt);
-        return createSession(account);
+        return account;
     }
 
     @Transactional(noRollbackFor = OtpRateLimitedException.class)
@@ -71,6 +81,15 @@ public class WorkspaceAuthenticationService {
 
     @Transactional(noRollbackFor = {OtpInvalidException.class, OtpRateLimitedException.class})
     public LoginResult verifyLoginOtp(String groupWorkspaceKey, String mobile, String otp) {
+        return createSession(verifyOtp(groupWorkspaceKey, mobile, otp));
+    }
+
+    @Transactional(noRollbackFor = {OtpInvalidException.class, OtpRateLimitedException.class})
+    public LoginEntryResult verifyLoginOtpWithSessionEntry(String groupWorkspaceKey, String mobile, String otp) {
+        return createSessionEntry(verifyOtp(groupWorkspaceKey, mobile, otp));
+    }
+
+    private Account verifyOtp(String groupWorkspaceKey, String mobile, String otp) {
         Account account = accountByMobile(groupWorkspaceKey, normalizedMobile(mobile));
         otpLimits.beforeVerify(account.workspaceUuid(), account.key(), "WORKSPACE_LOGIN", account.id());
         int consumed = jdbc.update("UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND purpose='WORKSPACE_LOGIN' AND token_hash=? AND status='ACTIVE' AND expires_at_epoch_millis>?", time.currentEpochMillis(), account.id(), sha256(otp), time.currentEpochMillis());
@@ -80,7 +99,7 @@ public class WorkspaceAuthenticationService {
             throw new OtpInvalidException();
         }
         otpLimits.successfulVerify(account.workspaceUuid(), account.key(), "WORKSPACE_LOGIN", account.id());
-        return createSession(account);
+        return account;
     }
 
     @Transactional
@@ -136,7 +155,18 @@ public class WorkspaceAuthenticationService {
 
     @Transactional(readOnly = true)
     public WorkspaceSessionEntryReadback sessionEntry(String rawToken) {
+        return sessionEntry(require(rawToken));
+    }
+
+    /** A path-key guard belongs with the session owner, not with an edge-local pre-read. */
+    @Transactional(readOnly = true)
+    public WorkspaceSessionEntryReadback sessionEntry(String rawToken, String groupWorkspaceKey) {
         SessionRow row = require(rawToken);
+        if (!row.key().equals(groupWorkspaceKey)) throw new SessionInvalidException();
+        return sessionEntry(row);
+    }
+
+    private WorkspaceSessionEntryReadback sessionEntry(SessionRow row) {
         List<Assignment> enterableAssignments = availableAssignments(row, activeAssignments(row));
         Map<UUID, WorkspaceRoleReadback> rolesById = roles.requireAll(
             row.workspaceUuid(), row.key(), enterableAssignments.stream().map(Assignment::roleId).toList()
@@ -193,8 +223,10 @@ public class WorkspaceAuthenticationService {
         jdbc.update("UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE account_id=? AND status='ACTIVE'", now, current.accountId());
         return new PasswordChangeResult("COMPLETED", true, true);
     }
-    private LoginResult createSession(Account account) { List<Assignment> assignments = jdbc.query("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'", (row, index) -> new Assignment(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getObject(4, UUID.class)), account.id(), account.workspaceUuid(), account.key()); List<Assignment> enterable = availableAssignments(account.workspaceUuid(), account.key(), assignments); UUID current = enterable.size() == 1 ? enterable.getFirst().id() : null; String raw = rawToken(); UUID sessionId = UUID.randomUUID(); long now = time.currentEpochMillis(); jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, current_assignment_id, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 1, 1, 'ACTIVE', ?)", sessionId, account.workspaceUuid(), account.key(), account.id(), sha256(raw), current, now + SESSION_TTL_MILLIS); return new LoginResult(raw, session(raw)); }
-    private Account accountByMobile(String groupWorkspaceKey, String mobile) { Account account = jdbc.query("SELECT id, workspace_uuid, group_workspace_key FROM workspace_iam.workspace_account WHERE group_workspace_key=? AND mobile_normalized=? AND status='ENABLED'", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, mobile); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3)) : null); if (account == null || !workspaces.isEnabled(account.workspaceUuid(), account.key())) throw new InvalidCredentialsException(); return account; }
+    private LoginResult createSession(Account account) { CreatedSession created = createRawSession(account); return new LoginResult(created.rawToken(), session(created.rawToken())); }
+    private LoginEntryResult createSessionEntry(Account account) { CreatedSession created = createRawSession(account); return new LoginEntryResult(created.rawToken(), sessionEntry(created.rawToken(), account.key())); }
+    private CreatedSession createRawSession(Account account) { List<Assignment> assignments = jdbc.query("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'", (row, index) -> new Assignment(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getObject(4, UUID.class)), account.id(), account.workspaceUuid(), account.key()); List<Assignment> enterable = availableAssignments(account.workspaceUuid(), account.key(), assignments); UUID current = enterable.size() == 1 ? enterable.getFirst().id() : null; String raw = rawToken(); UUID sessionId = UUID.randomUUID(); long now = time.currentEpochMillis(); jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, current_assignment_id, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 1, 1, 'ACTIVE', ?)", sessionId, account.workspaceUuid(), account.key(), account.id(), sha256(raw), current, now + SESSION_TTL_MILLIS); jdbc.update("INSERT INTO workspace_iam.workspace_authentication_history (id, workspace_uuid, group_workspace_key, account_id, authenticated_at_epoch_millis) VALUES (?, ?, ?, ?, ?)", UUID.randomUUID(), account.workspaceUuid(), account.key(), account.id(), now); return new CreatedSession(raw); }
+    private Account accountByMobile(String groupWorkspaceKey, String mobile) { Account account = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, status FROM workspace_iam.workspace_account WHERE group_workspace_key=? AND mobile_normalized=?", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, mobile); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), null, null) : null); if (account == null) throw new InvalidCredentialsException(); if (!"ENABLED".equals(account.status())) throw new AccountDisabledException(); if (!workspaces.isEnabled(account.workspaceUuid(), account.key())) throw new WorkspaceDisabledException(); return account; }
     private SessionRow require(String raw) { return jdbc.query("SELECT s.id, s.workspace_uuid, s.group_workspace_key, s.account_id, s.current_assignment_id, s.visible_data_node_id, s.context_version, s.authorization_revision, a.display_name, gw.name, gw.operations_title, gw.logo_asset_ref FROM workspace_iam.workspace_session s JOIN workspace_iam.workspace_account a ON a.id=s.account_id JOIN platform_workspace.group_workspace gw ON gw.workspace_uuid=s.workspace_uuid AND gw.group_workspace_key=s.group_workspace_key WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?", statement -> { statement.setString(1, sha256(raw)); statement.setLong(2, time.currentEpochMillis()); }, result -> { if (!result.next()) throw new SessionInvalidException(); return new SessionRow(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class), result.getObject(5, UUID.class), result.getObject(6, UUID.class), result.getLong(7), result.getLong(8), result.getString(9), result.getString(10), result.getString(11), result.getString(12)); }); }
     private boolean enterable(UUID workspace, String key, String type, UUID node) { return switch(type) { case "STORE" -> stores.isEnterableStore(workspace, key, node); case "HEAD_COMPANY" -> entities.isEnterableEntity(workspace, key, "HEAD_COMPANY", node); case "GROUP" -> groups.isEnterableCommercialGroup(workspace, key, node); case "REGION", "PROJECT" -> nodes.isEnterable(workspace, key, node); default -> false; }; }
     private boolean visibleDataNodeAllowed(UUID workspace, String key, String assignmentType, UUID assignmentNode, UUID visibleNode) {
@@ -243,17 +275,22 @@ public class WorkspaceAuthenticationService {
     private static String normalizedMobile(String value) { String normalized = value == null ? "" : value.replace(" ", "").replace("-", ""); if (!normalized.matches("^\\+?[0-9]{8,20}$")) throw new InvalidCredentialsException(); return normalized.startsWith("+") ? normalized.substring(1) : normalized; }
     private static String sha256(String input) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8))); } catch (Exception error) { throw new IllegalStateException(error); } }
     public record LoginResult(String rawSessionToken, WorkspaceSessionReadback session) { }
+    public record LoginEntryResult(String rawSessionToken, WorkspaceSessionEntryReadback sessionEntry) { }
     /**
      * Optional development/UAT-only delivery echo.  The name deliberately matches the public
      * contract: production omits it rather than exposing an internal test-code concept.
      */
     public record OtpDelivery(long expiresAt, String debugVerificationCode) { }
     public record PasswordChangeResult(String status, boolean sessionsRevoked, boolean reauthenticationRequired) { }
-    private record Account(UUID id, UUID workspaceUuid, String key) { }
+    private record Account(UUID id, UUID workspaceUuid, String key, String status, String passwordHash, Long lockedUntilEpochMillis) { }
+    private record CreatedSession(String rawToken) { }
     private record Assignment(UUID id, UUID roleId, String nodeType, UUID nodeId) { }
     private record SessionCredential(UUID accountId, long contextVersion, String passwordHash) { }
     private record SessionRow(UUID id, UUID workspaceUuid, String key, UUID accountId, UUID assignmentId, UUID visibleDataNodeId, long contextVersion, long authorizationRevision, String accountDisplayName, String workspaceName, String operationsTitle, String logoAssetRef) { }
     public static final class InvalidCredentialsException extends RuntimeException { }
+    public static final class AccountDisabledException extends RuntimeException { }
+    public static final class CredentialLockedException extends RuntimeException { }
+    public static final class WorkspaceDisabledException extends RuntimeException { }
     public static final class SessionInvalidException extends RuntimeException { }
     public static final class SessionConflictException extends RuntimeException { }
     public static final class OtpInvalidException extends RuntimeException { }

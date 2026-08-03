@@ -28,7 +28,7 @@ public final class PlatformExtensionDefinitionController {
     @GetMapping("/{entityType}") ExtensionDefinition detail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable("entityType") String hostType) { sessions.require(request); var workspace = workspaces.requireEnabled(groupWorkspaceKey); return ExtensionDefinitionWireMapper.wire(definitions.managementDefinition(workspace.workspaceUuid(), groupWorkspaceKey, hostType)); }
     @PutMapping("/{entityType}") ExtensionDefinition replace(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable("entityType") String hostType, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody ExtensionDefinitionUpdateRequest body) { var actor = sessions.requireActor(request); var workspace = workspaces.requireEnabled(groupWorkspaceKey); if (body == null || body.expectedVersion() == null || body.expectedVersion() < 0 || body.definitions() == null) throw new ExtensionDefinitionService.DefinitionInvalidException(); return ExtensionDefinitionWireMapper.wire(definitions.replaceDraft(workspace.workspaceUuid(), groupWorkspaceKey, hostType, body.expectedVersion(), body.definitions().stream().map(PlatformExtensionDefinitionController::field).toList(), actor, idempotencyKey)); }
     private static ExtensionDefinitionService.DraftField field(ExtensionDefinitionUpdateRequestDefinitionsItem value) {
-        if (value == null || value.label() == null || value.type() == null || value.required() == null || value.options() == null) {
+        if (value == null || value.key() == null || value.key().isBlank() || value.label() == null || value.type() == null || value.required() == null || value.options() == null) {
             throw new ExtensionDefinitionService.DefinitionInvalidException();
         }
         try { return new ExtensionDefinitionService.DraftField(value.key(), value.label(), value.type(), value.required(), value.options(), value.status(), value.displayOrder() == null ? null : Math.toIntExact(value.displayOrder()), value.displaySuffix()); }
@@ -41,6 +41,9 @@ public final class PlatformExtensionDefinitionController {
             case HEAD_COMPANY -> "总公司";
             case STORE -> "门店";
             case CONTRACT -> "合同";
+            case COMMERCIAL_GROUP -> "商业集团";
+            case REGION -> "大区";
+            case PROJECT -> "项目";
         };
     }
 }

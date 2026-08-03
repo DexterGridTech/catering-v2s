@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-WORKSPACE-LIST-ASSET-BATCH-U13",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-WORKSPACE-LIST-ASSET-BATCH-U13",
+      "title": "Owner-local workspace-list logo batch read",
+      "approvedAssertions": [
+        "WORKSPACE_LIST_LOGOS_USE_ONE_OWNER_BATCH_READ",
+        "ASSET_ACTIVE_AND_OBJECT_EXISTENCE_SEMANTICS_REMAIN_OWNER_LOCAL",
+        "DETAIL_AND_SINGLE_REFERENCE_SEMANTICS_ARE_UNCHANGED"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate C10"},
+        {"path": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java", "disposition": "update", "target": "active public-reference batch task read"},
+        {"path": "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java", "disposition": "update", "target": "batch owner proof"},
+        {"path": "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceBatchReferenceTest.java", "disposition": "create", "target": "owner bounded-query proof without Docker"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java", "disposition": "update", "target": "page-level owner batch mapping"},
+        {"path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationControllerTest.java", "disposition": "create", "target": "page-level bounded-owner-read proof"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-list-asset-batch-package-input.json", "disposition": "create", "target": "C10 binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-list-asset-batch-implementation-amendment.md", "disposition": "create", "target": "C10 design"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-list-asset-batch-package-exit.json", "disposition": "create", "target": "C10 exit"},
+        {"path": "doc/review/platform/rm1p6-u13-workspace-list-asset-batch-delivery-manifest.json", "disposition": "create", "target": "C10 manifest"}
+      ],
+      "complianceRoute": {
+        "taskKind": "implementation",
+        "domain": "backend",
+        "consumerFace": "platform-admin",
+        "owner": "platform",
+        "impact": "database",
+        "trigger": "implementation"
+      },
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+          "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+          "project-memory/kernel/02-service-shape-and-owner.md"
+        ],
+        "APPROVED_ASSERTIONS": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#Batch A",
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-list-asset-batch-implementation-amendment.md"
+        ],
+        "FORBIDDEN_PSEUDO_FIXES": [
+          "no edge reconstruction of asset truth",
+          "no loss of ACTIVE or object-existence check",
+          "no detail/single-object behavior change"
+        ],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-list-asset-batch-implementation-amendment.md"
+        ],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": [
+          "listPlatformGroupWorkspaces",
+          "PlatformAssetService active public reference"
+        ],
+        "DUE_STANDARDS_RULE_IDS": [
+          "scripts/check/database-boundaries",
+          "scripts/check/standards-coverage"
+        ]
+      }
+    }
+  ]
+}

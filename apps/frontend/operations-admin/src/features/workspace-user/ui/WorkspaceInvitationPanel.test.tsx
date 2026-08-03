@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 const panel = readFileSync(new URL('./WorkspaceInvitationPanel.tsx', import.meta.url), 'utf8');
 const createDrawer = readFileSync(new URL('./WorkspaceInvitationCreateDrawer.tsx', import.meta.url), 'utf8');
 const actionModal = readFileSync(new URL('./WorkspaceInvitationActionModal.tsx', import.meta.url), 'utf8');
+const detailDrawer = readFileSync(new URL('./WorkspaceInvitationDetailDrawer.tsx', import.meta.url), 'utf8');
 
 describe('workspace invitation focused IA contract', () => {
   it('consumes the generated userManagementFor projection instead of scanning compatibility bindings', () => {
@@ -27,14 +28,24 @@ describe('workspace invitation focused IA contract', () => {
     expect(createDrawer).toMatch(/subjectType: 'ROLE'/);
     expect(createDrawer).toMatch(/groupWorkspaceKey: queryContext\.groupWorkspaceKey/);
     expect(createDrawer).toMatch(/expectedContextVersion: queryContext\.expectedContextVersion/);
+    expect(createDrawer).toMatch(/formatCodeNamePath\(candidate\.path\)/);
+    expect(panel).toMatch(/formatCodeNamePath\(value\.targetOrganizationPath\)/);
+    expect(detailDrawer).toMatch(/formatCodeNamePath\(invitation\.targetOrganizationPath\)/);
   });
 
   it('keeps write failures inside the active overlay with fixed safe copy', () => {
-    expect(createDrawer).toMatch(/submitProblem && <Alert type="error" showIcon message=\{submitProblem\}/);
+    expect(createDrawer).toMatch(/submitProblem && <Alert type="error" showIcon title=\{submitProblem\}/);
     expect(createDrawer).toMatch(/邀请暂未发出，请检查后重试/);
     expect(createDrawer).not.toMatch(/error\.problem\.detail/);
-    expect(actionModal).toMatch(/problem && <Alert type="error" showIcon message=\{problem\}/);
+    expect(actionModal).toMatch(/problem && <Alert type="error" showIcon title=\{problem\}/);
     expect(actionModal).toMatch(/邀请操作未完成，请检查后重试/);
     expect(actionModal).not.toMatch(/error\.problem\.detail/);
+  });
+
+  it('sorts by the owner-supported expiry fact and restores the owner default when cleared', () => {
+    expect(panel).toMatch(/useState<WorkspaceInvitationSortKey>\('CREATED_AT'\)/);
+    expect(panel).toMatch(/sorter\.columnKey === 'expiresAt' \? 'EXPIRES_AT' : 'CREATED_AT'/);
+    expect(panel).toMatch(/setDirection\('DESC'\)/);
+    expect(panel).not.toMatch(/title: '业务角色'[^}]*sorter:\s*true/);
   });
 });

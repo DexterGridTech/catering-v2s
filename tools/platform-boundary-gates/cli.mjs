@@ -78,7 +78,24 @@ function validatePostGate0ContractFace(root) {
   const reportPath = path.join(root, "doc/evidence/platform/r5-u01-edge-placement-resolution.json");
   let report;
   try { report = JSON.parse(fs.readFileSync(reportPath, "utf8")); } catch (error) { fail("R5_CONTRACT_FACE_RESOLUTION_REPORT_INVALID", error.message); }
-  if (report.operations?.length !== 106 || JSON.stringify(report.closure?.faceCounts) !== JSON.stringify({ "platform-admin": 39, "operations-admin": 56, public: 11 })) fail("R5_CONTRACT_FACE_OPERATION_CLOSURE_INVALID");
+  const catalogPath = path.join(root, "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json");
+  let catalog;
+  try { catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8")); } catch (error) { fail("R5_CONTRACT_FACE_IMPLEMENTATION_CATALOG_INVALID", error.message); }
+  const faces = ["platform-admin", "operations-admin", "public"];
+  const catalogOperations = Array.isArray(catalog.operations) ? catalog.operations : [];
+  const reportOperations = Array.isArray(report.operations) ? report.operations : [];
+  const catalogOperationIds = catalogOperations.map((operation) => operation.operationId).sort();
+  const reportOperationIds = reportOperations.map((operation) => operation.operationId).sort();
+  const reportFaceCounts = Object.fromEntries(faces.map((face) => [face, reportOperations.filter((operation) => operation.face === face).length]));
+  const catalogFaceCounts = Object.fromEntries(faces.map((face) => [face, catalog.denominator?.faces?.[face]]));
+  if (!Number.isInteger(catalog.denominator?.operations)
+    || catalogOperations.length !== catalog.denominator.operations
+    || reportOperations.length !== catalog.denominator.operations
+    || JSON.stringify(reportOperationIds) !== JSON.stringify(catalogOperationIds)
+    || JSON.stringify(report.closure?.faceCounts) !== JSON.stringify(reportFaceCounts)
+    || JSON.stringify(reportFaceCounts) !== JSON.stringify(catalogFaceCounts)) {
+    fail("R5_CONTRACT_FACE_OPERATION_CLOSURE_INVALID");
+  }
   const rootRoutes = Object.entries(spec.paths ?? {});
   if (rootRoutes.length === 0 || rootRoutes.some(([, item]) => !item?.$ref?.startsWith("./paths/"))) fail("R5_CONTRACT_FACE_ROOT_REFERENCE_INVALID");
   if (spec.components?.schemas?.Problem?.$ref !== "./components/common/problem.schemas.yaml#/components/schemas/Problem") fail("R5_CONTRACT_FACE_PROBLEM_REFERENCE_INVALID");

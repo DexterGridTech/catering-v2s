@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-INVITATION-SINGLE-LOAD-U13",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-INVITATION-SINGLE-LOAD-U13",
+      "title": "Workspace-iam public invitation typed-load reuse",
+      "approvedAssertions": [
+        "PUBLIC_INVITATION_COMMANDS_LOAD_THE_TYPED_INVITATION_ONCE",
+        "OTP_RATE_LIMIT_CAS_AUDIT_AND_TYPED_FAILURES_REMAIN",
+        "PUBLIC_EDGE_REMAINS_A_THIN_OWNER_ADAPTER"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate C12"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java", "disposition": "update", "target": "owner-local typed invitation reuse"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java", "disposition": "update", "target": "public-flow semantic regression proof"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-package-input.json", "disposition": "create", "target": "C12 binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-implementation-amendment.md", "disposition": "create", "target": "C12 detail design"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-package-exit.json", "disposition": "create", "target": "C12 exit"},
+        {"path": "doc/review/platform/rm1p6-u13-invitation-single-load-delivery-manifest.json", "disposition": "create", "target": "C12 manifest"}
+      ],
+      "complianceRoute": {
+        "taskKind": "implementation",
+        "domain": "backend",
+        "consumerFace": "public",
+        "owner": "workspace-iam",
+        "impact": "database",
+        "trigger": "implementation"
+      },
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+          "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+          "project-memory/kernel/02-service-shape-and-owner.md"
+        ],
+        "APPROVED_ASSERTIONS": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#Batch B",
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-implementation-amendment.md"
+        ],
+        "FORBIDDEN_PSEUDO_FIXES": [
+          "no public-edge invitation fact reconstruction",
+          "no removal of OTP rate-limit, grant, CAS, audit or completion readback",
+          "no weakening of token and workspace-key validation"
+        ],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-invitation-single-load-implementation-amendment.md"
+        ],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": [
+          "acceptPublicInvitation",
+          "sendPublicInvitationOtp",
+          "verifyPublicInvitationOtp",
+          "savePublicInvitationCredentials",
+          "completePublicInvitation"
+        ],
+        "DUE_STANDARDS_RULE_IDS": [
+          "scripts/check/database-boundaries",
+          "scripts/check/standards-coverage"
+        ]
+      }
+    }
+  ]
+}

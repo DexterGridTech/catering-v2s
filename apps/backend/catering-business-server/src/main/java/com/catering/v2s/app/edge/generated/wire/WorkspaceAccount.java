@@ -5,7 +5,7 @@ public record WorkspaceAccount(
     String id,
     String groupWorkspaceKey,
     String displayName,
-    String maskedMobile,
+    String mobile,
     String loginName,
     WorkspaceAccountStatus status,
     String credentialStatus,
@@ -15,5 +15,6 @@ public record WorkspaceAccount(
     Long updatedAt,
     Long revision,
     java.util.List<WorkspaceAccountAssignmentsItem> assignments,
-    java.util.List<WorkspaceAccountInvitationHistoryItem> invitationHistory
+    java.util.List<WorkspaceAccountInvitationHistoryItem> invitationHistory,
+    java.util.List<WorkspaceAccountAuthenticationHistoryItem> authenticationHistory
 ) {}

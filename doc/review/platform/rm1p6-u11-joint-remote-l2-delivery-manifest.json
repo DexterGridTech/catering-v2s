@@ -8,7 +8,7 @@
       "title": "Joint local-execution, remote-middleware P6-2/P6-3 L2",
       "approvedAssertions": [
         "LOCAL_EXECUTION_REMOTE_MIDDLEWARE_BOUNDARY",
-        "EXACT_21_SPEC_DENOMINATOR",
+        "EXACT_19_SPEC_DENOMINATOR",
         "OWNER_COMMAND_FIXTURE_ONLY",
         "BUSINESS_AND_CLEANUP_SEPARATE"
         ,"RETIRED_PLATFORM_INVITATION_NO_HTTP_BOOTSTRAP"
@@ -68,6 +68,11 @@
           "path": "tools/compliance-control/cli.mjs",
           "disposition": "update",
           "target": "existing historical receipt-recovery control configuration"
+        },
+        {
+          "path": "tools/platform-boundary-gates/cli.mjs",
+          "disposition": "update",
+          "target": "derive U01 contract-face closure from its accepted catalog/report"
         },
         {
           "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-execution-deviation-memory-baseline-addendum.json",
@@ -243,6 +248,11 @@
           "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/contract/OperationsContractControllerScopeAndCandidateTest.java",
           "disposition": "modify",
           "target": "prove generated contract request JSON is deserialized and mapped through the owner boundary"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+          "disposition": "modify",
+          "target": "align focused test with resolveCommandTarget owner path"
         },
         {
           "path": "scripts/generate/edge-codegen.mjs",
@@ -510,6 +520,11 @@
           "target": "direct joint L2 implementation"
         },
         {
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u01-contract-face-denominator-problem-family.json",
+          "disposition": "create",
+          "target": "U01 contract-face denominator problem-family root cause and prevention"
+        },
+        {
           "path": "doc/evidence/platform/rm1/p6/rm1p6-u11-joint-remote-l2-source-compliance-disposition.json",
           "disposition": "update",
           "target": "direct joint L2 implementation"
@@ -749,11 +764,31 @@
           "disposition": "update",
           "target": "active U11 audit-history edge mapper"
         },
-        {
-          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapperTest.java",
-          "disposition": "update",
-          "target": "active U11 audit-history mapper proof"
-        }
+    {
+      "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapperTest.java",
+      "disposition": "update",
+      "target": "active U11 audit-history mapper proof"
+    },
+    {
+      "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+      "disposition": "update",
+      "target": "U11 owner-scope aggregate invitation read filtering"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "disposition": "update",
+      "target": "U11 explicit command target forwarding"
+    },
+    {
+      "path": "apps/frontend/platform-admin/package.json",
+      "disposition": "update",
+      "target": "U11 architecture plus focused Vitest package test entry"
+    },
+    {
+      "path": "apps/frontend/operations-admin/package.json",
+      "disposition": "update",
+      "target": "U11 architecture plus focused Vitest package test entry"
+    }
       ],
       "forbiddenPseudoFixes": [
         "remote application, Vite, or Playwright execution for the current L2",

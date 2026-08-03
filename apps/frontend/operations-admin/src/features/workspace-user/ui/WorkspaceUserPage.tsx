@@ -1,10 +1,10 @@
-import {Alert, Button, Form, Input, Select, Space, Tabs, Tag} from 'antd';
+import {Alert, Button, Space, Tabs, Tag} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {contextScopedQueryArgs, testId, useDetailDrawer, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {ApiFailure, operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
-import type {WorkspaceAccountStatus, WorkspaceUser, WorkspaceUserPage as WorkspaceUserPageResult} from '../../../app/api/generated/operations-edge';
+import type {SortDirection, WorkspaceAccountStatus, WorkspaceUser, WorkspaceUserPage as WorkspaceUserPageResult, WorkspaceUserSortKey} from '../../../app/api/generated/operations-edge';
 import {adminCatalog, userManagementFor, type UserManagementPageDesignKey} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {OperationsAuditHistoryModal} from '../../audit-history';
@@ -22,15 +22,12 @@ type UserFilters = {
 type UserManagementTargetType = ReturnType<typeof userManagementFor>['targetOrganizationType'];
 type WorkspaceAssignment = WorkspaceUser['assignments'][number];
 
-const statusOptions = [
-  {value: 'ENABLED', label: '启用'},
-  {value: 'DISABLED', label: '禁用'},
-] satisfies Array<{value: WorkspaceAccountStatus; label: string}>;
-
 function issue(error: unknown) {
-  return error instanceof ApiFailure
-    ? '无法读取用户详情，请稍后重试'
-    : '无法完成用户管理操作';
+  if (error instanceof ApiFailure) return error.problem.detail;
+  if (typeof error === 'object' && error !== null && 'detail' in error && typeof (error as {detail?: unknown}).detail === 'string') {
+    return (error as {detail: string}).detail;
+  }
+  return '无法完成用户管理操作';
 }
 
 function pageTitleFor(pageDesignKey: UserManagementPageDesignKey) {
@@ -49,20 +46,6 @@ function statusLabel(value: WorkspaceAccountStatus) {
 
 function latestUpdatedAt(user: WorkspaceUser) {
   return user.assignments.reduce((latest, assignment) => Math.max(latest, assignment.updatedAt), user.createdAt);
-}
-
-async function loadUserDetail(targetType: UserManagementTargetType, queryContext: OperationsPageProps['queryContext'], accountId: string) {
-  const path = {groupWorkspaceKey: queryContext.groupWorkspaceKey, accountId};
-  const options = {query: {expectedContextVersion: queryContext.expectedContextVersion}};
-  return targetType === 'GROUP'
-    ? operationsClient.getOperationsWorkspaceGroupUserAccount(path, options)
-    : targetType === 'REGION'
-      ? operationsClient.getOperationsWorkspaceRegionUserAccount(path, options)
-      : targetType === 'PROJECT'
-        ? operationsClient.getOperationsWorkspaceProjectUserAccount(path, options)
-        : targetType === 'HEAD_COMPANY'
-          ? operationsClient.getOperationsWorkspaceHeadCompanyUserAccount(path, options)
-          : operationsClient.getOperationsWorkspaceStoreUserAccount(path, options);
 }
 
 async function revokeAssignment(targetType: UserManagementTargetType, queryContext: OperationsPageProps['queryContext'], assignment: WorkspaceAssignment, idempotencyKey: string) {
@@ -96,11 +79,14 @@ export function WorkspaceUserPage({
   const targetType = userManagement.targetOrganizationType;
   const canRevoke = actionCapabilityKeys.includes(userManagement.roleRevokeActionKey);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
+  const [sort, setSort] = useState<WorkspaceUserSortKey>('LOGIN_NAME');
+  const [direction, setDirection] = useState<SortDirection>('ASC');
   const [filters, setFilters] = useState<UserFilters>({});
   const [commandProblem, setProblem] = useState<string>();
-  const [filterForm] = Form.useForm<UserFilters>();
   const detail = useDetailDrawer<WorkspaceUser>();
+  const {open: openDetailTarget, finishLoading: finishDetailLoading} = detail;
+  const [detailAccountId, setDetailAccountId] = useState<string>();
   const revokeLifecycle = useSubmissionLifecycle();
   const [pendingRevoke, setPendingRevoke] = useState<WorkspaceAssignment>();
   const [revokeProblem, setRevokeProblem] = useState<string>();
@@ -116,6 +102,8 @@ export function WorkspaceUserPage({
       status: filters.status,
       page,
       pageSize,
+      sort,
+      direction,
     }, {
       groupWorkspaceKey: queryContext.groupWorkspaceKey,
       expectedContextVersion: queryContext.expectedContextVersion,
@@ -123,7 +111,7 @@ export function WorkspaceUserPage({
     });
     const {groupWorkspaceKey, ...query} = scoped;
     return {path: {groupWorkspaceKey}, query};
-  }, [filters.mobile, filters.roleQuery, filters.status, filters.userName, page, pageSize, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, requestScopeRef]);
+  }, [direction, filters.mobile, filters.roleQuery, filters.status, filters.userName, page, pageSize, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, requestScopeRef, sort]);
 
   const groupUsers = operationsRtk.useGetOperationsWorkspaceGroupUserQuery(operationsAdminRtkRequest.getOperationsWorkspaceGroupUser(scopedQuery.path, {query: scopedQuery.query}), {skip: targetType !== 'GROUP'});
   const regionUsers = operationsRtk.useGetOperationsWorkspaceRegionUserQuery(operationsAdminRtkRequest.getOperationsWorkspaceRegionUser(scopedQuery.path, {query: scopedQuery.query}), {skip: targetType !== 'REGION' || !queryContext.scopeRef});
@@ -144,47 +132,72 @@ export function WorkspaceUserPage({
   const scopeRequired = targetType !== 'GROUP' && targetType !== 'HEAD_COMPANY' && !queryContext.scopeRef;
   const problem = scopeRequired ? '请选择可查看范围。' : queryError ? issue(operationsProblemOf(queryError)) : commandProblem;
 
+  const detailPath = useMemo(() => ({groupWorkspaceKey: queryContext.groupWorkspaceKey, accountId: detailAccountId ?? ''}), [detailAccountId, queryContext.groupWorkspaceKey]);
+  const detailOptions = useMemo(() => ({query: {expectedContextVersion: queryContext.expectedContextVersion}}), [queryContext.expectedContextVersion]);
+  const groupDetail = operationsRtk.useGetOperationsWorkspaceGroupUserAccountQuery(operationsAdminRtkRequest.getOperationsWorkspaceGroupUserAccount(detailPath, detailOptions), {skip: targetType !== 'GROUP' || !detailAccountId});
+  const regionDetail = operationsRtk.useGetOperationsWorkspaceRegionUserAccountQuery(operationsAdminRtkRequest.getOperationsWorkspaceRegionUserAccount(detailPath, detailOptions), {skip: targetType !== 'REGION' || !detailAccountId});
+  const projectDetail = operationsRtk.useGetOperationsWorkspaceProjectUserAccountQuery(operationsAdminRtkRequest.getOperationsWorkspaceProjectUserAccount(detailPath, detailOptions), {skip: targetType !== 'PROJECT' || !detailAccountId});
+  const headCompanyDetail = operationsRtk.useGetOperationsWorkspaceHeadCompanyUserAccountQuery(operationsAdminRtkRequest.getOperationsWorkspaceHeadCompanyUserAccount(detailPath, detailOptions), {skip: targetType !== 'HEAD_COMPANY' || !detailAccountId});
+  const storeDetail = operationsRtk.useGetOperationsWorkspaceStoreUserAccountQuery(operationsAdminRtkRequest.getOperationsWorkspaceStoreUserAccount(detailPath, detailOptions), {skip: targetType !== 'STORE' || !detailAccountId});
+  const activeDetailQuery = targetType === 'GROUP' ? groupDetail : targetType === 'REGION' ? regionDetail : targetType === 'PROJECT' ? projectDetail : targetType === 'HEAD_COMPANY' ? headCompanyDetail : storeDetail;
+  const detailData = activeDetailQuery.data as WorkspaceUser | undefined;
+  const detailError = activeDetailQuery.error;
+
+  useEffect(() => {
+    if (!detailAccountId) return;
+    if (detailData) openDetailTarget(detailData);
+    else if (detailError) {
+      finishDetailLoading();
+      setProblem(issue(operationsProblemOf(detailError)));
+    }
+  }, [detailAccountId, detailData, detailError, finishDetailLoading, openDetailTarget]);
+
+  const openDetail = useCallback((user: WorkspaceUser) => {
+    setProblem(undefined);
+    setDetailAccountId(user.accountId);
+    detail.openLoading();
+  }, [detail]);
+
   const columns = useMemo<ProColumns<WorkspaceUser>[]>(() => [
     {
       title: '姓名',
       dataIndex: 'displayName',
+      sorter: true,
+      fieldProps: {...testId('operations-workspace-user-filter-name'), allowClear: true, placeholder: '输入姓名'},
       render: (_, user) => <Button type="link" onClick={() => { void openDetail(user); }} {...testId(`operations-workspace-user-open-${user.accountId}`)}>{user.displayName}</Button>,
     },
-    {title: '登录账号', dataIndex: 'loginName'},
+    {title: '手机号', dataIndex: 'mobile', hideInTable: true, fieldProps: {...testId('operations-workspace-user-filter-mobile'), allowClear: true, placeholder: '输入手机号'}},
+    {title: '业务角色', dataIndex: 'roleQuery', hideInTable: true, fieldProps: {...testId('operations-workspace-user-filter-role'), allowClear: true, placeholder: '输入业务角色'}},
+    {title: '登录账号', dataIndex: 'loginName', search: false, sorter: true},
     {
       title: '业务角色',
       dataIndex: 'assignments',
+      search: false,
       render: (_, user) => <Space size={[4, 4]} wrap>{Array.from(new Set(user.assignments.filter((assignment) => assignment.status === 'ACTIVE').map((assignment) => assignment.roleName))).map((role) => <Tag key={role}>{role}</Tag>)}</Space>,
     },
     {
       title: '状态',
       dataIndex: 'status',
+      valueType: 'select',
+      valueEnum: {ENABLED: {text: '启用'}, DISABLED: {text: '禁用'}},
+      fieldProps: {...testId('operations-workspace-user-filter-status'), allowClear: true, placeholder: '全部'},
       render: (_, user) => <Tag color={user.status === 'ENABLED' ? 'success' : 'default'}>{statusLabel(user.status)}</Tag>,
     },
     {
       title: '更新时间',
       dataIndex: 'updatedAt',
+      search: false,
       render: (_, user) => time(latestUpdatedAt(user)),
     },
-  ], []);
+  ], [openDetail]);
 
-  async function openDetail(user: WorkspaceUser) {
-    setProblem(undefined);
-    try {
-      detail.open(await loadUserDetail(targetType, queryContext, user.accountId));
-    } catch (error) {
-      setProblem(issue(error));
-    }
+  function closeDetail() {
+    setDetailAccountId(undefined);
+    detail.close();
   }
 
   function submitFilters(next: UserFilters) {
     setFilters(next);
-    setPage(1);
-  }
-
-  function resetFilters() {
-    filterForm.resetFields();
-    setFilters({});
     setPage(1);
   }
 
@@ -208,26 +221,26 @@ export function WorkspaceUserPage({
   }
 
   const userContent = <>
-    {problem && <Alert type={scopeRequired ? 'info' : 'error'} showIcon message={scopeRequired ? '可查看范围' : '用户管理失败'} description={problem} style={{marginBottom: 16}}/>}
-    <Form form={filterForm} layout="inline" onFinish={submitFilters} style={{marginBottom: 16}}>
-      <Form.Item name="userName" label="姓名"><Input allowClear placeholder="输入姓名" {...testId('operations-workspace-user-filter-name')}/></Form.Item>
-      <Form.Item name="mobile" label="手机号"><Input allowClear placeholder="输入手机号" {...testId('operations-workspace-user-filter-mobile')}/></Form.Item>
-      <Form.Item name="roleQuery" label="业务角色"><Input allowClear placeholder="输入业务角色" {...testId('operations-workspace-user-filter-role')}/></Form.Item>
-      <Form.Item name="status" label="状态"><Select allowClear placeholder="全部" style={{width: 120}} options={statusOptions} {...testId('operations-workspace-user-filter-status')}/></Form.Item>
-      <Form.Item>
-        <Space>
-          <Button type="primary" htmlType="submit" {...testId('operations-workspace-user-filter-submit')}>查询</Button>
-          <Button onClick={resetFilters} {...testId('operations-workspace-user-filter-reset')}>重置</Button>
-        </Space>
-      </Form.Item>
-    </Form>
+    {problem && <Alert type={scopeRequired ? 'info' : 'error'} showIcon title={scopeRequired ? '可查看范围' : '用户管理失败'} description={problem} style={{marginBottom: 16}}/>}
     <ProTable<WorkspaceUser>
-      search={false}
+      search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-workspace-user-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId('operations-workspace-user-filter-reset')}>重置</Button>]}}
+      onSubmit={submitFilters}
       options={false}
       rowKey="accountId"
       loading={activeUserQuery.isLoading && !result}
       dataSource={result?.items ?? []}
       columns={columns}
+      onChange={(_, __, nextSorter) => {
+        const sorter = Array.isArray(nextSorter) ? nextSorter[0] : nextSorter;
+        if (!sorter?.order) {
+          setSort('LOGIN_NAME');
+          setDirection('ASC');
+          return;
+        }
+        setSort(sorter.columnKey === 'displayName' ? 'DISPLAY_NAME' : 'LOGIN_NAME');
+        setDirection(sorter.order === 'ascend' ? 'ASC' : 'DESC');
+        setPage(1);
+      }}
       pagination={{
         current: page,
         pageSize,
@@ -257,11 +270,13 @@ export function WorkspaceUserPage({
     />
     <WorkspaceUserDetailDrawer
       open={detail.isOpen}
+      loading={detail.loading}
+      problem={problem}
       pageTitle={pageTitle}
       user={detail.target}
       canRevoke={canRevoke}
       revoking={revoking}
-      onClose={detail.close}
+      onClose={closeDetail}
       onOpenAudit={() => setAuditOpen(true)}
       onRequestRevoke={(assignment) => {
         setRevokeProblem(undefined);

@@ -17,12 +17,14 @@ import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
+import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
 import com.catering.v2s.platform.workspace.api.GroupWorkspaceTaskQuery;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationPageRequest;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/platform/group-workspaces")
 public final class PlatformWorkspaceAdministrationController {
+    private static final tools.jackson.databind.ObjectMapper JSON = new tools.jackson.databind.ObjectMapper();
     private final PlatformSessionResolver sessions;
     private final WorkspaceAdministrationService workspaces;
     private final GroupWorkspaceTaskQuery initializationFacts;
@@ -66,7 +69,8 @@ public final class PlatformWorkspaceAdministrationController {
     ) {
         PlatformExecutionContext context = context(request);
         var ownerPage = workspaces.list(ownerPage(name, groupWorkspaceKey, operationsTitle, status, page, pageSize, sortKey, sortDirection));
-        var items = ownerPage.items().stream().map(this::listItem).toList();
+        var logoUrls = assets.requireActivePublicReferences(ownerPage.items().stream().map(WorkspaceAdministrationReadback::logoAssetRef).filter(java.util.Objects::nonNull).map(UUID::fromString).collect(java.util.stream.Collectors.toSet()));
+        var items = ownerPage.items().stream().map(value -> listItem(value, logoUrls)).toList();
         return new GroupWorkspacePage(items, ownerPage.page(), ownerPage.pageSize(), ownerPage.total(), sortKey, sortDirection);
     }
 
@@ -76,15 +80,16 @@ public final class PlatformWorkspaceAdministrationController {
         @RequestHeader("Idempotency-Key") String headerIdempotencyKey,
         @RequestBody GroupWorkspaceCreateRequest body
     ) {
-        sessions.require(request);
+        PlatformSessionReadback session = sessions.require(request);
         requireMatchingKey(headerIdempotencyKey, body.idempotencyKey());
-        WorkspaceAdministrationReadback created = workspaces.create(body.groupWorkspaceKey(), body.name(), body.operationsTitle(), uuid(body.logoAssetRef()), body.logoBindGrant(), body.notes(), body.idempotencyKey(), sessions.requireActor(request));
+        WorkspaceAdministrationReadback created = workspaces.create(body.groupWorkspaceKey(), body.name(), body.operationsTitle(), uuid(body.logoAssetRef()), body.logoBindGrant(), body.notes(), body.idempotencyKey(), sessions.actor(session));
         return ResponseEntity.status(HttpStatus.CREATED).body(toCreateResult(created));
     }
 
     @GetMapping("/{groupWorkspaceKey}")
     GroupWorkspaceDetail detail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey) {
-        PlatformExecutionContext context = context(request);
+        PlatformSessionReadback session = sessions.require(request);
+        PlatformExecutionContext context = context(session, request);
         return toDetail(context, workspaces.require(groupWorkspaceKey));
     }
 
@@ -95,10 +100,11 @@ public final class PlatformWorkspaceAdministrationController {
         @RequestHeader("Idempotency-Key") String headerIdempotencyKey,
         @RequestBody GroupWorkspaceDisplayUpdateRequest body
     ) {
-        PlatformExecutionContext context = context(request);
+        PlatformSessionReadback session = sessions.require(request);
+        PlatformExecutionContext context = context(session, request);
         requireMatchingKey(headerIdempotencyKey, body.idempotencyKey());
         if (body.expectedVersion() == null) throw new InvalidEdgeRequestException("expected version is required");
-        return toDetail(context, workspaces.updateDisplay(groupWorkspaceKey, body.name(), body.operationsTitle(), body.notes(), body.logoIntent(), nullableUuid(body.logoAssetRef()), body.logoBindGrant(), body.expectedVersion(), body.idempotencyKey(), sessions.requireActor(request)));
+        return toDetail(context, workspaces.updateDisplay(groupWorkspaceKey, body.name(), body.operationsTitle(), body.notes(), body.logoIntent(), nullableUuid(body.logoAssetRef()), body.logoBindGrant(), body.expectedVersion(), body.idempotencyKey(), sessions.actor(session)));
     }
 
     @PostMapping("/{groupWorkspaceKey}/status")
@@ -108,26 +114,30 @@ public final class PlatformWorkspaceAdministrationController {
         @RequestHeader("Idempotency-Key") String headerIdempotencyKey,
         @RequestBody GroupWorkspaceStatusTransitionRequest body
     ) {
-        PlatformExecutionContext context = context(request);
+        PlatformSessionReadback session = sessions.require(request);
+        PlatformExecutionContext context = context(session, request);
         requireMatchingKey(headerIdempotencyKey, body.idempotencyKey());
         if (body.targetStatus() == null || body.expectedVersion() == null) throw new InvalidEdgeRequestException("status and expected version are required");
-        return toDetail(context, workspaces.transitionStatus(groupWorkspaceKey, body.targetStatus().wire(), body.expectedVersion(), body.idempotencyKey(), sessions.requireActor(request)));
+        return toDetail(context, workspaces.transitionStatus(groupWorkspaceKey, body.targetStatus().wire(), body.expectedVersion(), body.idempotencyKey(), sessions.actor(session)));
     }
 
     private GroupWorkspaceDetail toDetail(PlatformExecutionContext context, WorkspaceAdministrationReadback value) {
         var legacy = initializationFacts.detail(context, value.groupWorkspaceKey()).orElse(null);
-        GroupWorkspaceDetailCommercialGroupRoot root = legacy == null || legacy.commercialGroup() == null ? null : new GroupWorkspaceDetailCommercialGroupRoot(String.valueOf(legacy.commercialGroup().id()), value.groupWorkspaceKey(), legacy.commercialGroup().commercialGroupCode(), legacy.commercialGroup().commercialGroupName(), legacy.commercialGroup().version(), legacy.commercialGroup().createdAtEpochMillis(), legacy.commercialGroup().createdAtEpochMillis());
+        GroupWorkspaceDetailCommercialGroupRoot root = legacy == null || legacy.commercialGroup() == null ? null : new GroupWorkspaceDetailCommercialGroupRoot(String.valueOf(legacy.commercialGroup().id()), value.groupWorkspaceKey(), legacy.commercialGroup().commercialGroupCode(), legacy.commercialGroup().commercialGroupName(), extensionValues(legacy.commercialGroup().extensionValuesJson()), legacy.commercialGroup().extensionRuleRevision(), legacy.commercialGroup().version(), legacy.commercialGroup().createdAtEpochMillis(), legacy.commercialGroup().createdAtEpochMillis());
         GroupWorkspaceDetailCommercialGroup commercialGroup = new GroupWorkspaceDetailCommercialGroup(root != null, root);
         return new GroupWorkspaceDetail(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), logoUrl(value.logoAssetRef()), value.notes(), GroupWorkspaceStatus.valueOf(value.status()), value.statusChangedAtEpochMillis(), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis(), commercialGroup, "AVAILABLE", value.updatedAtEpochMillis(), null, "AVAILABLE", value.updatedAtEpochMillis(), null, "AVAILABLE", value.updatedAtEpochMillis(), null, workspaces.accountCount(value.workspaceUuid()), workspaces.roleCount(value.workspaceUuid()));
     }
 
-    private GroupWorkspacePageItemsItem listItem(WorkspaceAdministrationReadback value) {
+    private GroupWorkspacePageItemsItem listItem(WorkspaceAdministrationReadback value, java.util.Map<UUID, PlatformAssetService.PublicAssetReference> logoUrls) {
         GroupWorkspacePageItemsItemCommercialGroup commercialGroup = new GroupWorkspacePageItemsItemCommercialGroup(value.commercialGroupInitialized(), null);
-        return new GroupWorkspacePageItemsItem(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), logoUrl(value.logoAssetRef()), commercialGroup, GroupWorkspaceStatus.valueOf(value.status()), value.updatedAtEpochMillis());
+        String logoUrl = value.logoAssetRef() == null ? null : logoUrls.get(UUID.fromString(value.logoAssetRef())).publicUrl();
+        return new GroupWorkspacePageItemsItem(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), logoUrl, commercialGroup, GroupWorkspaceStatus.valueOf(value.status()), value.updatedAtEpochMillis());
     }
 
     private String logoUrl(String value) { return value == null ? null : assets.requireActivePublicReference(UUID.fromString(value)).publicUrl(); }
-    private PlatformExecutionContext context(EdgeRequestContext request) { var session = sessions.require(request); return new PlatformExecutionContext(session.platformAdminId().toString(), "platform-admin", Instant.ofEpochMilli(session.expiresAtEpochMillis()), request.correlationId() == null ? "platform-session" : request.correlationId()); }
+    private static tools.jackson.databind.JsonNode extensionValues(String values) { try { tools.jackson.databind.JsonNode value = JSON.readTree(values); if (!value.isObject()) throw new IllegalStateException("organization owner emitted invalid extension JSON"); return value; } catch (Exception exception) { throw new IllegalStateException("organization owner emitted invalid extension JSON", exception); } }
+    private PlatformExecutionContext context(EdgeRequestContext request) { return context(sessions.require(request), request); }
+    private PlatformExecutionContext context(PlatformSessionReadback session, EdgeRequestContext request) { return new PlatformExecutionContext(session.platformAdminId().toString(), "platform-admin", Instant.ofEpochMilli(session.expiresAtEpochMillis()), request.correlationId() == null ? "platform-session" : request.correlationId()); }
     private static WorkspaceAdministrationPageRequest ownerPage(String name, String groupWorkspaceKey, String operationsTitle, GroupWorkspaceStatus status, int page, int pageSize, GroupWorkspaceSortKey sortKey, SortDirection sortDirection) {
         try { return new WorkspaceAdministrationPageRequest(name, groupWorkspaceKey, operationsTitle, status == null ? null : status.wire(), page, pageSize, sortKey.name(), sortDirection.name()); }
         catch (IllegalArgumentException failure) { throw new InvalidEdgeRequestException("invalid workspace list request"); }

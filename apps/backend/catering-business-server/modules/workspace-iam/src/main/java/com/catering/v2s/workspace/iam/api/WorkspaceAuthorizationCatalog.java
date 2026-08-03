@@ -95,9 +95,9 @@ public final class WorkspaceAuthorizationCatalog {
             capability("BC-IAM-PROJECT-INVITE", "管理项目用户邀请", "USER_MANAGEMENT", "用户管理", 300, List.of("GROUP", "REGION", "PROJECT"), "PG-IAM-PROJECT-USERS", "SELECTED_PROJECT_SCOPE"),
             capability("BC-IAM-HEAD-COMPANY-INVITE", "管理总公司用户邀请", "USER_MANAGEMENT", "用户管理", 300, List.of("GROUP", "HEAD_COMPANY"), "PG-IAM-HEAD-COMPANY-USERS", "HEAD_COMPANY_TARGET"),
             capability("BC-IAM-STORE-INVITE", "管理门店用户邀请", "USER_MANAGEMENT", "用户管理", 300, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-IAM-STORE-USERS", "SELECTED_STORE_SCOPE"),
-            capability("BC-CONTRACT-CREATE", "新建门店合同", "STORE_CONTRACT_MANAGEMENT", "门店合同", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
-            capability("BC-CONTRACT-EDIT", "编辑门店合同", "STORE_CONTRACT_MANAGEMENT", "门店合同", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
-            capability("BC-CONTRACT-INVALIDATE", "设置门店合同失效", "STORE_CONTRACT_MANAGEMENT", "门店合同", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE")); }
+            capability("BC-CONTRACT-CREATE", "新建门店合同", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
+            capability("BC-CONTRACT-EDIT", "编辑门店合同", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
+            capability("BC-CONTRACT-INVALIDATE", "设置门店合同失效", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE")); }
     public static List<PageAccessCatalogEntry> pageCatalog() { return List.of(
             page("HOME-GROUP", "集团首页", "工作台", 10, "NONE", List.of("GROUP"), null, false),
             page("HOME-REGION", "大区首页", "工作台", 20, "NONE", List.of("REGION"), null, false),
@@ -109,7 +109,7 @@ public final class WorkspaceAuthorizationCatalog {
             page("PG-ORG-TENANT", "经营租户管理", "组织管理", 120, "NONE", List.of("GROUP"), null, true),
             page("PG-ORG-HEAD-COMPANY", "总公司管理", "组织管理", 130, "NONE", List.of("GROUP"), null, true),
             page("PG-ORG-STORE-MANAGE", "门店管理", "组织管理", 140, "STORE", List.of("GROUP", "REGION", "PROJECT"), null, true),
-            page("PG-CONTRACT-STORE-MANAGE", "门店合同", "组织管理", 150, "PROJECT", List.of("GROUP", "REGION", "PROJECT"), null, true),
+            page("PG-CONTRACT-STORE-MANAGE", "门店合同管理", "组织管理", 150, "PROJECT", List.of("GROUP", "REGION", "PROJECT"), null, true),
             page("PG-IAM-GROUP-USERS", "集团用户管理", "用户与权限", 200, "NONE", List.of("GROUP"), "GROUP", true),
             page("PG-IAM-REGION-USERS", "大区用户管理", "用户与权限", 210, "REGION", List.of("GROUP", "REGION"), "REGION", true),
             page("PG-IAM-PROJECT-USERS", "项目用户管理", "用户与权限", 220, "PROJECT", List.of("GROUP", "REGION", "PROJECT"), "PROJECT", true),

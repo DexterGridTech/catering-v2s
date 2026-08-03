@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-WORKSPACE-SESSION-ENTRY-REUSE-U13",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-WORKSPACE-SESSION-ENTRY-REUSE-U13",
+      "title": "Workspace-iam canonical session-entry reuse",
+      "approvedAssertions": [
+        "PASSWORD_AND_OTP_LOGIN_RETURN_OWNER_COMPOSED_SESSION_ENTRY",
+        "SESSION_ENTRY_GET_RECHECKS_WORKSPACE_KEY_INSIDE_WORKSPACE_IAM",
+        "OPERATIONS_EDGE_ONLY_ISSUES_COOKIE_AND_MAPS_OWNER_READBACK",
+        "OTP_RATE_LIMIT_LOCKOUT_CONTEXT_AND_TYPED_FAILURES_REMAIN"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate C14"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java", "disposition": "update", "target": "owner-local canonical entry result and key guard"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java", "disposition": "update", "target": "OTP entry and replay semantic proof"},
+        {"path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java", "disposition": "update", "target": "thin login and entry adapter"},
+        {"path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationControllerTest.java", "disposition": "create", "target": "owner-result forwarding proof"},
+        {"path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java", "disposition": "update", "target": "measured login budget and entry semantics"},
+        {"path":"AGENTS.md","disposition":"update","target":"managed runtime resource budget"},
+        {"path":"doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md","disposition":"update","target":"runtime resource-budget rule"},
+        {"path":"project-memory/kernel/05-evidence-runtime-and-git.md","disposition":"update","target":"always-read resource-budget assertion"},
+        {"path":"project-memory/operations/phase-retrospective-and-systemic-repair.md","disposition":"update","target":"resource-preflight failure memory"},
+        {"path":"project-memory/required-inventory.json","disposition":"update","target":"memory denominator"},
+        {"path":"project-memory/index.json","disposition":"update","target":"generated memory index"},
+        {"path":"project-memory/index.md","disposition":"update","target":"generated memory index"},
+        {"path":"tools/project-memory/cli.mjs","disposition":"update","target":"inventory checksum"},
+        {"path":"tools/compliance-control/cli.mjs","disposition":"update","target":"remove prewrite-baseline package-exit dependency"},
+        {"path":"scripts/README.md","disposition":"update","target":"runtime budget operation"},
+        {"path":"scripts/env/check-runtime-resource-budget","disposition":"create","target":"local identity/RSS preflight"},
+        {"path":"scripts/dev/r5-dev-runner.mjs","disposition":"update","target":"local process identity/budget"},
+        {"path":"scripts/test/r5-remote-testcontainers.mjs","disposition":"update","target":"remote resource preflight/cleanup"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-package-input.json", "disposition": "create", "target": "C14 binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-implementation-amendment.md", "disposition": "create", "target": "C14 detail design"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-package-exit.json", "disposition": "create", "target": "C14 exit"},
+        {"path": "doc/review/platform/rm1p6-u13-workspace-session-entry-reuse-delivery-manifest.json", "disposition": "create", "target": "C14 manifest"}
+      ],
+      "complianceRoute": {
+        "taskKind": "implementation",
+        "domain": "backend",
+        "consumerFace": "backend",
+        "owner": "workspace-iam",
+        "impact": "database",
+        "trigger": "implementation"
+      },
+      "sourceDenominators": {
+        "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+          "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+          "project-memory/kernel/02-service-shape-and-owner.md"
+        ],
+        "APPROVED_ASSERTIONS": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md#Batch B",
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-implementation-amendment.md"
+        ],
+        "OWNED_SURFACE_AND_OPERATION_KEYS": [
+          "operationsWorkspacePasswordLogin",
+          "verifyOperationsWorkspaceOtp",
+          "getOperationsWorkspaceSessionEntry"
+        ],
+        "FORBIDDEN_PSEUDO_FIXES": [
+          "no edge-built authorization or workspace-entry facts",
+          "no deletion of workspace-key guard or owner canonical entry composition",
+          "no removal of OTP, rate-limit, credential-lockout, context-version or typed-failure behavior",
+          "no unexplained SQL-budget expectation change"
+        ],
+        "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+          "doc/evidence/platform/rm1/p6/rm1p6-u13-workspace-session-entry-reuse-implementation-amendment.md"
+        ],
+        "DUE_STANDARDS_RULE_IDS": [
+          "scripts/check/database-boundaries",
+          "scripts/check/standards-coverage"
+        ]
+      }
+    }
+  ]
+}

@@ -2,270 +2,357 @@
 
 export const PLATFORM_ADMIN_OPERATIONS = [
   {
+    "operationId": "cancelWorkspaceInvitation",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel",
+    "owner": "workspace-iam",
+    "requiresSession": true
+  },
+  {
     "operationId": "changeCurrentPlatformPassword",
     "method": "POST",
     "path": "/api/platform/auth/password",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "completePlatformPasswordRecovery",
     "method": "POST",
     "path": "/api/platform/auth/password-recovery/complete",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": false
   },
   {
     "operationId": "createPlatformAdmin",
     "method": "POST",
     "path": "/api/platform/admin-users",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "createPlatformGroupWorkspace",
     "method": "POST",
     "path": "/api/platform/group-workspaces",
-    "owner": "platform-workspace"
+    "owner": "platform-workspace",
+    "requiresSession": true
+  },
+  {
+    "operationId": "createWorkspaceInvitation",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "createWorkspaceRole",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getCurrentPlatformSession",
     "method": "GET",
     "path": "/api/platform/auth/session",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getExtensionDefinition",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
-    "owner": "extension"
+    "owner": "extension",
+    "requiresSession": true
   },
   {
     "operationId": "getExtensionEntityCatalog",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions",
-    "owner": "extension"
+    "owner": "extension",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformAdminDetail",
     "method": "GET",
     "path": "/api/platform/admin-users/{platformAdminId}",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformAdminPage",
     "method": "GET",
     "path": "/api/platform/admin-users",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformContractOverviewDetail",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformContractOverviewPage",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview",
-    "owner": "contract"
+    "owner": "contract",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformEntityAuditHistory",
     "method": "GET",
     "path": "/api/platform/audit-history",
-    "owner": "platform-workspace"
+    "owner": "platform-workspace",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformGroupWorkspaceDetail",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
-    "owner": "platform-workspace"
+    "owner": "platform-workspace",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformOrganizationHierarchyTree",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformOrganizationOverviewDetail",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getPlatformOrganizationOverviewPage",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "getWorkspaceAccount",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getWorkspaceAccounts",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getWorkspaceInvitation",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}",
+    "owner": "workspace-iam",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getWorkspaceInvitationCandidates",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates",
+    "owner": "workspace-iam",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getWorkspaceInvitations",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getWorkspaceRole",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "getWorkspaceRoles",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "initializeCommercialGroup",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
-    "owner": "organization"
+    "owner": "organization",
+    "requiresSession": true
   },
   {
     "operationId": "listPlatformGroupWorkspaces",
     "method": "GET",
     "path": "/api/platform/group-workspaces",
-    "owner": "platform-workspace"
+    "owner": "platform-workspace",
+    "requiresSession": true
   },
   {
     "operationId": "platformLogout",
     "method": "POST",
     "path": "/api/platform/auth/logout",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "platformPasswordLogin",
     "method": "POST",
     "path": "/api/platform/auth/password-login",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": false
+  },
+  {
+    "operationId": "reissueWorkspaceInvitation",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue",
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "releasePlatformStagedAsset",
     "method": "POST",
     "path": "/api/platform/assets/staging/{assetRef}/release",
-    "owner": "platform-asset"
+    "owner": "platform-asset",
+    "requiresSession": true
   },
   {
     "operationId": "replaceExtensionDefinition",
     "method": "PUT",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
-    "owner": "extension"
+    "owner": "extension",
+    "requiresSession": true
   },
   {
     "operationId": "requestWorkspaceCredentialReset",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "resetPlatformAdminCredential",
     "method": "POST",
     "path": "/api/platform/admin-users/{platformAdminId}/credential-reset",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "revokePlatformWorkspaceAssignment",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "sendPlatformLoginOtp",
     "method": "POST",
     "path": "/api/platform/auth/login-otp/send",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": false
   },
   {
     "operationId": "sendPlatformPasswordRecoveryOtp",
     "method": "POST",
     "path": "/api/platform/auth/password-recovery/otp/send",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": false
   },
   {
     "operationId": "stagePlatformAsset",
     "method": "POST",
     "path": "/api/platform/assets/staging",
-    "owner": "platform-asset"
+    "owner": "platform-asset",
+    "requiresSession": true
   },
   {
     "operationId": "startPlatformPasswordRecovery",
     "method": "POST",
     "path": "/api/platform/auth/password-recovery/start",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": false
   },
   {
     "operationId": "transitionPlatformAdminStatus",
     "method": "POST",
     "path": "/api/platform/admin-users/{platformAdminId}/status",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "transitionPlatformGroupWorkspaceStatus",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
-    "owner": "platform-workspace"
+    "owner": "platform-workspace",
+    "requiresSession": true
   },
   {
     "operationId": "transitionWorkspaceAccountStatus",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "transitionWorkspaceRoleStatus",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "updatePlatformAdminProfile",
     "method": "PATCH",
     "path": "/api/platform/admin-users/{platformAdminId}/profile",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": true
   },
   {
     "operationId": "updatePlatformGroupWorkspaceDisplay",
     "method": "PATCH",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
-    "owner": "platform-workspace"
+    "owner": "platform-workspace",
+    "requiresSession": true
   },
   {
     "operationId": "updateWorkspaceRole",
     "method": "PATCH",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
-    "owner": "workspace-iam"
+    "owner": "workspace-iam",
+    "requiresSession": true
   },
   {
     "operationId": "verifyPlatformLoginOtp",
     "method": "POST",
     "path": "/api/platform/auth/login-otp/verify",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": false
   },
   {
     "operationId": "verifyPlatformPasswordRecoveryOtp",
     "method": "POST",
     "path": "/api/platform/auth/password-recovery/otp/verify",
-    "owner": "platform-iam"
+    "owner": "platform-iam",
+    "requiresSession": false
   }
 ] as const;
 
 export const PLATFORM_ADMIN_OPERATION_IDS = {
+  "cancelWorkspaceInvitation": "cancelWorkspaceInvitation",
   "changeCurrentPlatformPassword": "changeCurrentPlatformPassword",
   "completePlatformPasswordRecovery": "completePlatformPasswordRecovery",
   "createPlatformAdmin": "createPlatformAdmin",
   "createPlatformGroupWorkspace": "createPlatformGroupWorkspace",
+  "createWorkspaceInvitation": "createWorkspaceInvitation",
   "createWorkspaceRole": "createWorkspaceRole",
   "getCurrentPlatformSession": "getCurrentPlatformSession",
   "getExtensionDefinition": "getExtensionDefinition",
@@ -281,12 +368,16 @@ export const PLATFORM_ADMIN_OPERATION_IDS = {
   "getPlatformOrganizationOverviewPage": "getPlatformOrganizationOverviewPage",
   "getWorkspaceAccount": "getWorkspaceAccount",
   "getWorkspaceAccounts": "getWorkspaceAccounts",
+  "getWorkspaceInvitation": "getWorkspaceInvitation",
+  "getWorkspaceInvitationCandidates": "getWorkspaceInvitationCandidates",
+  "getWorkspaceInvitations": "getWorkspaceInvitations",
   "getWorkspaceRole": "getWorkspaceRole",
   "getWorkspaceRoles": "getWorkspaceRoles",
   "initializeCommercialGroup": "initializeCommercialGroup",
   "listPlatformGroupWorkspaces": "listPlatformGroupWorkspaces",
   "platformLogout": "platformLogout",
   "platformPasswordLogin": "platformPasswordLogin",
+  "reissueWorkspaceInvitation": "reissueWorkspaceInvitation",
   "releasePlatformStagedAsset": "releasePlatformStagedAsset",
   "replaceExtensionDefinition": "replaceExtensionDefinition",
   "requestWorkspaceCredentialReset": "requestWorkspaceCredentialReset",
@@ -354,7 +445,7 @@ export const EDGE_PROBLEM_CODES = [
 export type EdgeProblemCode = (typeof EDGE_PROBLEM_CODES)[number];
 export type PlatformAdminOperationId = (typeof PLATFORM_ADMIN_OPERATIONS)[number]["operationId"];
 
-
+export type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
 
 export type AuditChange = {
   fieldKey: string;
@@ -387,6 +478,7 @@ export type AuditTarget = {
 export type CommercialGroupInitializeRequest = {
   groupCode: string;
   groupName: string;
+  extensionValues?: (Record<string, JsonValue>) | null;
   idempotencyKey: string;
 };
 
@@ -395,6 +487,8 @@ export type CommercialGroupRoot = {
   groupWorkspaceKey: string;
   groupCode: string;
   groupName: string;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
   version: number;
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
@@ -413,6 +507,12 @@ export type ContractOverviewItem = {
   name: string;
   resolutionStatus: "RESOLVED" | "UNRESOLVED";
 };
+  projectRef: {
+  id: string;
+  code: string;
+  name: string;
+  resolutionStatus: "RESOLVED" | "UNRESOLVED";
+};
   phaseName: string;
   tenantRef: {
   id: string;
@@ -424,6 +524,7 @@ export type ContractOverviewItem = {
   effectiveTo?: string;
   note?: (string) | null;
   itemSummary?: string;
+  items: Array<StoreContractItem>;
   status: StoreContractStatus;
   source: "MANUAL";
   revision: number;
@@ -451,10 +552,12 @@ export type ContractOverviewPage = {
   itemsAsOf: (number) | null;
   itemsUnresolved: Array<string>;
   filterOptions: Array<{
-  kind: "STORE" | "TENANT";
+  kind: "PROJECT" | "STORE" | "TENANT";
   id: string;
+  code: string;
   name: string;
 }>;
+  phaseOptions: Array<string>;
   filterOptionsSourceStatus: "AVAILABLE" | "UNAVAILABLE";
   filterOptionsAsOf: (number) | null;
   filterOptionsUnresolved: Array<string>;
@@ -481,7 +584,7 @@ export type ExtensionDefinition = {
 
 export type ExtensionDefinitionUpdateRequest = {
   definitions: Array<{
-  key?: string;
+  key: string;
   label: string;
   type: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "SELECT";
   required: boolean;
@@ -502,7 +605,7 @@ export type ExtensionEntityCatalogPage = {
 }>;
 };
 
-export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT";
+export type ExtensionEntityType = "COMMERCIAL_GROUP" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "REGION" | "PROJECT" | "STORE" | "CONTRACT";
 
 export type GroupWorkspaceCreateRequest = {
   groupWorkspaceKey: string;
@@ -622,6 +725,7 @@ export type OrganizationHierarchyTreeNode = {
   notes?: (string) | null;
   updatedAt: number;
   children: Array<OrganizationHierarchyTreeNode>;
+  phases: Array<string>;
 };
 
 export type OrganizationOverviewCategory = "HIERARCHY" | "BUSINESS_ENTITY" | "STORE";
@@ -854,6 +958,42 @@ export type PlatformSessionView = {
   platformAdminAccessible: boolean;
 };
 
+export type PlatformWorkspaceInvitation = {
+  id: string;
+  groupWorkspaceKey: string;
+  mobile: string;
+  issuerDisplayName: string;
+  targetOrganizationType: ServiceNodeType;
+  targetOrganizationPath: string;
+  roleNames: Array<string>;
+  status: WorkspaceInvitationStatus;
+  generation: number;
+  expiresAt: EpochMillis;
+  revision: number;
+  createdAt: EpochMillis;
+  consentedAt?: (EpochMillis) | null;
+  completedAt?: (EpochMillis) | null;
+  cancelledAt?: (EpochMillis) | null;
+  invitationPageUrl: string;
+};
+
+export type PlatformWorkspaceInvitationPage = {
+  items: Array<PlatformWorkspaceInvitation>;
+  page: number;
+  pageSize: number;
+  total: number;
+  criteria: {
+  mobile?: (string) | null;
+  organizationQuery?: (string) | null;
+  roleQuery?: (string) | null;
+  status?: (WorkspaceInvitationStatus) | null;
+  expiresFrom?: (EpochMillis) | null;
+  expiresTo?: (EpochMillis) | null;
+  sort: WorkspaceInvitationSortKey;
+  direction: SortDirection;
+};
+};
+
 export type Problem = {
   type: string;
   title: string;
@@ -875,6 +1015,11 @@ export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | 
 
 export type SortDirection = "ASC" | "DESC";
 
+export type StoreContractItem = {
+  code: string;
+  name: string;
+};
+
 export type StoreContractSortDirection = "ASC" | "DESC";
 
 export type StoreContractSortKey = "CONTRACT_NO" | "EFFECTIVE_FROM" | "UPDATED_AT";
@@ -885,12 +1030,12 @@ export type WorkspaceAccount = {
   id: string;
   groupWorkspaceKey: string;
   displayName: string;
-  maskedMobile: string;
+  mobile: string;
   loginName: string;
   status: WorkspaceAccountStatus;
   credentialStatus: "SET" | "RESET_PENDING";
   activeAssignmentCount: number;
-  lastLoginAt?: (EpochMillis) | null;
+  lastLoginAt: (EpochMillis) | null;
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
   revision: number;
@@ -909,6 +1054,9 @@ export type WorkspaceAccount = {
   generation: number;
   expiresAt: EpochMillis;
 }>;
+  authenticationHistory: Array<{
+  authenticatedAt: EpochMillis;
+}>;
 };
 
 export type WorkspaceAccountPage = {
@@ -916,6 +1064,8 @@ export type WorkspaceAccountPage = {
   page: number;
   pageSize: number;
   total: number;
+  sort: WorkspacePlatformAccountSortKey;
+  direction: SortDirection;
 };
 
 export type WorkspaceAccountStatus = "ENABLED" | "DISABLED";
@@ -951,7 +1101,43 @@ export type WorkspaceCredentialResetResult = {
   revision: number;
 };
 
+export type WorkspaceInvitationCancelRequest = {
+  expectedVersion: number;
+};
+
+export type WorkspaceInvitationCandidatePage = {
+  metadata?: ({
+  subjectType: "ORGANIZATION" | "ROLE";
+  queryText: (string) | null;
+  page: number;
+  pageSize: number;
+  total: number;
+  selectedOrganizationRef: (string) | null;
+}) | null;
+  organizations: Array<{
+  serviceNodeType: ServiceNodeType;
+  organizationRef: string;
+  path: string;
+}>;
+  roles: Array<WorkspaceRole>;
+};
+
+export type WorkspaceInvitationCreateRequest = {
+  mobile: string;
+  targetOrganizationType: ServiceNodeType;
+  targetOrganizationRef: string;
+  roleIds: Array<string>;
+};
+
+export type WorkspaceInvitationReissueRequest = {
+  expectedVersion: number;
+};
+
+export type WorkspaceInvitationSortKey = "CREATED_AT" | "EXPIRES_AT";
+
 export type WorkspaceInvitationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "COMPLETED";
+
+export type WorkspacePlatformAccountSortKey = "DISPLAY_NAME" | "LOGIN_NAME" | "LAST_LOGIN_AT" | "UPDATED_AT";
 
 export type WorkspaceRole = {
   id: string;
@@ -980,6 +1166,8 @@ export type WorkspaceRolePage = {
   page: number;
   pageSize: number;
   total: number;
+  sort: WorkspaceRoleSortKey;
+  direction: SortDirection;
   capabilityCatalog: Array<{
   key: "BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE";
   actionGroupKey: string;
@@ -999,6 +1187,8 @@ export type WorkspaceRolePage = {
 }>;
 };
 
+export type WorkspaceRoleSortKey = "NAME" | "UPDATED_AT";
+
 export type WorkspaceRoleStatus = "ENABLED" | "DISABLED";
 
 export type WorkspaceRoleStatusTransitionRequest = {
@@ -1015,10 +1205,27 @@ export type WorkspaceRoleUpdateRequest = {
 };
 
 export type FaceOperationContracts = {
+  "cancelWorkspaceInvitation": {
+    request: WorkspaceInvitationCancelRequest;
+    response: PlatformWorkspaceInvitation;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "changeCurrentPlatformPassword": {
     request: PlatformCurrentPasswordChangeRequest;
     response: PlatformCurrentPasswordChangeResult;
     requestRequired: true;
+    requiresSession: true;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1031,6 +1238,7 @@ export type FaceOperationContracts = {
     request: PlatformPasswordRecoveryCompleteRequest;
     response: PlatformPasswordRecoveryCompletion;
     requestRequired: true;
+    requiresSession: false;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1043,6 +1251,7 @@ export type FaceOperationContracts = {
     request: PlatformAdminCreateRequest;
     response: PlatformAdminDetail;
     requestRequired: true;
+    requiresSession: true;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1055,7 +1264,23 @@ export type FaceOperationContracts = {
     request: GroupWorkspaceCreateRequest;
     response: GroupWorkspaceCreateResult;
     requestRequired: true;
+    requiresSession: true;
     path: Record<string, never>;
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createWorkspaceInvitation": {
+    request: WorkspaceInvitationCreateRequest;
+    response: PlatformWorkspaceInvitation;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
     query: Record<string, never>;
     queryRequired: false;
     headers: {
@@ -1067,6 +1292,7 @@ export type FaceOperationContracts = {
     request: WorkspaceRoleCreateRequest;
     response: WorkspaceRole;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1081,6 +1307,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: PlatformSessionView;
     requestRequired: false;
+    requiresSession: true;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1091,6 +1318,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: ExtensionDefinition;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     entityType: string;
@@ -1104,6 +1332,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: ExtensionEntityCatalogPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1116,6 +1345,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: PlatformAdminDetail;
     requestRequired: false;
+    requiresSession: true;
     path: {
     platformAdminId: string;
   };
@@ -1128,6 +1358,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: PlatformAdminPage;
     requestRequired: false;
+    requiresSession: true;
     path: Record<string, never>;
     query: {
     userName?: string;
@@ -1146,6 +1377,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: ContractOverviewItem;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     contractId: string;
@@ -1159,15 +1391,16 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: ContractOverviewPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
     query: {
+    projectId?: string;
+    storeId?: string;
     contractNo?: string;
-    storeName?: string;
     phaseName?: string;
     tenantName?: string;
-    itemCode?: string;
     status?: StoreContractStatus;
     sort?: StoreContractSortKey;
     direction?: StoreContractSortDirection;
@@ -1182,10 +1415,11 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: AuditHistoryPage;
     requestRequired: false;
+    requiresSession: true;
     path: Record<string, never>;
     query: {
     groupWorkspaceKey?: string;
-    entityType: "GROUP_WORKSPACE" | "PLATFORM_ADMIN" | "WORKSPACE_ROLE" | "WORKSPACE_ACCOUNT" | "EXTENSION_DEFINITION" | "STORE_CONTRACT";
+    entityType: "GROUP_WORKSPACE" | "PLATFORM_ADMIN" | "WORKSPACE_ROLE" | "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "EXTENSION_DEFINITION" | "STORE_CONTRACT";
     entityId: string;
     page?: number;
     pageSize?: number;
@@ -1198,6 +1432,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: GroupWorkspaceDetail;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1210,6 +1445,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: OrganizationHierarchyTree;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1222,6 +1458,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: OrganizationOverviewItem;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     category: string;
@@ -1236,6 +1473,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: OrganizationOverviewPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1262,6 +1500,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceAccount;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -1275,6 +1514,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceAccountPage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1284,6 +1524,70 @@ export type FaceOperationContracts = {
     loginName?: string;
     roleQuery?: string;
     status?: WorkspaceAccountStatus;
+    serviceNodeType?: ServiceNodeType;
+    organizationRef?: string;
+    sort?: WorkspacePlatformAccountSortKey;
+    direction?: SortDirection;
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getWorkspaceInvitation": {
+    request: NoBody;
+    response: PlatformWorkspaceInvitation;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getWorkspaceInvitationCandidates": {
+    request: NoBody;
+    response: WorkspaceInvitationCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    targetOrganizationType: ServiceNodeType;
+    subjectType: "ORGANIZATION" | "ROLE";
+    queryText?: string;
+    page?: number;
+    pageSize?: number;
+    selectedOrganizationRef?: string;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getWorkspaceInvitations": {
+    request: NoBody;
+    response: PlatformWorkspaceInvitationPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    mobile?: string;
+    targetOrganizationType?: ServiceNodeType;
+    targetOrganizationRef?: string;
+    organizationQuery?: string;
+    roleQuery?: string;
+    status?: WorkspaceInvitationStatus;
+    expiresFrom?: number;
+    expiresTo?: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
     page?: number;
     pageSize?: number;
   };
@@ -1295,6 +1599,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceRole;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     roleId: string;
@@ -1308,6 +1613,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: WorkspaceRolePage;
     requestRequired: false;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1317,6 +1623,8 @@ export type FaceOperationContracts = {
     status?: WorkspaceRoleStatus;
     page?: number;
     pageSize?: number;
+    sort?: WorkspaceRoleSortKey;
+    direction?: SortDirection;
   };
     queryRequired: false;
     headers: Record<string, never>;
@@ -1326,6 +1634,7 @@ export type FaceOperationContracts = {
     request: CommercialGroupInitializeRequest;
     response: CommercialGroupRoot;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1340,6 +1649,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: GroupWorkspacePage;
     requestRequired: false;
+    requiresSession: true;
     path: Record<string, never>;
     query: {
     name?: string;
@@ -1359,6 +1669,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: NoContent;
     requestRequired: false;
+    requiresSession: true;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1371,7 +1682,24 @@ export type FaceOperationContracts = {
     request: LoginRequest;
     response: PlatformSessionView;
     requestRequired: true;
+    requiresSession: false;
     path: Record<string, never>;
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "reissueWorkspaceInvitation": {
+    request: WorkspaceInvitationReissueRequest;
+    response: PlatformWorkspaceInvitation;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    invitationId: string;
+  };
     query: Record<string, never>;
     queryRequired: false;
     headers: {
@@ -1383,6 +1711,7 @@ export type FaceOperationContracts = {
     request: NoBody;
     response: NoContent;
     requestRequired: false;
+    requiresSession: true;
     path: {
     assetRef: string;
   };
@@ -1397,6 +1726,7 @@ export type FaceOperationContracts = {
     request: ExtensionDefinitionUpdateRequest;
     response: ExtensionDefinition;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     entityType: string;
@@ -1412,6 +1742,7 @@ export type FaceOperationContracts = {
     request: WorkspaceCredentialResetRequest;
     response: WorkspaceCredentialResetResult;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -1427,6 +1758,7 @@ export type FaceOperationContracts = {
     request: PlatformAdminCredentialResetRequest;
     response: PlatformAdminDetail;
     requestRequired: true;
+    requiresSession: true;
     path: {
     platformAdminId: string;
   };
@@ -1441,6 +1773,7 @@ export type FaceOperationContracts = {
     request: WorkspaceAssignmentRevokeRequest;
     response: WorkspaceAssignmentRevokeResult;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -1457,6 +1790,7 @@ export type FaceOperationContracts = {
     request: PlatformLoginOtpSendRequest;
     response: PlatformOtpDispatchResponse;
     requestRequired: true;
+    requiresSession: false;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1469,6 +1803,7 @@ export type FaceOperationContracts = {
     request: PlatformPasswordRecoveryOtpSendRequest;
     response: PlatformOtpDispatchResponse;
     requestRequired: true;
+    requiresSession: false;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1481,6 +1816,7 @@ export type FaceOperationContracts = {
     request: PlatformAssetStageMultipart;
     response: PlatformAssetStagingResult;
     requestRequired: true;
+    requiresSession: true;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1493,6 +1829,7 @@ export type FaceOperationContracts = {
     request: PlatformPasswordRecoveryStartRequest;
     response: PlatformPasswordRecoveryStartResponse;
     requestRequired: true;
+    requiresSession: false;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1505,6 +1842,7 @@ export type FaceOperationContracts = {
     request: PlatformAdminStatusTransitionRequest;
     response: PlatformAdminDetail;
     requestRequired: true;
+    requiresSession: true;
     path: {
     platformAdminId: string;
   };
@@ -1519,6 +1857,7 @@ export type FaceOperationContracts = {
     request: GroupWorkspaceStatusTransitionRequest;
     response: GroupWorkspaceDetail;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1533,6 +1872,7 @@ export type FaceOperationContracts = {
     request: WorkspaceAccountStatusTransitionRequest;
     response: WorkspaceAccount;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     accountId: string;
@@ -1548,6 +1888,7 @@ export type FaceOperationContracts = {
     request: WorkspaceRoleStatusTransitionRequest;
     response: WorkspaceRole;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     roleId: string;
@@ -1563,6 +1904,7 @@ export type FaceOperationContracts = {
     request: PlatformAdminProfileUpdateRequest;
     response: PlatformAdminDetail;
     requestRequired: true;
+    requiresSession: true;
     path: {
     platformAdminId: string;
   };
@@ -1577,6 +1919,7 @@ export type FaceOperationContracts = {
     request: GroupWorkspaceDisplayUpdateRequest;
     response: GroupWorkspaceDetail;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
   };
@@ -1591,6 +1934,7 @@ export type FaceOperationContracts = {
     request: WorkspaceRoleUpdateRequest;
     response: WorkspaceRole;
     requestRequired: true;
+    requiresSession: true;
     path: {
     groupWorkspaceKey: string;
     roleId: string;
@@ -1606,6 +1950,7 @@ export type FaceOperationContracts = {
     request: PlatformLoginOtpVerifyRequest;
     response: PlatformSessionView;
     requestRequired: true;
+    requiresSession: false;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1618,6 +1963,7 @@ export type FaceOperationContracts = {
     request: PlatformPasswordRecoveryOtpVerifyRequest;
     response: PlatformPasswordRecoveryVerification;
     requestRequired: true;
+    requiresSession: false;
     path: Record<string, never>;
     query: Record<string, never>;
     queryRequired: false;
@@ -1643,16 +1989,26 @@ export type FaceOperationRequest<I extends PlatformAdminOperationId> = FaceOpera
   method: (typeof PLATFORM_ADMIN_OPERATIONS)[number]["method"];
   path: (typeof PLATFORM_ADMIN_OPERATIONS)[number]["path"];
   pathParameters: FaceOperationContracts[I]["path"];
+  requiresSession: FaceOperationContracts[I]["requiresSession"];
 };
 export type FaceExecutor = <I extends PlatformAdminOperationId>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;
 
 export function createPlatformAdminClient(execute: FaceExecutor) {
   return {
+    cancelWorkspaceInvitation: (pathParameters: FaceOperationContracts["cancelWorkspaceInvitation"]["path"], options: FaceOperationOptions<"cancelWorkspaceInvitation">) => execute({
+      operationId: "cancelWorkspaceInvitation",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     changeCurrentPlatformPassword: (pathParameters: FaceOperationContracts["changeCurrentPlatformPassword"]["path"], options: FaceOperationOptions<"changeCurrentPlatformPassword">) => execute({
       operationId: "changeCurrentPlatformPassword",
       method: "POST",
       path: "/api/platform/auth/password",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     completePlatformPasswordRecovery: (pathParameters: FaceOperationContracts["completePlatformPasswordRecovery"]["path"], options: FaceOperationOptions<"completePlatformPasswordRecovery">) => execute({
@@ -1660,6 +2016,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/auth/password-recovery/complete",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     createPlatformAdmin: (pathParameters: FaceOperationContracts["createPlatformAdmin"]["path"], options: FaceOperationOptions<"createPlatformAdmin">) => execute({
@@ -1667,6 +2024,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/admin-users",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createPlatformGroupWorkspace: (pathParameters: FaceOperationContracts["createPlatformGroupWorkspace"]["path"], options: FaceOperationOptions<"createPlatformGroupWorkspace">) => execute({
@@ -1674,6 +2032,15 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/group-workspaces",
       pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    createWorkspaceInvitation: (pathParameters: FaceOperationContracts["createWorkspaceInvitation"]["path"], options: FaceOperationOptions<"createWorkspaceInvitation">) => execute({
+      operationId: "createWorkspaceInvitation",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     createWorkspaceRole: (pathParameters: FaceOperationContracts["createWorkspaceRole"]["path"], options: FaceOperationOptions<"createWorkspaceRole">) => execute({
@@ -1681,6 +2048,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getCurrentPlatformSession: (pathParameters: FaceOperationContracts["getCurrentPlatformSession"]["path"], options: FaceOperationOptions<"getCurrentPlatformSession">) => execute({
@@ -1688,6 +2056,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/auth/session",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getExtensionDefinition: (pathParameters: FaceOperationContracts["getExtensionDefinition"]["path"], options: FaceOperationOptions<"getExtensionDefinition">) => execute({
@@ -1695,6 +2064,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getExtensionEntityCatalog: (pathParameters: FaceOperationContracts["getExtensionEntityCatalog"]["path"], options: FaceOperationOptions<"getExtensionEntityCatalog">) => execute({
@@ -1702,6 +2072,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformAdminDetail: (pathParameters: FaceOperationContracts["getPlatformAdminDetail"]["path"], options: FaceOperationOptions<"getPlatformAdminDetail">) => execute({
@@ -1709,6 +2080,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/admin-users/{platformAdminId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformAdminPage: (pathParameters: FaceOperationContracts["getPlatformAdminPage"]["path"], options: FaceOperationOptions<"getPlatformAdminPage">) => execute({
@@ -1716,6 +2088,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/admin-users",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformContractOverviewDetail: (pathParameters: FaceOperationContracts["getPlatformContractOverviewDetail"]["path"], options: FaceOperationOptions<"getPlatformContractOverviewDetail">) => execute({
@@ -1723,6 +2096,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformContractOverviewPage: (pathParameters: FaceOperationContracts["getPlatformContractOverviewPage"]["path"], options: FaceOperationOptions<"getPlatformContractOverviewPage">) => execute({
@@ -1730,6 +2104,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformEntityAuditHistory: (pathParameters: FaceOperationContracts["getPlatformEntityAuditHistory"]["path"], options: FaceOperationOptions<"getPlatformEntityAuditHistory">) => execute({
@@ -1737,6 +2112,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/audit-history",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformGroupWorkspaceDetail: (pathParameters: FaceOperationContracts["getPlatformGroupWorkspaceDetail"]["path"], options: FaceOperationOptions<"getPlatformGroupWorkspaceDetail">) => execute({
@@ -1744,6 +2120,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformOrganizationHierarchyTree: (pathParameters: FaceOperationContracts["getPlatformOrganizationHierarchyTree"]["path"], options: FaceOperationOptions<"getPlatformOrganizationHierarchyTree">) => execute({
@@ -1751,6 +2128,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformOrganizationOverviewDetail: (pathParameters: FaceOperationContracts["getPlatformOrganizationOverviewDetail"]["path"], options: FaceOperationOptions<"getPlatformOrganizationOverviewDetail">) => execute({
@@ -1758,6 +2136,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getPlatformOrganizationOverviewPage: (pathParameters: FaceOperationContracts["getPlatformOrganizationOverviewPage"]["path"], options: FaceOperationOptions<"getPlatformOrganizationOverviewPage">) => execute({
@@ -1765,6 +2144,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getWorkspaceAccount: (pathParameters: FaceOperationContracts["getWorkspaceAccount"]["path"], options: FaceOperationOptions<"getWorkspaceAccount">) => execute({
@@ -1772,6 +2152,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getWorkspaceAccounts: (pathParameters: FaceOperationContracts["getWorkspaceAccounts"]["path"], options: FaceOperationOptions<"getWorkspaceAccounts">) => execute({
@@ -1779,6 +2160,31 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts",
       pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getWorkspaceInvitation: (pathParameters: FaceOperationContracts["getWorkspaceInvitation"]["path"], options: FaceOperationOptions<"getWorkspaceInvitation">) => execute({
+      operationId: "getWorkspaceInvitation",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getWorkspaceInvitationCandidates: (pathParameters: FaceOperationContracts["getWorkspaceInvitationCandidates"]["path"], options: FaceOperationOptions<"getWorkspaceInvitationCandidates">) => execute({
+      operationId: "getWorkspaceInvitationCandidates",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getWorkspaceInvitations: (pathParameters: FaceOperationContracts["getWorkspaceInvitations"]["path"], options: FaceOperationOptions<"getWorkspaceInvitations">) => execute({
+      operationId: "getWorkspaceInvitations",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getWorkspaceRole: (pathParameters: FaceOperationContracts["getWorkspaceRole"]["path"], options: FaceOperationOptions<"getWorkspaceRole">) => execute({
@@ -1786,6 +2192,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     getWorkspaceRoles: (pathParameters: FaceOperationContracts["getWorkspaceRoles"]["path"], options: FaceOperationOptions<"getWorkspaceRoles">) => execute({
@@ -1793,6 +2200,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     initializeCommercialGroup: (pathParameters: FaceOperationContracts["initializeCommercialGroup"]["path"], options: FaceOperationOptions<"initializeCommercialGroup">) => execute({
@@ -1800,6 +2208,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     listPlatformGroupWorkspaces: (pathParameters: FaceOperationContracts["listPlatformGroupWorkspaces"]["path"], options: FaceOperationOptions<"listPlatformGroupWorkspaces">) => execute({
@@ -1807,6 +2216,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "GET",
       path: "/api/platform/group-workspaces",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     platformLogout: (pathParameters: FaceOperationContracts["platformLogout"]["path"], options: FaceOperationOptions<"platformLogout">) => execute({
@@ -1814,6 +2224,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/auth/logout",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     platformPasswordLogin: (pathParameters: FaceOperationContracts["platformPasswordLogin"]["path"], options: FaceOperationOptions<"platformPasswordLogin">) => execute({
@@ -1821,6 +2232,15 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/auth/password-login",
       pathParameters,
+      requiresSession: false,
+      ...options,
+    }),
+    reissueWorkspaceInvitation: (pathParameters: FaceOperationContracts["reissueWorkspaceInvitation"]["path"], options: FaceOperationOptions<"reissueWorkspaceInvitation">) => execute({
+      operationId: "reissueWorkspaceInvitation",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     releasePlatformStagedAsset: (pathParameters: FaceOperationContracts["releasePlatformStagedAsset"]["path"], options: FaceOperationOptions<"releasePlatformStagedAsset">) => execute({
@@ -1828,6 +2248,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/assets/staging/{assetRef}/release",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     replaceExtensionDefinition: (pathParameters: FaceOperationContracts["replaceExtensionDefinition"]["path"], options: FaceOperationOptions<"replaceExtensionDefinition">) => execute({
@@ -1835,6 +2256,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "PUT",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     requestWorkspaceCredentialReset: (pathParameters: FaceOperationContracts["requestWorkspaceCredentialReset"]["path"], options: FaceOperationOptions<"requestWorkspaceCredentialReset">) => execute({
@@ -1842,6 +2264,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     resetPlatformAdminCredential: (pathParameters: FaceOperationContracts["resetPlatformAdminCredential"]["path"], options: FaceOperationOptions<"resetPlatformAdminCredential">) => execute({
@@ -1849,6 +2272,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/admin-users/{platformAdminId}/credential-reset",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     revokePlatformWorkspaceAssignment: (pathParameters: FaceOperationContracts["revokePlatformWorkspaceAssignment"]["path"], options: FaceOperationOptions<"revokePlatformWorkspaceAssignment">) => execute({
@@ -1856,6 +2280,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     sendPlatformLoginOtp: (pathParameters: FaceOperationContracts["sendPlatformLoginOtp"]["path"], options: FaceOperationOptions<"sendPlatformLoginOtp">) => execute({
@@ -1863,6 +2288,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/auth/login-otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     sendPlatformPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["sendPlatformPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"sendPlatformPasswordRecoveryOtp">) => execute({
@@ -1870,6 +2296,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/auth/password-recovery/otp/send",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     stagePlatformAsset: (pathParameters: FaceOperationContracts["stagePlatformAsset"]["path"], options: FaceOperationOptions<"stagePlatformAsset">) => execute({
@@ -1877,6 +2304,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/assets/staging",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     startPlatformPasswordRecovery: (pathParameters: FaceOperationContracts["startPlatformPasswordRecovery"]["path"], options: FaceOperationOptions<"startPlatformPasswordRecovery">) => execute({
@@ -1884,6 +2312,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/auth/password-recovery/start",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     transitionPlatformAdminStatus: (pathParameters: FaceOperationContracts["transitionPlatformAdminStatus"]["path"], options: FaceOperationOptions<"transitionPlatformAdminStatus">) => execute({
@@ -1891,6 +2320,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/admin-users/{platformAdminId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionPlatformGroupWorkspaceStatus: (pathParameters: FaceOperationContracts["transitionPlatformGroupWorkspaceStatus"]["path"], options: FaceOperationOptions<"transitionPlatformGroupWorkspaceStatus">) => execute({
@@ -1898,6 +2328,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionWorkspaceAccountStatus: (pathParameters: FaceOperationContracts["transitionWorkspaceAccountStatus"]["path"], options: FaceOperationOptions<"transitionWorkspaceAccountStatus">) => execute({
@@ -1905,6 +2336,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionWorkspaceRoleStatus: (pathParameters: FaceOperationContracts["transitionWorkspaceRoleStatus"]["path"], options: FaceOperationOptions<"transitionWorkspaceRoleStatus">) => execute({
@@ -1912,6 +2344,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updatePlatformAdminProfile: (pathParameters: FaceOperationContracts["updatePlatformAdminProfile"]["path"], options: FaceOperationOptions<"updatePlatformAdminProfile">) => execute({
@@ -1919,6 +2352,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/platform/admin-users/{platformAdminId}/profile",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updatePlatformGroupWorkspaceDisplay: (pathParameters: FaceOperationContracts["updatePlatformGroupWorkspaceDisplay"]["path"], options: FaceOperationOptions<"updatePlatformGroupWorkspaceDisplay">) => execute({
@@ -1926,6 +2360,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     updateWorkspaceRole: (pathParameters: FaceOperationContracts["updateWorkspaceRole"]["path"], options: FaceOperationOptions<"updateWorkspaceRole">) => execute({
@@ -1933,6 +2368,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "PATCH",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
       pathParameters,
+      requiresSession: true,
       ...options,
     }),
     verifyPlatformLoginOtp: (pathParameters: FaceOperationContracts["verifyPlatformLoginOtp"]["path"], options: FaceOperationOptions<"verifyPlatformLoginOtp">) => execute({
@@ -1940,6 +2376,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/auth/login-otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     }),
     verifyPlatformPasswordRecoveryOtp: (pathParameters: FaceOperationContracts["verifyPlatformPasswordRecoveryOtp"]["path"], options: FaceOperationOptions<"verifyPlatformPasswordRecoveryOtp">) => execute({
@@ -1947,6 +2384,7 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       method: "POST",
       path: "/api/platform/auth/password-recovery/otp/verify",
       pathParameters,
+      requiresSession: false,
       ...options,
     })
   } as const;

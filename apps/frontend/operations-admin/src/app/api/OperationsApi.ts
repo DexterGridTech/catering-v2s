@@ -21,7 +21,9 @@ export function abortOperationsRequests() {
   activeControllers.clear();
 }
 
-function toWireRequest(request: {path: string; pathParameters: object; method: string; query?: object; headers?: Readonly<Record<string, string>>; body?: unknown}): FetchArgs {
+type ObservedFetchArgs<RequiresSession extends boolean> = FetchArgs & {requiresSession: RequiresSession};
+
+function toWireRequest<RequiresSession extends boolean>(request: {path: string; pathParameters: object; method: string; requiresSession: RequiresSession; query?: object; headers?: Readonly<Record<string, string>>; body?: unknown}): ObservedFetchArgs<RequiresSession> {
   const path = expandPath(request.path, request.pathParameters);
   const query = new URLSearchParams(
     Object.entries(request.query ?? {})
@@ -35,6 +37,7 @@ function toWireRequest(request: {path: string; pathParameters: object; method: s
     method: request.method.toUpperCase(),
     headers,
     body: serializeJsonOrMultipartBody(request.body, headers),
+    requiresSession: request.requiresSession,
   };
 }
 

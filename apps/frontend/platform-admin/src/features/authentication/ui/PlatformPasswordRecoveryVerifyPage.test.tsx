@@ -9,6 +9,12 @@ describe('platform recovery verification focused contract', () => {
     expect(source).toContain(PLATFORM_ADMIN_OPERATION_IDS.sendPlatformPasswordRecoveryOtp);
     expect(source).toContain(PLATFORM_ADMIN_OPERATION_IDS.verifyPlatformPasswordRecoveryOtp);
     expect(source).toContain("form.setFieldValue('code', undefined)");
+    expect(source).toContain("form.setFieldValue('code', debugCode)");
+    expect(source).toContain("message: '请输入正确的手机号'");
+    expect(source).toContain("message: '请输入6位验证码'");
     expect(source).toContain("testId('platform-recovery-verify')");
+    expect(source).toContain('className="auth-page"');
+    expect(source).toContain('className="auth-card"');
+    expect(source).toContain('<Space.Compact block>');
   });
 });

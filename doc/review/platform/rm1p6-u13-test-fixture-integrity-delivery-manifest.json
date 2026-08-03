@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-TEST-FIXTURE-INTEGRITY-U13",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-TEST-FIXTURE-INTEGRITY-U13",
+      "title": "Database-backed focused-test fixture integrity",
+      "approvedAssertions": [
+        "DISTINCT_LOGICAL_STAGED_ASSETS_HAVE_DISTINCT_VALID_CONTENT_FIXTURES",
+        "SQL_FIXTURES_SATISFY_THEIR_REAL_PERSISTENCE_CONSTRAINTS",
+        "PRODUCTION_CONTENT_ADDRESSING_AND_SCHEMA_CONSTRAINTS_REMAIN_UNCHANGED"
+      ],
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate C13"},
+        {"path": "apps/backend/catering-business-server/modules/asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java", "disposition": "update", "target": "distinct valid asset fixture bytes"},
+        {"path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java", "disposition": "update", "target": "bounded unique credit-code fixture"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-package-input.json", "disposition": "create", "target": "C13 binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-implementation-amendment.md", "disposition": "create", "target": "C13 detailed boundary"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-problem-family.json", "disposition": "create", "target": "finite root-cause denominator"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-package-exit.json", "disposition": "create", "target": "C13 exit"},
+        {"path": "doc/review/platform/rm1p6-u13-test-fixture-integrity-delivery-manifest.json", "disposition": "create", "target": "C13 manifest"}
+      ],
+      "complianceRoute": {
+        "taskKind": "testing",
+        "domain": "backend",
+        "consumerFace": "backend",
+        "owner": "backend",
+        "impact": "database",
+        "trigger": "failure"
+      },
+      "sourceDenominators": {
+        "ROOT_CAUSE": ["doc/evidence/platform/rm1/p6/rm1p6-u13-test-fixture-integrity-problem-family.json"],
+        "OWNING_SCHEMA": ["apps/backend/catering-business-server/src/main/resources/db/migration/V20260726_150000_000__organization_and_contract_persistence_correction.sql"],
+        "FORBIDDEN_PSEUDO_FIXES": ["no production uniqueness/schema relaxation", "no skipped target assertions", "no local Docker/Testcontainers"],
+        "DUE_STANDARDS_RULE_IDS": ["scripts/check/database-boundaries", "scripts/check/standards-coverage"]
+      }
+    }
+  ]
+}

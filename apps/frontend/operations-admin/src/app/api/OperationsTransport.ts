@@ -3,7 +3,6 @@ import {
   type FaceOperationRequest as OperationsFaceOperationRequest,
   type FaceExecutor as OperationsFaceExecutor,
   createOperationsAdminClient,
-  EDGE_PROBLEM_CODES as OPERATIONS_EDGE_PROBLEM_CODES,
   type EdgeProblemCode as OperationsEdgeProblemCode,
 } from './generated/operations-edge';
 import {
@@ -11,23 +10,23 @@ import {
   type FaceOperationRequest as PublicFaceOperationRequest,
   type FaceExecutor as PublicFaceExecutor,
   createPublicClient,
-  EDGE_PROBLEM_CODES as PUBLIC_EDGE_PROBLEM_CODES,
   type EdgeProblemCode as PublicEdgeProblemCode,
 } from './generated/public-edge';
+import {isOperationsProblemCode, operationsProblemFeedback, type ProblemFeedback} from './operationsProblemFeedback';
 import {abortOperationsRequests, operationsApi, operationsRefreshSignal, registerOperationsUnauthorizedRecovery} from './OperationsApi';
 import {operationsStore} from '../state/OperationsStore';
 
-export type ApiProblem = {
+export type ApiProblem = ProblemFeedback & {
   type: string;
   title: string;
   status: number;
-  detail: string;
   errorCode: OperationsEdgeProblemCode | PublicEdgeProblemCode | 'NETWORK_ERROR';
   correlationId: string;
+  /** Contract fields are retained for diagnostics, never rendered by UI. */
+  contractTitle?: string;
+  contractDetail?: string;
 };
 export class ApiFailure extends Error { constructor(public readonly problem: ApiProblem) { super(problem.detail); } }
-const operationsProblemCodes = new Set<string>(OPERATIONS_EDGE_PROBLEM_CODES);
-const publicProblemCodes = new Set<string>(PUBLIC_EDGE_PROBLEM_CODES);
 
 async function dispatchWire<Response>(
   operationId: string,
@@ -78,20 +77,20 @@ export const operationsRtk = operationsApi;
 function problem(error: unknown): ApiProblem {
   const data = typeof error === 'object' && error !== null && 'data' in error ? (error as {data?: unknown}).data : undefined;
   if (typeof data === 'object' && data !== null) {
-    const value = data as {status?: unknown; errorCode?: unknown; correlationId?: unknown};
-    const candidate = value.errorCode;
-    const errorCode = typeof candidate === 'string'
-      && (operationsProblemCodes.has(candidate) || publicProblemCodes.has(candidate))
-      ? candidate as OperationsEdgeProblemCode | PublicEdgeProblemCode
-      : 'NETWORK_ERROR';
+    const value = data as {type?: unknown; title?: unknown; status?: unknown; detail?: unknown; errorCode?: unknown; correlationId?: unknown};
+    const errorCode = isOperationsProblemCode(value.errorCode)
+      ? value.errorCode
+      : 'PLATFORM_COMMON_RESULT_UNKNOWN';
+    const feedback = operationsProblemFeedback(errorCode);
     return {
-      type: 'about:blank',
-      title: '请求失败',
+      ...feedback,
+      type: typeof value.type === 'string' ? value.type : 'about:blank',
       status: typeof value.status === 'number' ? value.status : 0,
-      detail: '请求未完成，请根据错误码检查后重试。',
       errorCode,
       correlationId: typeof value.correlationId === 'string' ? value.correlationId : '',
+      contractTitle: typeof value.title === 'string' ? value.title : undefined,
+      contractDetail: typeof value.detail === 'string' ? value.detail : undefined,
     };
   }
-  return {type: 'about:blank', title: '请求失败', status: 0, detail: '无法连接运营服务。', errorCode: 'NETWORK_ERROR', correlationId: ''};
+  return {...operationsProblemFeedback('NETWORK_ERROR'), type: 'about:blank', status: 0, errorCode: 'NETWORK_ERROR', correlationId: ''};
 }

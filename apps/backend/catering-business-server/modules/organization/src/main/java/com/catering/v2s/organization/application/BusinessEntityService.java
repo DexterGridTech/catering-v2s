@@ -235,6 +235,41 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
         requireEntity("HEAD_COMPANY", workspaceUuid, groupWorkspaceKey, headCompanyId);
         return jdbc.query("SELECT b.id, b.workspace_uuid, b.group_workspace_key, b.code, b.name, NULL::varchar AS legal_name, NULL::varchar AS credit_code, b.alias, b.remark, NULL::varchar AS notes, b.status, b.version, b.extension_rule_revision, b.created_at_epoch_millis, b.updated_at_epoch_millis, b.extension_values::text FROM organization.head_company_brand_authorization a JOIN organization.brand b ON b.id=a.brand_id WHERE a.head_company_id=? AND b.workspace_uuid=? AND b.group_workspace_key=? ORDER BY b.id", (row, index) -> readEntity("BRAND", row), headCompanyId, workspaceUuid, groupWorkspaceKey);
     }
+
+    /**
+     * Bounded organization-owner task read for an already paged head-company surface. It validates
+     * every requested head company within its workspace before grouping its authorized brands.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, List<OrganizationEntityReadback>> authorizedBrandsByHeadCompanyIds(UUID workspaceUuid, String groupWorkspaceKey, List<UUID> requestedHeadCompanyIds) {
+        List<UUID> ids = requestedHeadCompanyIds == null ? List.of() : requestedHeadCompanyIds.stream().distinct().toList();
+        if (ids.isEmpty()) return Map.of();
+        if (ids.stream().anyMatch(Objects::isNull)) throw new OrganizationNotFoundException();
+        String placeholders = String.join(",", java.util.Collections.nCopies(ids.size(), "?"));
+        Map<UUID, List<OrganizationEntityReadback>> brandsByHeadCompanyId = new java.util.LinkedHashMap<>();
+        ids.forEach(id -> brandsByHeadCompanyId.put(id, new ArrayList<>()));
+        Set<UUID> foundHeadCompanyIds = new java.util.HashSet<>();
+        jdbc.query(
+            "SELECT b.id, b.workspace_uuid, b.group_workspace_key, b.code, b.name, NULL::varchar AS legal_name, NULL::varchar AS credit_code, b.alias, b.remark, NULL::varchar AS notes, b.status, b.version, b.extension_rule_revision, b.created_at_epoch_millis, b.updated_at_epoch_millis, b.extension_values::text, h.id AS head_company_id FROM organization.head_company h LEFT JOIN organization.head_company_brand_authorization a ON a.head_company_id=h.id LEFT JOIN organization.brand b ON b.id=a.brand_id AND b.workspace_uuid=h.workspace_uuid AND b.group_workspace_key=h.group_workspace_key WHERE h.workspace_uuid=? AND h.group_workspace_key=? AND h.id IN (" + placeholders + ") ORDER BY h.id, b.id",
+            statement -> {
+                statement.setObject(1, workspaceUuid);
+                statement.setString(2, groupWorkspaceKey);
+                for (int index = 0; index < ids.size(); index++) statement.setObject(index + 3, ids.get(index));
+            },
+            result -> {
+                while (result.next()) {
+                    UUID headCompanyId = result.getObject("head_company_id", UUID.class);
+                    foundHeadCompanyIds.add(headCompanyId);
+                    if (result.getObject(1, UUID.class) != null) brandsByHeadCompanyId.get(headCompanyId).add(readEntity("BRAND", result));
+                }
+                return null;
+            }
+        );
+        if (foundHeadCompanyIds.size() != ids.size()) throw new OrganizationNotFoundException();
+        Map<UUID, List<OrganizationEntityReadback>> immutable = new java.util.LinkedHashMap<>();
+        brandsByHeadCompanyId.forEach((headCompanyId, brands) -> immutable.put(headCompanyId, List.copyOf(brands)));
+        return Map.copyOf(immutable);
+    }
     @Transactional(readOnly = true)
     public List<HeadCompanyBrandAuthorization> authorizedBrandAuthorizations(UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId) {
         requireEntity("HEAD_COMPANY", workspaceUuid, groupWorkspaceKey, headCompanyId);
