@@ -16,7 +16,8 @@ class WorkspacePlatformAccountPageRequestTest {
         var service = new WorkspaceUserService(jdbc, null, null, null);
         var organizationRef = UUID.randomUUID();
 
-        var page = service.pageForPlatform(UUID.randomUUID(), "workspace-a", "Dexter", "138", "dexter", "Operator", "ENABLED", "STORE", organizationRef, 2, 50, "LAST_LOGIN_AT", "DESC");
+        UUID roleId = UUID.randomUUID();
+        var page = service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", "Dexter", "138", "dexter", roleId, "ENABLED", "STORE", organizationRef, "LAST_LOGIN_AT", "DESC", 2, 50));
 
         assertEquals(73, page.total());
         assertEquals(2, page.page());
@@ -30,25 +31,25 @@ class WorkspacePlatformAccountPageRequestTest {
         assertTrue(jdbc.countSql.contains("EXISTS (SELECT 1 FROM workspace_iam.role_assignment assignment"));
         assertTrue(jdbc.countSql.contains("assignment.service_node_type=?"));
         assertTrue(jdbc.countSql.contains("assignment.service_node_id=?"));
-        assertTrue(jdbc.countSql.contains("role.name ILIKE"));
+        assertTrue(jdbc.countSql.contains("assignment.role_id=?"));
         assertTrue(jdbc.listSql.contains("MAX(authenticated_at_epoch_millis) AS last_login_at"));
         assertTrue(jdbc.listSql.contains("ORDER BY COALESCE(login.last_login_at, -1) DESC, a.id ASC"));
     }
 
     @Test void rejectsInvalidPlatformAccountPageBeforeQuerying() {
         var service = new WorkspaceUserService(new RecordingJdbcTemplate(), null, null, null);
-        assertThrows(WorkspaceAccountService.AccountNotFoundException.class, () -> service.pageForPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, "PENDING", 1, 20));
-        assertThrows(WorkspaceAccountService.AccountNotFoundException.class, () -> service.pageForPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, 0, 20));
+        assertThrows(WorkspaceAccountService.AccountNotFoundException.class, () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, "PENDING", null, null, null, null, 1, 20)));
+        assertThrows(WorkspaceAccountService.AccountNotFoundException.class, () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, null, null, null, 0, 20)));
     }
 
     @Test void ownerTypesEveryOptionalPlatformFilterBeforeItsNullGuard() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceUserService(jdbc, null, null, null);
 
-        service.pageForPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, 1, 20);
+        service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, null, null, null, 1, 20));
 
-        assertEquals(8, occurrences(jdbc.countSql, "CAST(? AS text) IS NULL"));
-        assertEquals(2, occurrences(jdbc.countSql, "CAST(? AS uuid) IS NULL"));
+        assertEquals(6, occurrences(jdbc.countSql, "CAST(? AS text) IS NULL"));
+        assertEquals(4, occurrences(jdbc.countSql, "CAST(? AS uuid) IS NULL"));
         assertEquals(jdbc.countSql.replace("SELECT COUNT(*)", ""), jdbc.listSql.substring(jdbc.listSql.indexOf(" FROM workspace_iam.workspace_account"), jdbc.listSql.indexOf(" ORDER BY")));
     }
 

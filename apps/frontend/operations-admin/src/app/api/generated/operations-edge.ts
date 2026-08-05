@@ -590,6 +590,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "updateOperationsCommercialGroup",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group",
+    "owner": "organization",
+    "requiresSession": true
+  },
+  {
     "operationId": "updateOperationsContract",
     "method": "PATCH",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
@@ -725,6 +732,7 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "transitionOperationsOrganizationNodeStatus": "transitionOperationsOrganizationNodeStatus",
   "transitionOperationsOrganizationStoreStatus": "transitionOperationsOrganizationStoreStatus",
   "transitionOperationsOrganizationTenantStatus": "transitionOperationsOrganizationTenantStatus",
+  "updateOperationsCommercialGroup": "updateOperationsCommercialGroup",
   "updateOperationsContract": "updateOperationsContract",
   "updateOperationsOrganizationBrand": "updateOperationsOrganizationBrand",
   "updateOperationsOrganizationHeadCompany": "updateOperationsOrganizationHeadCompany",
@@ -782,6 +790,7 @@ export const EDGE_PROBLEM_CODES = [
   "WORKSPACE_IAM_INVALID_CREDENTIALS",
   "WORKSPACE_IAM_OTP_EXPIRED",
   "WORKSPACE_IAM_OTP_INVALID",
+  "WORKSPACE_IAM_PASSWORD_POLICY_FAILED",
   "WORKSPACE_IAM_RATE_LIMITED",
   "WORKSPACE_IAM_RESULT_UNKNOWN",
   "WORKSPACE_IAM_WORKSPACE_DISABLED",
@@ -841,6 +850,7 @@ export type BrandCreateRequest = {
   alias?: (string) | null;
   remark?: (string) | null;
   extensionValues?: (Record<string, JsonValue>) | null;
+  expectedExtensionRuleRevision?: (number) | null;
 };
 
 export type BrandPage = {
@@ -857,7 +867,6 @@ export type BrandPage = {
 
 export type BrandUpdateRequest = (BrandCreateRequest) & ({
   expectedVersion: number;
-  expectedContextVersion: number;
 });
 
 export type BusinessEntitySortDirection = "ASC" | "DESC";
@@ -876,11 +885,18 @@ export type CommercialGroupRoot = {
   groupWorkspaceKey: string;
   groupCode: string;
   groupName: string;
-  extensionValues: Record<string, JsonValue>;
-  extensionRuleRevision: number;
   version: number;
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
+};
+
+export type CommercialGroupUpdateRequest = {
+  groupCode: string;
+  groupName: string;
+  extensionValues?: (Record<string, JsonValue>) | null;
+  expectedVersion: number;
 };
 
 export type EpochMillis = number;
@@ -902,7 +918,7 @@ export type ExtensionDefinition = {
   updatedAt: EpochMillis;
 };
 
-export type ExtensionEntityType = "COMMERCIAL_GROUP" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "REGION" | "PROJECT" | "STORE" | "CONTRACT";
+export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT" | "COMMERCIAL_GROUP" | "REGION" | "PROJECT";
 
 export type GroupWorkspaceStatus = "ENABLED" | "DISABLED";
 
@@ -939,6 +955,7 @@ export type HeadCompanyCreateRequest = {
   unifiedSocialCreditCode: string;
   remark?: (string) | null;
   extensionValues?: (Record<string, JsonValue>) | null;
+  expectedExtensionRuleRevision?: (number) | null;
 };
 
 export type HeadCompanyPage = {
@@ -955,7 +972,6 @@ export type HeadCompanyPage = {
 
 export type HeadCompanyUpdateRequest = (HeadCompanyCreateRequest) & ({
   expectedVersion: number;
-  expectedContextVersion: number;
 });
 
 export type NoBody = Record<string, never>;
@@ -963,19 +979,23 @@ export type NoBody = Record<string, never>;
 export type NoContent = null;
 
 export type OrganizationCandidatePage = {
-  metadata: {
+  metadata: OrganizationCandidatePageMetadata;
+  items: Array<OrganizationCandidatePageItemsItem>;
+};
+
+export type OrganizationCandidatePageItemsItem = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type OrganizationCandidatePageMetadata = {
   subjectType: OrganizationCandidateQuerySubjectType;
   queryText: (string) | null;
   page: number;
   pageSize: number;
   total: number;
   selectedId: (string) | null;
-};
-  items: Array<{
-  id: string;
-  code: string;
-  name: string;
-}>;
 };
 
 export type OrganizationCandidateQuerySubjectType = "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
@@ -994,8 +1014,6 @@ export type OrganizationNode = {
   code: string;
   name: string;
   notes?: (string) | null;
-  extensionValues: Record<string, JsonValue>;
-  extensionRuleRevision: number;
   status: "ENABLED" | "DISABLED";
   phases: Array<{
   name: string;
@@ -1003,6 +1021,8 @@ export type OrganizationNode = {
   revision: number;
   createdAt: number;
   updatedAt: number;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
 };
 
 export type OrganizationNodeCreateRequest = {
@@ -1025,8 +1045,8 @@ export type OrganizationNodeUpdateRequest = {
   name: string;
 }>;
   notes?: (string) | null;
-  extensionValues?: (Record<string, JsonValue>) | null;
   expectedVersion: number;
+  extensionValues?: (Record<string, JsonValue>) | null;
 };
 
 export type OrganizationProjectCreateRequest = (OrganizationNodeCreateRequest) & ({
@@ -1077,7 +1097,7 @@ export type OrganizationStore = {
 export type OrganizationStoreCandidatePage = {
   groupWorkspaceKey: string;
   dataScope: {
-  nodeType: ServiceNodeType;
+  nodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   nodeRef: string;
   nodeName: string;
 };
@@ -1108,7 +1128,6 @@ export type OrganizationStoreCandidatePage = {
 };
 
 export type OrganizationStoreCreateRequest = {
-  projectId: string;
   brandId: string;
   tenantId: string;
   headCompanyId?: (string) | null;
@@ -1122,7 +1141,7 @@ export type OrganizationStorePage = {
   metadata: {
   groupWorkspaceKey: string;
   dataScope: {
-  nodeType: ServiceNodeType;
+  nodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   nodeRef: string;
   nodeName: string;
 };
@@ -1151,6 +1170,7 @@ export type OrganizationStoreUpdateRequest = {
   headCompanyId?: (string) | null;
   notes?: (string) | null;
   extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
   expectedVersion: number;
 };
 
@@ -1162,13 +1182,6 @@ export type Problem = {
   instance?: (string) | null;
   errorCode: EdgeProblemCode;
   correlationId: string;
-  brandAuthorizationBlockers?: {
-  visibleStores: Array<{
-  id: string;
-  code: string;
-  name: string;
-}>;
-};
 };
 
 export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
@@ -1224,11 +1237,10 @@ export type StoreContractCandidatePage = {
 };
   stores: Array<StoreContractStoreCandidate>;
   phases: Array<string>;
-  selectedStoreTenant: (StoreContractSelectedTenant) | null;
+  selectedStoreTenant?: ((StoreContractSelectedTenant)) | null;
 };
 
 export type StoreContractCreateRequest = {
-  projectId: string;
   storeId: string;
   phaseName: string;
   contractNo: string;
@@ -1236,6 +1248,7 @@ export type StoreContractCreateRequest = {
   effectiveTo: (string) | null;
   note?: (string) | null;
   extensionValues?: (Record<string, JsonValue>) | null;
+  expectedExtensionRuleRevision?: (number) | null;
   items: Array<StoreContractItem>;
   phaseNameSnapshot?: (string) | null;
 };
@@ -1288,6 +1301,7 @@ export type StoreContractUpdateRequest = {
   effectiveTo: (string) | null;
   note?: (string) | null;
   extensionValues?: (Record<string, JsonValue>) | null;
+  expectedExtensionRuleRevision?: (number) | null;
   expectedVersion: number;
   items: Array<StoreContractItem>;
   phaseNameSnapshot?: (string) | null;
@@ -1318,6 +1332,7 @@ export type TenantCreateRequest = {
   unifiedSocialCreditCode: string;
   remark?: (string) | null;
   extensionValues?: (Record<string, JsonValue>) | null;
+  expectedExtensionRuleRevision?: (number) | null;
 };
 
 export type TenantPage = {
@@ -1334,7 +1349,6 @@ export type TenantPage = {
 
 export type TenantUpdateRequest = (TenantCreateRequest) & ({
   expectedVersion: number;
-  expectedContextVersion: number;
 });
 
 export type WorkspaceAccountStatus = "ENABLED" | "DISABLED";
@@ -1355,7 +1369,7 @@ export type WorkspaceInvitation = {
   id: string;
   groupWorkspaceKey: string;
   maskedMobile: string;
-  targetOrganizationType: ServiceNodeType;
+  targetOrganizationType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   targetOrganizationPath: string;
   roleNames: Array<string>;
   status: WorkspaceInvitationStatus;
@@ -1370,20 +1384,20 @@ export type WorkspaceInvitation = {
 };
 
 export type WorkspaceInvitationCandidatePage = {
-  metadata?: ({
-  subjectType: "ORGANIZATION" | "ROLE";
-  queryText: (string) | null;
-  page: number;
-  pageSize: number;
-  total: number;
-  selectedOrganizationRef: (string) | null;
-}) | null;
   organizations: Array<{
-  serviceNodeType: ServiceNodeType;
+  serviceNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   organizationRef: string;
   path: string;
 }>;
   roles: Array<WorkspaceRole>;
+  metadata: ({
+  subjectType: string;
+  queryText?: (string) | null;
+  page: number;
+  pageSize: number;
+  total: number;
+  selectedOrganizationRef?: (string) | null;
+}) | null;
 };
 
 export type WorkspaceInvitationPage = {
@@ -1411,12 +1425,13 @@ export type WorkspaceLoginEntry = {
   groupWorkspaceKey: string;
   workspaceName: string;
   operationsTitle: string;
-  logoUrl?: (string) | null;
   status: GroupWorkspaceStatus;
   sessionState: "NONE" | "AUTHENTICATED";
+  logoUrl?: (string) | null;
 };
 
 export type WorkspaceOperationsInvitationActionRequest = {
+  scopeRef?: (string) | null;
   expectedVersion: number;
   expectedContextVersion: number;
   idempotencyKey: string;
@@ -1426,7 +1441,6 @@ export type WorkspaceOperationsInvitationCreateRequest = {
   scopeRef?: (string) | null;
   mobile: string;
   roleIds: Array<string>;
-  expectedContextVersion: number;
   idempotencyKey: string;
 };
 
@@ -1454,7 +1468,7 @@ export type WorkspaceRole = {
   groupWorkspaceKey: string;
   name: string;
   description?: (string) | null;
-  serviceNodeType: ServiceNodeType;
+  serviceNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   capabilityKeys: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
   pageAccessKeys: Array<string>;
   status: WorkspaceRoleStatus;
@@ -1465,6 +1479,25 @@ export type WorkspaceRole = {
 
 export type WorkspaceRoleStatus = "ENABLED" | "DISABLED";
 
+export type WorkspaceScopeContext = {
+  region: (WorkspaceScopeNode) | null;
+  project: (WorkspaceScopeNode) | null;
+  store: (WorkspaceScopeNode) | null;
+  headCompany: (WorkspaceScopeNode) | null;
+};
+
+export type WorkspaceScopeNode = {
+  dataNodeType: "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
+  dataNodeRef: string;
+  dataNodeName: string;
+  dataNodeCode: string;
+  ancestorPath: Array<string>;
+  regionRef?: (string) | null;
+  projectRef?: (string) | null;
+  storeRef?: (string) | null;
+  headCompanyRef?: (string) | null;
+};
+
 export type WorkspaceSelectContextRequest = {
   roleAssignmentRef: string;
   requiredContextVersion: number;
@@ -1472,7 +1505,7 @@ export type WorkspaceSelectContextRequest = {
 
 export type WorkspaceSelectDataNodeRequest = {
   dataNodeRef: string;
-  dataNodeType: ServiceNodeType;
+  dataNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   requiredContextVersion: number;
 };
 
@@ -1480,18 +1513,15 @@ export type WorkspaceSessionEntry = {
   groupWorkspaceKey: string;
   accountId: string;
   displayName: string;
-  workspaceName: string;
-  operationsTitle: string;
-  logoUrl?: (string) | null;
   contextVersion: number;
   mode: "DIRECT" | "SELECT" | "EMPTY";
-  outcome: "HOME" | "SELECT_IDENTITY" | "SELECT_SCOPE" | "EMPTY_WORKBENCH";
+  outcome: "HOME" | "SELECT_IDENTITY" | "SELECT_SCOPE" | "EMPTY_WORKBENCH" | "PASSWORD_CHANGE_REQUIRED";
   candidates: Array<{
   roleAssignmentRef: string;
   roleId: string;
   roleName: string;
   roleNodeRef: string;
-  roleNodeType: ServiceNodeType;
+  roleNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   roleNodeName: string;
   homePageDesignKey: string;
   pageDesignKeys: Array<string>;
@@ -1502,25 +1532,17 @@ export type WorkspaceSessionEntry = {
   menuOrder: number;
   kind: "ROLE_HOME" | "BUSINESS";
   pageAccessManaged: boolean;
-  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE";
+  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
 }>;
 }>;
   actionGrants: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
-  dataNodeCandidates?: Array<{
-  dataNodeType: ServiceNodeType;
-  dataNodeRef: string;
-  dataNodeName: string;
-  ancestorPath: Array<string>;
-  regionRef?: (string) | null;
-  projectRef?: (string) | null;
-  storeRef?: (string) | null;
-}>;
+  dataNodeCandidates?: Array<WorkspaceScopeNode>;
   selected?: ((({
   roleAssignmentRef: string;
   roleId: string;
   roleName: string;
   roleNodeRef: string;
-  roleNodeType: ServiceNodeType;
+  roleNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   roleNodeName: string;
   homePageDesignKey: string;
   pageDesignKeys: Array<string>;
@@ -1531,22 +1553,15 @@ export type WorkspaceSessionEntry = {
   menuOrder: number;
   kind: "ROLE_HOME" | "BUSINESS";
   pageAccessManaged: boolean;
-  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE";
+  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
 }>;
 }) & ({
   contextVersion: number;
 }))) | null;
-  selectedDataNode?: ({
-  dataNodeType: ServiceNodeType;
-  dataNodeRef: string;
-  dataNodeName: string;
-  ancestorPath: Array<string>;
-  regionRef?: (string) | null;
-  projectRef?: (string) | null;
-  storeRef?: (string) | null;
-}) & ({
-  contextVersion: number;
-});
+  scopeContext: (WorkspaceScopeContext) | null;
+  workspaceName: string;
+  operationsTitle: string;
+  logoUrl: (string) | null;
 };
 
 export type WorkspaceUser = {
@@ -1555,7 +1570,7 @@ export type WorkspaceUser = {
   maskedMobile: string;
   loginName: string;
   status: WorkspaceAccountStatus;
-  credentialStatus: "SET" | "RESET_PENDING";
+  credentialStatus: "SET" | "CHANGE_REQUIRED";
   activeAssignmentCount: number;
   lastLoginAt?: (EpochMillis) | null;
   createdAt: EpochMillis;
@@ -1598,7 +1613,6 @@ export type WorkspaceUserPage = {
 
 export type WorkspaceUserRevokeRequest = {
   expectedVersion: number;
-  expectedContextVersion: number;
 };
 
 export type WorkspaceUserRevokeResult = {
@@ -1931,7 +1945,6 @@ export type FaceOperationContracts = {
   };
     query: {
     expectedContextVersion: number;
-    projectId: string;
     storeSearch?: string;
     selectedStoreId?: string;
     page?: number;
@@ -1951,7 +1964,6 @@ export type FaceOperationContracts = {
   };
     query: {
     expectedContextVersion: number;
-    projectId: string;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -1967,11 +1979,10 @@ export type FaceOperationContracts = {
   };
     query: {
     expectedContextVersion: number;
-    projectId: string;
     storeId?: string;
     contractNo?: string;
     phaseName?: string;
-    tenantName?: string;
+    tenantId?: string;
     itemCode?: string;
     dateFrom?: string;
     dateTo?: string;
@@ -2085,6 +2096,7 @@ export type FaceOperationContracts = {
     query: {
     expectedContextVersion: number;
     subjectType: OrganizationCandidateQuerySubjectType;
+    candidateUsage?: "DEFAULT" | "CONTRACT_LIST";
     queryText?: string;
     page?: number;
     pageSize?: number;
@@ -2194,7 +2206,6 @@ export type FaceOperationContracts = {
     query: {
     expectedContextVersion: number;
     brandId?: string;
-    projectId?: string;
     tenantId?: string;
   };
     queryRequired: true;
@@ -2227,7 +2238,6 @@ export type FaceOperationContracts = {
     query: {
     expectedContextVersion: number;
     name?: string;
-    projectId?: string;
     code?: string;
     status?: OrganizationStoreStatus;
     sort?: OrganizationStoreSortKey;
@@ -2305,6 +2315,7 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     subjectType: "ORGANIZATION" | "ROLE";
+    candidateUsage: "INVITATION_TARGET" | "LIST_FILTER";
     queryText?: string;
     page?: number;
     pageSize?: number;
@@ -2326,16 +2337,16 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     mobile?: string;
-    organizationQuery?: string;
-    roleQuery?: string;
+    organizationRef?: string;
+    roleId?: string;
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
-    sort?: WorkspaceInvitationSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2353,13 +2364,13 @@ export type FaceOperationContracts = {
     scopeRef?: string;
     userName?: string;
     mobile?: string;
-    roleQuery?: string;
+    roleId?: string;
     status?: WorkspaceAccountStatus;
-    sort?: WorkspaceUserSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2392,6 +2403,7 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     subjectType: "ORGANIZATION" | "ROLE";
+    candidateUsage: "INVITATION_TARGET" | "LIST_FILTER";
     queryText?: string;
     page?: number;
     pageSize?: number;
@@ -2413,16 +2425,16 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     mobile?: string;
-    organizationQuery?: string;
-    roleQuery?: string;
+    organizationRef?: string;
+    roleId?: string;
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
-    sort?: WorkspaceInvitationSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2440,13 +2452,13 @@ export type FaceOperationContracts = {
     scopeRef?: string;
     userName?: string;
     mobile?: string;
-    roleQuery?: string;
+    roleId?: string;
     status?: WorkspaceAccountStatus;
-    sort?: WorkspaceUserSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2492,6 +2504,7 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     subjectType: "ORGANIZATION" | "ROLE";
+    candidateUsage: "INVITATION_TARGET" | "LIST_FILTER";
     queryText?: string;
     page?: number;
     pageSize?: number;
@@ -2513,16 +2526,16 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     mobile?: string;
-    organizationQuery?: string;
-    roleQuery?: string;
+    organizationRef?: string;
+    roleId?: string;
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
-    sort?: WorkspaceInvitationSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2540,13 +2553,13 @@ export type FaceOperationContracts = {
     scopeRef?: string;
     userName?: string;
     mobile?: string;
-    roleQuery?: string;
+    roleId?: string;
     status?: WorkspaceAccountStatus;
-    sort?: WorkspaceUserSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2579,6 +2592,7 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     subjectType: "ORGANIZATION" | "ROLE";
+    candidateUsage: "INVITATION_TARGET" | "LIST_FILTER";
     queryText?: string;
     page?: number;
     pageSize?: number;
@@ -2600,16 +2614,16 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     mobile?: string;
-    organizationQuery?: string;
-    roleQuery?: string;
+    organizationRef?: string;
+    roleId?: string;
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
-    sort?: WorkspaceInvitationSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2627,13 +2641,13 @@ export type FaceOperationContracts = {
     scopeRef?: string;
     userName?: string;
     mobile?: string;
-    roleQuery?: string;
+    roleId?: string;
     status?: WorkspaceAccountStatus;
-    sort?: WorkspaceUserSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2679,6 +2693,7 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     subjectType: "ORGANIZATION" | "ROLE";
+    candidateUsage: "INVITATION_TARGET" | "LIST_FILTER";
     queryText?: string;
     page?: number;
     pageSize?: number;
@@ -2700,16 +2715,16 @@ export type FaceOperationContracts = {
     query: {
     scopeRef?: string;
     mobile?: string;
-    organizationQuery?: string;
-    roleQuery?: string;
+    organizationRef?: string;
+    roleId?: string;
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
-    sort?: WorkspaceInvitationSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceInvitationSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -2727,13 +2742,13 @@ export type FaceOperationContracts = {
     scopeRef?: string;
     userName?: string;
     mobile?: string;
-    roleQuery?: string;
+    roleId?: string;
     status?: WorkspaceAccountStatus;
-    sort?: WorkspaceUserSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
     expectedContextVersion: number;
+    sort?: WorkspaceUserSortKey;
+    direction?: SortDirection;
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -3095,6 +3110,21 @@ export type FaceOperationContracts = {
     path: {
     groupWorkspaceKey: string;
     tenantId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsCommercialGroup": {
+    request: CommercialGroupUpdateRequest;
+    response: CommercialGroupRoot;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -3905,6 +3935,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "transitionOperationsOrganizationTenantStatus",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updateOperationsCommercialGroup: (pathParameters: FaceOperationContracts["updateOperationsCommercialGroup"]["path"], options: FaceOperationOptions<"updateOperationsCommercialGroup">) => execute({
+      operationId: "updateOperationsCommercialGroup",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group",
       pathParameters,
       requiresSession: true,
       ...options,

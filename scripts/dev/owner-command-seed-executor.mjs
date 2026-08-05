@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import {existsSync, mkdirSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
-import {buildSeedReport, loadGeneratedOperationRegistry, resolveGeneratedOperation, writeSeedReportPair} from '../test/seed-report.mjs';
+import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById, writeSeedReportPair} from '../test/seed-report.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const fixturePath = path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json');
@@ -241,18 +241,20 @@ async function executeFormalSeed() {
     // of leaving an earlier optimistic terminal manifest behind.
     persist(business, cleanup);
   };
-  async function request(stage, method, pathname, {cookie, body, form, expected = [200], idempotency = method !== 'GET'} = {}) {
-    const started = Date.now(); const operation = resolveGeneratedOperation(registry, method, pathname);
+  async function request(stage, operationId, pathParameters = {}, {queryParameters = {}, cookie, body, form, expected = [200], idempotency} = {}) {
+    const started = Date.now(); const operation = resolveGeneratedOperationById(registry, operationId);
+    const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters});
+    const requestIsIdempotent = idempotency ?? operation.method !== 'GET';
     const correlationId = `seed-${crypto.randomUUID()}`;
     const headers = {Accept: 'application/json', 'X-Seed-Operation-Id': operation.operationId, 'X-Seed-Route-Template': operation.path, 'X-Seed-Run-Id': manifest.runId, 'X-Seed-Report-Secret': credentials.V2S_SEED_REPORT_SECRET, 'X-Correlation-Id': correlationId};
     if (cookie) headers.Cookie = cookie;
-    const idempotencyKey = idempotency ? invocationKey(runId, stage) : null;
+    const idempotencyKey = requestIsIdempotent ? invocationKey(runId, stage) : null;
     if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
     if (body?.idempotencyKey === '$header') body = {...body, idempotencyKey};
     let payload;
     if (form) payload = form; else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
     let response;
-    try { response = await fetch(`http://127.0.0.1:8080${pathname}`, {method, headers, body: payload, signal: AbortSignal.timeout(15_000)}); }
+    try { response = await fetch(`http://127.0.0.1:8080${pathname}`, {method: operation.method, headers, body: payload, signal: AbortSignal.timeout(15_000)}); }
     catch { firstFailure ??= `${stage}_NETWORK`; calls.push({stageId: stage, owner: operation.owner, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs: Date.now() - started, status: 0, outcome: 'FAILED', correlationId, requestId: null}); phase(stage, 'FAIL', {operationId: operation.operationId, httpStatus: 0}); throw new FormalSeedFailure(firstFailure); }
     const text = await response.text(); let json; try { json = text ? JSON.parse(text) : null; } catch { json = null; }
     const accepted = expected.includes(response.status);
@@ -268,14 +270,14 @@ async function executeFormalSeed() {
     const bootstrap = spawnSync(process.execPath, [bootstrapScript], {cwd: root, encoding: 'utf8', env: {...process.env, ...credentials}});
     if (bootstrap.status !== 0) throw new FormalSeedFailure(`SEED_BOOTSTRAP_FAILED:${safeCode(bootstrap.stderr || bootstrap.stdout)}`);
     nonApiStages.push({stageId: 'bootstrap', status: 'PASS', durationMs: Date.now() - bootstrapStarted, summary: 'allowed-root-bootstrap'}); phase('bootstrap', 'PASS');
-    const login = await request('platform-login', 'POST', '/api/platform/auth/password-login', {body: {accountName: 'root', password: credentials.V2S_SEED_PLATFORM_ROOT_PASSWORD}});
+    const login = await request('platform-login', 'platformPasswordLogin', {}, {body: {accountName: 'root', password: credentials.V2S_SEED_PLATFORM_ROOT_PASSWORD}});
     const platformCookie = requireValue(login.cookie, 'SEED_PLATFORM_SESSION_MISSING');
-    await request('platform-session', 'GET', '/api/platform/auth/session', {cookie: platformCookie});
+    await request('platform-session', 'getCurrentPlatformSession', {}, {cookie: platformCookie});
 
     const ids = {workspace: {}, asset: {}, extensionDefinition: {}, group: {}, region: {}, project: {}, brand: {}, tenant: {}, headCompany: {}, store: {}, role: {}, account: {}, invitation: {}};
     for (const admin of fixture.stableFixtures.platformAdmins.filter((entry) => !entry.builtIn)) {
-      const created = await request(`platform-admin-${admin.key}`, 'POST', '/api/platform/admin-users', {cookie: platformCookie, expected: [201], body: {loginName: admin.login, userName: admin.key === 'pa-support' ? 'R5 支持管理员' : 'R5 停用管理员', password: admin.key === 'pa-support' ? credentials.V2S_SEED_PLATFORM_SUPPORT_PASSWORD : credentials.V2S_SEED_PLATFORM_DISABLED_PASSWORD, idempotencyKey: '$header'}});
-      if (admin.status === 'DISABLED') await request(`platform-admin-disable-${admin.key}`, 'POST', `/api/platform/admin-users/${requireValue(created.json?.id, 'SEED_PLATFORM_ADMIN_ID')}/status`, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(created.json?.version, 'SEED_PLATFORM_ADMIN_VERSION'), idempotencyKey: '$header'}});
+      const created = await request(`platform-admin-${admin.key}`, 'createPlatformAdmin', {}, {cookie: platformCookie, expected: [201], body: {loginName: admin.login, userName: admin.key === 'pa-support' ? 'R5 支持管理员' : 'R5 停用管理员', password: admin.key === 'pa-support' ? credentials.V2S_SEED_PLATFORM_SUPPORT_PASSWORD : credentials.V2S_SEED_PLATFORM_DISABLED_PASSWORD, idempotencyKey: '$header'}});
+      if (admin.status === 'DISABLED') await request(`platform-admin-disable-${admin.key}`, 'transitionPlatformAdminStatus', {platformAdminId: requireValue(created.json?.id, 'SEED_PLATFORM_ADMIN_ID')}, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(created.json?.version, 'SEED_PLATFORM_ADMIN_VERSION'), idempotencyKey: '$header'}});
     }
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64');
     for (const asset of fixture.stableFixtures.assets) {
@@ -283,7 +285,7 @@ async function executeFormalSeed() {
       // distinct bytes, not merely distinct display filenames.
       const bytes = Buffer.concat([png, Buffer.from(asset.key, 'utf8')]);
       const form = new FormData(); form.set('usage', asset.usage); form.set('file', new Blob([bytes], {type: 'image/png'}), `${asset.key}.png`);
-      const staged = await request(`asset-${asset.key}`, 'POST', '/api/platform/assets/staging', {cookie: platformCookie, form, expected: [201]});
+      const staged = await request(`asset-${asset.key}`, 'stagePlatformAsset', {}, {cookie: platformCookie, form, expected: [201]});
       ids.asset[asset.key] = staged.json;
     }
     for (const workspace of fixture.stableFixtures.groupWorkspaces) {
@@ -291,14 +293,14 @@ async function executeFormalSeed() {
       // therefore created with its declared staged asset and immediately moved
       // to the owner-supported REMOVE intent, leaving no hidden direct write.
       const asset = workspace.logo ? ids.asset[workspace.logo] : ids.asset['asset-staged'];
-      const created = await request(`workspace-${workspace.key}`, 'POST', '/api/platform/group-workspaces', {cookie: platformCookie, expected: [201], body: {groupWorkspaceKey: workspace.groupWorkspaceKey, name: workspace.name, operationsTitle: `${workspace.name}运营管理后台`, logoAssetRef: requireValue(asset.assetRef, 'SEED_ASSET_REF'), logoBindGrant: requireValue(asset.bindGrant, 'SEED_ASSET_BIND_GRANT'), idempotencyKey: '$header'}});
+      const created = await request(`workspace-${workspace.key}`, 'createPlatformGroupWorkspace', {}, {cookie: platformCookie, expected: [201], body: {groupWorkspaceKey: workspace.groupWorkspaceKey, name: workspace.name, operationsTitle: `${workspace.name}运营管理后台`, logoAssetRef: requireValue(asset.assetRef, 'SEED_ASSET_REF'), logoBindGrant: requireValue(asset.bindGrant, 'SEED_ASSET_BIND_GRANT'), idempotencyKey: '$header'}});
       ids.workspace[workspace.key] = created.json;
-      if (!workspace.logo) await request(`workspace-remove-logo-${workspace.key}`, 'PATCH', `/api/platform/group-workspaces/${workspace.groupWorkspaceKey}`, {cookie: platformCookie, body: {name: workspace.name, operationsTitle: `${workspace.name}运营管理后台`, logoIntent: 'REMOVE', expectedVersion: requireValue(created.json?.version, 'SEED_WORKSPACE_VERSION'), idempotencyKey: '$header'}});
+      if (!workspace.logo) await request(`workspace-remove-logo-${workspace.key}`, 'updatePlatformGroupWorkspaceDisplay', {groupWorkspaceKey: workspace.groupWorkspaceKey}, {cookie: platformCookie, body: {name: workspace.name, operationsTitle: `${workspace.name}运营管理后台`, logoIntent: 'REMOVE', expectedVersion: requireValue(created.json?.version, 'SEED_WORKSPACE_VERSION'), idempotencyKey: '$header'}});
     }
     for (const definition of fixture.stableFixtures.extensionDefinitions) {
       const key = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === definition.workspace).groupWorkspaceKey;
-      const before = await request(`extension-read-${definition.key}`, 'GET', `/api/platform/group-workspaces/${key}/extension-definitions/${definition.hostType}`, {cookie: platformCookie});
-      const updated = await request(`extension-${definition.key}`, 'PUT', `/api/platform/group-workspaces/${key}/extension-definitions/${definition.hostType}`, {cookie: platformCookie, body: {expectedVersion: requireValue(before.json?.revision, 'SEED_EXTENSION_REVISION'), definitions: definition.fields.map((field) => ({key: requireValue(field?.key, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), label: requireValue(field?.label, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), type: 'TEXT', required: false, options: []}))}});
+      const before = await request(`extension-read-${definition.key}`, 'getExtensionDefinition', {groupWorkspaceKey: key, entityType: definition.hostType}, {cookie: platformCookie});
+      const updated = await request(`extension-${definition.key}`, 'replaceExtensionDefinition', {groupWorkspaceKey: key, entityType: definition.hostType}, {cookie: platformCookie, body: {expectedVersion: requireValue(before.json?.revision, 'SEED_EXTENSION_REVISION'), definitions: definition.fields.map((field) => ({key: requireValue(field?.key, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), label: requireValue(field?.label, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), type: 'TEXT', required: false, options: []}))}});
       ids.extensionDefinition[`${definition.workspace}:${definition.hostType}`] = updated.json;
     }
     const extensionValuesFor = (workspace, hostType, fixtureValues) => {
@@ -313,17 +315,17 @@ async function executeFormalSeed() {
     for (const group of fixture.stableFixtures.organization.commercialGroups) {
       const key = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === group.workspace).groupWorkspaceKey;
       const extensionValues = extensionValuesFor(group.workspace, 'COMMERCIAL_GROUP', group.extensionValues);
-      const created = await request(`commercial-group-${group.key}`, 'POST', `/api/platform/group-workspaces/${key}/commercial-group`, {cookie: platformCookie, expected: [201], body: {groupCode: group.code, groupName: group.name, extensionValues, idempotencyKey: '$header'}});
+      const created = await request(`commercial-group-${group.key}`, 'initializeCommercialGroup', {groupWorkspaceKey: key}, {cookie: platformCookie, expected: [201], body: {groupCode: group.code, groupName: group.name, extensionValues, idempotencyKey: '$header'}});
       if (Object.keys(extensionValues).length) { assertExtensionValueReadback(created, extensionValues); extensionReadback.COMMERCIAL_GROUP += 1; }
       ids.group[group.key] = created.json;
     }
     for (const workspace of fixture.stableFixtures.groupWorkspaces.filter((entry) => entry.status === 'DISABLED')) {
       const created = ids.workspace[workspace.key];
-      await request(`workspace-disable-${workspace.key}`, 'POST', `/api/platform/group-workspaces/${workspace.groupWorkspaceKey}/status`, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(created?.version, 'SEED_WORKSPACE_VERSION'), idempotencyKey: '$header'}});
+      await request(`workspace-disable-${workspace.key}`, 'transitionPlatformGroupWorkspaceStatus', {groupWorkspaceKey: workspace.groupWorkspaceKey}, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(created?.version, 'SEED_WORKSPACE_VERSION'), idempotencyKey: '$header'}});
     }
     const aurora = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === 'gw-aurora').groupWorkspaceKey;
     for (const role of fixture.stableFixtures.workspaceIam.roles) {
-      const created = await request(`role-${role.key}`, 'POST', `/api/platform/group-workspaces/${aurora}/roles`, {cookie: platformCookie, expected: [201], body: {name: `R5 ${role.key}`, serviceNodeType: role.serviceNodeType, pageAccessKeys: role.pageAccessKeys, capabilityKeys: role.actionCapabilityKeys}});
+      const created = await request(`role-${role.key}`, 'createWorkspaceRole', {groupWorkspaceKey: aurora}, {cookie: platformCookie, expected: [201], body: {name: `R5 ${role.key}`, serviceNodeType: role.serviceNodeType, pageAccessKeys: role.pageAccessKeys, capabilityKeys: role.actionCapabilityKeys}});
       ids.role[role.key] = created.json;
     }
     // One real completed GROUP invitation provides the operations session.  It is
@@ -334,43 +336,43 @@ async function executeFormalSeed() {
       return requireValue(node?.[plan.nodeKey]?.id, `SEED_INVITATION_NODE_ID:${plan.nodeKey}`);
     };
     const createInvitation = async (plan) => {
-      const created = await request(`invitation-${plan.invitationKey}`, 'POST', `/api/platform/group-workspaces/${aurora}/invitations`, {cookie: platformCookie, expected: [201], body: {mobile: plan.mobile, targetOrganizationType: plan.targetOrganizationType, targetOrganizationRef: nodeIdFor(plan), roleIds: [requireValue(ids.role[plan.roleKey]?.id, 'SEED_ROLE_ID')]}});
+      const created = await request(`invitation-${plan.invitationKey}`, 'createWorkspaceInvitation', {groupWorkspaceKey: aurora}, {cookie: platformCookie, expected: [201], body: {mobile: plan.mobile, targetOrganizationType: plan.targetOrganizationType, targetOrganizationRef: nodeIdFor(plan), roleIds: [requireValue(ids.role[plan.roleKey]?.id, 'SEED_ROLE_ID')]}});
       ids.invitation[plan.invitationKey] = created.json;
       return created.json;
     };
     const advanceInvitation = async (plan, invitation, target = 'COMPLETED') => {
       const token = tokenFromInvitationPath(requireValue(invitation.invitationPageUrl, 'SEED_INVITATION_URL'));
-      const base = `/api/public/invitations/${aurora}/${token}`;
-      await request(`invitation-accept-${plan.invitationKey}`, 'POST', base);
+      const publicInvitationPath = {groupWorkspaceKey: aurora, invitationToken: token};
+      await request(`invitation-accept-${plan.invitationKey}`, 'acceptPublicInvitation', publicInvitationPath);
       if (target === 'ACCEPT_INTENT_RECORDED') return;
-      await request(`invitation-otp-${plan.invitationKey}`, 'POST', `${base}/otp/send`, {body: {mobile: plan.mobile}});
-      const verified = await request(`invitation-verify-${plan.invitationKey}`, 'POST', `${base}/otp/verify`, {body: {mobile: plan.mobile, code: credentials.V2S_SEED_OTP_FIXED_VALUE}});
+      await request(`invitation-otp-${plan.invitationKey}`, 'sendPublicInvitationOtp', publicInvitationPath, {body: {mobile: plan.mobile}});
+      const verified = await request(`invitation-verify-${plan.invitationKey}`, 'verifyPublicInvitationOtp', publicInvitationPath, {body: {mobile: plan.mobile, code: credentials.V2S_SEED_OTP_FIXED_VALUE}});
       if (target === 'MOBILE_VERIFIED') return;
       const account = fixture.stableFixtures.workspaceIam.accounts.find((entry) => entry.key === plan.accountKey);
       const transientKey = plan.accountKey ?? plan.invitationKey;
-      await request(`invitation-credentials-${plan.invitationKey}`, 'POST', `${base}/credentials`, {body: {verificationGrant: requireValue(verified.json?.verificationGrant, 'SEED_VERIFICATION_GRANT'), userName: canonicalUserName(transientKey), loginName: canonicalLogin(transientKey), password: account?.status === 'DISABLED' ? credentials.V2S_SEED_OPERATIONS_DISABLED_PASSWORD : credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+      await request(`invitation-credentials-${plan.invitationKey}`, 'savePublicInvitationCredentials', publicInvitationPath, {body: {verificationGrant: requireValue(verified.json?.verificationGrant, 'SEED_VERIFICATION_GRANT'), userName: canonicalUserName(transientKey), loginName: canonicalLogin(transientKey), password: account?.status === 'DISABLED' ? credentials.V2S_SEED_OPERATIONS_DISABLED_PASSWORD : credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
       if (target === 'CREDENTIAL_READY') return;
-      await request(`invitation-complete-${plan.invitationKey}`, 'POST', `${base}/complete`);
+      await request(`invitation-complete-${plan.invitationKey}`, 'completePublicInvitation', publicInvitationPath);
     };
     const bootstrapInvitation = await createInvitation(groupPlan); await advanceInvitation(groupPlan, bootstrapInvitation);
-    const operationsLogin = await request('operations-login', 'POST', `/api/operations/group-workspaces/${aurora}/password-login`, {body: {loginName: canonicalLogin(groupPlan.accountKey), password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+    const operationsLogin = await request('operations-login', 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: aurora}, {body: {loginName: canonicalLogin(groupPlan.accountKey), password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
     const operationsCookie = requireValue(operationsLogin.cookie, 'SEED_OPERATIONS_SESSION_MISSING');
     // The remaining implementation continues through generated owner operations;
     // every created id is retained only in memory and verified by later owner reads.
     for (const region of fixture.stableFixtures.organization.regions) {
       const extensionValues = extensionValuesFor('gw-aurora', 'REGION', region.extensionValues);
-      const created = await request(`region-${region.key}`, 'POST', `/api/operations/group-workspaces/${aurora}/hierarchy/regions`, {cookie: operationsCookie, expected: [201], body: {code: region.code, name: region.name, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.REGION += 1; ids.region[region.key] = created.json;
+      const created = await request(`region-${region.key}`, 'createOperationsOrganizationRegion', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: region.code, name: region.name, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.REGION += 1; ids.region[region.key] = created.json;
     }
     for (const project of fixture.stableFixtures.organization.projects) {
       const parent = fixture.stableFixtures.organization.regions.find((entry) => entry.key === project.parent);
       const extensionValues = extensionValuesFor('gw-aurora', 'PROJECT', project.extensionValues);
-      const created = await request(`project-${project.key}`, 'POST', `/api/operations/group-workspaces/${aurora}/hierarchy/regions/${requireValue(ids.region[parent.key]?.id, 'SEED_REGION_ID')}/projects`, {cookie: operationsCookie, expected: [201], body: {code: project.code, name: project.name, phases: project.phases.map((name) => ({name})), extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.PROJECT += 1; ids.project[project.key] = created.json;
+      const created = await request(`project-${project.key}`, 'createOperationsOrganizationProject', {groupWorkspaceKey: aurora, regionId: requireValue(ids.region[parent.key]?.id, 'SEED_REGION_ID')}, {cookie: operationsCookie, expected: [201], body: {code: project.code, name: project.name, phases: project.phases.map((name) => ({name})), extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.PROJECT += 1; ids.project[project.key] = created.json;
     }
-    for (const brand of fixture.stableFixtures.organization.brands) { const extensionValues = extensionValuesFor('gw-aurora', 'BRAND', brand.extensionValues); const created = await request(`brand-${brand.key}`, 'POST', `/api/operations/group-workspaces/${aurora}/organization/brands`, {cookie: operationsCookie, expected: [201], body: {code: brand.code, name: brand.name, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.BRAND += 1; ids.brand[brand.key] = created.json; }
-    for (const tenant of fixture.stableFixtures.organization.tenants) { const extensionValues = extensionValuesFor('gw-aurora', 'TENANT', tenant.extensionValues); const created = await request(`tenant-${tenant.key}`, 'POST', `/api/operations/group-workspaces/${aurora}/organization/tenants`, {cookie: operationsCookie, expected: [201], body: {code: tenant.code, name: tenant.name, legalName: `${tenant.name}有限公司`, unifiedSocialCreditCode: `91310000${tenant.code.replaceAll('-', '').padEnd(8, '0')}A`, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.TENANT += 1; ids.tenant[tenant.key] = created.json; }
-    for (const head of fixture.stableFixtures.organization.headCompanies) { const extensionValues = extensionValuesFor('gw-aurora', 'HEAD_COMPANY', head.extensionValues); const created = await request(`head-company-${head.key}`, 'POST', `/api/operations/group-workspaces/${aurora}/organization/head-companies`, {cookie: operationsCookie, expected: [201], body: {code: head.code, name: head.name, legalName: `${head.name}有限公司`, unifiedSocialCreditCode: `91320000${head.code.replaceAll('-', '').padEnd(8, '0')}B`, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.HEAD_COMPANY += 1; ids.headCompany[head.key] = created.json; }
-    for (const authorization of fixture.stableFixtures.organization.brandAuthorizations) await request(`brand-authorization-${authorization.headCompany}-${authorization.brand}`, 'POST', `/api/operations/group-workspaces/${aurora}/organization/head-companies/${requireValue(ids.headCompany[authorization.headCompany]?.id, 'SEED_HEAD_COMPANY_ID')}/brand-authorizations`, {cookie: operationsCookie, expected: [204], body: {brandId: requireValue(ids.brand[authorization.brand]?.id, 'SEED_BRAND_ID')}});
-    for (const store of fixture.stableFixtures.organization.stores) { const extensionValues = extensionValuesFor('gw-aurora', 'STORE', store.extensionValues); const created = await request(`store-${store.key}`, 'POST', `/api/operations/group-workspaces/${aurora}/organization/stores`, {cookie: operationsCookie, expected: [201], body: {projectId: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.STORE += 1; ids.store[store.key] = created.json; }
+    for (const brand of fixture.stableFixtures.organization.brands) { const extensionValues = extensionValuesFor('gw-aurora', 'BRAND', brand.extensionValues); const created = await request(`brand-${brand.key}`, 'createOperationsOrganizationBrand', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: brand.code, name: brand.name, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.BRAND += 1; ids.brand[brand.key] = created.json; }
+    for (const tenant of fixture.stableFixtures.organization.tenants) { const extensionValues = extensionValuesFor('gw-aurora', 'TENANT', tenant.extensionValues); const created = await request(`tenant-${tenant.key}`, 'createOperationsOrganizationTenant', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: tenant.code, name: tenant.name, legalName: `${tenant.name}有限公司`, unifiedSocialCreditCode: `91310000${tenant.code.replaceAll('-', '').padEnd(8, '0')}A`, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.TENANT += 1; ids.tenant[tenant.key] = created.json; }
+    for (const head of fixture.stableFixtures.organization.headCompanies) { const extensionValues = extensionValuesFor('gw-aurora', 'HEAD_COMPANY', head.extensionValues); const created = await request(`head-company-${head.key}`, 'createOperationsOrganizationHeadCompany', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: head.code, name: head.name, legalName: `${head.name}有限公司`, unifiedSocialCreditCode: `91320000${head.code.replaceAll('-', '').padEnd(8, '0')}B`, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.HEAD_COMPANY += 1; ids.headCompany[head.key] = created.json; }
+    for (const authorization of fixture.stableFixtures.organization.brandAuthorizations) await request(`brand-authorization-${authorization.headCompany}-${authorization.brand}`, 'addOperationsOrganizationHeadCompanyBrandAuthorization', {groupWorkspaceKey: aurora, headCompanyId: requireValue(ids.headCompany[authorization.headCompany]?.id, 'SEED_HEAD_COMPANY_ID')}, {cookie: operationsCookie, expected: [204], body: {brandId: requireValue(ids.brand[authorization.brand]?.id, 'SEED_BRAND_ID')}});
+    for (const store of fixture.stableFixtures.organization.stores) { const extensionValues = extensionValuesFor('gw-aurora', 'STORE', store.extensionValues); const created = await request(`store-${store.key}`, 'createOperationsOrganizationStore', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {projectId: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.STORE += 1; ids.store[store.key] = created.json; }
     // Materialize every declared invitation state through public owner commands.
     // The only non-HTTP terminal fact is inv-expired, guarded by the narrowly
     // scoped adapter after the public PENDING invitation and intent exist.
@@ -382,9 +384,9 @@ async function executeFormalSeed() {
       if (['ACCEPT_INTENT_RECORDED', 'MOBILE_VERIFIED', 'CREDENTIAL_READY', 'COMPLETED'].includes(state)) await advanceInvitation(plan, ids.invitation[plan.invitationKey], state);
     }
     const cancelled = invitationPlan.find((entry) => entry.invitationKey === 'inv-cancelled');
-    const cancelledResult = await request('invitation-cancelled', 'POST', `/api/platform/group-workspaces/${aurora}/invitations/${requireValue(ids.invitation['inv-cancelled']?.id, 'SEED_CANCELLED_INVITATION_ID')}/cancel`, {cookie: platformCookie, body: {expectedVersion: requireValue(ids.invitation['inv-cancelled']?.revision, 'SEED_CANCELLED_INVITATION_VERSION')}});
+    const cancelledResult = await request('invitation-cancelled', 'cancelWorkspaceInvitation', {groupWorkspaceKey: aurora, invitationId: requireValue(ids.invitation['inv-cancelled']?.id, 'SEED_CANCELLED_INVITATION_ID')}, {cookie: platformCookie, body: {expectedVersion: requireValue(ids.invitation['inv-cancelled']?.revision, 'SEED_CANCELLED_INVITATION_VERSION')}});
     ids.invitation['inv-cancelled'] = cancelledResult.json;
-    const reissued = await request('invitation-reissued', 'POST', `/api/platform/group-workspaces/${aurora}/invitations/${requireValue(cancelledResult.json?.id, 'SEED_CANCELLED_INVITATION_ID')}/reissue`, {cookie: platformCookie, body: {expectedVersion: requireValue(cancelledResult.json?.revision, 'SEED_CANCELLED_INVITATION_VERSION')}});
+    const reissued = await request('invitation-reissued', 'reissueWorkspaceInvitation', {groupWorkspaceKey: aurora, invitationId: requireValue(cancelledResult.json?.id, 'SEED_CANCELLED_INVITATION_ID')}, {cookie: platformCookie, body: {expectedVersion: requireValue(cancelledResult.json?.revision, 'SEED_CANCELLED_INVITATION_VERSION')}});
     ids.invitation['inv-reissued'] = reissued.json;
     const expiredPlan = invitationPlan.find((entry) => entry.invitationKey === 'inv-expired');
     const terminalStarted = Date.now();
@@ -393,33 +395,33 @@ async function executeFormalSeed() {
     nonApiStages.push({stageId: 'terminal-inv-expired', status: 'PASS', durationMs: Date.now() - terminalStarted, summary: 'allowlisted-invitation-expired'}); phase('terminal-inv-expired', 'PASS');
     const accountByKey = new Map(fixture.stableFixtures.workspaceIam.accounts.map((account) => [account.key, account]));
     for (const account of fixture.stableFixtures.workspaceIam.accounts) {
-      const page = await request(`account-read-${account.key}`, 'GET', `/api/platform/group-workspaces/${aurora}/accounts?loginName=${encodeURIComponent(canonicalLogin(account.key))}&page=1&pageSize=5`, {cookie: platformCookie, idempotency: false});
+      const page = await request(`account-read-${account.key}`, 'getWorkspaceAccounts', {groupWorkspaceKey: aurora}, {cookie: platformCookie, idempotency: false, queryParameters: {loginName: canonicalLogin(account.key), page: 1, pageSize: 5}});
       const value = (page.json?.items ?? []).find((item) => item.loginName === canonicalLogin(account.key));
       ids.account[account.key] = requireValue(value, `SEED_ACCOUNT_READBACK_MISSING:${account.key}`);
     }
     const assignmentFor = (accountKey, roleKey) => requireValue((ids.account[accountKey]?.assignments ?? []).find((assignment) => assignment.roleName === `R5 ${roleKey}`), `SEED_ASSIGNMENT_READBACK_MISSING:${accountKey}:${roleKey}`);
     for (const assignment of fixture.stableFixtures.workspaceIam.assignments.filter((entry) => entry.status === 'REVOKED' || entry.account === 'account-no-role')) {
       const account = ids.account[assignment.account]; const actual = assignmentFor(assignment.account, assignment.role);
-      await request(`assignment-revoke-${assignment.key}`, 'POST', `/api/platform/group-workspaces/${aurora}/accounts/${account.id}/assignments/${actual.id}/revoke`, {cookie: platformCookie, body: {expectedVersion: requireValue(actual.revision, 'SEED_ASSIGNMENT_VERSION')}});
+      await request(`assignment-revoke-${assignment.key}`, 'revokePlatformWorkspaceAssignment', {groupWorkspaceKey: aurora, accountId: account.id, assignmentId: actual.id}, {cookie: platformCookie, body: {expectedVersion: requireValue(actual.revision, 'SEED_ASSIGNMENT_VERSION')}});
     }
     const disabledAccount = ids.account['account-disabled'];
-    await request('account-disable-account-disabled', 'POST', `/api/platform/group-workspaces/${aurora}/accounts/${disabledAccount.id}/status`, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(disabledAccount.revision, 'SEED_ACCOUNT_VERSION')}});
+    await request('account-disable-account-disabled', 'transitionWorkspaceAccountStatus', {groupWorkspaceKey: aurora, accountId: disabledAccount.id}, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(disabledAccount.revision, 'SEED_ACCOUNT_VERSION')}});
     const resetAccount = ids.account['account-reset'];
-    await request('account-reset-account-reset', 'POST', `/api/platform/group-workspaces/${aurora}/accounts/${resetAccount.id}/credential-reset`, {cookie: platformCookie, body: {expectedVersion: requireValue(resetAccount.revision, 'SEED_ACCOUNT_VERSION')}});
-    const transition = async (stage, route, entity) => request(stage, 'POST', route, {cookie: operationsCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(entity?.revision, 'SEED_ENTITY_VERSION')}});
-    for (const project of fixture.stableFixtures.organization.projects.filter((entry) => entry.status === 'DISABLED')) await transition(`project-disable-${project.key}`, `/api/operations/group-workspaces/${aurora}/hierarchy/${ids.project[project.key].id}/status`, ids.project[project.key]);
-    for (const brand of fixture.stableFixtures.organization.brands.filter((entry) => entry.status === 'DISABLED')) await transition(`brand-disable-${brand.key}`, `/api/operations/group-workspaces/${aurora}/organization/brands/${ids.brand[brand.key].id}/status`, ids.brand[brand.key]);
-    for (const tenant of fixture.stableFixtures.organization.tenants.filter((entry) => entry.status === 'DISABLED')) await transition(`tenant-disable-${tenant.key}`, `/api/operations/group-workspaces/${aurora}/organization/tenants/${ids.tenant[tenant.key].id}/status`, ids.tenant[tenant.key]);
-    for (const head of fixture.stableFixtures.organization.headCompanies.filter((entry) => entry.status === 'DISABLED')) await transition(`head-company-disable-${head.key}`, `/api/operations/group-workspaces/${aurora}/organization/head-companies/${ids.headCompany[head.key].id}/status`, ids.headCompany[head.key]);
-    for (const store of fixture.stableFixtures.organization.stores.filter((entry) => entry.status === 'DISABLED')) await transition(`store-disable-${store.key}`, `/api/operations/group-workspaces/${aurora}/organization/stores/${ids.store[store.key].id}/status`, ids.store[store.key]);
+    await request('account-reset-account-reset', 'requestWorkspaceCredentialReset', {groupWorkspaceKey: aurora, accountId: resetAccount.id}, {cookie: platformCookie, body: {expectedVersion: requireValue(resetAccount.revision, 'SEED_ACCOUNT_VERSION')}});
+    const transition = async (stage, operationId, pathParameters, entity) => request(stage, operationId, pathParameters, {cookie: operationsCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(entity?.revision, 'SEED_ENTITY_VERSION')}});
+    for (const project of fixture.stableFixtures.organization.projects.filter((entry) => entry.status === 'DISABLED')) await transition(`project-disable-${project.key}`, 'transitionOperationsOrganizationNodeStatus', {groupWorkspaceKey: aurora, nodeId: ids.project[project.key].id}, ids.project[project.key]);
+    for (const brand of fixture.stableFixtures.organization.brands.filter((entry) => entry.status === 'DISABLED')) await transition(`brand-disable-${brand.key}`, 'transitionOperationsOrganizationBrandStatus', {groupWorkspaceKey: aurora, brandId: ids.brand[brand.key].id}, ids.brand[brand.key]);
+    for (const tenant of fixture.stableFixtures.organization.tenants.filter((entry) => entry.status === 'DISABLED')) await transition(`tenant-disable-${tenant.key}`, 'transitionOperationsOrganizationTenantStatus', {groupWorkspaceKey: aurora, tenantId: ids.tenant[tenant.key].id}, ids.tenant[tenant.key]);
+    for (const head of fixture.stableFixtures.organization.headCompanies.filter((entry) => entry.status === 'DISABLED')) await transition(`head-company-disable-${head.key}`, 'transitionOperationsOrganizationHeadCompanyStatus', {groupWorkspaceKey: aurora, headCompanyId: ids.headCompany[head.key].id}, ids.headCompany[head.key]);
+    for (const store of fixture.stableFixtures.organization.stores.filter((entry) => entry.status === 'DISABLED')) await transition(`store-disable-${store.key}`, 'transitionOperationsOrganizationStoreStatus', {groupWorkspaceKey: aurora, storeId: ids.store[store.key].id}, ids.store[store.key]);
     const contracts = {};
     for (const contract of fixture.stableFixtures.contracts) {
       const store = fixture.stableFixtures.organization.stores.find((entry) => entry.key === contract.store);
       const extensionValues = extensionValuesFor('gw-aurora', 'CONTRACT', contract.extensionValues);
-      const created = await request(`contract-${contract.key}`, 'POST', `/api/operations/group-workspaces/${aurora}/contracts`, {cookie: operationsCookie, expected: [201], body: {projectId: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), storeId: requireValue(ids.store[store.key]?.id, 'SEED_CONTRACT_STORE_ID'), phaseName: contract.phaseNameSnapshot ?? null, phaseNameSnapshot: contract.phaseNameSnapshot ?? null, contractNo: contract.contractNo, effectiveFrom: contract.effectiveFrom, effectiveTo: contract.effectiveTo, note: null, extensionValues, items: contract.items}});
+      const created = await request(`contract-${contract.key}`, 'createOperationsContract', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {projectId: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), storeId: requireValue(ids.store[store.key]?.id, 'SEED_CONTRACT_STORE_ID'), phaseName: contract.phaseNameSnapshot ?? null, phaseNameSnapshot: contract.phaseNameSnapshot ?? null, contractNo: contract.contractNo, effectiveFrom: contract.effectiveFrom, effectiveTo: contract.effectiveTo, note: null, extensionValues, items: contract.items}});
       assertExtensionValueReadback(created, extensionValues); extensionReadback.CONTRACT += 1;
       contracts[contract.key] = created.json;
-      if (contract.status === 'INVALID') await request(`contract-invalidate-${contract.key}`, 'POST', `/api/operations/group-workspaces/${aurora}/contracts/${requireValue(created.json?.id, 'SEED_CONTRACT_ID')}/invalidate`, {cookie: operationsCookie, body: {expectedVersion: requireValue(created.json?.revision, 'SEED_CONTRACT_VERSION')}});
+      if (contract.status === 'INVALID') await request(`contract-invalidate-${contract.key}`, 'invalidateOperationsContract', {groupWorkspaceKey: aurora, contractId: requireValue(created.json?.id, 'SEED_CONTRACT_ID')}, {cookie: operationsCookie, body: {expectedVersion: requireValue(created.json?.revision, 'SEED_CONTRACT_VERSION')}});
     }
     // The public list face is intentionally a UI query surface.  Each invitation
     // is already read back by its lifecycle response, while account reads above

@@ -143,7 +143,7 @@ public class WorkspaceInvitationService {
     /** Owner-owned platform page: filters, total and bounds finish before edge mapping. */
     @Transactional(readOnly = true)
     public ManagementInvitationPage managementPage(UUID workspaceUuid, String groupWorkspaceKey, ManagementInvitationPageRequest request) {
-        return managementPage(workspaceUuid, groupWorkspaceKey, request, null, null, null);
+        return managementPage(workspaceUuid, groupWorkspaceKey, request, null, null);
     }
 
     /** Owner-owned operations page; the endpoint-fixed type is never inferred from the session. */
@@ -152,23 +152,12 @@ public class WorkspaceInvitationService {
         if (user == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
         OrganizationTaskPathLookup.TaskPath scope = user.resolveTaskScope(session, expectedTargetType, requestedScopeRef);
         boolean aggregate = "GROUP".equals(scope.targetType()) && "HEAD_COMPANY".equals(expectedTargetType);
-        return managementPage(session.workspaceUuid(), session.groupWorkspaceKey(), request, expectedTargetType, aggregate ? null : scope.targetId(), aggregate ? null : scope.displayPath());
+        return managementPage(session.workspaceUuid(), session.groupWorkspaceKey(), request, expectedTargetType, aggregate ? null : scope.targetId());
     }
 
-    private ManagementInvitationPage managementPage(UUID workspaceUuid, String key, ManagementInvitationPageRequest request, String fixedTargetType, UUID fixedTargetId, String fixedTargetPath) {
+    private ManagementInvitationPage managementPage(UUID workspaceUuid, String key, ManagementInvitationPageRequest request, String fixedTargetType, UUID fixedTargetId) {
         PageRequest page = PageRequest.from(request);
-        List<OrganizationTaskPathLookup.TaskPathRef> organizationMatches = fixedTargetType == null
-            ? matchingOrganizationTargets(workspaceUuid, key, request.organizationQuery(), null)
-            : fixedTargetId == null
-                ? matchingOrganizationTargets(workspaceUuid, key, request.organizationQuery(), fixedTargetType)
-                : List.of();
-        if (fixedTargetType == null && request.organizationQuery() != null && organizationMatches.isEmpty()) {
-            return new ManagementInvitationPage(List.of(), page.page(), page.pageSize(), 0L, page.criteria());
-        }
-        if (fixedTargetId != null && request.organizationQuery() != null && !contains(fixedTargetPath, request.organizationQuery())) {
-            return new ManagementInvitationPage(List.of(), page.page(), page.pageSize(), 0L, page.criteria());
-        }
-        InvitationPageSql sql = invitationPageSql(workspaceUuid, key, request, fixedTargetType, fixedTargetId, organizationMatches);
+        InvitationPageSql sql = invitationPageSql(workspaceUuid, key, request, fixedTargetType, fixedTargetId);
         long total = jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.invitation i WHERE " + sql.where(), Long.class, sql.arguments().toArray());
         if (total == 0) return new ManagementInvitationPage(List.of(), page.page(), page.pageSize(), 0L, page.criteria());
         List<WorkspaceInvitationReadback> rows = jdbc.query(
@@ -179,18 +168,7 @@ public class WorkspaceInvitationService {
         return new ManagementInvitationPage(managementViews(rows), page.page(), page.pageSize(), total, page.criteria());
     }
 
-    private List<OrganizationTaskPathLookup.TaskPathRef> matchingOrganizationTargets(UUID workspaceUuid, String key, String query, String onlyType) {
-        if (query == null || query.isBlank()) return List.of();
-        if (candidates == null) throw new InvitationStateException();
-        return List.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE").stream()
-            .filter(type -> onlyType == null || onlyType.equals(type))
-            .flatMap(type -> candidates.listEnabled(workspaceUuid, key, type).stream())
-            .filter(candidate -> contains(candidate.path(), query))
-            .map(candidate -> new OrganizationTaskPathLookup.TaskPathRef(candidate.serviceNodeType(), candidate.organizationRef()))
-            .toList();
-    }
-
-    private static InvitationPageSql invitationPageSql(UUID workspaceUuid, String key, ManagementInvitationPageRequest request, String fixedType, UUID fixedId, List<OrganizationTaskPathLookup.TaskPathRef> organizationMatches) {
+    private static InvitationPageSql invitationPageSql(UUID workspaceUuid, String key, ManagementInvitationPageRequest request, String fixedType, UUID fixedId) {
         List<String> clauses = new ArrayList<>(List.of("i.workspace_uuid=?", "i.group_workspace_key=?"));
         List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, key));
         String mobileQuery = normalizedMobileQuery(request.mobile());
@@ -198,9 +176,9 @@ public class WorkspaceInvitationService {
         if (request.status() != null) { clauses.add("i.status=?"); arguments.add(request.status()); }
         if (request.expiresFrom() != null) { clauses.add("i.expires_at_epoch_millis>=?"); arguments.add(request.expiresFrom()); }
         if (request.expiresTo() != null) { clauses.add("i.expires_at_epoch_millis<=?"); arguments.add(request.expiresTo()); }
-        if (request.targetOrganizationType() != null || request.targetOrganizationRef() != null || request.roleQuery() != null) {
-            clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent JOIN workspace_iam.workspace_role role ON role.id=intent.role_id WHERE intent.invitation_id=i.id AND (CAST(? AS text) IS NULL OR intent.service_node_type=?) AND (CAST(? AS uuid) IS NULL OR intent.service_node_id=?) AND (CAST(? AS text) IS NULL OR LOWER(role.name) LIKE ?))");
-            arguments.add(request.targetOrganizationType()); arguments.add(request.targetOrganizationType()); arguments.add(request.targetOrganizationRef()); arguments.add(request.targetOrganizationRef()); arguments.add(request.roleQuery()); arguments.add(request.roleQuery() == null ? null : "%" + request.roleQuery().toLowerCase(java.util.Locale.ROOT) + "%");
+        if (request.targetOrganizationType() != null || request.targetOrganizationRef() != null || request.roleId() != null) {
+            clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE intent.invitation_id=i.id AND (CAST(? AS text) IS NULL OR intent.service_node_type=?) AND (CAST(? AS uuid) IS NULL OR intent.service_node_id=?) AND (CAST(? AS uuid) IS NULL OR intent.role_id=?))");
+            arguments.add(request.targetOrganizationType()); arguments.add(request.targetOrganizationType()); arguments.add(request.targetOrganizationRef()); arguments.add(request.targetOrganizationRef()); arguments.add(request.roleId()); arguments.add(request.roleId());
         }
         if (fixedType != null) {
             if (fixedId == null) {
@@ -210,11 +188,6 @@ public class WorkspaceInvitationService {
                 clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE intent.invitation_id=i.id AND intent.service_node_type=? AND intent.service_node_id=?)");
                 arguments.add(fixedType); arguments.add(fixedId);
             }
-        }
-        if (!organizationMatches.isEmpty()) {
-            List<String> pairs = new ArrayList<>();
-            for (OrganizationTaskPathLookup.TaskPathRef ref : organizationMatches) { pairs.add("(intent.service_node_type=? AND intent.service_node_id=?)"); arguments.add(ref.targetType()); arguments.add(ref.targetId()); }
-            clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE intent.invitation_id=i.id AND (" + String.join(" OR ", pairs) + "))");
         }
         // JDBC intentionally needs null placeholders for independently optional
         // type/ref/role filters; List.copyOf rejects those nulls.
@@ -313,6 +286,7 @@ public class WorkspaceInvitationService {
         String groupWorkspaceKey,
         UUID actorAssignmentId,
         String expectedTargetType,
+        OrganizationTaskPathLookup.TaskPath selectedScope,
         UUID invitationId,
         long expectedVersion,
         String idempotencyKey,
@@ -320,6 +294,7 @@ public class WorkspaceInvitationService {
     ) {
         AssignmentIntent target = invitationTarget(invitationId);
         requireExpectedTargetType(expectedTargetType, target.serviceNodeType());
+        requireExactOperationScope(selectedScope, target);
         commandAuthorization.requireUserManagementAction(
             workspaceUuid, groupWorkspaceKey, actorAssignmentId,
             target.serviceNodeType(), target.serviceNodeId(), UserManagementAction.INVITE
@@ -366,6 +341,7 @@ public class WorkspaceInvitationService {
         String groupWorkspaceKey,
         UUID actorAssignmentId,
         String expectedTargetType,
+        OrganizationTaskPathLookup.TaskPath selectedScope,
         UUID invitationId,
         long expectedVersion,
         String idempotencyKey,
@@ -373,6 +349,7 @@ public class WorkspaceInvitationService {
     ) {
         AssignmentIntent target = invitationTarget(invitationId);
         requireExpectedTargetType(expectedTargetType, target.serviceNodeType());
+        requireExactOperationScope(selectedScope, target);
         commandAuthorization.requireUserManagementAction(
             workspaceUuid, groupWorkspaceKey, actorAssignmentId,
             target.serviceNodeType(), target.serviceNodeId(), UserManagementAction.INVITE
@@ -534,6 +511,15 @@ public class WorkspaceInvitationService {
         }
     }
 
+    /** Mutating a scoped invitation is bound to the owner-confirmed page node, not merely its type. */
+    private static void requireExactOperationScope(OrganizationTaskPathLookup.TaskPath selectedScope, AssignmentIntent target) {
+        if (selectedScope == null
+            || !target.serviceNodeType().equals(selectedScope.targetType())
+            || !target.serviceNodeId().equals(selectedScope.targetId())) {
+            throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
+        }
+    }
+
     private UUID completeReadyInvitation(Invitation invitation, Progress progress) {
         if (jdbc.update("UPDATE workspace_iam.invitation SET status='COMPLETING', version=version+1 WHERE id=? AND status='CREDENTIAL_READY' AND version=?", invitation.id(), invitation.version()) != 1) throw new InvitationStateException();
         List<AssignmentIntent> intents = jdbc.query("SELECT role_id, service_node_type, service_node_id FROM workspace_iam.invitation_assignment_intent WHERE invitation_id=?", (row, index) -> new AssignmentIntent(row.getObject(1, UUID.class), row.getString(2), row.getObject(3, UUID.class)), invitation.id());
@@ -684,7 +670,6 @@ public class WorkspaceInvitationService {
     private static String normalizedLogin(String value) { if (value == null || !value.matches("^[A-Za-z0-9_.-]{3,120}$")) throw new InvitationValidationException(); return value.toLowerCase(); }
     private static String text(String value, int limit) { if (value == null || value.isBlank() || value.trim().length() > limit) throw new InvitationValidationException(); return value.trim(); }
     private static String maskMobile(String value) { return value.length() <= 4 ? "****" : value.substring(0, Math.min(3, value.length())) + "****" + value.substring(Math.max(3, value.length() - 4)); }
-    private static boolean contains(String value, String query) { return query == null || (value != null && value.toLowerCase(java.util.Locale.ROOT).contains(query.toLowerCase(java.util.Locale.ROOT))); }
     public record AssignmentIntent(UUID roleId, String serviceNodeType, UUID serviceNodeId) {
         @Override public String toString() {
             return roleId + ":" + serviceNodeType + ":" + serviceNodeId;
@@ -714,8 +699,7 @@ public class WorkspaceInvitationService {
         Long cancelledAt,
         String invitationPageUrl
     ) { }
-    public record ManagementInvitationPageRequest(String mobile, String targetOrganizationType, UUID targetOrganizationRef, String organizationQuery, String roleQuery, String status, Long expiresFrom, Long expiresTo, String sort, String direction, int page, int pageSize) {
-        public ManagementInvitationPageRequest(String mobile, String organizationQuery, String roleQuery, String status, Long expiresFrom, Long expiresTo, String sort, String direction, int page, int pageSize) { this(mobile, null, null, organizationQuery, roleQuery, status, expiresFrom, expiresTo, sort, direction, page, pageSize); }
+    public record ManagementInvitationPageRequest(String mobile, String targetOrganizationType, UUID targetOrganizationRef, UUID roleId, String status, Long expiresFrom, Long expiresTo, String sort, String direction, int page, int pageSize) {
     }
     public record ManagementInvitationPage(List<ManagementInvitationView> items, int page, int pageSize, long total, ManagementInvitationPageRequest criteria) { public ManagementInvitationPage { items = List.copyOf(items); } }
     private record InvitationPageSql(String where, List<Object> arguments) { }
@@ -726,7 +710,7 @@ public class WorkspaceInvitationService {
             String direction = request.direction() == null ? "DESC" : request.direction();
             String column = switch (sort) { case "CREATED_AT" -> "created_at_epoch_millis"; case "EXPIRES_AT" -> "expires_at_epoch_millis"; default -> throw new InvitationValidationException(); };
             if (!Set.of("ASC", "DESC").contains(direction)) throw new InvitationValidationException();
-            return new PageRequest(request.page(), request.pageSize(), column, direction, new ManagementInvitationPageRequest(request.mobile(), request.targetOrganizationType(), request.targetOrganizationRef(), request.organizationQuery(), request.roleQuery(), request.status(), request.expiresFrom(), request.expiresTo(), sort, direction, request.page(), request.pageSize()));
+            return new PageRequest(request.page(), request.pageSize(), column, direction, new ManagementInvitationPageRequest(request.mobile(), request.targetOrganizationType(), request.targetOrganizationRef(), request.roleId(), request.status(), request.expiresFrom(), request.expiresTo(), sort, direction, request.page(), request.pageSize()));
         }
     }
     private record Invitation(UUID id, UUID workspaceUuid, String groupWorkspaceKey, String mobile, String status, long expiresAtEpochMillis, long version) { }

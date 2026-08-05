@@ -1,8 +1,10 @@
 import {randomUUID} from 'node:crypto';
+import {materializeGeneratedOperationPath} from './seed-report.mjs';
 
 const HANDLE = /^[A-Z][A-Z0-9_]{2,96}$/;
 const REPLAY_KEY = /^[a-z][a-z0-9_.:-]{2,127}$/;
 const SENSITIVE_KEY = /(?:password|secret|token|cookie|authorization|otp|mobile|login|identity|payload|sql|bind)/i;
+const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const PLATFORM_FOUNDATION_CAPABILITIES = ['BC-ORG-REGION-CREATE', 'BC-ORG-REGION-EDIT', 'BC-ORG-REGION-STATUS', 'BC-ORG-PROJECT-CREATE', 'BC-ORG-PROJECT-EDIT', 'BC-ORG-PROJECT-STATUS', 'BC-ORG-BRAND-CREATE', 'BC-ORG-BRAND-EDIT', 'BC-ORG-BRAND-STATUS', 'BC-ORG-TENANT-CREATE', 'BC-ORG-TENANT-EDIT', 'BC-ORG-TENANT-STATUS', 'BC-ORG-HEAD-COMPANY-CREATE', 'BC-ORG-HEAD-COMPANY-EDIT', 'BC-ORG-HEAD-COMPANY-STATUS', 'BC-ORG-HEAD-COMPANY-BRAND', 'BC-ORG-STORE-CREATE', 'BC-ORG-STORE-EDIT', 'BC-ORG-STORE-STATUS', 'BC-CONTRACT-CREATE', 'BC-CONTRACT-EDIT', 'BC-CONTRACT-INVALIDATE', 'BC-IAM-GROUP-INVITE', 'BC-IAM-GROUP-ROLE-REVOKE', 'BC-IAM-REGION-INVITE', 'BC-IAM-REGION-ROLE-REVOKE', 'BC-IAM-PROJECT-INVITE', 'BC-IAM-PROJECT-ROLE-REVOKE', 'BC-IAM-HEAD-COMPANY-INVITE', 'BC-IAM-HEAD-COMPANY-ROLE-REVOKE', 'BC-IAM-STORE-INVITE', 'BC-IAM-STORE-ROLE-REVOKE'];
 const PLATFORM_FOUNDATION_PAGES = ['PG-ORG-STRUCTURE', 'PG-ORG-BRAND', 'PG-ORG-TENANT', 'PG-ORG-HEAD-COMPANY', 'PG-ORG-STORE-MANAGE', 'PG-CONTRACT-STORE-MANAGE', 'PG-IAM-GROUP-USERS', 'PG-IAM-REGION-USERS', 'PG-IAM-PROJECT-USERS', 'PG-IAM-HEAD-COMPANY-USERS', 'PG-IAM-STORE-USERS'];
 
@@ -46,8 +48,9 @@ export function createDiagnosticWorkloadState() {
 
 /**
  * Binds explicit, source-reviewed recipes to the generated scenario denominator.  It has no
- * route/body inference: callers supply the concrete path and request body from the owning source,
- * while this layer guarantees the only HTTP call is the correlated diagnostic interaction.
+ * route/body inference: callers supply typed path/query values and request body from the owning
+ * source, while this layer materializes only the generated operation template and guarantees the
+ * only HTTP call is the correlated diagnostic interaction.
  */
 export function createDiagnosticRecipeExecutor({manifestPath, baseUrl, secret, scenarios, state = createDiagnosticWorkloadState(), fetchImpl}) {
   if (typeof manifestPath !== 'string' || !manifestPath || typeof baseUrl !== 'string' || !baseUrl || typeof secret !== 'string' || secret.length < 24 || !Array.isArray(scenarios)) {
@@ -59,9 +62,10 @@ export function createDiagnosticRecipeExecutor({manifestPath, baseUrl, secret, s
     if (!scenario || typeof scenario.operationId !== 'string' || byOperationId.has(scenario.operationId)) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_SCENARIO_SET_INVALID');
     byOperationId.set(scenario.operationId, scenario);
   }
-  return async function execute(operationId, {replayKey, path, body, headers = {}, prerequisiteHandles, capturePrivateResponse} = {}) {
+  return async function execute(operationId, {replayKey, pathParameters = {}, queryParameters = {}, body, headers = {}, prerequisiteHandles, capturePrivateResponse} = {}) {
     const scenario = byOperationId.get(operationId);
-    if (!scenario || typeof path !== 'string' || !path.startsWith('/')) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_RECIPE_INVALID');
+    if (!scenario || !isRecord(pathParameters) || !isRecord(queryParameters)) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_RECIPE_INVALID');
+    const path = materializeGeneratedOperationPath(scenario, {pathParameters, queryParameters});
     const handles = prerequisiteHandles ?? scenario.prerequisiteHandles ?? [];
     return replayDiagnosticOperation({
       state,
@@ -113,27 +117,28 @@ export async function executePlatformFoundationWorkload({manifestPath, baseUrl, 
     if (response?.json?.sessionVersion !== undefined) state.setPrivate('PLATFORM_SESSION_VERSION', response.json.sessionVersion);
   };
   const cookie = () => ({Cookie: state.requirePrivate('PLATFORM_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
+  const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
 
   state.setPrivate('PLATFORM_ADMIN_ENABLED', true);
   await invoke('platformPasswordLogin', {
-    replayKey: 'platform-password-login', path: '/api/platform/auth/password-login',
+    replayKey: 'platform-password-login',
     headers: {'Idempotency-Key': idempotency('platform-login')}, body: {accountName: bootstrapLogin, password: bootstrapCredential},
     capturePrivateResponse: privateSession,
   });
-  await invoke('getCurrentPlatformSession', {replayKey: 'platform-current-session', path: '/api/platform/auth/session', headers: cookie()});
-  await invoke('getPlatformAdminPage', {replayKey: 'platform-admin-page', path: `/api/platform/admin-users?loginName=${encodeURIComponent(bootstrapLogin)}&page=1&pageSize=20`, headers: cookie()});
+  await invoke('getCurrentPlatformSession', {replayKey: 'platform-current-session', headers: cookie()});
+  await invoke('getPlatformAdminPage', {replayKey: 'platform-admin-page', queryParameters: {loginName: bootstrapLogin, page: 1, pageSize: 20}, headers: cookie()});
   state.setPrivate('SAFE_ASSET_CONTENT', true);
   state.setPrivate('ASSET_BIND_GRANT', true);
   const form = new FormData();
   form.set('usage', 'GROUP_WORKSPACE_LOGO');
   form.set('file', new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64')], {type: 'image/png'}), `diag-${uniqueSuffix}.png`);
   await invoke('stagePlatformAsset', {
-    replayKey: 'platform-stage-asset', path: '/api/platform/assets/staging', body: form, headers: {...cookie(), 'Idempotency-Key': idempotency('stage-asset')},
+    replayKey: 'platform-stage-asset', body: form, headers: {...cookie(), 'Idempotency-Key': idempotency('stage-asset')},
     capturePrivateResponse: (response) => privateJson(response, 'STAGED_ASSET', ['assetRef', 'bindGrant']),
   });
   state.setPrivate('UNIQUE_WORKSPACE_KEY', workspaceKey);
   await invoke('createPlatformGroupWorkspace', {
-    replayKey: 'platform-create-workspace', path: '/api/platform/group-workspaces', headers: {...cookie(), 'Idempotency-Key': idempotency('workspace')},
+    replayKey: 'platform-create-workspace', headers: {...cookie(), 'Idempotency-Key': idempotency('workspace')},
     body: {groupWorkspaceKey: workspaceKey, name: `HTTP诊断空间${uniqueSuffix}`, operationsTitle: `HTTP诊断运营后台${uniqueSuffix}`, logoAssetRef: state.requirePrivate('STAGED_ASSET').assetRef, logoBindGrant: state.requirePrivate('STAGED_ASSET').bindGrant, idempotencyKey: idempotency('workspace')},
     capturePrivateResponse: (response) => { privateJson(response, 'WORKSPACE_ENABLED', ['groupWorkspaceKey', 'version']); state.setPrivate('WORKSPACE_VERSION', true); },
   });
@@ -142,33 +147,33 @@ export async function executePlatformFoundationWorkload({manifestPath, baseUrl, 
   // owner transition, rather than treating a staged asset as publicly visible.
   await invoke('getPublicAssetContent', {
     replayKey: 'public-workspace-logo-content',
-    path: `/api/public/assets/${encodeURIComponent(state.requirePrivate('STAGED_ASSET').assetRef)}/content`,
+    pathParameters: {assetRef: state.requirePrivate('STAGED_ASSET').assetRef},
   });
-  await invoke('listPlatformGroupWorkspaces', {replayKey: 'platform-workspace-page', path: `/api/platform/group-workspaces?groupWorkspaceKey=${encodeURIComponent(workspaceKey)}&page=1&pageSize=20`, headers: cookie()});
-  await invoke('getPlatformGroupWorkspaceDetail', {replayKey: 'platform-workspace-detail', path: `/api/platform/group-workspaces/${workspaceKey}`, headers: cookie()});
+  await invoke('listPlatformGroupWorkspaces', {replayKey: 'platform-workspace-page', queryParameters: {groupWorkspaceKey: workspaceKey, page: 1, pageSize: 20}, headers: cookie()});
+  await invoke('getPlatformGroupWorkspaceDetail', {replayKey: 'platform-workspace-detail', ...workspace(), headers: cookie()});
   state.setPrivate('WORKSPACE_WITHOUT_COMMERCIAL_GROUP', true);
   await invoke('initializeCommercialGroup', {
-    replayKey: 'platform-initialize-commercial-group', path: `/api/platform/group-workspaces/${workspaceKey}/commercial-group`, headers: {...cookie(), 'Idempotency-Key': idempotency('commercial-group')},
+    replayKey: 'platform-initialize-commercial-group', ...workspace(), headers: {...cookie(), 'Idempotency-Key': idempotency('commercial-group')},
     body: {groupCode: `DG${uniqueSuffix.toUpperCase()}`, groupName: `HTTP诊断商业集团${uniqueSuffix}`, idempotencyKey: idempotency('commercial-group')},
     capturePrivateResponse: (response) => privateJson(response, 'COMMERCIAL_GROUP', ['id']),
   });
   state.setPrivate('EXTENSION_HOST_TYPE', 'BRAND');
   await invoke('getExtensionDefinition', {
-    replayKey: 'platform-read-brand-extension', path: `/api/platform/group-workspaces/${workspaceKey}/extension-definitions/BRAND`, headers: cookie(),
+    replayKey: 'platform-read-brand-extension', ...workspace({entityType: 'BRAND'}), headers: cookie(),
     capturePrivateResponse: (response) => privateJson(response, 'EXTENSION_VERSION', ['revision']),
   });
   await invoke('replaceExtensionDefinition', {
-    replayKey: 'platform-replace-brand-extension', path: `/api/platform/group-workspaces/${workspaceKey}/extension-definitions/BRAND`, headers: {...cookie(), 'Idempotency-Key': idempotency('replace-extension')},
-    body: {expectedVersion: state.requirePrivate('EXTENSION_VERSION').revision, definitions: [{label: '诊断品牌等级', type: 'TEXT', required: false, options: []}]},
+    replayKey: 'platform-replace-brand-extension', ...workspace({entityType: 'BRAND'}), headers: {...cookie(), 'Idempotency-Key': idempotency('replace-extension')},
+    body: {expectedVersion: state.requirePrivate('EXTENSION_VERSION').revision, definitions: [{key: 'diagnosticBrandLevel', label: '诊断品牌等级', type: 'TEXT', required: false, options: []}]},
     capturePrivateResponse: (response) => privateJson(response, 'BRAND_EXTENSION', ['revision']),
   });
   await invoke('getExtensionEntityCatalog', {
-    replayKey: 'platform-read-extension-catalog', path: `/api/platform/group-workspaces/${workspaceKey}/extension-definitions`, headers: cookie(),
+    replayKey: 'platform-read-extension-catalog', ...workspace(), headers: cookie(),
     capturePrivateResponse: (response) => privateJson(response, 'EXTENSION_CATALOG', ['items']),
   });
   state.setPrivate('ROLE_CATALOG_COMPATIBLE', true);
   await invoke('createWorkspaceRole', {
-    replayKey: 'platform-create-group-operator-role', path: `/api/platform/group-workspaces/${workspaceKey}/roles`, headers: {...cookie(), 'Idempotency-Key': idempotency('group-role')},
+    replayKey: 'platform-create-group-operator-role', ...workspace(), headers: {...cookie(), 'Idempotency-Key': idempotency('group-role')},
     body: {name: `诊断集团运营管理员${uniqueSuffix}`, serviceNodeType: 'GROUP', capabilityKeys: PLATFORM_FOUNDATION_CAPABILITIES, pageAccessKeys: PLATFORM_FOUNDATION_PAGES},
     capturePrivateResponse: (response) => privateJson(response, 'GROUP_OPERATOR_ROLE', ['id', 'revision']),
   });
@@ -179,15 +184,15 @@ export async function executePlatformFoundationWorkload({manifestPath, baseUrl, 
     ['STORE', 'PG-IAM-STORE-USERS', 'STORE_OPERATOR_ROLE'],
   ]) {
     await invoke('createWorkspaceRole', {
-      replayKey: `platform-create-${serviceNodeType.toLowerCase()}-operator-role`, path: `/api/platform/group-workspaces/${workspaceKey}/roles`, headers: {...cookie(), 'Idempotency-Key': idempotency(`${serviceNodeType.toLowerCase()}-role`)},
+      replayKey: `platform-create-${serviceNodeType.toLowerCase()}-operator-role`, ...workspace(), headers: {...cookie(), 'Idempotency-Key': idempotency(`${serviceNodeType.toLowerCase()}-role`)},
       body: {name: `诊断${serviceNodeType}运营管理员${uniqueSuffix}`, serviceNodeType, description: 'HTTP诊断访问范围角色', capabilityKeys: [], pageAccessKeys: serviceNodeType === 'STORE' ? [pageAccessKey, 'PG-STORE-PROFILE'] : [pageAccessKey]},
       capturePrivateResponse: (response) => privateJson(response, handle, ['id', 'revision']),
     });
   }
-  await invoke('getWorkspaceRoles', {replayKey: 'platform-workspace-roles', path: `/api/platform/group-workspaces/${workspaceKey}/roles?page=1&pageSize=20`, headers: cookie()});
-  await invoke('getWorkspaceAccounts', {replayKey: 'platform-workspace-accounts', path: `/api/platform/group-workspaces/${workspaceKey}/accounts?page=1&pageSize=20`, headers: cookie()});
-  await invoke('getPlatformOrganizationHierarchyTree', {replayKey: 'platform-organization-hierarchy', path: `/api/platform/group-workspaces/${workspaceKey}/organization-overview/hierarchy`, headers: cookie()});
-  await invoke('getPlatformContractOverviewPage', {replayKey: 'platform-contract-overview', path: `/api/platform/group-workspaces/${workspaceKey}/contract-overview?page=1&pageSize=20`, headers: cookie()});
+  await invoke('getWorkspaceRoles', {replayKey: 'platform-workspace-roles', ...workspace({}, {page: 1, pageSize: 20}), headers: cookie()});
+  await invoke('getWorkspaceAccounts', {replayKey: 'platform-workspace-accounts', ...workspace({}, {page: 1, pageSize: 20}), headers: cookie()});
+  await invoke('getPlatformOrganizationHierarchyTree', {replayKey: 'platform-organization-hierarchy', ...workspace(), headers: cookie()});
+  await invoke('getPlatformContractOverviewPage', {replayKey: 'platform-contract-overview', ...workspace({}, {page: 1, pageSize: 20}), headers: cookie()});
   return {calls, state, workspaceKey, execute};
 }
 
@@ -210,20 +215,21 @@ export async function executePlatformMaintenanceWorkload({foundation, uniqueSuff
     state.setPrivate(handle, response.json);
   };
   const cookie = () => ({Cookie: state.requirePrivate('PLATFORM_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
+  const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
 
   const form = new FormData();
   form.set('usage', 'GROUP_WORKSPACE_LOGO');
   form.set('file', new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMQjD35HwAD8QI3lLpUaAAAAABJRU5ErkJggg==', 'base64')], {type: 'image/png'}), `release-${uniqueSuffix}.png`);
   await invoke('stagePlatformAsset', {
-    replayKey: 'platform-stage-unbound-asset', path: '/api/platform/assets/staging', body: form, headers: {...cookie(), 'Idempotency-Key': key('stage-unbound-asset')},
+    replayKey: 'platform-stage-unbound-asset', body: form, headers: {...cookie(), 'Idempotency-Key': key('stage-unbound-asset')},
     capturePrivateResponse: (response) => requireJson(response, 'UNBOUND_STAGED_ASSET', ['assetRef', 'bindGrant']),
   });
   await invoke('releasePlatformStagedAsset', {
-    replayKey: 'platform-release-unbound-asset', path: `/api/platform/assets/staging/${encodeURIComponent(state.requirePrivate('UNBOUND_STAGED_ASSET').assetRef)}/release`, headers: {...cookie(), 'X-Asset-Bind-Grant': state.requirePrivate('UNBOUND_STAGED_ASSET').bindGrant},
+    replayKey: 'platform-release-unbound-asset', pathParameters: {assetRef: state.requirePrivate('UNBOUND_STAGED_ASSET').assetRef}, headers: {...cookie(), 'X-Asset-Bind-Grant': state.requirePrivate('UNBOUND_STAGED_ASSET').bindGrant},
   });
 
   await invoke('updatePlatformGroupWorkspaceDisplay', {
-    replayKey: 'platform-update-workspace-display', path: `/api/platform/group-workspaces/${workspaceKey}`, headers: {...cookie(), 'Idempotency-Key': key('workspace-display')},
+    replayKey: 'platform-update-workspace-display', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('workspace-display')},
     body: {name: `HTTP诊断空间更新${uniqueSuffix}`, operationsTitle: `HTTP诊断运营后台更新${uniqueSuffix}`, notes: 'HTTP诊断运行时可回收空间', logoIntent: 'KEEP', expectedVersion: state.requirePrivate('WORKSPACE_ENABLED').version, idempotencyKey: key('workspace-display')},
     capturePrivateResponse: (response) => requireJson(response, 'WORKSPACE_ENABLED', ['groupWorkspaceKey', 'version']),
   });
@@ -233,20 +239,20 @@ export async function executePlatformMaintenanceWorkload({foundation, uniqueSuff
   state.setPrivate('UNIQUE_PLATFORM_ADMIN', true);
   state.setPrivate('PLATFORM_CREDENTIAL', true);
   await invoke('createPlatformAdmin', {
-    replayKey: 'platform-create-disposable-admin', path: '/api/platform/admin-users', headers: {...cookie(), 'Idempotency-Key': key('create-admin')},
+    replayKey: 'platform-create-disposable-admin', headers: {...cookie(), 'Idempotency-Key': key('create-admin')},
     body: {loginName: `diagnostic-admin-${uniqueSuffix}`, userName: `诊断平台管理员${uniqueSuffix}`, mobile: adminMobile, password: adminPassword, idempotencyKey: key('create-admin')},
     capturePrivateResponse: (response) => { requireJson(response, 'DISPOSABLE_PLATFORM_ADMIN', ['id', 'version']); state.setPrivate('DISPOSABLE_PLATFORM_ADMIN_PASSWORD', adminPassword); state.setPrivate('PLATFORM_ADMIN_TARGET', true); state.setPrivate('SECOND_PLATFORM_ADMIN', true); state.setPrivate('PLATFORM_ADMIN_VERSION', true); },
   });
   await invoke('getPlatformAdminDetail', {
-    replayKey: 'platform-read-disposable-admin', path: `/api/platform/admin-users/${encodeURIComponent(state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').id)}`, headers: cookie(),
+    replayKey: 'platform-read-disposable-admin', pathParameters: {platformAdminId: state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').id}, headers: cookie(),
   });
   await invoke('updatePlatformAdminProfile', {
-    replayKey: 'platform-update-disposable-admin', path: `/api/platform/admin-users/${encodeURIComponent(state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').id)}/profile`, headers: {...cookie(), 'Idempotency-Key': key('update-admin')},
+    replayKey: 'platform-update-disposable-admin', pathParameters: {platformAdminId: state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').id}, headers: {...cookie(), 'Idempotency-Key': key('update-admin')},
     body: {userName: `诊断平台管理员更新${uniqueSuffix}`, mobile: adminMobile, expectedVersion: state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').version, idempotencyKey: key('update-admin')},
     capturePrivateResponse: (response) => requireJson(response, 'DISPOSABLE_PLATFORM_ADMIN', ['id', 'version']),
   });
   await invoke('resetPlatformAdminCredential', {
-    replayKey: 'platform-reset-disposable-admin', path: `/api/platform/admin-users/${encodeURIComponent(state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').id)}/credential-reset`, headers: {...cookie(), 'Idempotency-Key': key('reset-admin')},
+    replayKey: 'platform-reset-disposable-admin', pathParameters: {platformAdminId: state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').id}, headers: {...cookie(), 'Idempotency-Key': key('reset-admin')},
     body: {password: randomUUID().replaceAll('-', ''), expectedVersion: state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').version, idempotencyKey: key('reset-admin')},
     capturePrivateResponse: (response) => requireJson(response, 'DISPOSABLE_PLATFORM_ADMIN', ['id', 'version']),
   });
@@ -259,7 +265,7 @@ export async function executePublicInvitationWorkload({foundation, invitationTok
     throw new Error('HTTP_DIAGNOSTIC_PUBLIC_INVITATION_INPUT_INVALID');
   }
   const {state, execute, workspaceKey} = foundation;
-  const invitationPath = `/api/public/invitations/${workspaceKey}/${encodeURIComponent(invitationToken)}`;
+  const invitation = () => ({pathParameters: {groupWorkspaceKey: workspaceKey, invitationToken}});
   const key = (name) => `diagnostic-${name}-${uniqueSuffix}`;
   const replay = (name) => `${replayPrefix}-${name}`;
   const calls = [];
@@ -275,24 +281,24 @@ export async function executePublicInvitationWorkload({foundation, invitationTok
   };
   state.setPrivate('MOBILE', mobile);
   state.setPrivate('PUBLIC_INVITATION', invitationToken);
-  await invoke('getPublicInvitationView', {replayKey: replay('view'), path: invitationPath});
-  await invoke('acceptPublicInvitation', {replayKey: replay('accept'), path: invitationPath, headers: {'Idempotency-Key': key('invitation-accept')}});
+  await invoke('getPublicInvitationView', {replayKey: replay('view'), ...invitation()});
+  await invoke('acceptPublicInvitation', {replayKey: replay('accept'), ...invitation(), headers: {'Idempotency-Key': key('invitation-accept')}});
   state.setPrivate('PUBLIC_INVITATION_ACCEPTED', true);
   await invoke('sendPublicInvitationOtp', {
-    replayKey: replay('otp-send'), path: `${invitationPath}/otp/send`, headers: {'Idempotency-Key': key('invitation-otp-send')}, body: {mobile},
+    replayKey: replay('otp-send'), ...invitation(), headers: {'Idempotency-Key': key('invitation-otp-send')}, body: {mobile},
     capturePrivateResponse: (response) => requireJson(response, 'PUBLIC_CHALLENGE', ['debugVerificationCode']),
   });
   await invoke('verifyPublicInvitationOtp', {
-    replayKey: replay('otp-verify'), path: `${invitationPath}/otp/verify`, headers: {'Idempotency-Key': key('invitation-otp-verify')}, body: {mobile, code: state.requirePrivate('PUBLIC_CHALLENGE').debugVerificationCode},
+    replayKey: replay('otp-verify'), ...invitation(), headers: {'Idempotency-Key': key('invitation-otp-verify')}, body: {mobile, code: state.requirePrivate('PUBLIC_CHALLENGE').debugVerificationCode},
     capturePrivateResponse: (response) => requireJson(response, 'PUBLIC_INVITATION_VERIFIED', ['verificationGrant']),
   });
   await invoke('savePublicInvitationCredentials', {
-    replayKey: replay('credentials'), path: `${invitationPath}/credentials`, headers: {'Idempotency-Key': key('invitation-credentials')}, body: {verificationGrant: state.requirePrivate('PUBLIC_INVITATION_VERIFIED').verificationGrant, userName, loginName, password},
+    replayKey: replay('credentials'), ...invitation(), headers: {'Idempotency-Key': key('invitation-credentials')}, body: {verificationGrant: state.requirePrivate('PUBLIC_INVITATION_VERIFIED').verificationGrant, userName, loginName, password},
     capturePrivateResponse: (response) => requireJson(response, 'PUBLIC_INVITATION_CREDENTIAL_READY', []),
   });
-  await invoke('completePublicInvitation', {replayKey: replay('complete'), path: `${invitationPath}/complete`, headers: {'Idempotency-Key': key('invitation-complete')}});
+  await invoke('completePublicInvitation', {replayKey: replay('complete'), ...invitation(), headers: {'Idempotency-Key': key('invitation-complete')}});
   state.setPrivate('PUBLIC_INVITATION_COMPLETED', true);
-  await invoke('getPublicInvitationCompletion', {replayKey: replay('completion'), path: `${invitationPath}/completion`});
+  await invoke('getPublicInvitationCompletion', {replayKey: replay('completion'), ...invitation()});
   state.setPrivate('OPERATIONS_ACCOUNT_ENABLED', true);
   state.setPrivate('OPERATIONS_WORKSPACE_ENABLED', true);
   state.setPrivate('OPERATIONS_CREDENTIAL', {loginName, password});
@@ -334,64 +340,66 @@ export async function executeOperationsOrganizationWorkload({publicFlow, uniqueS
     state.setPrivate('CONTEXT_VERSION', state.requirePrivate('OPERATIONS_SESSION_ENTRY').contextVersion);
   };
   const cookie = () => ({Cookie: state.requirePrivate('OPERATIONS_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
-  const base = `/api/operations/group-workspaces/${workspaceKey}`;
+  const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
+  const context = () => ({expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')});
+  const projectContext = () => ({...context(), projectId: state.requirePrivate('PROJECT').id});
 
-  await invoke('getOperationsWorkspaceLoginEntry', {replayKey: 'operations-login-entry', path: `${base}/login-entry`});
+  await invoke('getOperationsWorkspaceLoginEntry', {replayKey: 'operations-login-entry', ...workspace()});
   await invoke('operationsWorkspacePasswordLogin', {
-    replayKey: 'operations-password-login', path: `${base}/password-login`, body: credential,
+    replayKey: 'operations-password-login', ...workspace(), body: credential,
     capturePrivateResponse: sessionCookie,
   });
   await invoke('getOperationsWorkspaceSessionEntry', {
-    replayKey: 'operations-session-entry', path: `${base}/session/entry`, headers: cookie(),
+    replayKey: 'operations-session-entry', ...workspace(), headers: cookie(),
     capturePrivateResponse: sessionEntry,
   });
   await invoke('getOperationsOrganizationHierarchy', {
-    replayKey: 'operations-hierarchy', path: `${base}/hierarchy`, headers: cookie(),
+    replayKey: 'operations-hierarchy', ...workspace(), headers: cookie(),
     capturePrivateResponse: (response) => requireJson(response, 'OPERATIONS_HIERARCHY', []),
   });
   await invoke('createOperationsOrganizationRegion', {
-    replayKey: 'operations-create-region', path: `${base}/hierarchy/regions`, headers: {...cookie(), 'Idempotency-Key': key('region')},
+    replayKey: 'operations-create-region', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('region')},
     body: {code: `RG${uniqueSuffix.toUpperCase()}`, name: `诊断大区${uniqueSuffix}`},
     capturePrivateResponse: (response) => requireJson(response, 'REGION', ['id', 'revision']),
   });
   await invoke('createOperationsOrganizationProject', {
-    replayKey: 'operations-create-project', path: `${base}/hierarchy/regions/${state.requirePrivate('REGION').id}/projects`, headers: {...cookie(), 'Idempotency-Key': key('project')},
+    replayKey: 'operations-create-project', ...workspace({regionId: state.requirePrivate('REGION').id}), headers: {...cookie(), 'Idempotency-Key': key('project')},
     body: {code: `PJ${uniqueSuffix.toUpperCase()}`, name: `诊断项目${uniqueSuffix}`, phases: [{name: '一期'}]},
     capturePrivateResponse: (response) => requireJson(response, 'PROJECT', ['id', 'revision']),
   });
   await invoke('createOperationsOrganizationBrand', {
-    replayKey: 'operations-create-brand', path: `${base}/organization/brands`, headers: {...cookie(), 'Idempotency-Key': key('brand')},
+    replayKey: 'operations-create-brand', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('brand')},
     body: {code: `BR${uniqueSuffix.toUpperCase()}`, name: `诊断品牌${uniqueSuffix}`},
     capturePrivateResponse: (response) => requireJson(response, 'BRAND', ['id', 'revision']),
   });
   await invoke('createOperationsOrganizationTenant', {
-    replayKey: 'operations-create-tenant', path: `${base}/organization/tenants`, headers: {...cookie(), 'Idempotency-Key': key('tenant')},
+    replayKey: 'operations-create-tenant', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('tenant')},
     body: {code: `TN${uniqueSuffix.toUpperCase()}`, name: `诊断租户${uniqueSuffix}`, legalName: `诊断租户${uniqueSuffix}有限公司`, unifiedSocialCreditCode: `91310000${uniqueSuffix.toUpperCase().padEnd(10, '0').slice(0, 10)}`},
     capturePrivateResponse: (response) => requireJson(response, 'TENANT', ['id', 'revision']),
   });
   await invoke('createOperationsOrganizationHeadCompany', {
-    replayKey: 'operations-create-head-company', path: `${base}/organization/head-companies`, headers: {...cookie(), 'Idempotency-Key': key('head-company')},
+    replayKey: 'operations-create-head-company', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('head-company')},
     body: {code: `HC${uniqueSuffix.toUpperCase()}`, name: `诊断总公司${uniqueSuffix}`, legalName: `诊断总公司${uniqueSuffix}有限公司`, unifiedSocialCreditCode: `91320000${uniqueSuffix.toUpperCase().padEnd(10, '0').slice(0, 10)}`},
     capturePrivateResponse: (response) => requireJson(response, 'HEAD_COMPANY', ['id', 'revision']),
   });
   await invoke('addOperationsOrganizationHeadCompanyBrandAuthorization', {
-    replayKey: 'operations-authorize-head-company-brand', path: `${base}/organization/head-companies/${state.requirePrivate('HEAD_COMPANY').id}/brand-authorizations`, headers: {...cookie(), 'Idempotency-Key': key('head-company-brand')},
+    replayKey: 'operations-authorize-head-company-brand', ...workspace({headCompanyId: state.requirePrivate('HEAD_COMPANY').id}), headers: {...cookie(), 'Idempotency-Key': key('head-company-brand')},
     body: {brandId: state.requirePrivate('BRAND').id},
   });
   // Exercise the positive removal contract before a store may establish the explicit
   // in-use reference; the in-use rejection remains an owner invariant, not a fake pass.
   await invoke('removeOperationsOrganizationHeadCompanyBrandAuthorization', {
-    replayKey: 'operations-remove-head-company-brand', path: `${base}/organization/head-companies/${state.requirePrivate('HEAD_COMPANY').id}/brand-authorizations/${state.requirePrivate('BRAND').id}`, headers: {...cookie(), 'Idempotency-Key': key('head-company-brand-remove')},
+    replayKey: 'operations-remove-head-company-brand', ...workspace({headCompanyId: state.requirePrivate('HEAD_COMPANY').id, brandId: state.requirePrivate('BRAND').id}), headers: {...cookie(), 'Idempotency-Key': key('head-company-brand-remove')},
   });
   await invoke('getOperationsWorkspaceSessionEntry', {
-    replayKey: 'operations-session-entry-after-project', path: `${base}/session/entry`, headers: cookie(),
+    replayKey: 'operations-session-entry-after-project', ...workspace(), headers: cookie(),
     capturePrivateResponse: sessionEntry,
   });
   const projectDataNode = state.requirePrivate('OPERATIONS_SESSION_ENTRY').dataNodeCandidates?.find((candidate) => candidate?.projectRef === state.requirePrivate('PROJECT').id);
   if (!projectDataNode?.dataNodeType || !projectDataNode?.dataNodeRef) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_PROJECT_DATA_NODE_MISSING');
   state.setPrivate('VISIBLE_DATA_NODE', projectDataNode);
   await invoke('selectOperationsWorkspaceSessionDataNode', {
-    replayKey: 'operations-select-project-data-node', path: `${base}/session/data-node`, headers: {...cookie(), 'Idempotency-Key': key('project-data-node')},
+    replayKey: 'operations-select-project-data-node', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('project-data-node')},
     body: {dataNodeType: projectDataNode.dataNodeType, dataNodeRef: projectDataNode.dataNodeRef, requiredContextVersion: state.requirePrivate('CONTEXT_VERSION')},
     capturePrivateResponse: sessionEntry,
   });
@@ -403,76 +411,74 @@ export async function executeOperationsOrganizationWorkload({publicFlow, uniqueS
     headCompanyId: state.requirePrivate('HEAD_COMPANY').id,
     dataNode: state.requirePrivate('VISIBLE_DATA_NODE'),
   });
-  await invoke('getOperationsOrganizationStoreCandidates', {replayKey: 'operations-store-candidates', path: `${base}/organization/stores/candidates?expectedContextVersion=${encodeURIComponent(String(state.requirePrivate('CONTEXT_VERSION')))}&projectId=${encodeURIComponent(state.requirePrivate('PROJECT').id)}&brandId=${encodeURIComponent(state.requirePrivate('BRAND').id)}&tenantId=${encodeURIComponent(state.requirePrivate('TENANT').id)}`, headers: cookie()});
+  await invoke('getOperationsOrganizationStoreCandidates', {replayKey: 'operations-store-candidates', ...workspace({}, {...projectContext(), brandId: state.requirePrivate('BRAND').id, tenantId: state.requirePrivate('TENANT').id}), headers: cookie()});
   await invoke('createOperationsOrganizationStore', {
-    replayKey: 'operations-create-store', path: `${base}/organization/stores`, headers: {...cookie(), 'Idempotency-Key': key('store')},
+    replayKey: 'operations-create-store', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('store')},
     body: {projectId: state.requirePrivate('PROJECT').id, brandId: state.requirePrivate('BRAND').id, tenantId: state.requirePrivate('TENANT').id, code: `ST${uniqueSuffix.toUpperCase()}`, name: `诊断门店${uniqueSuffix}`},
     capturePrivateResponse: (response) => requireJson(response, 'STORE', ['id', 'revision']),
   });
   const platformCookie = () => ({Cookie: state.requirePrivate('PLATFORM_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
   await invoke('getExtensionDefinition', {
-    replayKey: 'platform-read-contract-extension', path: `/api/platform/group-workspaces/${workspaceKey}/extension-definitions/CONTRACT`, headers: platformCookie(),
+    replayKey: 'platform-read-contract-extension', ...workspace({entityType: 'CONTRACT'}), headers: platformCookie(),
     capturePrivateResponse: (response) => requireJson(response, 'CONTRACT_EXTENSION_VERSION', ['revision']),
   });
   await invoke('replaceExtensionDefinition', {
-    replayKey: 'platform-replace-contract-extension', path: `/api/platform/group-workspaces/${workspaceKey}/extension-definitions/CONTRACT`, headers: {...platformCookie(), 'Idempotency-Key': key('replace-contract-extension')},
-    body: {expectedVersion: state.requirePrivate('CONTRACT_EXTENSION_VERSION').revision, definitions: [{label: '诊断合同字段', type: 'TEXT', required: false, options: []}]},
+    replayKey: 'platform-replace-contract-extension', ...workspace({entityType: 'CONTRACT'}), headers: {...platformCookie(), 'Idempotency-Key': key('replace-contract-extension')},
+    body: {expectedVersion: state.requirePrivate('CONTRACT_EXTENSION_VERSION').revision, definitions: [{key: 'diagnosticContractField', label: '诊断合同字段', type: 'TEXT', required: false, options: []}]},
   });
   await invoke('getExtensionDefinition', {
-    replayKey: 'platform-read-store-extension', path: `/api/platform/group-workspaces/${workspaceKey}/extension-definitions/STORE`, headers: platformCookie(),
+    replayKey: 'platform-read-store-extension', ...workspace({entityType: 'STORE'}), headers: platformCookie(),
     capturePrivateResponse: (response) => requireJson(response, 'STORE_EXTENSION_VERSION', ['revision']),
   });
   await invoke('replaceExtensionDefinition', {
-    replayKey: 'platform-replace-store-extension', path: `/api/platform/group-workspaces/${workspaceKey}/extension-definitions/STORE`, headers: {...platformCookie(), 'Idempotency-Key': key('replace-store-extension')},
-    body: {expectedVersion: state.requirePrivate('STORE_EXTENSION_VERSION').revision, definitions: [{label: '诊断门店字段', type: 'TEXT', required: false, options: []}]},
+    replayKey: 'platform-replace-store-extension', ...workspace({entityType: 'STORE'}), headers: {...platformCookie(), 'Idempotency-Key': key('replace-store-extension')},
+    body: {expectedVersion: state.requirePrivate('STORE_EXTENSION_VERSION').revision, definitions: [{key: 'diagnosticStoreField', label: '诊断门店字段', type: 'TEXT', required: false, options: []}]},
   });
-  const projectQuery = () => `expectedContextVersion=${encodeURIComponent(String(state.requirePrivate('CONTEXT_VERSION')))}&projectId=${encodeURIComponent(state.requirePrivate('PROJECT').id)}`;
-  await invoke('getOperationsContractExtensionDefinition', {replayKey: 'operations-contract-extension', path: `${base}/contracts/extension-definition?${projectQuery()}`, headers: cookie()});
-  await invoke('getOperationsContractCandidates', {replayKey: 'operations-contract-candidates', path: `${base}/contracts/candidates?${projectQuery()}&selectedStoreId=${encodeURIComponent(state.requirePrivate('STORE').id)}`, headers: cookie()});
+  await invoke('getOperationsContractExtensionDefinition', {replayKey: 'operations-contract-extension', ...workspace({}, projectContext()), headers: cookie()});
+  await invoke('getOperationsContractCandidates', {replayKey: 'operations-contract-candidates', ...workspace({}, {...projectContext(), selectedStoreId: state.requirePrivate('STORE').id}), headers: cookie()});
   await invoke('createOperationsContract', {
-    replayKey: 'operations-create-contract', path: `${base}/contracts`, headers: {...cookie(), 'Idempotency-Key': key('contract')},
+    replayKey: 'operations-create-contract', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('contract')},
     body: {projectId: state.requirePrivate('PROJECT').id, storeId: state.requirePrivate('STORE').id, phaseName: '一期', contractNo: `DG-${uniqueSuffix.toUpperCase()}-001`, effectiveFrom: '2026-07-01', effectiveTo: '2026-12-31', items: [{code: `SKU-${uniqueSuffix.toUpperCase()}`, name: `诊断商品${uniqueSuffix}`}]},
     capturePrivateResponse: (response) => requireJson(response, 'CONTRACT', ['id', 'revision', 'effectiveFrom', 'effectiveTo', 'phaseName', 'items']),
   });
-  await invoke('getOperationsContracts', {replayKey: 'operations-list-contracts', path: `${base}/contracts?${projectQuery()}&storeId=${encodeURIComponent(state.requirePrivate('STORE').id)}&page=1&pageSize=20`, headers: cookie()});
-  await invoke('getOperationsContract', {replayKey: 'operations-read-contract', path: `${base}/contracts/${state.requirePrivate('CONTRACT').id}?expectedContextVersion=${encodeURIComponent(String(state.requirePrivate('CONTEXT_VERSION')))}`, headers: cookie()});
+  await invoke('getOperationsContracts', {replayKey: 'operations-list-contracts', ...workspace({}, {...projectContext(), storeId: state.requirePrivate('STORE').id, page: 1, pageSize: 20}), headers: cookie()});
+  await invoke('getOperationsContract', {replayKey: 'operations-read-contract', ...workspace({contractId: state.requirePrivate('CONTRACT').id}, context()), headers: cookie()});
   await invoke('updateOperationsContract', {
-    replayKey: 'operations-update-contract', path: `${base}/contracts/${state.requirePrivate('CONTRACT').id}`, headers: {...cookie(), 'Idempotency-Key': key('contract-update')},
+    replayKey: 'operations-update-contract', ...workspace({contractId: state.requirePrivate('CONTRACT').id}), headers: {...cookie(), 'Idempotency-Key': key('contract-update')},
     body: {phaseName: state.requirePrivate('CONTRACT').phaseName, effectiveFrom: state.requirePrivate('CONTRACT').effectiveFrom, effectiveTo: state.requirePrivate('CONTRACT').effectiveTo, expectedVersion: state.requirePrivate('CONTRACT').revision, items: state.requirePrivate('CONTRACT').items},
     capturePrivateResponse: (response) => requireJson(response, 'CONTRACT', ['id', 'revision']),
   });
   await invoke('invalidateOperationsContract', {
-    replayKey: 'operations-invalidate-contract', path: `${base}/contracts/${state.requirePrivate('CONTRACT').id}/invalidate`, headers: {...cookie(), 'Idempotency-Key': key('contract-invalidate')},
+    replayKey: 'operations-invalidate-contract', ...workspace({contractId: state.requirePrivate('CONTRACT').id}), headers: {...cookie(), 'Idempotency-Key': key('contract-invalidate')},
     body: {expectedVersion: state.requirePrivate('CONTRACT').revision},
     capturePrivateResponse: (response) => requireJson(response, 'CONTRACT', ['id', 'revision']),
   });
-  const context = () => `expectedContextVersion=${encodeURIComponent(String(state.requirePrivate('CONTEXT_VERSION')))}`;
-  await invoke('getOperationsOrganizationStoreExtensionDefinition', {replayKey: 'operations-store-extension', path: `${base}/organization/stores/extension-definition?${context()}`, headers: cookie()});
-  await invoke('getOperationsOrganizationStores', {replayKey: 'operations-list-stores', path: `${base}/organization/stores?${context()}&projectId=${encodeURIComponent(state.requirePrivate('PROJECT').id)}&page=1&pageSize=20`, headers: cookie()});
-  await invoke('getOperationsOrganizationStore', {replayKey: 'operations-read-store', path: `${base}/organization/stores/${state.requirePrivate('STORE').id}?${context()}`, headers: cookie()});
+  await invoke('getOperationsOrganizationStoreExtensionDefinition', {replayKey: 'operations-store-extension', ...workspace({}, context()), headers: cookie()});
+  await invoke('getOperationsOrganizationStores', {replayKey: 'operations-list-stores', ...workspace({}, {...projectContext(), page: 1, pageSize: 20}), headers: cookie()});
+  await invoke('getOperationsOrganizationStore', {replayKey: 'operations-read-store', ...workspace({storeId: state.requirePrivate('STORE').id}, context()), headers: cookie()});
   await invoke('updateOperationsOrganizationStore', {
-    replayKey: 'operations-update-store', path: `${base}/organization/stores/${state.requirePrivate('STORE').id}`, headers: {...cookie(), 'Idempotency-Key': key('store-update')},
+    replayKey: 'operations-update-store', ...workspace({storeId: state.requirePrivate('STORE').id}), headers: {...cookie(), 'Idempotency-Key': key('store-update')},
     body: {name: `诊断门店更新${uniqueSuffix}`, expectedVersion: state.requirePrivate('STORE').revision},
     capturePrivateResponse: (response) => requireJson(response, 'STORE', ['id', 'revision']),
   });
-  await invoke('getOperationsOrganizationBrands', {replayKey: 'operations-list-brands', path: `${base}/organization/brands?${context()}`, headers: cookie()});
-  await invoke('getOperationsOrganizationBrand', {replayKey: 'operations-read-brand', path: `${base}/organization/brands/${state.requirePrivate('BRAND').id}?${context()}`, headers: cookie()});
-  await invoke('getOperationsOrganizationTenants', {replayKey: 'operations-list-tenants', path: `${base}/organization/tenants?${context()}`, headers: cookie()});
-  await invoke('getOperationsOrganizationTenant', {replayKey: 'operations-read-tenant', path: `${base}/organization/tenants/${state.requirePrivate('TENANT').id}?${context()}`, headers: cookie()});
-  await invoke('getOperationsOrganizationHeadCompanies', {replayKey: 'operations-list-head-companies', path: `${base}/organization/head-companies?${context()}`, headers: cookie()});
-  await invoke('getOperationsOrganizationHeadCompany', {replayKey: 'operations-read-head-company', path: `${base}/organization/head-companies/${state.requirePrivate('HEAD_COMPANY').id}?${context()}`, headers: cookie()});
+  await invoke('getOperationsOrganizationBrands', {replayKey: 'operations-list-brands', ...workspace({}, context()), headers: cookie()});
+  await invoke('getOperationsOrganizationBrand', {replayKey: 'operations-read-brand', ...workspace({brandId: state.requirePrivate('BRAND').id}, context()), headers: cookie()});
+  await invoke('getOperationsOrganizationTenants', {replayKey: 'operations-list-tenants', ...workspace({}, context()), headers: cookie()});
+  await invoke('getOperationsOrganizationTenant', {replayKey: 'operations-read-tenant', ...workspace({tenantId: state.requirePrivate('TENANT').id}, context()), headers: cookie()});
+  await invoke('getOperationsOrganizationHeadCompanies', {replayKey: 'operations-list-head-companies', ...workspace({}, context()), headers: cookie()});
+  await invoke('getOperationsOrganizationHeadCompany', {replayKey: 'operations-read-head-company', ...workspace({headCompanyId: state.requirePrivate('HEAD_COMPANY').id}, context()), headers: cookie()});
   await invoke('updateOperationsOrganizationBrand', {
-    replayKey: 'operations-update-brand', path: `${base}/organization/brands/${state.requirePrivate('BRAND').id}`, headers: {...cookie(), 'Idempotency-Key': key('brand-update')},
+    replayKey: 'operations-update-brand', ...workspace({brandId: state.requirePrivate('BRAND').id}), headers: {...cookie(), 'Idempotency-Key': key('brand-update')},
     body: {code: state.requirePrivate('BRAND').code, name: `诊断品牌更新${uniqueSuffix}`, expectedVersion: state.requirePrivate('BRAND').revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')},
     capturePrivateResponse: (response) => requireJson(response, 'BRAND', ['id', 'revision']),
   });
   await invoke('updateOperationsOrganizationTenant', {
-    replayKey: 'operations-update-tenant', path: `${base}/organization/tenants/${state.requirePrivate('TENANT').id}`, headers: {...cookie(), 'Idempotency-Key': key('tenant-update')},
+    replayKey: 'operations-update-tenant', ...workspace({tenantId: state.requirePrivate('TENANT').id}), headers: {...cookie(), 'Idempotency-Key': key('tenant-update')},
     body: {code: state.requirePrivate('TENANT').code, name: `诊断租户更新${uniqueSuffix}`, legalName: state.requirePrivate('TENANT').legalName, unifiedSocialCreditCode: state.requirePrivate('TENANT').unifiedSocialCreditCode, expectedVersion: state.requirePrivate('TENANT').revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')},
     capturePrivateResponse: (response) => requireJson(response, 'TENANT', ['id', 'revision']),
   });
   await invoke('updateOperationsOrganizationHeadCompany', {
-    replayKey: 'operations-update-head-company', path: `${base}/organization/head-companies/${state.requirePrivate('HEAD_COMPANY').id}`, headers: {...cookie(), 'Idempotency-Key': key('head-company-update')},
+    replayKey: 'operations-update-head-company', ...workspace({headCompanyId: state.requirePrivate('HEAD_COMPANY').id}), headers: {...cookie(), 'Idempotency-Key': key('head-company-update')},
     body: {code: state.requirePrivate('HEAD_COMPANY').code, name: `诊断总公司更新${uniqueSuffix}`, legalName: state.requirePrivate('HEAD_COMPANY').legalName, unifiedSocialCreditCode: state.requirePrivate('HEAD_COMPANY').unifiedSocialCreditCode, expectedVersion: state.requirePrivate('HEAD_COMPANY').revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')},
     capturePrivateResponse: (response) => requireJson(response, 'HEAD_COMPANY', ['id', 'revision']),
   });
@@ -480,26 +486,26 @@ export async function executeOperationsOrganizationWorkload({publicFlow, uniqueS
   // before any terminal organization transition and before the session moves to a store data node.
   await invoke('getOperationsOrganizationBusinessEntityExtensionDefinition', {
     replayKey: 'operations-business-entity-brand-extension',
-    path: `${base}/organization/business-entities/extension-definition?${context()}&entityType=BRAND`, headers: cookie(),
+    ...workspace({}, {...context(), entityType: 'BRAND'}), headers: cookie(),
   });
   await invoke('getPlatformOrganizationOverviewPage', {
     replayKey: 'platform-store-overview-page',
-    path: `/api/platform/group-workspaces/${workspaceKey}/organization-overview?category=STORE&type=STORE&projectId=${encodeURIComponent(state.requirePrivate('PROJECT').id)}&page=1&pageSize=20`, headers: platformCookie(),
+    ...workspace({}, {category: 'STORE', type: 'STORE', projectId: state.requirePrivate('PROJECT').id, page: 1, pageSize: 20}), headers: platformCookie(),
   });
   state.setPrivate('ORGANIZATION_OVERVIEW_ENTITY', {category: 'STORE', id: state.requirePrivate('STORE').id});
   await invoke('getPlatformOrganizationOverviewDetail', {
     replayKey: 'platform-store-overview-detail',
-    path: `/api/platform/group-workspaces/${workspaceKey}/organization-overview/STORE/${encodeURIComponent(state.requirePrivate('STORE').id)}`, headers: platformCookie(),
+    ...workspace({category: 'STORE', itemId: state.requirePrivate('STORE').id}), headers: platformCookie(),
   });
   state.setPrivate('WORKSPACE_CONTRACT', state.requirePrivate('CONTRACT').id);
   await invoke('getPlatformContractOverviewDetail', {
     replayKey: 'platform-contract-overview-detail',
-    path: `/api/platform/group-workspaces/${workspaceKey}/contract-overview/${encodeURIComponent(state.requirePrivate('CONTRACT').id)}`, headers: platformCookie(),
+    ...workspace({contractId: state.requirePrivate('CONTRACT').id}), headers: platformCookie(),
   });
   state.setPrivate('AUDITED_ENTITY', {entityType: 'WORKSPACE_ROLE', id: state.requirePrivate('STORE_OPERATOR_ROLE').id});
   await invoke('getPlatformEntityAuditHistory', {
     replayKey: 'platform-store-role-audit',
-    path: `/api/platform/audit-history?groupWorkspaceKey=${encodeURIComponent(workspaceKey)}&entityType=WORKSPACE_ROLE&entityId=${encodeURIComponent(state.requirePrivate('STORE_OPERATOR_ROLE').id)}&page=1&pageSize=20`, headers: platformCookie(),
+    queryParameters: {groupWorkspaceKey: workspaceKey, entityType: 'WORKSPACE_ROLE', entityId: state.requirePrivate('STORE_OPERATOR_ROLE').id, page: 1, pageSize: 20}, headers: platformCookie(),
   });
   state.setPrivate('GROUP_SCOPE', {id: state.requirePrivate('COMMERCIAL_GROUP').id});
   state.setPrivate('REGION_SCOPE', {id: state.requirePrivate('REGION').id});
@@ -523,8 +529,8 @@ export async function executeOperationsAccessWorkload({operationsFlow, uniqueSuf
   };
   const key = (name) => `diagnostic-${name}-${uniqueSuffix}`;
   const cookie = () => ({Cookie: state.requirePrivate('OPERATIONS_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
-  const context = () => `expectedContextVersion=${encodeURIComponent(String(state.requirePrivate('CONTEXT_VERSION')))}`;
-  const base = `/api/operations/group-workspaces/${workspaceKey}/user-management`;
+  const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
+  const context = () => ({expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')});
   const suffix = {GROUP: 'Group', REGION: 'Region', PROJECT: 'Project', HEAD_COMPANY: 'HeadCompany', STORE: 'Store'};
   const segment = {GROUP: 'group', REGION: 'region', PROJECT: 'project', HEAD_COMPANY: 'head-company', STORE: 'store'};
   const targets = [
@@ -538,13 +544,13 @@ export async function executeOperationsAccessWorkload({operationsFlow, uniqueSuf
     const target = state.requirePrivate(targetHandle).id;
     const family = suffix[targetType];
     const pathSegment = segment[targetType];
-    const scope = targetType === 'HEAD_COMPANY' ? context() : `${context()}&scopeRef=${encodeURIComponent(target)}`;
-    await invoke(`getOperationsWorkspace${family}Invitations`, {replayKey: `operations-${pathSegment}-invitation-page`, path: `${base}/${pathSegment}/invitations?${scope}&page=1&pageSize=20`, headers: cookie()});
-    await invoke(`getOperationsWorkspace${family}InvitationCandidates`, {replayKey: `operations-${pathSegment}-organization-candidates`, path: `${base}/${pathSegment}/invitations/candidates?${scope}&subjectType=ORGANIZATION&page=1&pageSize=20`, headers: cookie()});
-    await invoke(`getOperationsWorkspace${family}InvitationCandidates`, {replayKey: `operations-${pathSegment}-role-candidates`, path: `${base}/${pathSegment}/invitations/candidates?${scope}&subjectType=ROLE&selectedOrganizationRef=${encodeURIComponent(target)}&page=1&pageSize=20`, headers: cookie()});
+    const scope = targetType === 'HEAD_COMPANY' ? context() : {...context(), scopeRef: target};
+    await invoke(`getOperationsWorkspace${family}Invitations`, {replayKey: `operations-${pathSegment}-invitation-page`, ...workspace({}, {...scope, page: 1, pageSize: 20}), headers: cookie()});
+    await invoke(`getOperationsWorkspace${family}InvitationCandidates`, {replayKey: `operations-${pathSegment}-organization-candidates`, ...workspace({}, {...scope, subjectType: 'ORGANIZATION', page: 1, pageSize: 20}), headers: cookie()});
+    await invoke(`getOperationsWorkspace${family}InvitationCandidates`, {replayKey: `operations-${pathSegment}-role-candidates`, ...workspace({}, {...scope, subjectType: 'ROLE', selectedOrganizationRef: target, page: 1, pageSize: 20}), headers: cookie()});
     const invitationHandle = `${targetType}_INVITATION`;
     await invoke(`createOperationsWorkspace${family}Invitation`, {
-      replayKey: `operations-${pathSegment}-invitation-create`, path: `${base}/${pathSegment}/invitations`, headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-create`)},
+      replayKey: `operations-${pathSegment}-invitation-create`, ...workspace(), headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-create`)},
       body: {scopeRef: target, mobile: `137${uniqueSuffix.replace(/\D/g, '').padEnd(8, '0').slice(0, 6)}${String(targetIndex + 10).slice(-2)}`, roleIds: [state.requirePrivate(roleHandle).id], expectedContextVersion: state.requirePrivate('CONTEXT_VERSION'), idempotencyKey: key(`${pathSegment}-invitation-create`)},
       capturePrivateResponse: (response) => {
         if (!response?.json?.id || response.json.revision === undefined) throw new Error(`HTTP_DIAGNOSTIC_WORKLOAD_RESPONSE_INVALID:${invitationHandle}`);
@@ -552,12 +558,12 @@ export async function executeOperationsAccessWorkload({operationsFlow, uniqueSuf
       },
     });
     await invoke(`reissueOperationsWorkspace${family}Invitation`, {
-      replayKey: `operations-${pathSegment}-invitation-reissue`, path: `${base}/${pathSegment}/invitations/${encodeURIComponent(state.requirePrivate(invitationHandle).id)}/reissue`, headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-reissue`)},
+      replayKey: `operations-${pathSegment}-invitation-reissue`, ...workspace({invitationId: state.requirePrivate(invitationHandle).id}), headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-reissue`)},
       body: {expectedVersion: state.requirePrivate(invitationHandle).revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION'), idempotencyKey: key(`${pathSegment}-invitation-reissue`)},
       capturePrivateResponse: (response) => state.setPrivate(invitationHandle, response.json),
     });
     await invoke(`cancelOperationsWorkspace${family}Invitation`, {
-      replayKey: `operations-${pathSegment}-invitation-cancel`, path: `${base}/${pathSegment}/invitations/${encodeURIComponent(state.requirePrivate(invitationHandle).id)}/cancel`, headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-cancel`)},
+      replayKey: `operations-${pathSegment}-invitation-cancel`, ...workspace({invitationId: state.requirePrivate(invitationHandle).id}), headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-cancel`)},
       body: {expectedVersion: state.requirePrivate(invitationHandle).revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION'), idempotencyKey: key(`${pathSegment}-invitation-cancel`)},
     });
   }
@@ -573,6 +579,7 @@ export async function executeOperationsUserReadbackWorkload({operationsFlow, tar
   const {state, execute, workspaceKey} = operationsFlow;
   const cookie = () => ({Cookie: state.requirePrivate('OPERATIONS_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
   const context = () => String(state.requirePrivate('CONTEXT_VERSION'));
+  const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
   const calls = [];
   const invoke = async (operationId, request) => { const observation = await execute(operationId, request); calls.push(observation); return observation; };
   const suffix = {GROUP: 'Group', REGION: 'Region', PROJECT: 'Project', HEAD_COMPANY: 'HeadCompany', STORE: 'Store'};
@@ -582,9 +589,9 @@ export async function executeOperationsUserReadbackWorkload({operationsFlow, tar
     const family = suffix[target.targetType];
     const pathSegment = segment[target.targetType];
     if (!family || !pathSegment || typeof target.loginName !== 'string' || !target.loginName) throw new Error('HTTP_DIAGNOSTIC_OPERATIONS_USER_TARGET_INVALID');
-    const scope = target.targetType === 'HEAD_COMPANY' ? '' : `&scopeRef=${encodeURIComponent(target.scopeRef)}`;
+    const scope = target.targetType === 'HEAD_COMPANY' ? {} : {scopeRef: target.scopeRef};
     const page = await invoke(`getOperationsWorkspace${family}User`, {
-      replayKey: `operations-${pathSegment}-user-page-${target.loginName}-${uniqueSuffix}`, path: `/api/operations/group-workspaces/${workspaceKey}/user-management/${pathSegment}/user?expectedContextVersion=${encodeURIComponent(context())}${scope}&page=1&pageSize=20`, headers: cookie(),
+      replayKey: `operations-${pathSegment}-user-page-${target.loginName}-${uniqueSuffix}`, ...workspace({}, {expectedContextVersion: context(), ...scope, page: 1, pageSize: 20}), headers: cookie(),
       capturePrivateResponse: (response) => {
         const item = response?.json?.items?.find((value) => value?.loginName === target.loginName);
         const assignment = item?.assignments?.find((value) => value?.serviceNodeType === target.targetType && value?.status === 'ACTIVE');
@@ -594,11 +601,11 @@ export async function executeOperationsUserReadbackWorkload({operationsFlow, tar
     });
     const user = state.requirePrivate(`USER_${target.targetType}`);
     await invoke(`getOperationsWorkspace${family}UserAccount`, {
-      replayKey: `operations-${pathSegment}-user-detail-${target.loginName}-${uniqueSuffix}`, path: `/api/operations/group-workspaces/${workspaceKey}/user-management/${pathSegment}/user/accounts/${encodeURIComponent(user.accountId)}?expectedContextVersion=${encodeURIComponent(context())}`, headers: cookie(),
+      replayKey: `operations-${pathSegment}-user-detail-${target.loginName}-${uniqueSuffix}`, ...workspace({accountId: user.accountId}, {expectedContextVersion: context()}), headers: cookie(),
     });
     if (target.deferRevoke) continue;
     await invoke(`revokeOperationsWorkspace${family}UserAssignment`, {
-      replayKey: `operations-${pathSegment}-user-revoke-${target.loginName}-${uniqueSuffix}`, path: `/api/operations/group-workspaces/${workspaceKey}/user-management/${pathSegment}/user/assignments/${encodeURIComponent(user.assignmentId)}/revoke`, headers: {...cookie(), 'Idempotency-Key': `diagnostic-${pathSegment}-user-revoke-${uniqueSuffix}`},
+      replayKey: `operations-${pathSegment}-user-revoke-${target.loginName}-${uniqueSuffix}`, ...workspace({assignmentId: user.assignmentId}), headers: {...cookie(), 'Idempotency-Key': `diagnostic-${pathSegment}-user-revoke-${uniqueSuffix}`},
       body: {expectedVersion: user.revision, expectedContextVersion: Number(context())},
       capturePrivateResponse: (response) => {
         if (response?.json?.revokedAssignmentId !== user.assignmentId || response?.json?.accountRetained !== true) throw new Error(`HTTP_DIAGNOSTIC_WORKLOAD_USER_REVOKE_READBACK_INVALID:${target.targetType}`);
@@ -617,7 +624,7 @@ export async function executeOperationsStoreProfileWorkload({operationsFlow, tar
   const originalContext = state.requirePrivate('CONTEXT_VERSION');
   const originalCredential = state.requirePrivate('OPERATIONS_CREDENTIAL');
   const originalMobile = state.requirePrivate('MOBILE');
-  const base = `/api/operations/group-workspaces/${workspaceKey}`;
+  const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
   const key = (name) => `diagnostic-store-${name}-${uniqueSuffix}`;
   const calls = [];
   const invoke = async (operationId, request) => { const observation = await execute(operationId, request); calls.push(observation); return observation; };
@@ -630,16 +637,16 @@ export async function executeOperationsStoreProfileWorkload({operationsFlow, tar
   const cookie = () => ({Cookie: state.requirePrivate('OPERATIONS_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
   try {
     state.setPrivate('OPERATIONS_ACCOUNT_ENABLED', true);
-    await invoke('operationsWorkspacePasswordLogin', {replayKey: `store-user-password-login-${uniqueSuffix}`, path: `${base}/password-login`, headers: {'Idempotency-Key': key('login')}, body: {loginName: target.loginName, password: target.password}, capturePrivateResponse: captureSession});
-    await invoke('getOperationsWorkspaceSessionEntry', {replayKey: `store-user-session-entry-${uniqueSuffix}`, path: `${base}/session/entry`, headers: cookie(), capturePrivateResponse: (response) => { if (!response?.json?.contextVersion) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_STORE_SESSION_ENTRY_MISSING'); state.setPrivate('CONTEXT_VERSION', response.json.contextVersion); state.setPrivate('STORE_SESSION_ENTRY', response.json); }});
+    await invoke('operationsWorkspacePasswordLogin', {replayKey: `store-user-password-login-${uniqueSuffix}`, ...workspace(), headers: {'Idempotency-Key': key('login')}, body: {loginName: target.loginName, password: target.password}, capturePrivateResponse: captureSession});
+    await invoke('getOperationsWorkspaceSessionEntry', {replayKey: `store-user-session-entry-${uniqueSuffix}`, ...workspace(), headers: cookie(), capturePrivateResponse: (response) => { if (!response?.json?.contextVersion) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_STORE_SESSION_ENTRY_MISSING'); state.setPrivate('CONTEXT_VERSION', response.json.contextVersion); state.setPrivate('STORE_SESSION_ENTRY', response.json); }});
     const node = state.requirePrivate('STORE_SESSION_ENTRY').dataNodeCandidates?.find((value) => value?.storeRef === target.storeId);
     if (!node?.dataNodeType || !node?.dataNodeRef) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_STORE_DATA_NODE_MISSING');
     state.setPrivate('VISIBLE_DATA_NODE', node);
     state.setPrivate('STORE_DATA_NODE', node);
-    await invoke('selectOperationsWorkspaceSessionDataNode', {replayKey: `store-user-select-node-${uniqueSuffix}`, path: `${base}/session/data-node`, headers: {...cookie(), 'Idempotency-Key': key('node')}, body: {dataNodeType: node.dataNodeType, dataNodeRef: node.dataNodeRef, requiredContextVersion: state.requirePrivate('CONTEXT_VERSION')}, capturePrivateResponse: (response) => { if (!response?.json?.contextVersion) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_STORE_CONTEXT_MISSING'); state.setPrivate('CONTEXT_VERSION', response.json.contextVersion); }});
-    const context = () => `expectedContextVersion=${encodeURIComponent(String(state.requirePrivate('CONTEXT_VERSION')))}`;
-    await invoke('getOperationsStoreProfile', {replayKey: `store-user-profile-${uniqueSuffix}`, path: `${base}/store/profile?${context()}`, headers: cookie()});
-    await invoke('getOperationsFixedStoreContracts', {replayKey: `store-user-fixed-contracts-${uniqueSuffix}`, path: `${base}/store/profile/contracts?${context()}&state=INVALID&page=1&pageSize=20`, headers: cookie()});
+    await invoke('selectOperationsWorkspaceSessionDataNode', {replayKey: `store-user-select-node-${uniqueSuffix}`, ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('node')}, body: {dataNodeType: node.dataNodeType, dataNodeRef: node.dataNodeRef, requiredContextVersion: state.requirePrivate('CONTEXT_VERSION')}, capturePrivateResponse: (response) => { if (!response?.json?.contextVersion) throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_STORE_CONTEXT_MISSING'); state.setPrivate('CONTEXT_VERSION', response.json.contextVersion); }});
+    const context = () => ({expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')});
+    await invoke('getOperationsStoreProfile', {replayKey: `store-user-profile-${uniqueSuffix}`, ...workspace({}, context()), headers: cookie()});
+    await invoke('getOperationsFixedStoreContracts', {replayKey: `store-user-fixed-contracts-${uniqueSuffix}`, ...workspace({}, {...context(), state: 'INVALID', page: 1, pageSize: 20}), headers: cookie()});
   } finally {
     state.setPrivate('OPERATIONS_SESSION', originalSession);
     state.setPrivate('CONTEXT_VERSION', originalContext);
@@ -659,17 +666,17 @@ export async function executeRemainingDenominatorWorkload({operationsFlow, uniqu
   const platformCookie = () => ({Cookie: state.requirePrivate('PLATFORM_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
   const operationsCookie = () => ({Cookie: state.requirePrivate('OPERATIONS_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
   const saveJson = (response, handle) => { if (!response?.json || typeof response.json !== 'object') throw new Error(`HTTP_DIAGNOSTIC_WORKLOAD_RESPONSE_INVALID:${handle}`); state.setPrivate(handle, response.json); };
-  const base = `/api/operations/group-workspaces/${workspaceKey}`;
+  const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
 
   // Operations audit and node CAS commands happen before any terminal status transition.
-  await invoke('getOperationsEntityAuditHistory', {replayKey: 'operations-entity-audit-history', path: `/api/operations/audit-history?groupWorkspaceKey=${encodeURIComponent(workspaceKey)}&entityType=STORE&entityId=${encodeURIComponent(state.requirePrivate('STORE').id)}&page=1&pageSize=20`, headers: operationsCookie()});
+  await invoke('getOperationsEntityAuditHistory', {replayKey: 'operations-entity-audit-history', queryParameters: {groupWorkspaceKey: workspaceKey, entityType: 'STORE', entityId: state.requirePrivate('STORE').id, page: 1, pageSize: 20}, headers: operationsCookie()});
   await invoke('updateOperationsOrganizationNode', {
-    replayKey: 'operations-update-region-node', path: `${base}/hierarchy/${state.requirePrivate('REGION').id}`, headers: {...operationsCookie(), 'Idempotency-Key': key('update-region')},
+    replayKey: 'operations-update-region-node', ...workspace({nodeId: state.requirePrivate('REGION').id}), headers: {...operationsCookie(), 'Idempotency-Key': key('update-region')},
     body: {code: state.requirePrivate('REGION').code, name: `诊断大区更新${uniqueSuffix}`, parentId: null, phases: [], notes: null, expectedVersion: state.requirePrivate('REGION').revision},
     capturePrivateResponse: (response) => saveJson(response, 'REGION'),
   });
   await invoke('transitionOperationsOrganizationNodeStatus', {
-    replayKey: 'operations-disable-region-node', path: `${base}/hierarchy/${state.requirePrivate('REGION').id}/status`, headers: {...operationsCookie(), 'Idempotency-Key': key('disable-region')},
+    replayKey: 'operations-disable-region-node', ...workspace({nodeId: state.requirePrivate('REGION').id}), headers: {...operationsCookie(), 'Idempotency-Key': key('disable-region')},
     body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('REGION').revision},
   });
 
@@ -677,39 +684,38 @@ export async function executeRemainingDenominatorWorkload({operationsFlow, uniqu
   const disposable = state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN');
   const disposableMobile = `136${uniqueSuffix.replace(/\D/g, '').padEnd(8, '0').slice(0, 8)}`;
   state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN_PASSWORD');
-  await invoke('sendPlatformLoginOtp', {replayKey: 'platform-login-otp-send', path: '/api/platform/auth/login-otp/send', headers: {'Idempotency-Key': key('platform-login-otp')}, body: {mobile: disposableMobile}, capturePrivateResponse: (response) => { saveJson(response, 'PLATFORM_LOGIN_CHALLENGE'); state.setPrivate('PLATFORM_CHALLENGE_SENT', true); }});
-  await invoke('verifyPlatformLoginOtp', {replayKey: 'platform-login-otp-verify', path: '/api/platform/auth/login-otp/verify', headers: {'Idempotency-Key': key('platform-login-otp-verify')}, body: {mobile: disposableMobile, code: state.requirePrivate('PLATFORM_LOGIN_CHALLENGE').debugVerificationCode}, capturePrivateResponse: (response) => { if (response?.cookies?.length) state.setPrivate('PLATFORM_SESSION', response.cookies); if (response.json?.sessionVersion !== undefined) state.setPrivate('PLATFORM_SESSION_VERSION', response.json.sessionVersion); }});
-  const recoveryPath = '/api/platform/auth/password-recovery';
+  await invoke('sendPlatformLoginOtp', {replayKey: 'platform-login-otp-send', headers: {'Idempotency-Key': key('platform-login-otp')}, body: {mobile: disposableMobile}, capturePrivateResponse: (response) => { saveJson(response, 'PLATFORM_LOGIN_CHALLENGE'); state.setPrivate('PLATFORM_CHALLENGE_SENT', true); }});
+  await invoke('verifyPlatformLoginOtp', {replayKey: 'platform-login-otp-verify', headers: {'Idempotency-Key': key('platform-login-otp-verify')}, body: {mobile: disposableMobile, code: state.requirePrivate('PLATFORM_LOGIN_CHALLENGE').debugVerificationCode}, capturePrivateResponse: (response) => { if (response?.cookies?.length) state.setPrivate('PLATFORM_SESSION', response.cookies); if (response.json?.sessionVersion !== undefined) state.setPrivate('PLATFORM_SESSION_VERSION', response.json.sessionVersion); }});
   const recoveryPassword = randomUUID().replaceAll('-', '');
-  await invoke('startPlatformPasswordRecovery', {replayKey: 'platform-password-recovery-start', path: `${recoveryPath}/start`, headers: {'Idempotency-Key': key('platform-recovery-start')}, body: {loginName: disposable.loginName ?? `diagnostic-admin-${uniqueSuffix}`, mobile: disposableMobile}, capturePrivateResponse: (response) => { state.setPrivate('PLATFORM_RECOVERY_COOKIES', response.cookies ?? []); state.setPrivate('PLATFORM_RECOVERY_FLOW', true); }});
+  await invoke('startPlatformPasswordRecovery', {replayKey: 'platform-password-recovery-start', headers: {'Idempotency-Key': key('platform-recovery-start')}, body: {loginName: disposable.loginName ?? `diagnostic-admin-${uniqueSuffix}`, mobile: disposableMobile}, capturePrivateResponse: (response) => { state.setPrivate('PLATFORM_RECOVERY_COOKIES', response.cookies ?? []); state.setPrivate('PLATFORM_RECOVERY_FLOW', true); }});
   const recoveryCookie = () => ({Cookie: state.requirePrivate('PLATFORM_RECOVERY_COOKIES').map((value) => String(value).split(';', 1)[0]).join('; ')});
-  await invoke('sendPlatformPasswordRecoveryOtp', {replayKey: 'platform-password-recovery-otp-send', path: `${recoveryPath}/otp/send`, headers: {...recoveryCookie(), 'Idempotency-Key': key('platform-recovery-otp-send')}, body: {}, capturePrivateResponse: (response) => saveJson(response, 'PLATFORM_RECOVERY_CHALLENGE')});
-  await invoke('verifyPlatformPasswordRecoveryOtp', {replayKey: 'platform-password-recovery-otp-verify', path: `${recoveryPath}/otp/verify`, headers: {...recoveryCookie(), 'Idempotency-Key': key('platform-recovery-otp-verify')}, body: {code: state.requirePrivate('PLATFORM_RECOVERY_CHALLENGE').debugVerificationCode}, capturePrivateResponse: (response) => { state.setPrivate('PLATFORM_RECOVERY_COOKIES', [...state.requirePrivate('PLATFORM_RECOVERY_COOKIES'), ...(response.cookies ?? [])]); state.setPrivate('PLATFORM_RECOVERY_VERIFIED', true); }});
-  await invoke('completePlatformPasswordRecovery', {replayKey: 'platform-password-recovery-complete', path: `${recoveryPath}/complete`, headers: {...recoveryCookie(), 'Idempotency-Key': key('platform-recovery-complete')}, body: {newPassword: recoveryPassword}});
-  await invoke('platformPasswordLogin', {replayKey: 'platform-terminal-password-login', path: '/api/platform/auth/password-login', headers: {'Idempotency-Key': key('platform-terminal-login')}, body: {accountName: disposable.loginName ?? `diagnostic-admin-${uniqueSuffix}`, password: recoveryPassword}, capturePrivateResponse: (response) => { if (!response?.cookies?.length) throw new Error('HTTP_DIAGNOSTIC_PLATFORM_REAUTH_SESSION_MISSING'); state.setPrivate('PLATFORM_SESSION', response.cookies); if (response.json?.sessionVersion !== undefined) state.setPrivate('PLATFORM_SESSION_VERSION', response.json.sessionVersion); }});
+  await invoke('sendPlatformPasswordRecoveryOtp', {replayKey: 'platform-password-recovery-otp-send', headers: {...recoveryCookie(), 'Idempotency-Key': key('platform-recovery-otp-send')}, body: {}, capturePrivateResponse: (response) => saveJson(response, 'PLATFORM_RECOVERY_CHALLENGE')});
+  await invoke('verifyPlatformPasswordRecoveryOtp', {replayKey: 'platform-password-recovery-otp-verify', headers: {...recoveryCookie(), 'Idempotency-Key': key('platform-recovery-otp-verify')}, body: {code: state.requirePrivate('PLATFORM_RECOVERY_CHALLENGE').debugVerificationCode}, capturePrivateResponse: (response) => { state.setPrivate('PLATFORM_RECOVERY_COOKIES', [...state.requirePrivate('PLATFORM_RECOVERY_COOKIES'), ...(response.cookies ?? [])]); state.setPrivate('PLATFORM_RECOVERY_VERIFIED', true); }});
+  await invoke('completePlatformPasswordRecovery', {replayKey: 'platform-password-recovery-complete', headers: {...recoveryCookie(), 'Idempotency-Key': key('platform-recovery-complete')}, body: {newPassword: recoveryPassword}});
+  await invoke('platformPasswordLogin', {replayKey: 'platform-terminal-password-login', headers: {'Idempotency-Key': key('platform-terminal-login')}, body: {accountName: disposable.loginName ?? `diagnostic-admin-${uniqueSuffix}`, password: recoveryPassword}, capturePrivateResponse: (response) => { if (!response?.cookies?.length) throw new Error('HTTP_DIAGNOSTIC_PLATFORM_REAUTH_SESSION_MISSING'); state.setPrivate('PLATFORM_SESSION', response.cookies); if (response.json?.sessionVersion !== undefined) state.setPrivate('PLATFORM_SESSION_VERSION', response.json.sessionVersion); }});
   const finalPlatformPassword = randomUUID().replaceAll('-', '');
-  await invoke('changeCurrentPlatformPassword', {replayKey: 'platform-current-password-change', path: '/api/platform/auth/password', headers: {...platformCookie(), 'Idempotency-Key': key('platform-password-change')}, body: {currentPassword: recoveryPassword, newPassword: finalPlatformPassword, expectedSessionVersion: state.requirePrivate('PLATFORM_SESSION_VERSION')}});
-  await invoke('platformPasswordLogin', {replayKey: 'platform-terminal-final-login', path: '/api/platform/auth/password-login', headers: {'Idempotency-Key': key('platform-final-login')}, body: {accountName: disposable.loginName ?? `diagnostic-admin-${uniqueSuffix}`, password: finalPlatformPassword}, capturePrivateResponse: (response) => { if (!response?.cookies?.length) throw new Error('HTTP_DIAGNOSTIC_PLATFORM_FINAL_SESSION_MISSING'); state.setPrivate('PLATFORM_SESSION', response.cookies); if (response.json?.sessionVersion !== undefined) state.setPrivate('PLATFORM_SESSION_VERSION', response.json.sessionVersion); }});
+  await invoke('changeCurrentPlatformPassword', {replayKey: 'platform-current-password-change', headers: {...platformCookie(), 'Idempotency-Key': key('platform-password-change')}, body: {currentPassword: recoveryPassword, newPassword: finalPlatformPassword, expectedSessionVersion: state.requirePrivate('PLATFORM_SESSION_VERSION')}});
+  await invoke('platformPasswordLogin', {replayKey: 'platform-terminal-final-login', headers: {'Idempotency-Key': key('platform-final-login')}, body: {accountName: disposable.loginName ?? `diagnostic-admin-${uniqueSuffix}`, password: finalPlatformPassword}, capturePrivateResponse: (response) => { if (!response?.cookies?.length) throw new Error('HTTP_DIAGNOSTIC_PLATFORM_FINAL_SESSION_MISSING'); state.setPrivate('PLATFORM_SESSION', response.cookies); if (response.json?.sessionVersion !== undefined) state.setPrivate('PLATFORM_SESSION_VERSION', response.json.sessionVersion); }});
 
   // Platform role and account reads/writes are owner-readback driven and are done before disable/revoke.
   state.setPrivate('WORKSPACE_ROLE', state.requirePrivate('STORE_OPERATOR_ROLE'));
-  await invoke('getWorkspaceRole', {replayKey: 'platform-store-role-detail', path: `/api/platform/group-workspaces/${workspaceKey}/roles/${state.requirePrivate('STORE_OPERATOR_ROLE').id}`, headers: platformCookie(), capturePrivateResponse: (response) => saveJson(response, 'STORE_ROLE')});
+  await invoke('getWorkspaceRole', {replayKey: 'platform-store-role-detail', ...workspace({roleId: state.requirePrivate('STORE_OPERATOR_ROLE').id}), headers: platformCookie(), capturePrivateResponse: (response) => saveJson(response, 'STORE_ROLE')});
   const role = state.requirePrivate('STORE_ROLE');
   state.setPrivate('ROLE_VERSION', role.revision);
-  await invoke('updateWorkspaceRole', {replayKey: 'platform-store-role-update', path: `/api/platform/group-workspaces/${workspaceKey}/roles/${role.id}`, headers: {...platformCookie(), 'Idempotency-Key': key('store-role-update')}, body: {name: `诊断STORE运营管理员更新${uniqueSuffix}`, description: role.description ?? null, capabilityKeys: role.capabilityKeys ?? [], pageAccessKeys: role.pageAccessKeys ?? ['PG-IAM-STORE-USERS', 'PG-STORE-PROFILE'], expectedVersion: role.revision}, capturePrivateResponse: (response) => saveJson(response, 'STORE_ROLE')});
-  await invoke('transitionWorkspaceRoleStatus', {replayKey: 'platform-store-role-disable', path: `/api/platform/group-workspaces/${workspaceKey}/roles/${role.id}/status`, headers: {...platformCookie(), 'Idempotency-Key': key('store-role-disable')}, body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('STORE_ROLE').revision}});
+  await invoke('updateWorkspaceRole', {replayKey: 'platform-store-role-update', ...workspace({roleId: role.id}), headers: {...platformCookie(), 'Idempotency-Key': key('store-role-update')}, body: {name: `诊断STORE运营管理员更新${uniqueSuffix}`, description: role.description ?? null, capabilityKeys: role.capabilityKeys ?? [], pageAccessKeys: role.pageAccessKeys ?? ['PG-IAM-STORE-USERS', 'PG-STORE-PROFILE'], expectedVersion: role.revision}, capturePrivateResponse: (response) => saveJson(response, 'STORE_ROLE')});
+  await invoke('transitionWorkspaceRoleStatus', {replayKey: 'platform-store-role-disable', ...workspace({roleId: role.id}), headers: {...platformCookie(), 'Idempotency-Key': key('store-role-disable')}, body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('STORE_ROLE').revision}});
   // Operations OTP/context/password are terminal for the authenticated operator; recovery follows.
   const operationsCredential = state.requirePrivate('OPERATIONS_CREDENTIAL');
   const mobile = state.requirePrivate('MOBILE');
-  await invoke('operationsWorkspaceLogout', {replayKey: 'operations-terminal-logout', path: `${base}/logout`, headers: operationsCookie()});
-  await invoke('sendOperationsWorkspaceOtp', {replayKey: 'operations-otp-send', path: `${base}/otp/send`, headers: {'Idempotency-Key': key('operations-otp-send')}, body: {mobile}, capturePrivateResponse: (response) => { saveJson(response, 'OPERATIONS_CHALLENGE'); state.setPrivate('OPERATIONS_CHALLENGE_SENT', true); }});
-  await invoke('verifyOperationsWorkspaceOtp', {replayKey: 'operations-otp-verify', path: `${base}/otp/verify`, headers: {'Idempotency-Key': key('operations-otp-verify')}, body: {mobile, code: state.requirePrivate('OPERATIONS_CHALLENGE').debugVerificationCode}, capturePrivateResponse: (response) => { if (!response?.cookies?.length) throw new Error('HTTP_DIAGNOSTIC_OPERATIONS_OTP_SESSION_MISSING'); state.setPrivate('OPERATIONS_SESSION', response.cookies); state.setPrivate('OPERATIONS_SESSION_ENTRY', response.json); state.setPrivate('CONTEXT_VERSION', response.json.contextVersion); }});
+  await invoke('operationsWorkspaceLogout', {replayKey: 'operations-terminal-logout', ...workspace(), headers: operationsCookie()});
+  await invoke('sendOperationsWorkspaceOtp', {replayKey: 'operations-otp-send', ...workspace(), headers: {'Idempotency-Key': key('operations-otp-send')}, body: {mobile}, capturePrivateResponse: (response) => { saveJson(response, 'OPERATIONS_CHALLENGE'); state.setPrivate('OPERATIONS_CHALLENGE_SENT', true); }});
+  await invoke('verifyOperationsWorkspaceOtp', {replayKey: 'operations-otp-verify', ...workspace(), headers: {'Idempotency-Key': key('operations-otp-verify')}, body: {mobile, code: state.requirePrivate('OPERATIONS_CHALLENGE').debugVerificationCode}, capturePrivateResponse: (response) => { if (!response?.cookies?.length) throw new Error('HTTP_DIAGNOSTIC_OPERATIONS_OTP_SESSION_MISSING'); state.setPrivate('OPERATIONS_SESSION', response.cookies); state.setPrivate('OPERATIONS_SESSION_ENTRY', response.json); state.setPrivate('CONTEXT_VERSION', response.json.contextVersion); }});
   const candidate = state.requirePrivate('OPERATIONS_SESSION_ENTRY').candidates?.find((value) => value?.roleNodeType === 'GROUP') ?? state.requirePrivate('OPERATIONS_SESSION_ENTRY').candidates?.[0];
   if (!candidate?.roleAssignmentRef) throw new Error('HTTP_DIAGNOSTIC_OPERATIONS_ASSIGNMENT_READBACK_MISSING');
   state.setPrivate('ENTERABLE_ASSIGNMENT', candidate);
-  await invoke('selectOperationsWorkspaceSessionContext', {replayKey: 'operations-select-context', path: `${base}/session/context`, headers: {...operationsCookie(), 'Idempotency-Key': key('operations-context')}, body: {roleAssignmentRef: candidate.roleAssignmentRef, requiredContextVersion: state.requirePrivate('CONTEXT_VERSION')}, capturePrivateResponse: (response) => { saveJson(response, 'OPERATIONS_SESSION_ENTRY'); state.setPrivate('CONTEXT_VERSION', response.json.contextVersion); }});
+  await invoke('selectOperationsWorkspaceSessionContext', {replayKey: 'operations-select-context', ...workspace(), headers: {...operationsCookie(), 'Idempotency-Key': key('operations-context')}, body: {roleAssignmentRef: candidate.roleAssignmentRef, requiredContextVersion: state.requirePrivate('CONTEXT_VERSION')}, capturePrivateResponse: (response) => { saveJson(response, 'OPERATIONS_SESSION_ENTRY'); state.setPrivate('CONTEXT_VERSION', response.json.contextVersion); }});
   const changedPassword = randomUUID().replaceAll('-', '');
-  await invoke('changeCurrentWorkspacePassword', {replayKey: 'operations-current-password-change', path: `${base}/session/password`, headers: {...operationsCookie(), 'Idempotency-Key': key('operations-password-change')}, body: {currentPassword: operationsCredential.password, newPassword: changedPassword, expectedSessionVersion: state.requirePrivate('CONTEXT_VERSION')}});
+  await invoke('changeCurrentWorkspacePassword', {replayKey: 'operations-current-password-change', ...workspace(), headers: {...operationsCookie(), 'Idempotency-Key': key('operations-password-change')}, body: {currentPassword: operationsCredential.password, newPassword: changedPassword, expectedSessionVersion: state.requirePrivate('CONTEXT_VERSION')}});
   state.setPrivate('OPERATIONS_CREDENTIAL', {...operationsCredential, password: changedPassword});
   return {calls, state, workspaceKey, execute};
 }
@@ -720,13 +726,14 @@ export async function executePlatformAccountFinalization({operationsFlow, unique
   const key = (name) => `diagnostic-terminal-${name}-${uniqueSuffix}`;
   const calls = [];
   const invoke = async (operationId, request) => { const observation = await execute(operationId, request); calls.push(observation); return observation; };
+  const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
   const accountLogin = state.requirePrivate('OPERATIONS_CREDENTIAL').loginName;
-  await invoke('getWorkspaceAccounts', {replayKey: 'platform-terminal-account-page', path: `/api/platform/group-workspaces/${workspaceKey}/accounts?loginName=${encodeURIComponent(accountLogin)}&page=1&pageSize=20`, headers: cookie(), capturePrivateResponse: (response) => { const item = response?.json?.items?.find((value) => value?.loginName === accountLogin); if (!item?.id || item.revision === undefined) throw new Error('HTTP_DIAGNOSTIC_WORKSPACE_ACCOUNT_READBACK_MISSING'); state.setPrivate('WORKSPACE_ACCOUNT', item); state.setPrivate('ACCOUNT_VERSION', item.revision); const assignment = item.assignments?.find((value) => value?.status === 'ACTIVE'); if (!assignment?.id || assignment.revision === undefined) throw new Error('HTTP_DIAGNOSTIC_WORKSPACE_ASSIGNMENT_READBACK_MISSING'); state.setPrivate('WORKSPACE_ASSIGNMENT', assignment); state.setPrivate('ASSIGNMENT_VERSION', assignment.revision); }});
+  await invoke('getWorkspaceAccounts', {replayKey: 'platform-terminal-account-page', ...workspace({}, {loginName: accountLogin, page: 1, pageSize: 20}), headers: cookie(), capturePrivateResponse: (response) => { const item = response?.json?.items?.find((value) => value?.loginName === accountLogin); if (!item?.id || item.revision === undefined) throw new Error('HTTP_DIAGNOSTIC_WORKSPACE_ACCOUNT_READBACK_MISSING'); state.setPrivate('WORKSPACE_ACCOUNT', item); state.setPrivate('ACCOUNT_VERSION', item.revision); const assignment = item.assignments?.find((value) => value?.status === 'ACTIVE'); if (!assignment?.id || assignment.revision === undefined) throw new Error('HTTP_DIAGNOSTIC_WORKSPACE_ASSIGNMENT_READBACK_MISSING'); state.setPrivate('WORKSPACE_ASSIGNMENT', assignment); state.setPrivate('ASSIGNMENT_VERSION', assignment.revision); }});
   const account = state.requirePrivate('WORKSPACE_ACCOUNT');
-  await invoke('getWorkspaceAccount', {replayKey: 'platform-terminal-account-detail', path: `/api/platform/group-workspaces/${workspaceKey}/accounts/${account.id}`, headers: cookie()});
-  await invoke('requestWorkspaceCredentialReset', {replayKey: 'platform-account-credential-reset', path: `/api/platform/group-workspaces/${workspaceKey}/accounts/${account.id}/credential-reset`, headers: {...cookie(), 'Idempotency-Key': key('account-reset')}, body: {expectedVersion: state.requirePrivate('ACCOUNT_VERSION')}, capturePrivateResponse: (response) => { if (response?.json?.revision !== undefined) state.setPrivate('ACCOUNT_VERSION', response.json.revision); }});
-  await invoke('transitionWorkspaceAccountStatus', {replayKey: 'platform-account-disable', path: `/api/platform/group-workspaces/${workspaceKey}/accounts/${account.id}/status`, headers: {...cookie(), 'Idempotency-Key': key('account-disable')}, body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('ACCOUNT_VERSION')}});
-  await invoke('revokePlatformWorkspaceAssignment', {replayKey: 'platform-account-assignment-revoke', path: `/api/platform/group-workspaces/${workspaceKey}/accounts/${account.id}/assignments/${state.requirePrivate('WORKSPACE_ASSIGNMENT').id}/revoke`, headers: {...cookie(), 'Idempotency-Key': key('account-assignment-revoke')}, body: {expectedVersion: state.requirePrivate('ASSIGNMENT_VERSION')}});
+  await invoke('getWorkspaceAccount', {replayKey: 'platform-terminal-account-detail', ...workspace({accountId: account.id}), headers: cookie()});
+  await invoke('requestWorkspaceCredentialReset', {replayKey: 'platform-account-credential-reset', ...workspace({accountId: account.id}), headers: {...cookie(), 'Idempotency-Key': key('account-reset')}, body: {expectedVersion: state.requirePrivate('ACCOUNT_VERSION')}, capturePrivateResponse: (response) => { if (response?.json?.revision !== undefined) state.setPrivate('ACCOUNT_VERSION', response.json.revision); }});
+  await invoke('transitionWorkspaceAccountStatus', {replayKey: 'platform-account-disable', ...workspace({accountId: account.id}), headers: {...cookie(), 'Idempotency-Key': key('account-disable')}, body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('ACCOUNT_VERSION')}});
+  await invoke('revokePlatformWorkspaceAssignment', {replayKey: 'platform-account-assignment-revoke', ...workspace({accountId: account.id, assignmentId: state.requirePrivate('WORKSPACE_ASSIGNMENT').id}), headers: {...cookie(), 'Idempotency-Key': key('account-assignment-revoke')}, body: {expectedVersion: state.requirePrivate('ASSIGNMENT_VERSION')}});
   return {calls, state, workspaceKey, execute};
 }
 
@@ -736,9 +743,9 @@ export async function executePlatformFinalization({operationsFlow, uniqueSuffix}
   const key = (name) => `diagnostic-terminal-${name}-${uniqueSuffix}`;
   const calls = [];
   for (const [operationId, request] of [
-    ['transitionPlatformAdminStatus', {replayKey: 'platform-disable-disposable-admin', path: `/api/platform/admin-users/${encodeURIComponent(state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').id)}/status`, headers: {...cookie(), 'Idempotency-Key': key('disable-admin')}, body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').version, idempotencyKey: key('disable-admin')}}],
-    ['transitionPlatformGroupWorkspaceStatus', {replayKey: 'platform-workspace-disable', path: `/api/platform/group-workspaces/${workspaceKey}/status`, headers: {...cookie(), 'Idempotency-Key': key('workspace-disable')}, body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('WORKSPACE_ENABLED').version, idempotencyKey: key('workspace-disable')}}],
-    ['platformLogout', {replayKey: 'platform-terminal-logout', path: '/api/platform/auth/logout', headers: cookie()}],
+    ['transitionPlatformAdminStatus', {replayKey: 'platform-disable-disposable-admin', pathParameters: {platformAdminId: state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').id}, headers: {...cookie(), 'Idempotency-Key': key('disable-admin')}, body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('DISPOSABLE_PLATFORM_ADMIN').version, idempotencyKey: key('disable-admin')}}],
+    ['transitionPlatformGroupWorkspaceStatus', {replayKey: 'platform-workspace-disable', pathParameters: {groupWorkspaceKey: workspaceKey}, headers: {...cookie(), 'Idempotency-Key': key('workspace-disable')}, body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate('WORKSPACE_ENABLED').version, idempotencyKey: key('workspace-disable')}}],
+    ['platformLogout', {replayKey: 'platform-terminal-logout', headers: cookie()}],
   ]) calls.push(await execute(operationId, request));
   return {calls, state, workspaceKey, execute};
 }
@@ -757,15 +764,14 @@ export async function executeOperationsStatusTerminalWorkload({operationsFlow, u
   };
   const key = (name) => `diagnostic-${name}-${uniqueSuffix}`;
   const cookie = () => ({Cookie: state.requirePrivate('OPERATIONS_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
-  const base = `/api/operations/group-workspaces/${workspaceKey}/organization`;
-  for (const [operationId, path, handle] of [
-    ['transitionOperationsOrganizationStoreStatus', `/stores/${state.requirePrivate('STORE').id}/status`, 'STORE'],
-    ['transitionOperationsOrganizationBrandStatus', `/brands/${state.requirePrivate('BRAND').id}/status`, 'BRAND'],
-    ['transitionOperationsOrganizationTenantStatus', `/tenants/${state.requirePrivate('TENANT').id}/status`, 'TENANT'],
-    ['transitionOperationsOrganizationHeadCompanyStatus', `/head-companies/${state.requirePrivate('HEAD_COMPANY').id}/status`, 'HEAD_COMPANY'],
+  for (const [operationId, pathParameters, handle] of [
+    ['transitionOperationsOrganizationStoreStatus', {groupWorkspaceKey: workspaceKey, storeId: state.requirePrivate('STORE').id}, 'STORE'],
+    ['transitionOperationsOrganizationBrandStatus', {groupWorkspaceKey: workspaceKey, brandId: state.requirePrivate('BRAND').id}, 'BRAND'],
+    ['transitionOperationsOrganizationTenantStatus', {groupWorkspaceKey: workspaceKey, tenantId: state.requirePrivate('TENANT').id}, 'TENANT'],
+    ['transitionOperationsOrganizationHeadCompanyStatus', {groupWorkspaceKey: workspaceKey, headCompanyId: state.requirePrivate('HEAD_COMPANY').id}, 'HEAD_COMPANY'],
   ]) {
     await invoke(operationId, {
-      replayKey: `operations-disable-${handle.toLowerCase().replaceAll('_', '-')}`, path: `${base}${path}`, headers: {...cookie(), 'Idempotency-Key': key(`disable-${handle.toLowerCase().replaceAll('_', '-')}`)},
+      replayKey: `operations-disable-${handle.toLowerCase().replaceAll('_', '-')}`, pathParameters, headers: {...cookie(), 'Idempotency-Key': key(`disable-${handle.toLowerCase().replaceAll('_', '-')}`)},
       body: {targetStatus: 'DISABLED', expectedVersion: state.requirePrivate(handle).revision},
     });
   }
@@ -793,11 +799,11 @@ export async function executeOperationsRecoveryWorkload({operationsFlow, uniqueS
   };
   // Recovery completion revokes active workspace sessions, so it is deliberately terminal for
   // this workload. Cookies, challenge and grant remain in private in-memory state.
-  const recoveryPath = `/api/public/operations-workspaces/${workspaceKey}/password-recovery`;
+  const workspace = () => ({pathParameters: {groupWorkspaceKey: workspaceKey}});
   const recoveryPassword = randomUUID().replaceAll('-', '');
   const recoveryCookie = () => ({Cookie: state.requirePrivate('OPERATIONS_RECOVERY_COOKIES').map((value) => String(value).split(';', 1)[0]).join('; ')});
   await invoke('startOperationsPasswordRecovery', {
-    replayKey: 'operations-password-recovery-start', path: `${recoveryPath}/start`, headers: {'Idempotency-Key': key('operations-password-recovery-start')},
+    replayKey: 'operations-password-recovery-start', ...workspace(), headers: {'Idempotency-Key': key('operations-password-recovery-start')},
     body: {loginName: credential.loginName, mobile: state.requirePrivate('MOBILE')},
     capturePrivateResponse: (response) => {
       state.setPrivate('OPERATIONS_RECOVERY_COOKIES', response.cookies);
@@ -805,33 +811,21 @@ export async function executeOperationsRecoveryWorkload({operationsFlow, uniqueS
     },
   });
   await invoke('sendOperationsPasswordRecoveryOtp', {
-    replayKey: 'operations-password-recovery-otp-send', path: `${recoveryPath}/otp/send`, headers: {...recoveryCookie(), 'Idempotency-Key': key('operations-password-recovery-otp-send')}, body: {},
+    replayKey: 'operations-password-recovery-otp-send', ...workspace(), headers: {...recoveryCookie(), 'Idempotency-Key': key('operations-password-recovery-otp-send')}, body: {},
     capturePrivateResponse: (response) => requireJson(response, 'OPERATIONS_RECOVERY_CHALLENGE', ['debugVerificationCode']),
   });
   await invoke('verifyOperationsPasswordRecoveryOtp', {
-    replayKey: 'operations-password-recovery-otp-verify', path: `${recoveryPath}/otp/verify`, headers: {...recoveryCookie(), 'Idempotency-Key': key('operations-password-recovery-otp-verify')}, body: {code: state.requirePrivate('OPERATIONS_RECOVERY_CHALLENGE').debugVerificationCode},
+    replayKey: 'operations-password-recovery-otp-verify', ...workspace(), headers: {...recoveryCookie(), 'Idempotency-Key': key('operations-password-recovery-otp-verify')}, body: {code: state.requirePrivate('OPERATIONS_RECOVERY_CHALLENGE').debugVerificationCode},
     capturePrivateResponse: (response) => {
       state.setPrivate('OPERATIONS_RECOVERY_COOKIES', [...state.requirePrivate('OPERATIONS_RECOVERY_COOKIES'), ...(response.cookies ?? [])]);
       state.setPrivate('OPERATIONS_RECOVERY_VERIFIED', true);
     },
   });
   await invoke('completeOperationsPasswordRecovery', {
-    replayKey: 'operations-password-recovery-complete', path: `${recoveryPath}/complete`, headers: {...recoveryCookie(), 'Idempotency-Key': key('operations-password-recovery-complete')}, body: {newPassword: recoveryPassword},
+    replayKey: 'operations-password-recovery-complete', ...workspace(), headers: {...recoveryCookie(), 'Idempotency-Key': key('operations-password-recovery-complete')}, body: {newPassword: recoveryPassword},
   });
   state.setPrivate('OPERATIONS_CREDENTIAL', {...credential, password: recoveryPassword});
 
-  // The platform reset API intentionally never exposes the raw generation key. Cover the three
-  // public faces through the owner-defined not-found branch instead of leaking or deriving a key.
-  const missingResetKey = `diagnostic-reset-missing-${uniqueSuffix}`;
-  for (const [operationId, suffix, body] of [
-    ['sendWorkspacePasswordResetOtp', 'otp/send', {mobile: state.requirePrivate('MOBILE')}],
-    ['verifyWorkspacePasswordResetOtp', 'otp/verify', {mobile: state.requirePrivate('MOBILE'), code: '000000'}],
-    ['completeWorkspacePasswordReset', 'complete', {passwordResetGrant: 'diagnostic-missing-grant', password: randomUUID().replaceAll('-', '')}],
-  ]) {
-    await invoke(operationId, {
-      replayKey: `${operationId.toLowerCase()}-missing`, path: `/api/public/password-reset/${missingResetKey}/${suffix}`, headers: {'Idempotency-Key': key(operationId)}, body,
-    });
-  }
   return {calls, state, workspaceKey, execute};
 }
 

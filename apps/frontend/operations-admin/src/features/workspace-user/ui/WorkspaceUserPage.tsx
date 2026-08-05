@@ -11,11 +11,12 @@ import {OperationsAuditHistoryModal} from '../../audit-history';
 import {WorkspaceInvitationPanel} from './WorkspaceInvitationPanel';
 import {WorkspaceUserDetailDrawer} from './WorkspaceUserDetailDrawer';
 import {WorkspaceUserRevokeModal} from './WorkspaceUserRevokeModal';
+import {useWorkspaceInvitationCandidates} from '../application/useWorkspaceInvitationCandidates';
 
 type UserFilters = {
   userName?: string;
   mobile?: string;
-  roleQuery?: string;
+  roleId?: string;
   status?: WorkspaceAccountStatus;
 };
 
@@ -92,13 +93,16 @@ export function WorkspaceUserPage({
   const [revokeProblem, setRevokeProblem] = useState<string>();
   const [auditOpen, setAuditOpen] = useState(false);
   const [revoking, setRevoking] = useState(false);
-  const requestScopeRef = targetType === 'GROUP' || targetType === 'HEAD_COMPANY' ? undefined : queryContext.scopeRef;
+  const [roleCandidateQuery, setRoleCandidateQuery] = useState('');
+  // GROUP is the sole aggregate page.  A head-company page is a selected,
+  // exact data-node context just like region/project/store pages.
+  const requestScopeRef = targetType === 'GROUP' ? undefined : queryContext.scopeRef;
 
   const scopedQuery = useMemo(() => {
     const scoped = contextScopedQueryArgs({
       userName: filters.userName?.trim() || undefined,
       mobile: filters.mobile?.trim() || undefined,
-      roleQuery: filters.roleQuery?.trim() || undefined,
+      roleId: filters.roleId,
       status: filters.status,
       page,
       pageSize,
@@ -111,12 +115,12 @@ export function WorkspaceUserPage({
     });
     const {groupWorkspaceKey, ...query} = scoped;
     return {path: {groupWorkspaceKey}, query};
-  }, [direction, filters.mobile, filters.roleQuery, filters.status, filters.userName, page, pageSize, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, requestScopeRef, sort]);
+  }, [direction, filters.mobile, filters.roleId, filters.status, filters.userName, page, pageSize, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, requestScopeRef, sort]);
 
   const groupUsers = operationsRtk.useGetOperationsWorkspaceGroupUserQuery(operationsAdminRtkRequest.getOperationsWorkspaceGroupUser(scopedQuery.path, {query: scopedQuery.query}), {skip: targetType !== 'GROUP'});
   const regionUsers = operationsRtk.useGetOperationsWorkspaceRegionUserQuery(operationsAdminRtkRequest.getOperationsWorkspaceRegionUser(scopedQuery.path, {query: scopedQuery.query}), {skip: targetType !== 'REGION' || !queryContext.scopeRef});
   const projectUsers = operationsRtk.useGetOperationsWorkspaceProjectUserQuery(operationsAdminRtkRequest.getOperationsWorkspaceProjectUser(scopedQuery.path, {query: scopedQuery.query}), {skip: targetType !== 'PROJECT' || !queryContext.scopeRef});
-  const headCompanyUsers = operationsRtk.useGetOperationsWorkspaceHeadCompanyUserQuery(operationsAdminRtkRequest.getOperationsWorkspaceHeadCompanyUser(scopedQuery.path, {query: scopedQuery.query}), {skip: targetType !== 'HEAD_COMPANY'});
+  const headCompanyUsers = operationsRtk.useGetOperationsWorkspaceHeadCompanyUserQuery(operationsAdminRtkRequest.getOperationsWorkspaceHeadCompanyUser(scopedQuery.path, {query: scopedQuery.query}), {skip: targetType !== 'HEAD_COMPANY' || !queryContext.scopeRef});
   const storeUsers = operationsRtk.useGetOperationsWorkspaceStoreUserQuery(operationsAdminRtkRequest.getOperationsWorkspaceStoreUser(scopedQuery.path, {query: scopedQuery.query}), {skip: targetType !== 'STORE' || !queryContext.scopeRef});
   const activeUserQuery = targetType === 'GROUP'
     ? groupUsers
@@ -129,8 +133,12 @@ export function WorkspaceUserPage({
           : storeUsers;
   const result = activeUserQuery.data as WorkspaceUserPageResult | undefined;
   const queryError = activeUserQuery.error;
-  const scopeRequired = targetType !== 'GROUP' && targetType !== 'HEAD_COMPANY' && !queryContext.scopeRef;
-  const problem = scopeRequired ? '请选择可查看范围。' : queryError ? issue(operationsProblemOf(queryError)) : commandProblem;
+  const scopeRequired = targetType !== 'GROUP' && !queryContext.scopeRef;
+  const roleCandidateResult = useWorkspaceInvitationCandidates({targetType, queryContext, subjectType: 'ROLE', candidateUsage: 'LIST_FILTER', queryText: roleCandidateQuery, enabled: !scopeRequired});
+  const roleOptions = (roleCandidateResult.data?.roles ?? []).map((role) => ({value: role.id, label: role.name}));
+  // The shared app-level scope bar is the one and only missing-scope prompt.
+  // Keep this page alert for genuine query or command failures only.
+  const problem = queryError ? issue(operationsProblemOf(queryError)) : commandProblem;
 
   const detailPath = useMemo(() => ({groupWorkspaceKey: queryContext.groupWorkspaceKey, accountId: detailAccountId ?? ''}), [detailAccountId, queryContext.groupWorkspaceKey]);
   const detailOptions = useMemo(() => ({query: {expectedContextVersion: queryContext.expectedContextVersion}}), [queryContext.expectedContextVersion]);
@@ -167,7 +175,8 @@ export function WorkspaceUserPage({
       render: (_, user) => <Button type="link" onClick={() => { void openDetail(user); }} {...testId(`operations-workspace-user-open-${user.accountId}`)}>{user.displayName}</Button>,
     },
     {title: '手机号', dataIndex: 'mobile', hideInTable: true, fieldProps: {...testId('operations-workspace-user-filter-mobile'), allowClear: true, placeholder: '输入手机号'}},
-    {title: '业务角色', dataIndex: 'roleQuery', hideInTable: true, fieldProps: {...testId('operations-workspace-user-filter-role'), allowClear: true, placeholder: '输入业务角色'}},
+    {title: '手机号', dataIndex: 'maskedMobile', search: false},
+    {title: '业务角色', dataIndex: 'roleId', hideInTable: true, valueType: 'select', fieldProps: {showSearch: true, filterOption: false, onSearch: setRoleCandidateQuery, options: roleOptions, loading: roleCandidateResult.isFetching, allowClear: true, placeholder: '搜索业务角色', ...testId('operations-workspace-user-filter-role')}},
     {title: '登录账号', dataIndex: 'loginName', search: false, sorter: true},
     {
       title: '业务角色',
@@ -189,7 +198,7 @@ export function WorkspaceUserPage({
       search: false,
       render: (_, user) => time(latestUpdatedAt(user)),
     },
-  ], [openDetail]);
+  ], [openDetail, roleCandidateResult.isFetching, roleOptions]);
 
   function closeDetail() {
     setDetailAccountId(undefined);
@@ -221,16 +230,23 @@ export function WorkspaceUserPage({
   }
 
   const userContent = <>
-    {problem && <Alert type={scopeRequired ? 'info' : 'error'} showIcon title={scopeRequired ? '可查看范围' : '用户管理失败'} description={problem} style={{marginBottom: 16}}/>}
+    {problem && <Alert type="error" showIcon title="用户管理失败" description={problem} style={{marginBottom: 16}}/>}
     <ProTable<WorkspaceUser>
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-workspace-user-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId('operations-workspace-user-filter-reset')}>重置</Button>]}}
-      onSubmit={submitFilters}
+      onSubmit={(values) => submitFilters({
+        userName: typeof values.displayName === 'string' ? values.displayName : undefined,
+        mobile: typeof values.mobile === 'string' ? values.mobile : undefined,
+        roleId: typeof values.roleId === 'string' ? values.roleId : undefined,
+        status: values.status,
+      })}
       options={false}
       rowKey="accountId"
       loading={activeUserQuery.isLoading && !result}
       dataSource={result?.items ?? []}
       columns={columns}
-      onChange={(_, __, nextSorter) => {
+      onChange={(pagination, _, nextSorter, extra) => {
+        if (extra.action === 'paginate') { setPage(pagination.current ?? page); setPageSize(pagination.pageSize ?? pageSize); return; }
+        if (extra.action !== 'sort') return;
         const sorter = Array.isArray(nextSorter) ? nextSorter[0] : nextSorter;
         if (!sorter?.order) {
           setSort('LOGIN_NAME');
@@ -246,10 +262,6 @@ export function WorkspaceUserPage({
         pageSize,
         total: result?.total ?? 0,
         showSizeChanger: true,
-        onChange: (nextPage, nextPageSize) => {
-          setPage(nextPage);
-          setPageSize(nextPageSize);
-        },
       }}
       locale={{emptyText: '当前目标暂无任职用户'}}
       {...testId('operations-workspace-user-table')}

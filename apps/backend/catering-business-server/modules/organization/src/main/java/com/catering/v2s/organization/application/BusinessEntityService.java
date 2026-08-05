@@ -2,6 +2,7 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
@@ -89,6 +90,13 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
         return receipts.execute(workspaceUuid, idempotencyKey, canonical("createEntity", entityType, workspaceUuid, groupWorkspaceKey, code, name, legalName, creditCode, alias, remark, extensionValues), () -> createEntity(entityType, workspaceUuid, groupWorkspaceKey, code, name, legalName, creditCode, alias, remark, extensionValues, actor));
     }
 
+    /** Operations-only overload: bind the GROUP grant before receipt replay can return a prior response. */
+    @Transactional
+    public OrganizationEntityReadback createEntity(String entityType, UUID workspaceUuid, String groupWorkspaceKey, String code, String name, String legalName, String creditCode, String alias, String remark, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "GROUP", requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+        return createEntity(entityType, workspaceUuid, groupWorkspaceKey, code, name, legalName, creditCode, alias, remark, extensionValues, idempotencyKey, actor);
+    }
+
     @Transactional
     public OrganizationEntityReadback updateEntity(String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id, String code, String name, String legalName, String creditCode, String alias, String remark, long expectedVersion, Map<String, String> extensionValues) {
         return updateEntity(entityType, workspaceUuid, groupWorkspaceKey, id, code, name, legalName, creditCode, alias, remark, expectedVersion, extensionValues, AuditActor.system());
@@ -120,6 +128,15 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
         return receipts.execute(workspaceUuid, idempotencyKey, canonical("updateEntity", entityType, workspaceUuid, groupWorkspaceKey, id, code, name, legalName, creditCode, alias, remark, expectedVersion, extensionValues), () -> updateEntity(entityType, workspaceUuid, groupWorkspaceKey, id, code, name, legalName, creditCode, alias, remark, expectedVersion, extensionValues, actor));
     }
 
+    /** Brand and tenant commands are authorized at GROUP; head-company commands target their owner fact. */
+    @Transactional
+    public OrganizationEntityReadback updateEntity(String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id, String code, String name, String legalName, String creditCode, String alias, String remark, long expectedVersion, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        String type = entityType(entityType);
+        if ("HEAD_COMPANY".equals(type)) requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "HEAD_COMPANY", id);
+        else requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "GROUP", requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+        return updateEntity(type, workspaceUuid, groupWorkspaceKey, id, code, name, legalName, creditCode, alias, remark, expectedVersion, extensionValues, idempotencyKey, actor);
+    }
+
     @Transactional
     public OrganizationEntityReadback transitionEntityStatus(String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id, String status, long expectedVersion) {
         return transitionEntityStatus(entityType, workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, AuditActor.system());
@@ -140,6 +157,15 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     @Transactional
     public OrganizationEntityReadback transitionEntityStatus(String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id, String status, long expectedVersion, String idempotencyKey, AuditActor actor) {
         return receipts.execute(workspaceUuid, idempotencyKey, canonical("transitionEntityStatus", entityType, workspaceUuid, groupWorkspaceKey, id, status, expectedVersion), () -> transitionEntityStatus(entityType, workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, actor));
+    }
+
+    @Transactional
+    public OrganizationEntityReadback transitionEntityStatus(String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id, String status, long expectedVersion, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        String type = "STORE".equals(entityType) ? "STORE" : entityType(entityType);
+        if ("STORE".equals(type)) requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "PROJECT", requireStoreProjectId(workspaceUuid, groupWorkspaceKey, id));
+        else if ("HEAD_COMPANY".equals(type)) requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "HEAD_COMPANY", id);
+        else requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "GROUP", requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+        return transitionEntityStatus(type, workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, idempotencyKey, actor);
     }
 
     @Transactional
@@ -178,6 +204,13 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     }
 
     @Transactional
+    public OrganizationEntityReadback createStore(UUID workspaceUuid, String groupWorkspaceKey, UUID projectId, UUID tenantId, UUID brandId, UUID headCompanyId, String code, String name, String notes, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        UUID ownerProjectId = requireProjectId(workspaceUuid, groupWorkspaceKey, projectId);
+        requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "PROJECT", ownerProjectId);
+        return createStore(workspaceUuid, groupWorkspaceKey, ownerProjectId, tenantId, brandId, headCompanyId, code, name, notes, extensionValues, idempotencyKey, actor);
+    }
+
+    @Transactional
     public OrganizationEntityReadback updateStore(UUID workspaceUuid, String groupWorkspaceKey, UUID id, UUID projectId, UUID tenantId, UUID brandId, UUID headCompanyId, String code, String name, String notes, long expectedVersion, Map<String, String> extensionValues) {
         return updateStore(workspaceUuid, groupWorkspaceKey, id, projectId, tenantId, brandId, headCompanyId, code, name, notes, expectedVersion, extensionValues, AuditActor.system());
     }
@@ -205,6 +238,14 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     }
 
     @Transactional
+    public OrganizationEntityReadback updateStore(UUID workspaceUuid, String groupWorkspaceKey, UUID id, UUID projectId, UUID tenantId, UUID brandId, UUID headCompanyId, String code, String name, String notes, long expectedVersion, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        UUID ownerProjectId = requireStoreProjectId(workspaceUuid, groupWorkspaceKey, id);
+        requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "PROJECT", ownerProjectId);
+        if (!ownerProjectId.equals(projectId)) throw new OrganizationValidationException();
+        return updateStore(workspaceUuid, groupWorkspaceKey, id, ownerProjectId, tenantId, brandId, headCompanyId, code, name, notes, expectedVersion, extensionValues, idempotencyKey, actor);
+    }
+
+    @Transactional
     public BusinessEntityCommandReceiptService.BrandAuthorizationAcknowledgement addHeadCompanyBrandAuthorization(UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId, UUID brandId, String idempotencyKey, AuditActor actor) {
         return receipts.executeAuthorizationAcknowledgement(workspaceUuid, headCompanyId, idempotencyKey, canonical("addHeadCompanyBrandAuthorization", workspaceUuid, groupWorkspaceKey, headCompanyId, brandId), () -> {
             requireEntity("HEAD_COMPANY", workspaceUuid, groupWorkspaceKey, headCompanyId);
@@ -213,6 +254,12 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
                 audit(workspaceUuid, groupWorkspaceKey, headCompanyId, "HEAD_COMPANY", "HEAD_COMPANY_BRAND_AUTHORIZATION_ADDED", time.currentEpochMillis(), actor, List.of(new AuditChange("relationship", null, brandId.toString())));
             }
         });
+    }
+
+    @Transactional
+    public BusinessEntityCommandReceiptService.BrandAuthorizationAcknowledgement addHeadCompanyBrandAuthorization(UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId, UUID brandId, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "HEAD_COMPANY", headCompanyId);
+        return addHeadCompanyBrandAuthorization(workspaceUuid, groupWorkspaceKey, headCompanyId, brandId, idempotencyKey, actor);
     }
 
     @Transactional
@@ -228,6 +275,12 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
             }
             audit(workspaceUuid, groupWorkspaceKey, headCompanyId, "HEAD_COMPANY", "HEAD_COMPANY_BRAND_AUTHORIZATION_REMOVED", time.currentEpochMillis(), actor, List.of(new AuditChange("relationship", brandId.toString(), null)));
         });
+    }
+
+    @Transactional
+    public BusinessEntityCommandReceiptService.BrandAuthorizationAcknowledgement removeHeadCompanyBrandAuthorization(UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId, UUID brandId, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, "HEAD_COMPANY", headCompanyId);
+        return removeHeadCompanyBrandAuthorization(workspaceUuid, groupWorkspaceKey, headCompanyId, brandId, idempotencyKey, actor);
     }
 
     @Transactional(readOnly = true)
@@ -326,6 +379,35 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
         return jdbc.query("SELECT id, workspace_uuid, group_workspace_key, code, name, " + fields + ", status, version, extension_rule_revision, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text FROM organization." + table + " WHERE id=? AND workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, id); statement.setObject(2, workspaceUuid); statement.setString(3, groupWorkspaceKey); }, result -> { if (!result.next()) throw new OrganizationNotFoundException(); return readEntity(type, result); });
     }
 
+    /** Server-side target fact for operations capability resolution; never accept a synthesized group id. */
+    @Transactional(readOnly = true)
+    public UUID requireCommercialGroupId(UUID workspaceUuid, String groupWorkspaceKey) {
+        requireActiveWorkspace(workspaceUuid, groupWorkspaceKey);
+        return jdbc.query("SELECT commercial_group_uuid FROM organization.commercial_group WHERE group_workspace_key=?", statement -> statement.setString(1, groupWorkspaceKey), result -> {
+            if (!result.next()) throw new OrganizationNotFoundException();
+            return result.getObject(1, UUID.class);
+        });
+    }
+
+    /** Server-side project fact for a requested create target; the controller never manufactures a PROJECT resource. */
+    @Transactional(readOnly = true)
+    public UUID requireProjectId(UUID workspaceUuid, String groupWorkspaceKey, UUID projectId) {
+        return nodes.requireNode(workspaceUuid, groupWorkspaceKey, projectId, "PROJECT").id();
+    }
+
+    /** Server-side project fact for an existing store write target; STORE is never a capability target. */
+    @Transactional(readOnly = true)
+    public UUID requireStoreProjectId(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return jdbc.query("SELECT project_id FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=?", statement -> {
+            statement.setObject(1, storeId);
+            statement.setObject(2, workspaceUuid);
+            statement.setString(3, groupWorkspaceKey);
+        }, result -> {
+            if (!result.next()) throw new OrganizationNotFoundException();
+            return result.getObject(1, UUID.class);
+        });
+    }
+
     @Transactional(readOnly = true)
     public List<OrganizationEntityReadback> listEntities(String entityType, UUID workspaceUuid, String groupWorkspaceKey) {
         String type = "STORE".equals(entityType) ? "STORE" : entityType(entityType); String table = table(type);
@@ -336,14 +418,25 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     /** Brand list truth stays with the organization owner: predicate, total and bounded slice are one query contract. */
     @Transactional(readOnly = true)
     public BrandPage pageBrands(UUID workspaceUuid, String groupWorkspaceKey, String name, String code, String status, String sort, String direction, int page, int pageSize) {
-        EntityPage values = pageEntities("BRAND", workspaceUuid, groupWorkspaceKey, name, code, status, sort, direction, page, pageSize);
+        EntityPage values = pageEntities("BRAND", workspaceUuid, groupWorkspaceKey, name, code, null, null, status, sort, direction, page, pageSize);
         return new BrandPage(values.items(), values.total(), values.page(), values.pageSize());
     }
 
     /** Every business-entity page keeps predicate, total and bounded slice inside the organization owner. */
     @Transactional(readOnly = true)
-    public EntityPage pageEntities(String entityType, UUID workspaceUuid, String groupWorkspaceKey, String name, String code, String status, String sort, String direction, int page, int pageSize) {
+    public EntityPage pageEntities(String entityType, UUID workspaceUuid, String groupWorkspaceKey, String name, String code, String legalName, String unifiedSocialCreditCode, String status, String sort, String direction, int page, int pageSize) {
         String type = entityType(entityType);
+        BusinessEntityPage values = pageBusinessEntities(workspaceUuid, groupWorkspaceKey, type, name, code, legalName, unifiedSocialCreditCode, status, sort, direction, page, pageSize);
+        return new EntityPage(values.items().stream().map(BusinessEntityPageItem::entity).toList(), values.total(), values.page(), values.pageSize());
+    }
+
+    /**
+     * Canonical organization-owner read for every business-entity list. External edges may expose
+     * different response shapes, but their entity predicate, count and bounded slice must pass here.
+     */
+    @Transactional(readOnly = true)
+    public BusinessEntityPage pageBusinessEntities(UUID workspaceUuid, String groupWorkspaceKey, String entityType, String name, String code, String legalName, String unifiedSocialCreditCode, String status, String sort, String direction, int page, int pageSize) {
+        String type = entityType == null ? null : entityType(entityType);
         if (page < 1 || pageSize < 1 || pageSize > 100) throw new OrganizationValidationException();
         String order = switch (Objects.requireNonNullElse(sort, "NAME")) {
             case "NAME" -> "name";
@@ -361,19 +454,39 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
         };
         String nameFilter = filter(name);
         String codeFilter = filter(code);
+        String legalNameFilter = filter(legalName);
+        String unifiedSocialCreditCodeFilter = filter(unifiedSocialCreditCode);
         List<Object> parameters = new ArrayList<>();
-        parameters.add(workspaceUuid); parameters.add(groupWorkspaceKey);
+        for (int index = 0; index < 3; index++) { parameters.add(workspaceUuid); parameters.add(groupWorkspaceKey); }
         parameters.add(nameFilter); parameters.add(nameFilter);
         parameters.add(codeFilter); parameters.add(codeFilter);
+        parameters.add(legalNameFilter); parameters.add(legalNameFilter);
+        parameters.add(unifiedSocialCreditCodeFilter); parameters.add(unifiedSocialCreditCodeFilter);
         parameters.add(safeStatus); parameters.add(safeStatus);
-        String predicate = "workspace_uuid=? AND group_workspace_key=? AND (CAST(? AS text) IS NULL OR lower(name) LIKE ?) AND (CAST(? AS text) IS NULL OR lower(code) LIKE ?) AND (CAST(? AS text) IS NULL OR status=?)";
-        String table = table(type);
-        long total = jdbc.queryForObject("SELECT count(*) FROM organization." + table + " WHERE " + predicate, Long.class, parameters.toArray());
-        String fields = switch (type) { case "BRAND" -> "NULL::varchar AS legal_name, NULL::varchar AS credit_code, alias, remark, NULL::varchar AS notes"; default -> "legal_name, credit_code, NULL::varchar AS alias, remark, NULL::varchar AS notes"; };
+        parameters.add(type); parameters.add(type);
+        String predicate = "(CAST(? AS text) IS NULL OR lower(name) LIKE ?) AND (CAST(? AS text) IS NULL OR lower(code) LIKE ?) AND (CAST(? AS text) IS NULL OR lower(legal_name) LIKE ?) AND (CAST(? AS text) IS NULL OR lower(credit_code) LIKE ?) AND (CAST(? AS text) IS NULL OR status=?) AND (CAST(? AS text) IS NULL OR entity_type=?)";
+        String rows = businessEntityRowsSql();
+        long total = jdbc.queryForObject("SELECT count(*) FROM (" + rows + ") entities WHERE " + predicate, Long.class, parameters.toArray());
         List<Object> pageParameters = new ArrayList<>(parameters);
         pageParameters.add(pageSize); pageParameters.add((page - 1) * pageSize);
-        List<OrganizationEntityReadback> items = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, code, name, " + fields + ", status, version, extension_rule_revision, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text FROM organization." + table + " WHERE " + predicate + " ORDER BY " + order + " " + safeDirection + ", id ASC LIMIT ? OFFSET ?", (row, index) -> readEntity(type, row), pageParameters.toArray());
-        return new EntityPage(items, total, page, pageSize);
+        List<BusinessEntityPageItem> items = jdbc.query("SELECT * FROM (" + rows + ") entities WHERE " + predicate + " ORDER BY " + order + " " + safeDirection + ", id ASC LIMIT ? OFFSET ?", (row, index) -> new BusinessEntityPageItem(row.getString(17), readEntity(row.getString(17), row)), pageParameters.toArray());
+        return new BusinessEntityPage(items, total, page, pageSize);
+    }
+
+    /** Canonical owner lookup when an app knows a business-entity id but not its subtype. */
+    @Transactional(readOnly = true)
+    public BusinessEntityPageItem requireBusinessEntity(UUID workspaceUuid, String groupWorkspaceKey, UUID entityId) {
+        List<BusinessEntityPageItem> values = jdbc.query(
+            "SELECT * FROM (" + businessEntityRowsSql() + ") entities WHERE id=?",
+            (row, index) -> new BusinessEntityPageItem(row.getString(17), readEntity(row.getString(17), row)),
+            workspaceUuid, groupWorkspaceKey, workspaceUuid, groupWorkspaceKey, workspaceUuid, groupWorkspaceKey, entityId
+        );
+        if (values.isEmpty()) throw new OrganizationNotFoundException();
+        return values.getFirst();
+    }
+
+    private static String businessEntityRowsSql() {
+        return "SELECT id, workspace_uuid, group_workspace_key, code, name, NULL::varchar AS legal_name, NULL::varchar AS credit_code, alias, remark, NULL::varchar AS notes, status, version, extension_rule_revision, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text, 'BRAND' AS entity_type FROM organization.brand WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT id, workspace_uuid, group_workspace_key, code, name, legal_name, credit_code, NULL::varchar AS alias, remark, NULL::varchar AS notes, status, version, extension_rule_revision, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text, 'TENANT' AS entity_type FROM organization.tenant WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT id, workspace_uuid, group_workspace_key, code, name, legal_name, credit_code, NULL::varchar AS alias, remark, NULL::varchar AS notes, status, version, extension_rule_revision, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text, 'HEAD_COMPANY' AS entity_type FROM organization.head_company WHERE workspace_uuid=? AND group_workspace_key=?";
     }
 
     /**
@@ -400,6 +513,12 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     }
 
     private static String filter(String value) { return value == null || value.isBlank() ? null : "%" + value.trim().toLowerCase(Locale.ROOT) + "%"; }
+    private void requireOwnerGrant(OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+        if (grant == null || !grant.matches(workspaceUuid, groupWorkspaceKey, targetType, targetId)) throw new OrganizationAuthorizationException();
+        if ("GROUP".equals(targetType)) requireCommercialGroupId(workspaceUuid, groupWorkspaceKey);
+        else if ("PROJECT".equals(targetType)) requireProjectId(workspaceUuid, groupWorkspaceKey, targetId);
+        else requireEntity(targetType, workspaceUuid, groupWorkspaceKey, targetId);
+    }
     private static OrganizationEntityReadback readEntity(String type, java.sql.ResultSet result) throws java.sql.SQLException { return new OrganizationEntityReadback(result.getObject(1, UUID.class), type, result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getString(5), result.getString(6), result.getString(7), result.getString(11), result.getLong(12), result.getString(8), result.getString(9), result.getString(10), result.getLong(13), result.getLong(14), result.getLong(15), jsonObject(result.getString(16))); }
 
     private void validateValues(String type, UUID workspaceUuid, String key, Map<String, String> values) {
@@ -475,7 +594,10 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     public static final class HeadCompanyBrandAuthorizationInUseException extends OrganizationConflictException { }
     public static final class HeadCompanyBrandAuthorizationNotFoundException extends OrganizationNotFoundException { }
     public static final class OrganizationValidationException extends RuntimeException { }
+    public static final class OrganizationAuthorizationException extends RuntimeException { }
     public record HeadCompanyBrandAuthorization(UUID brandId, long authorizedAtEpochMillis) { }
     public record BrandPage(List<OrganizationEntityReadback> items, long total, int page, int pageSize) { }
     public record EntityPage(List<OrganizationEntityReadback> items, long total, int page, int pageSize) { }
+    public record BusinessEntityPageItem(String entityType, OrganizationEntityReadback entity) { }
+    public record BusinessEntityPage(List<BusinessEntityPageItem> items, long total, int page, int pageSize) { }
 }

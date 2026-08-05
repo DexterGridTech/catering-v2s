@@ -17,23 +17,22 @@ export function PlatformLoginPage({onSession}: {onSession: (session: PlatformLog
   const [mode, setMode] = useState<LoginMode>('PASSWORD');
   const [problem, setProblem] = useState<PlatformApiProblem>();
   const [otpSent, setOtpSent] = useState(false);
-  const [debugCode, setDebugCode] = useState<string>();
   const [sendingOtp, setSendingOtp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm<LoginValue>();
   const lifecycle = useSubmissionLifecycle();
   const locked = useOverlayLock();
   const navigate = useNavigate();
-  const resetForMode = (next: LoginMode) => { setMode(next); setProblem(undefined); setOtpSent(false); setDebugCode(undefined); form.resetFields(); };
+  const resetForMode = (next: LoginMode) => { setMode(next); setProblem(undefined); setOtpSent(false); form.resetFields(); };
   const sendOtp = async () => {
     let mobile: string | undefined;
     try { ({mobile} = await form.validateFields(['mobile'])); } catch { return; }
     setSendingOtp(true); lifecycle.markBusinessIntentChanged(); setProblem(undefined);
     try {
       const result = await platformClient.sendPlatformLoginOtp({}, {body: {mobile: mobile ?? ''}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
-      const debugCode = result.debugVerificationCode ?? undefined;
-      setOtpSent(true); setDebugCode(debugCode); form.setFieldValue('code', debugCode);
-    } catch (error) { setOtpSent(false); setDebugCode(undefined); setProblem(platformProblemOf(error)); } finally { setSendingOtp(false); }
+      form.setFieldValue('code', result.debugVerificationCode ?? undefined);
+      setOtpSent(true);
+    } catch (error) { setOtpSent(false); setProblem(platformProblemOf(error)); } finally { setSendingOtp(false); }
   };
   return <LoginFormPage<LoginValue>
     className="auth-login-page"
@@ -59,7 +58,7 @@ export function PlatformLoginPage({onSession}: {onSession: (session: PlatformLog
       <Form.Item name="accountName" label="登录名" rules={[{required: true, whitespace: true}]}><Input autoComplete="username" disabled={submitting} {...testId('platform-login-name')}/></Form.Item>
       <Form.Item name="password" label="登录密码" rules={[{required: true}]}><Input.Password autoComplete="current-password" disabled={submitting} {...testId('platform-login-password')}/></Form.Item>
     </> : <>
-      <Form.Item name="mobile" label="手机号" rules={[{required: true, pattern: /^1\d{10}$/, message: '请输入正确的手机号'}]}><Input disabled={submitting || sendingOtp} onChange={() => { setOtpSent(false); setDebugCode(undefined); form.setFieldValue('code', undefined); }} {...testId('platform-login-mobile')}/></Form.Item>
+      <Form.Item name="mobile" label="手机号" rules={[{required: true, pattern: /^1\d{10}$/, message: '请输入正确的手机号'}]}><Input disabled={submitting || sendingOtp} onChange={() => { setOtpSent(false); form.setFieldValue('code', undefined); }} {...testId('platform-login-mobile')}/></Form.Item>
       <Form.Item label="验证码" required>
         <Space.Compact block>
           <Form.Item name="code" noStyle rules={[{required: true, pattern: /^\d{6}$/, message: '请输入6位验证码'}]}><Input disabled={!otpSent || submitting} {...testId('platform-login-otp')}/></Form.Item>
@@ -67,7 +66,6 @@ export function PlatformLoginPage({onSession}: {onSession: (session: PlatformLog
         </Space.Compact>
       </Form.Item>
       {otpSent && <Alert type="success" showIcon title="验证码已发送，请在有效期内填写"/>}
-      {debugCode && <Alert type="info" showIcon title={`当前为测试环境，验证码：${debugCode}`}/>}
     </>}
   </LoginFormPage>;
 }

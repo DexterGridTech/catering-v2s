@@ -5,7 +5,7 @@ public record WorkspaceLoginEntry(
     String groupWorkspaceKey,
     String workspaceName,
     String operationsTitle,
-    String logoUrl,
     GroupWorkspaceStatus status,
-    String sessionState
+    String sessionState,
+    String logoUrl
 ) {}

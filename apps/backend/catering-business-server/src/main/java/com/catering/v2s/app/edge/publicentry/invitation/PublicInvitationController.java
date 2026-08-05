@@ -11,7 +11,6 @@ import com.catering.v2s.app.edge.generated.wire.PublicInvitationReadiness;
 import com.catering.v2s.app.edge.generated.wire.PublicInvitationView;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityOperation;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationStatus;
-import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
@@ -42,7 +41,7 @@ public final class PublicInvitationController {
     @PostMapping("/complete") @PublicSecurityOperation(id = "completePublicInvitation", owner = "workspace-iam") PublicInvitationCompletion complete(@PathVariable String groupWorkspaceKey, @PathVariable String invitationToken, @RequestHeader("Idempotency-Key") String idempotencyKey) { requiredIdempotencyKey(idempotencyKey); return completion(invitations.completePublic(groupWorkspaceKey, invitationToken)); }
     @GetMapping("/completion") @PublicSecurityOperation(id = "getPublicInvitationCompletion", owner = "workspace-iam") PublicInvitationCompletion completion(@PathVariable String groupWorkspaceKey, @PathVariable String invitationToken) { return completion(invitations.publicCompletion(groupWorkspaceKey, invitationToken)); }
 
-    private PublicInvitationView view(WorkspaceInvitationService.PublicInvitationView value, com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback workspace) { return new PublicInvitationView(value.invitationId().toString(), value.groupWorkspaceKey(), workspace.name(), workspace.operationsTitle(), logoUrl(workspace.logoAssetRef()), ServiceNodeType.valueOf(value.targetOrganizationType()), value.targetOrganizationPath(), value.roleNames(), value.maskedMobile(), invitationStatus(value.status()), value.expiresAt()); }
+    private PublicInvitationView view(WorkspaceInvitationService.PublicInvitationView value, com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback workspace) { return new PublicInvitationView(value.invitationId().toString(), value.groupWorkspaceKey(), workspace.operationsTitle(), value.targetOrganizationType(), value.targetOrganizationPath(), value.roleNames(), value.maskedMobile(), invitationStatus(value.status()), value.expiresAt(), workspace.name(), logoUrl(workspace.logoAssetRef())); }
     private static PublicInvitationCompletion completion(WorkspaceInvitationService.PublicCompletion value) { return new PublicInvitationCompletion(value.invitationId().toString(), value.status(), value.message(), value.loginPath()); }
     private static PublicInvitationReadiness readiness(WorkspaceInvitationService.PublicReadiness value) { return new PublicInvitationReadiness(value.verificationGrant(), value.accountExists(), value.userNameReady(), value.loginNameReady(), value.passwordReady(), value.nextStep()); }
     private static PublicInvitationCredentialResponse credentialResponse(WorkspaceInvitationService.PublicReadiness value) { return new PublicInvitationCredentialResponse(value.verificationGrant(), value.accountExists(), value.userNameReady(), value.loginNameReady(), value.passwordReady(), value.nextStep()); }

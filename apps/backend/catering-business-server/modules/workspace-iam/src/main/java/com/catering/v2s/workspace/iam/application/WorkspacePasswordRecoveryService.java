@@ -127,7 +127,7 @@ public class WorkspacePasswordRecoveryService {
         Account account = enabledAccount(recovery);
         if (account == null) throw new RecoveryStateException();
         long now = time.currentEpochMillis();
-        jdbc.update("UPDATE workspace_iam.workspace_credential SET password_hash=?, changed_at_epoch_millis=?, failed_attempts=0, locked_until_epoch_millis=NULL, version=version+1 WHERE account_id=?", passwords.encode(new String(password)), now, account.id());
+        jdbc.update("UPDATE workspace_iam.workspace_credential SET password_hash=?, changed_at_epoch_millis=?, failed_attempts=0, locked_until_epoch_millis=NULL, password_change_required=FALSE, version=version+1 WHERE account_id=?", passwords.encode(new String(password)), now, account.id());
         int revoked = jdbc.update("UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE account_id=? AND status='ACTIVE'", now, account.id());
         if (jdbc.update("UPDATE workspace_iam.operations_password_recovery SET status='COMPLETED', completion_grant_hash=NULL, completion_grant_expires_at_epoch_millis=NULL, completed_at_epoch_millis=?, version=version+1 WHERE id=? AND status='OTP_VERIFIED' AND version=?", now, recovery.id(), recovery.version()) != 1) throw new RecoveryStateException();
         return new Completion("COMPLETED", revoked > 0);

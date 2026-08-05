@@ -58,7 +58,7 @@ public class WorkspaceAuthenticationService {
 
     private Account authenticatePassword(String groupWorkspaceKey, String loginName, char[] password, String sourceAddress) {
         WorkspaceLoginRateLimitService.Attempt attempt = loginLimits.begin(groupWorkspaceKey, loginName, sourceAddress);
-        Account account = jdbc.query("SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_hash, c.locked_until_epoch_millis FROM workspace_iam.workspace_account a JOIN workspace_iam.workspace_credential c ON c.account_id=a.id WHERE a.group_workspace_key=? AND a.login_name_normalized=?", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, loginName == null ? "" : loginName.toLowerCase()); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getString(5), result.getObject(6, Long.class)) : null);
+        Account account = jdbc.query("SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_hash, c.locked_until_epoch_millis, c.password_change_required FROM workspace_iam.workspace_account a JOIN workspace_iam.workspace_credential c ON c.account_id=a.id WHERE a.group_workspace_key=? AND a.login_name_normalized=?", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, loginName == null ? "" : loginName.toLowerCase()); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getString(5), result.getObject(6, Long.class), result.getBoolean(7)) : null);
         if (account == null) { loginLimits.recordInvalid(groupWorkspaceKey, attempt); throw new InvalidCredentialsException(); }
         if (!"ENABLED".equals(account.status())) { loginLimits.recordSourceFailure(groupWorkspaceKey, attempt); throw new AccountDisabledException(); }
         if (!workspaces.isEnabled(account.workspaceUuid(), account.key())) { loginLimits.recordSourceFailure(groupWorkspaceKey, attempt); throw new WorkspaceDisabledException(); }
@@ -103,39 +103,41 @@ public class WorkspaceAuthenticationService {
     }
 
     @Transactional
-    public WorkspaceSessionReadback selectContext(String rawToken, UUID assignmentId, UUID visibleDataNodeId, long expectedContextVersion) {
+    public WorkspaceSessionReadback selectContext(String rawToken, UUID assignmentId, UUID scopeNodeId, long expectedContextVersion) {
         selectContext(rawToken, assignmentId, expectedContextVersion);
-        SessionRow selected = require(rawToken);
+        SessionRow selected = requireNormal(rawToken);
         Assignment assignment = requireAssignment(selected, assignmentId);
         OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = visibility.listVisibleDataNodeCandidates(selected.workspaceUuid(), selected.key(), assignment.nodeType(), assignment.nodeId()).stream()
-            .filter(value -> value.dataNodeId().equals(visibleDataNodeId))
+            .filter(value -> value.dataNodeId().equals(scopeNodeId))
             .findFirst()
             .orElseThrow(SessionInvalidException::new);
-        selectDataNode(rawToken, candidate.dataNodeType(), visibleDataNodeId, selected.contextVersion());
+        selectDataNode(rawToken, candidate.dataNodeType(), scopeNodeId, selected.contextVersion());
         return session(rawToken);
     }
 
     @Transactional
     public WorkspaceSessionEntryReadback selectContext(String rawToken, UUID assignmentId, long expectedContextVersion) {
-        SessionRow current = require(rawToken);
+        SessionRow current = requireNormal(rawToken);
         if (current.contextVersion() != expectedContextVersion) throw new SessionConflictException();
         Assignment assignment = requireAssignment(current, assignmentId);
         if (!enterable(current.workspaceUuid(), current.key(), assignment.nodeType(), assignment.nodeId())) throw new SessionInvalidException();
-        if (jdbc.update("UPDATE workspace_iam.workspace_session SET current_assignment_id=?, visible_data_node_id=NULL, context_version=context_version+1, authorization_revision=authorization_revision+1 WHERE id=? AND context_version=?", assignmentId, current.id(), expectedContextVersion) != 1) throw new SessionConflictException();
+        ScopeSelection locked = lockedSelection(current, assignment);
+        if (jdbc.update("UPDATE workspace_iam.workspace_session SET current_assignment_id=?, selected_region_id=?, selected_project_id=?, selected_store_id=?, selected_head_company_id=?, context_version=context_version+1, authorization_revision=authorization_revision+1 WHERE id=? AND context_version=?", assignmentId, locked.regionId(), locked.projectId(), locked.storeId(), locked.headCompanyId(), current.id(), expectedContextVersion) != 1) throw new SessionConflictException();
         sessionCache.evict(rawToken);
         return sessionEntry(rawToken);
     }
 
     @Transactional
-    public WorkspaceSessionEntryReadback selectDataNode(String rawToken, String dataNodeType, UUID visibleDataNodeId, long expectedContextVersion) {
-        SessionRow current = require(rawToken);
+    public WorkspaceSessionEntryReadback selectDataNode(String rawToken, String dataNodeType, UUID scopeNodeId, long expectedContextVersion) {
+        SessionRow current = requireNormal(rawToken);
         if (current.contextVersion() != expectedContextVersion || current.assignmentId() == null) throw new SessionConflictException();
         Assignment assignment = requireAssignment(current, current.assignmentId());
         OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = visibility.listVisibleDataNodeCandidates(current.workspaceUuid(), current.key(), assignment.nodeType(), assignment.nodeId()).stream()
-            .filter(value -> value.dataNodeId().equals(visibleDataNodeId) && value.dataNodeType().equals(dataNodeType))
+            .filter(value -> value.dataNodeId().equals(scopeNodeId) && value.dataNodeType().equals(dataNodeType))
             .findFirst()
             .orElseThrow(SessionInvalidException::new);
-        if (jdbc.update("UPDATE workspace_iam.workspace_session SET visible_data_node_id=?, context_version=context_version+1, authorization_revision=authorization_revision+1 WHERE id=? AND context_version=?", candidate.dataNodeId(), current.id(), expectedContextVersion) != 1) throw new SessionConflictException();
+        ScopeSelection next = selectedScope(current, candidate);
+        if (jdbc.update("UPDATE workspace_iam.workspace_session SET selected_region_id=?, selected_project_id=?, selected_store_id=?, selected_head_company_id=?, context_version=context_version+1, authorization_revision=authorization_revision+1 WHERE id=? AND context_version=?", next.regionId(), next.projectId(), next.storeId(), next.headCompanyId(), current.id(), expectedContextVersion) != 1) throw new SessionConflictException();
         sessionCache.evict(rawToken);
         return sessionEntry(rawToken);
     }
@@ -145,12 +147,19 @@ public class WorkspaceAuthenticationService {
         return sessionCache.read(rawToken, () -> loadSession(rawToken));
     }
 
-    private WorkspaceSessionReadback loadSession(String rawToken) {
+    /** Restricted read used only by the password-change edge route. */
+    @Transactional(readOnly = true)
+    public WorkspaceSessionReadback sessionForPasswordChange(String rawToken) {
         SessionRow row = require(rawToken);
-        if (row.assignmentId() == null) return new WorkspaceSessionReadback(row.id(), row.workspaceUuid(), row.key(), row.accountId(), null, row.visibleDataNodeId(), row.contextVersion(), row.authorizationRevision(), Set.of(), Set.of(), row.accountDisplayName());
+        return new WorkspaceSessionReadback(row.id(), row.workspaceUuid(), row.key(), row.accountId(), null, WorkspaceSessionEntryReadback.ScopeContext.empty(), row.contextVersion(), row.authorizationRevision(), Set.of(), Set.of(), row.accountDisplayName());
+    }
+
+    private WorkspaceSessionReadback loadSession(String rawToken) {
+        SessionRow row = requireNormal(rawToken);
+        if (row.assignmentId() == null) return new WorkspaceSessionReadback(row.id(), row.workspaceUuid(), row.key(), row.accountId(), null, scopeContext(row), row.contextVersion(), row.authorizationRevision(), Set.of(), Set.of(), row.accountDisplayName());
         UUID roleId = jdbc.queryForObject("SELECT role_id FROM workspace_iam.role_assignment WHERE id=? AND status='ACTIVE'", UUID.class, row.assignmentId());
         var role = roles.require(row.workspaceUuid(), row.key(), roleId);
-        return new WorkspaceSessionReadback(row.id(), row.workspaceUuid(), row.key(), row.accountId(), row.assignmentId(), row.visibleDataNodeId(), row.contextVersion(), row.authorizationRevision(), role.pageAccessKeys(), role.actionCapabilityKeys(), row.accountDisplayName());
+        return new WorkspaceSessionReadback(row.id(), row.workspaceUuid(), row.key(), row.accountId(), row.assignmentId(), scopeContext(row), row.contextVersion(), row.authorizationRevision(), role.pageAccessKeys(), role.actionCapabilityKeys(), row.accountDisplayName());
     }
 
     @Transactional(readOnly = true)
@@ -167,6 +176,9 @@ public class WorkspaceAuthenticationService {
     }
 
     private WorkspaceSessionEntryReadback sessionEntry(SessionRow row) {
+        if (row.passwordChangeRequired()) {
+            return new WorkspaceSessionEntryReadback(row.key(), row.accountId(), row.accountDisplayName(), row.workspaceName(), row.operationsTitle(), row.logoAssetRef(), row.contextVersion(), WorkspaceSessionEntryReadback.Mode.EMPTY, WorkspaceSessionEntryReadback.Outcome.PASSWORD_CHANGE_REQUIRED, List.of(), Set.of(), List.of(), null, null);
+        }
         List<Assignment> enterableAssignments = availableAssignments(row, activeAssignments(row));
         Map<UUID, WorkspaceRoleReadback> rolesById = roles.requireAll(
             row.workspaceUuid(), row.key(), enterableAssignments.stream().map(Assignment::roleId).toList()
@@ -196,43 +208,75 @@ public class WorkspaceAuthenticationService {
             .findFirst()
             .orElseThrow(SessionInvalidException::new);
         List<WorkspaceSessionEntryReadback.VisibleDataNodeCandidate> dataNodes = visibility.listVisibleDataNodeCandidates(row.workspaceUuid(), row.key(), assignment.nodeType(), assignment.nodeId()).stream()
-            .map(value -> new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(value.dataNodeType(), value.dataNodeId(), value.dataNodeName(), value.ancestorPath(), value.regionId(), value.projectId(), value.storeId()))
+            .map(value -> new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(value.dataNodeType(), value.dataNodeId(), value.dataNodeName(), value.dataNodeCode(), value.ancestorPath(), value.regionId(), value.projectId(), value.storeId(), value.headCompanyId()))
             .toList();
-        WorkspaceSessionEntryReadback.VisibleDataNodeCandidate selectedDataNode = dataNodes.stream().filter(value -> value.dataNodeId().equals(row.visibleDataNodeId())).findFirst().orElse(null);
+        WorkspaceSessionEntryReadback.ScopeContext scopeContext = scopeContext(row, dataNodes);
         boolean scopeRequired = selected.navigation().stream().anyMatch(item -> !"NONE".equals(item.requiredDataNodeType()));
         WorkspaceSessionEntryReadback.Mode mode = candidates.size() == 1 ? WorkspaceSessionEntryReadback.Mode.DIRECT : WorkspaceSessionEntryReadback.Mode.SELECT;
-        WorkspaceSessionEntryReadback.Outcome outcome = scopeRequired && selectedDataNode == null ? WorkspaceSessionEntryReadback.Outcome.SELECT_SCOPE : WorkspaceSessionEntryReadback.Outcome.HOME;
-        return new WorkspaceSessionEntryReadback(row.key(), row.accountId(), row.accountDisplayName(), row.workspaceName(), row.operationsTitle(), row.logoAssetRef(), row.contextVersion(), mode, outcome, candidates, selected.actionGrants(), dataNodes, selected, selectedDataNode);
+        WorkspaceSessionEntryReadback.Outcome outcome = scopeRequired && selected.navigation().stream().anyMatch(item -> !"NONE".equals(item.requiredDataNodeType()) && scopeContext.selectionFor(item.requiredDataNodeType()) == null) ? WorkspaceSessionEntryReadback.Outcome.SELECT_SCOPE : WorkspaceSessionEntryReadback.Outcome.HOME;
+        return new WorkspaceSessionEntryReadback(row.key(), row.accountId(), row.accountDisplayName(), row.workspaceName(), row.operationsTitle(), row.logoAssetRef(), row.contextVersion(), mode, outcome, candidates, selected.actionGrants(), dataNodes, selected, scopeContext);
     }
 
     @Transactional
-    public void logout(String rawToken) { jdbc.update("UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE token_hash=? AND status='ACTIVE'", time.currentEpochMillis(), sha256(rawToken)); sessionCache.evict(rawToken); }
+    public void logout(String rawToken) { jdbc.update("UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=?, selected_region_id=NULL, selected_project_id=NULL, selected_store_id=NULL, selected_head_company_id=NULL WHERE token_hash=? AND status='ACTIVE'", time.currentEpochMillis(), sha256(rawToken)); sessionCache.evict(rawToken); }
 
     /** Current-account rotation revokes all operations sessions after CAS on the current context version. */
     @Transactional
     public PasswordChangeResult changeCurrentPassword(String rawToken, char[] currentPassword, char[] newPassword, long expectedSessionVersion) {
         if (newPassword == null || newPassword.length < 8) throw new InvalidCredentialsException();
-        SessionCredential current = jdbc.query("SELECT s.account_id, s.context_version, c.password_hash FROM workspace_iam.workspace_session s JOIN workspace_iam.workspace_credential c ON c.account_id=s.account_id WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?", statement -> { statement.setString(1, sha256(rawToken)); statement.setLong(2, time.currentEpochMillis()); }, result -> {
+        SessionCredential current = jdbc.query("SELECT s.id, s.account_id, s.context_version, c.password_hash, c.version FROM workspace_iam.workspace_session s JOIN workspace_iam.workspace_credential c ON c.account_id=s.account_id WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?", statement -> { statement.setString(1, sha256(rawToken)); statement.setLong(2, time.currentEpochMillis()); }, result -> {
             if (!result.next()) throw new SessionInvalidException();
-            return new SessionCredential(result.getObject(1, UUID.class), result.getLong(2), result.getString(3));
+            return new SessionCredential(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getLong(3), result.getString(4), result.getLong(5));
         });
         if (current.contextVersion() != expectedSessionVersion) throw new SessionConflictException();
         if (!passwords.matches(new String(currentPassword == null ? new char[0] : currentPassword), current.passwordHash())) throw new InvalidCredentialsException();
         long now = time.currentEpochMillis();
-        jdbc.update("UPDATE workspace_iam.workspace_credential SET password_hash=?, changed_at_epoch_millis=?, failed_attempts=0, locked_until_epoch_millis=NULL, version=version+1 WHERE account_id=?", passwords.encode(new String(newPassword)), now, current.accountId());
-        jdbc.update("UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE account_id=? AND status='ACTIVE'", now, current.accountId());
+        if (jdbc.update("UPDATE workspace_iam.workspace_credential c SET password_hash=?, changed_at_epoch_millis=?, failed_attempts=0, locked_until_epoch_millis=NULL, password_change_required=FALSE, version=version+1 WHERE c.account_id=? AND c.version=? AND EXISTS (SELECT 1 FROM workspace_iam.workspace_session s WHERE s.id=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?)", passwords.encode(new String(newPassword)), now, current.accountId(), current.credentialVersion(), current.sessionId(), now) != 1) throw new SessionConflictException();
+        jdbc.update("UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=?, selected_region_id=NULL, selected_project_id=NULL, selected_store_id=NULL, selected_head_company_id=NULL WHERE account_id=? AND status='ACTIVE'", now, current.accountId());
         return new PasswordChangeResult("COMPLETED", true, true);
     }
     private LoginResult createSession(Account account) { CreatedSession created = createRawSession(account); return new LoginResult(created.rawToken(), session(created.rawToken())); }
     private LoginEntryResult createSessionEntry(Account account) { CreatedSession created = createRawSession(account); return new LoginEntryResult(created.rawToken(), sessionEntry(created.rawToken(), account.key())); }
-    private CreatedSession createRawSession(Account account) { List<Assignment> assignments = jdbc.query("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'", (row, index) -> new Assignment(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getObject(4, UUID.class)), account.id(), account.workspaceUuid(), account.key()); List<Assignment> enterable = availableAssignments(account.workspaceUuid(), account.key(), assignments); UUID current = enterable.size() == 1 ? enterable.getFirst().id() : null; String raw = rawToken(); UUID sessionId = UUID.randomUUID(); long now = time.currentEpochMillis(); jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, current_assignment_id, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 1, 1, 'ACTIVE', ?)", sessionId, account.workspaceUuid(), account.key(), account.id(), sha256(raw), current, now + SESSION_TTL_MILLIS); jdbc.update("INSERT INTO workspace_iam.workspace_authentication_history (id, workspace_uuid, group_workspace_key, account_id, authenticated_at_epoch_millis) VALUES (?, ?, ?, ?, ?)", UUID.randomUUID(), account.workspaceUuid(), account.key(), account.id(), now); return new CreatedSession(raw); }
-    private Account accountByMobile(String groupWorkspaceKey, String mobile) { Account account = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, status FROM workspace_iam.workspace_account WHERE group_workspace_key=? AND mobile_normalized=?", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, mobile); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), null, null) : null); if (account == null) throw new InvalidCredentialsException(); if (!"ENABLED".equals(account.status())) throw new AccountDisabledException(); if (!workspaces.isEnabled(account.workspaceUuid(), account.key())) throw new WorkspaceDisabledException(); return account; }
-    private SessionRow require(String raw) { return jdbc.query("SELECT s.id, s.workspace_uuid, s.group_workspace_key, s.account_id, s.current_assignment_id, s.visible_data_node_id, s.context_version, s.authorization_revision, a.display_name, gw.name, gw.operations_title, gw.logo_asset_ref FROM workspace_iam.workspace_session s JOIN workspace_iam.workspace_account a ON a.id=s.account_id JOIN platform_workspace.group_workspace gw ON gw.workspace_uuid=s.workspace_uuid AND gw.group_workspace_key=s.group_workspace_key WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?", statement -> { statement.setString(1, sha256(raw)); statement.setLong(2, time.currentEpochMillis()); }, result -> { if (!result.next()) throw new SessionInvalidException(); return new SessionRow(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class), result.getObject(5, UUID.class), result.getObject(6, UUID.class), result.getLong(7), result.getLong(8), result.getString(9), result.getString(10), result.getString(11), result.getString(12)); }); }
+    private CreatedSession createRawSession(Account account) { List<Assignment> assignments = jdbc.query("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'", (row, index) -> new Assignment(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getObject(4, UUID.class)), account.id(), account.workspaceUuid(), account.key()); List<Assignment> enterable = availableAssignments(account.workspaceUuid(), account.key(), assignments); Assignment selected = enterable.size() == 1 ? enterable.getFirst() : null; ScopeSelection locked = selected == null ? ScopeSelection.empty() : lockedSelection(account.workspaceUuid(), account.key(), selected); String raw = rawToken(); UUID sessionId = UUID.randomUUID(); long now = time.currentEpochMillis(); jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, current_assignment_id, selected_region_id, selected_project_id, selected_store_id, selected_head_company_id, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 'ACTIVE', ?)", sessionId, account.workspaceUuid(), account.key(), account.id(), sha256(raw), selected == null ? null : selected.id(), locked.regionId(), locked.projectId(), locked.storeId(), locked.headCompanyId(), now + SESSION_TTL_MILLIS); jdbc.update("INSERT INTO workspace_iam.workspace_authentication_history (id, workspace_uuid, group_workspace_key, account_id, authenticated_at_epoch_millis) VALUES (?, ?, ?, ?, ?)", UUID.randomUUID(), account.workspaceUuid(), account.key(), account.id(), now); return new CreatedSession(raw); }
+    private Account accountByMobile(String groupWorkspaceKey, String mobile) { Account account = jdbc.query("SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_change_required FROM workspace_iam.workspace_account a JOIN workspace_iam.workspace_credential c ON c.account_id=a.id WHERE a.group_workspace_key=? AND a.mobile_normalized=?", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, mobile); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), null, null, result.getBoolean(5)) : null); if (account == null) throw new InvalidCredentialsException(); if (!"ENABLED".equals(account.status())) throw new AccountDisabledException(); if (!workspaces.isEnabled(account.workspaceUuid(), account.key())) throw new WorkspaceDisabledException(); return account; }
+    private SessionRow require(String raw) { return jdbc.query("SELECT s.id, s.workspace_uuid, s.group_workspace_key, s.account_id, s.current_assignment_id, s.selected_region_id, s.selected_project_id, s.selected_store_id, s.selected_head_company_id, s.context_version, s.authorization_revision, a.display_name, gw.name, gw.operations_title, gw.logo_asset_ref, c.password_change_required FROM workspace_iam.workspace_session s JOIN workspace_iam.workspace_account a ON a.id=s.account_id JOIN workspace_iam.workspace_credential c ON c.account_id=a.id JOIN platform_workspace.group_workspace gw ON gw.workspace_uuid=s.workspace_uuid AND gw.group_workspace_key=s.group_workspace_key WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?", statement -> { statement.setString(1, sha256(raw)); statement.setLong(2, time.currentEpochMillis()); }, result -> { if (!result.next()) throw new SessionInvalidException(); return new SessionRow(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class), result.getObject(5, UUID.class), result.getObject(6, UUID.class), result.getObject(7, UUID.class), result.getObject(8, UUID.class), result.getObject(9, UUID.class), result.getLong(10), result.getLong(11), result.getString(12), result.getString(13), result.getString(14), result.getString(15), result.getBoolean(16)); }); }
+    private SessionRow requireNormal(String raw) { SessionRow row = require(raw); if (row.passwordChangeRequired()) throw new PasswordChangeRequiredException(); return row; }
     private boolean enterable(UUID workspace, String key, String type, UUID node) { return switch(type) { case "STORE" -> stores.isEnterableStore(workspace, key, node); case "HEAD_COMPANY" -> entities.isEnterableEntity(workspace, key, "HEAD_COMPANY", node); case "GROUP" -> groups.isEnterableCommercialGroup(workspace, key, node); case "REGION", "PROJECT" -> nodes.isEnterable(workspace, key, node); default -> false; }; }
-    private boolean visibleDataNodeAllowed(UUID workspace, String key, String assignmentType, UUID assignmentNode, UUID visibleNode) {
-        if ("GROUP".equals(assignmentType) && !groups.isEnterableCommercialGroup(workspace, key, assignmentNode)) return false;
-        return visibility.isVisibleDataNodeAllowed(workspace, key, assignmentType, assignmentNode, visibleNode);
+    private ScopeSelection lockedSelection(SessionRow current, Assignment assignment) { return lockedSelection(current.workspaceUuid(), current.key(), assignment); }
+    private ScopeSelection lockedSelection(UUID workspaceUuid, String key, Assignment assignment) {
+        if ("GROUP".equals(assignment.nodeType())) return ScopeSelection.empty();
+        OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = visibility.listVisibleDataNodeCandidates(workspaceUuid, key, assignment.nodeType(), assignment.nodeId()).stream().filter(value -> value.dataNodeId().equals(assignment.nodeId())).findFirst().orElseThrow(SessionInvalidException::new);
+        return selectionFor(candidate, null);
     }
+    private ScopeSelection selectedScope(SessionRow current, OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate) { return selectionFor(candidate, new ScopeSelection(current.selectedRegionId(), current.selectedProjectId(), current.selectedStoreId(), current.selectedHeadCompanyId())); }
+    private static ScopeSelection selectionFor(OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate, ScopeSelection current) {
+        ScopeSelection base = current == null ? ScopeSelection.empty() : current;
+        return switch (candidate.dataNodeType()) {
+            case "REGION" -> new ScopeSelection(candidate.regionId(), null, null, base.headCompanyId());
+            case "PROJECT" -> new ScopeSelection(candidate.regionId(), candidate.projectId(), null, base.headCompanyId());
+            case "STORE" -> new ScopeSelection(candidate.regionId(), candidate.projectId(), candidate.storeId(), base.headCompanyId());
+            case "HEAD_COMPANY" -> new ScopeSelection(base.regionId(), base.projectId(), base.storeId(), candidate.headCompanyId());
+            default -> throw new SessionInvalidException();
+        };
+    }
+    private List<OrganizationVisibilityLookup.VisibleDataNodeCandidate> visibleCandidates(SessionRow row, Assignment assignment) { return visibility.listVisibleDataNodeCandidates(row.workspaceUuid(), row.key(), assignment.nodeType(), assignment.nodeId()); }
+    private WorkspaceSessionEntryReadback.ScopeContext scopeContext(SessionRow row) {
+        if (row.assignmentId() == null) return WorkspaceSessionEntryReadback.ScopeContext.empty();
+        Assignment assignment = requireAssignment(row, row.assignmentId());
+        return scopeContext(row, visibleCandidates(row, assignment).stream().map(value -> new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(value.dataNodeType(), value.dataNodeId(), value.dataNodeName(), value.dataNodeCode(), value.ancestorPath(), value.regionId(), value.projectId(), value.storeId(), value.headCompanyId())).toList());
+    }
+    private WorkspaceSessionEntryReadback.ScopeContext scopeContext(SessionRow row, List<WorkspaceSessionEntryReadback.VisibleDataNodeCandidate> candidates) {
+        WorkspaceSessionEntryReadback.ScopeContext fallback = new WorkspaceSessionEntryReadback.ScopeContext(findCandidate(candidates, "REGION", row.selectedRegionId()), findCandidate(candidates, "PROJECT", row.selectedProjectId()), findCandidate(candidates, "STORE", row.selectedStoreId()), findCandidate(candidates, "HEAD_COMPANY", row.selectedHeadCompanyId()));
+        OrganizationVisibilityLookup.ScopeContext ownerContext = visibility.describeScopeContext(row.workspaceUuid(), row.key(), row.selectedRegionId(), row.selectedProjectId(), row.selectedStoreId(), row.selectedHeadCompanyId());
+        return new WorkspaceSessionEntryReadback.ScopeContext(
+            ownerContext.region() == null ? fallback.region() : scopeNode(ownerContext.region()),
+            ownerContext.project() == null ? fallback.project() : scopeNode(ownerContext.project()),
+            ownerContext.store() == null ? fallback.store() : scopeNode(ownerContext.store()),
+            ownerContext.headCompany() == null ? fallback.headCompany() : scopeNode(ownerContext.headCompany())
+        );
+    }
+    private static WorkspaceSessionEntryReadback.VisibleDataNodeCandidate scopeNode(OrganizationVisibilityLookup.VisibleDataNodeCandidate value) { return new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(value.dataNodeType(), value.dataNodeId(), value.dataNodeName(), value.dataNodeCode(), value.ancestorPath(), value.regionId(), value.projectId(), value.storeId(), value.headCompanyId()); }
+    private static WorkspaceSessionEntryReadback.VisibleDataNodeCandidate findCandidate(List<WorkspaceSessionEntryReadback.VisibleDataNodeCandidate> candidates, String type, UUID id) { return id == null ? null : candidates.stream().filter(value -> type.equals(value.dataNodeType()) && id.equals(value.dataNodeId())).findFirst().orElse(null); }
     private Assignment requireAssignment(SessionRow current, UUID assignmentId) {
         return jdbc.query("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.id=? AND a.account_id=? AND a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'", statement -> { statement.setObject(1, assignmentId); statement.setObject(2, current.accountId()); statement.setObject(3, current.workspaceUuid()); statement.setString(4, current.key()); }, result -> { if (!result.next()) throw new SessionInvalidException(); return new Assignment(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class)); });
     }
@@ -282,14 +326,16 @@ public class WorkspaceAuthenticationService {
      */
     public record OtpDelivery(long expiresAt, String debugVerificationCode) { }
     public record PasswordChangeResult(String status, boolean sessionsRevoked, boolean reauthenticationRequired) { }
-    private record Account(UUID id, UUID workspaceUuid, String key, String status, String passwordHash, Long lockedUntilEpochMillis) { }
+    private record Account(UUID id, UUID workspaceUuid, String key, String status, String passwordHash, Long lockedUntilEpochMillis, boolean passwordChangeRequired) { }
     private record CreatedSession(String rawToken) { }
     private record Assignment(UUID id, UUID roleId, String nodeType, UUID nodeId) { }
-    private record SessionCredential(UUID accountId, long contextVersion, String passwordHash) { }
-    private record SessionRow(UUID id, UUID workspaceUuid, String key, UUID accountId, UUID assignmentId, UUID visibleDataNodeId, long contextVersion, long authorizationRevision, String accountDisplayName, String workspaceName, String operationsTitle, String logoAssetRef) { }
+    private record SessionCredential(UUID sessionId, UUID accountId, long contextVersion, String passwordHash, long credentialVersion) { }
+    private record ScopeSelection(UUID regionId, UUID projectId, UUID storeId, UUID headCompanyId) { static ScopeSelection empty() { return new ScopeSelection(null, null, null, null); } }
+    private record SessionRow(UUID id, UUID workspaceUuid, String key, UUID accountId, UUID assignmentId, UUID selectedRegionId, UUID selectedProjectId, UUID selectedStoreId, UUID selectedHeadCompanyId, long contextVersion, long authorizationRevision, String accountDisplayName, String workspaceName, String operationsTitle, String logoAssetRef, boolean passwordChangeRequired) { }
     public static final class InvalidCredentialsException extends RuntimeException { }
     public static final class AccountDisabledException extends RuntimeException { }
     public static final class CredentialLockedException extends RuntimeException { }
+    public static final class PasswordChangeRequiredException extends RuntimeException { }
     public static final class WorkspaceDisabledException extends RuntimeException { }
     public static final class SessionInvalidException extends RuntimeException { }
     public static final class SessionConflictException extends RuntimeException { }

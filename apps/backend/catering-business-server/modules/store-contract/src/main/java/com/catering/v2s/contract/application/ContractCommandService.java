@@ -8,6 +8,7 @@ import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.StoreContractLookup;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,6 +62,15 @@ public class ContractCommandService {
     @Transactional
     public StoreContractReadback create(UUID workspaceUuid, String key, String contractNo, UUID storeId, UUID projectId, LocalDate from, LocalDate to, String phaseName, String notes, List<ItemInput> items, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor) { return receipts.execute(idempotencyKey, canonical("create", workspaceUuid, key, contractNo, storeId, projectId, from, to, phaseName, notes, items, extensionValues), () -> create(workspaceUuid, key, contractNo, storeId, projectId, from, to, phaseName, notes, items, extensionValues, actor)); }
 
+    /** Operations command path: bind the actual store project before receipt replay. */
+    @Transactional
+    public StoreContractReadback create(UUID workspaceUuid, String key, String contractNo, UUID storeId, UUID projectId, LocalDate from, LocalDate to, String phaseName, String notes, List<ItemInput> items, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        var context = stores.requireStoreContractContext(workspaceUuid, key, storeId);
+        if (!context.projectId().equals(projectId)) throw new ContractValidationException();
+        requireProjectGrant(workspaceUuid, key, context.projectId(), ownerScopeGrant);
+        return receipts.execute(idempotencyKey, canonical("create", workspaceUuid, key, contractNo, storeId, projectId, from, to, phaseName, notes, items, extensionValues), () -> create(workspaceUuid, key, contractNo, storeId, projectId, from, to, phaseName, notes, items, extensionValues, actor));
+    }
+
     @Transactional
     public StoreContractReadback update(UUID workspaceUuid, String key, UUID contractId, LocalDate from, LocalDate to, String phaseName, List<ItemInput> items, long expectedVersion, Map<String, String> extensionValues) {
         return update(workspaceUuid, key, contractId, from, to, phaseName, null, items, expectedVersion, extensionValues, AuditActor.system());
@@ -86,6 +96,14 @@ public class ContractCommandService {
     @Transactional
     public StoreContractReadback update(UUID workspaceUuid, String key, UUID contractId, LocalDate from, LocalDate to, String phaseName, String notes, List<ItemInput> items, long expectedVersion, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor) { return receipts.execute(idempotencyKey, canonical("update", workspaceUuid, key, contractId, from, to, phaseName, notes, items, expectedVersion, extensionValues), () -> update(workspaceUuid, key, contractId, from, to, phaseName, notes, items, expectedVersion, extensionValues, actor)); }
 
+    /** Operations command path: bind the persisted contract's store project before receipt replay. */
+    @Transactional
+    public StoreContractReadback update(UUID workspaceUuid, String key, UUID contractId, LocalDate from, LocalDate to, String phaseName, String notes, List<ItemInput> items, long expectedVersion, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        StoreContractReadback existing = require(workspaceUuid, key, contractId);
+        requireProjectGrant(workspaceUuid, key, stores.requireStoreContractContext(workspaceUuid, key, existing.storeId()).projectId(), ownerScopeGrant);
+        return receipts.execute(idempotencyKey, canonical("update", workspaceUuid, key, contractId, from, to, phaseName, notes, items, expectedVersion, extensionValues), () -> update(workspaceUuid, key, contractId, from, to, phaseName, notes, items, expectedVersion, extensionValues, actor));
+    }
+
     @Transactional
     public StoreContractReadback invalidate(UUID workspaceUuid, String key, UUID contractId, long expectedVersion) {
         return invalidate(workspaceUuid, key, contractId, expectedVersion, AuditActor.system());
@@ -103,6 +121,14 @@ public class ContractCommandService {
     public StoreContractReadback invalidate(UUID workspaceUuid, String key, UUID contractId, long expectedVersion, String idempotencyKey) { return invalidate(workspaceUuid, key, contractId, expectedVersion, idempotencyKey, AuditActor.system()); }
     @Transactional
     public StoreContractReadback invalidate(UUID workspaceUuid, String key, UUID contractId, long expectedVersion, String idempotencyKey, AuditActor actor) { return receipts.execute(idempotencyKey, canonical("invalidate", workspaceUuid, key, contractId, expectedVersion), () -> invalidate(workspaceUuid, key, contractId, expectedVersion, actor)); }
+
+    /** Operations command path: bind the persisted contract's store project before receipt replay. */
+    @Transactional
+    public StoreContractReadback invalidate(UUID workspaceUuid, String key, UUID contractId, long expectedVersion, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        StoreContractReadback existing = require(workspaceUuid, key, contractId);
+        requireProjectGrant(workspaceUuid, key, stores.requireStoreContractContext(workspaceUuid, key, existing.storeId()).projectId(), ownerScopeGrant);
+        return receipts.execute(idempotencyKey, canonical("invalidate", workspaceUuid, key, contractId, expectedVersion), () -> invalidate(workspaceUuid, key, contractId, expectedVersion, actor));
+    }
 
     @Transactional(readOnly = true)
     public StoreContractReadback require(UUID workspaceUuid, String key, UUID contractId) {
@@ -127,6 +153,9 @@ public class ContractCommandService {
     }
 
     private void validateContract(LocalDate from, LocalDate to, String phase, List<String> projectPhases, List<ItemInput> items) { if (from == null || (to != null && to.isBefore(from)) || (phase != null && !phase.isBlank() && !projectPhases.contains(phase)) || items == null || items.isEmpty() || items.stream().anyMatch(item -> item == null || item.itemCode() == null || item.itemCode().isBlank() || item.itemCode().trim().length() > 120 || item.itemName() == null || item.itemName().isBlank() || item.itemName().trim().length() > 240) || items.stream().map(item -> item.itemCode().strip().toLowerCase(java.util.Locale.ROOT)).distinct().count() != items.size()) throw new ContractValidationException(); }
+    private static void requireProjectGrant(UUID workspaceUuid, String key, UUID projectId, OperationsOwnerScopeGrant ownerScopeGrant) {
+        if (ownerScopeGrant == null || !ownerScopeGrant.matches(workspaceUuid, key, "PROJECT", projectId)) throw new ContractAuthorizationException();
+    }
     private static StoreContractReadback readback(java.sql.ResultSet result) throws java.sql.SQLException { List<StoreContractReadback.Item> items = readItems(result.getString(13)); return new StoreContractReadback(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getObject(5, UUID.class), result.getObject(6, UUID.class), result.getObject(7, LocalDate.class), result.getObject(8, LocalDate.class), result.getString(9), result.getString(10), result.getString(11), result.getLong(12), items); }
     private static String canonical(String operation, Object... values) { StringBuilder value = new StringBuilder(operation); for (Object part : values) { String text = String.valueOf(part == null ? "<null>" : part); value.append('|').append(text.length()).append(':').append(text); } return value.toString(); }
     private void validateValues(UUID workspaceUuid, String key, Map<String, String> values) { Map<String, String> actual = values == null ? Map.of() : values; try { ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, key, "CONTRACT"); Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream().collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field)); if (actual.keySet().stream().anyMatch(field -> !fields.containsKey(field)) || actual.entrySet().stream().anyMatch(entry -> !"DISABLED".equals(fields.get(entry.getKey()).status()) && !isJsonNull(entry.getValue()) && !validJsonValue(fields.get(entry.getKey()), entry.getValue()))) throw new ContractValidationException(); } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) { if (!actual.isEmpty()) throw new ContractValidationException(); } }
@@ -174,4 +203,5 @@ public class ContractCommandService {
     public static final class ContractNotFoundException extends RuntimeException { }
     public static final class ContractConflictException extends RuntimeException { }
     public static final class ContractValidationException extends RuntimeException { }
+    public static final class ContractAuthorizationException extends RuntimeException { }
 }

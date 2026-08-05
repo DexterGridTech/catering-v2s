@@ -50,7 +50,11 @@ class WorkspaceAuthenticationContextVersionTest {
         UUID assignmentId = UUID.randomUUID();
         String token = "context-version-token";
         jdbc.update("INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, mobile_normalized, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', '13800000111', 'context-user', 'Context user', 'ENABLED', 1, ?, ?)", accountId, workspaceId, NOW, NOW);
-        jdbc.update("INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, mobile_normalized, status, expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, 'context-version-test', 'context-invitation-token-hash', '13800000111', 'COMPLETED', ?, 1, ?)", invitationId, workspaceId, NOW + 60_000L, NOW);
+        // Credential hashes are globally unique.  This test does not authenticate, but its
+        // fixture must still satisfy the production constraint so it remains independent of
+        // all other Testcontainers test class fixtures.
+        jdbc.update("INSERT INTO workspace_iam.workspace_credential (account_id, password_hash, algorithm, changed_at_epoch_millis, failed_attempts, version) VALUES (?, ?, 'fixture', ?, 0, 1)", accountId, "not-used-by-context-test-" + accountId, NOW);
+        jdbc.update("INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, mobile_normalized, status, expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, '13800000111', 'COMPLETED', ?, 1, ?)", invitationId, workspaceId, sha256("context-invitation-token-" + accountId), NOW + 60_000L, NOW);
         jdbc.update("INSERT INTO workspace_iam.role_assignment (id, workspace_uuid, group_workspace_key, account_id, role_id, source_invitation_id, service_node_type, service_node_id, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, ?, 'REGION', ?, 'ACTIVE', 1, ?, ?)", assignmentId, workspaceId, accountId, roleId, invitationId, regionId, NOW, NOW);
         jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, 1, 1, 'ACTIVE', ?)", UUID.randomUUID(), workspaceId, accountId, sha256(token), NOW + 60_000L);
 
@@ -60,6 +64,7 @@ class WorkspaceAuthenticationContextVersionTest {
         assertEquals("Context version test", afterContextSelection.operationsTitle());
         assertEquals(null, afterContextSelection.logoAssetRef());
         assertEquals(2L, afterContextSelection.contextVersion());
+        assertEquals(regionId, afterContextSelection.scopeContext().region().dataNodeId());
         var afterDataNodeSelection = authentication.selectDataNode(token, "REGION", regionId, 2L);
         assertEquals("Context version test", afterDataNodeSelection.workspaceName());
         assertEquals("Context version test", afterDataNodeSelection.operationsTitle());
@@ -79,7 +84,7 @@ class WorkspaceAuthenticationContextVersionTest {
         };
         OrganizationVisibilityLookup visibility = new OrganizationVisibilityLookup() {
             @Override public boolean isVisibleDataNodeAllowed(UUID workspaceUuid, String groupWorkspaceKey, String assignmentNodeType, UUID assignmentNodeId, UUID candidateVisibleNodeId) { return visibleNodeId.equals(candidateVisibleNodeId); }
-            @Override public List<VisibleDataNodeCandidate> listVisibleDataNodeCandidates(UUID workspaceUuid, String groupWorkspaceKey, String assignmentNodeType, UUID assignmentNodeId) { return List.of(new VisibleDataNodeCandidate("REGION", visibleNodeId, "Context region", List.of("Context region"), visibleNodeId, null, null)); }
+            @Override public List<VisibleDataNodeCandidate> listVisibleDataNodeCandidates(UUID workspaceUuid, String groupWorkspaceKey, String assignmentNodeType, UUID assignmentNodeId) { return List.of(new VisibleDataNodeCandidate("REGION", visibleNodeId, "Context region", "CTX-R", List.of("Context region"), visibleNodeId, null, null, null)); }
         };
         return new WorkspaceAuthenticationService(jdbc, time, roles, hierarchy, entities, entities, groups, new WorkspaceLoginRateLimitService(jdbc, time), new WorkspaceOtpRateLimitService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, visibility, new WorkspaceSessionRequestCache(false), null);
     }

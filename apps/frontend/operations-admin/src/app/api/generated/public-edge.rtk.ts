@@ -37,14 +37,6 @@ export const publicRtkRequest = {
       requiresSession: false,
       ...options,
     }),
-    completeWorkspacePasswordReset: (pathParameters: FaceOperationContracts["completeWorkspacePasswordReset"]["path"], options: FaceOperationOptions<"completeWorkspacePasswordReset">): FaceOperationRequest<"completeWorkspacePasswordReset"> => ({
-      operationId: "completeWorkspacePasswordReset",
-      method: "POST",
-      path: "/api/public/password-reset/{resetGenerationKey}/complete",
-      pathParameters,
-      requiresSession: false,
-      ...options,
-    }),
     getPublicAssetContent: (pathParameters: FaceOperationContracts["getPublicAssetContent"]["path"], options: FaceOperationOptions<"getPublicAssetContent">): FaceOperationRequest<"getPublicAssetContent"> => ({
       operationId: "getPublicAssetContent",
       method: "GET",
@@ -93,14 +85,6 @@ export const publicRtkRequest = {
       requiresSession: false,
       ...options,
     }),
-    sendWorkspacePasswordResetOtp: (pathParameters: FaceOperationContracts["sendWorkspacePasswordResetOtp"]["path"], options: FaceOperationOptions<"sendWorkspacePasswordResetOtp">): FaceOperationRequest<"sendWorkspacePasswordResetOtp"> => ({
-      operationId: "sendWorkspacePasswordResetOtp",
-      method: "POST",
-      path: "/api/public/password-reset/{resetGenerationKey}/otp/send",
-      pathParameters,
-      requiresSession: false,
-      ...options,
-    }),
     startOperationsPasswordRecovery: (pathParameters: FaceOperationContracts["startOperationsPasswordRecovery"]["path"], options: FaceOperationOptions<"startOperationsPasswordRecovery">): FaceOperationRequest<"startOperationsPasswordRecovery"> => ({
       operationId: "startOperationsPasswordRecovery",
       method: "POST",
@@ -121,14 +105,6 @@ export const publicRtkRequest = {
       operationId: "verifyPublicInvitationOtp",
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
-      pathParameters,
-      requiresSession: false,
-      ...options,
-    }),
-    verifyWorkspacePasswordResetOtp: (pathParameters: FaceOperationContracts["verifyWorkspacePasswordResetOtp"]["path"], options: FaceOperationOptions<"verifyWorkspacePasswordResetOtp">): FaceOperationRequest<"verifyWorkspacePasswordResetOtp"> => ({
-      operationId: "verifyWorkspacePasswordResetOtp",
-      method: "POST",
-      path: "/api/public/password-reset/{resetGenerationKey}/otp/verify",
       pathParameters,
       requiresSession: false,
       ...options,
@@ -156,10 +132,6 @@ export function createPublicRtkEndpoints(
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
-    completeWorkspacePasswordReset: build.mutation<FaceOperationContracts["completeWorkspacePasswordReset"]["response"], FaceOperationRequest<"completeWorkspacePasswordReset">>({
-      query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
-    }),
     getPublicAssetContent: build.query<FaceOperationContracts["getPublicAssetContent"]["response"], FaceOperationRequest<"getPublicAssetContent">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
@@ -184,10 +156,6 @@ export function createPublicRtkEndpoints(
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
-    sendWorkspacePasswordResetOtp: build.mutation<FaceOperationContracts["sendWorkspacePasswordResetOtp"]["response"], FaceOperationRequest<"sendWorkspacePasswordResetOtp">>({
-      query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
-    }),
     startOperationsPasswordRecovery: build.mutation<FaceOperationContracts["startOperationsPasswordRecovery"]["response"], FaceOperationRequest<"startOperationsPasswordRecovery">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
@@ -197,10 +165,6 @@ export function createPublicRtkEndpoints(
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
     verifyPublicInvitationOtp: build.mutation<FaceOperationContracts["verifyPublicInvitationOtp"]["response"], FaceOperationRequest<"verifyPublicInvitationOtp">>({
-      query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
-    }),
-    verifyWorkspacePasswordResetOtp: build.mutation<FaceOperationContracts["verifyWorkspacePasswordResetOtp"]["response"], FaceOperationRequest<"verifyWorkspacePasswordResetOtp">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     })

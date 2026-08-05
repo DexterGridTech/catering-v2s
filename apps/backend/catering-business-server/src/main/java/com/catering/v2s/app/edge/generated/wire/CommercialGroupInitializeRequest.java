@@ -4,6 +4,6 @@ package com.catering.v2s.app.edge.generated.wire;
 public record CommercialGroupInitializeRequest(
     String groupCode,
     String groupName,
-    tools.jackson.databind.JsonNode extensionValues,
-    String idempotencyKey
+    String idempotencyKey,
+    tools.jackson.databind.JsonNode extensionValues
 ) {}

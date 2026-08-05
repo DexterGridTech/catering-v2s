@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceInvitationCandidatePageOrganizationsItem(
-    ServiceNodeType serviceNodeType,
+    String serviceNodeType,
     String organizationRef,
     String path
 ) {}

@@ -7,6 +7,6 @@ public record BrandUpdateRequest(
     String alias,
     String remark,
     tools.jackson.databind.JsonNode extensionValues,
-    Long expectedVersion,
-    Long expectedContextVersion
+    Long expectedExtensionRuleRevision,
+    Long expectedVersion
 ) {}

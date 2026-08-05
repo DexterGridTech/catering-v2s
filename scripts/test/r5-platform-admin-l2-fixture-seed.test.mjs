@@ -17,5 +17,6 @@ test('platform L2 fixture consumes CommercialGroupRoot.groupName rather than a g
   assert.doesNotMatch(jointFixtureSource, /R5_L2_PLATFORM_ORGANIZATION_(?:PROJECT|BRAND|TENANT)_LABEL:[^;]*（/);
   assert.match(source, /pageAccessKeys: \['PG-ORG-STRUCTURE'\]/);
   assert.doesNotMatch(source, /pageAccessKeys: \[\]/);
+  assert.match(jointFixtureSource, /V2S_SEED_OTP_FIXED_VALUE:\s*required\(credentials\.V2S_SEED_OTP_FIXED_VALUE, 'MANAGED_BOOTSTRAP_FIXED_OTP'\)/);
   assert.match(source, /R5_L2_PLATFORM_ORGANIZATION_LABEL:\s*`\$\{required\(store\.json\?\.name, 'STORE_NAME'\)\}\(\$\{required\(store\.json\?\.code, 'STORE_CODE'\)\}\)`/);
 });

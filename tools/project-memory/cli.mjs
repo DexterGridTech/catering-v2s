@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const INVENTORY_SHA256 = "cca6f31259ae0f5d19496b5972ee7be5836950e868e65b3a98f2a8c99cab4db1";
+const INVENTORY_SHA256 = "717c5380b128a1fd3cf570bae8d194b6a2483bb0f541503c0092dd7a4a24f487";
 const dimensions = ["taskKinds", "domains", "consumerFaces", "owners", "impacts", "triggers"];
 const routeFlags = {
   taskKinds: "--task-kind",

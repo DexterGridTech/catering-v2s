@@ -2,7 +2,6 @@ package com.catering.v2s.app.edge.workspaceiam;
 
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitation;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationStatus;
-import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 
 /** Maps the owner readback to the generated HTTP wire without exposing owner-only mobile/token. */
@@ -16,7 +15,7 @@ public final class WorkspaceInvitationWireMapper {
             value.id().toString(),
             value.groupWorkspaceKey(),
             value.maskedMobile(),
-            ServiceNodeType.valueOf(value.targetOrganizationType()),
+            value.targetOrganizationType(),
             value.targetOrganizationPath(),
             value.roleNames(),
             status(value.status()),

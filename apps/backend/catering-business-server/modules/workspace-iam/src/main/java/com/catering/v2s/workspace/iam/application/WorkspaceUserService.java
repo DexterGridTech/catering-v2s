@@ -36,7 +36,7 @@ public class WorkspaceUserService {
         if (session == null || session.currentAssignmentId() == null || assignments == null || taskPaths == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
         WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId());
         OrganizationTaskPathLookup.TaskPath target = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId());
-        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), target)) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), target)) throw new TaskScopeDeniedException();
         return target;
     }
 
@@ -53,17 +53,33 @@ public class WorkspaceUserService {
             if ("GROUP".equals(assignment.serviceNodeType()) && "HEAD_COMPANY".equals(expectedTargetType)) {
                 // The catalog declares this page as fixed-target/no-scope. A GROUP
                 // operator therefore receives the owner-approved aggregate, never a
-                // stale visibleDataNodeId from a previous scope-required page.
+                // scope selection from a different required page type.
                 return taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), "GROUP", assignment.serviceNodeId());
             }
-            if (expectedTargetType == null || !expectedTargetType.equals(assignment.serviceNodeType())) throw new WorkspaceAuthenticationService.SessionInvalidException();
+            if (expectedTargetType == null || !expectedTargetType.equals(assignment.serviceNodeType())) throw new TaskScopeDeniedException();
             return taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId());
         }
-        UUID effectiveScopeRef = requestedScopeRef == null ? session.visibleDataNodeId() : requestedScopeRef;
-        if (effectiveScopeRef == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        var selected = session.scopeContext() == null ? null : session.scopeContext().selectionFor(requiredDataNodeType);
+        UUID effectiveScopeRef = selected == null ? null : selected.dataNodeId();
+        if (requestedScopeRef != null && !requestedScopeRef.equals(effectiveScopeRef)) throw new TaskScopeDeniedException();
+        if (effectiveScopeRef == null) throw new TaskScopeDeniedException();
         OrganizationTaskPathLookup.TaskPath requested = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), expectedTargetType, effectiveScopeRef);
-        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), requested)) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), requested)) throw new TaskScopeDeniedException();
         return requested;
+    }
+
+    /** Resolves the project explicitly selected for project-context business pages. */
+    @Transactional(readOnly = true)
+    public OrganizationTaskPathLookup.TaskPath resolveSelectedProjectScope(WorkspaceSessionReadback session, UUID requestedProjectRef) {
+        if (session == null || session.currentAssignmentId() == null || assignments == null || taskPaths == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId());
+        var selected = session.scopeContext() == null ? null : session.scopeContext().selectionFor("PROJECT");
+        UUID effectiveProjectRef = selected == null ? null : selected.dataNodeId();
+        if (requestedProjectRef != null && !requestedProjectRef.equals(effectiveProjectRef)) throw new TaskScopeDeniedException();
+        if (effectiveProjectRef == null) throw new TaskScopeDeniedException();
+        OrganizationTaskPathLookup.TaskPath project = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), "PROJECT", effectiveProjectRef);
+        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), project)) throw new TaskScopeDeniedException();
+        return project;
     }
 
     /** Resolves a command target from the explicit target selected in the approved form. */
@@ -84,205 +100,92 @@ public class WorkspaceUserService {
             .orElseThrow(WorkspaceAuthenticationService.SessionInvalidException::new);
     }
 
-    /** Legacy internal compatibility only; operations endpoints must pass their fixed type. */
+    /** One candidate interface; only invitation-target candidates carry task-range restriction. */
     @Transactional(readOnly = true)
-    public OrganizationTaskPathLookup.TaskPath resolveTaskScope(WorkspaceSessionReadback session, UUID requestedScopeRef) {
-        if (session == null || session.currentAssignmentId() == null || assignments == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        String assignmentType = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId()).serviceNodeType();
-        return resolveTaskScope(session, assignmentType, requestedScopeRef);
-    }
-
-    /** Verifies a persisted target against the server-derived active (or narrowed) task scope. */
-    @Transactional(readOnly = true)
-    public boolean isTargetWithinTaskScope(WorkspaceSessionReadback session, String expectedTargetType, UUID requestedScopeRef, String targetType, UUID targetId) {
-        if (!java.util.Objects.equals(expectedTargetType, targetType) || targetId == null || taskPaths == null) return false;
-        return isTargetWithinScope(session.workspaceUuid(), session.groupWorkspaceKey(), resolveTaskScope(session, expectedTargetType, requestedScopeRef), targetType, targetId);
-    }
-
-    /** Filters a bounded set of persisted targets through one server-derived scope and one owner batch read. */
-    @Transactional(readOnly = true)
-    public Set<OrganizationTaskPathLookup.TaskPathRef> targetsWithinTaskScope(
-        WorkspaceSessionReadback session,
-        String expectedTargetType,
-        UUID requestedScopeRef,
-        List<OrganizationTaskPathLookup.TaskPathRef> targets
-    ) {
-        if (taskPaths == null || targets == null) return Set.of();
-        OrganizationTaskPathLookup.TaskPath scope = resolveTaskScope(session, expectedTargetType, requestedScopeRef);
-        LinkedHashSet<OrganizationTaskPathLookup.TaskPathRef> requested = new LinkedHashSet<>();
-        for (OrganizationTaskPathLookup.TaskPathRef target : targets) {
-            if (target != null && expectedTargetType.equals(target.targetType()) && target.targetId() != null) requested.add(target);
-        }
-        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths = taskPaths.requireTaskPaths(
-            session.workspaceUuid(), session.groupWorkspaceKey(), List.copyOf(requested)
-        );
-        LinkedHashSet<OrganizationTaskPathLookup.TaskPathRef> allowed = new LinkedHashSet<>();
-        for (OrganizationTaskPathLookup.TaskPathRef target : requested) {
-            if (isWithinScope(scope, paths.get(target))) allowed.add(target);
-        }
-        return Set.copyOf(allowed);
-    }
-
-    @Transactional(readOnly = true)
-    public CandidatePage candidatesForOperations(WorkspaceSessionReadback session, String expectedTargetType, UUID requestedScopeRef, String subjectType, String queryText, Integer page, Integer pageSize, UUID selectedOrganizationRef) {
-        OrganizationTaskPathLookup.TaskPath scope = resolveTaskScope(session, expectedTargetType, requestedScopeRef);
-        int safePage = Math.max(1, page == null ? 1 : page);
-        int safeSize = Math.min(100, Math.max(1, pageSize == null ? 20 : pageSize));
-        String normalizedQuery = blankToNull(queryText);
-        return switch (subjectType) {
+    public CandidatePage candidates(CandidateQuery query) {
+        CandidateQuery safe = query == null ? null : query.validated();
+        if (safe == null) throw new IllegalArgumentException("candidate query is required");
+        OrganizationTaskPathLookup.TaskPath scope = safe.operationsSession() == null ? null : resolveTaskScope(safe.operationsSession(), safe.targetType(), safe.requestedScopeRef());
+        int safePage = Math.max(1, safe.page() == null ? 1 : safe.page());
+        int safeSize = Math.min(100, Math.max(1, safe.pageSize() == null ? 20 : safe.pageSize()));
+        String normalizedQuery = blankToNull(safe.queryText());
+        return switch (safe.subjectType()) {
             case "ORGANIZATION" -> {
-                List<CandidateOrganization> visible = candidates.listEnabled(session.workspaceUuid(), session.groupWorkspaceKey(), expectedTargetType).stream()
+                List<CandidateOrganization> visible = candidates.listEnabled(safe.workspaceUuid(), safe.groupWorkspaceKey(), safe.targetType()).stream()
                     .map(value -> new CandidateOrganization(value.serviceNodeType(), value.organizationRef(), value.path()))
-                    .filter(value -> isTargetWithinScope(session.workspaceUuid(), session.groupWorkspaceKey(), scope, value.serviceNodeType(), value.organizationRef()))
+                    .filter(value -> scope == null || isTargetWithinScope(safe.workspaceUuid(), safe.groupWorkspaceKey(), scope, value.serviceNodeType(), value.organizationRef()))
                     .filter(value -> contains(value.path(), normalizedQuery))
                     .sorted(java.util.Comparator.comparing(CandidateOrganization::path).thenComparing(value -> value.organizationRef().toString()))
                     .toList();
                 yield new CandidatePage(new CandidateQueryMetadata("ORGANIZATION", normalizedQuery, safePage, safeSize, visible.size(), null), pageSlice(visible, safePage, safeSize), List.of());
             }
             case "ROLE" -> {
-                if (selectedOrganizationRef == null || !isTargetWithinScope(session.workspaceUuid(), session.groupWorkspaceKey(), scope, expectedTargetType, selectedOrganizationRef)) {
-                    yield new CandidatePage(new CandidateQueryMetadata("ROLE", normalizedQuery, safePage, safeSize, 0, selectedOrganizationRef), List.of(), List.of());
-                }
-                List<WorkspaceRoleReadback> enabledRoles = roles.list(session.workspaceUuid(), session.groupWorkspaceKey()).stream()
-                    .filter(role -> "ENABLED".equals(role.status()) && expectedTargetType.equals(role.serviceNodeType()))
+                boolean invitationTarget = "INVITATION_TARGET".equals(safe.candidateUsage());
+                boolean selectedIsAllowed = !invitationTarget || (safe.selectedOrganizationRef() != null && (scope == null
+                    ? isEnabledTarget(safe.workspaceUuid(), safe.groupWorkspaceKey(), safe.targetType(), safe.selectedOrganizationRef())
+                    : isTargetWithinScope(safe.workspaceUuid(), safe.groupWorkspaceKey(), scope, safe.targetType(), safe.selectedOrganizationRef())));
+                if (!selectedIsAllowed) yield new CandidatePage(new CandidateQueryMetadata("ROLE", normalizedQuery, safePage, safeSize, 0, safe.selectedOrganizationRef()), List.of(), List.of());
+                List<WorkspaceRoleReadback> enabledRoles = roles.list(safe.workspaceUuid(), safe.groupWorkspaceKey()).stream()
+                    .filter(role -> "ENABLED".equals(role.status()) && safe.targetType().equals(role.serviceNodeType()))
                     .filter(role -> contains(role.name(), normalizedQuery))
                     .sorted(java.util.Comparator.comparing(WorkspaceRoleReadback::name).thenComparing(WorkspaceRoleReadback::id))
                     .toList();
-                yield new CandidatePage(new CandidateQueryMetadata("ROLE", normalizedQuery, safePage, safeSize, enabledRoles.size(), selectedOrganizationRef), List.of(), pageSlice(enabledRoles, safePage, safeSize));
+                yield new CandidatePage(new CandidateQueryMetadata("ROLE", normalizedQuery, safePage, safeSize, enabledRoles.size(), safe.selectedOrganizationRef()), List.of(), pageSlice(enabledRoles, safePage, safeSize));
             }
             default -> throw new IllegalArgumentException("unsupported invitation candidate subject type");
         };
     }
 
     /**
-     * Platform administration has no workspace assignment scope: an enabled platform
-     * administrator may invite for every enabled organization node in the workspace.
-     * The platform edge authenticates that administrator through the platform owner
-     * before this owner-side candidate read is reached.
+     * The sole owner account-page query.  The app face chooses only a caller
+     * scope and the conditions it exposes; scope resolution and the exact
+     * count/page predicate remain in workspace-IAM.
      */
     @Transactional(readOnly = true)
-    public CandidatePage candidatesForPlatform(UUID workspaceUuid, String groupWorkspaceKey, String targetType, String subjectType, String queryText, Integer page, Integer pageSize, UUID selectedOrganizationRef) {
-        int safePage = Math.max(1, page == null ? 1 : page);
-        int safeSize = Math.min(100, Math.max(1, pageSize == null ? 20 : pageSize));
-        String normalizedQuery = blankToNull(queryText);
-        return switch (subjectType) {
-            case "ORGANIZATION" -> {
-                List<CandidateOrganization> visible = candidates.listEnabled(workspaceUuid, groupWorkspaceKey, targetType).stream()
-                    .map(value -> new CandidateOrganization(value.serviceNodeType(), value.organizationRef(), value.path()))
-                    .filter(value -> contains(value.path(), normalizedQuery))
-                    .sorted(java.util.Comparator.comparing(CandidateOrganization::path).thenComparing(value -> value.organizationRef().toString()))
-                    .toList();
-                yield new CandidatePage(new CandidateQueryMetadata("ORGANIZATION", normalizedQuery, safePage, safeSize, visible.size(), null), pageSlice(visible, safePage, safeSize), List.of());
-            }
-            case "ROLE" -> {
-                if (selectedOrganizationRef != null && !isEnabledTarget(workspaceUuid, groupWorkspaceKey, targetType, selectedOrganizationRef)) {
-                    yield new CandidatePage(new CandidateQueryMetadata("ROLE", normalizedQuery, safePage, safeSize, 0, selectedOrganizationRef), List.of(), List.of());
-                }
-                List<WorkspaceRoleReadback> enabledRoles = roles.list(workspaceUuid, groupWorkspaceKey).stream()
-                    .filter(role -> "ENABLED".equals(role.status()) && targetType.equals(role.serviceNodeType()))
-                    .filter(role -> contains(role.name(), normalizedQuery))
-                    .sorted(java.util.Comparator.comparing(WorkspaceRoleReadback::name).thenComparing(WorkspaceRoleReadback::id))
-                    .toList();
-                yield new CandidatePage(new CandidateQueryMetadata("ROLE", normalizedQuery, safePage, safeSize, enabledRoles.size(), selectedOrganizationRef), List.of(), pageSlice(enabledRoles, safePage, safeSize));
-            }
-            default -> throw new IllegalArgumentException("unsupported invitation candidate subject type");
-        };
+    public AccountPage page(AccountPageQuery query) {
+        AccountPageQuery safe = query == null ? null : query.validated();
+        if (safe == null) throw new WorkspaceAccountService.AccountNotFoundException();
+        ResolvedAccountScope scope = resolveAccountScope(safe);
+        PageOrder order = pageOrder(safe.sort(), safe.direction(), scope.operationsScoped());
+        AccountPagePredicate predicate = accountPagePredicate(safe, scope);
+        long total = jdbc.queryForObject("SELECT COUNT(*)" + predicate.joins() + predicate.where(), Long.class, predicate.values().toArray());
+        List<Object> pageValues = new ArrayList<>(predicate.values()); pageValues.add(safe.pageSize()); pageValues.add((safe.page() - 1) * safe.pageSize());
+        List<UUID> ids = jdbc.query("SELECT a.id" + predicate.joins() + predicate.where() + " ORDER BY " + order.column() + " " + order.direction() + ", a.id ASC LIMIT ? OFFSET ?", (row, index) -> row.getObject(1, UUID.class), pageValues.toArray());
+        List<User> pageUsers = users(safe.workspaceUuid(), safe.groupWorkspaceKey(), ids, false);
+        if (scope.operationsScoped()) pageUsers = usersAtExactTarget(scope.targetType(), scope.targetId(), pageUsers);
+        return new AccountPage(pageUsers, safe.page(), safe.pageSize(), total, scope.targetType(), scope.scopeRef(), scope.scopeName(), scope.contextVersion(), order.sort(), order.direction());
     }
 
     @Transactional(readOnly = true)
-    public Page pageForOperations(WorkspaceSessionReadback session, String expectedTargetType, UUID requestedScopeRef, String userName, String mobile, String roleQuery, String status, int page, int pageSize) {
-        return pageForOperations(session, expectedTargetType, requestedScopeRef, userName, mobile, roleQuery, status, page, pageSize, null, null);
-    }
-
-    /** The owner accepts only page-visible user attributes; role aggregation is intentionally not sortable. */
-    @Transactional(readOnly = true)
-    public Page pageForOperations(WorkspaceSessionReadback session, String expectedTargetType, UUID requestedScopeRef, String userName, String mobile, String roleQuery, String status, int page, int pageSize, String sort, String direction) {
-        OrganizationTaskPathLookup.TaskPath scope = resolveTaskScope(session, expectedTargetType, requestedScopeRef);
-        int safePage = Math.max(1, page); int safeSize = Math.min(100, Math.max(1, pageSize));
-        PageOrder order = operationsPageOrder(sort, direction);
-        boolean groupHeadCompanyAggregate = "GROUP".equals(scope.targetType()) && "HEAD_COMPANY".equals(expectedTargetType);
-        List<UUID> ids = groupHeadCompanyAggregate
-            ? accountIdsForTargetFamily(session.workspaceUuid(), session.groupWorkspaceKey(), expectedTargetType, userName, mobile, roleQuery, status, safePage, safeSize, order)
-            : accountIdsForTarget(session.workspaceUuid(), session.groupWorkspaceKey(), expectedTargetType, scope.targetId(), userName, mobile, roleQuery, status, safePage, safeSize, order);
-        List<User> visible = usersWithinTaskScope(session, scope, expectedTargetType, users(session.workspaceUuid(), session.groupWorkspaceKey(), ids));
-        return new Page(
-            visible, safePage, safeSize, groupHeadCompanyAggregate
-                ? accountTotalForTargetFamily(session.workspaceUuid(), session.groupWorkspaceKey(), expectedTargetType, userName, mobile, roleQuery, status)
-                : accountTotalForTarget(session.workspaceUuid(), session.groupWorkspaceKey(), expectedTargetType, scope.targetId(), userName, mobile, roleQuery, status),
-            expectedTargetType, groupHeadCompanyAggregate ? null : scope.targetId().toString(), groupHeadCompanyAggregate ? null : scope.displayPath(), session.contextVersion(), order.sort(), order.direction()
-        );
-    }
-
-    @Transactional(readOnly = true)
-    public User userForOperations(WorkspaceSessionReadback session, String expectedTargetType, UUID accountId) {
-        List<User> visible = usersWithinTaskScope(session, resolveCurrentTaskScope(session), expectedTargetType, users(session.workspaceUuid(), session.groupWorkspaceKey(), List.of(accountId)));
+    public User detail(AccountDetailQuery query) {
+        AccountDetailQuery safe = query == null ? null : query.validated();
+        if (safe == null) throw new WorkspaceAccountService.AccountNotFoundException();
+        if (safe.operationsSession() == null) {
+            List<User> visible = users(safe.workspaceUuid(), safe.groupWorkspaceKey(), List.of(safe.accountId()));
+            if (visible.isEmpty()) throw new WorkspaceAccountService.AccountNotFoundException();
+            return visible.getFirst();
+        }
+        WorkspaceSessionReadback session = safe.operationsSession();
+        if (!safe.workspaceUuid().equals(session.workspaceUuid()) || !safe.groupWorkspaceKey().equals(session.groupWorkspaceKey())) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        OrganizationTaskPathLookup.TaskPath scope = resolveTaskScope(session, safe.expectedTargetType(), null);
+        List<User> visible = usersAtExactTarget(scope.targetType(), scope.targetId(), users(session.workspaceUuid(), session.groupWorkspaceKey(), List.of(safe.accountId())));
         if (visible.isEmpty()) throw new WorkspaceAccountService.AccountNotFoundException();
         return visible.getFirst();
     }
-
-    @Transactional(readOnly = true)
-    public CandidatePage candidates(UUID workspaceUuid, String key, String onlyNodeType, UUID scopeId) {
-        List<CandidateOrganization> all = new java.util.ArrayList<>();
-        for (String type : List.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE")) {
-            if (onlyNodeType == null || onlyNodeType.equals(type)) {
-                all.addAll(candidates.listEnabled(workspaceUuid, key, type).stream()
-                    .map(value -> new CandidateOrganization(value.serviceNodeType(), value.organizationRef(), value.path()))
-                    .toList());
-            }
-        }
-        if (scopeId != null) all = all.stream().filter(value -> scopeId.equals(value.organizationRef())).toList();
-        List<WorkspaceRoleReadback> enabledRoles = roles.list(workspaceUuid, key).stream().filter(role -> "ENABLED".equals(role.status()) && (onlyNodeType == null || onlyNodeType.equals(role.serviceNodeType()))).toList();
-        return new CandidatePage(new CandidateQueryMetadata("ORGANIZATION", null, 1, Math.max(1, all.size()), all.size(), scopeId), all, enabledRoles);
+    private ResolvedAccountScope resolveAccountScope(AccountPageQuery query) {
+        if (query.operationsSession() == null) return new ResolvedAccountScope(false, null, null, null, null, null);
+        OrganizationTaskPathLookup.TaskPath scope = resolveTaskScope(query.operationsSession(), query.targetType(), query.requestedScopeRef());
+        return new ResolvedAccountScope(true, query.targetType(), scope.targetId(), scope.targetId().toString(), scope.displayPath(), query.operationsSession().contextVersion());
     }
 
-    @Transactional(readOnly = true)
-    public Page page(UUID workspaceUuid, String key, String nodeType, UUID scopeId, int page, int pageSize, long contextVersion) {
-        int safePage = Math.max(1, page); int safeSize = Math.min(100, Math.max(1, pageSize));
-        String scopePredicate = "(CAST(? AS uuid) IS NULL OR r.service_node_id=?)";
-        List<UUID> ids = jdbc.query("SELECT DISTINCT a.id, a.login_name_normalized FROM workspace_iam.workspace_account a JOIN workspace_iam.role_assignment r ON r.account_id=a.id WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND r.service_node_type=? AND " + scopePredicate + " ORDER BY a.login_name_normalized LIMIT ? OFFSET ?", (row, index) -> row.getObject(1, UUID.class), workspaceUuid, key, nodeType, scopeId, scopeId, safeSize, (safePage - 1) * safeSize);
-        long total = jdbc.queryForObject("SELECT COUNT(DISTINCT a.id) FROM workspace_iam.workspace_account a JOIN workspace_iam.role_assignment r ON r.account_id=a.id WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND r.service_node_type=? AND " + scopePredicate, Long.class, workspaceUuid, key, nodeType, scopeId, scopeId);
-        String scopeName = scopeId == null ? null : taskPath(workspaceUuid, key, new OrganizationTaskPathLookup.TaskPathRef(nodeType, scopeId)).displayPath();
-        return new Page(users(workspaceUuid, key, ids), safePage, safeSize, total, nodeType, scopeId == null ? null : scopeId.toString(), scopeName, contextVersion);
-    }
-
-    /** Platform account search keeps the same owner predicate for COUNT and the bounded id read. */
-    @Transactional(readOnly = true)
-    public PlatformPage pageForPlatform(UUID workspaceUuid, String key, String userName, String mobile, String loginName, String roleQuery, String status, int page, int pageSize) {
-        return pageForPlatform(workspaceUuid, key, userName, mobile, loginName, roleQuery, status, null, null, page, pageSize, null, null);
-    }
-
-    /** Platform accounts may sort only concrete account columns, never joined role names. */
-    @Transactional(readOnly = true)
-    public PlatformPage pageForPlatform(UUID workspaceUuid, String key, String userName, String mobile, String loginName, String roleQuery, String status, int page, int pageSize, String sort, String direction) {
-        return pageForPlatform(workspaceUuid, key, userName, mobile, loginName, roleQuery, status, null, null, page, pageSize, sort, direction);
-    }
-
-    /**
-     * Every optional assignment filter is evaluated in one correlated assignment row.
-     * This keeps type/ref/role from being assembled from separate employments.
-     */
-    @Transactional(readOnly = true)
-    public PlatformPage pageForPlatform(UUID workspaceUuid, String key, String userName, String mobile, String loginName, String roleQuery, String status, String serviceNodeType, UUID organizationRef, int page, int pageSize, String sort, String direction) {
-        if (page < 1 || pageSize < 1 || pageSize > 100 || (status != null && !Set.of("ENABLED", "DISABLED").contains(status))) throw new WorkspaceAccountService.AccountNotFoundException();
-        PageOrder order = platformPageOrder(sort, direction);
-        PlatformPagePredicate predicate = platformPagePredicate(workspaceUuid, key, userName, mobile, loginName, roleQuery, status, serviceNodeType, organizationRef);
-        long total = jdbc.queryForObject("SELECT COUNT(*)" + predicate.joins() + predicate.where(), Long.class, predicate.values().toArray());
-        List<Object> pageValues = new ArrayList<>(predicate.values()); pageValues.add(pageSize); pageValues.add((page - 1) * pageSize);
-        List<UUID> ids = jdbc.query("SELECT a.id" + predicate.joins() + predicate.where() + " ORDER BY " + order.column() + " " + order.direction() + ", a.id ASC LIMIT ? OFFSET ?", (row, index) -> row.getObject(1, UUID.class), pageValues.toArray());
-        return new PlatformPage(users(workspaceUuid, key, ids, false), page, pageSize, total, order.sort(), order.direction());
-    }
-
-    private static PlatformPagePredicate platformPagePredicate(UUID workspaceUuid, String key, String userName, String mobile, String loginName, String roleQuery, String status, String serviceNodeType, UUID organizationRef) {
+    /** Every optional assignment condition is evaluated against one role-assignment row. */
+    private static AccountPagePredicate accountPagePredicate(AccountPageQuery query, ResolvedAccountScope scope) {
+        String serviceNodeType = scope.operationsScoped() ? scope.targetType() : query.targetType();
+        UUID organizationRef = scope.operationsScoped() ? scope.targetId() : query.organizationRef();
+        UUID roleId = query.roleId();
         String joins = " FROM workspace_iam.workspace_account a LEFT JOIN (SELECT account_id, MAX(authenticated_at_epoch_millis) AS last_login_at FROM workspace_iam.workspace_authentication_history WHERE workspace_uuid=? AND group_workspace_key=? GROUP BY account_id) login ON login.account_id=a.id";
-        String where = " WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND (CAST(? AS text) IS NULL OR a.display_name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.mobile_normalized ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.login_name_normalized ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.status=?) AND ((CAST(? AS text) IS NULL AND CAST(? AS uuid) IS NULL AND CAST(? AS text) IS NULL) OR EXISTS (SELECT 1 FROM workspace_iam.role_assignment assignment JOIN workspace_iam.workspace_role role ON role.id=assignment.role_id WHERE assignment.account_id=a.id AND assignment.workspace_uuid=a.workspace_uuid AND assignment.group_workspace_key=a.group_workspace_key AND (CAST(? AS text) IS NULL OR assignment.service_node_type=?) AND (CAST(? AS uuid) IS NULL OR assignment.service_node_id=?) AND (CAST(? AS text) IS NULL OR role.name ILIKE '%' || ? || '%')))";
-        return new PlatformPagePredicate(joins, where, java.util.Arrays.asList(workspaceUuid, key, workspaceUuid, key, userName, userName, mobile, mobile, loginName, loginName, status, status, serviceNodeType, organizationRef, roleQuery, serviceNodeType, serviceNodeType, organizationRef, organizationRef, roleQuery, roleQuery));
-    }
-
-    @Transactional(readOnly = true)
-    public User user(UUID workspaceUuid, String key, UUID accountId) {
-        List<User> values = users(workspaceUuid, key, List.of(accountId), true);
-        if (values.isEmpty()) throw new WorkspaceAccountService.AccountNotFoundException();
-        return values.getFirst();
+        String where = " WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND (CAST(? AS text) IS NULL OR a.display_name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.mobile_normalized ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.login_name_normalized ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.status=?) AND ((CAST(? AS text) IS NULL AND CAST(? AS uuid) IS NULL AND CAST(? AS uuid) IS NULL) OR EXISTS (SELECT 1 FROM workspace_iam.role_assignment assignment WHERE assignment.account_id=a.id AND assignment.workspace_uuid=a.workspace_uuid AND assignment.group_workspace_key=a.group_workspace_key AND (CAST(? AS text) IS NULL OR assignment.service_node_type=?) AND (CAST(? AS uuid) IS NULL OR assignment.service_node_id=?) AND (CAST(? AS uuid) IS NULL OR assignment.role_id=?)))";
+        return new AccountPagePredicate(joins, where, java.util.Arrays.asList(query.workspaceUuid(), query.groupWorkspaceKey(), query.workspaceUuid(), query.groupWorkspaceKey(), query.userName(), query.userName(), query.mobile(), query.mobile(), query.loginName(), query.loginName(), query.status(), query.status(), serviceNodeType, organizationRef, roleId, serviceNodeType, serviceNodeType, organizationRef, organizationRef, roleId, roleId));
     }
 
     /** Loads the page's account bundle in fixed IAM reads; organization facts are one owner batch read. */
@@ -304,66 +207,30 @@ public class WorkspaceUserService {
         for (UUID accountId : requested) {
             Account account = accounts.get(accountId);
             List<Assignment> accountAssignments = rawAssignments.getOrDefault(accountId, List.of()).stream().map(value -> assignment(value, paths)).toList();
-            values.add(new User(account.id(), account.displayName(), account.mobile(), mask(account.mobile()), account.loginName(), account.status(), pendingCredentials.contains(account.id()) ? "RESET_PENDING" : "SET", (int) accountAssignments.stream().filter(value -> "ACTIVE".equals(value.status())).count(), accountAssignments, historyByMobile.getOrDefault(account.mobile(), List.of()), lastLoginByAccount.get(account.id()), authenticationHistoryByAccount.getOrDefault(account.id(), List.of()), account.createdAt(), account.updatedAt(), account.version()));
+            values.add(new User(account.id(), account.displayName(), account.mobile(), mask(account.mobile()), account.loginName(), account.status(), pendingCredentials.contains(account.id()) ? "CHANGE_REQUIRED" : "SET", (int) accountAssignments.stream().filter(value -> "ACTIVE".equals(value.status())).count(), accountAssignments, historyByMobile.getOrDefault(account.mobile(), List.of()), lastLoginByAccount.get(account.id()), authenticationHistoryByAccount.getOrDefault(account.id(), List.of()), account.createdAt(), account.updatedAt(), account.version()));
         }
         return List.copyOf(values);
     }
 
-    private List<User> usersWithinTaskScope(WorkspaceSessionReadback session, OrganizationTaskPathLookup.TaskPath scope, String expectedTargetType, List<User> users) {
+    /**
+     * Operations user pages are a management view of one exact selected node.
+     * Account membership is selected by the same target in SQL; this owner-side
+     * projection keeps the returned role and invitation facts on that exact node
+     * instead of leaking the account's other valid assignments into the view.
+     */
+    private List<User> usersAtExactTarget(String targetType, UUID targetId, List<User> users) {
         Map<UUID, List<AssignmentTarget>> invitationTargets = invitationTargets(users.stream().flatMap(user -> user.invitationHistory().stream()).map(Invitation::invitationId).toList());
-        List<OrganizationTaskPathLookup.TaskPathRef> targets = new ArrayList<>();
-        users.forEach(user -> user.assignments().stream().filter(value -> expectedTargetType.equals(value.serviceNodeType())).forEach(value -> targets.add(new OrganizationTaskPathLookup.TaskPathRef(value.serviceNodeType(), value.serviceNodeId()))));
-        invitationTargets.values().forEach(values -> values.forEach(value -> targets.add(new OrganizationTaskPathLookup.TaskPathRef(value.serviceNodeType(), value.serviceNodeId()))));
-        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths = taskPaths(session.workspaceUuid(), session.groupWorkspaceKey(), targets);
         List<User> visible = new ArrayList<>();
         for (User user : users) {
-            List<Assignment> assignments = user.assignments().stream().filter(value -> expectedTargetType.equals(value.serviceNodeType()) && isWithinScope(scope, paths.get(new OrganizationTaskPathLookup.TaskPathRef(value.serviceNodeType(), value.serviceNodeId())))).toList();
+            List<Assignment> assignments = user.assignments().stream().filter(value -> targetType.equals(value.serviceNodeType()) && targetId.equals(value.serviceNodeId())).toList();
             if (assignments.isEmpty()) continue;
             List<Invitation> history = user.invitationHistory().stream().filter(invitation -> {
                 List<AssignmentTarget> targetsForInvitation = invitationTargets.getOrDefault(invitation.invitationId(), List.of());
-                return !targetsForInvitation.isEmpty() && targetsForInvitation.stream().allMatch(target -> isWithinScope(scope, paths.get(new OrganizationTaskPathLookup.TaskPathRef(target.serviceNodeType(), target.serviceNodeId()))));
+                return !targetsForInvitation.isEmpty() && targetsForInvitation.stream().allMatch(target -> targetType.equals(target.serviceNodeType()) && targetId.equals(target.serviceNodeId()));
             }).toList();
             visible.add(new User(user.accountId(), user.displayName(), user.mobile(), user.maskedMobile(), user.loginName(), user.status(), user.credentialStatus(), (int) assignments.stream().filter(value -> "ACTIVE".equals(value.status())).count(), assignments, history, user.lastLoginAt(), user.authenticationHistory(), user.createdAt(), user.updatedAt(), user.revision()));
         }
         return List.copyOf(visible);
-    }
-
-    private List<UUID> accountIdsForTarget(UUID workspaceUuid, String key, String targetType, UUID targetId, String userName, String mobile, String roleQuery, String status, int page, int pageSize, PageOrder order) {
-        String joins = " FROM workspace_iam.workspace_account a JOIN workspace_iam.role_assignment r ON r.account_id=a.id AND r.workspace_uuid=a.workspace_uuid AND r.group_workspace_key=a.group_workspace_key LEFT JOIN workspace_iam.workspace_role role ON role.id=r.role_id";
-        String where = " WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND r.service_node_type=? AND r.service_node_id=? AND (CAST(? AS text) IS NULL OR a.display_name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.mobile_normalized ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR role.name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.status=?)";
-        List<Object> values = new ArrayList<>();
-        values.add(workspaceUuid);
-        values.add(key);
-        values.add(targetType);
-        values.add(targetId);
-        values.add(userName);
-        values.add(userName);
-        values.add(mobile);
-        values.add(mobile);
-        values.add(roleQuery);
-        values.add(roleQuery);
-        values.add(status);
-        values.add(status);
-        values.add(pageSize); values.add((page - 1) * pageSize);
-        return jdbc.query("SELECT DISTINCT a.id, " + order.column() + joins + where + " ORDER BY " + order.column() + " " + order.direction() + ", a.id ASC LIMIT ? OFFSET ?", (row, index) -> row.getObject(1, UUID.class), values.toArray());
-    }
-
-    private long accountTotalForTarget(UUID workspaceUuid, String key, String targetType, UUID targetId, String userName, String mobile, String roleQuery, String status) {
-        return jdbc.queryForObject("SELECT COUNT(DISTINCT a.id) FROM workspace_iam.workspace_account a JOIN workspace_iam.role_assignment r ON r.account_id=a.id AND r.workspace_uuid=a.workspace_uuid AND r.group_workspace_key=a.group_workspace_key LEFT JOIN workspace_iam.workspace_role role ON role.id=r.role_id WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND r.service_node_type=? AND r.service_node_id=? AND (CAST(? AS text) IS NULL OR a.display_name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.mobile_normalized ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR role.name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.status=?)", Long.class, workspaceUuid, key, targetType, targetId, userName, userName, mobile, mobile, roleQuery, roleQuery, status, status);
-    }
-
-    private List<UUID> accountIdsForTargetFamily(UUID workspaceUuid, String key, String targetType, String userName, String mobile, String roleQuery, String status, int page, int pageSize, PageOrder order) {
-        String joins = " FROM workspace_iam.workspace_account a JOIN workspace_iam.role_assignment r ON r.account_id=a.id AND r.workspace_uuid=a.workspace_uuid AND r.group_workspace_key=a.group_workspace_key LEFT JOIN workspace_iam.workspace_role role ON role.id=r.role_id";
-        String where = " WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND r.service_node_type=? AND (CAST(? AS text) IS NULL OR a.display_name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.mobile_normalized ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR role.name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.status=?)";
-        List<Object> values = new ArrayList<>();
-        values.add(workspaceUuid); values.add(key); values.add(targetType);
-        values.add(userName); values.add(userName); values.add(mobile); values.add(mobile); values.add(roleQuery); values.add(roleQuery); values.add(status); values.add(status);
-        values.add(pageSize); values.add((page - 1) * pageSize);
-        return jdbc.query("SELECT DISTINCT a.id, " + order.column() + joins + where + " ORDER BY " + order.column() + " " + order.direction() + ", a.id ASC LIMIT ? OFFSET ?", (row, index) -> row.getObject(1, UUID.class), values.toArray());
-    }
-
-    private long accountTotalForTargetFamily(UUID workspaceUuid, String key, String targetType, String userName, String mobile, String roleQuery, String status) {
-        return jdbc.queryForObject("SELECT COUNT(DISTINCT a.id) FROM workspace_iam.workspace_account a JOIN workspace_iam.role_assignment r ON r.account_id=a.id AND r.workspace_uuid=a.workspace_uuid AND r.group_workspace_key=a.group_workspace_key LEFT JOIN workspace_iam.workspace_role role ON role.id=r.role_id WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND r.service_node_type=? AND (CAST(? AS text) IS NULL OR a.display_name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.mobile_normalized ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR role.name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.status=?)", Long.class, workspaceUuid, key, targetType, userName, userName, mobile, mobile, roleQuery, roleQuery, status, status);
     }
 
     private Map<UUID, Account> accounts(UUID workspaceUuid, String key, Set<UUID> ids) {
@@ -403,7 +270,7 @@ public class WorkspaceUserService {
     }
 
     private Set<UUID> pendingCredentialAccounts(Set<UUID> accountIds) {
-        return Set.copyOf(jdbc.query("SELECT DISTINCT account_id FROM workspace_iam.password_reset WHERE status IN ('PENDING','MOBILE_VERIFIED') AND account_id IN (" + placeholders(accountIds.size()) + ")", (row, index) -> row.getObject(1, UUID.class), accountIds.toArray()));
+        return Set.copyOf(jdbc.query("SELECT account_id FROM workspace_iam.workspace_credential WHERE password_change_required=TRUE AND account_id IN (" + placeholders(accountIds.size()) + ")", (row, index) -> row.getObject(1, UUID.class), accountIds.toArray()));
     }
 
     private Map<UUID, List<AssignmentTarget>> invitationTargets(List<UUID> invitationIds) {
@@ -443,7 +310,6 @@ public class WorkspaceUserService {
         return new Assignment(value.id(), value.accountId(), value.roleId(), value.roleName(), value.serviceNodeType(), path.displayPath(), value.status(), value.sourceInvitationId() == null ? "ADMINISTRATION" : "INVITATION", value.revision(), value.createdAt(), value.updatedAt(), value.serviceNodeId());
     }
 
-    private static boolean isWithinScope(OrganizationTaskPathLookup.TaskPath scope, OrganizationTaskPathLookup.TaskPath target) { return target != null && target.ancestorIds().contains(scope.targetId()); }
     private static boolean contains(String value, String query) { return query == null || (value != null && value.toLowerCase(java.util.Locale.ROOT).contains(query.toLowerCase(java.util.Locale.ROOT))); }
     private static String blankToNull(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     private static <T> List<T> pageSlice(List<T> values, int page, int pageSize) {
@@ -468,22 +334,13 @@ public class WorkspaceUserService {
 
     private String path(UUID workspaceUuid, String key, String nodeType, UUID id) { return switch (nodeType) { case "GROUP" -> groups.describeCommercialGroup(workspaceUuid, key, id); case "REGION", "PROJECT" -> nodes.describePath(workspaceUuid, key, id); case "HEAD_COMPANY", "STORE" -> entities.describeEntityPath(workspaceUuid, key, nodeType, id); default -> throw new IllegalArgumentException("unsupported service node type"); }; }
     private static CommercialGroupLookup legacyGroups(OrganizationNodeLookup nodes) { return new CommercialGroupLookup() { @Override public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) { throw new UnsupportedOperationException("legacy tests supply a GROUP node"); } @Override public boolean isEnterableCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.isEnterable(workspaceUuid, groupWorkspaceKey, commercialGroupRef); } @Override public String describeCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.describePath(workspaceUuid, groupWorkspaceKey, commercialGroupRef); } }; }
-    private static PageOrder operationsPageOrder(String sort, String direction) {
+    private static PageOrder pageOrder(String sort, String direction, boolean operationsScoped) {
         String safeSort = sort == null ? "LOGIN_NAME" : sort;
         String column = switch (safeSort) {
             case "DISPLAY_NAME" -> "a.display_name";
             case "LOGIN_NAME" -> "a.login_name_normalized";
-            default -> throw new WorkspaceAccountService.AccountNotFoundException();
-        };
-        return new PageOrder(column, safeSort, sortDirection(direction));
-    }
-    private static PageOrder platformPageOrder(String sort, String direction) {
-        String safeSort = sort == null ? "LOGIN_NAME" : sort;
-        String column = switch (safeSort) {
-            case "DISPLAY_NAME" -> "a.display_name";
-            case "LOGIN_NAME" -> "a.login_name_normalized";
-            case "LAST_LOGIN_AT" -> "COALESCE(login.last_login_at, -1)";
-            case "UPDATED_AT" -> "a.updated_at_epoch_millis";
+            case "LAST_LOGIN_AT" -> { if (operationsScoped) throw new WorkspaceAccountService.AccountNotFoundException(); yield "COALESCE(login.last_login_at, -1)"; }
+            case "UPDATED_AT" -> { if (operationsScoped) throw new WorkspaceAccountService.AccountNotFoundException(); yield "a.updated_at_epoch_millis"; }
             default -> throw new WorkspaceAccountService.AccountNotFoundException();
         };
         return new PageOrder(column, safeSort, sortDirection(direction));
@@ -495,9 +352,27 @@ public class WorkspaceUserService {
     }
     private static String invitationStatus(String status) { return switch (status) { case "CANCELLED" -> "CANCELLED"; case "COMPLETED" -> "COMPLETED"; case "EXPIRED" -> "EXPIRED"; default -> "ACTIVE"; }; }
     private static String mask(String value) { return value.length() <= 4 ? "****" : value.substring(0, Math.min(3, value.length())) + "****" + value.substring(Math.max(3, value.length() - 4)); }
+    /** A valid session attempted a direct primary read outside its role-node range. */
+    public static final class TaskScopeDeniedException extends RuntimeException { }
+
     private record Account(UUID id, String displayName, String mobile, String loginName, String status, long version, long createdAt, long updatedAt) { }
-    public record Page(List<User> items, int page, int pageSize, long total, String targetOrganizationType, String scopeRef, String scopeName, long contextVersion, String sort, String direction) { public Page(List<User> items, int page, int pageSize, long total, String targetOrganizationType, String scopeRef, String scopeName, long contextVersion) { this(items, page, pageSize, total, targetOrganizationType, scopeRef, scopeName, contextVersion, "LOGIN_NAME", "ASC"); } }
-    public record PlatformPage(List<User> items, int page, int pageSize, long total, String sort, String direction) { public PlatformPage(List<User> items, int page, int pageSize, long total) { this(items, page, pageSize, total, "LOGIN_NAME", "ASC"); } }
+    public record AccountPageQuery(UUID workspaceUuid, String groupWorkspaceKey, WorkspaceSessionReadback operationsSession, String targetType, UUID requestedScopeRef, UUID organizationRef, String userName, String mobile, String loginName, UUID roleId, String status, String sort, String direction, int page, int pageSize) {
+        public static AccountPageQuery forOperations(WorkspaceSessionReadback session, String targetType, UUID requestedScopeRef, String userName, String mobile, UUID roleId, String status, String sort, String direction, int page, int pageSize) { return new AccountPageQuery(session.workspaceUuid(), session.groupWorkspaceKey(), session, targetType, requestedScopeRef, null, userName, mobile, null, roleId, status, sort, direction, page, pageSize); }
+        public static AccountPageQuery forPlatform(UUID workspaceUuid, String groupWorkspaceKey, String userName, String mobile, String loginName, UUID roleId, String status, String targetType, UUID organizationRef, String sort, String direction, int page, int pageSize) { return new AccountPageQuery(workspaceUuid, groupWorkspaceKey, null, targetType, null, organizationRef, userName, mobile, loginName, roleId, status, sort, direction, page, pageSize); }
+        private AccountPageQuery validated() {
+            if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || page < 1 || pageSize < 1 || pageSize > 100 || (status != null && !Set.of("ENABLED", "DISABLED").contains(status))) throw new WorkspaceAccountService.AccountNotFoundException();
+            if (operationsSession != null && (targetType == null || targetType.isBlank() || loginName != null || organizationRef != null)) throw new WorkspaceAccountService.AccountNotFoundException();
+            return this;
+        }
+    }
+    public record AccountPage(List<User> items, int page, int pageSize, long total, String targetOrganizationType, String scopeRef, String scopeName, Long contextVersion, String sort, String direction) { }
+    /** The sole owner account-detail query; operations scope is data, never a consumer-specific API. */
+    public record AccountDetailQuery(UUID workspaceUuid, String groupWorkspaceKey, UUID accountId, WorkspaceSessionReadback operationsSession, String expectedTargetType) {
+        public static AccountDetailQuery forPlatform(UUID workspaceUuid, String groupWorkspaceKey, UUID accountId) { return new AccountDetailQuery(workspaceUuid, groupWorkspaceKey, accountId, null, null); }
+        public static AccountDetailQuery forOperations(WorkspaceSessionReadback session, String expectedTargetType, UUID accountId) { return new AccountDetailQuery(session.workspaceUuid(), session.groupWorkspaceKey(), accountId, session, expectedTargetType); }
+        private AccountDetailQuery validated() { if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || accountId == null || (operationsSession != null && (expectedTargetType == null || expectedTargetType.isBlank()))) throw new WorkspaceAccountService.AccountNotFoundException(); return this; }
+    }
+    private record ResolvedAccountScope(boolean operationsScoped, String targetType, UUID targetId, String scopeRef, String scopeName, Long contextVersion) { }
     private record PageOrder(String column, String sort, String direction) { }
     public record User(UUID accountId, String displayName, String mobile, String maskedMobile, String loginName, String status, String credentialStatus, int activeAssignmentCount, List<Assignment> assignments, List<Invitation> invitationHistory, Long lastLoginAt, List<AuthenticationHistory> authenticationHistory, long createdAt, long updatedAt, long revision) { }
     public record Assignment(UUID id, UUID accountId, UUID roleId, String roleName, String serviceNodeType, String organizationPath, String status, String source, long revision, long createdAt, long updatedAt, UUID serviceNodeId) { }
@@ -505,6 +380,14 @@ public class WorkspaceUserService {
     public record CandidatePage(CandidateQueryMetadata metadata, List<CandidateOrganization> organizations, List<WorkspaceRoleReadback> roles) { }
     public record CandidateQueryMetadata(String subjectType, String queryText, int page, int pageSize, long total, UUID selectedOrganizationRef) { }
     public record CandidateOrganization(String serviceNodeType, UUID organizationRef, String path) { }
+    public record CandidateQuery(UUID workspaceUuid, String groupWorkspaceKey, WorkspaceSessionReadback operationsSession, String targetType, UUID requestedScopeRef, String subjectType, String candidateUsage, String queryText, Integer page, Integer pageSize, UUID selectedOrganizationRef) {
+        public static CandidateQuery forOperations(WorkspaceSessionReadback session, String targetType, UUID requestedScopeRef, String subjectType, String candidateUsage, String queryText, Integer page, Integer pageSize, UUID selectedOrganizationRef) { return new CandidateQuery(session.workspaceUuid(), session.groupWorkspaceKey(), session, targetType, requestedScopeRef, subjectType, candidateUsage, queryText, page, pageSize, selectedOrganizationRef); }
+        public static CandidateQuery forPlatform(UUID workspaceUuid, String groupWorkspaceKey, String targetType, String subjectType, String candidateUsage, String queryText, Integer page, Integer pageSize, UUID selectedOrganizationRef) { return new CandidateQuery(workspaceUuid, groupWorkspaceKey, null, targetType, null, subjectType, candidateUsage, queryText, page, pageSize, selectedOrganizationRef); }
+        private CandidateQuery validated() {
+            if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || targetType == null || subjectType == null || !Set.of("ORGANIZATION", "ROLE").contains(subjectType) || !Set.of("INVITATION_TARGET", "LIST_FILTER").contains(candidateUsage) || ("LIST_FILTER".equals(candidateUsage) && selectedOrganizationRef != null) || ("INVITATION_TARGET".equals(candidateUsage) && "ROLE".equals(subjectType) && selectedOrganizationRef == null)) throw new IllegalArgumentException("invalid candidate query");
+            return this;
+        }
+    }
     private record RawAssignment(UUID id, UUID accountId, UUID roleId, String roleName, String serviceNodeType, UUID serviceNodeId, String status, UUID sourceInvitationId, long revision, long createdAt, long updatedAt) { }
     public record AuthenticationHistory(UUID id, long authenticatedAt) { }
     private record AuthenticationLatest(UUID accountId, long authenticatedAt) { }
@@ -512,5 +395,5 @@ public class WorkspaceUserService {
     private record MobileInvitation(String mobile, Invitation invitation) { }
     private record InvitationTarget(UUID invitationId, AssignmentTarget target) { }
     private record AssignmentTarget(String serviceNodeType, UUID serviceNodeId) { }
-    private record PlatformPagePredicate(String joins, String where, List<Object> values) { }
+    private record AccountPagePredicate(String joins, String where, List<Object> values) { }
 }

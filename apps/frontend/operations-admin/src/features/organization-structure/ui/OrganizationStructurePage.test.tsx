@@ -2,11 +2,12 @@ import {describe, expect, it} from 'vitest';
 import {readFile} from 'node:fs/promises';
 import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
 
-const [page, regionCreate, projectCreate, edit, status, phases, extensionFields] = await Promise.all([
+const [page, regionCreate, projectCreate, edit, groupEdit, status, phases, extensionFields] = await Promise.all([
   readFile(new URL('./OrganizationStructurePage.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./RegionCreateDrawer.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./ProjectCreateDrawer.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./OrganizationEditDrawer.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('./CommercialGroupEditDrawer.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./OrganizationStatusModal.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./ProjectPhaseFieldList.tsx', import.meta.url), 'utf8'),
   readFile(new URL('./OrganizationExtensionFields.tsx', import.meta.url), 'utf8'),
@@ -34,7 +35,8 @@ describe('organization structure focused IA contract', () => {
     expect(page).toContain('size="small" column={1} styles={{label: {width: 164}}}');
     expect(page).toContain("selected.nodeType === 'GROUP' ? 'COMMERCIAL_GROUP' : 'ORGANIZATION_NODE'");
     expect(page).not.toContain('<Space style={{marginTop: 16}} wrap>');
-    expect(page).not.toContain('selected.phases');
+    expect(page).toContain("selected.nodeType === 'PROJECT' ? [{key: 'phases', label: '项目分期名称'");
+    expect(page).toContain("selected.phases.join('、') || '—'");
     expect(page).toContain('organizationStructurePageTitle');
     expect(page).not.toContain('title={organizationStructurePageTitle}');
     expect(page).not.toMatch(/title:\s*['"]操作['"]/);
@@ -49,12 +51,14 @@ describe('organization structure focused IA contract', () => {
     expect(regionCreate).toContain('useOverlayLock(open)');
     expect(projectCreate).toContain('useOverlayLock(open)');
     expect(phases).toContain('operations-project-phase-add');
+    expect(phases).toContain("name={[field.name, 'name']}");
+    expect(phases).not.toContain('<Form.Item {...field} noStyle');
     expect(phases).toContain('move(index, index - 1)');
     expect(phases).toContain('move(index, index + 1)');
   });
 
   it('closes the detail context before independent edit/status surfaces and preserves owner readback', () => {
-    expect(page).toContain('setEditing(selected); setSelected(undefined);');
+    expect(page).toContain("if (selected.nodeType === 'GROUP') setEditingCommercialGroup(selected); else setEditing(selected); setSelected(undefined);");
     expect(page).toContain('setTransitionTarget(selected); setSelected(undefined);');
     expect(page).toContain('const readback = await operationsClient.transitionOperationsOrganizationNodeStatus');
     expect(page).toContain('setSelected(rowFromNode(readback));');
@@ -84,6 +88,24 @@ describe('organization structure focused IA contract', () => {
     expect(edit).toContain("node?.nodeType === 'PROJECT' ? 'PROJECT' : 'REGION'");
     expect(page).toContain("selected?.nodeType === 'GROUP' ? 'COMMERCIAL_GROUP'");
     expect(page).toContain('organizationExtensionDetailItems(definition.data, selected.extensionValues)');
-    expect(regionCreate + projectCreate + edit).toContain('disabled={!definitionReady}');
+    expect(groupEdit).toContain("entityType: 'COMMERCIAL_GROUP'");
+    expect(groupEdit).toContain(OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsCommercialGroup);
+    expect(groupEdit).toContain('updateOperationsCommercialGroup');
+    expect(groupEdit).toContain('expectedVersion: group.revision');
+    expect(groupEdit).toContain("'Idempotency-Key': lifecycle.getIdempotencyKey()");
+    expect(groupEdit).toContain("testId('operations-commercial-group-edit-submit')");
+    expect(groupEdit).toContain('useOverlayLock(Boolean(group))');
+    expect(groupEdit).toContain('maskClosable');
+    expect(groupEdit).not.toContain('<Input readOnly');
+    expect(regionCreate + projectCreate + edit + groupEdit).toContain('disabled={!definitionReady}');
+  });
+
+  it('renders the persisted group-edit grant as one owner-backed edit path without inferring a group-status action', () => {
+    expect(page).toContain("row.nodeType === 'GROUP'");
+    expect(page).toContain('ACTION_CAPABILITIES.ORG_GROUP_EDIT');
+    expect(page).toContain("? actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_GROUP_EDIT)");
+    expect(page).toContain('<CommercialGroupEditDrawer');
+    expect(page).toContain('rowFromCommercialGroup(group)');
+    expect(page).not.toContain('ACTION_CAPABILITIES.ORG_GROUP_STATUS');
   });
 });

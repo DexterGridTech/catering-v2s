@@ -2,6 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceOperationsInvitationActionRequest(
+    String scopeRef,
     Long expectedVersion,
     Long expectedContextVersion,
     String idempotencyKey

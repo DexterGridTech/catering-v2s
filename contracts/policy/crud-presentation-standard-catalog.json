@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "kind": "crud-presentation-standard-catalog",
+  "authority": "Dexter 2026-08-04 product-standard",
+  "scope": "Both administrative applications: CRUD list query, primary-entity columns and detail surfaces.",
+  "rules": {
+    "primaryListIdentity": "The primary entity name cell renders name only; its real code is a separate visible column.",
+    "primaryDetailIdentity": "The primary entity name and real code render as separate detail values.",
+    "relatedIdentity": "A related entity with both owner facts renders 名称(编码).",
+    "externalEntityFilter": "A relationship filter selects the owner-issued opaque identifier from an owner candidate query and searches actual name and code; a model without a real code is explicitly name-only.",
+    "columnsStrictlyCoverFilters": "Every visible semantic filter has an equivalent visible result column, and each list has at least one additional business column."
+  },
+  "counterexamples": [
+    "A primary entity self name/code text filter remains a text condition, not a relationship selector.",
+    "Hierarchy navigation titles and local name/code navigation search are not flat CRUD result rows.",
+    "A relation whose owner model has no code must not fabricate a code."
+  ],
+  "surfaceCoverage": [
+    {
+      "id": "platform-organization-overview",
+      "source": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "primaryKinds": ["BRAND", "TENANT", "HEAD_COMPANY", "STORE"],
+      "tableIndex": 0,
+      "filterKeys": ["name", "code", "legalName", "unifiedSocialCreditCode", "status", "source", "projectId", "brandId", "tenantId", "headCompanyId"],
+      "filterColumnMappings": [{"filterKey":"name","visibleColumnTitle":"名称"},{"filterKey":"code","visibleColumnTitle":"编码"},{"filterKey":"legalName","visibleColumnTitle":"法人公司"},{"filterKey":"unifiedSocialCreditCode","visibleColumnTitle":"统一代码"},{"filterKey":"status","visibleColumnTitle":"状态"},{"filterKey":"source","visibleColumnTitle":"来源"},{"filterKey":"projectId","visibleColumnTitle":"项目"},{"filterKey":"brandId","visibleColumnTitle":"品牌"},{"filterKey":"tenantId","visibleColumnTitle":"经营租户"},{"filterKey":"headCompanyId","visibleColumnTitle":"总公司"}],
+      "additionalVisibleColumnTitles": ["别名", "备注", "更新时间"],
+      "primaryIdentityForbidden": ["formatNameCode(row.name, row.code)"],
+      "primaryIdentityRequired": [">{row.name}</Button>"]
+    },
+    {
+      "id": "platform-contract-overview",
+      "source": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx",
+      "primaryKinds": ["CONTRACT"],
+      "tableIndex": 1,
+      "filterKeys": ["contractNo", "storeId", "phaseName", "tenantId", "itemCode", "status"],
+      "filterColumnMappings": [{"filterKey":"contractNo","visibleColumnTitle":"合同编号"},{"filterKey":"storeId","visibleColumnTitle":"门店"},{"filterKey":"phaseName","visibleColumnTitle":"分期"},{"filterKey":"tenantId","visibleColumnTitle":"经营租户"},{"filterKey":"itemCode","visibleColumnTitle":"货号"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["起止日期"],
+      "relatedIdentityRequired": ["formatNameCode(row.storeRef.name, row.storeRef.code)", "formatNameCode(row.tenantRef.name, row.tenantRef.code)"],
+      "externalFilterRequiredExpressions": ["dataIndex: 'storeId'", "dataIndex: 'tenantId'"]
+    },
+    {
+      "id": "operations-business-entities",
+      "source": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityManagementPage.tsx",
+      "primaryKinds": ["BRAND", "TENANT", "HEAD_COMPANY"],
+      "tableIndex": 0,
+      "filterKeys": ["name", "code", "legalName", "unifiedSocialCreditCode", "status"],
+      "filterColumnMappings": [{"filterKey":"name","visibleColumnTitle":"名称"},{"filterKey":"code","visibleColumnTitle":"编码"},{"filterKey":"legalName","visibleColumnTitle":"法人公司"},{"filterKey":"unifiedSocialCreditCode","visibleColumnTitle":"统一代码"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["别名", "备注", "更新时间"],
+      "primaryIdentityForbidden": ["formatNameCode(row.name, row.code)"],
+      "primaryIdentityRequired": [">{entity.name}</Button>"]
+    },
+    {
+      "id": "operations-stores",
+      "source": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
+      "primaryKinds": ["STORE"],
+      "tableIndex": 0,
+      "filterKeys": ["name", "code", "projectId", "status"],
+      "filterColumnMappings": [{"filterKey":"name","visibleColumnTitle":"门店名称"},{"filterKey":"code","visibleColumnTitle":"编码"},{"filterKey":"projectId","visibleColumnTitle":"项目"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["品牌", "总公司", "备注"],
+      "primaryIdentityForbidden": ["formatNameCode(row.name, row.code)"],
+      "primaryIdentityRequired": [">{row.name}</Button>"],
+      "relatedIdentityRequired": ["formatNameCode(row.project.name, row.project.code)", "formatNameCode(row.brand.name, row.brand.code)", "formatNameCode(row.tenant.name, row.tenant.code)"]
+    },
+    {
+      "id": "operations-contracts",
+      "source": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
+      "primaryKinds": ["CONTRACT"],
+      "tableIndex": 0,
+      "filterKeys": ["contractNo", "projectId", "storeId", "phaseName", "tenantId", "status", "dateRange"],
+      "filterColumnMappings": [{"filterKey":"contractNo","visibleColumnTitle":"合同编号"},{"filterKey":"projectId","visibleColumnTitle":"项目"},{"filterKey":"storeId","visibleColumnTitle":"门店"},{"filterKey":"phaseName","visibleColumnTitle":"分期"},{"filterKey":"tenantId","visibleColumnTitle":"经营租户"},{"filterKey":"status","visibleColumnTitle":"状态"},{"filterKey":"dateRange","visibleColumnTitle":"起止日期"}],
+      "additionalVisibleColumnTitles": ["更新时间"],
+      "relatedIdentityRequired": ["formatNameCode(row.project.name, row.project.code)", "formatNameCode(row.store.name, row.store.code)", "formatNameCode(row.tenant.name, row.tenant.code)"],
+      "externalFilterRequiredExpressions": ["dataIndex: 'tenantId'"]
+    },
+    {
+      "id": "platform-workspace-management",
+      "source": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "primaryKinds": ["GROUP_WORKSPACE"],
+      "tableIndex": 0,
+      "filterKeys": ["name", "groupWorkspaceKey", "operationsTitle", "status"],
+      "filterColumnMappings": [{"filterKey":"name","visibleColumnTitle":"集团空间名称"},{"filterKey":"groupWorkspaceKey","visibleColumnTitle":"集团空间编码"},{"filterKey":"operationsTitle","visibleColumnTitle":"运营管理后台标题名称"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["Logo"],
+      "primaryIdentityForbidden": ["formatNameCode(row.name, row.groupWorkspaceKey)"],
+      "primaryIdentityRequired": [">{row.name}</Button>"]
+    },
+    {
+      "id": "platform-administrators",
+      "source": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
+      "primaryKinds": ["PLATFORM_ADMIN"],
+      "tableIndex": 0,
+      "filterKeys": ["userName", "loginName", "status"],
+      "filterColumnMappings": [{"filterKey":"userName","visibleColumnTitle":"姓名"},{"filterKey":"loginName","visibleColumnTitle":"登录账号"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["账号类型"]
+    },
+    {
+      "id": "platform-roles",
+      "source": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
+      "primaryKinds": ["WORKSPACE_ROLE_NO_CODE"],
+      "tableIndex": 0,
+      "filterKeys": ["name", "serviceNodeType", "status"],
+      "filterColumnMappings": [{"filterKey":"name","visibleColumnTitle":"名称"},{"filterKey":"serviceNodeType","visibleColumnTitle":"任职机构类型"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["说明"]
+    },
+    {
+      "id": "platform-accounts",
+      "source": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
+      "primaryKinds": ["WORKSPACE_ACCOUNT_NO_CODE"],
+      "tableIndex": 0,
+      "filterKeys": ["displayName", "mobile", "loginName", "status", "serviceNodeType", "organizationRef", "roleId"],
+      "filterColumnMappings": [{"filterKey":"displayName","visibleColumnTitle":"姓名"},{"filterKey":"mobile","visibleColumnTitle":"手机号"},{"filterKey":"loginName","visibleColumnTitle":"登录账号"},{"filterKey":"status","visibleColumnTitle":"状态"},{"filterKey":"serviceNodeType","visibleColumnTitle":"任职机构 / 业务角色"},{"filterKey":"organizationRef","visibleColumnTitle":"任职机构 / 业务角色"},{"filterKey":"roleId","visibleColumnTitle":"任职机构 / 业务角色"}],
+      "additionalVisibleColumnTitles": ["最后登录时间"],
+      "externalFilterRequiredExpressions": ["dataIndex: 'roleId'"]
+    },
+    {
+      "id": "platform-invitations",
+      "source": "apps/frontend/platform-admin/src/features/workspace-iam/ui/PlatformInvitationPanel.tsx",
+      "primaryKinds": ["WORKSPACE_INVITATION_NO_CODE"],
+      "tableIndex": 0,
+      "filterKeys": ["mobile", "targetOrganizationType", "targetOrganizationRef", "roleId", "status"],
+      "filterColumnMappings": [{"filterKey":"mobile","visibleColumnTitle":"邀请手机号"},{"filterKey":"targetOrganizationType","visibleColumnTitle":"任职机构类型"},{"filterKey":"targetOrganizationRef","visibleColumnTitle":"任职机构"},{"filterKey":"roleId","visibleColumnTitle":"业务角色"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["有效期"],
+      "externalFilterRequiredExpressions": ["dataIndex: 'roleId'"]
+    },
+    {
+      "id": "operations-workspace-users",
+      "source": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx",
+      "primaryKinds": ["WORKSPACE_USER_NO_CODE"],
+      "tableIndex": 0,
+      "filterKeys": ["displayName", "mobile", "roleId", "status"],
+      "filterColumnMappings": [{"filterKey":"displayName","visibleColumnTitle":"姓名"},{"filterKey":"mobile","visibleColumnTitle":"手机号"},{"filterKey":"roleId","visibleColumnTitle":"业务角色"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["登录账号"],
+      "externalFilterRequiredExpressions": ["dataIndex: 'roleId'"]
+    },
+    {
+      "id": "operations-invitations",
+      "source": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
+      "primaryKinds": ["WORKSPACE_INVITATION_NO_CODE"],
+      "tableIndex": 0,
+      "filterKeys": ["mobile", "organizationRef", "roleId", "status", "expiresRange"],
+      "filterColumnMappings": [{"filterKey":"mobile","visibleColumnTitle":"邀请手机号"},{"filterKey":"organizationRef","visibleColumnTitle":"任职机构"},{"filterKey":"roleId","visibleColumnTitle":"业务角色"},{"filterKey":"status","visibleColumnTitle":"状态"},{"filterKey":"expiresRange","visibleColumnTitle":"有效期"}],
+      "additionalVisibleColumnTitles": ["发起时间"],
+      "externalFilterRequiredExpressions": ["dataIndex: 'roleId'", "dataIndex: 'organizationRef'"]
+    },
+    {
+      "id": "platform-extension-definitions",
+      "source": "apps/frontend/platform-admin/src/features/extension-management/ui/ExtensionsPage.tsx",
+      "notApplicable": true,
+      "notApplicableReason": "The table is the selected owner definition set and has no query form or separate primary-detail flow."
+    },
+    {
+      "id": "operations-store-profile-fixed-contracts",
+      "source": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "notApplicable": true,
+      "notApplicableReason": "The table is a fixed current-store profile projection with state tabs, not a general CRUD query list."
+    },
+    {
+      "id": "platform-workspace-account-detail-assignments",
+      "source": "apps/frontend/platform-admin/src/features/workspace-iam/ui/WorkspaceAccountDetailDrawer.tsx",
+      "notApplicable": true,
+      "notApplicableReason": "The embedded assignment table is a single-account detail child collection, not an independently queried CRUD list."
+    },
+    {
+      "id": "platform-audit-history",
+      "source": "apps/frontend/platform-admin/src/features/audit-history/ui/PlatformAuditHistoryModal.tsx",
+      "notApplicable": true,
+      "notApplicableReason": "The audit modal is a fixed-target event history, not an entity CRUD query list."
+    },
+    {
+      "id": "operations-audit-history",
+      "source": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
+      "notApplicable": true,
+      "notApplicableReason": "The audit modal is a fixed-target event history, not an entity CRUD query list."
+    },
+    {
+      "id": "operations-head-company-brand-selector",
+      "source": "apps/frontend/operations-admin/src/features/business-entity-management/application/HeadCompanyBrandAuthorizationActionAdapter.ts",
+      "selectorOnly": true,
+      "externalFilterRequiredExpressions": ["code: queryText"]
+    },
+    {
+      "id": "platform-organization-overview-detail",
+      "source": "apps/frontend/platform-admin/src/features/organization-contract-overview/ui/OrganizationOverviewDetailDrawer.tsx",
+      "detailOnly": true,
+      "primaryIdentityForbidden": ["formatNameCode(item.name, item.code)"],
+      "primaryIdentityRequired": ["label: '名称'", "label: '编码'"]
+    },
+    {
+      "id": "platform-workspace-management-detail",
+      "source": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+      "detailOnly": true,
+      "primaryIdentityForbidden": ["formatNameCode(workspace.name, workspace.groupWorkspaceKey)"],
+      "primaryIdentityRequired": ["label: '集团空间名称'", "label: '集团空间编码'"]
+    },
+    {
+      "id": "operations-business-entity-detail",
+      "source": "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityDetailDrawer.tsx",
+      "detailOnly": true,
+      "primaryIdentityForbidden": ["formatNameCode(selected.name, selected.code)"],
+      "primaryIdentityRequired": ["label: '名称'", "label: '编码'"]
+    },
+    {
+      "id": "operations-store-detail",
+      "source": "apps/frontend/operations-admin/src/features/store-management/ui/StoreDetailDrawer.tsx",
+      "detailOnly": true,
+      "primaryIdentityForbidden": ["formatNameCode(selected.name, selected.code)"],
+      "primaryIdentityRequired": ["label: '门店名称'", "label: '门店编码'"]
+    },
+    {
+      "id": "operations-organization-structure-detail",
+      "source": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
+      "detailOnly": true,
+      "primaryIdentityForbidden": ["formatNameCode(selected.name, selected.code)"],
+      "primaryIdentityRequired": ["label: '名称'", "label: '编码'"]
+    },
+    {
+      "id": "operations-store-profile-detail",
+      "source": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
+      "detailOnly": true,
+      "primaryIdentityForbidden": ["formatNameCode(store.name, store.code)"],
+      "primaryIdentityRequired": ["label: '名称'", "label: '编码'"]
+    }
+  ]
+}

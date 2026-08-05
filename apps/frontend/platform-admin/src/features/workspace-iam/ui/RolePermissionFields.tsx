@@ -54,22 +54,29 @@ function leafKeys(nodes: PermissionTreeNode[]): Set<string> {
 
 function PermissionTreeField({value = [], onChange, treeData, marker, disabled}: {value?: string[]; onChange?: (value: string[]) => void; treeData: PermissionTreeNode[]; marker: string; disabled: boolean}) {
   const allowedLeafKeys = leafKeys(treeData);
-  return <div className="workspace-role-permission-tree" {...testId(marker)}>
+  const {errors} = Form.Item.useStatus();
+  return <><div className="workspace-role-permission-tree" {...testId(marker)}>
     <Tree checkable selectable={false} blockNode disabled={disabled} treeData={treeData} checkedKeys={value} defaultExpandAll onCheck={(checkedKeys) => onChange?.((checkedKeys as string[]).filter((key) => allowedLeafKeys.has(key)))}/>
-  </div>;
+  </div>{errors.length > 0 && <Form.ErrorList errors={errors}/>}</>;
 }
 
 /** Two independent owner-catalog trees; menu/action selections are never inferred from each other. */
-export function RolePermissionFields({catalog, serviceNodeType}: {catalog?: RoleCatalog; serviceNodeType?: ServiceNodeType}) {
+export function RolePermissionFields({catalog, serviceNodeType, fillDrawer = false}: {catalog?: RoleCatalog; serviceNodeType?: ServiceNodeType; fillDrawer?: boolean}) {
   const pageData = useMemo(() => pageTreeData(catalog, serviceNodeType), [catalog, serviceNodeType]);
   const capabilityData = useMemo(() => capabilityTreeData(catalog, serviceNodeType), [catalog, serviceNodeType]);
+  const fields = [
+    {name: 'pageAccessKeys', label: '可使用的功能菜单', treeData: pageData, marker: 'workspace-role-page-access'},
+    {name: 'capabilityKeys', label: '可执行的操作', treeData: capabilityData, marker: 'workspace-role-capability-access'},
+  ] as const;
   return <div className="workspace-role-permission-grid">
-    <Form.Item name="pageAccessKeys" label="可使用的功能菜单" rules={[{required: true, message: '请选择可使用的功能菜单'}]}>
-      <PermissionTreeField treeData={pageData} marker="workspace-role-page-access" disabled={!catalog || !serviceNodeType}/>
-    </Form.Item>
-    <Form.Item name="capabilityKeys" label="可执行的操作" rules={[{required: true, message: '请选择可执行的操作'}]}>
-      <PermissionTreeField treeData={capabilityData} marker="workspace-role-capability-access" disabled={!catalog || !serviceNodeType}/>
-    </Form.Item>
+    {fields.map((field) => fillDrawer ? <section className="workspace-role-permission-field" aria-label={field.label} key={field.name}>
+      <div className="workspace-role-permission-heading">{field.label}</div>
+      <Form.Item noStyle name={field.name} rules={[{required: true, message: `请选择${field.label}`}]}> 
+        <PermissionTreeField treeData={field.treeData} marker={field.marker} disabled={!catalog || !serviceNodeType}/>
+      </Form.Item>
+    </section> : <Form.Item className="workspace-role-permission-field" key={field.name} name={field.name} label={field.label} rules={[{required: true, message: `请选择${field.label}`}]}> 
+      <PermissionTreeField treeData={field.treeData} marker={field.marker} disabled={!catalog || !serviceNodeType}/>
+    </Form.Item>)}
   </div>;
 }
 

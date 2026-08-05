@@ -15,7 +15,6 @@
         ],
         "x-page-key": "PLATFORM-ADMIN-USERS",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -103,31 +102,30 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         }
       },
       "post": {
         "operationId": "createPlatformAdmin",
-        "x-required-platform-authorization": "REQ_CREATE_PLATFORM_ADMIN",
         "tags": [
           "platform-iam"
         ],
@@ -140,7 +138,6 @@
         ],
         "x-page-key": "PLATFORM-ADMIN-USERS",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -183,27 +180,28 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-platform-authorization": "REQ_CREATE_PLATFORM_ADMIN",
         "requestBody": {
           "required": true,
           "content": {
@@ -231,7 +229,6 @@
         ],
         "x-page-key": "PLATFORM-ADMIN-USERS",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -268,25 +265,25 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         }
       }
@@ -294,7 +291,6 @@
     "/api/platform/admin-users/{platformAdminId}/profile": {
       "patch": {
         "operationId": "updatePlatformAdminProfile",
-        "x-required-platform-authorization": "REQ_UPDATE_PLATFORM_ADMIN_PROFILE",
         "tags": [
           "platform-iam"
         ],
@@ -307,7 +303,6 @@
         ],
         "x-page-key": "PLATFORM-ADMIN-USERS",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -360,27 +355,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_UPDATE_PLATFORM_ADMIN_PROFILE",
         "requestBody": {
           "required": true,
           "content": {
@@ -396,7 +393,6 @@
     "/api/platform/admin-users/{platformAdminId}/status": {
       "post": {
         "operationId": "transitionPlatformAdminStatus",
-        "x-required-platform-authorization": "REQ_TRANSITION_PLATFORM_ADMIN_STATUS",
         "tags": [
           "platform-iam"
         ],
@@ -409,7 +405,6 @@
         ],
         "x-page-key": "PLATFORM-ADMIN-USERS",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -461,27 +456,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_TRANSITION_PLATFORM_ADMIN_STATUS",
         "requestBody": {
           "required": true,
           "content": {
@@ -497,7 +494,6 @@
     "/api/platform/admin-users/{platformAdminId}/credential-reset": {
       "post": {
         "operationId": "resetPlatformAdminCredential",
-        "x-required-platform-authorization": "REQ_RESET_PLATFORM_ADMIN_CREDENTIAL",
         "tags": [
           "platform-iam"
         ],
@@ -510,7 +506,6 @@
         ],
         "x-page-key": "PLATFORM-ADMIN-USERS",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -562,27 +557,28 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-platform-authorization": "REQ_RESET_PLATFORM_ADMIN_CREDENTIAL",
         "requestBody": {
           "required": true,
           "content": {
@@ -590,20 +586,6 @@
               "schema": {
                 "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformAdminCredentialResetRequest"
               }
-            }
-          }
-        }
-      }
-    }
-  }
-,  "components": {
-    "responses": {
-      "ProblemResponse": {
-        "description": "Problem response",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
             }
           }
         }

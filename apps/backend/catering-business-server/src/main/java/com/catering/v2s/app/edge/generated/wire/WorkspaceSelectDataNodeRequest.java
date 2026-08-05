@@ -3,6 +3,6 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceSelectDataNodeRequest(
     String dataNodeRef,
-    ServiceNodeType dataNodeType,
+    String dataNodeType,
     Long requiredContextVersion
 ) {}

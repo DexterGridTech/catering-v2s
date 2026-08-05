@@ -131,7 +131,7 @@
       "path": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
       "layer": "routed",
       "route": {"taskKinds":["design","implementation","review","testing"],"domains":["backend","contract","platform","admin-ui"],"consumerFaces":["all"],"owners":["backend","platform","contract","frontend-platform","product"],"impacts":["architecture","database","contract","evidence"],"triggers":["task-start","implementation","review"]},
-      "requiredAssertions": ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM","SET_BASED_COLLECTION_READS","OWNER_LOCAL_EFFICIENCY_REPAIR","COMMAND_CORRECTNESS_COST_PRESERVED","TASK_READ_BUDGET_REQUIRES_EXPLANATION","MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT","CONTRACT_ROUTE_CLOSURE","DIAGNOSTIC_SECRET_FLOW_EXPLICIT","EXECUTION_EVIDENCE_TAXONOMY"],
+      "requiredAssertions": ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM","SET_BASED_COLLECTION_READS","OWNER_LOCAL_EFFICIENCY_REPAIR","COMMAND_CORRECTNESS_COST_PRESERVED","TASK_READ_BUDGET_REQUIRES_EXPLANATION","MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT","CONTRACT_ROUTE_CLOSURE","GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS","DIAGNOSTIC_SECRET_FLOW_EXPLICIT","EXECUTION_EVIDENCE_TAXONOMY"],
       "assertionSources": [
         {"assertionKey":"HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"# 1. 决策与目标"},
         {"assertionKey":"SET_BASED_COLLECTION_READS","path":"PLATFORM-BLUEPRINT.md","anchor":"## HTTP CRUD 效率设计红线"},
@@ -140,10 +140,11 @@
         {"assertionKey":"TASK_READ_BUDGET_REQUIRES_EXPLANATION","path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### B.6 性能"},
         {"assertionKey":"MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"## 3.3 两层指标"},
         {"assertionKey":"CONTRACT_ROUTE_CLOSURE","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"## 3.1 契约分母（第一交付单元）"},
+        {"assertionKey":"GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS","path":"doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md","anchor":"## Dexter-authorized generated edge route consumer closure"},
         {"assertionKey":"DIAGNOSTIC_SECRET_FLOW_EXPLICIT","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"## 5.1 受管执行分类与敏感数据流"},
         {"assertionKey":"EXECUTION_EVIDENCE_TAXONOMY","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"## 5.1 受管执行分类与敏感数据流"}
       ],
-      "sourceRefs": ["PLATFORM-BLUEPRINT.md","doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
+      "sourceRefs": ["PLATFORM-BLUEPRINT.md","doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md","doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
     },
     {
       "id": "decisions.distributed-topology-is-not-current",

@@ -16,7 +16,6 @@
         ],
         "x-page-key": "OPERATIONS-BRAND",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -124,31 +123,30 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         }
       },
       "post": {
         "operationId": "createOperationsOrganizationBrand",
-        "x-required-capability": "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND",
         "tags": [
           "organization"
         ],
@@ -162,7 +160,6 @@
         ],
         "x-page-key": "OPERATIONS-BRAND",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT",
           "ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT",
@@ -217,27 +214,28 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-capability": "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND",
         "requestBody": {
           "required": true,
           "content": {
@@ -266,7 +264,6 @@
         ],
         "x-page-key": "OPERATIONS-BRAND",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -323,31 +320,30 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         }
       },
       "patch": {
         "operationId": "updateOperationsOrganizationBrand",
-        "x-required-capability": "REQ_UPDATE_OPERATIONS_ORGANIZATION_BRAND",
         "tags": [
           "organization"
         ],
@@ -361,7 +357,6 @@
         ],
         "x-page-key": "OPERATIONS-BRAND",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "ORGANIZATION_BUSINESS_ENTITY_REFERENCE_CONFLICT",
           "ORGANIZATION_BUSINESS_ENTITY_VERSION_CONFLICT",
@@ -425,27 +420,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_UPDATE_OPERATIONS_ORGANIZATION_BRAND",
         "requestBody": {
           "required": true,
           "content": {
@@ -461,7 +458,6 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status": {
       "post": {
         "operationId": "transitionOperationsOrganizationBrandStatus",
-        "x-required-capability": "REQ_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS",
         "tags": [
           "organization"
         ],
@@ -475,7 +471,6 @@
         ],
         "x-page-key": "OPERATIONS-BRAND",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "ORGANIZATION_BUSINESS_ENTITY_STATUS_TRANSITION_INVALID",
           "ORGANIZATION_BUSINESS_ENTITY_VERSION_CONFLICT",
@@ -539,27 +534,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS",
         "requestBody": {
           "required": true,
           "content": {
@@ -567,20 +564,6 @@
               "schema": {
                 "$ref": "../../components/organization/business-entity.schemas.yaml#/components/schemas/BusinessEntityStatusRequest"
               }
-            }
-          }
-        }
-      }
-    }
-  }
-,  "components": {
-    "responses": {
-      "ProblemResponse": {
-        "description": "Problem response",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
             }
           }
         }

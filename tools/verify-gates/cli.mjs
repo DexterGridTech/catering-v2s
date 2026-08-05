@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const skip = new Set([".git", "node_modules", ".gradle", "build", "dist"]);
@@ -28,6 +29,19 @@ function sourceFiles(relative, base = root) {
 function assertFile(relative, code, base = root) { if (!exists(relative, base)) fail(code, relative); }
 function assertNoMatch(files, pattern, code, base = root) {
   for (const file of files) if (pattern.test(read(file, base))) fail(code, file);
+}
+function assertNoHandwrittenEdgeRouteLiterals(base = root) {
+  const isSyntheticTest = (file) => /\.test\.[cm]?[jt]sx?$/.test(file);
+  const consumers = sourceFiles("apps/frontend", base)
+    .filter((file) => file.includes("/src/") && !file.includes("/src/app/api/generated/") && !isSyntheticTest(file))
+    .concat(sourceFiles("scripts/dev", base), sourceFiles("scripts/test", base).filter((file) => !isSyntheticTest(file)));
+  const violations = [];
+  for (const file of consumers) {
+    for (const [index, line] of read(file, base).split("\n").entries()) {
+      if (/(?:["'`])\s*\/api(?:\/|["'`])/.test(line)) violations.push(`${file}:${index + 1}`);
+    }
+  }
+  if (violations.length) fail("R5_EDGE_ROUTE_LITERAL", violations.join(","));
 }
 function assertMatch(relative, pattern, code, base = root) {
   if (!pattern.test(read(relative, base))) fail(code, relative);
@@ -80,6 +94,120 @@ function assertLogoutClearsLocalSessionAfterRemoteFailure(base = root) {
     const escaped = remoteLogout.replaceAll(".", "\\.");
     const pattern = new RegExp(`try\\s*\\{[\\s\\S]*?await\\s+${escaped}\\([\\s\\S]*?\\);\\s*\\}\\s*finally\\s*\\{[\\s\\S]*?clearLocalSession\\(\\);[\\s\\S]*?\\}`, "m");
     if (!pattern.test(read(file, base))) fail("R5_FRONTEND_LOGOUT_LOCAL_CLEAR_MISSING", file);
+  }
+}
+function stringCandidates(expression) {
+  if (!expression) return [];
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) return [expression.text];
+  if (ts.isParenthesizedExpression(expression)) return stringCandidates(expression.expression);
+  if (ts.isConditionalExpression(expression)) return [...stringCandidates(expression.whenTrue), ...stringCandidates(expression.whenFalse)];
+  return [];
+}
+function propertyName(property) { return property.name && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) ? property.name.text : undefined; }
+function objectProperty(object, name) { return object.properties.find((property) => ts.isPropertyAssignment(property) && propertyName(property) === name); }
+function objectBoolean(object, name) { const property = objectProperty(object, name); return Boolean(property && property.initializer.kind === ts.SyntaxKind.TrueKeyword); }
+function objectFalse(object, name) { const property = objectProperty(object, name); return Boolean(property && property.initializer.kind === ts.SyntaxKind.FalseKeyword); }
+function objectStrings(object, name) { const property = objectProperty(object, name); return property ? stringCandidates(property.initializer) : []; }
+function columnFacts(source, file) {
+  const parsed = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const variables = new Map(); const tables = [];
+  const visit = (node) => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) variables.set(node.name.text, node.initializer);
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(parsed) === "ProTable") {
+      const attribute = node.attributes.properties.find((item) => ts.isJsxAttribute(item) && item.name.text === "columns");
+      if (attribute?.initializer && ts.isJsxExpression(attribute.initializer)) tables.push(attribute.initializer.expression);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(parsed);
+  const objects = (expression, visited = new Set()) => {
+    if (!expression) return [];
+    if (ts.isParenthesizedExpression(expression) || ts.isAsExpression(expression) || ts.isTypeAssertionExpression(expression)) return objects(expression.expression, visited);
+    if (ts.isIdentifier(expression)) { if (visited.has(expression.text)) return []; visited.add(expression.text); return objects(variables.get(expression.text), visited); }
+    if (ts.isCallExpression(expression)) return objects(expression.arguments[0], visited);
+    if (ts.isArrowFunction(expression) || ts.isFunctionExpression(expression)) return ts.isBlock(expression.body) ? [] : objects(expression.body, visited);
+    if (ts.isConditionalExpression(expression)) return [...objects(expression.whenTrue, visited), ...objects(expression.whenFalse, visited)];
+    if (ts.isArrayLiteralExpression(expression)) return expression.elements.flatMap((element) => objects(ts.isSpreadElement(element) ? element.expression : element, visited));
+    return ts.isObjectLiteralExpression(expression) ? [expression] : [];
+  };
+  return tables.map((table) => objects(table).map((column) => ({
+    filterKeys: objectStrings(column, "dataIndex"), titles: objectStrings(column, "title"),
+    hidden: objectBoolean(column, "hideInTable"), searchDisabled: objectFalse(column, "search"),
+  })));
+}
+function assertCrudPresentationStandard(base = root) {
+  const catalogPath = "contracts/policy/crud-presentation-standard-catalog.json";
+  assertFile(catalogPath, "R5_CRUD_PRESENTATION_CATALOG_MISSING", base);
+  let catalog;
+  try { catalog = JSON.parse(read(catalogPath, base)); } catch { fail("R5_CRUD_PRESENTATION_CATALOG_INVALID"); }
+  if (catalog?.schemaVersion !== 1 || catalog?.kind !== "crud-presentation-standard-catalog" || !Array.isArray(catalog?.surfaceCoverage)) {
+    fail("R5_CRUD_PRESENTATION_CATALOG_INVALID");
+  }
+  const ids = new Set();
+  const registeredSources = new Set();
+  const violations = [];
+  for (const surface of catalog.surfaceCoverage) {
+    if (!surface || typeof surface.id !== "string" || !surface.id || ids.has(surface.id) || typeof surface.source !== "string" || !surface.source) {
+      fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID");
+    }
+    ids.add(surface.id);
+    assertFile(surface.source, "R5_CRUD_PRESENTATION_SOURCE_MISSING", base);
+    registeredSources.add(surface.source);
+    const source = read(surface.source, base);
+    if (surface.selectorOnly === true) {
+      for (const required of surface.externalFilterRequiredExpressions ?? []) {
+        if (typeof required !== "string" || !required) fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID", surface.id);
+        if (!source.includes(required)) violations.push(`REQUIRED_EXPRESSION:${surface.id}:${required}`);
+      }
+      continue;
+    }
+    if (surface.detailOnly === true) {
+      for (const forbidden of surface.primaryIdentityForbidden ?? []) {
+        if (typeof forbidden !== "string" || !forbidden) fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID", surface.id);
+        if (source.includes(forbidden)) violations.push(`PRIMARY_IDENTITY:${surface.id}`);
+      }
+      for (const required of surface.primaryIdentityRequired ?? []) {
+        if (typeof required !== "string" || !required) fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID", surface.id);
+        if (!source.includes(required)) violations.push(`REQUIRED_EXPRESSION:${surface.id}:${required}`);
+      }
+      continue;
+    }
+    if (surface.notApplicable === true) {
+      if (typeof surface.notApplicableReason !== "string" || !surface.notApplicableReason.trim()) fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID", surface.id);
+      continue;
+    }
+    const filters = surface.filterKeys; const mappings = surface.filterColumnMappings;
+    const additionalTitles = surface.additionalVisibleColumnTitles; const tableIndex = surface.tableIndex;
+    if (!Array.isArray(filters) || filters.length === 0 || !Array.isArray(mappings) || mappings.length !== filters.length
+      || !Array.isArray(additionalTitles) || additionalTitles.length === 0 || !Number.isInteger(tableIndex) || tableIndex < 0) violations.push(`FILTER_COLUMN:${surface.id}`);
+    else {
+      const table = columnFacts(source, surface.source)[tableIndex];
+      const actualFilters = new Set((table ?? []).filter((column) => !column.searchDisabled).flatMap((column) => column.filterKeys));
+      const mappedFilters = new Set(mappings.map((mapping) => mapping?.filterKey));
+      if (!table || mappedFilters.size !== mappings.length || !filters.every((key) => typeof key === "string" && mappedFilters.has(key))
+        || ![...actualFilters].every((key) => mappedFilters.has(key)) || ![...mappedFilters].every((key) => actualFilters.has(key))) violations.push(`FILTER_COLUMN:${surface.id}`);
+      for (const mapping of mappings) {
+        if (!mapping || typeof mapping.filterKey !== "string" || typeof mapping.visibleColumnTitle !== "string"
+          || !table?.some((column) => !column.hidden && column.titles.includes(mapping.visibleColumnTitle))) violations.push(`FILTER_COLUMN:${surface.id}:${mapping?.filterKey ?? "INVALID"}`);
+      }
+      for (const title of additionalTitles) if (typeof title !== "string" || mappings.some((mapping) => mapping?.visibleColumnTitle === title)
+        || !table?.some((column) => !column.hidden && column.titles.includes(title))) violations.push(`FILTER_COLUMN:${surface.id}:EXTRA`);
+    }
+    for (const forbidden of surface.primaryIdentityForbidden ?? []) {
+      if (typeof forbidden !== "string" || !forbidden) fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID", surface.id);
+      if (source.includes(forbidden)) violations.push(`PRIMARY_IDENTITY:${surface.id}`);
+    }
+    for (const required of [...(surface.primaryIdentityRequired ?? []), ...(surface.relatedIdentityRequired ?? []), ...(surface.externalFilterRequiredExpressions ?? [])]) {
+      if (typeof required !== "string" || !required) fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID", surface.id);
+      if (!source.includes(required)) violations.push(`REQUIRED_EXPRESSION:${surface.id}:${required}`);
+    }
+  }
+  const tableSources = sourceFiles("apps/frontend", base).filter((file) => file.endsWith(".tsx") && read(file, base).includes("<ProTable"));
+  for (const source of tableSources) if (!registeredSources.has(source)) violations.push(`UNREGISTERED_TABLE:${source}`);
+  if (violations.length) {
+    const primary = violations.some((entry) => entry.startsWith("PRIMARY_IDENTITY:"));
+    const code = primary ? "R5_CRUD_PRIMARY_IDENTITY_COMPOSITE" : violations.some((entry) => entry.startsWith("FILTER_COLUMN:")) ? "R5_CRUD_PRESENTATION_FILTER_COLUMN_COVERAGE" : "R5_CRUD_PRESENTATION_REQUIRED_EXPRESSION_MISSING";
+    fail(code, violations.join(","));
   }
 }
 function assertNoGeneratedSemanticImports(files, base = root) {
@@ -278,6 +406,7 @@ function frontend(base = root) {
   assertNoMatch(sourceFiles("apps/frontend/operations-admin", base), /platform-commercial-group-edge|PLATFORM_COMMERCIAL_GROUP_OPERATIONS|PLATFORM_ADMIN_OPERATIONS/, "R5_FRONTEND_OPERATIONS_PLATFORM_WIRE", base);
   const nonTransportSources = sourceFiles("apps/frontend", base).filter((file) => !/\/src\/app\/api\/client(?:\/|\.ts$)/.test(file));
   assertNoMatch(nonTransportSources, /\bfetch\s*\(/, "R5_FRONTEND_DIRECT_TRANSPORT", base);
+  assertNoHandwrittenEdgeRouteLiterals(base);
   const featureSources = sourceFiles("apps/frontend/platform-admin/src/features", base)
     .concat(sourceFiles("apps/frontend/operations-admin/src/features", base));
   assertNoMatch(featureSources, /title\s*:\s*["']操作["']/, "R5_FRONTEND_ENTITY_OPERATION_COLUMN", base);
@@ -285,7 +414,8 @@ function frontend(base = root) {
   const handwrittenFrontendSources = sourceFiles("apps/frontend", base).filter((file) =>
     !file.includes("/src/app/api/generated/")
       && !file.endsWith("/src/app/catalog/generatedAdminCatalog.ts")
-      && !file.includes("/src/tests/"));
+      && !file.includes("/src/tests/")
+      && !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file));
   assertNoMatch(handwrittenFrontendSources, /["'](?:PLATFORM|PG|HOME)-[A-Z0-9-]+["']/, "R5_FRONTEND_PAGE_KEY_LITERAL", base);
   const handwrittenBackendCatalogConsumers = sourceFiles(
     "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge",
@@ -337,6 +467,7 @@ function frontend(base = root) {
   );
   assertNoPrivateFeatureUiImports(base);
   assertRequiredMutationsUseLifecycle(featureSources, base);
+  assertCrudPresentationStandard(base);
   const generatedSlices = [
     ["apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts", "PLATFORM_ADMIN_OPERATIONS", "platform-admin"],
     ["apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts", "OPERATIONS_ADMIN_OPERATIONS", "operations-admin"],
@@ -643,6 +774,12 @@ function selfTest(action) {
   try {
     fs.cpSync(root, scratch, { recursive: true, filter: (source) => !source.includes("/.git") && !source.includes("/build") && !source.includes("/node_modules") });
     prepareSelfTestClean(action, scratch);
+    if (action === "frontend") {
+      const catalogPath = "contracts/policy/crud-presentation-standard-catalog.json";
+      const catalog = JSON.parse(read(catalogPath, scratch));
+      for (const surface of catalog.surfaceCoverage) delete surface.externalFilterRequiredExpressions;
+      writeScratch(scratch, catalogPath, JSON.stringify(catalog, null, 2) + "\n");
+    }
     actions[action](scratch);
     const write = (relative, content) => {
       writeScratch(scratch, relative, content);
@@ -811,12 +948,53 @@ function selfTest(action) {
       try { actions[action](scratch); } catch (error) { generatedClientRed = String(error).includes("R5_FRONTEND_OPERATIONS_GENERATED_CLIENT_NOT_BOUND"); }
       if (!generatedClientRed) fail("R5_FRONTEND_GENERATED_CLIENT_SELF_TEST_NOT_DETECTED");
       write(transportSource, generatedClientOriginal);
+      const presentationSource = "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx";
+      const presentationOriginal = read(presentationSource, scratch);
+      write(presentationSource, presentationOriginal.replace(">{row.name}</Button>", ">{formatNameCode(row.name, row.code)}</Button>"));
+      let crudPrimaryIdentityRed = false;
+      try { actions[action](scratch); } catch (error) { crudPrimaryIdentityRed = String(error).includes("R5_CRUD_PRIMARY_IDENTITY_COMPOSITE"); }
+      if (!crudPrimaryIdentityRed) fail("R5_CRUD_PRIMARY_IDENTITY_SELF_TEST_NOT_DETECTED");
+      write(presentationSource, presentationOriginal);
+      const detailSource = "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityDetailDrawer.tsx";
+      const detailOriginal = read(detailSource, scratch);
+      write(detailSource, detailOriginal.replace("{key: 'name', label: '名称', children: selected.name}", "{key: 'name', label: '主体名称', children: selected.name}"));
+      let crudPrimaryDetailRed = false;
+      try { actions[action](scratch); } catch (error) { crudPrimaryDetailRed = String(error).includes("R5_CRUD_PRESENTATION_REQUIRED_EXPRESSION_MISSING"); }
+      if (!crudPrimaryDetailRed) fail("R5_CRUD_PRIMARY_DETAIL_SELF_TEST_NOT_DETECTED");
+      write(detailSource, detailOriginal);
+      const catalogSource = "contracts/policy/crud-presentation-standard-catalog.json";
+      const catalogOriginal = read(catalogSource, scratch);
+      const filterCoverageCatalog = JSON.parse(catalogOriginal);
+      filterCoverageCatalog.surfaceCoverage.find((surface) => surface.id === "operations-stores").filterColumnMappings.find((mapping) => mapping.filterKey === "projectId").visibleColumnTitle = "不存在";
+      write(catalogSource, JSON.stringify(filterCoverageCatalog, null, 2) + "\n");
+      let crudFilterColumnRed = false;
+      try { actions[action](scratch); } catch (error) { crudFilterColumnRed = String(error).includes("R5_CRUD_PRESENTATION_FILTER_COLUMN_COVERAGE"); }
+      if (!crudFilterColumnRed) fail("R5_CRUD_FILTER_COLUMN_SELF_TEST_NOT_DETECTED");
+      write(catalogSource, catalogOriginal);
+      write(presentationSource, presentationOriginal.replace("{title: '项目', search: false, render: (_, row) => formatNameCode(row.project.name, row.project.code)}", "{title: '项目', hideInTable: true, search: false, render: (_, row) => formatNameCode(row.project.name, row.project.code)}"));
+      let crudActualColumnRed = false;
+      try { actions[action](scratch); } catch (error) { crudActualColumnRed = String(error).includes("R5_CRUD_PRESENTATION_FILTER_COLUMN_COVERAGE"); }
+      if (!crudActualColumnRed) fail("R5_CRUD_ACTUAL_FILTER_COLUMN_SELF_TEST_NOT_DETECTED");
+      write(presentationSource, presentationOriginal);
+      const externalSelectorCatalog = JSON.parse(catalogOriginal);
+      externalSelectorCatalog.surfaceCoverage.find((surface) => surface.id === "operations-stores").externalFilterRequiredExpressions = ["dataIndex: 'brandCandidateId'"];
+      write(catalogSource, JSON.stringify(externalSelectorCatalog, null, 2) + "\n");
+      let crudExternalSelectorRed = false;
+      try { actions[action](scratch); } catch (error) { crudExternalSelectorRed = String(error).includes("R5_CRUD_PRESENTATION_REQUIRED_EXPRESSION_MISSING"); }
+      if (!crudExternalSelectorRed) fail("R5_CRUD_EXTERNAL_SELECTOR_SELF_TEST_NOT_DETECTED");
+      write(catalogSource, catalogOriginal);
       const legacyFallback = "apps/frontend/operations-admin/src/main.js";
       write(legacyFallback, "fetch('/api/operations/legacy');\n");
       let legacyFallbackRed = false;
       try { actions[action](scratch); } catch (error) { legacyFallbackRed = String(error).includes("R5_FRONTEND_LEGACY_BUILD_FALLBACK_PRESENT"); }
       if (!legacyFallbackRed) fail("R5_FRONTEND_LEGACY_BUILD_FALLBACK_SELF_TEST_NOT_DETECTED");
-      process.stdout.write("R5_FRONTEND_CANDIDATE_LOADING_FAILURE_STATE_RED=PASS\nR5_FRONTEND_PLATFORM_LOGOUT_LOCAL_CLEAR_RED=PASS\nR5_FRONTEND_OPERATIONS_LOGOUT_LOCAL_CLEAR_RED=PASS\nR4_FRONTEND_SELF_TEST=PASS\n");
+      fs.rmSync(path.join(scratch, legacyFallback));
+      const handwrittenRoute = "scripts/test/edge-route-literal-red.mjs";
+      write(handwrittenRoute, "const endpoint = '/api/forbidden';\n");
+      let handwrittenRouteRed = false;
+      try { assertNoHandwrittenEdgeRouteLiterals(scratch); } catch (error) { handwrittenRouteRed = String(error).includes("R5_EDGE_ROUTE_LITERAL"); }
+      if (!handwrittenRouteRed) fail("R5_EDGE_ROUTE_LITERAL_SELF_TEST_NOT_DETECTED");
+      process.stdout.write("R5_FRONTEND_CANDIDATE_LOADING_FAILURE_STATE_RED=PASS\nR5_FRONTEND_PLATFORM_LOGOUT_LOCAL_CLEAR_RED=PASS\nR5_FRONTEND_OPERATIONS_LOGOUT_LOCAL_CLEAR_RED=PASS\nR5_CRUD_PRIMARY_IDENTITY_RED=PASS\nR5_CRUD_PRIMARY_DETAIL_RED=PASS\nR5_CRUD_FILTER_COLUMN_COVERAGE_RED=PASS\nR5_CRUD_EXTERNAL_SELECTOR_RED=PASS\nR5_EDGE_ROUTE_LITERAL_RED=PASS\nR4_FRONTEND_SELF_TEST=PASS\n");
       return;
     } else if (action === "database") {
       const source = `${appRoot}/src/main/resources/db/migration/V20260725_170000_000__platform_workspace_and_commercial_group.sql`;

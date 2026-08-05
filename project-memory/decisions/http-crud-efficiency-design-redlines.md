@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["backend", "platform", "contract", "frontend-platform", "product"]
 impacts: ["architecture", "database", "contract", "evidence"]
 triggers: ["task-start", "implementation", "review"]
-assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY"]
-sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
+assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY"]
+sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
 ---
 
 # HTTP CRUD efficiency design redlines
@@ -29,6 +29,17 @@ global SQL-count gate, or replace detailed business/IA/owner source reread.
   reference or generated drift before using the set for performance, security or coverage claims. If a
   route is registry-only, decide from its shard, controller, face and approved business status whether
   to add the missing root reference or retire it; never infer retirement from a root omission alone.
+- Source: `doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md@## 3.1 契约分母（第一交付单元）`.
+- `GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS`: an HTTP consumer must not hand-write an edge route,
+  build one from string fragments, then reverse-match it against the generated registry. The finite
+  denominator is both admin-app runtime consumers and every managed seed, fixture, L2 and diagnostic
+  caller; OpenAPI shards, edge controller mappings, codegen and generated clients are owner truth,
+  while synthetic non-request test data is a documented counterexample. The only permitted consumer
+  flow is `operationId + typed path/query parameters → generated template → concrete encoded path`.
+  The minimal prevention is the fail-closed frontend-architecture gate with a real route-literal red
+  mutation, plus a shared registry resolver; a route mismatch discovered at runtime is evidence that
+  the consumer escaped the generated path, not a reason to add another manual route string.
+- Source: `doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md@## Dexter-authorized generated edge route consumer closure`.
 - `SET_BASED_COLLECTION_READS`: a collection/list/page must not make a per-item database call, owner
   API call or HTTP request for a fact that can be loaded once for the collection. Use a bounded
   `IN`/set-based query, owner-owned batch task read, or task read model. Single-object detail lookups

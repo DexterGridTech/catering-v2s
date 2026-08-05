@@ -4,11 +4,13 @@ import {requiredL2Env, signInPlatform, signOutPlatform} from './platformL2';
 test('platform administrator locates a real workspace and proves display update owner readback', async ({page}) => {
   const workspaceName = requiredL2Env('R5_L2_PLATFORM_WORKSPACE_NAME');
   const workspaceLabel = requiredL2Env('R5_L2_PLATFORM_WORKSPACE_LABEL');
+  const workspaceKey = workspaceLabel.slice(`${workspaceName}(`.length, -1);
   await signInPlatform(page); await page.goto('/platform/workspaces');
   await page.getByLabel('集团空间名称').fill(workspaceName); await page.getByTestId('platform-workspace-filter-submit').click();
-  await page.getByRole('button', {name: workspaceLabel, exact: true}).click();
+  await page.getByRole('button', {name: workspaceName, exact: true}).click();
   await expect(page.getByTestId('platform-workspace-detail-drawer').getByText('集团空间详情', {exact: true})).toBeVisible();
-  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceLabel, {exact: true})).toBeVisible();
+  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceName, {exact: true})).toBeVisible();
+  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceKey, {exact: true})).toBeVisible();
   await page.getByTestId('platform-workspace-edit').click();
   await expect(page.getByTestId('platform-workspace-edit-submit')).toBeVisible();
   const name = page.getByTestId('platform-workspace-edit-name');
@@ -34,6 +36,7 @@ test('platform administrator locates a real workspace and proves display update 
   expect(readback.version).toBeGreaterThan(0);
   expect(readback.version).toBe(body.expectedVersion! + 1);
   await expect(page.getByTestId('platform-workspace-detail-drawer')).toBeVisible();
-  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceLabel, {exact: true})).toBeVisible();
+  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceName, {exact: true})).toBeVisible();
+  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceKey, {exact: true})).toBeVisible();
   await signOutPlatform(page);
 });

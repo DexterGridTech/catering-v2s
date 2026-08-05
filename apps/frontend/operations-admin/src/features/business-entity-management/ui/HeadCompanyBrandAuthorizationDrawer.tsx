@@ -100,6 +100,7 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     open={Boolean(headCompany)}
     size={600}
     destroyOnHidden
+    maskClosable
     keyboard={!submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
@@ -110,7 +111,9 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     <Space.Compact block style={{marginBottom: 16}}>
       <Select
         aria-label="候选品牌"
-        showSearch={{filterOption: false, onSearch: searchCandidates}}
+        showSearch
+        filterOption={false}
+        onSearch={searchCandidates}
         value={selectedBrandId}
         placeholder="搜索并选择可授权品牌"
         loading={submitting}

@@ -28,7 +28,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class WorkspaceInvitationPublicFlowTest {
     @Container static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
-    private static Flyway flyway; private static JdbcTemplate jdbc; private static WorkspaceInvitationService invitations; private static WorkspacePasswordResetService passwordResets; private static WorkspaceAuthenticationService authentication; private static WorkspaceUserService user; private static UUID workspaceId; private static UUID groupId; private static UUID roleId;
+    private static Flyway flyway; private static JdbcTemplate jdbc; private static WorkspaceInvitationService invitations; private static WorkspaceAuthenticationService authentication; private static WorkspaceUserService user; private static UUID workspaceId; private static UUID groupId; private static UUID roleId;
     private static final long NOW = 1_785_000_000_000L;
 
     @BeforeAll static void setup() {
@@ -36,7 +36,7 @@ class WorkspaceInvitationPublicFlowTest {
         jdbc = new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())); TimeProvider time = () -> NOW; workspaceId = UUID.randomUUID();
         jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, 'public-flow', 'Public flow', 'public flow', 'Public flow', 'ENABLED', 1, 1, ?, ?, ?)", workspaceId, NOW, NOW, NOW);
         ExtensionDefinitionService definitions = new ExtensionDefinitionService(jdbc, time); OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time); BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy); WorkspaceRoleService roles = new WorkspaceRoleService(jdbc, time);
-        groupId = hierarchy.create(workspaceId, "public-flow", "REGION", null, "region", "Region").id(); roleId = roles.create(workspaceId, "public-flow", "Region user", "REGION", null, Set.of(), Set.of()).id(); invitations = new WorkspaceInvitationService(jdbc, time, roles, hierarchy, entities, entities); passwordResets = new WorkspacePasswordResetService(jdbc, time); authentication = new WorkspaceAuthenticationService(jdbc, time, roles, hierarchy, entities, entities); user = new WorkspaceUserService(jdbc, hierarchy, entities, roles);
+        groupId = hierarchy.create(workspaceId, "public-flow", "REGION", null, "region", "Region").id(); roleId = roles.create(workspaceId, "public-flow", "Region user", "REGION", null, Set.of(), Set.of()).id(); invitations = new WorkspaceInvitationService(jdbc, time, roles, hierarchy, entities, entities); authentication = new WorkspaceAuthenticationService(jdbc, time, roles, hierarchy, entities, entities); user = new WorkspaceUserService(jdbc, hierarchy, entities, roles);
     }
 
     @Test void onlyFinalizeCreatesAssignmentsAfterAcceptOtpAndCredentialDraft() {
@@ -79,23 +79,6 @@ class WorkspaceInvitationPublicFlowTest {
         assertEquals(1, assignments(created.id()));
     }
 
-    @Test void resetOnlyCompletesAfterMobileBoundOtpAndGrantAndRevokesSessions() {
-        UUID accountId = UUID.randomUUID();
-        jdbc.update("INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, mobile_normalized, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'public-flow', '13800000008', 'reset-user', 'Reset User', 'ENABLED', 1, ?, ?)", accountId, workspaceId, NOW, NOW);
-        jdbc.update("INSERT INTO workspace_iam.workspace_credential (account_id, password_hash, algorithm, changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)", accountId, new BCryptPasswordEncoder().encode("previous-password"), NOW);
-        jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, 'public-flow', ?, ?, 1, 1, 'ACTIVE', ?)", UUID.randomUUID(), workspaceId, accountId, sha256("active-session"), NOW + 60_000L);
-        var requested = passwordResets.request(workspaceId, "public-flow", accountId, 1);
-        passwordResets.sendOtp(requested.rawGenerationKey(), "13800000008");
-        UUID resetId = jdbc.queryForObject("SELECT id FROM workspace_iam.password_reset WHERE generation_key_hash=?", UUID.class, sha256(requested.rawGenerationKey()));
-        jdbc.update("UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=?", resetId);
-        jdbc.update("INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, token_hash, subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, 'public-flow', 'PASSWORD_RESET_VERIFY', ?, ?, 'ACTIVE', ?)", UUID.randomUUID(), workspaceId, sha256("123456"), resetId, NOW + 60_000L);
-        var ready = passwordResets.verifyOtp(requested.rawGenerationKey(), "138 0000 0008", "123456");
-        var completed = passwordResets.complete(requested.rawGenerationKey(), ready.passwordResetGrant(), "new-password".toCharArray());
-        assertEquals("COMPLETED", completed.status());
-        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.workspace_session WHERE account_id=? AND status='ACTIVE'", Integer.class, accountId));
-        assertThrows(WorkspacePasswordResetService.ResetStateException.class, () -> passwordResets.complete(requested.rawGenerationKey(), ready.passwordResetGrant(), "other-password".toCharArray()));
-    }
-
     @Test void operationsOtpCreatesSessionOnlyAfterOneTimeMobileBoundProof() {
         UUID accountId = UUID.randomUUID();
         jdbc.update("INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, mobile_normalized, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'public-flow', '13800000009', 'otp-user', 'OTP User', 'ENABLED', 1, ?, ?)", accountId, workspaceId, NOW, NOW);
@@ -120,12 +103,12 @@ class WorkspaceInvitationPublicFlowTest {
         UUID invitationId = UUID.randomUUID();
         jdbc.update("INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, mobile_normalized, status, expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, 'public-flow', 'user-token-hash', '13800000010', 'COMPLETED', ?, 1, ?)", invitationId, workspaceId, NOW + 60_000L, NOW);
         jdbc.update("INSERT INTO workspace_iam.role_assignment (id, workspace_uuid, group_workspace_key, account_id, role_id, source_invitation_id, service_node_type, service_node_id, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'public-flow', ?, ?, ?, 'REGION', ?, 'ACTIVE', 1, ?, ?)", assignmentId, workspaceId, accountId, roleId, invitationId, scopeId, NOW, NOW);
-        var page = user.page(workspaceId, "public-flow", "REGION", scopeId, 1, 20, 7);
-        assertEquals(1, page.total()); assertEquals(1, page.items().size()); assertEquals("user-scope User scope", page.items().getFirst().assignments().getFirst().organizationPath()); assertEquals(7, page.contextVersion());
+        var page = user.page(WorkspaceUserService.AccountPageQuery.forPlatform(workspaceId, "public-flow", null, null, null, null, null, "REGION", scopeId, null, null, 1, 20));
+        assertEquals(1, page.total()); assertEquals(1, page.items().size()); assertEquals("user-scope User scope", page.items().getFirst().assignments().getFirst().organizationPath());
         UUID emptyScopeId = new OrganizationHierarchyService(jdbc, () -> NOW).create(workspaceId, "public-flow", "REGION", null, "empty-scope", "Empty scope").id();
-        assertEquals(0, user.page(workspaceId, "public-flow", "REGION", emptyScopeId, 1, 20, 7).total());
+        assertEquals(0, user.page(WorkspaceUserService.AccountPageQuery.forPlatform(workspaceId, "public-flow", null, null, null, null, null, "REGION", emptyScopeId, null, null, 1, 20)).total());
         new WorkspaceAccountService(jdbc, () -> NOW).revokeAssignment(workspaceId, "public-flow", accountId, assignmentId, 1);
-        assertEquals("REVOKED", user.user(workspaceId, "public-flow", accountId).assignments().getFirst().status());
+        assertEquals("REVOKED", user.detail(WorkspaceUserService.AccountDetailQuery.forPlatform(workspaceId, "public-flow", accountId)).assignments().getFirst().status());
     }
 
     @Test void platformInvitationPageAllowsEachOptionalAssignmentFilterIndependently() {
@@ -134,7 +117,7 @@ class WorkspaceInvitationPublicFlowTest {
         var differentType = invitations.create(workspaceId, "public-flow", "13800000014", List.of(new WorkspaceInvitationService.AssignmentIntent(groupRoleId, "GROUP", groupId)), NOW + 60 * 60 * 1000L);
         var byType = invitations.managementPage(workspaceId, "public-flow", pageRequest("REGION", null, null));
         var byOrganization = invitations.managementPage(workspaceId, "public-flow", pageRequest(null, groupId, null));
-        var byRole = invitations.managementPage(workspaceId, "public-flow", pageRequest(null, null, "Region user"));
+        var byRole = invitations.managementPage(workspaceId, "public-flow", pageRequest(null, null, roleId));
         assertEquals(true, byType.items().stream().anyMatch(item -> item.id().equals(created.id())));
         assertEquals(false, byType.items().stream().anyMatch(item -> item.id().equals(differentType.id())));
         assertEquals(true, byOrganization.items().stream().anyMatch(item -> item.id().equals(created.id())));
@@ -143,7 +126,7 @@ class WorkspaceInvitationPublicFlowTest {
 
     @Test void invitationMobileFilterMatchesNormalizedOwnerFactRatherThanMaskedDisplayText() {
         var created = invitations.create(workspaceId, "public-flow", "13800000012", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
-        var page = invitations.managementPage(workspaceId, "public-flow", new WorkspaceInvitationService.ManagementInvitationPageRequest("138 0000-0012", null, null, null, null, null, null, null, "CREATED_AT", "DESC", 1, 20));
+        var page = invitations.managementPage(workspaceId, "public-flow", new WorkspaceInvitationService.ManagementInvitationPageRequest("138 0000-0012", null, null, null, null, null, null, "CREATED_AT", "DESC", 1, 20));
         assertEquals(List.of(created.id()), page.items().stream().filter(item -> item.id().equals(created.id())).map(WorkspaceInvitationService.ManagementInvitationView::id).toList());
     }
 
@@ -156,7 +139,7 @@ class WorkspaceInvitationPublicFlowTest {
         jdbc.update("INSERT INTO workspace_iam.invitation_assignment_intent (invitation_id, role_id, service_node_type, service_node_id) VALUES (?, ?, 'GROUP', ?), (?, ?, 'REGION', ?)", malformedInvitationId, groupRoleId, groupId, malformedInvitationId, otherRoleId, otherRegionId);
 
         try {
-            var crossIntentRequest = pageRequest("GROUP", otherRegionId, "Other region user");
+            var crossIntentRequest = pageRequest("GROUP", otherRegionId, otherRoleId);
             assertEquals(false, invitations.managementPage(workspaceId, "public-flow", crossIntentRequest).items().stream().anyMatch(item -> item.id().equals(malformedInvitationId)));
         } finally {
             jdbc.update("DELETE FROM workspace_iam.invitation_assignment_intent WHERE invitation_id=?", malformedInvitationId);
@@ -189,8 +172,8 @@ class WorkspaceInvitationPublicFlowTest {
     }
 
 
-    private static WorkspaceInvitationService.ManagementInvitationPageRequest pageRequest(String targetOrganizationType, UUID targetOrganizationRef, String roleQuery) {
-        return new WorkspaceInvitationService.ManagementInvitationPageRequest(null, targetOrganizationType, targetOrganizationRef, null, roleQuery, null, null, null, "CREATED_AT", "DESC", 1, 20);
+    private static WorkspaceInvitationService.ManagementInvitationPageRequest pageRequest(String targetOrganizationType, UUID targetOrganizationRef, UUID roleId) {
+        return new WorkspaceInvitationService.ManagementInvitationPageRequest(null, targetOrganizationType, targetOrganizationRef, roleId, null, null, null, "CREATED_AT", "DESC", 1, 20);
     }
     private static int assignments(UUID invitationId) { return jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.role_assignment WHERE source_invitation_id=?", Integer.class, invitationId); }
     private static String sha256(String value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); } catch (Exception failure) { throw new IllegalStateException(failure); } }

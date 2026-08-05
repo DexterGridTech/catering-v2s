@@ -7,10 +7,11 @@ import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-e
 import {OperationsAuditHistoryModal} from '../../audit-history';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {OrganizationEditDrawer} from './OrganizationEditDrawer';
+import {CommercialGroupEditDrawer} from './CommercialGroupEditDrawer';
 import {OrganizationStatusModal} from './OrganizationStatusModal';
 import {ProjectCreateDrawer} from './ProjectCreateDrawer';
 import {RegionCreateDrawer} from './RegionCreateDrawer';
-import {issue, nodeTypeLabel, organizationRegionCreateLabel, organizationStatusLabel, rowFromNode, rowsOf, type HierarchyRow, organizationStructurePageTitle} from './organizationStructureShared';
+import {issue, nodeTypeLabel, organizationRegionCreateLabel, organizationStatusLabel, rowFromCommercialGroup, rowFromNode, rowsOf, type HierarchyRow, organizationStructurePageTitle} from './organizationStructureShared';
 import {organizationExtensionDetailItems, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 function treeNodeTitle(row: HierarchyRow) {
@@ -30,6 +31,7 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
   const [transitioning, setTransitioning] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [editing, setEditing] = useState<HierarchyRow>();
+  const [editingCommercialGroup, setEditingCommercialGroup] = useState<HierarchyRow>();
   const [transitionTarget, setTransitionTarget] = useState<HierarchyRow>();
   const [selected, setSelected] = useState<HierarchyRow>();
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
@@ -73,9 +75,11 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
     setExpandedKeys(treeData.flatMap((group) => [String(group.key), ...(group.children ?? []).map((region) => String(region.key))]));
   }, [treeData]);
 
-  const canEdit = (row: HierarchyRow) => row.nodeType === 'REGION'
-    ? actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_REGION_EDIT)
-    : row.nodeType === 'PROJECT' && actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_PROJECT_EDIT);
+  const canEdit = (row: HierarchyRow) => row.nodeType === 'GROUP'
+    ? actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_GROUP_EDIT)
+    : row.nodeType === 'REGION'
+      ? actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_REGION_EDIT)
+      : row.nodeType === 'PROJECT' && actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_PROJECT_EDIT);
   const canTransition = (row: HierarchyRow) => row.nodeType === 'REGION'
     ? actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_REGION_STATUS)
     : row.nodeType === 'PROJECT' && actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_PROJECT_STATUS);
@@ -102,7 +106,7 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
     <Button onClick={() => setAuditOpen(true)} {...testId('operations-organization-audit')}>操作历史</Button>
     {selected.nodeType === 'GROUP' && canCreateRegion && <Button type="primary" onClick={() => setRegionCreateOpen(true)} {...testId('operations-region-create')}>{organizationRegionCreateLabel}</Button>}
     {selected.nodeType === 'REGION' && canCreateProject && <Button type="primary" onClick={() => setProjectCreateOpen(true)} {...testId('operations-project-create')}>新建项目</Button>}
-    {canEdit(selected) && <Button onClick={() => { setEditing(selected); setSelected(undefined); }} {...testId('operations-organization-edit')}>编辑</Button>}
+    {canEdit(selected) && <Button onClick={() => { if (selected.nodeType === 'GROUP') setEditingCommercialGroup(selected); else setEditing(selected); setSelected(undefined); }} {...testId('operations-organization-edit')}>编辑</Button>}
     {canTransition(selected) && <Button onClick={() => { setTransitionTarget(selected); setSelected(undefined); }} {...testId('operations-organization-status')}>{selected.status === 'ENABLED' ? '停用' : '启用'}</Button>}
   </Space> : undefined;
 
@@ -115,9 +119,11 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
         {selected ? <>
           {definition.error && <Alert type="error" showIcon title="扩展字段加载失败" description="请关闭后重新进入。" style={{marginBottom: 16}}/>}
           <Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={[
-            {key: 'identity', label: '名称', children: formatNameCode(selected.name, selected.code)},
+            {key: 'name', label: '名称', children: selected.name},
+            {key: 'code', label: '编码', children: selected.code},
             {key: 'status', label: '状态', children: organizationStatusLabel(selected.status)},
             {key: 'notes', label: '备注', children: selected.notes ?? '—'},
+            ...(selected.nodeType === 'PROJECT' ? [{key: 'phases', label: '项目分期名称', children: selected.phases.join('、') || '—'}] : []),
             ...organizationExtensionDetailItems(definition.data, selected.extensionValues),
           ]}/>
         </> : '请选择集团、大区或项目查看详情'}
@@ -126,6 +132,7 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
     <RegionCreateDrawer open={regionCreateOpen} commercialGroup={commercialGroup} queryContext={queryContext} onClose={() => setRegionCreateOpen(false)} onCreated={(node) => { setSelected(rowFromNode(node)); }}/>
     <ProjectCreateDrawer open={projectCreateOpen} region={selected?.nodeType === 'REGION' ? selected : undefined} queryContext={queryContext} onClose={() => setProjectCreateOpen(false)} onCreated={(node) => { setSelected(rowFromNode(node)); }}/>
     <OrganizationEditDrawer node={editing} parentName={editing?.nodeType === 'PROJECT' ? rows.find((row) => row.id === editing.parentId)?.name : commercialGroup?.name} queryContext={queryContext} onClose={() => setEditing(undefined)} onUpdated={(node) => { setSelected(node); setEditing(undefined); }}/>
+    <CommercialGroupEditDrawer group={editingCommercialGroup} queryContext={queryContext} onClose={() => setEditingCommercialGroup(undefined)} onUpdated={(group) => { setSelected(rowFromCommercialGroup(group)); setEditingCommercialGroup(undefined); }}/>
     <OrganizationStatusModal target={transitionTarget} submitting={transitioning} onCancel={() => setTransitionTarget(undefined)} onConfirm={(target) => void transition(target)}/>
     <OperationsAuditHistoryModal open={auditOpen} target={selected ? {entityType: selected.nodeType === 'GROUP' ? 'COMMERCIAL_GROUP' : 'ORGANIZATION_NODE', entityId: selected.id, displayName: selected.name} : undefined} groupWorkspaceKey={queryContext.groupWorkspaceKey} onClose={() => setAuditOpen(false)}/>
     {isLoading && !snapshot && <span aria-live="polite">正在加载</span>}

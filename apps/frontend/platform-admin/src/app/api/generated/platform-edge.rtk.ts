@@ -141,6 +141,14 @@ export const platformAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    getPlatformOrganizationCandidates: (pathParameters: FaceOperationContracts["getPlatformOrganizationCandidates"]["path"], options: FaceOperationOptions<"getPlatformOrganizationCandidates">): FaceOperationRequest<"getPlatformOrganizationCandidates"> => ({
+      operationId: "getPlatformOrganizationCandidates",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getPlatformOrganizationHierarchyTree: (pathParameters: FaceOperationContracts["getPlatformOrganizationHierarchyTree"]["path"], options: FaceOperationOptions<"getPlatformOrganizationHierarchyTree">): FaceOperationRequest<"getPlatformOrganizationHierarchyTree"> => ({
       operationId: "getPlatformOrganizationHierarchyTree",
       method: "GET",
@@ -477,6 +485,10 @@ export function createPlatformAdminRtkEndpoints(
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
     getPlatformGroupWorkspaceDetail: build.query<FaceOperationContracts["getPlatformGroupWorkspaceDetail"]["response"], FaceOperationRequest<"getPlatformGroupWorkspaceDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    getPlatformOrganizationCandidates: build.query<FaceOperationContracts["getPlatformOrganizationCandidates"]["response"], FaceOperationRequest<"getPlatformOrganizationCandidates">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),

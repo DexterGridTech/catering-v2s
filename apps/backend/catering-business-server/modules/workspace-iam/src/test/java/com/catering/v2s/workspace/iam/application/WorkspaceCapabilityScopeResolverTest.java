@@ -79,6 +79,51 @@ class WorkspaceCapabilityScopeResolverTest {
         }
     }
 
+    @Test
+    void allowsOnlyTheHeadCompanyCreateCapabilityForAHeadCompanyAssignmentAgainstTheOwningGroup() {
+        UUID groupId = UUID.randomUUID();
+        WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) -> new WorkspaceAssignmentScopeLookup.AssignmentScope("HEAD_COMPANY", assignmentNode);
+        OrganizationTaskPathLookup taskPaths = new OrganizationTaskPathLookup() {
+            @Override public TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+                return new TaskPath(targetType, targetId, List.of(targetId), "Group target");
+            }
+            @Override public boolean isScopeAllowed(UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath target) { return false; }
+        };
+        WorkspaceCapabilityScopeResolver resolver = new WorkspaceCapabilityScopeResolver(assignments, taskPaths);
+        String createCapability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey("REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY", "GROUP").orElseThrow();
+
+        var allowed = resolver.resolve(session(Set.of(createCapability)), "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("GROUP", groupId));
+        var denied = resolver.resolve(session(Set.of(createCapability)), "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("GROUP", groupId));
+
+        assertEquals(WorkspaceCapabilityScopeResolver.Decision.ALLOW, allowed.decision());
+        assertEquals(WorkspaceCapabilityScopeResolver.Decision.DENY, denied.decision());
+    }
+
+    @Test
+    void statusTransitionUsesTheExplicitPersistedTargetPathWithoutChangingTheNormalLookup() {
+        UUID target = UUID.randomUUID();
+        String requirement = "REQ_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS";
+        String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirement, "HEAD_COMPANY").orElseThrow();
+        WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) -> new WorkspaceAssignmentScopeLookup.AssignmentScope("GROUP", assignmentNode);
+        OrganizationTaskPathLookup taskPaths = new OrganizationTaskPathLookup() {
+            @Override public TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+                throw new AssertionError("normal enabled-only lookup must not authorize a status transition");
+            }
+            @Override public TaskPath requireStatusTransitionTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+                return new TaskPath(targetType, targetId, List.of(assignmentNode, targetId), "persisted disabled target");
+            }
+            @Override public boolean isScopeAllowed(UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath path) {
+                return "GROUP".equals(scopeType) && assignmentNode.equals(scopeId) && path.ancestorIds().contains(scopeId);
+            }
+        };
+        WorkspaceCapabilityScopeResolver resolver = new WorkspaceCapabilityScopeResolver(assignments, taskPaths);
+
+        var result = resolver.resolveStatusTransition(session(Set.of(capability)), requirement, new WorkspaceCapabilityScopeResolver.ServerResolvedResource("HEAD_COMPANY", target));
+
+        assertEquals(WorkspaceCapabilityScopeResolver.Decision.ALLOW, result.decision());
+        assertEquals(target, result.firstOwnerQueryPredicate().resourceId());
+    }
+
     private WorkspaceCapabilityScopeResolver resolver(String assignmentType, boolean allowed) {
         WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) -> {
             assertEquals(workspace, workspaceUuid);
@@ -98,6 +143,6 @@ class WorkspaceCapabilityScopeResolverTest {
     }
 
     private WorkspaceSessionReadback session(Set<String> capabilities) {
-        return new WorkspaceSessionReadback(UUID.randomUUID(), workspace, "scope-test", UUID.randomUUID(), assignmentId, null, 1L, 1L, Set.of(), capabilities, "Scope tester");
+        return new WorkspaceSessionReadback(UUID.randomUUID(), workspace, "scope-test", UUID.randomUUID(), assignmentId, com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 1L, Set.of(), capabilities, "Scope tester");
     }
 }

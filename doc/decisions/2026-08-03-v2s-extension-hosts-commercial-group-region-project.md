@@ -14,8 +14,20 @@ Platform administrators configure definitions before entering business data. Ope
 administrators create or update a region/project with those values and inspect the
 persisted values in the organization tree. A commercial-group definition is configured
 before the existing commercial-group initialization form; that form writes values and the
-operations hierarchy root reads them back. This retains the one-time group initialization
-lifecycle rather than inventing a second group-management capability.
+operations hierarchy root reads them back.
+
+### Correction: persisted group-edit grant
+
+Dexter confirmed that the current formal DEV role has the persisted
+`BC-ORG-GROUP-EDIT` grant and requires the selected commercial group to be editable in
+operations-admin. The previous one-time-only sentence was therefore inconsistent with the
+catalog and an unreachable granted action. The commercial group now has one explicit,
+owner-owned operations edit command: code, name and `COMMERCIAL_GROUP` extension values
+are CAS- and idempotency-protected, audited as `COMMERCIAL_GROUP`, and read back by the
+same hierarchy root. The platform initialization form remains the only create surface.
+
+`BC-ORG-GROUP-STATUS` is deliberately outside this edit correction: no requested or
+approved status lifecycle is inferred from an edit grant.
 
 The rejected alternative is three page-local field schemas or an untyped client-side map.
 It duplicates type/required/disabled semantics and permits a detail surface to drift from
@@ -24,8 +36,8 @@ the owner. The existing `ExtensionDefinition` and JSON value model is reused ins
 ## Owner and transaction boundary
 
 - `organization.commercial_group` remains the commercial-group owner. Its initialization
-  command validates `COMMERCIAL_GROUP` values against `ExtensionDefinitionLookup` and
-  persists them in its required transaction.
+  and operations edit commands validate `COMMERCIAL_GROUP` values against
+  `ExtensionDefinitionLookup` and persist them in their required transactions.
 - `organization.organization_node` remains the region/project owner. Create/update
   validate `REGION` or `PROJECT` values and persist them with its existing receipt/CAS
   transaction.

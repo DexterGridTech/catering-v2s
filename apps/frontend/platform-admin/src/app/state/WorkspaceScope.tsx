@@ -1,5 +1,4 @@
-import {AppstoreOutlined} from '@ant-design/icons';
-import {Alert, Button, Form, Result, Select} from 'antd';
+import {Alert, Button, Result, Select, Space, Typography} from 'antd';
 import {formatNameCode, testId, useAsyncGenerationGuard, useOverlayLock, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
 import {Fragment, createContext, useContext, useEffect, useRef, useState, type ReactNode} from 'react';
 import {platformClient, platformProblemOf, platformRefreshSignal, type PlatformApiProblem} from '../api/PlatformTransport';
@@ -55,20 +54,20 @@ export function useWorkspaceScope() {
   return value;
 }
 
-/** This is the sole UI selector, hosted in the authenticated shell side-bar footer. */
-export function WorkspaceScopeSelector({collapsed = false}: {collapsed?: boolean}) {
+/** This is the sole UI selector, hosted in the authenticated shell header. */
+export function WorkspaceScopeSelector() {
   const {result, selectedGroupWorkspaceKey, setSelectedGroupWorkspaceKey, setSearch, problem, refresh} = useWorkspaceScope();
   const locked = useOverlayLock();
   return <>
     {problem && <Alert type="error" showIcon title="暂时无法获取集团空间" description={<><span>{problem.detail}</span><Button type="link" size="small" onClick={refresh}>重试</Button></>}/>}
-    <Form.Item style={{marginBottom: 0}} label={collapsed ? undefined : <AppstoreOutlined aria-label="集团空间"/>}>
+    <Space size={8} align="center">
+      <Typography.Text>集团空间</Typography.Text>
       <Select
         loading={!result && !problem}
         disabled={locked}
         aria-label="集团空间"
-        placeholder={collapsed ? undefined : '请选择集团空间'}
-        labelRender={collapsed ? () => <AppstoreOutlined aria-hidden="true"/> : undefined}
-        style={collapsed ? {width: 40} : undefined}
+        placeholder="请选择集团空间"
+        style={{width: 288}}
         value={selectedGroupWorkspaceKey}
         onSelect={(value) => { setSelectedGroupWorkspaceKey(value); setSearch(''); }}
         showSearch={{filterOption: false, onSearch: (value) => setSearch(value)}}
@@ -76,7 +75,7 @@ export function WorkspaceScopeSelector({collapsed = false}: {collapsed?: boolean
         options={(result?.items ?? []).map((row) => ({value: row.groupWorkspaceKey, label: formatNameCode(row.name, row.groupWorkspaceKey)}))}
         {...testId('platform-workspace-selector')}
       />
-    </Form.Item>
+    </Space>
   </>;
 }
 

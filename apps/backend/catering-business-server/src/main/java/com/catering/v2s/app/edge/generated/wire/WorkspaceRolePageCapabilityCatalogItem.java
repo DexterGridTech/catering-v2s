@@ -8,5 +8,5 @@ public record WorkspaceRolePageCapabilityCatalogItem(
     Long actionGroupOrder,
     String label,
     String description,
-    java.util.List<ServiceNodeType> organizationTypes
+    java.util.List<String> organizationTypes
 ) {}

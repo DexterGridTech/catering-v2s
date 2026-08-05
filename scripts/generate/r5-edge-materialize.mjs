@@ -6,13 +6,16 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { projectEdgeCatalog } from "./edge-operation-projections.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const catalogPath = "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json";
 const placementPath = "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json";
 const errorCatalogPath = "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-catalog.json";
+const authorizationManifestPath = "contracts/registry/iam-org-governance-manifest.json";
 const outputReport = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
 const generatedRoot = "contracts/openapi";
+const writeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function fail(code, detail = "") { throw new Error(`${code}${detail ? `:${detail}` : ""}`); }
 function readJson(relative, base = root) { return JSON.parse(fs.readFileSync(path.join(base, relative), "utf8")); }
@@ -27,7 +30,10 @@ function yamlAsJson(file) {
   if (result.status !== 0) fail("R5_EDGE_HERITAGE_YAML_INVALID", `${file}:${result.stderr.trim()}`);
   return JSON.parse(result.stdout);
 }
-function pointer(pathValue) { return pathValue.split("/").map((part) => part.replaceAll("~", "~0").replaceAll("/", "~1")).join("/"); }
+function pointer(pathValue) {
+  if (typeof pathValue !== "string" || pathValue.length === 0) fail("R5_EDGE_JSON_POINTER_TOKEN_INVALID");
+  return pathValue.replaceAll("~", "~0").replaceAll("/", "~1");
+}
 function clone(value) { return structuredClone(value); }
 function replaceNames(value, renames) {
   if (Array.isArray(value)) return value.map((item) => replaceNames(item, renames));
@@ -47,9 +53,14 @@ function convertSymbolRefs(value) {
   return result;
 }
 function removeProperty(schema, property) {
+  if (Array.isArray(schema)) {
+    for (const item of schema) removeProperty(item, property);
+    return;
+  }
   if (!schema || typeof schema !== "object") return;
   if (schema.properties) delete schema.properties[property];
   if (Array.isArray(schema.required)) schema.required = schema.required.filter((name) => name !== property);
+  for (const value of Object.values(schema)) removeProperty(value, property);
 }
 function inlineMissingReferences(value, knownComponents, sourceSchemas, renames, forbiddenProperties, resolving = new Set()) {
   if (Array.isArray(value)) return value.map((item) => inlineMissingReferences(item, knownComponents, sourceSchemas, renames, forbiddenProperties, resolving));
@@ -104,7 +115,21 @@ function operationErrors(operation, catalog) {
   if (selection?.mode === "REPLACE_BASE_WITH_AUGMENTATION") return catalog.operationErrorAugmentations[operation.operationId] || [];
   return [...new Set([...(catalog.errorSets[operation.errorSetRef] || []), ...(catalog.operationErrorAugmentations[operation.operationId] || [])])].sort();
 }
-function operationDocument(operation, catalog) {
+function operationIdentity(operation) {
+  return [operation.operationId, operation.method, operation.path, operation.face, operation.owner].join("|");
+}
+function authorizationRequirements(manifest) {
+  const requirements = new Map();
+  for (const requirement of manifest.requirements || []) {
+    const identity = requirement.operationIdentity;
+    if (!identity) continue;
+    const key = [identity.operationId, identity.method, identity.path, identity.consumerFace, identity.ownerModule].join("|");
+    if (requirements.has(key)) fail("R5_EDGE_AUTHORIZATION_REQUIREMENT_DUPLICATE", key);
+    requirements.set(key, requirement);
+  }
+  return requirements;
+}
+function operationDocument(operation, catalog, requirements, pathFile) {
   const parameters = [
     ...(operation.pathParameters || []).map((name) => ({ name, in: "path", required: true, schema: { type: "string", minLength: 1, maxLength: 128 } })),
     ...(operation.queryParameters || []).map((parameter) => ({ ...clone(parameter), schema: convertSymbolRefs(parameter.schema) })),
@@ -115,7 +140,8 @@ function operationDocument(operation, catalog) {
   const successType = successContentType(operation);
   const response = successType ? { description: "Owner readback", content: { [successType]: { schema: { $ref: `#/components/schemas/${operation.responseSchema}` } } } } : { description: "No content" };
   const responses = { [operation.successStatus]: response };
-  for (const status of ["400", "401", "403", "404", "409", "429", "500"]) responses[status] = { $ref: "#/components/responses/ProblemResponse" };
+  const problemResponseRef = `${path.posix.relative(path.posix.dirname(pathFile), "edge.openapi.yaml")}#/components/responses/ProblemResponse`;
+  for (const status of ["400", "401", "403", "404", "409", "429", "500"]) responses[status] = { $ref: problemResponseRef };
   const document = {
     operationId: operation.operationId,
     tags: [operation.owner],
@@ -124,12 +150,26 @@ function operationDocument(operation, catalog) {
     "x-scenario-ids": operation.scenarioIds,
     "x-page-key": operation.pageKey,
     "x-idempotency-policy": operation.idempotency.header,
-    "x-expected-version-policy": operation.expectedVersion,
     "x-error-codes": operationErrors(operation, catalog),
     security: security(operation),
     parameters,
     responses,
   };
+  if (["REQUIRED", "REQUIRED_CONTEXT_VERSION"].includes(operation.expectedVersion)) {
+    document["x-expected-version-policy"] = operation.expectedVersion;
+  }
+  const requirement = requirements.get(operationIdentity(operation));
+  if (requirement && writeMethods.has(operation.method)) {
+    if (requirement.authorizationMode === "AUTHENTICATED_PLATFORM_SUPER_ADMIN") {
+      document["x-required-platform-authorization"] = requirement.requirementId;
+    } else if (requirement.authorizationMode === "PUBLIC_PROTOCOL") {
+      document["x-required-owner-protocol"] = requirement.requirementId;
+    } else if (requirement.authorizationMode === "AUTHENTICATED_WORKSPACE") {
+      document["x-required-capability"] = requirement.requirementId;
+    } else {
+      fail("R5_EDGE_AUTHORIZATION_MODE_UNRESOLVED", operation.operationId);
+    }
+  }
   if (operation.requestSchema !== "NoBody") document.requestBody = { required: true, content: { "application/json": { schema: { $ref: `#/components/schemas/${operation.requestSchema}` } } } };
   return document;
 }
@@ -173,6 +213,7 @@ function materializeComponents(catalog, placement) {
     let next = clone(prior);
     if (["Problem", "EpochMillis", "ServiceNodeType", "ProjectPhaseNames", "WorkspaceRoleAuthorizationReplaceRequest", "StoreContractItem"].includes(name)) next = { type: override.type, ...(override.enum ? { enum: override.enum } : {}), ...(override.required ? { required: override.required } : {}), ...(override.properties ? { properties: override.properties } : {}), ...(override.additionalProperties !== undefined ? { additionalProperties: override.additionalProperties } : {}) };
     if (override.removeProperties) for (const property of override.removeProperties) removeProperty(next, property);
+    if (override.required) next.required = clone(override.required);
     if (override.requiredAdditions) addRequired(next, override.requiredAdditions);
     if (override.properties) next.properties = { ...(next.properties || {}), ...clone(override.properties) };
     if (override.requiredNestedReferences) {
@@ -180,6 +221,7 @@ function materializeComponents(catalog, placement) {
       for (const rule of override.requiredNestedReferences) next.properties[rule.property] = clone(rule);
     }
     if (override.type && !next.type) next.type = override.type;
+    if (override.additionalProperties !== undefined) next.additionalProperties = override.additionalProperties;
     if (override.enum) next.enum = clone(override.enum);
     components.set(name, next);
   }
@@ -205,8 +247,11 @@ function rewriteRefs(value, currentFile, componentFiles) {
   if (Array.isArray(value)) return value.map((item) => rewriteRefs(item, currentFile, componentFiles));
   if (!value || typeof value !== "object") return value;
   const result = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, rewriteRefs(item, currentFile, componentFiles)]));
-  if (typeof result.$ref === "string" && result.$ref.startsWith("#/components/schemas/")) {
-    const component = result.$ref.slice("#/components/schemas/".length);
+  const schemaReference = typeof result.$ref === "string"
+    ? result.$ref.match(/#\/components\/schemas\/([^/]+)$/)?.[1]
+    : undefined;
+  if (schemaReference) {
+    const component = schemaReference;
     const target = componentFiles.get(component);
     if (!target) fail("R5_EDGE_COMPONENT_REF_UNRESOLVED", component);
     result.$ref = target === currentFile ? `#/components/schemas/${component}` : `${path.posix.relative(path.posix.dirname(currentFile), target)}#/components/schemas/${component}`;
@@ -214,9 +259,10 @@ function rewriteRefs(value, currentFile, componentFiles) {
   return result;
 }
 function materialize(rootDir = root, writeOutputs = true) {
-  const catalog = readJson(catalogPath, rootDir);
+  const catalog = projectEdgeCatalog(readJson(catalogPath, rootDir)).catalog;
   const placement = readJson(placementPath, rootDir);
   const errors = readJson(errorCatalogPath, rootDir);
+  const requirements = authorizationRequirements(readJson(authorizationManifestPath, rootDir));
   const expectedOperationCount = catalog.denominator?.operations;
   if (!Number.isInteger(expectedOperationCount) || catalog.operations.length !== expectedOperationCount || placement.closure.expectedResolvedOperationCount !== expectedOperationCount) fail("R5_EDGE_OPERATION_DENOMINATOR_DRIFT");
   const operationRows = catalog.operations.map((operation) => ({ ...operation, ...resolveCapability(operation, placement) }));
@@ -233,7 +279,7 @@ function materialize(rootDir = root, writeOutputs = true) {
     routes[operation.path] ||= {};
     const method = operation.method.toLowerCase();
     if (routes[operation.path][method]) fail("R5_EDGE_ROUTE_METHOD_DUPLICATE", operation.operationId);
-    routes[operation.path][method] = operationDocument(operation, catalog);
+    routes[operation.path][method] = operationDocument(operation, catalog, requirements, operation.pathFile);
   }
   const rootPaths = {};
   for (const [file, routes] of pathFiles) for (const route of Object.keys(routes)) {
@@ -256,7 +302,7 @@ function materialize(rootDir = root, writeOutputs = true) {
   const report = {
     kind: "R5_U01_EDGE_PLACEMENT_RESOLUTION",
     status: "GENERATED_FROM_ACCEPTED_CATALOG",
-    source: { catalog: catalogPath, placement: placementPath, errorCatalog: errorCatalogPath },
+    source: { catalog: catalogPath, placement: placementPath, errorCatalog: errorCatalogPath, authorizationManifest: authorizationManifestPath },
     closure: { operations: operationRows.length, faceCounts: counts, componentBaseline: Object.keys(catalog.componentFieldBaseline).length, componentFiles: files.size, unreachable: [{ component: "BusinessEntitySource", disposition: "NOT_CARRIED_NO_EXTERNAL_SYNC_SOURCE" }] },
     operations: operationRows.map(({ operationId, face, owner, method, path: route, capability, pathFile, requestSchema, responseSchema, errorSetRef }) => ({ operationId, face, owner, method, path: route, capability, pathFile, requestComponentFile: requestSchema === "NoBody" ? "components/common/empty.schemas.yaml" : componentFiles.get(requestSchema), responseComponentFile: responseSchema === "NoContent" ? "components/common/empty.schemas.yaml" : componentFiles.get(responseSchema), errorSetRef })),
     requiredNestedReferenceChecks: placement.resolvedFieldContract.requiredNestedReferenceChecks
@@ -287,12 +333,34 @@ function check() {
 function selfTest() {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-r5-edge-red-"));
   try {
+    const route = "/api/public/path~token";
+    const rootReference = `#/paths/${pointer(route)}`;
+    if (rootReference !== "#/paths/~1api~1public~1path~0token") fail("R5_EDGE_JSON_POINTER_TOKEN_RED_NOT_DETECTED");
+    const nestedCommandSchema = {
+      allOf: [{
+        type: "object",
+        required: ["expectedVersion", "expectedContextVersion"],
+        properties: { expectedVersion: { type: "integer" }, expectedContextVersion: { type: "integer" } },
+      }],
+    };
+    removeProperty(nestedCommandSchema, "expectedContextVersion");
+    if (JSON.stringify(nestedCommandSchema).includes("expectedContextVersion")) {
+      fail("R5_EDGE_NESTED_FORBIDDEN_PROPERTY_RED_NOT_DETECTED");
+    }
+    const relativeComponentReference = rewriteRefs(
+      { $ref: "./platform-time.schemas.yaml#/components/schemas/EpochMillis" },
+      "components/workspace-iam/workspace-access.schemas.yaml",
+      new Map([["EpochMillis", "components/common/time.schemas.yaml"]]),
+    ).$ref;
+    if (relativeComponentReference !== "../common/time.schemas.yaml#/components/schemas/EpochMillis") {
+      fail("R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED");
+    }
     fs.cpSync(root, scratch, { recursive: true, filter: (file) => !file.includes("/build") && !file.includes("/dist") && !file.includes("/.git") });
     const catalog = readJson(catalogPath, scratch);
     catalog.operations[0].pageKey = "UNKNOWN-PAGE";
     write(catalogPath, catalog, scratch);
     try { materialize(scratch, true); fail("R5_EDGE_MATERIALIZE_RED_NOT_DETECTED"); } catch (error) { if (!String(error.message).includes("R5_EDGE_CAPABILITY_UNRESOLVED")) throw error; }
-    process.stdout.write("R5_EDGE_MATERIALIZE_SELF_TEST=PASS\nRED=R5_EDGE_CAPABILITY_UNRESOLVED\n");
+    process.stdout.write("R5_EDGE_MATERIALIZE_SELF_TEST=PASS\nRED=R5_EDGE_JSON_POINTER_TOKEN_RED_NOT_DETECTED,R5_EDGE_NESTED_FORBIDDEN_PROPERTY_RED_NOT_DETECTED,R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED,R5_EDGE_CAPABILITY_UNRESOLVED\n");
   } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 

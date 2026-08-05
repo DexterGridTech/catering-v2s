@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-DATA-SCOPE-CONTEXT-U27",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-data-scope-context-u27-delivery-manifest.json",
+  "deliveryManifestSha256": "3567611a8e932b6757632aefeec342c0d8314cf2cb2312605ed21d64a1a187bb",
+  "unitId": "RM1P6-DATA-SCOPE-CONTEXT-U27",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance", "scripts/check/openapi-contracts", "scripts/check/edge-codegen", "scripts/check/affected-l2"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance", "scripts/check/openapi-contracts", "scripts/check/edge-codegen", "scripts/check/affected-l2"],
+  "requiredControlRuleIds": [],
+  "businessEvidenceObligation": "OPERATIONS_DATA_SCOPE_CONTEXT_OWNER_READBACK_AND_L2",
+  "serialPredecessor": {
+    "packageId": "RM1P6-EXTENSION-HOSTS-U26",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-package-exit.json",
+    "exitSha256": "45b0e612eee80783187706df6380caa51bf9ef85f7a9dd1de61bc3e735c127c4"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-data-scope-context-u27-implementation-amendment.md",
+    "sha256": "9bba71c706476e78a5186c9ff106915572619ffc8be1c3ffa75dee058d71e238"
+  },
+  "authorizationBoundary": "Dexter authorized the complete U27 successor package to replace the conflicting current operations data-scope interaction model: owner-confirmed retained four-type scope context, role-constrained candidates and server rechecks, shared selector and scoped-page surface, project-context store and contract CRUD, focused tests and local L2. The confirmed operations remote-candidate Select consumer wiring repair is included without changing any owner query, face contract or authorization. It does not authorize platform-admin changes, changing role-derived read range, capability-derived reads, adding head companies to the organization tree, UAT, reset or seed."
+}

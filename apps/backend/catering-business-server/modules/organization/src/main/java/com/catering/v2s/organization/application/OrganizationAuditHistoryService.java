@@ -39,6 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
         statement -> { statement.setString(1, target.entityRef()); statement.setObject(2, scope.workspaceUuid()); statement.setString(3, scope.groupWorkspaceKey()); },
         (result, row) -> result.getLong(1));
     if (groupWorkspaceIds.isEmpty()) throw new BusinessEntityService.OrganizationNotFoundException();
-    return readInitializationForGroupWorkspace(scope, String.valueOf(groupWorkspaceIds.getFirst()), page, pageSize);
+    String workspaceRef = String.valueOf(groupWorkspaceIds.getFirst());
+    long total = jdbc.queryForObject("SELECT count(*) FROM organization.audit_event WHERE workspace_uuid=? AND group_workspace_key=? AND ((entity_type='GROUP_WORKSPACE' AND entity_ref_text=? AND action='COMMERCIAL_GROUP_INITIALIZED') OR (entity_type='COMMERCIAL_GROUP' AND entity_ref_text=?))", Long.class, scope.workspaceUuid(), scope.groupWorkspaceKey(), workspaceRef, target.entityRef());
+    List<AuditHistoryItem> items = jdbc.query("SELECT id, occurred_at_epoch_millis, actor_display_snapshot, action, entity_type, entity_ref_text, changes_json::text FROM organization.audit_event WHERE workspace_uuid=? AND group_workspace_key=? AND ((entity_type='GROUP_WORKSPACE' AND entity_ref_text=? AND action='COMMERCIAL_GROUP_INITIALIZED') OR (entity_type='COMMERCIAL_GROUP' AND entity_ref_text=?)) ORDER BY occurred_at_epoch_millis DESC, id DESC LIMIT ? OFFSET ?", (r, n) -> new AuditHistoryItem(r.getObject("id", UUID.class), r.getLong("occurred_at_epoch_millis"), r.getString("actor_display_snapshot"), r.getString("action"), new AuditTarget(r.getString("entity_type"), r.getString("entity_ref_text")), AuditChangeJson.read(r.getString("changes_json"))), scope.workspaceUuid(), scope.groupWorkspaceKey(), workspaceRef, target.entityRef(), pageSize, (page - 1) * pageSize);
+    return new AuditHistoryPage(items, page, pageSize, total);
   }
 }

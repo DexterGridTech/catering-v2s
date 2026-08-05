@@ -3,7 +3,6 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group": {
       "post": {
         "operationId": "initializeCommercialGroup",
-        "x-required-platform-authorization": "REQ_INITIALIZE_COMMERCIAL_GROUP",
         "tags": [
           "organization"
         ],
@@ -17,7 +16,6 @@
         ],
         "x-page-key": "PLATFORM-WORKSPACES",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "INVALID_EDGE_CONTEXT",
           "GROUP_WORKSPACE_NOT_FOUND",
@@ -65,27 +63,28 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-platform-authorization": "REQ_INITIALIZE_COMMERCIAL_GROUP",
         "requestBody": {
           "required": true,
           "content": {
@@ -93,20 +92,6 @@
               "schema": {
                 "$ref": "../../components/organization/commercial-group.schemas.yaml#/components/schemas/CommercialGroupInitializeRequest"
               }
-            }
-          }
-        }
-      }
-    }
-  }
-,  "components": {
-    "responses": {
-      "ProblemResponse": {
-        "description": "Problem response",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
             }
           }
         }

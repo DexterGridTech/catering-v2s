@@ -18,7 +18,7 @@ describe('operations login focused IA contract', () => {
     expect(source).toContain('useOverlayLock');
     expect(source).toContain("form.setFieldValue('password', undefined)");
     expect(source).toContain("form.setFieldValue('code', undefined)");
-    expect(source).toContain("form.setFieldValue('code', debugCode)");
+    expect(source).toContain("form.setFieldValue('code', result.debugVerificationCode ?? undefined)");
     expect(source).toContain('title={problem.title} description={problem.detail}');
     expect(source).toContain('验证码已发送，请在有效期内填写');
     expect(source).toContain("message: '请输入正确的手机号'");

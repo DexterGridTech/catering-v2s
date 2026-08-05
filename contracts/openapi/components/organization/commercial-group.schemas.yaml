@@ -20,15 +20,15 @@
             "minLength": 1,
             "maxLength": 120
           },
-          "extensionValues": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": true
-          },
           "idempotencyKey": {
             "type": "string",
             "minLength": 16,
             "maxLength": 128
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
           }
         }
       },
@@ -40,11 +40,11 @@
           "groupWorkspaceKey",
           "groupCode",
           "groupName",
-          "extensionValues",
-          "extensionRuleRevision",
           "version",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "extensionValues",
+          "extensionRuleRevision"
         ],
         "properties": {
           "id": {
@@ -67,15 +67,6 @@
             "minLength": 1,
             "maxLength": 120
           },
-          "extensionValues": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "extensionRuleRevision": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
           "version": {
             "type": "integer",
             "format": "int64",
@@ -86,6 +77,46 @@
           },
           "updatedAt": {
             "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "CommercialGroupUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groupCode",
+          "groupName",
+          "expectedVersion"
+        ],
+        "properties": {
+          "groupCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       }

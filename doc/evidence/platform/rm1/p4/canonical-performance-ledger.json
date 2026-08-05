@@ -7,43 +7,6 @@
   },
   "rows": [
     {
-      "id": "M1",
-      "roots": {
-        "source": [
-          "apps/backend/catering-business-server/modules/store-contract/src/main"
-        ],
-        "test": [
-          "apps/backend/catering-business-server/modules/store-contract/src/test"
-        ]
-      },
-      "identity": {
-        "callerSymbol": "ContractTaskReadService#overview",
-        "queryBoundarySymbol": "ContractTaskReadService#view",
-        "mechanism": "CALLBACK_PUBLIC_READ"
-      },
-      "classification": "callback/mapper",
-      "owner": "contract",
-      "testClass": "ContractTaskReadServiceTest",
-      "fixture": "100 contracts",
-      "budget": {
-        "mode": "EXACT_SQL_STATEMENTS",
-        "cases": [
-          {
-            "id": "FIRST_CALL",
-            "expectedStatements": 1
-          },
-          {
-            "id": "SECOND_CALL",
-            "expectedStatements": 1
-          }
-        ],
-        "semanticInvariants": [
-          "<= 2 SQL"
-        ]
-      },
-      "disposition": "RUNTIME_BUDGET_REQUIRED"
-    },
-    {
       "id": "M2",
       "roots": {
         "source": [
@@ -91,8 +54,8 @@
         ]
       },
       "identity": {
-        "callerSymbol": "ContractTaskReadService#page",
-        "queryBoundarySymbol": "project+count+page",
+        "callerSymbol": "ContractTaskReadService#list",
+        "queryBoundarySymbol": "project lookup + one list predicate for count+page",
         "mechanism": "FIXED_OWNER_READS"
       },
       "classification": "callback/mapper",
@@ -128,28 +91,28 @@
         ]
       },
       "identity": {
-        "callerSymbol": "ContractTaskReadService#platformOverview",
-        "queryBoundarySymbol": "count+page+filters+asOf",
+        "callerSymbol": "ContractTaskReadService#list",
+        "queryBoundarySymbol": "platform text filters + one list predicate for count+page",
         "mechanism": "FIXED_OWNER_READS"
       },
       "classification": "callback/mapper",
       "owner": "contract",
       "testClass": "P4SqlOperationBudgetTest",
-      "fixture": "P=1/P=100; count + page + filter options + asOf",
+      "fixture": "P=1/P=100; text-filtered count + page",
       "budget": {
         "mode": "EXACT_SQL_STATEMENTS",
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 4
+            "expectedStatements": 2
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 4
+            "expectedStatements": 2
           }
         ],
         "semanticInvariants": [
-          "fixed <= 4 SQL"
+          "fixed <= 2 SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -686,7 +649,7 @@
         ]
       },
       "identity": {
-        "callerSymbol": "WorkspaceUserService#pageForOperations",
+        "callerSymbol": "WorkspaceUserService#page",
         "queryBoundarySymbol": "scope+page+user bundle",
         "mechanism": "FIXED_OWNER_READS"
       },

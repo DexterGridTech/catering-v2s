@@ -1,13 +1,8 @@
 {
   "paths": {
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start": {"post":{"operationId":"startOperationsPasswordRecovery","x-required-capability":"REQ_START_OPERATIONS_PASSWORD_RECOVERY","tags":["workspace-iam"],"x-consumer-faces":["public"],"x-owner-module":"workspace-iam","x-scenario-ids":["D04-S10"],"x-page-key":"PUBLIC-ACCESS-RECOVERY","x-idempotency-policy":"REQUIRED_16_128","x-expected-version-policy":"FORBIDDEN_UNLESS_SCHEMA_EXPLICIT","x-error-codes":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","WORKSPACE_IAM_RATE_LIMITED","WORKSPACE_IAM_RESULT_UNKNOWN"],"security":[],"parameters":[{"name":"groupWorkspaceKey","in":"path","required":true,"schema":{"type":"string","minLength":1,"maxLength":128}},{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],"responses":{"200":{"description":"Branded opaque recovery start","content":{"application/json":{"schema":{"$ref":"../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryStartResponse"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"404":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"429":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryStartRequest"}}}}}},
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send": {"post":{"operationId":"sendOperationsPasswordRecoveryOtp","x-required-capability":"REQ_SEND_OPERATIONS_PASSWORD_RECOVERY_OTP","tags":["workspace-iam"],"x-consumer-faces":["public"],"x-owner-module":"workspace-iam","x-scenario-ids":["D04-S10"],"x-page-key":"PUBLIC-ACCESS-RECOVERY","x-idempotency-policy":"REQUIRED_16_128","x-expected-version-policy":"FORBIDDEN_UNLESS_SCHEMA_EXPLICIT","x-error-codes":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","WORKSPACE_IAM_RATE_LIMITED","WORKSPACE_IAM_RESULT_UNKNOWN"],"security":[],"parameters":[{"name":"groupWorkspaceKey","in":"path","required":true,"schema":{"type":"string","minLength":1,"maxLength":128}},{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],"responses":{"200":{"description":"Owner dispatch result","content":{"application/json":{"schema":{"$ref":"../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpSendResponse"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"401":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"429":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpSendRequest"}}}}}},
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify": {"post":{"operationId":"verifyOperationsPasswordRecoveryOtp","x-required-capability":"REQ_VERIFY_OPERATIONS_PASSWORD_RECOVERY_OTP","tags":["workspace-iam"],"x-consumer-faces":["public"],"x-owner-module":"workspace-iam","x-scenario-ids":["D04-S10"],"x-page-key":"PUBLIC-ACCESS-RECOVERY","x-idempotency-policy":"REQUIRED_16_128","x-expected-version-policy":"FORBIDDEN_UNLESS_SCHEMA_EXPLICIT","x-error-codes":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","WORKSPACE_IAM_OTP_INVALID","WORKSPACE_IAM_RESULT_UNKNOWN"],"security":[],"parameters":[{"name":"groupWorkspaceKey","in":"path","required":true,"schema":{"type":"string","minLength":1,"maxLength":128}},{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],"responses":{"200":{"description":"Opaque recovery verified","content":{"application/json":{"schema":{"$ref":"../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryVerification"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"401":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpVerifyRequest"}}}}}},
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete": {"post":{"operationId":"completeOperationsPasswordRecovery","x-required-capability":"REQ_COMPLETE_OPERATIONS_PASSWORD_RECOVERY","tags":["workspace-iam"],"x-consumer-faces":["public"],"x-owner-module":"workspace-iam","x-scenario-ids":["D04-S10"],"x-page-key":"PUBLIC-ACCESS-RECOVERY","x-idempotency-policy":"REQUIRED_16_128","x-expected-version-policy":"FORBIDDEN_UNLESS_SCHEMA_EXPLICIT","x-error-codes":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","WORKSPACE_IAM_OTP_INVALID","WORKSPACE_IAM_RESULT_UNKNOWN"],"security":[],"parameters":[{"name":"groupWorkspaceKey","in":"path","required":true,"schema":{"type":"string","minLength":1,"maxLength":128}},{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],"responses":{"200":{"description":"Recovery completed","content":{"application/json":{"schema":{"$ref":"../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryCompletion"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"401":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryCompleteRequest"}}}}}},
-    "/api/public/password-reset/{resetGenerationKey}/otp/send": {
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start": {
       "post": {
-        "operationId": "sendWorkspacePasswordResetOtp",
-        "x-required-capability": "REQ_SEND_WORKSPACE_PASSWORD_RESET_OTP",
+        "operationId": "startOperationsPasswordRecovery",
         "tags": [
           "workspace-iam"
         ],
@@ -20,22 +15,15 @@
         ],
         "x-page-key": "PUBLIC-ACCESS-RECOVERY",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "WORKSPACE_IAM_GRANT_INVALID",
-          "WORKSPACE_IAM_OTP_INVALID",
-          "WORKSPACE_IAM_PASSWORD_POLICY_FAILED",
-          "WORKSPACE_IAM_PASSWORD_RESET_GENERATION_INVALID",
-          "WORKSPACE_IAM_PASSWORD_RESET_MOBILE_MISMATCH",
-          "WORKSPACE_IAM_RESET_EXPIRED",
-          "WORKSPACE_IAM_RESET_NOT_FOUND"
+          "WORKSPACE_IAM_RATE_LIMITED",
+          "WORKSPACE_IAM_RESULT_UNKNOWN"
         ],
         "security": [],
         "parameters": [
           {
-            "name": "resetGenerationKey",
+            "name": "groupWorkspaceKey",
             "in": "path",
             "required": true,
             "schema": {
@@ -61,49 +49,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpSendResponse"
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryStartResponse"
                 }
               }
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-owner-protocol": "REQ_START_OPERATIONS_PASSWORD_RECOVERY",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpSendRequest"
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryStartRequest"
               }
             }
           }
         }
       }
     },
-    "/api/public/password-reset/{resetGenerationKey}/otp/verify": {
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send": {
       "post": {
-        "operationId": "verifyWorkspacePasswordResetOtp",
-        "x-required-capability": "REQ_VERIFY_WORKSPACE_PASSWORD_RESET_OTP",
+        "operationId": "sendOperationsPasswordRecoveryOtp",
         "tags": [
           "workspace-iam"
         ],
@@ -116,20 +104,16 @@
         ],
         "x-page-key": "PUBLIC-ACCESS-RECOVERY",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_GRANT_INVALID",
-          "WORKSPACE_IAM_OTP_INVALID",
-          "WORKSPACE_IAM_PASSWORD_POLICY_FAILED",
-          "WORKSPACE_IAM_RESET_EXPIRED",
-          "WORKSPACE_IAM_RESET_NOT_FOUND"
+          "WORKSPACE_IAM_RATE_LIMITED",
+          "WORKSPACE_IAM_RESULT_UNKNOWN"
         ],
         "security": [],
         "parameters": [
           {
-            "name": "resetGenerationKey",
+            "name": "groupWorkspaceKey",
             "in": "path",
             "required": true,
             "schema": {
@@ -155,49 +139,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetReadiness"
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpSendResponse"
                 }
               }
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-owner-protocol": "REQ_SEND_OPERATIONS_PASSWORD_RECOVERY_OTP",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpVerifyRequest"
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpSendRequest"
               }
             }
           }
         }
       }
     },
-    "/api/public/password-reset/{resetGenerationKey}/complete": {
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify": {
       "post": {
-        "operationId": "completeWorkspacePasswordReset",
-        "x-required-capability": "REQ_COMPLETE_WORKSPACE_PASSWORD_RESET",
+        "operationId": "verifyOperationsPasswordRecoveryOtp",
         "tags": [
           "workspace-iam"
         ],
@@ -210,21 +194,17 @@
         ],
         "x-page-key": "PUBLIC-ACCESS-RECOVERY",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_GRANT_INVALID",
           "WORKSPACE_IAM_OTP_INVALID",
-          "WORKSPACE_IAM_PASSWORD_POLICY_FAILED",
-          "WORKSPACE_IAM_PASSWORD_RESET_REPLAYED",
-          "WORKSPACE_IAM_RESET_EXPIRED",
-          "WORKSPACE_IAM_RESET_NOT_FOUND"
+          "WORKSPACE_IAM_RATE_LIMITED",
+          "WORKSPACE_IAM_RESULT_UNKNOWN"
         ],
         "security": [],
         "parameters": [
           {
-            "name": "resetGenerationKey",
+            "name": "groupWorkspaceKey",
             "in": "path",
             "required": true,
             "schema": {
@@ -250,54 +230,130 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetCompletion"
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryVerification"
                 }
               }
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-owner-protocol": "REQ_VERIFY_OPERATIONS_PASSWORD_RECOVERY_OTP",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetCompleteRequest"
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpVerifyRequest"
               }
             }
           }
         }
       }
-    }
-  }
-,  "components": {
-    "responses": {
-      "ProblemResponse": {
-        "description": "Problem response",
-        "content": {
-          "application/json": {
+    },
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete": {
+      "post": {
+        "operationId": "completeOperationsPasswordRecovery",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S10"
+        ],
+        "x-page-key": "PUBLIC-ACCESS-RECOVERY",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_RESULT_UNKNOWN"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
             "schema": {
-              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryCompletion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_COMPLETE_OPERATIONS_PASSWORD_RECOVERY",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryCompleteRequest"
+              }
             }
           }
         }

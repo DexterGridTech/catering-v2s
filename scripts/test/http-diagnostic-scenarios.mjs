@@ -95,9 +95,6 @@ export const SCENARIO_FACT_GROUPS = [
   {operationIds: ['sendOperationsPasswordRecoveryOtp'], ...fact('public operations recovery challenge dispatch', ['OperationsPasswordRecoveryController', 'WorkspacePasswordRecoveryService'], 'RecoveryChallengeDispatch', ['OPERATIONS_RECOVERY_FLOW'], ['OPERATIONS_RECOVERY_FLOW', 'OPERATIONS_CHALLENGE'], 'COMMAND')},
   {operationIds: ['verifyOperationsPasswordRecoveryOtp'], ...fact('public operations recovery challenge verification', ['OperationsPasswordRecoveryController', 'WorkspacePasswordRecoveryService'], 'VerifiedRecoveryFlow', ['OPERATIONS_RECOVERY_FLOW'], ['OPERATIONS_CHALLENGE'], 'COMMAND')},
   {operationIds: ['completeOperationsPasswordRecovery'], ...fact('public operations recovery completion', ['OperationsPasswordRecoveryController', 'WorkspacePasswordRecoveryService'], 'RecoveryCompletion', ['OPERATIONS_RECOVERY_VERIFIED'], ['OPERATIONS_RECOVERY_FLOW', 'OPERATIONS_CREDENTIAL'], 'COMMAND')},
-  {operationIds: ['sendWorkspacePasswordResetOtp'], ...rejectedFact('public workspace reset challenge dispatch without a deliverable generation', ['PublicWorkspacePasswordResetController', 'WorkspacePasswordResetService'], 'typed owner not-found', 'WORKSPACE_IAM_RESET_NOT_FOUND')},
-  {operationIds: ['verifyWorkspacePasswordResetOtp'], ...rejectedFact('public workspace reset verification without a deliverable generation', ['PublicWorkspacePasswordResetController', 'WorkspacePasswordResetService'], 'typed owner not-found', 'WORKSPACE_IAM_RESET_NOT_FOUND')},
-  {operationIds: ['completeWorkspacePasswordReset'], ...rejectedFact('public workspace reset completion without a deliverable generation', ['PublicWorkspacePasswordResetController', 'WorkspacePasswordResetService'], 'typed owner not-found', 'WORKSPACE_IAM_RESET_NOT_FOUND')},
 ];
 
 export function declareSourceBoundDiagnosticScenarios(registryOperations, factGroups = SCENARIO_FACT_GROUPS) {

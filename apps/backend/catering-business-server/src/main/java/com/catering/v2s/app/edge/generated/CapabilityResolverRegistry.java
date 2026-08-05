@@ -8,6 +8,8 @@ import java.util.Optional;
 public final class CapabilityResolverRegistry {
     private CapabilityResolverRegistry() { }
     public static List<ResolverDefinition> resolvers() { return List.of(
+        resolver("AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE", AuthorizationMode.AUTHENTICATED_WORKSPACE, List.of("authenticatedWorkspaceSession", "serverResolvedResourceTypeAndId", "assignmentNode"), List.of("ALLOW", "DENY", "readScopePredicate"), false),
+        resolver("AUTHENTICATED_WORKSPACE_SELF_SESSION", AuthorizationMode.AUTHENTICATED_WORKSPACE, List.of("authenticatedWorkspaceSession"), List.of("ALLOW", "DENY", "firstOwnerQueryPredicate"), false),
         resolver("AUTHENTICATED_WORKSPACE_TARGET_SCOPE", AuthorizationMode.AUTHENTICATED_WORKSPACE, List.of("authenticatedWorkspaceSession", "serverResolvedResourceTypeAndId", "assignmentNode"), List.of("ALLOW", "DENY", "firstOwnerQueryPredicate"), false),
         resolver("PLATFORM_SESSION_ENABLED_ADMIN", AuthorizationMode.AUTHENTICATED_PLATFORM_SUPER_ADMIN, List.of("activePlatformSession", "enabledPlatformAdministrator"), List.of("ALLOW", "DENY", "firstOwnerQueryPredicate"), true),
         resolver("PUBLIC_PROTOCOL_OWNER_FACT", AuthorizationMode.PUBLIC_PROTOCOL, List.of("ownerValidatedCredentialOrOtpOrBoundFlow", "serverResolvedResourceTypeAndId"), List.of("ALLOW", "DENY", "firstOwnerQueryPredicate"), true),

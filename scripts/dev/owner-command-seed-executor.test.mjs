@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {FormalSeedFailure, resolveExtensionValues, resolveInvitationCreationPlan, validateFormalSeedStaticInputs, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
+
+const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
 
 const fixture = {
   profile: {id: 'r5-full', version: 1},
@@ -42,6 +45,22 @@ test('only generated owner operations may satisfy the executor input', () => {
   assert.throws(() => validateFormalSeedStaticInputs({fixture, registry: registry.slice(1)}), code('SEED_OPERATION_REGISTRY_MISSING:platformPasswordLogin'));
 });
 
+test('formal seed derives encoded request paths from one generated operation id', () => {
+  const operation = resolveGeneratedOperationById(generatedRegistry, 'revokePlatformWorkspaceAssignment');
+  const path = materializeGeneratedOperationPath(operation, {
+    pathParameters: {groupWorkspaceKey: 'aurora space', accountId: 'A/1', assignmentId: 'assignment/1'},
+    queryParameters: {page: 1, statuses: ['ENABLED', 'DISABLED']},
+  });
+  assert.match(path, /aurora%20space\/accounts\/A%2F1\/assignments\/assignment%2F1\/revoke\?page=1&statuses=ENABLED&statuses=DISABLED$/);
+});
+
+test('formal seed fails closed for unresolved operations and path parameter drift', () => {
+  assert.throws(() => resolveGeneratedOperationById(generatedRegistry, 'handwrittenRoute'), /SEED_OPERATION_ID_UNRESOLVED/);
+  const operation = resolveGeneratedOperationById(generatedRegistry, 'revokePlatformWorkspaceAssignment');
+  assert.throws(() => materializeGeneratedOperationPath(operation, {pathParameters: {groupWorkspaceKey: 'aurora'}}), /SEED_OPERATION_PATH_PARAMETERS_MISMATCH/);
+  assert.throws(() => materializeGeneratedOperationPath(operation, {pathParameters: {groupWorkspaceKey: 'aurora', accountId: 'a', assignmentId: 'assignment', unexpected: 'x'}}), /SEED_OPERATION_PATH_PARAMETERS_MISMATCH/);
+});
+
 test('owner-command idempotency keys remain within the public contract limit for long run and stage names', () => {
   const key = invocationKeyForTest('rm1-seed-00000000-0000-0000-0000-000000000000', 'invitation-credentials-inv-completed-multi-a');
   assert.ok(key.length >= 16);
@@ -51,6 +70,20 @@ test('owner-command idempotency keys remain within the public contract limit for
 test('formal seed source requires the hard-locked managed OTP readback', async () => {
   const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
   assert.match(source, /manifest\.otpDebugExposure !== true/);
+});
+
+test('formal seed group administrator owns every executor-required ORG and contract write capability', async () => {
+  const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
+  const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
+  const role = actual.stableFixtures.workspaceIam.roles.find((entry) => entry.key === 'role-group');
+  const requiredCapabilities = [
+    'BC-ORG-REGION-CREATE', 'BC-ORG-PROJECT-CREATE', 'BC-ORG-BRAND-CREATE', 'BC-ORG-TENANT-CREATE',
+    'BC-ORG-HEAD-COMPANY-CREATE', 'BC-ORG-HEAD-COMPANY-BRAND', 'BC-ORG-STORE-CREATE',
+    'BC-ORG-PROJECT-STATUS', 'BC-ORG-BRAND-STATUS', 'BC-ORG-TENANT-STATUS',
+    'BC-ORG-HEAD-COMPANY-STATUS', 'BC-ORG-STORE-STATUS', 'BC-CONTRACT-CREATE', 'BC-CONTRACT-INVALIDATE',
+  ];
+  assert.ok(role);
+  assert.deepEqual(requiredCapabilities.filter((capability) => !role.actionCapabilityKeys.includes(capability)), []);
 });
 
 test('formal seed preserves administrator-defined extension keys and refuses partial values', () => {

@@ -3,8 +3,9 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformWorkspaceInvitationPageCriteria(
     String mobile,
-    String organizationQuery,
-    String roleQuery,
+    ServiceNodeType targetOrganizationType,
+    String targetOrganizationRef,
+    String roleId,
     WorkspaceInvitationStatus status,
     Long expiresFrom,
     Long expiresTo,

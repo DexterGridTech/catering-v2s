@@ -31,6 +31,18 @@ function api(overrides: Record<string, unknown> = {}) {
 }
 
 describe('HeadCompanyBrandAuthorizationActionAdapter', () => {
+  it('uses the owner brand predicate for both name and code candidate search', async () => {
+    const getBrands = vi.fn(async () => ({items: []}));
+    const client = api({getOperationsOrganizationBrands: getBrands});
+
+    await new HeadCompanyBrandAuthorizationActionAdapter(client).searchEnabledBrands(context, 'BRAND-01');
+
+    expect(getBrands).toHaveBeenCalledWith(
+      {groupWorkspaceKey: context.groupWorkspaceKey},
+      {query: {expectedContextVersion: context.expectedContextVersion, name: 'BRAND-01', code: 'BRAND-01', status: 'ENABLED', page: 1, pageSize: 20}},
+    );
+  });
+
   it('uses one generated add command and replaces visible truth with fresh owner detail', async () => {
     const client = api({getOperationsOrganizationHeadCompany: vi.fn(async () => detail(['brand-a']))});
     const result = await new HeadCompanyBrandAuthorizationActionAdapter(client).add(context, {brandId: 'brand-a', idempotencyKey: 'intent-a'});

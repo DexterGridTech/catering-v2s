@@ -7,5 +7,5 @@ public record WorkspaceRolePagePageAccessCatalogItem(
     String menuGroup,
     Long menuOrder,
     String requiredDataNodeType,
-    java.util.List<ServiceNodeType> eligibleOrganizationTypes
+    java.util.List<String> eligibleOrganizationTypes
 ) {}

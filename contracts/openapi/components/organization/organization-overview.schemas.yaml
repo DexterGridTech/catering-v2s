@@ -9,32 +9,6 @@
           "STORE"
         ]
       },
-      "OrganizationHierarchyTree": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["groupCode", "groupName", "regions"],
-        "properties": {
-          "groupCode": {"type": "string", "minLength": 1, "maxLength": 64},
-          "groupName": {"type": "string", "minLength": 1, "maxLength": 120},
-          "regions": {"type": "array", "items": {"$ref": "#/components/schemas/OrganizationHierarchyTreeNode"}}
-        }
-      },
-      "OrganizationHierarchyTreeNode": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "type", "code", "name", "status", "updatedAt", "children", "phases"],
-        "properties": {
-          "id": {"type": "string", "minLength": 1, "maxLength": 64},
-          "type": {"type": "string", "enum": ["REGION", "PROJECT"]},
-          "code": {"type": "string", "minLength": 1, "maxLength": 120},
-          "name": {"type": "string", "minLength": 1, "maxLength": 160},
-          "status": {"$ref": "#/components/schemas/OrganizationOverviewStatus"},
-          "notes": {"type": "string", "nullable": true, "maxLength": 2000},
-          "updatedAt": {"type": "integer", "format": "int64", "minimum": 0},
-          "children": {"type": "array", "items": {"$ref": "#/components/schemas/OrganizationHierarchyTreeNode"}},
-          "phases": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 120}}
-        }
-      },
       "OrganizationOverviewItem": {
         "type": "object",
         "additionalProperties": false,
@@ -267,18 +241,42 @@
             },
             "maxItems": 16
           },
+          "alias": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "legalName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 240
+          },
+          "unifiedSocialCreditCode": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
           "extensionFields": {
             "type": "array",
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["name"],
+              "required": [
+                "name"
+              ],
               "properties": {
-                "name": {"type": "string", "minLength": 1, "maxLength": 120},
-                "value": {"type": "string", "nullable": true, "maxLength": 2000}
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "value": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 4000
+                }
               }
-            },
-            "maxItems": 100
+            }
           }
         }
       },

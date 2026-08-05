@@ -4,14 +4,11 @@ package com.catering.v2s.app.edge.generated.wire;
 public record ContractOverviewItem(
     ContractOverviewItemContractRef contractRef,
     ContractOverviewItemStoreRef storeRef,
-    ContractOverviewItemProjectRef projectRef,
     String phaseName,
     ContractOverviewItemTenantRef tenantRef,
     String effectiveFrom,
     String effectiveTo,
     String note,
-    String itemSummary,
-    java.util.List<StoreContractItem> items,
     StoreContractStatus status,
     String source,
     Long revision,
@@ -19,5 +16,8 @@ public record ContractOverviewItem(
     Long updatedAt,
     String storeResolutionStatus,
     String tenantResolutionStatus,
+    ContractOverviewItemProjectRef projectRef,
+    String itemSummary,
+    java.util.List<StoreContractItem> items,
     java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields
 ) {}

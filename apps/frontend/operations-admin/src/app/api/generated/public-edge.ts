@@ -23,13 +23,6 @@ export const PUBLIC_OPERATIONS = [
     "requiresSession": false
   },
   {
-    "operationId": "completeWorkspacePasswordReset",
-    "method": "POST",
-    "path": "/api/public/password-reset/{resetGenerationKey}/complete",
-    "owner": "workspace-iam",
-    "requiresSession": false
-  },
-  {
     "operationId": "getPublicAssetContent",
     "method": "GET",
     "path": "/api/public/assets/{assetRef}/content",
@@ -72,13 +65,6 @@ export const PUBLIC_OPERATIONS = [
     "requiresSession": false
   },
   {
-    "operationId": "sendWorkspacePasswordResetOtp",
-    "method": "POST",
-    "path": "/api/public/password-reset/{resetGenerationKey}/otp/send",
-    "owner": "workspace-iam",
-    "requiresSession": false
-  },
-  {
     "operationId": "startOperationsPasswordRecovery",
     "method": "POST",
     "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start",
@@ -98,13 +84,6 @@ export const PUBLIC_OPERATIONS = [
     "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
     "owner": "workspace-iam",
     "requiresSession": false
-  },
-  {
-    "operationId": "verifyWorkspacePasswordResetOtp",
-    "method": "POST",
-    "path": "/api/public/password-reset/{resetGenerationKey}/otp/verify",
-    "owner": "workspace-iam",
-    "requiresSession": false
   }
 ] as const;
 
@@ -112,18 +91,15 @@ export const PUBLIC_OPERATION_IDS = {
   "acceptPublicInvitation": "acceptPublicInvitation",
   "completeOperationsPasswordRecovery": "completeOperationsPasswordRecovery",
   "completePublicInvitation": "completePublicInvitation",
-  "completeWorkspacePasswordReset": "completeWorkspacePasswordReset",
   "getPublicAssetContent": "getPublicAssetContent",
   "getPublicInvitationCompletion": "getPublicInvitationCompletion",
   "getPublicInvitationView": "getPublicInvitationView",
   "savePublicInvitationCredentials": "savePublicInvitationCredentials",
   "sendOperationsPasswordRecoveryOtp": "sendOperationsPasswordRecoveryOtp",
   "sendPublicInvitationOtp": "sendPublicInvitationOtp",
-  "sendWorkspacePasswordResetOtp": "sendWorkspacePasswordResetOtp",
   "startOperationsPasswordRecovery": "startOperationsPasswordRecovery",
   "verifyOperationsPasswordRecoveryOtp": "verifyOperationsPasswordRecoveryOtp",
-  "verifyPublicInvitationOtp": "verifyPublicInvitationOtp",
-  "verifyWorkspacePasswordResetOtp": "verifyWorkspacePasswordResetOtp"
+  "verifyPublicInvitationOtp": "verifyPublicInvitationOtp"
 } as const;
 
 export const EDGE_PROBLEM_CODES = [
@@ -139,13 +115,7 @@ export const EDGE_PROBLEM_CODES = [
   "WORKSPACE_IAM_INVITATION_NOT_FOUND",
   "WORKSPACE_IAM_INVITATION_TERMINAL",
   "WORKSPACE_IAM_OTP_INVALID",
-  "WORKSPACE_IAM_PASSWORD_POLICY_FAILED",
-  "WORKSPACE_IAM_PASSWORD_RESET_GENERATION_INVALID",
-  "WORKSPACE_IAM_PASSWORD_RESET_MOBILE_MISMATCH",
-  "WORKSPACE_IAM_PASSWORD_RESET_REPLAYED",
   "WORKSPACE_IAM_RATE_LIMITED",
-  "WORKSPACE_IAM_RESET_EXPIRED",
-  "WORKSPACE_IAM_RESET_NOT_FOUND",
   "WORKSPACE_IAM_RESULT_UNKNOWN"
 ] as const;
 export type EdgeProblemCode = (typeof EDGE_PROBLEM_CODES)[number];
@@ -200,13 +170,6 @@ export type Problem = {
   instance?: (string) | null;
   errorCode: EdgeProblemCode;
   correlationId: string;
-  brandAuthorizationBlockers?: {
-  visibleStores: Array<{
-  id: string;
-  code: string;
-  name: string;
-}>;
-};
 };
 
 export type PublicAssetReference = {
@@ -269,52 +232,18 @@ export type PublicInvitationReadiness = {
 export type PublicInvitationView = {
   invitationId: string;
   groupWorkspaceKey: string;
-  workspaceName: string;
   operationsTitle: string;
-  logoUrl?: (string) | null;
-  targetOrganizationType: ServiceNodeType;
+  targetOrganizationType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   targetOrganizationPath: string;
   roleNames: Array<string>;
   maskedMobile: string;
   status: WorkspaceInvitationStatus;
   expiresAt: EpochMillis;
+  workspaceName: string;
+  logoUrl?: (string) | null;
 };
-
-export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
 
 export type WorkspaceInvitationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "COMPLETED";
-
-export type WorkspacePasswordResetCompleteRequest = {
-  passwordResetGrant: string;
-  password: string;
-};
-
-export type WorkspacePasswordResetCompletion = {
-  status: "COMPLETED";
-  loginName: string;
-  message: string;
-  loginPath: string;
-  sessionsRevoked: boolean;
-};
-
-export type WorkspacePasswordResetOtpSendRequest = {
-  mobile: string;
-};
-
-export type WorkspacePasswordResetOtpSendResponse = {
-  expiresAt: EpochMillis;
-};
-
-export type WorkspacePasswordResetOtpVerifyRequest = {
-  mobile: string;
-  code: string;
-};
-
-export type WorkspacePasswordResetReadiness = {
-  passwordResetGrant: string;
-  loginName: string;
-  nextStep: "SET_PASSWORD";
-};
 
 export type FaceOperationContracts = {
   "acceptPublicInvitation": {
@@ -356,21 +285,6 @@ export type FaceOperationContracts = {
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
-  };
-    query: Record<string, never>;
-    queryRequired: false;
-    headers: {
-    "Idempotency-Key": string;
-  };
-    headersRequired: true;
-  };
-  "completeWorkspacePasswordReset": {
-    request: WorkspacePasswordResetCompleteRequest;
-    response: WorkspacePasswordResetCompletion;
-    requestRequired: true;
-    requiresSession: false;
-    path: {
-    resetGenerationKey: string;
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -467,21 +381,6 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
-  "sendWorkspacePasswordResetOtp": {
-    request: WorkspacePasswordResetOtpSendRequest;
-    response: WorkspacePasswordResetOtpSendResponse;
-    requestRequired: true;
-    requiresSession: false;
-    path: {
-    resetGenerationKey: string;
-  };
-    query: Record<string, never>;
-    queryRequired: false;
-    headers: {
-    "Idempotency-Key": string;
-  };
-    headersRequired: true;
-  };
   "startOperationsPasswordRecovery": {
     request: OperationsPasswordRecoveryStartRequest;
     response: OperationsPasswordRecoveryStartResponse;
@@ -520,21 +419,6 @@ export type FaceOperationContracts = {
     path: {
     groupWorkspaceKey: string;
     invitationToken: string;
-  };
-    query: Record<string, never>;
-    queryRequired: false;
-    headers: {
-    "Idempotency-Key": string;
-  };
-    headersRequired: true;
-  };
-  "verifyWorkspacePasswordResetOtp": {
-    request: WorkspacePasswordResetOtpVerifyRequest;
-    response: WorkspacePasswordResetReadiness;
-    requestRequired: true;
-    requiresSession: false;
-    path: {
-    resetGenerationKey: string;
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -590,14 +474,6 @@ export function createPublicClient(execute: FaceExecutor) {
       requiresSession: false,
       ...options,
     }),
-    completeWorkspacePasswordReset: (pathParameters: FaceOperationContracts["completeWorkspacePasswordReset"]["path"], options: FaceOperationOptions<"completeWorkspacePasswordReset">) => execute({
-      operationId: "completeWorkspacePasswordReset",
-      method: "POST",
-      path: "/api/public/password-reset/{resetGenerationKey}/complete",
-      pathParameters,
-      requiresSession: false,
-      ...options,
-    }),
     getPublicAssetContent: (pathParameters: FaceOperationContracts["getPublicAssetContent"]["path"], options: FaceOperationOptions<"getPublicAssetContent">) => execute({
       operationId: "getPublicAssetContent",
       method: "GET",
@@ -646,14 +522,6 @@ export function createPublicClient(execute: FaceExecutor) {
       requiresSession: false,
       ...options,
     }),
-    sendWorkspacePasswordResetOtp: (pathParameters: FaceOperationContracts["sendWorkspacePasswordResetOtp"]["path"], options: FaceOperationOptions<"sendWorkspacePasswordResetOtp">) => execute({
-      operationId: "sendWorkspacePasswordResetOtp",
-      method: "POST",
-      path: "/api/public/password-reset/{resetGenerationKey}/otp/send",
-      pathParameters,
-      requiresSession: false,
-      ...options,
-    }),
     startOperationsPasswordRecovery: (pathParameters: FaceOperationContracts["startOperationsPasswordRecovery"]["path"], options: FaceOperationOptions<"startOperationsPasswordRecovery">) => execute({
       operationId: "startOperationsPasswordRecovery",
       method: "POST",
@@ -674,14 +542,6 @@ export function createPublicClient(execute: FaceExecutor) {
       operationId: "verifyPublicInvitationOtp",
       method: "POST",
       path: "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
-      pathParameters,
-      requiresSession: false,
-      ...options,
-    }),
-    verifyWorkspacePasswordResetOtp: (pathParameters: FaceOperationContracts["verifyWorkspacePasswordResetOtp"]["path"], options: FaceOperationOptions<"verifyWorkspacePasswordResetOtp">) => execute({
-      operationId: "verifyWorkspacePasswordResetOtp",
-      method: "POST",
-      path: "/api/public/password-reset/{resetGenerationKey}/otp/verify",
       pathParameters,
       requiresSession: false,
       ...options,

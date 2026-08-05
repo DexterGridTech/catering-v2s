@@ -23,6 +23,13 @@ describe('BusinessEntityManagementPage', () => {
     expect(page).toMatch(/key: 'updatedAt'.*sorter: true/);
     expect(page).toMatch(/current\?\.columnKey === 'name' \? 'NAME'/);
     expect(page).toMatch(/current\?\.columnKey === 'code' \? 'CODE' : 'UPDATED_AT'/);
+    expect(page).toContain("legalName: filters.legalName?.trim() || undefined");
+    expect(page).toContain("unifiedSocialCreditCode: filters.unifiedSocialCreditCode?.trim() || undefined");
+    expect(page).toContain("title: '法人公司'");
+    expect(page).toContain("title: '统一代码'");
+    expect(page).toContain("key: 'alias', title: '别名'");
+    expect(page).toContain("key: 'remark', title: '备注'");
+    expect(page).toContain("config.kind === 'BRAND' ? [");
     expect(page).not.toMatch(/valueType:\s*['"]option/);
     expect(page).not.toMatch(/title:\s*['"]操作/);
   });
@@ -36,10 +43,13 @@ describe('BusinessEntityManagementPage', () => {
     expect(detail).toMatch(/detailReady = Boolean\(selected\)/);
     expect(detail).toMatch(/extra=\{detailReady && selected/);
     expect(detail).toContain('size="small" column={1} styles={{label: {width: 164}}}');
+    expect(detail).toContain("label: '统一代码'");
+    expect(create + edit).toContain('label="统一代码"');
     expect(detail).toMatch(/if \(!detailReady \|\| !selected\) return/);
     expect(create).toMatch(/useGetOperationsOrganizationBusinessEntityExtensionDefinitionQuery/);
     expect(edit).toMatch(/useGetOperationsOrganizationBusinessEntityExtensionDefinitionQuery/);
     expect(status).toMatch(/useSubmissionLifecycle/);
+    expect(status).toContain('operationsProblemOf(error)?.detail');
     expect(create + edit).not.toMatch(/operationsProblemOf\(error\)\.detail/);
   });
 });

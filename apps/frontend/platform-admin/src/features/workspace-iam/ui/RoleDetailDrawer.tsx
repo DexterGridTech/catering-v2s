@@ -13,7 +13,7 @@ export function RoleDetailDrawer({open, loading, role, catalog, onClose, onAfter
     <Button onClick={onEdit} {...testId('workspace-role-edit')}>编辑业务角色</Button>
     <Button onClick={onChangeStatus} {...testId('workspace-role-transition-status')}>{role.status === 'ENABLED' ? '停用业务角色' : '启用业务角色'}</Button>
   </Space>}>
-    {role && <>
+    {role && <div className="workspace-role-permission-drawer-content">
       <Descriptions bordered size="small" column={1} items={[
       {key: 'name', label: '名称', children: role.name},
       {key: 'service-node-type', label: '任职机构类型', children: serviceNodeTypeLabel(role.serviceNodeType)},
@@ -21,6 +21,6 @@ export function RoleDetailDrawer({open, loading, role, catalog, onClose, onAfter
       {key: 'description', label: '说明', children: role.description || '—'},
       ]}/>
       <RolePermissionSummaryTrees catalog={catalog} serviceNodeType={role.serviceNodeType} pageAccessKeys={role.pageAccessKeys} capabilityKeys={role.capabilityKeys}/>
-    </>}
+    </div>}
   </Drawer>;
 }

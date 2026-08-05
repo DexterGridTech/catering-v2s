@@ -181,7 +181,8 @@ export const adminCatalog = {
       ],
       "requiredDataNodeType": "NONE",
       "supportedRoleNodeTypes": [
-        "GROUP"
+        "GROUP",
+        "HEAD_COMPANY"
       ],
       "userManagementTargetOrganizationType": null
     },
@@ -207,7 +208,8 @@ export const adminCatalog = {
       ],
       "requiredDataNodeType": "NONE",
       "supportedRoleNodeTypes": [
-        "GROUP"
+        "GROUP",
+        "HEAD_COMPANY"
       ],
       "userManagementTargetOrganizationType": null
     },
@@ -233,7 +235,8 @@ export const adminCatalog = {
       ],
       "requiredDataNodeType": "NONE",
       "supportedRoleNodeTypes": [
-        "GROUP"
+        "GROUP",
+        "HEAD_COMPANY"
       ],
       "userManagementTargetOrganizationType": null
     },
@@ -261,7 +264,7 @@ export const adminCatalog = {
         "门店节点",
         "门店范围"
       ],
-      "requiredDataNodeType": "STORE",
+      "requiredDataNodeType": "PROJECT",
       "supportedRoleNodeTypes": [
         "GROUP",
         "REGION",
@@ -400,15 +403,17 @@ export const adminCatalog = {
       "pageTitle": "总公司用户管理",
       "contentTabLabel": "总公司用户管理",
       "pageDescription": "查看总公司用户和总公司邀请。",
-      "dataNodeCascaderLabel": null,
-      "noDataNodePrompt": null,
-      "noCandidatePrompt": null,
-      "cascadeLevelLabels": [],
+      "dataNodeCascaderLabel": "可视数据节点",
+      "noDataNodePrompt": "请选择总公司",
+      "noCandidatePrompt": "当前运营角色没有可选择的总公司",
+      "cascadeLevelLabels": [
+        "总公司"
+      ],
       "forbiddenAlternatives": [
         "总公司成员管理",
         "总公司节点用户"
       ],
-      "requiredDataNodeType": "NONE",
+      "requiredDataNodeType": "HEAD_COMPANY",
       "supportedRoleNodeTypes": [
         "GROUP",
         "HEAD_COMPANY"
@@ -807,13 +812,15 @@ export const adminCatalog = {
         {
           "pageDesignKey": "PG-ORG-HEAD-COMPANY",
           "selectedIdentityTypes": [
-            "GROUP"
+            "GROUP",
+            "HEAD_COMPANY"
           ],
           "scopeApplicability": "NONE"
         }
       ],
       "grantableRoleNodeTypes": [
-        "GROUP"
+        "GROUP",
+        "HEAD_COMPANY"
       ]
     },
     {
@@ -827,13 +834,15 @@ export const adminCatalog = {
         {
           "pageDesignKey": "PG-ORG-HEAD-COMPANY",
           "selectedIdentityTypes": [
-            "GROUP"
+            "GROUP",
+            "HEAD_COMPANY"
           ],
           "scopeApplicability": "NONE"
         }
       ],
       "grantableRoleNodeTypes": [
-        "GROUP"
+        "GROUP",
+        "HEAD_COMPANY"
       ]
     },
     {
@@ -847,13 +856,15 @@ export const adminCatalog = {
         {
           "pageDesignKey": "PG-ORG-HEAD-COMPANY",
           "selectedIdentityTypes": [
-            "GROUP"
+            "GROUP",
+            "HEAD_COMPANY"
           ],
           "scopeApplicability": "NONE"
         }
       ],
       "grantableRoleNodeTypes": [
-        "GROUP"
+        "GROUP",
+        "HEAD_COMPANY"
       ]
     },
     {
@@ -867,13 +878,15 @@ export const adminCatalog = {
         {
           "pageDesignKey": "PG-ORG-HEAD-COMPANY",
           "selectedIdentityTypes": [
-            "GROUP"
+            "GROUP",
+            "HEAD_COMPANY"
           ],
           "scopeApplicability": "NONE"
         }
       ],
       "grantableRoleNodeTypes": [
-        "GROUP"
+        "GROUP",
+        "HEAD_COMPANY"
       ]
     },
     {
@@ -1040,7 +1053,7 @@ export const adminCatalog = {
             "GROUP",
             "HEAD_COMPANY"
           ],
-          "scopeApplicability": "NONE"
+          "scopeApplicability": "HEAD_COMPANY_TARGET"
         }
       ],
       "grantableRoleNodeTypes": [

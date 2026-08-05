@@ -5,6 +5,5 @@ public record WorkspaceOperationsInvitationCreateRequest(
     String scopeRef,
     String mobile,
     java.util.List<String> roleIds,
-    Long expectedContextVersion,
     String idempotencyKey
 ) {}

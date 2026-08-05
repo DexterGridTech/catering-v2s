@@ -1,16 +1,9 @@
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`${name}_REQUIRED`);
   return value;
-}
-
-async function ownerReturnedTestOtp(page: Page): Promise<string> {
-  const message = await page.getByText(/当前为测试环境，验证码：\d{6}/).textContent();
-  const code = message?.match(/验证码：(\d{6})/)?.[1];
-  if (!code) throw new Error('OWNER_RETURNED_TEST_OTP_REQUIRED');
-  return code;
 }
 
 test('invitee completes the anonymous invitation journey before returning to the branded operations login', async ({page}) => {
@@ -21,7 +14,7 @@ test('invitee completes the anonymous invitation journey before returning to the
 
   await page.getByTestId('public-invitation-mobile').fill(requiredEnvironment('R5_L2_PUBLIC_INVITATION_MOBILE'));
   await page.getByTestId('public-invitation-send-otp').click();
-  await page.getByTestId('public-invitation-otp').fill(await ownerReturnedTestOtp(page));
+  await expect(page.getByTestId('public-invitation-otp')).toHaveValue(/^\d{6}$/);
   await page.getByTestId('public-invitation-verify').click();
 
   await expect(page.getByTestId('public-invitation-user-name')).toBeVisible();

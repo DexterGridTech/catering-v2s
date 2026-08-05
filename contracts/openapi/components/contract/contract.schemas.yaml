@@ -6,7 +6,6 @@
         "additionalProperties": false,
         "required": [
           "contractRef",
-          "projectRef",
           "storeRef",
           "phaseName",
           "tenantRef",
@@ -16,8 +15,11 @@
           "createdAt",
           "updatedAt",
           "storeResolutionStatus",
-          "tenantResolutionStatus"
-          ,"items"
+          "tenantResolutionStatus",
+          "projectRef",
+          "itemSummary",
+          "items",
+          "extensionFields"
         ],
         "properties": {
           "contractRef": {
@@ -88,17 +90,6 @@
               }
             }
           },
-          "projectRef": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["id", "code", "name", "resolutionStatus"],
-            "properties": {
-              "id": {"type": "string", "minLength": 1, "maxLength": 64},
-              "code": {"type": "string", "minLength": 1, "maxLength": 64},
-              "name": {"type": "string", "minLength": 1, "maxLength": 120},
-              "resolutionStatus": {"type": "string", "enum": ["RESOLVED", "UNRESOLVED"]}
-            }
-          },
           "phaseName": {
             "type": "string",
             "minLength": 1,
@@ -151,16 +142,6 @@
             "nullable": true,
             "maxLength": 2000
           },
-          "itemSummary": {
-            "type": "string",
-            "maxLength": 2000
-          },
-          "items": {
-            "type": "array",
-            "items": {"$ref": "#/components/schemas/StoreContractItem"},
-            "minItems": 0,
-            "maxItems": 100
-          },
           "status": {
             "$ref": "#/components/schemas/StoreContractStatus"
           },
@@ -199,18 +180,72 @@
               "UNRESOLVED"
             ]
           },
+          "projectRef": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "code",
+              "name",
+              "resolutionStatus"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "resolutionStatus": {
+                "type": "string",
+                "enum": [
+                  "RESOLVED",
+                  "UNRESOLVED"
+                ]
+              }
+            }
+          },
+          "itemSummary": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 4000
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreContractItem"
+            }
+          },
           "extensionFields": {
             "type": "array",
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["name"],
+              "required": [
+                "name"
+              ],
               "properties": {
-                "name": {"type": "string", "minLength": 1, "maxLength": 120},
-                "value": {"type": "string", "nullable": true, "maxLength": 2000}
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "value": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 4000
+                }
               }
-            },
-            "maxItems": 100
+            }
           }
         }
       },
@@ -224,7 +259,6 @@
           "itemsAsOf",
           "itemsUnresolved",
           "filterOptions",
-          "phaseOptions",
           "filterOptionsSourceStatus",
           "filterOptionsAsOf",
           "filterOptionsUnresolved"
@@ -301,22 +335,20 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["kind", "id", "code", "name"],
+              "required": [
+                "kind",
+                "id",
+                "name"
+              ],
               "properties": {
                 "kind": {
                   "type": "string",
                   "enum": [
-                    "PROJECT",
                     "STORE",
                     "TENANT"
                   ]
                 },
                 "id": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "code": {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 64
@@ -329,11 +361,6 @@
               }
             },
             "maxItems": 500
-          },
-          "phaseOptions": {
-            "type": "array",
-            "items": {"type": "string", "minLength": 1, "maxLength": 120},
-            "maxItems": 100
           },
           "filterOptionsSourceStatus": {
             "type": "string",
@@ -550,8 +577,7 @@
           "project",
           "metadata",
           "stores",
-          "phases",
-          "selectedStoreTenant"
+          "phases"
         ],
         "properties": {
           "groupWorkspaceKey": {
@@ -634,34 +660,12 @@
             }
           },
           "selectedStoreTenant": {
-            "$ref": "#/components/schemas/StoreContractSelectedTenant",
-            "nullable": true
-          }
-        }
-      },
-      "StoreContractSelectedTenant": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "code",
-          "name"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StoreContractSelectedTenant"
+              }
+            ]
           }
         }
       },
@@ -669,7 +673,6 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "projectId",
           "storeId",
           "phaseName",
           "contractNo",
@@ -679,11 +682,6 @@
           "effectiveFrom"
         ],
         "properties": {
-          "projectId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
           "storeId": {
             "type": "string",
             "minLength": 1,
@@ -717,6 +715,12 @@
             "type": "object",
             "nullable": true,
             "additionalProperties": true
+          },
+          "expectedExtensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "minimum": 0
           },
           "items": {
             "type": "array",
@@ -836,15 +840,6 @@
           "INVALID"
         ]
       },
-      "StoreContractViewState": {
-        "type": "string",
-        "enum": [
-          "CURRENT",
-          "PENDING_EFFECTIVE",
-          "HISTORY",
-          "INVALID"
-        ]
-      },
       "StoreContractUpdateRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -882,6 +877,12 @@
             "nullable": true,
             "additionalProperties": true
           },
+          "expectedExtensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "minimum": 0
+          },
           "expectedVersion": {
             "type": "integer",
             "format": "int64",
@@ -901,6 +902,15 @@
             "nullable": true
           }
         }
+      },
+      "StoreContractViewState": {
+        "type": "string",
+        "enum": [
+          "CURRENT",
+          "PENDING_EFFECTIVE",
+          "HISTORY",
+          "INVALID"
+        ]
       },
       "StoreContractStoreCandidate": {
         "required": [
@@ -933,7 +943,35 @@
             ],
             "readOnly": true
           }
-        }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StoreContractSelectedTenant": {
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
       },
       "StoreContractItem": {
         "type": "object",

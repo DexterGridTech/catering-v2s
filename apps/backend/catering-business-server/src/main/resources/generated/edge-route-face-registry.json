@@ -5,11 +5,11 @@
     "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
   ],
   "closure": {
-    "operations": 155,
+    "operations": 154,
     "faceCounts": {
-      "platform-admin": 49,
-      "operations-admin": 91,
-      "public": 15
+      "platform-admin": 50,
+      "operations-admin": 92,
+      "public": 12
     }
   },
   "operations": [
@@ -125,15 +125,6 @@
       "operationId": "completePublicInvitation",
       "method": "POST",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
-      "consumerFaces": [
-        "public"
-      ],
-      "owner": "workspace-iam"
-    },
-    {
-      "operationId": "completeWorkspacePasswordReset",
-      "method": "POST",
-      "path": "/api/public/password-reset/{resetGenerationKey}/complete",
       "consumerFaces": [
         "public"
       ],
@@ -752,6 +743,15 @@
       "owner": "platform-workspace"
     },
     {
+      "operationId": "getPlatformOrganizationCandidates",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "organization"
+    },
+    {
       "operationId": "getPlatformOrganizationHierarchyTree",
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy",
@@ -1157,15 +1157,6 @@
       "owner": "workspace-iam"
     },
     {
-      "operationId": "sendWorkspacePasswordResetOtp",
-      "method": "POST",
-      "path": "/api/public/password-reset/{resetGenerationKey}/otp/send",
-      "consumerFaces": [
-        "public"
-      ],
-      "owner": "workspace-iam"
-    },
-    {
       "operationId": "stagePlatformAsset",
       "method": "POST",
       "path": "/api/platform/assets/staging",
@@ -1272,6 +1263,15 @@
         "platform-admin"
       ],
       "owner": "workspace-iam"
+    },
+    {
+      "operationId": "updateOperationsCommercialGroup",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
     },
     {
       "operationId": "updateOperationsContract",
@@ -1394,15 +1394,6 @@
       "operationId": "verifyPublicInvitationOtp",
       "method": "POST",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
-      "consumerFaces": [
-        "public"
-      ],
-      "owner": "workspace-iam"
-    },
-    {
-      "operationId": "verifyWorkspacePasswordResetOtp",
-      "method": "POST",
-      "path": "/api/public/password-reset/{resetGenerationKey}/otp/verify",
       "consumerFaces": [
         "public"
       ],

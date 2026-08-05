@@ -37,6 +37,28 @@ public final class OperationsSessionResolver {
         return session;
     }
 
+    /**
+     * A changed scope context is recoverable optimistic-concurrency state, not an
+     * authentication failure. Keeping this check here prevents individual edge
+     * adapters from accidentally redirecting a still-authenticated operator to login.
+     */
+    public WorkspaceSessionReadback requireWorkspaceAtContextVersion(EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
+        WorkspaceSessionReadback session = requireWorkspace(request, groupWorkspaceKey);
+        if (session.contextVersion() != expectedContextVersion) {
+            throw new WorkspaceAuthenticationService.SessionConflictException();
+        }
+        return session;
+    }
+
+    /** Narrow escape hatch for the password-change route only. */
+    public WorkspaceSessionReadback requireWorkspaceForPasswordChange(EdgeRequestContext request, String groupWorkspaceKey) {
+        WorkspaceSessionReadback session = sessions.sessionForPasswordChange(token(request));
+        if (!groupWorkspaceKey.equals(session.groupWorkspaceKey())) {
+            throw new WorkspaceAuthenticationService.SessionInvalidException();
+        }
+        return session;
+    }
+
     /** Captures the permitted immutable actor snapshot at the authentication boundary. */
     public AuditActor requireActor(EdgeRequestContext request, String groupWorkspaceKey) {
         return actor(requireWorkspace(request, groupWorkspaceKey));

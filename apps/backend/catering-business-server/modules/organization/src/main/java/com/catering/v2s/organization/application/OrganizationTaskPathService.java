@@ -41,6 +41,19 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     }
 
     /**
+     * Status-transition authority is the only command branch that may resolve a disabled
+     * persisted task target. Read, session, and candidate callers remain enabled-only.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public TaskPath requireStatusTransitionTaskPath(UUID workspaceUuid, String key, String targetType, UUID targetId) {
+        TaskPathRef target = new TaskPathRef(targetType, targetId);
+        TaskPath taskPath = resolveTaskPaths(workspaceUuid, key, List.of(target), true).get(target);
+        if (taskPath == null) throw new TaskPathNotFoundException();
+        return taskPath;
+    }
+
+    /**
      * Bounded display-path resolution for list/readback callers.  The owner performs
      * one read per physical target family, rather than making consumer loops infer
      * hierarchy through repeated scalar owner calls.

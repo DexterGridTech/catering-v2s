@@ -135,6 +135,7 @@ export function BusinessEntityCreateDrawer({open, kind, queryContext, onClose, o
     open={open}
     size={620}
     destroyOnHidden
+    maskClosable
     keyboard={!lifecycle.submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
@@ -158,7 +159,7 @@ export function BusinessEntityCreateDrawer({open, kind, queryContext, onClose, o
         ? <Form.Item name="alias" label="别名"><Input maxLength={120}/></Form.Item>
         : <>
           <Form.Item name="legalName" label="法定名称" rules={[{required: true, whitespace: true, message: '请输入法定名称'}]}><Input maxLength={160}/></Form.Item>
-          <Form.Item name="unifiedSocialCreditCode" label="统一社会信用代码" rules={[{required: true, whitespace: true, message: '请输入统一社会信用代码'}]}><Input maxLength={64}/></Form.Item>
+          <Form.Item name="unifiedSocialCreditCode" label="统一代码" rules={[{required: true, whitespace: true, message: '请输入统一代码'}]}><Input maxLength={64}/></Form.Item>
         </>}
       <Form.Item name="remark" label="备注"><Input.TextArea rows={3} maxLength={2000}/></Form.Item>
       {enabledExtensionFields(definitionQuery.data)}

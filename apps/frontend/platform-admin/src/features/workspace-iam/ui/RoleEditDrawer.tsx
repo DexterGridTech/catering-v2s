@@ -22,12 +22,14 @@ export function RoleEditDrawer({role, groupWorkspaceKey, catalog, onClose, onUpd
     } catch (error) { setProblem(platformProblemOf(error)); } finally { lifecycle.setSubmitting(false); }
   };
   return <Drawer title="编辑业务角色" open={Boolean(role)} size={640} destroyOnHidden onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} mask={{closable: true}} keyboard={!lifecycle.submitting} {...adminDrawerSurfaceProps} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('workspace-role-edit-cancel')}>取消</Button><Button type="primary" loading={lifecycle.submitting} onClick={() => form.submit()} {...testId('workspace-role-edit-submit')}>保存</Button></Space>}>
-    {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 16}} {...testId('workspace-role-edit-error')}/>}
-    <Form form={form} layout="vertical" onFinish={(value) => void submit(value)} onValuesChange={() => { lifecycle.setDirty(true); lifecycle.markBusinessIntentChanged(); }} disabled={lifecycle.submitting}>
-      <Form.Item name="name" label="名称" rules={[{required: true, whitespace: true}]}><Input {...testId('workspace-role-edit-name')}/></Form.Item>
-      <Form.Item label="任职机构类型"><Input value={role ? serviceNodeTypeLabel(role.serviceNodeType) : undefined} readOnly {...testId('workspace-role-edit-service-node-type')}/></Form.Item>
-      <Form.Item name="description" label="说明"><Input.TextArea autoSize={{minRows: 2, maxRows: 4}} {...testId('workspace-role-edit-description')}/></Form.Item>
-      <RolePermissionFields catalog={catalog} serviceNodeType={role?.serviceNodeType}/>
-    </Form>
+    <div className="workspace-role-permission-drawer-content">
+      {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 16}} {...testId('workspace-role-edit-error')}/>} 
+      <Form className="workspace-role-permission-drawer-form" form={form} layout="vertical" onFinish={(value) => void submit(value)} onValuesChange={() => { lifecycle.setDirty(true); lifecycle.markBusinessIntentChanged(); }} disabled={lifecycle.submitting}>
+        <Form.Item name="name" label="名称" rules={[{required: true, whitespace: true}]}><Input {...testId('workspace-role-edit-name')}/></Form.Item>
+        <Form.Item label="任职机构类型"><Input value={role ? serviceNodeTypeLabel(role.serviceNodeType) : undefined} readOnly {...testId('workspace-role-edit-service-node-type')}/></Form.Item>
+        <Form.Item name="description" label="说明"><Input.TextArea autoSize={{minRows: 2, maxRows: 4}} {...testId('workspace-role-edit-description')}/></Form.Item>
+        <RolePermissionFields catalog={catalog} serviceNodeType={role?.serviceNodeType} fillDrawer/>
+      </Form>
+    </div>
   </Drawer>;
 }

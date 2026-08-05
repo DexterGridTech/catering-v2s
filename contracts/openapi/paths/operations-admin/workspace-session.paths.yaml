@@ -3,7 +3,6 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context": {
       "post": {
         "operationId": "selectOperationsWorkspaceSessionContext",
-        "x-required-capability": "REQ_SELECT_OPERATIONS_WORKSPACE_SESSION_CONTEXT",
         "tags": [
           "workspace-iam"
         ],
@@ -16,7 +15,6 @@
         ],
         "x-page-key": "OPERATIONS-SHELL",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED_CONTEXT_VERSION",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -68,27 +66,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED_CONTEXT_VERSION",
+        "x-required-capability": "REQ_SELECT_OPERATIONS_WORKSPACE_SESSION_CONTEXT",
         "requestBody": {
           "required": true,
           "content": {
@@ -104,7 +104,6 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password": {
       "post": {
         "operationId": "changeCurrentWorkspacePassword",
-        "x-required-capability": "REQ_CHANGE_CURRENT_WORKSPACE_PASSWORD",
         "tags": [
           "workspace-iam"
         ],
@@ -117,7 +116,6 @@
         ],
         "x-page-key": "OPERATIONS-SHELL",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -128,7 +126,8 @@
           "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT"
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "WORKSPACE_IAM_PASSWORD_POLICY_FAILED"
         ],
         "security": [
           {
@@ -169,27 +168,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_CHANGE_CURRENT_WORKSPACE_PASSWORD",
         "requestBody": {
           "required": true,
           "content": {
@@ -205,7 +206,6 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node": {
       "post": {
         "operationId": "selectOperationsWorkspaceSessionDataNode",
-        "x-required-capability": "REQ_SELECT_OPERATIONS_WORKSPACE_SESSION_DATA_NODE",
         "tags": [
           "workspace-iam"
         ],
@@ -218,7 +218,6 @@
         ],
         "x-page-key": "OPERATIONS-SHELL",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED_CONTEXT_VERSION",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -270,27 +269,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED_CONTEXT_VERSION",
+        "x-required-capability": "REQ_SELECT_OPERATIONS_WORKSPACE_SESSION_DATA_NODE",
         "requestBody": {
           "required": true,
           "content": {
@@ -306,7 +307,6 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/logout": {
       "post": {
         "operationId": "operationsWorkspaceLogout",
-        "x-required-capability": "REQ_OPERATIONS_WORKSPACE_LOGOUT",
         "tags": [
           "workspace-iam"
         ],
@@ -319,7 +319,6 @@
         ],
         "x-page-key": "OPERATIONS-SHELL",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -364,41 +363,28 @@
             "description": "No content"
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
-        }
-      }
-    }
-  }
-,  "components": {
-    "responses": {
-      "ProblemResponse": {
-        "description": "Problem response",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
-            }
-          }
-        }
+        },
+        "x-required-capability": "REQ_OPERATIONS_WORKSPACE_LOGOUT"
       }
     }
   }

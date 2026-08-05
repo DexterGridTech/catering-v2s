@@ -9,13 +9,13 @@ type Query = NonNullable<Parameters<typeof operationsAdminRtkRequest.getOperatio
 const PAGE_SIZE = 50;
 
 /** Shared candidate query primitive; consumers keep their own selection and search state. */
-export function useOrganizationCandidates({open, queryContext, subjectType, queryText, pageSize = PAGE_SIZE, selectedId, projectId, brandId, tenantId}: {open: boolean; queryContext: OperationsPageProps['queryContext']; subjectType: OrganizationCandidateQuerySubjectType; queryText?: string; pageSize?: number; selectedId?: string; projectId?: string; brandId?: string; tenantId?: string}) {
+export function useOrganizationCandidates({open, queryContext, subjectType, candidateUsage = 'DEFAULT', queryText, pageSize = PAGE_SIZE, selectedId, projectId, brandId, tenantId}: {open: boolean; queryContext: OperationsPageProps['queryContext']; subjectType: OrganizationCandidateQuerySubjectType; candidateUsage?: 'DEFAULT' | 'CONTRACT_LIST'; queryText?: string; pageSize?: number; selectedId?: string; projectId?: string; brandId?: string; tenantId?: string}) {
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<Array<{id: string; name: string; code: string}>>([]);
-  const query: Query = useMemo(() => ({expectedContextVersion: queryContext.expectedContextVersion, subjectType, queryText: queryText?.trim() || undefined, page, pageSize, selectedId, projectId, brandId, tenantId}), [brandId, page, pageSize, projectId, queryContext.expectedContextVersion, queryText, selectedId, subjectType, tenantId]);
+  const query: Query = useMemo(() => ({expectedContextVersion: queryContext.expectedContextVersion, subjectType, candidateUsage, queryText: queryText?.trim() || undefined, page, pageSize, selectedId, projectId, brandId, tenantId}), [brandId, candidateUsage, page, pageSize, projectId, queryContext.expectedContextVersion, queryText, selectedId, subjectType, tenantId]);
   const request = useMemo(() => operationsAdminRtkRequest.getOperationsOrganizationCandidates({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {query}), [query, queryContext.groupWorkspaceKey]);
   const result = operationsRtk.useGetOperationsOrganizationCandidatesQuery(request, {skip: !open});
-  const identity = `${queryContext.groupWorkspaceKey}|${queryContext.expectedContextVersion}|${subjectType}|${queryText?.trim() ?? ''}|${selectedId ?? ''}|${projectId ?? ''}|${brandId ?? ''}|${tenantId ?? ''}`;
+  const identity = `${queryContext.groupWorkspaceKey}|${queryContext.expectedContextVersion}|${subjectType}|${candidateUsage}|${queryText?.trim() ?? ''}|${selectedId ?? ''}|${projectId ?? ''}|${brandId ?? ''}|${tenantId ?? ''}`;
   const previousIdentity = useRef(identity);
 
   useEffect(() => {

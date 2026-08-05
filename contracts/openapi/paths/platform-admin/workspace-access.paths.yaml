@@ -3,101 +3,720 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations": {
       "get": {
         "operationId": "getWorkspaceInvitations",
-        "tags": ["workspace-iam"],
-        "x-consumer-faces": ["platform-admin"],
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
         "x-owner-module": "workspace-iam",
-        "x-scenario-ids": ["D04-S05P"],
+        "x-scenario-ids": [
+          "D04-S05P"
+        ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
-        "x-error-codes": ["PLATFORM_COMMON_ACCESS_DENIED", "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "PLATFORM_COMMON_CONTEXT_STALE", "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED", "PLATFORM_COMMON_RESOURCE_NOT_FOUND"],
-        "security": [{"platformSessionCookie": []}],
-        "parameters": [{"$ref": "#/components/parameters/GroupWorkspaceKey"}, {"$ref": "#/components/parameters/Mobile"}, {"$ref": "#/components/parameters/InvitationFilterTargetOrganizationType"}, {"$ref": "#/components/parameters/InvitationTargetOrganizationRef"}, {"$ref": "#/components/parameters/OrganizationQuery"}, {"$ref": "#/components/parameters/RoleQuery"}, {"$ref": "#/components/parameters/InvitationStatus"}, {"$ref": "#/components/parameters/ExpiresFrom"}, {"$ref": "#/components/parameters/ExpiresTo"}, {"$ref": "#/components/parameters/WorkspaceInvitationSort"}, {"$ref": "#/components/parameters/SortDirection"}, {"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"}],
-        "responses": {"200": {"$ref": "#/components/responses/PlatformInvitationPage"}, "400": {"$ref": "#/components/responses/ProblemResponse"}, "401": {"$ref": "#/components/responses/ProblemResponse"}, "403": {"$ref": "#/components/responses/ProblemResponse"}, "404": {"$ref": "#/components/responses/ProblemResponse"}, "409": {"$ref": "#/components/responses/ProblemResponse"}, "429": {"$ref": "#/components/responses/ProblemResponse"}, "500": {"$ref": "#/components/responses/ProblemResponse"}}
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "mobile",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            }
+          },
+          {
+            "name": "targetOrganizationType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/common/enum.schemas.yaml#/components/schemas/ServiceNodeType"
+            }
+          },
+          {
+            "name": "targetOrganizationRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "roleId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationStatus"
+            }
+          },
+          {
+            "name": "expiresFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "expiresTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationSortKey"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/common/enum.schemas.yaml#/components/schemas/SortDirection"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitationPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        }
       },
       "post": {
         "operationId": "createWorkspaceInvitation",
-        "x-required-platform-authorization": "REQ_CREATE_WORKSPACE_INVITATION",
-        "tags": ["workspace-iam"],
-        "x-consumer-faces": ["platform-admin"],
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
         "x-owner-module": "workspace-iam",
-        "x-scenario-ids": ["D04-S05P"],
+        "x-scenario-ids": [
+          "D04-S05P"
+        ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
-        "x-error-codes": ["PLATFORM_COMMON_ACCESS_DENIED", "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "PLATFORM_COMMON_CONTEXT_STALE", "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED", "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION", "PLATFORM_COMMON_RESOURCE_NOT_FOUND", "PLATFORM_COMMON_RESULT_UNKNOWN", "PLATFORM_COMMON_VALIDATION_FAILED", "PLATFORM_COMMON_VERSION_CONFLICT"],
-        "security": [{"platformSessionCookie": []}],
-        "parameters": [{"$ref": "#/components/parameters/GroupWorkspaceKey"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
-        "requestBody": {"$ref": "#/components/requestBodies/InvitationCreate"},
-        "responses": {"201": {"$ref": "#/components/responses/PlatformInvitation"}, "400": {"$ref": "#/components/responses/ProblemResponse"}, "401": {"$ref": "#/components/responses/ProblemResponse"}, "403": {"$ref": "#/components/responses/ProblemResponse"}, "404": {"$ref": "#/components/responses/ProblemResponse"}, "409": {"$ref": "#/components/responses/ProblemResponse"}, "429": {"$ref": "#/components/responses/ProblemResponse"}, "500": {"$ref": "#/components/responses/ProblemResponse"}}
-      }
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates": {
-      "get": {
-        "operationId": "getWorkspaceInvitationCandidates",
-        "tags": ["workspace-iam"],
-        "x-consumer-faces": ["platform-admin"],
-        "x-owner-module": "workspace-iam",
-        "x-scenario-ids": ["D04-S05P"],
-        "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
-        "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
-        "x-error-codes": ["PLATFORM_COMMON_ACCESS_DENIED", "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "PLATFORM_COMMON_CONTEXT_STALE", "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED", "PLATFORM_COMMON_RESOURCE_NOT_FOUND"],
-        "security": [{"platformSessionCookie": []}],
-        "parameters": [{"$ref": "#/components/parameters/GroupWorkspaceKey"}, {"$ref": "#/components/parameters/TargetOrganizationType"}, {"$ref": "#/components/parameters/InvitationCandidateSubjectType"}, {"$ref": "#/components/parameters/InvitationCandidateQueryText"}, {"$ref": "#/components/parameters/Page"}, {"$ref": "#/components/parameters/PageSize"}, {"$ref": "#/components/parameters/SelectedOrganizationRef"}],
-        "responses": {"200": {"$ref": "#/components/responses/InvitationCandidatePage"}, "400": {"$ref": "#/components/responses/ProblemResponse"}, "401": {"$ref": "#/components/responses/ProblemResponse"}, "403": {"$ref": "#/components/responses/ProblemResponse"}, "404": {"$ref": "#/components/responses/ProblemResponse"}, "409": {"$ref": "#/components/responses/ProblemResponse"}, "429": {"$ref": "#/components/responses/ProblemResponse"}, "500": {"$ref": "#/components/responses/ProblemResponse"}}
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-platform-authorization": "REQ_CREATE_WORKSPACE_INVITATION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationCreateRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}": {
       "get": {
         "operationId": "getWorkspaceInvitation",
-        "tags": ["workspace-iam"],
-        "x-consumer-faces": ["platform-admin"],
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
         "x-owner-module": "workspace-iam",
-        "x-scenario-ids": ["D04-S05P"],
+        "x-scenario-ids": [
+          "D04-S05P"
+        ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
-        "x-error-codes": ["PLATFORM_COMMON_ACCESS_DENIED", "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "PLATFORM_COMMON_CONTEXT_STALE", "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED", "PLATFORM_COMMON_RESOURCE_NOT_FOUND"],
-        "security": [{"platformSessionCookie": []}],
-        "parameters": [{"$ref": "#/components/parameters/GroupWorkspaceKey"}, {"$ref": "#/components/parameters/InvitationId"}],
-        "responses": {"200": {"$ref": "#/components/responses/PlatformInvitation"}, "400": {"$ref": "#/components/responses/ProblemResponse"}, "401": {"$ref": "#/components/responses/ProblemResponse"}, "403": {"$ref": "#/components/responses/ProblemResponse"}, "404": {"$ref": "#/components/responses/ProblemResponse"}, "409": {"$ref": "#/components/responses/ProblemResponse"}, "429": {"$ref": "#/components/responses/ProblemResponse"}, "500": {"$ref": "#/components/responses/ProblemResponse"}}
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates": {
+      "get": {
+        "operationId": "getWorkspaceInvitationCandidates",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S05P"
+        ],
+        "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "targetOrganizationType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "../../components/common/enum.schemas.yaml#/components/schemas/ServiceNodeType"
+            }
+          },
+          {
+            "name": "subjectType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ORGANIZATION",
+                "ROLE"
+              ]
+            }
+          },
+          {
+            "name": "candidateUsage",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "INVITATION_TARGET",
+                "LIST_FILTER"
+              ]
+            }
+          },
+          {
+            "name": "queryText",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "selectedOrganizationRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 240
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationCandidatePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        }
       }
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel": {
       "post": {
         "operationId": "cancelWorkspaceInvitation",
-        "x-required-platform-authorization": "REQ_CANCEL_WORKSPACE_INVITATION",
-        "tags": ["workspace-iam"],
-        "x-consumer-faces": ["platform-admin"],
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
         "x-owner-module": "workspace-iam",
-        "x-scenario-ids": ["D04-S05P"],
+        "x-scenario-ids": [
+          "D04-S05P"
+        ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
         "x-expected-version-policy": "REQUIRED",
-        "x-error-codes": ["PLATFORM_COMMON_ACCESS_DENIED", "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "PLATFORM_COMMON_CONTEXT_STALE", "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED", "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION", "PLATFORM_COMMON_RESOURCE_NOT_FOUND", "PLATFORM_COMMON_RESULT_UNKNOWN", "PLATFORM_COMMON_VALIDATION_FAILED", "PLATFORM_COMMON_VERSION_CONFLICT"],
-        "security": [{"platformSessionCookie": []}],
-        "parameters": [{"$ref": "#/components/parameters/GroupWorkspaceKey"}, {"$ref": "#/components/parameters/InvitationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
-        "requestBody": {"$ref": "#/components/requestBodies/InvitationCancel"},
-        "responses": {"200": {"$ref": "#/components/responses/PlatformInvitation"}, "400": {"$ref": "#/components/responses/ProblemResponse"}, "401": {"$ref": "#/components/responses/ProblemResponse"}, "403": {"$ref": "#/components/responses/ProblemResponse"}, "404": {"$ref": "#/components/responses/ProblemResponse"}, "409": {"$ref": "#/components/responses/ProblemResponse"}, "429": {"$ref": "#/components/responses/ProblemResponse"}, "500": {"$ref": "#/components/responses/ProblemResponse"}}
+        "x-required-platform-authorization": "REQ_CANCEL_WORKSPACE_INVITATION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationCancelRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue": {
       "post": {
         "operationId": "reissueWorkspaceInvitation",
-        "x-required-platform-authorization": "REQ_REISSUE_WORKSPACE_INVITATION",
-        "tags": ["workspace-iam"],
-        "x-consumer-faces": ["platform-admin"],
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
         "x-owner-module": "workspace-iam",
-        "x-scenario-ids": ["D04-S05P"],
+        "x-scenario-ids": [
+          "D04-S05P"
+        ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
         "x-expected-version-policy": "REQUIRED",
-        "x-error-codes": ["PLATFORM_COMMON_ACCESS_DENIED", "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "PLATFORM_COMMON_CONTEXT_STALE", "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED", "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION", "PLATFORM_COMMON_RESOURCE_NOT_FOUND", "PLATFORM_COMMON_RESULT_UNKNOWN", "PLATFORM_COMMON_VALIDATION_FAILED", "PLATFORM_COMMON_VERSION_CONFLICT"],
-        "security": [{"platformSessionCookie": []}],
-        "parameters": [{"$ref": "#/components/parameters/GroupWorkspaceKey"}, {"$ref": "#/components/parameters/InvitationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
-        "requestBody": {"$ref": "#/components/requestBodies/InvitationReissue"},
-        "responses": {"200": {"$ref": "#/components/responses/PlatformInvitation"}, "400": {"$ref": "#/components/responses/ProblemResponse"}, "401": {"$ref": "#/components/responses/ProblemResponse"}, "403": {"$ref": "#/components/responses/ProblemResponse"}, "404": {"$ref": "#/components/responses/ProblemResponse"}, "409": {"$ref": "#/components/responses/ProblemResponse"}, "429": {"$ref": "#/components/responses/ProblemResponse"}, "500": {"$ref": "#/components/responses/ProblemResponse"}}
+        "x-required-platform-authorization": "REQ_REISSUE_WORKSPACE_INVITATION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationReissueRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts": {
@@ -115,7 +734,6 @@
         ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -167,12 +785,12 @@
             }
           },
           {
-            "name": "roleQuery",
+            "name": "roleId",
             "in": "query",
             "required": false,
             "schema": {
               "type": "string",
-              "maxLength": 120
+              "format": "uuid"
             }
           },
           {
@@ -202,22 +820,6 @@
             }
           },
           {
-            "name": "sort",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePlatformAccountSortKey"
-            }
-          },
-          {
-            "name": "direction",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "$ref": "../../components/common/enum.schemas.yaml#/components/schemas/SortDirection"
-            }
-          },
-          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -235,6 +837,22 @@
               "minimum": 1,
               "maximum": 100
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePlatformAccountSortKey"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/common/enum.schemas.yaml#/components/schemas/SortDirection"
+            }
           }
         ],
         "responses": {
@@ -249,25 +867,25 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         }
       }
@@ -287,7 +905,6 @@
         ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -334,25 +951,25 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         }
       }
@@ -360,7 +977,6 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status": {
       "post": {
         "operationId": "transitionWorkspaceAccountStatus",
-        "x-required-platform-authorization": "REQ_TRANSITION_WORKSPACE_ACCOUNT_STATUS",
         "tags": [
           "workspace-iam"
         ],
@@ -373,7 +989,6 @@
         ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -437,27 +1052,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_TRANSITION_WORKSPACE_ACCOUNT_STATUS",
         "requestBody": {
           "required": true,
           "content": {
@@ -473,7 +1090,6 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset": {
       "post": {
         "operationId": "requestWorkspaceCredentialReset",
-        "x-required-platform-authorization": "REQ_REQUEST_WORKSPACE_CREDENTIAL_RESET",
         "tags": [
           "workspace-iam"
         ],
@@ -486,7 +1102,6 @@
         ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -549,27 +1164,28 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-platform-authorization": "REQ_REQUEST_WORKSPACE_CREDENTIAL_RESET",
         "requestBody": {
           "required": true,
           "content": {
@@ -585,7 +1201,6 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke": {
       "post": {
         "operationId": "revokePlatformWorkspaceAssignment",
-        "x-required-platform-authorization": "REQ_REVOKE_PLATFORM_WORKSPACE_ASSIGNMENT",
         "tags": [
           "workspace-iam"
         ],
@@ -598,7 +1213,6 @@
         ],
         "x-page-key": "PLATFORM-WORKSPACE-ACCOUNTS",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -672,27 +1286,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_REVOKE_PLATFORM_WORKSPACE_ASSIGNMENT",
         "requestBody": {
           "required": true,
           "content": {
@@ -704,66 +1320,6 @@
           }
         }
       }
-    }
-  },
-  "components": {
-    "parameters": {
-      "GroupWorkspaceKey": {"name": "groupWorkspaceKey", "in": "path", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128}},
-      "Mobile": {"name": "mobile", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 32}},
-      "OrganizationQuery": {"name": "organizationQuery", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120}},
-      "RoleQuery": {"name": "roleQuery", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120}},
-      "InvitationFilterTargetOrganizationType": {"name": "targetOrganizationType", "in": "query", "required": false, "schema": {"$ref": "../../components/common/enum.schemas.yaml#/components/schemas/ServiceNodeType"}},
-      "InvitationTargetOrganizationRef": {"name": "targetOrganizationRef", "in": "query", "required": false, "schema": {"type": "string", "minLength": 1, "maxLength": 64}},
-      "InvitationStatus": {"name": "status", "in": "query", "required": false, "schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationStatus"}},
-      "ExpiresFrom": {"name": "expiresFrom", "in": "query", "required": false, "schema": {"type": "integer", "format": "int64", "minimum": 0}},
-      "ExpiresTo": {"name": "expiresTo", "in": "query", "required": false, "schema": {"type": "integer", "format": "int64", "minimum": 0}},
-      "WorkspaceInvitationSort": {"name": "sort", "in": "query", "required": false, "schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationSortKey"}},
-      "SortDirection": {"name": "direction", "in": "query", "required": false, "schema": {"$ref": "../../components/common/enum.schemas.yaml#/components/schemas/SortDirection"}},
-      "Page": {"name": "page", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1}},
-      "PageSize": {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}},
-      "TargetOrganizationType": {"name": "targetOrganizationType", "in": "query", "required": true, "schema": {"$ref": "../../components/common/enum.schemas.yaml#/components/schemas/ServiceNodeType"}},
-      "InvitationCandidateSubjectType": {"name": "subjectType", "in": "query", "required": true, "schema": {"type": "string", "enum": ["ORGANIZATION", "ROLE"]}},
-      "InvitationCandidateQueryText": {"name": "queryText", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120}},
-      "SelectedOrganizationRef": {"name": "selectedOrganizationRef", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 240}},
-      "IdempotencyKey": {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "minLength": 16, "maxLength": 128}},
-      "InvitationId": {"name": "invitationId", "in": "path", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128}}
-    },
-    "responses": {
-      "ProblemResponse": {
-        "description": "Problem response",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
-            }
-          }
-        }
-      },
-      "InvitationPage": {
-        "description": "Owner readback",
-        "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationPage"}}}
-      },
-      "PlatformInvitationPage": {
-        "description": "Platform-admin owner readback",
-        "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitationPage"}}}
-      },
-      "Invitation": {
-        "description": "Owner readback",
-        "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitation"}}}
-      },
-      "PlatformInvitation": {
-        "description": "Platform-admin owner readback",
-        "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitation"}}}
-      },
-      "InvitationCandidatePage": {
-        "description": "Owner readback",
-        "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationCandidatePage"}}}
-      }
-    },
-    "requestBodies": {
-      "InvitationCreate": {"required": true, "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationCreateRequest"}}}},
-      "InvitationCancel": {"required": true, "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationCancelRequest"}}}},
-      "InvitationReissue": {"required": true, "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationReissueRequest"}}}}
     }
   }
 }

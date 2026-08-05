@@ -8,6 +8,5 @@ public record Problem(
     String detail,
     String instance,
     String errorCode,
-    String correlationId,
-    ProblemBrandAuthorizationBlockers brandAuthorizationBlockers
+    String correlationId
 ) {}

@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationStorePageMetadataDataScope(
-    ServiceNodeType nodeType,
+    String nodeType,
     String nodeRef,
     String nodeName
 ) {}

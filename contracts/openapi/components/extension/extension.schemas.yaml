@@ -213,14 +213,14 @@
       "ExtensionEntityType": {
         "type": "string",
         "enum": [
-          "COMMERCIAL_GROUP",
           "BRAND",
           "TENANT",
           "HEAD_COMPANY",
-          "REGION",
-          "PROJECT",
           "STORE",
-          "CONTRACT"
+          "CONTRACT",
+          "COMMERCIAL_GROUP",
+          "REGION",
+          "PROJECT"
         ]
       }
     }

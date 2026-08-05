@@ -21,13 +21,11 @@ import java.util.UUID;
 @RequestMapping("/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry")
 public final class OperationsWorkspaceLoginEntryController {
     private final WorkspaceAdministrationService workspaces;
-    private final WorkspaceAuthenticationService sessions;
     private final OperationsSessionResolver sessionResolver;
     private final PlatformAssetService assets;
 
     public OperationsWorkspaceLoginEntryController(WorkspaceAdministrationService workspaces, WorkspaceAuthenticationService sessions, OperationsSessionResolver sessionResolver, PlatformAssetService assets) {
         this.workspaces = workspaces;
-        this.sessions = sessions;
         this.sessionResolver = sessionResolver;
         this.assets = assets;
     }
@@ -37,15 +35,15 @@ public final class OperationsWorkspaceLoginEntryController {
     WorkspaceLoginEntry entry(EdgeRequestContext request, @PathVariable String groupWorkspaceKey) {
         var workspace = workspaces.require(groupWorkspaceKey);
         String state = sessionState(request, groupWorkspaceKey);
-        return new WorkspaceLoginEntry(workspace.groupWorkspaceKey(), workspace.name(), workspace.operationsTitle(), logoUrl(workspace.logoAssetRef()), GroupWorkspaceStatus.valueOf(workspace.status()), state);
+        return new WorkspaceLoginEntry(workspace.groupWorkspaceKey(), workspace.name(), workspace.operationsTitle(), GroupWorkspaceStatus.valueOf(workspace.status()), state, logoUrl(workspace.logoAssetRef()));
     }
 
     private String sessionState(EdgeRequestContext request, String groupWorkspaceKey) {
         try {
             return sessionResolver.tokenIfPresent(request)
-                .map(token -> groupWorkspaceKey.equals(sessions.session(token).groupWorkspaceKey()) ? WorkspaceSessionState.AUTHENTICATED.wire() : WorkspaceSessionState.NONE.wire())
+                .map(ignored -> groupWorkspaceKey.equals(sessionResolver.requireWorkspace(request, groupWorkspaceKey).groupWorkspaceKey()) ? WorkspaceSessionState.AUTHENTICATED.wire() : WorkspaceSessionState.NONE.wire())
                 .orElse(WorkspaceSessionState.NONE.wire());
-        } catch (WorkspaceAuthenticationService.SessionInvalidException ignored) {
+        } catch (WorkspaceAuthenticationService.SessionInvalidException | WorkspaceAuthenticationService.PasswordChangeRequiredException ignored) {
             return WorkspaceSessionState.NONE.wire();
         }
     }

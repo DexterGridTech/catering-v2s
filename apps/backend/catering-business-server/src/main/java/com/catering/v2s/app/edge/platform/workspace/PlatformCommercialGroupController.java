@@ -59,7 +59,7 @@ public final class PlatformCommercialGroupController {
             PlatformSessionReadback session = sessions.require(request);
             CommercialGroupReadback readback = coordinator.initializeCommercialGroup(context(request, session), groupWorkspaceKey, headerIdempotencyKey, body.groupCode(), body.groupName(), extensionValues(body.extensionValues()), new com.catering.v2s.audit.contract.AuditActor("PLATFORM_ADMIN", session.platformAdminId(), session.displayName()));
             recordDiagnostic(diagnostics, request, startedAtNanos, HttpStatus.CREATED.value(), null);
-            return ResponseEntity.status(HttpStatus.CREATED).body(new CommercialGroupRoot(String.valueOf(readback.id()), readback.groupWorkspaceKey(), readback.commercialGroupCode(), readback.commercialGroupName(), extensionValues(readback.extensionValues()), readback.extensionRuleRevision(), readback.revision(), readback.createdAtEpochMillis(), readback.updatedAtEpochMillis()));
+            return ResponseEntity.status(HttpStatus.CREATED).body(new CommercialGroupRoot(String.valueOf(readback.id()), readback.groupWorkspaceKey(), readback.commercialGroupCode(), readback.commercialGroupName(), readback.revision(), readback.createdAtEpochMillis(), readback.updatedAtEpochMillis(), extensionValues(readback.extensionValues()), readback.extensionRuleRevision()));
         } catch (RuntimeException exception) {
             DiagnosticFailure failure = diagnosticFailure(exception);
             recordDiagnostic(diagnostics, request, startedAtNanos, failure.status(), failure.errorCode());

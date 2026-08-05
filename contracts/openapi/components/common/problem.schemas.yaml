@@ -45,45 +45,6 @@
             "type": "string",
             "minLength": 8,
             "maxLength": 128
-          },
-          "brandAuthorizationBlockers": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "visibleStores"
-            ],
-            "properties": {
-              "visibleStores": {
-                "type": "array",
-                "maxItems": 20,
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "id",
-                    "code",
-                    "name"
-                  ],
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 64
-                    },
-                    "code": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 64
-                    },
-                    "name": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 120
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "additionalProperties": false

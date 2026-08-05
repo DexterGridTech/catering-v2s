@@ -24,6 +24,7 @@ import com.catering.v2s.workspace.iam.application.WorkspaceIamCommandReceiptServ
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordResetService;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService;
 import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
+import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,7 +48,6 @@ public final class ContractProblemAdvice {
         OrganizationTaskPathService.TaskPathNotFoundException.class,
         WorkspaceAccountService.AccountNotFoundException.class,
         WorkspaceInvitationService.InvitationNotFoundException.class,
-        WorkspacePasswordResetService.ResetNotFoundException.class,
         WorkspaceRoleService.RoleNotFoundException.class,
         WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException.class,
         WorkspaceAdministrationService.WorkspaceNotFoundException.class,
@@ -56,7 +56,6 @@ public final class ContractProblemAdvice {
     })
     ResponseEntity<Problem> notFound(RuntimeException exception, HttpServletRequest request) {
         String code = exception instanceof WorkspaceInvitationService.InvitationNotFoundException ? "WORKSPACE_IAM_INVITATION_NOT_FOUND"
-            : exception instanceof WorkspacePasswordResetService.ResetNotFoundException ? "WORKSPACE_IAM_RESET_NOT_FOUND"
             : exception instanceof PlatformAssetService.AssetNotFoundException ? "PLATFORM_ASSET_NOT_FOUND"
             : "PLATFORM_COMMON_RESOURCE_NOT_FOUND";
         return problem(HttpStatus.NOT_FOUND, code, "请求的 owner 资源不存在", request);
@@ -120,6 +119,11 @@ public final class ContractProblemAdvice {
         return problem(HttpStatus.CONFLICT, "WORKSPACE_IAM_INVITATION_TERMINAL", "邀请流程状态不可用或已结束", request);
     }
 
+    @ExceptionHandler(WorkspacePasswordResetService.ResetStateException.class)
+    ResponseEntity<Problem> workspaceCredentialResetUnavailable(RuntimeException exception, HttpServletRequest request) {
+        return problem(HttpStatus.CONFLICT, "WORKSPACE_IAM_CREDENTIAL_RESET_UNAVAILABLE", "账号状态已变化，请重新读取后再重置登录凭据", request);
+    }
+
     @ExceptionHandler({
         InvalidEdgeRequestException.class,
         ContractCommandService.ContractValidationException.class,
@@ -127,7 +131,6 @@ public final class ContractProblemAdvice {
         BusinessEntityService.OrganizationValidationException.class,
         OrganizationHierarchyService.OrganizationValidationException.class,
         WorkspaceInvitationService.InvitationValidationException.class,
-        WorkspacePasswordResetService.ResetMobileMismatchException.class,
         WorkspaceRoleService.RoleValidationException.class,
         WorkspaceAdministrationService.WorkspaceInputInvalidException.class,
         PlatformAssetService.AssetInputInvalidException.class,
@@ -139,7 +142,6 @@ public final class ContractProblemAdvice {
     })
     ResponseEntity<Problem> invalid(RuntimeException exception, HttpServletRequest request) {
         String code = exception instanceof PlatformAssetService.AssetStorageUnavailableException ? "PLATFORM_COMMON_RESULT_UNKNOWN"
-            : exception instanceof WorkspacePasswordResetService.ResetMobileMismatchException ? "WORKSPACE_IAM_PASSWORD_RESET_MOBILE_MISMATCH"
             : exception instanceof ExtensionDefinitionService.DefinitionInvalidException ? "EXTENSION_DEFINITION_INVALID"
             : exception instanceof WorkspaceRoleService.RoleCapabilityUnknownException ? "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN"
             : exception instanceof WorkspaceRoleService.PageAccessCatalogMismatchException ? "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH"
@@ -173,6 +175,11 @@ public final class ContractProblemAdvice {
         return problem(HttpStatus.UNAUTHORIZED, exception instanceof PlatformAuthenticationService.SessionExpiredException ? "PLATFORM_IAM_SESSION_EXPIRED" : "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "会话不可用或已过期", request);
     }
 
+    @ExceptionHandler(WorkspaceAuthenticationService.PasswordChangeRequiredException.class)
+    ResponseEntity<Problem> passwordChangeRequired(WorkspaceAuthenticationService.PasswordChangeRequiredException exception, HttpServletRequest request) {
+        return problem(HttpStatus.FORBIDDEN, "WORKSPACE_IAM_PASSWORD_CHANGE_REQUIRED", "请先修改登录密码", request);
+    }
+
     @ExceptionHandler({PlatformAuthenticationService.AccountDisabledException.class, WorkspaceAuthenticationService.AccountDisabledException.class, WorkspaceAuthenticationService.WorkspaceDisabledException.class, WorkspaceAdministrationService.WorkspaceDisabledException.class, WorkspaceAdministrationService.WorkspaceStatusInvalidException.class, WorkspaceAccountService.WorkspaceDisabledException.class, WorkspaceRoleService.WorkspaceDisabledException.class})
     ResponseEntity<Problem> disabled(RuntimeException exception, HttpServletRequest request) {
         String code = exception instanceof PlatformAuthenticationService.AccountDisabledException ? "PLATFORM_IAM_ACCOUNT_DISABLED"
@@ -183,7 +190,13 @@ public final class ContractProblemAdvice {
         return problem(HttpStatus.FORBIDDEN, code, "当前主体不可执行该操作", request);
     }
 
-    @ExceptionHandler(WorkspaceCommandAuthorizationService.AuthorizationDeniedException.class)
+    @ExceptionHandler({
+        WorkspaceCommandAuthorizationService.AuthorizationDeniedException.class,
+        WorkspaceUserService.TaskScopeDeniedException.class,
+        ContractCommandService.ContractAuthorizationException.class,
+        BusinessEntityService.OrganizationAuthorizationException.class,
+        OrganizationHierarchyService.OrganizationAuthorizationException.class
+    })
     ResponseEntity<Problem> accessDenied(RuntimeException exception, HttpServletRequest request) {
         return problem(HttpStatus.FORBIDDEN, "PLATFORM_COMMON_ACCESS_DENIED", "当前主体无权执行该操作", request);
     }
@@ -204,14 +217,9 @@ public final class ContractProblemAdvice {
         return problem(HttpStatus.UNAUTHORIZED, "PLATFORM_IAM_INVALID_CREDENTIALS", "验证码或恢复流程不可用", request);
     }
 
-    @ExceptionHandler({WorkspaceAuthenticationService.OtpInvalidException.class, WorkspacePasswordResetService.ResetOtpInvalidException.class, WorkspacePasswordRecoveryService.OtpInvalidException.class})
+    @ExceptionHandler({WorkspaceAuthenticationService.OtpInvalidException.class, WorkspacePasswordRecoveryService.OtpInvalidException.class})
     ResponseEntity<Problem> resetOtpInvalid(RuntimeException exception, HttpServletRequest request) {
         return problem(HttpStatus.UNPROCESSABLE_ENTITY, "WORKSPACE_IAM_OTP_INVALID", "验证码不可用或已失效", request);
-    }
-
-    @ExceptionHandler(WorkspacePasswordResetService.ResetStateException.class)
-    ResponseEntity<Problem> resetState(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.CONFLICT, "WORKSPACE_IAM_GRANT_INVALID", "重置流程状态不可用或已失效", request);
     }
 
     @ExceptionHandler(WorkspacePasswordRecoveryService.RecoveryStateException.class)

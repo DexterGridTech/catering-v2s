@@ -18,7 +18,7 @@ function copy(action: WorkspaceAccountAction, account: WorkspaceAccount) {
     confirm: '确认',
   };
   if (action.kind === 'CREDENTIAL_RESET') return {
-    title: `确认向“${account.loginName}”发起重置登录凭据？`,
+    title: `确认将“${account.loginName}”的密码重置为其登录账号，并要求下次登录修改密码？`,
     confirm: '确认',
   };
   return {

@@ -12,26 +12,29 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 
 class ContractPlatformOverviewQueryTest {
-    @Test void preservesAllSixBusinessFiltersForSamePredicateCountAndBoundedRead() {
+    @Test void preservesAllCanonicalBusinessFiltersForSamePredicateCountAndBoundedRead() {
         var jdbc = new RecordingJdbcTemplate();
-        var page = new ContractTaskReadService(jdbc).platformOverview(UUID.randomUUID(), "workspace-a", UUID.randomUUID(), UUID.randomUUID(), "CT", "Phase", "Tenant", "VALID", "CONTRACT_NO", "ASC", 3, 20);
+        var page = new ContractTaskReadService(jdbc).list(UUID.randomUUID(), "workspace-a", new ContractTaskReadService.ContractListQuery(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "CT", "Phase", "item-1", null, null, "VALID", "CONTRACT_NO", "ASC", 3, 20));
 
         assertEquals(73, page.metadata().total());
         assertEquals(jdbc.countSql.replace("SELECT COUNT(*)", ""), jdbc.listSql.substring(jdbc.listSql.indexOf(" FROM contract.store_contract"), jdbc.listSql.indexOf(" ORDER BY")));
-        assertEquals(15, jdbc.countArgs.length);
-        assertEquals(17, jdbc.listArgs.length);
-        assertEquals(20, jdbc.listArgs[15]);
-        assertEquals(40, jdbc.listArgs[16]);
-        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("p.id=?"));
-        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("t.code ILIKE"));
+        assertEquals(18, jdbc.countArgs.length);
+        assertEquals(20, jdbc.listArgs.length);
+        assertEquals(20, jdbc.listArgs[18]);
+        assertEquals(40, jdbc.listArgs[19]);
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("s.project_id=?"));
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("s.id=?"));
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("t.id=?"));
+        org.junit.jupiter.api.Assertions.assertFalse(jdbc.countSql.contains("s.name ILIKE"));
+        org.junit.jupiter.api.Assertions.assertFalse(jdbc.countSql.contains("t.code ILIKE"));
         assertEquals(1, occurrences(jdbc.listSql, "LIMIT ? OFFSET ?"));
     }
 
     @Test void rejectsUnknownFilterOrOrderingBeforeQuerying() {
         var service = new ContractTaskReadService(new RecordingJdbcTemplate());
-        assertThrows(ContractCommandService.ContractValidationException.class, () -> service.platformOverview(UUID.randomUUID(), "workspace-a", null, null, null, null, null, "PENDING", "UPDATED_AT", "DESC", 1, 20));
-        assertThrows(ContractCommandService.ContractValidationException.class, () -> service.platformOverview(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, "CREATED_AT", "DESC", 1, 20));
-        assertThrows(ContractCommandService.ContractValidationException.class, () -> service.platformOverview(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, "UPDATED_AT", "SIDEWAYS", 1, 20));
+        assertThrows(ContractCommandService.ContractValidationException.class, () -> service.list(UUID.randomUUID(), "workspace-a", new ContractTaskReadService.ContractListQuery(null, null, null, null, null, null, null, null, "PENDING", "UPDATED_AT", "DESC", 1, 20)));
+        assertThrows(ContractCommandService.ContractValidationException.class, () -> service.list(UUID.randomUUID(), "workspace-a", new ContractTaskReadService.ContractListQuery(null, null, null, null, null, null, null, null, null, "CREATED_AT", "DESC", 1, 20)));
+        assertThrows(ContractCommandService.ContractValidationException.class, () -> service.list(UUID.randomUUID(), "workspace-a", new ContractTaskReadService.ContractListQuery(null, null, null, null, null, null, null, null, null, "UPDATED_AT", "SIDEWAYS", 1, 20)));
     }
 
     private static int occurrences(String value, String token) { return value.split(java.util.regex.Pattern.quote(token), -1).length - 1; }

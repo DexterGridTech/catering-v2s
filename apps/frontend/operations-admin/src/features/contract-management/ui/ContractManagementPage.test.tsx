@@ -19,6 +19,8 @@ describe('contract management focused contract', () => {
     expect(source).toContain('sort, direction, page, pageSize');
     expect(source).toContain("key: 'contractNo'");
     expect(source).toContain("key: 'effectiveFrom'");
+    expect(source).toContain("title: '更新时间'");
+    expect(source).toContain("dataIndex: 'updatedAt'");
     expect(source).toContain("current?.columnKey === 'contractNo' ? 'CONTRACT_NO'");
     expect(source).toContain("current?.columnKey === 'effectiveFrom' ? 'EFFECTIVE_FROM' : 'UPDATED_AT'");
     expect(source).toContain('showOwnerReadback');
@@ -26,6 +28,14 @@ describe('contract management focused contract', () => {
     expect(source).toContain("testId('operations-contract-filter-submit')");
     expect(source).toContain("searchConfig.form?.submit()");
     expect(source).toContain("testId('operations-contract-filter-reset')");
+    expect(source).toContain("search: false");
+    expect(source).not.toContain('hideInSearch');
+    expect(source).toContain('const projectId = queryContext.scopeRef');
+    expect(source).toContain('useContractStoreCandidates({open: Boolean(projectId), queryContext})');
+    expect(source).not.toContain('请先选择数据范围。');
+    expect(source).not.toContain('请先选择项目。');
+    expect(source).not.toContain('operations-contract-filter-project');
+    expect(source).not.toContain('projectCandidates');
     expect(source).toContain('operations-contract-page-retry');
     expect(source).not.toMatch(/title:\s*['"]操作['"]/);
   });
@@ -33,13 +43,19 @@ describe('contract management focused contract', () => {
   it('keeps contract mutations in independent foundation-managed overlays', () => {
     expect(createSource).toContain('useDrawerFormLifecycle');
     expect(createSource).toContain('selectedStoreTenant');
-    expect(createSource).toContain('placeholder="随门店确定"');
+    expect(createSource).toContain("testId('operations-contract-create-tenant')");
+    expect(createSource).toContain("'随门店确定'");
     expect(createSource).toContain('operations-contract-create-project');
-    expect(createSource).toContain('showSearch={{filterOption: false, onSearch: candidates.setStoreSearch}}');
+    expect(createSource).toContain('showSearch filterOption={false} onSearch={candidates.setStoreSearch}');
     expect(createSource).toContain('onPopupScroll={candidates.onPopupScroll}');
+    expect(source).toContain('showSearch: true, filterOption: false, onSearch: candidates.setStoreSearch');
+    expect(source).toContain('showSearch: true, filterOption: false, onSearch: setTenantSearch');
+    expect(source).toContain('operations-contract-number-link');
+    expect(source).toContain('operations-contract-effective-range');
     expect(createSource).toContain('Form.List name="items"');
     expect(createSource).toContain('货号编码不能重复');
     expect(createSource).toContain('operationsClient.createOperationsContract');
+    expect(createSource).not.toContain('body: {projectId');
     expect(editSource).toContain('useDrawerFormLifecycle');
     expect(editSource).toContain('operationsClient.updateOperationsContract');
     expect(editSource).toContain('items: contract.items');

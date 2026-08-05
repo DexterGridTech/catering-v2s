@@ -19,7 +19,7 @@ describe('operations recovery verification focused IA contract', () => {
     expect(source).toContain('<Form.Item name="mobile"');
     expect(source).toContain('identityFields');
     expect(source).toContain("setIdentityFields({loginName: values.loginName, mobile: values.mobile});");
-    expect(source).toContain("form.setFieldValue('code', debugCode)");
+    expect(source).toContain("form.setFieldValue('code', result.debugVerificationCode ?? undefined)");
     expect(source).toContain('form={form}');
     expect(source).toContain('if (entryState.kind === \'loading\') return <LoginFormPage form={form}');
     expect(source).not.toContain('找回{branding.operationsTitle}密码');

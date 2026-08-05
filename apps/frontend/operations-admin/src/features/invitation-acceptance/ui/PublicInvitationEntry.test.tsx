@@ -35,7 +35,7 @@ describe('public invitation focused IA control contract', () => {
 
   it('enforces the OTP and credential reset cascades before moving to the next owner-gated step', () => {
     expect(otp).toContain("form.setFieldValue('code', undefined)");
-    expect(otp).toContain("form.setFieldValue('code', result.debugCode ?? undefined)");
+    expect(otp).toContain("form.setFieldValue('code', result.debugVerificationCode ?? undefined)");
     expect(otp).toContain("message: '请输入正确的手机号'");
     expect(otp).toContain("message: '请输入6位验证码'");
     expect(otp).toContain('if (!result.sent) { invalidate(); return; }');

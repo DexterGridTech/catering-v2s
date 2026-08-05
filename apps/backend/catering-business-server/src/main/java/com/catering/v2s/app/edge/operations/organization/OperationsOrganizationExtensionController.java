@@ -27,26 +27,24 @@ public final class OperationsOrganizationExtensionController {
     @GetMapping("/stores/extension-definition")
     ExtensionDefinition storeDefinition(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion) {
         var session = requireContext(request, groupWorkspaceKey, expectedContextVersion);
-        return ExtensionDefinitionWireMapper.wire(definitions.requireDefinition(session.workspaceUuid(), groupWorkspaceKey, OrganizationEntityType.STORE.wire()));
+        return ExtensionDefinitionWireMapper.wire(definitions.managementDefinition(session.workspaceUuid(), groupWorkspaceKey, OrganizationEntityType.STORE.wire()));
     }
 
     @GetMapping("/business-entities/extension-definition")
     ExtensionDefinition businessEntityDefinition(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion, @org.springframework.web.bind.annotation.RequestParam("entityType") String hostType) {
         var session = requireContext(request, groupWorkspaceKey, expectedContextVersion);
         if (!java.util.Set.of(OrganizationEntityType.BRAND.wire(), OrganizationEntityType.TENANT.wire(), OrganizationEntityType.HEAD_COMPANY.wire()).contains(hostType)) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("unsupported host type");
-        return ExtensionDefinitionWireMapper.wire(definitions.requireDefinition(session.workspaceUuid(), groupWorkspaceKey, hostType));
+        return ExtensionDefinitionWireMapper.wire(definitions.managementDefinition(session.workspaceUuid(), groupWorkspaceKey, hostType));
     }
 
     @GetMapping("/hierarchy/extension-definition")
     ExtensionDefinition hierarchyDefinition(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion, @org.springframework.web.bind.annotation.RequestParam("entityType") String hostType) {
         var session = requireContext(request, groupWorkspaceKey, expectedContextVersion);
         if (!java.util.Set.of("COMMERCIAL_GROUP", "REGION", "PROJECT").contains(hostType)) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("unsupported host type");
-        return ExtensionDefinitionWireMapper.wire(definitions.requireDefinition(session.workspaceUuid(), groupWorkspaceKey, hostType));
+        return ExtensionDefinitionWireMapper.wire(definitions.managementDefinition(session.workspaceUuid(), groupWorkspaceKey, hostType));
     }
 
     private com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback requireContext(EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
-        var session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        if (session.contextVersion() != expectedContextVersion) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        return session;
+        return sessions.requireWorkspaceAtContextVersion(request, groupWorkspaceKey, expectedContextVersion);
     }
 }

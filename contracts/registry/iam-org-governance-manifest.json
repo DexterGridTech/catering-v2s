@@ -36,6 +36,46 @@
       ]
     },
     {
+      "resolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "inputs": [
+        "authenticatedWorkspaceSession",
+        "serverResolvedResourceTypeAndId",
+        "assignmentNode"
+      ],
+      "outputs": [
+        "ALLOW",
+        "DENY",
+        "readScopePredicate"
+      ],
+      "clientDerivedInputsForbidden": [
+        "pageDesignKey",
+        "actionKey",
+        "URL",
+        "requestBodyTargetType",
+        "clientCapabilityLiteral"
+      ]
+    },
+    {
+      "resolverId": "AUTHENTICATED_WORKSPACE_SELF_SESSION",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "inputs": [
+        "authenticatedWorkspaceSession"
+      ],
+      "outputs": [
+        "ALLOW",
+        "DENY",
+        "firstOwnerQueryPredicate"
+      ],
+      "clientDerivedInputsForbidden": [
+        "pageDesignKey",
+        "actionKey",
+        "URL",
+        "requestBodyTargetType",
+        "clientCapabilityLiteral"
+      ]
+    },
+    {
       "resolverId": "PLATFORM_SESSION_ENABLED_ADMIN",
       "authorizationMode": "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
       "inputs": [
@@ -232,7 +272,7 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-GROUP-INVITE",
+  "capabilityKey": "BC-IAM-GROUP-INVITE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "workspace-iam",
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
@@ -349,8 +389,7 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_CHANGE_CURRENT_WORKSPACE_PASSWORD",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_SELF_SESSION",
       "ownerModule": "workspace-iam",
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
@@ -375,23 +414,6 @@
       "noClientDerivedAuthorization": true
     },
     {
-      "requirementId": "REQ_COMPLETE_WORKSPACE_PASSWORD_RESET",
-      "operationIdentity": {
-        "operationId": "completeWorkspacePasswordReset",
-        "method": "POST",
-        "path": "/api/public/password-reset/{resetGenerationKey}/complete",
-        "consumerFace": "public",
-        "ownerModule": "workspace-iam"
-      },
-      "authorizationMode": "PUBLIC_PROTOCOL",
-      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
-      "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
-      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
-      "redFixtureId": "RED_REQ_COMPLETE_WORKSPACE_PASSWORD_RESET",
-      "noClientDerivedAuthorization": true
-    },
-    {
       "requirementId": "REQ_CREATE_OPERATIONS_CONTRACT",
       "operationIdentity": {
         "operationId": "createOperationsContract",
@@ -401,7 +423,7 @@
         "ownerModule": "contract"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_CREATE_OPERATIONS_CONTRACT",
+      "capabilityKey": "BC-CONTRACT-CREATE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "contract",
       "ownerRecheckId": "OWNER_RECHECK_CONTRACT",
@@ -419,7 +441,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_BRAND",
+      "capabilityKey": "BC-ORG-BRAND-CREATE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -437,7 +459,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+      "capabilityKey": "BC-ORG-HEAD-COMPANY-CREATE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -455,7 +477,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_PROJECT",
+      "capabilityKey": "BC-ORG-PROJECT-CREATE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -473,7 +495,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_REGION",
+      "capabilityKey": "BC-ORG-REGION-CREATE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -491,7 +513,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_STORE",
+      "capabilityKey": "BC-ORG-STORE-CREATE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -509,7 +531,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_CREATE_OPERATIONS_ORGANIZATION_TENANT",
+      "capabilityKey": "BC-ORG-TENANT-CREATE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -695,7 +717,7 @@
         "ownerModule": "contract"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_INVALIDATE_OPERATIONS_CONTRACT",
+      "capabilityKey": "BC-CONTRACT-INVALIDATE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "contract",
       "ownerRecheckId": "OWNER_RECHECK_CONTRACT",
@@ -713,8 +735,7 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_OPERATIONS_WORKSPACE_LOGOUT",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_SELF_SESSION",
       "ownerModule": "workspace-iam",
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
@@ -969,7 +990,7 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-GROUP-ROLE-REVOKE",
+  "capabilityKey": "BC-IAM-GROUP-ROLE-REVOKE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "workspace-iam",
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
@@ -1103,8 +1124,7 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_SELECT_OPERATIONS_WORKSPACE_SESSION_CONTEXT",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_SELF_SESSION",
       "ownerModule": "workspace-iam",
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
@@ -1121,8 +1141,7 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_SELECT_OPERATIONS_WORKSPACE_SESSION_DATA_NODE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_SELF_SESSION",
       "ownerModule": "workspace-iam",
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
@@ -1161,23 +1180,6 @@
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_SEND_PUBLIC_INVITATION_OTP",
-      "noClientDerivedAuthorization": true
-    },
-    {
-      "requirementId": "REQ_SEND_WORKSPACE_PASSWORD_RESET_OTP",
-      "operationIdentity": {
-        "operationId": "sendWorkspacePasswordResetOtp",
-        "method": "POST",
-        "path": "/api/public/password-reset/{resetGenerationKey}/otp/send",
-        "consumerFace": "public",
-        "ownerModule": "workspace-iam"
-      },
-      "authorizationMode": "PUBLIC_PROTOCOL",
-      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
-      "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
-      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
-      "redFixtureId": "RED_REQ_SEND_WORKSPACE_PASSWORD_RESET_OTP",
       "noClientDerivedAuthorization": true
     },
     {
@@ -1224,7 +1226,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS",
+      "capabilityKey": "BC-ORG-BRAND-STATUS",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -1242,7 +1244,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS",
+      "capabilityKey": "BC-ORG-HEAD-COMPANY-STATUS",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -1260,7 +1262,14 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_NODE_STATUS",
+      "capabilityMapping": {
+        "kind": "SERVER_RESOLVED_RESOURCE_TYPE",
+        "resourceTypeCapabilities": {
+          "REGION": "BC-ORG-REGION-STATUS",
+          "PROJECT": "BC-ORG-PROJECT-STATUS"
+        },
+        "unsupportedResourceTypeDecision": "DENY"
+      },
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -1278,7 +1287,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_STORE_STATUS",
+      "capabilityKey": "BC-ORG-STORE-STATUS",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -1296,7 +1305,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_TRANSITION_OPERATIONS_ORGANIZATION_TENANT_STATUS",
+      "capabilityKey": "BC-ORG-TENANT-STATUS",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -1382,7 +1391,7 @@
         "ownerModule": "contract"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_UPDATE_OPERATIONS_CONTRACT",
+      "capabilityKey": "BC-CONTRACT-EDIT",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "contract",
       "ownerRecheckId": "OWNER_RECHECK_CONTRACT",
@@ -1400,7 +1409,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_UPDATE_OPERATIONS_ORGANIZATION_BRAND",
+      "capabilityKey": "BC-ORG-BRAND-EDIT",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -1418,13 +1427,33 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_UPDATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+      "capabilityKey": "BC-ORG-HEAD-COMPANY-EDIT",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
       "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_UPDATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
       "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_COMMERCIAL_GROUP",
+      "operationIdentity": {
+        "operationId": "updateOperationsCommercialGroup",
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group",
+        "consumerFace": "operations-admin",
+        "ownerModule": "organization"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityKey": "BC-ORG-GROUP-EDIT",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_UPDATE_OPERATIONS_COMMERCIAL_GROUP",
+      "noClientDerivedAuthorization": true,
+      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
+      "targetOrganizationType": "GROUP"
     },
     {
       "requirementId": "ORG_NODE_EDIT",
@@ -1461,7 +1490,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_UPDATE_OPERATIONS_ORGANIZATION_STORE",
+      "capabilityKey": "BC-ORG-STORE-EDIT",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -1479,7 +1508,7 @@
         "ownerModule": "organization"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "CAP_UPDATE_OPERATIONS_ORGANIZATION_TENANT",
+      "capabilityKey": "BC-ORG-TENANT-EDIT",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       "ownerModule": "organization",
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
@@ -1573,23 +1602,6 @@
       "noClientDerivedAuthorization": true
     },
     {
-      "requirementId": "REQ_VERIFY_WORKSPACE_PASSWORD_RESET_OTP",
-      "operationIdentity": {
-        "operationId": "verifyWorkspacePasswordResetOtp",
-        "method": "POST",
-        "path": "/api/public/password-reset/{resetGenerationKey}/otp/verify",
-        "consumerFace": "public",
-        "ownerModule": "workspace-iam"
-      },
-      "authorizationMode": "PUBLIC_PROTOCOL",
-      "resolverId": "PUBLIC_PROTOCOL_TOKEN",
-      "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
-      "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
-      "redFixtureId": "RED_REQ_VERIFY_WORKSPACE_PASSWORD_RESET_OTP",
-      "noClientDerivedAuthorization": true
-    },
-    {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_GROUP_INVITATIONS",
       "operationIdentity": {
         "operationId": "getOperationsWorkspaceGroupInvitations",
@@ -1599,15 +1611,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-GROUP-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_GROUP_INVITATIONS",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "GROUP"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_GROUP_INVITATION_CANDIDATES",
@@ -1619,15 +1628,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-GROUP-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_GROUP_INVITATION_CANDIDATES",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "GROUP"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER",
@@ -1639,15 +1645,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-GROUP-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "GROUP"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER_ACCOUNT",
@@ -1659,15 +1662,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-GROUP-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER_ACCOUNT",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "GROUP"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_REGION_INVITATIONS",
@@ -1679,15 +1679,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-REGION-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_REGION_INVITATIONS",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "REGION"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_REGION_INVITATION_CANDIDATES",
@@ -1699,15 +1696,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-REGION-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_REGION_INVITATION_CANDIDATES",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "REGION"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_REGION_USER",
@@ -1719,15 +1713,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-REGION-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_REGION_USER",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "REGION"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_REGION_USER_ACCOUNT",
@@ -1739,15 +1730,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-REGION-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_REGION_USER_ACCOUNT",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "REGION"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_PROJECT_INVITATIONS",
@@ -1759,15 +1747,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-PROJECT-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_PROJECT_INVITATIONS",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "PROJECT"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_PROJECT_INVITATION_CANDIDATES",
@@ -1779,15 +1764,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-PROJECT-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_PROJECT_INVITATION_CANDIDATES",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "PROJECT"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_PROJECT_USER",
@@ -1799,15 +1781,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-PROJECT-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_PROJECT_USER",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "PROJECT"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_PROJECT_USER_ACCOUNT",
@@ -1819,15 +1798,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-PROJECT-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_PROJECT_USER_ACCOUNT",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "PROJECT"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATIONS",
@@ -1839,15 +1815,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-HEAD-COMPANY-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATIONS",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "HEAD_COMPANY"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION_CANDIDATES",
@@ -1859,15 +1832,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-HEAD-COMPANY-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION_CANDIDATES",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "HEAD_COMPANY"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER",
@@ -1879,15 +1849,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "HEAD_COMPANY"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_ACCOUNT",
@@ -1899,15 +1866,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_ACCOUNT",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "HEAD_COMPANY"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_STORE_INVITATIONS",
@@ -1919,15 +1883,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-STORE-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_STORE_INVITATIONS",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "STORE"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_STORE_INVITATION_CANDIDATES",
@@ -1939,15 +1900,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-STORE-INVITE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_STORE_INVITATION_CANDIDATES",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "STORE"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_STORE_USER",
@@ -1959,15 +1917,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-STORE-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_STORE_USER",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "STORE"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_GET_OPERATIONS_WORKSPACE_STORE_USER_ACCOUNT",
@@ -1979,15 +1934,12 @@
         "ownerModule": "workspace-iam"
       },
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityKey": "BC-IAM-STORE-ROLE-REVOKE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "authorizationKind": "ROLE_NODE_RANGE_READ",
+      "readScopeResolverId": "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE",
       "ownerModule": "workspace-iam",
-      "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_GET_OPERATIONS_WORKSPACE_STORE_USER_ACCOUNT",
-      "noClientDerivedAuthorization": true,
-      "serverDerivedTarget": "STATIC_OPERATION_CAPABILITY",
-      "targetOrganizationType": "STORE"
+      "noClientDerivedAuthorization": true
     },
     {
       "requirementId": "REQ_SEND_PLATFORM_LOGIN_OTP",

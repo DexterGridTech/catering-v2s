@@ -50,7 +50,6 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
   });
 
   it('freezes the cross-admin Drawer surface contract', () => {
-    expect(adminDrawerSurfaceProps.mask?.closable).toBe(true);
     expect(adminDrawerSurfaceProps.styles?.body?.overflowY).toBe('auto');
     expect(adminDrawerSurfaceProps.styles?.body?.minHeight).toBe(0);
     expect(adminDrawerSurfaceProps.styles?.footer?.justifyContent).toBe('flex-end');

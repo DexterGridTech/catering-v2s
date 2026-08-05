@@ -38,6 +38,7 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
     onClose={onClose}
     size={640}
     destroyOnHidden
+    maskClosable
     {...adminDrawerSurfaceProps}
     {...testId('operations-workspace-invitation-detail-drawer')}
     extra={invitation ? <Space>

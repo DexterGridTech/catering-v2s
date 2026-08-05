@@ -6,7 +6,7 @@ public record WorkspaceSessionEntryCandidatesItem(
     String roleId,
     String roleName,
     String roleNodeRef,
-    ServiceNodeType roleNodeType,
+    String roleNodeType,
     String roleNodeName,
     String homePageDesignKey,
     java.util.List<String> pageDesignKeys,

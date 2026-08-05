@@ -12,7 +12,100 @@ const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const AUTHENTICATED_MODE = "AUTHENTICATED_WORKSPACE";
 const PLATFORM_SUPER_ADMIN_MODE = "AUTHENTICATED_PLATFORM_SUPER_ADMIN";
 const PUBLIC_MODE = "PUBLIC_PROTOCOL";
+const SELF_SESSION_RESOLVER = "AUTHENTICATED_WORKSPACE_SELF_SESSION";
+const READ_SCOPE_RESOLVER = "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE";
+const ROLE_NODE_RANGE_READ = "ROLE_NODE_RANGE_READ";
+const SELF_SESSION_OPERATION_IDS = new Set([
+  "changeCurrentWorkspacePassword",
+  "operationsWorkspaceLogout",
+  "selectOperationsWorkspaceSessionContext",
+  "selectOperationsWorkspaceSessionDataNode",
+]);
 const R24_SHARED_BUSINESS_CAPABILITY = "BC-ORG-HEAD-COMPANY-BRAND";
+const FIXED_BUSINESS_CAPABILITY_OPERATIONS = new Map([
+  [
+    "createOperationsContract|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/contracts|operations-admin",
+    "BC-CONTRACT-CREATE",
+  ],
+  [
+    "createOperationsOrganizationBrand|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands|operations-admin",
+    "BC-ORG-BRAND-CREATE",
+  ],
+  [
+    "createOperationsOrganizationHeadCompany|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies|operations-admin",
+    "BC-ORG-HEAD-COMPANY-CREATE",
+  ],
+  [
+    "createOperationsOrganizationProject|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects|operations-admin",
+    "BC-ORG-PROJECT-CREATE",
+  ],
+  [
+    "createOperationsOrganizationRegion|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions|operations-admin",
+    "BC-ORG-REGION-CREATE",
+  ],
+  [
+    "createOperationsOrganizationStore|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores|operations-admin",
+    "BC-ORG-STORE-CREATE",
+  ],
+  [
+    "createOperationsOrganizationTenant|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants|operations-admin",
+    "BC-ORG-TENANT-CREATE",
+  ],
+  [
+    "invalidateOperationsContract|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate|operations-admin",
+    "BC-CONTRACT-INVALIDATE",
+  ],
+  [
+    "transitionOperationsOrganizationBrandStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status|operations-admin",
+    "BC-ORG-BRAND-STATUS",
+  ],
+  [
+    "transitionOperationsOrganizationHeadCompanyStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status|operations-admin",
+    "BC-ORG-HEAD-COMPANY-STATUS",
+  ],
+  [
+    "transitionOperationsOrganizationStoreStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status|operations-admin",
+    "BC-ORG-STORE-STATUS",
+  ],
+  [
+    "transitionOperationsOrganizationTenantStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status|operations-admin",
+    "BC-ORG-TENANT-STATUS",
+  ],
+  [
+    "updateOperationsCommercialGroup|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group|operations-admin",
+    "BC-ORG-GROUP-EDIT",
+  ],
+  [
+    "updateOperationsContract|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}|operations-admin",
+    "BC-CONTRACT-EDIT",
+  ],
+  [
+    "updateOperationsOrganizationBrand|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}|operations-admin",
+    "BC-ORG-BRAND-EDIT",
+  ],
+  [
+    "updateOperationsOrganizationHeadCompany|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}|operations-admin",
+    "BC-ORG-HEAD-COMPANY-EDIT",
+  ],
+  [
+    "updateOperationsOrganizationStore|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}|operations-admin",
+    "BC-ORG-STORE-EDIT",
+  ],
+  [
+    "updateOperationsOrganizationTenant|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}|operations-admin",
+    "BC-ORG-TENANT-EDIT",
+  ],
+]);
+const RESOURCE_TYPE_CAPABILITY_OPERATIONS = new Map([
+  [
+    "updateOperationsOrganizationNode|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}|operations-admin",
+    {REGION: "BC-ORG-REGION-EDIT", PROJECT: "BC-ORG-PROJECT-EDIT"},
+  ],
+  [
+    "transitionOperationsOrganizationNodeStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status|operations-admin",
+    {REGION: "BC-ORG-REGION-STATUS", PROJECT: "BC-ORG-PROJECT-STATUS"},
+  ],
+]);
 const R24_OPERATION_REQUIREMENTS = new Map([
   [
     "addOperationsOrganizationHeadCompanyBrandAuthorization|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations|operations-admin",
@@ -70,21 +163,20 @@ const P3_C_MUTATING_OPERATION_IDS = new Set([...P3_C_OPERATIONS.entries()]
   .filter(([, operation]) => operation.method === "POST")
   .map(([operationId]) => operationId));
 const EDGE_ROOT = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge";
-const EXTERNAL_OTP_RESPONSE_ROOTS = [
-  OPENAPI_ROOT,
-  EDGE_ROOT,
-  "apps/backend/catering-business-server/src/main/resources/generated",
-  "apps/frontend/platform-admin/src/app/api/generated",
-  "apps/frontend/operations-admin/src/app/api/generated",
-];
 const OWNER_OTP_DELIVERY_ROOT = "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application";
-const LEGACY_TEST_CODE_OWNER_PATHS = new Set([
-  "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java",
-]);
+const LEGACY_TEST_CODE_OWNER_PATHS = new Set();
 const DEBUG_VERIFICATION_CODE_OWNER_PATHS = new Set([
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java",
+]);
+const DEBUG_VERIFICATION_CODE_EXTERNAL_PATHS = new Set([
+  "contracts/openapi/components/platform-iam/platform-identity.schemas.yaml",
+  "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
 ]);
 const PROBLEM_ADVICE_PATH = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java";
 const PROBLEM_SCHEMA_PATH = "contracts/openapi/components/common/problem.schemas.yaml";
@@ -97,8 +189,8 @@ const TYPED_OWNER_EXCEPTION_ROOTS = [
   "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application",
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application",
 ];
-const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 88;
-const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "145c84943fc0a3ad0a8b8a896f19da7f46dabb13cf48f12d121a543f2287308d";
+const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 93;
+const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "58f3440909ea2c1f479aae1ebe54d982516b0574cec05cad5d7af2cf894970f3";
 const EXACT_TYPED_OWNER_EXCEPTION_MAPPINGS = [
   "com.catering.v2s.organization.application.BusinessEntityService.HeadCompanyBrandAuthorizationInUseException",
 ];
@@ -144,8 +236,18 @@ function textHits(root, relative, token = "testCode") {
 }
 
 function validateOtpResponseExposure(root) {
-  const externalHits = EXTERNAL_OTP_RESPONSE_ROOTS.flatMap((relative) => textHits(root, relative));
-  if (externalHits.length > 0) fail(`P3_A_OTP_TEST_CODE_EXTERNAL_EXPOSURE:${externalHits.join(",")}`);
+  const legacyExternalHits = [...new Set([
+    ...textHits(root, OPENAPI_ROOT),
+    ...textHits(root, EDGE_ROOT).filter((sourcePath) => !sourcePath.includes("/generated/")),
+  ])].sort();
+  if (legacyExternalHits.length > 0) fail(`P3_A_OTP_TEST_CODE_EXTERNAL_EXPOSURE:${legacyExternalHits.join(",")}`);
+  const debugExternalHits = [...new Set([
+    ...textHits(root, OPENAPI_ROOT, "debugVerificationCode"),
+    ...textHits(root, EDGE_ROOT, "debugVerificationCode").filter((sourcePath) => !sourcePath.includes("/generated/")),
+  ])].sort();
+  if (debugExternalHits.length > 0 && !exactSet(debugExternalHits, [...DEBUG_VERIFICATION_CODE_EXTERNAL_PATHS])) {
+    fail(`P3_A_OTP_DEBUG_CODE_EXTERNAL_BOUNDARY_DRIFT:${debugExternalHits.join(",") || "NONE"}`);
+  }
   const legacyOwnerHits = textHits(root, OWNER_OTP_DELIVERY_ROOT);
   if (!exactSet(legacyOwnerHits, [...LEGACY_TEST_CODE_OWNER_PATHS])) {
     fail(`P3_A_OTP_TEST_CODE_OWNER_BOUNDARY_DRIFT:${legacyOwnerHits.join(",") || "NONE"}`);
@@ -154,7 +256,7 @@ function validateOtpResponseExposure(root) {
   if (!exactSet(debugOwnerHits, [...DEBUG_VERIFICATION_CODE_OWNER_PATHS])) {
     fail(`P3_A_OTP_DEBUG_CODE_OWNER_BOUNDARY_DRIFT:${debugOwnerHits.join(",") || "NONE"}`);
   }
-  return {externalOtpResponseRoots: EXTERNAL_OTP_RESPONSE_ROOTS, legacyOwnerOtpDeliveryPaths: legacyOwnerHits, debugOwnerOtpDeliveryPaths: debugOwnerHits};
+  return {externalOtpResponseRoots: [OPENAPI_ROOT, `${EDGE_ROOT} (non-generated)`], debugExternalOtpResponsePaths: debugExternalHits, legacyOwnerOtpDeliveryPaths: legacyOwnerHits, debugOwnerOtpDeliveryPaths: debugOwnerHits};
 }
 
 function validateTypedProblemAdviceSurface(root) {
@@ -370,19 +472,26 @@ function indexBy(values, key, duplicateReason) {
 
 function validateResolver(resolver) {
   expectObject(resolver, "CAPABILITY_RESOLVER_INVALID");
-  if (!["AUTHENTICATED_WORKSPACE_TARGET_SCOPE", "PLATFORM_SESSION_ENABLED_ADMIN", "PUBLIC_PROTOCOL_TOKEN", "PUBLIC_PROTOCOL_OWNER_FACT"].includes(resolver.resolverId)) {
+  if (!["AUTHENTICATED_WORKSPACE_TARGET_SCOPE", READ_SCOPE_RESOLVER, SELF_SESSION_RESOLVER, "PLATFORM_SESSION_ENABLED_ADMIN", "PUBLIC_PROTOCOL_TOKEN", "PUBLIC_PROTOCOL_OWNER_FACT"].includes(resolver.resolverId)) {
     fail(`CAPABILITY_RESOLVER_ID_INVALID:${resolver.resolverId || "UNSET"}`);
   }
   if (![AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE].includes(resolver.authorizationMode)) fail(`CAPABILITY_RESOLVER_MODE_INVALID:${resolver.resolverId}`);
   if (!Array.isArray(resolver.inputs) || !Array.isArray(resolver.outputs) || !Array.isArray(resolver.clientDerivedInputsForbidden)) {
     fail(`CAPABILITY_RESOLVER_SHAPE_INVALID:${resolver.resolverId}`);
   }
-  if (!exactSet(resolver.outputs, ["ALLOW", "DENY", "firstOwnerQueryPredicate"])) fail(`CAPABILITY_RESOLVER_OUTPUT_INVALID:${resolver.resolverId}`);
+  const expectedOutputs = resolver.resolverId === READ_SCOPE_RESOLVER
+    ? ["ALLOW", "DENY", "readScopePredicate"]
+    : ["ALLOW", "DENY", "firstOwnerQueryPredicate"];
+  if (!exactSet(resolver.outputs, expectedOutputs)) fail(`CAPABILITY_RESOLVER_OUTPUT_INVALID:${resolver.resolverId}`);
   if (!resolver.clientDerivedInputsForbidden.includes("pageDesignKey")
     || !resolver.clientDerivedInputsForbidden.includes("clientCapabilityLiteral")) {
     fail(`CAPABILITY_RESOLVER_CLIENT_DERIVATION_GAP:${resolver.resolverId}`);
   }
-  if (resolver.authorizationMode === AUTHENTICATED_MODE
+  if (resolver.authorizationMode === AUTHENTICATED_MODE && resolver.resolverId === SELF_SESSION_RESOLVER
+    && !exactSet(resolver.inputs, ["authenticatedWorkspaceSession"])) {
+    fail(`CAPABILITY_SELF_SESSION_RESOLVER_INPUT_INVALID:${resolver.resolverId}`);
+  }
+  if (resolver.authorizationMode === AUTHENTICATED_MODE && resolver.resolverId !== SELF_SESSION_RESOLVER
     && !exactSet(resolver.inputs, ["authenticatedWorkspaceSession", "serverResolvedResourceTypeAndId", "assignmentNode"])) {
     fail(`CAPABILITY_WORKSPACE_RESOLVER_INPUT_INVALID:${resolver.resolverId}`);
   }
@@ -397,6 +506,82 @@ function validateResolver(resolver) {
       : ["serverValidatedInvitationOrResetToken", "serverResolvedResourceTypeAndId"])
       || resolver.authenticatedWorkspaceSessionForbidden !== true)) {
     fail(`CAPABILITY_PUBLIC_PROTOCOL_RESOLVER_INVALID:${resolver.resolverId}`);
+  }
+}
+
+function validateCapabilityWriteOnlyBoundary(root, manifest) {
+  const openApiReadCapabilities = [];
+  for (const sourcePath of walkOpenApi(root)) {
+    const document = json(root, sourcePath, "OPENAPI_DOCUMENT_INVALID");
+    for (const [route, methods] of Object.entries(document.paths || {})) {
+      for (const [method, operation] of Object.entries(methods || {})) {
+        if (WRITE_METHODS.has(String(method).toUpperCase()) || !operation || typeof operation !== "object") continue;
+        if (operation["x-required-capability"] !== undefined) openApiReadCapabilities.push(`${sourcePath}:${String(method).toUpperCase()}:${route}:${operation.operationId || "UNSET"}`);
+      }
+    }
+  }
+  if (openApiReadCapabilities.length > 0) fail(`CAPABILITY_READ_OPENAPI_CAPABILITY_PRESENT:${openApiReadCapabilities.sort().join(",")}`);
+  const registryReadCapabilities = (manifest.requirements || [])
+    .filter((requirement) => !WRITE_METHODS.has(String(requirement?.operationIdentity?.method || "").toUpperCase()))
+    .filter((requirement) => requirement.capabilityKey !== undefined || requirement.capabilityMapping !== undefined || requirement.ownerRecheckId !== undefined)
+    .map((requirement) => requirement?.requirementId || "UNSET");
+  if (registryReadCapabilities.length > 0) fail(`CAPABILITY_READ_REGISTRY_CAPABILITY_PRESENT:${registryReadCapabilities.sort().join(",")}`);
+  const registryReadScopeDrift = (manifest.requirements || [])
+    .filter((requirement) => !WRITE_METHODS.has(String(requirement?.operationIdentity?.method || "").toUpperCase()))
+    .filter((requirement) => requirement.authorizationMode === AUTHENTICATED_MODE)
+    .filter((requirement) => requirement.authorizationKind !== ROLE_NODE_RANGE_READ
+      || requirement.readScopeResolverId !== READ_SCOPE_RESOLVER
+      || requirement.resolverId !== undefined)
+    .map((requirement) => requirement?.requirementId || "UNSET");
+  if (registryReadScopeDrift.length > 0) fail(`CAPABILITY_READ_REGISTRY_SCOPE_MODEL_DRIFT:${registryReadScopeDrift.sort().join(",")}`);
+
+  if (fs.existsSync(path.join(root, EDGE_ROOT))) {
+    const edgeGetCapabilityHits = [];
+    for (const sourcePath of walkFiles(root, EDGE_ROOT).filter((candidate) => candidate.endsWith(".java"))) {
+      const source = fs.readFileSync(path.join(root, sourcePath), "utf8");
+      const capabilityResolverFields = [...source.matchAll(/(?:[\w.]+\.)?WorkspaceCapabilityScopeResolver\s+(\w+)\b/g)].map((match) => match[1]);
+      const capabilityHelperNames = [];
+      for (const helper of source.matchAll(/\bprivate\s+(?:static\s+)?[\w<>?,\s\[\].]+\s+(\w+)\s*\([^;{}]*\)\s*\{/g)) {
+        let depth = 0;
+        let bodyEnd = -1;
+        const bodyStart = helper.index + helper[0].length - 1;
+        for (let cursor = bodyStart; cursor < source.length; cursor += 1) {
+          if (source[cursor] === "{") depth += 1;
+          else if (source[cursor] === "}" && --depth === 0) {
+            bodyEnd = cursor;
+            break;
+          }
+        }
+        if (bodyEnd < 0) fail(`CAPABILITY_READ_EDGE_HELPER_BODY_UNCLOSED:${sourcePath}:${helper[1]}`);
+        const body = source.slice(bodyStart, bodyEnd + 1);
+        if (capabilityResolverFields.some((field) => new RegExp(`\\b${field}\\.resolve\\s*\\(`).test(body)) || /\brequireCapability\s*\(/.test(body)) {
+          capabilityHelperNames.push(helper[1]);
+        }
+      }
+      let annotationOffset = 0;
+      while (true) {
+        const getMappingOffset = source.indexOf("@GetMapping", annotationOffset);
+        if (getMappingOffset < 0) break;
+        const bodyStart = source.indexOf("{", getMappingOffset);
+        if (bodyStart < 0) fail(`CAPABILITY_READ_EDGE_GET_HANDLER_BODY_MISSING:${sourcePath}`);
+        let depth = 0;
+        let bodyEnd = -1;
+        for (let cursor = bodyStart; cursor < source.length; cursor += 1) {
+          if (source[cursor] === "{") depth += 1;
+          else if (source[cursor] === "}" && --depth === 0) {
+            bodyEnd = cursor;
+            break;
+          }
+        }
+        if (bodyEnd < 0) fail(`CAPABILITY_READ_EDGE_GET_HANDLER_BODY_UNCLOSED:${sourcePath}`);
+        const body = source.slice(bodyStart, bodyEnd + 1);
+        const capabilityResolverCall = capabilityResolverFields.some((field) => new RegExp(`\\b${field}\\.resolve\\s*\\(`).test(body));
+        const capabilityHelperCall = capabilityHelperNames.some((helper) => new RegExp(`\\b${helper}\\s*\\(`).test(body));
+        if (capabilityResolverCall || capabilityHelperCall || /\brequireCapability\s*\(/.test(body)) edgeGetCapabilityHits.push(sourcePath);
+        annotationOffset = bodyEnd + 1;
+      }
+    }
+    if (edgeGetCapabilityHits.length > 0) fail(`CAPABILITY_READ_EDGE_GET_CAPABILITY_PRESENT:${[...new Set(edgeGetCapabilityHits)].sort().join(",")}`);
   }
 }
 
@@ -429,6 +614,7 @@ function validateR24ContractProjection(root, manifest) {
   if (!remove || remove.operationId !== "removeOperationsOrganizationHeadCompanyBrandAuthorization"
     || remove["x-required-capability"] !== R24_OPERATION_REQUIREMENTS.get("removeOperationsOrganizationHeadCompanyBrandAuthorization|DELETE|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}|operations-admin")
     || remove["x-expected-version-policy"] !== undefined
+    || !remove["x-error-codes"]?.includes("ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE")
     || !exactSet(successStatuses(remove), ["204"])) {
     fail("CAPABILITY_R24_REMOVE_CONTRACT_DRIFT");
   }
@@ -441,17 +627,13 @@ function validateR24ContractProjection(root, manifest) {
     fail("CAPABILITY_R24_READBACK_OR_REQUEST_DRIFT");
   }
   const problemDocument = json(root, PROBLEM_SCHEMA_PATH, "CAPABILITY_R24_PROBLEM_SCHEMA_INVALID");
-  const blockers = problemDocument?.components?.schemas?.Problem?.properties?.brandAuthorizationBlockers;
-  const visibleStores = blockers?.properties?.visibleStores;
-  const store = visibleStores?.items;
-  if (!blockers || blockers.additionalProperties !== false || !exactSet(blockers.required || [], ["visibleStores"])
-    || !visibleStores || visibleStores.maxItems !== 20 || store?.additionalProperties !== false
-    || !exactSet(store?.required || [], ["id", "code", "name"])
-    || !exactSet(Object.keys(store?.properties || {}), ["id", "code", "name"])
-    || /(?:hasAdditional|referencingStoreCount|canRevoke|total)/.test(JSON.stringify(blockers))) {
-    fail("CAPABILITY_R24_BLOCKER_PROJECTION_DRIFT");
+  const problemProperties = problemDocument?.components?.schemas?.Problem?.properties || {};
+  if (Object.hasOwn(problemProperties, "brandAuthorizationBlockers")
+    || /(?:visibleStores|referencingStoreCount|canRevoke|hasAdditional)/.test(JSON.stringify(problemProperties))) {
+    fail("CAPABILITY_R24_BLOCKER_DISCLOSURE_PRESENT");
   }
-  const problemResponse = pathDocument?.components?.responses?.ProblemResponse?.content;
+  const edgeDocument = json(root, "contracts/openapi/edge.openapi.yaml", "CAPABILITY_R24_EDGE_ROOT_INVALID");
+  const problemResponse = edgeDocument?.components?.responses?.ProblemResponse?.content;
   if (!problemResponse || !exactSet(Object.keys(problemResponse), ["application/problem+json"])) {
     fail("CAPABILITY_R24_PROBLEM_MEDIA_TYPE_DRIFT");
   }
@@ -481,9 +663,10 @@ function validateP3CAccessContract(root, manifest) {
   const requirements = new Map((manifest.requirements || []).map((requirement) => [requirement?.operationIdentity?.operationId, requirement]));
   for (const [operationId, expectedOperation] of P3_C_OPERATIONS) {
     const operation = pathDocument.paths?.[expectedOperation.path]?.[expectedOperation.method.toLowerCase()];
+    const isWrite = WRITE_METHODS.has(expectedOperation.method);
     if (!operation
       || operation["x-page-key"] !== expectedOperation.pageKey
-      || operation["x-required-capability"] !== capabilityRequirementId(operationId)
+      || operation["x-required-capability"] !== (isWrite ? capabilityRequirementId(operationId) : undefined)
       || (operation.parameters || []).some((parameter) => ["pageDesignKey", "targetOrganizationType", "targetType", "capabilityKey"].includes(parameter?.name))
       || /fallback/i.test(JSON.stringify(operation))) {
       fail(`CAPABILITY_P3_C_PAGE_KEY_OR_FALLBACK_PRESENT:${operationId}`);
@@ -501,6 +684,27 @@ function validateP3CAccessContract(root, manifest) {
     }
     const requirement = requirements.get(operationId);
     const authorityCapability = authorityCapabilities?.get(`${expectedOperation.targetType}|${expectedOperation.action}`);
+    if (!isWrite) {
+      if (!requirement
+        || requirement.requirementId !== capabilityRequirementId(operationId)
+        || operationIdentity(requirement.operationIdentity || {}) !== operationIdentity({operationId, method: expectedOperation.method, path: expectedOperation.path, consumerFace: "operations-admin"})
+        || requirement.authorizationMode !== AUTHENTICATED_MODE
+        || requirement.authorizationKind !== ROLE_NODE_RANGE_READ
+        || requirement.readScopeResolverId !== READ_SCOPE_RESOLVER
+        || requirement.resolverId !== undefined
+        || requirement.capabilityKey !== undefined
+        || requirement.capabilityMapping !== undefined
+        || requirement.ownerRecheckId !== undefined
+        || requirement.serverDerivedTarget !== undefined
+        || requirement.targetOrganizationType !== undefined
+        || requirement.ownerModule !== "workspace-iam"
+        || requirement.typedProblemMappingId !== "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION"
+        || requirement.noClientDerivedAuthorization !== true
+        || /pageDesignKey|fallback/i.test(JSON.stringify(requirement))) {
+        fail(`CAPABILITY_P3_C_ROLE_NODE_READ_DRIFT:${operationId}`);
+      }
+      continue;
+    }
     if (!requirement
       || requirement.requirementId !== capabilityRequirementId(operationId)
       || operationIdentity(requirement.operationIdentity || {}) !== operationIdentity({operationId, method: expectedOperation.method, path: expectedOperation.path, consumerFace: "operations-admin"})
@@ -596,6 +800,8 @@ export function validateCapabilityInvariants(root = process.cwd()) {
       ? operationIdentity(identity) : undefined;
   }, "CAPABILITY_REQUIREMENT_OPERATION_DUPLICATE");
 
+  validateCapabilityWriteOnlyBoundary(root, manifest);
+
   const inventoryKeys = inventory.map(operationIdentity);
   const p3cReadRequirementKeys = String(manifest.authority).startsWith("P3-A authoritative")
     ? [...P3_C_OPERATIONS.values()]
@@ -635,28 +841,32 @@ export function validateCapabilityInvariants(root = process.cwd()) {
       || operationIdentity(requirement.operationIdentity) !== operationIdentity(row)) {
       failures.push(`CAPABILITY_REQUIREMENT_IDENTITY_DRIFT:${row.operationId}`);
     }
-    const orgNodeEdit = requirement.requirementId === "ORG_NODE_EDIT";
     const r24RequirementId = R24_OPERATION_REQUIREMENTS.get(operationIdentity(row));
+    const fixedBusinessCapability = FIXED_BUSINESS_CAPABILITY_OPERATIONS.get(operationIdentity(row));
+    const resourceTypeCapabilities = RESOURCE_TYPE_CAPABILITY_OPERATIONS.get(operationIdentity(row));
     const p3cOperation = P3_C_OPERATIONS.get(row.operationId);
+    const selfSessionOperation = SELF_SESSION_OPERATION_IDS.has(row.operationId);
     const mapping = requirement.capabilityMapping;
-    const validOrgNodeMapping = orgNodeEdit
+    const validResourceTypeMapping = resourceTypeCapabilities
       && requirement.capabilityKey === undefined
       && mapping?.kind === "SERVER_RESOLVED_RESOURCE_TYPE"
       && mapping.unsupportedResourceTypeDecision === "DENY"
       && mapping.resourceTypeCapabilities
-      && Object.keys(mapping.resourceTypeCapabilities).length === 2
-      && mapping.resourceTypeCapabilities.REGION === "BC-ORG-REGION-EDIT"
-      && mapping.resourceTypeCapabilities.PROJECT === "BC-ORG-PROJECT-EDIT";
-    const validFixedCapability = !orgNodeEdit
+      && Object.keys(mapping.resourceTypeCapabilities).length === Object.keys(resourceTypeCapabilities).length
+      && Object.entries(resourceTypeCapabilities).every(([type, capability]) => mapping.resourceTypeCapabilities[type] === capability);
+    const validFixedCapability = !resourceTypeCapabilities
+      && !selfSessionOperation
       && row.authorizationMode === AUTHENTICATED_MODE
       && typeof requirement.capabilityKey === "string"
       && (r24RequirementId
         ? requirement.capabilityKey === R24_SHARED_BUSINESS_CAPABILITY
         : p3cOperation
           ? requirement.capabilityKey === p3cOperation.capabilityKey
+          : fixedBusinessCapability
+            ? requirement.capabilityKey === fixedBusinessCapability
           : /^CAP_[A-Z0-9_]+$/.test(requirement.capabilityKey))
       && requirement.capabilityMapping === undefined;
-    if (orgNodeEdit && !validOrgNodeMapping) {
+    if (resourceTypeCapabilities && !validResourceTypeMapping) {
       failures.push("CAPABILITY_ORG_NODE_EDIT_MAPPING_INVALID:" + row.operationId);
       continue;
     }
@@ -669,13 +879,18 @@ export function validateCapabilityInvariants(root = process.cwd()) {
     if (!r24RequirementId && requirement.capabilityKey === R24_SHARED_BUSINESS_CAPABILITY) {
       failures.push(`CAPABILITY_R24_BUSINESS_CAPABILITY_OVERBROAD:${row.operationId}`);
     }
+    const validSelfSession = selfSessionOperation
+      && row.authorizationMode === AUTHENTICATED_MODE
+      && requirement.capabilityKey === undefined
+      && requirement.capabilityMapping === undefined
+      && requirement.resolverId === SELF_SESSION_RESOLVER;
     const noWorkspaceCapability = row.authorizationMode !== AUTHENTICATED_MODE
       && requirement.capabilityKey === undefined
       && requirement.capabilityMapping === undefined;
     if (row.consumerFace === "platform-admin" && (requirement.capabilityKey !== undefined || requirement.capabilityMapping !== undefined)) {
       failures.push(`CAPABILITY_PLATFORM_CAPABILITY_FORBIDDEN:${row.operationId}`);
     }
-    if ((!orgNodeEdit && !validFixedCapability && !noWorkspaceCapability)
+    if ((!resourceTypeCapabilities && !validFixedCapability && !validSelfSession && !noWorkspaceCapability)
       || typeof requirement.ownerModule !== "string" || requirement.ownerModule !== row.ownerModule
       || typeof requirement.ownerRecheckId !== "string" || typeof requirement.typedProblemMappingId !== "string"
       || typeof requirement.redFixtureId !== "string" || requirement.noClientDerivedAuthorization !== true) {
@@ -710,7 +925,9 @@ function writeFixture(root, operation) {
   fs.mkdirSync(path.join(root, "contracts/registry"), {recursive: true});
   const requirementId = capabilityRequirementId(operation.operationId);
   const ownerId = operation.ownerModule.replace(/[^A-Za-z0-9]+/g, "_").toUpperCase();
-  const orgNodeEdit = requirementId === "ORG_NODE_EDIT";
+  const resourceTypeCapabilities = RESOURCE_TYPE_CAPABILITY_OPERATIONS.get(
+    `${operation.operationId}|${(operation.method || "POST").toUpperCase()}|${operation.path}|${operation.consumerFace}`,
+  );
   const method = (operation.method || "POST").toLowerCase();
   const anonymousProtocol = Array.isArray(operation.security) ? operation.security.length === 0 : operation.consumerFace === "public";
   const platformSuperAdmin = operation.consumerFace === "platform-admin" && !anonymousProtocol;
@@ -744,7 +961,7 @@ function writeFixture(root, operation) {
       requirementId,
       operationIdentity: {operationId: operation.operationId, method: method.toUpperCase(), path: operation.path, consumerFace: operation.consumerFace},
       authorizationMode: platformSuperAdmin ? PLATFORM_SUPER_ADMIN_MODE : anonymousProtocol ? PUBLIC_MODE : AUTHENTICATED_MODE,
-      ...(!platformSuperAdmin && !anonymousProtocol && (orgNodeEdit ? {capabilityMapping: {kind: "SERVER_RESOLVED_RESOURCE_TYPE", resourceTypeCapabilities: {REGION: "BC-ORG-REGION-EDIT", PROJECT: "BC-ORG-PROJECT-EDIT"}, unsupportedResourceTypeDecision: "DENY"}} : {capabilityKey: operation.capabilityKey || "CAP_" + requirementId.replace(/^REQ_/, "")})),
+      ...(!platformSuperAdmin && !anonymousProtocol && (resourceTypeCapabilities ? {capabilityMapping: {kind: "SERVER_RESOLVED_RESOURCE_TYPE", resourceTypeCapabilities, unsupportedResourceTypeDecision: "DENY"}} : {capabilityKey: operation.capabilityKey || "CAP_" + requirementId.replace(/^REQ_/, "")})),
       resolverId: platformSuperAdmin ? "PLATFORM_SESSION_ENABLED_ADMIN" : anonymousProtocol ? "PUBLIC_PROTOCOL_TOKEN" : "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       ownerModule: operation.ownerModule,
       ownerRecheckId: "OWNER_RECHECK_" + ownerId,
@@ -812,8 +1029,10 @@ function writeR24ContractFixture(root) {
   fs.writeFileSync(path.join(root, R24_PATH_DOCUMENT), JSON.stringify({
     paths: {
       [addPath]: {post: {operationId: "addOperationsOrganizationHeadCompanyBrandAuthorization", "x-consumer-faces": ["operations-admin"], "x-owner-module": "organization", "x-required-capability": "REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", responses: {204: {}}}},
-      [removePath]: {delete: {operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization", "x-consumer-faces": ["operations-admin"], "x-owner-module": "organization", "x-required-capability": "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", responses: {204: {}}}},
+      [removePath]: {delete: {operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization", "x-consumer-faces": ["operations-admin"], "x-owner-module": "organization", "x-required-capability": "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", "x-error-codes": ["ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE", "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED"], responses: {204: {}}}},
     },
+  }));
+  fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.yaml"), JSON.stringify({
     components: {responses: {ProblemResponse: {content: {"application/problem+json": {}}}}},
   }));
   fs.writeFileSync(path.join(root, R24_BUSINESS_ENTITY_SCHEMA), JSON.stringify({components: {schemas: {
@@ -826,23 +1045,6 @@ function writeR24ContractFixture(root) {
           properties: {
             errorCode: {},
             correlationId: {},
-            brandAuthorizationBlockers: {
-              type: "object",
-              additionalProperties: false,
-              required: ["visibleStores"],
-              properties: {
-                visibleStores: {
-                  type: "array",
-                  maxItems: 20,
-                  items: {
-                    type: "object",
-                    additionalProperties: false,
-                    required: ["id", "code", "name"],
-                    properties: {id: {}, code: {}, name: {}},
-                  },
-                },
-              },
-            },
           },
         },
       },
@@ -859,7 +1061,7 @@ function writeP3CAccessFixture(root) {
     paths[operation.path][operation.method.toLowerCase()] = {
       operationId,
       "x-page-key": operation.pageKey,
-      "x-required-capability": capabilityRequirementId(operationId),
+      ...(WRITE_METHODS.has(operation.method) ? {"x-required-capability": capabilityRequirementId(operationId)} : {}),
       parameters: [{name: "groupWorkspaceKey", in: "path"}],
       ...(operation.requestSchema ? {requestBody: {content: {"application/json": {schema: {$ref: `../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/${operation.requestSchema}`}}}}} : {}),
     };
@@ -876,11 +1078,10 @@ function writeP3CAccessFixture(root) {
       requirementId: capabilityRequirementId(operation.operationId),
       operationIdentity: {operationId: operation.operationId, method: operation.method, path: operation.path, consumerFace: "operations-admin"},
       authorizationMode: AUTHENTICATED_MODE,
-      capabilityKey: operation.capabilityKey,
-      serverDerivedTarget: "STATIC_OPERATION_CAPABILITY",
-      targetOrganizationType: operation.targetType,
+      ...(WRITE_METHODS.has(operation.method)
+        ? {capabilityKey: operation.capabilityKey, serverDerivedTarget: "STATIC_OPERATION_CAPABILITY", targetOrganizationType: operation.targetType, ownerRecheckId: "OWNER_RECHECK_WORKSPACE_IAM"}
+        : {authorizationKind: ROLE_NODE_RANGE_READ, readScopeResolverId: READ_SCOPE_RESOLVER}),
       ownerModule: "workspace-iam",
-      ownerRecheckId: "OWNER_RECHECK_WORKSPACE_IAM",
       typedProblemMappingId: "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       noClientDerivedAuthorization: true,
     })),
@@ -894,14 +1095,13 @@ function writeP3CEdgeRootFixture(root) {
 }
 
 function writeStaticProofFixture(root) {
-  for (const relative of [...EXTERNAL_OTP_RESPONSE_ROOTS.slice(1), OWNER_OTP_DELIVERY_ROOT, ...TYPED_OWNER_EXCEPTION_ROOTS, path.posix.dirname(PROBLEM_ADVICE_PATH), path.posix.dirname(PROBLEM_SCHEMA_PATH)]) {
+  for (const relative of [EDGE_ROOT, OWNER_OTP_DELIVERY_ROOT, ...TYPED_OWNER_EXCEPTION_ROOTS, path.posix.dirname(PROBLEM_ADVICE_PATH), path.posix.dirname(PROBLEM_SCHEMA_PATH)]) {
     fs.mkdirSync(path.join(root, relative), {recursive: true});
   }
   fs.writeFileSync(path.join(root, "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/FixtureOwner.java"), "package com.catering.v2s.contract.application; public class FixtureOwner { public static final class FixtureException extends RuntimeException {} }\n");
   fs.writeFileSync(path.join(root, "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java"), "package com.catering.v2s.organization.application; public class BusinessEntityService { public static class OrganizationConflictException extends RuntimeException {} public static final class HeadCompanyBrandAuthorizationInUseException extends OrganizationConflictException {} }\n");
   fs.writeFileSync(path.join(root, PROBLEM_ADVICE_PATH), "package fixture;\nimport com.catering.v2s.contract.application.FixtureOwner;\nimport com.catering.v2s.organization.application.BusinessEntityService;\n@RestControllerAdvice\n@ExceptionHandler({FixtureOwner.FixtureException.class, BusinessEntityService.OrganizationConflictException.class, BusinessEntityService.HeadCompanyBrandAuthorizationInUseException.class})\napplication/problem+json\nrecord Problem() {}\n");
   fs.writeFileSync(path.join(root, PROBLEM_SCHEMA_PATH), JSON.stringify({components: {schemas: {Problem: {properties: {errorCode: {}, correlationId: {}}}}}}));
-  fs.writeFileSync(path.join(root, [...LEGACY_TEST_CODE_OWNER_PATHS][0]), "package com.catering.v2s.workspace.iam.application; record OtpDelivery(long expiresAt, String testCode) {}\n");
   for (const ownerPath of DEBUG_VERIFICATION_CODE_OWNER_PATHS) {
     fs.writeFileSync(path.join(root, ownerPath), "package com.catering.v2s.workspace.iam.application; record OtpDelivery(long expiresAt, String debugVerificationCode) {}\n");
   }
@@ -968,7 +1168,7 @@ function selfTest() {
     try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_OWNER_RECHECK_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("CAPABILITY_OWNER_RECHECK_BINDING_DRIFT:acceptPublicInvitation")) throw error; }
 
-    const orgNodeOperation = {operationId: "updateOperationsOrganizationNode", path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}", consumerFace: "operations-admin", ownerModule: "organization"};
+    const orgNodeOperation = {operationId: "updateOperationsOrganizationNode", method: "PATCH", path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}", consumerFace: "operations-admin", ownerModule: "organization"};
     writeFixture(root, orgNodeOperation);
     validateCapabilityInvariants(root);
     const orgNodeRegistry = governanceManifest(root);
@@ -995,13 +1195,35 @@ function selfTest() {
     writeR24ContractFixture(root);
     validateCapabilityInvariants(root);
     const r24Problem = json(root, PROBLEM_SCHEMA_PATH, "CAPABILITY_R24_FIXTURE_INVALID");
-    r24Problem.components.schemas.Problem.properties.brandAuthorizationBlockers.properties.visibleStores.maxItems = 21;
+    r24Problem.components.schemas.Problem.properties.brandAuthorizationBlockers = {type: "object"};
     fs.writeFileSync(path.join(root, PROBLEM_SCHEMA_PATH), JSON.stringify(r24Problem));
-    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_R24_BLOCKER_PROJECTION_NOT_DETECTED"); }
-    catch (error) { if (!String(error.message).includes("CAPABILITY_R24_BLOCKER_PROJECTION_DRIFT")) throw error; }
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_R24_BLOCKER_DISCLOSURE_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_R24_BLOCKER_DISCLOSURE_PRESENT")) throw error; }
 
     const p3cManifest = writeP3CAccessFixture(root);
     validateP3CAccessContract(root, p3cManifest);
+    const p3cReadCapabilityPath = json(root, P3_C_PATH_DOCUMENT, "CAPABILITY_P3_C_FIXTURE_INVALID");
+    p3cReadCapabilityPath.paths[P3_C_OPERATIONS.get("getOperationsWorkspaceGroupUser").path].get["x-required-capability"] = "REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER";
+    fs.writeFileSync(path.join(root, P3_C_PATH_DOCUMENT), JSON.stringify(p3cReadCapabilityPath));
+    try { validateCapabilityWriteOnlyBoundary(root, p3cManifest); fail("CAPABILITY_SELF_TEST_READ_OPENAPI_CAPABILITY_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_READ_OPENAPI_CAPABILITY_PRESENT:")) throw error; }
+    const p3cReadRegistryManifest = writeP3CAccessFixture(root);
+    p3cReadRegistryManifest.requirements.find((requirement) => requirement.operationIdentity.operationId === "getOperationsWorkspaceGroupUser").capabilityKey = "BC-IAM-GROUP-ROLE-REVOKE";
+    try { validateCapabilityWriteOnlyBoundary(root, p3cReadRegistryManifest); fail("CAPABILITY_SELF_TEST_READ_REGISTRY_CAPABILITY_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_READ_REGISTRY_CAPABILITY_PRESENT:REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER")) throw error; }
+    const readEdgeSource = path.join(root, `${EDGE_ROOT}/FixtureReadController.java`);
+    fs.mkdirSync(path.dirname(readEdgeSource), {recursive: true});
+    fs.writeFileSync(readEdgeSource, "class FixtureReadController { WorkspaceCapabilityScopeResolver scopeResolver; @GetMapping void read() { scopeResolver.resolve(); } }\n");
+    try { validateCapabilityWriteOnlyBoundary(root, writeP3CAccessFixture(root)); fail("CAPABILITY_SELF_TEST_READ_EDGE_GET_CAPABILITY_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes(`CAPABILITY_READ_EDGE_GET_CAPABILITY_PRESENT:${EDGE_ROOT}/FixtureReadController.java`)) throw error; }
+    fs.writeFileSync(readEdgeSource, "class FixtureReadController { WorkspaceCapabilityScopeResolver scopeResolver; @GetMapping void read() { authorizeForRead(); } private void authorizeForRead() { scopeResolver.resolve(); } }\n");
+    try { validateCapabilityWriteOnlyBoundary(root, writeP3CAccessFixture(root)); fail("CAPABILITY_SELF_TEST_READ_EDGE_GET_CAPABILITY_HELPER_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes(`CAPABILITY_READ_EDGE_GET_CAPABILITY_PRESENT:${EDGE_ROOT}/FixtureReadController.java`)) throw error; }
+    fs.rmSync(readEdgeSource, {force: true});
+    const p3cReadResolverManifest = writeP3CAccessFixture(root);
+    p3cReadResolverManifest.requirements.find((requirement) => requirement.operationIdentity.operationId === "getOperationsWorkspaceGroupUser").resolverId = "AUTHENTICATED_WORKSPACE_TARGET_SCOPE";
+    try { validateCapabilityWriteOnlyBoundary(root, p3cReadResolverManifest); fail("CAPABILITY_SELF_TEST_READ_REGISTRY_SCOPE_MODEL_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_READ_REGISTRY_SCOPE_MODEL_DRIFT:REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER")) throw error; }
     writeP3CEdgeRootFixture(root);
     validateP3CEdgeRootProjection(root);
     const p3cRootFixture = json(root, "contracts/openapi/edge.openapi.yaml", "CAPABILITY_P3_C_FIXTURE_INVALID");
@@ -1062,13 +1284,18 @@ function selfTest() {
     catch (error) { if (!String(error.message).includes("P3_A_OTP_TEST_CODE_EXTERNAL_EXPOSURE:contracts/openapi/exposure.yaml")) throw error; }
     fs.rmSync(path.join(root, "contracts/openapi/exposure.yaml"), {force: true});
 
+    fs.writeFileSync(path.join(root, "contracts/openapi/debug-exposure.yaml"), "debugVerificationCode\n");
+    try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_OTP_DEBUG_EXTERNAL_ESCAPE_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("P3_A_OTP_DEBUG_CODE_EXTERNAL_BOUNDARY_DRIFT:contracts/openapi/debug-exposure.yaml")) throw error; }
+    fs.rmSync(path.join(root, "contracts/openapi/debug-exposure.yaml"), {force: true});
+
     writeFixture(root, publicOperation);
     writeStaticProofFixture(root);
-    const generatedWire = path.join(root, `${EDGE_ROOT}/generated/wire/FixtureOtpResponse.java`);
+    const generatedWire = path.join(root, `${EDGE_ROOT}/FixtureOtpResponse.java`);
     fs.mkdirSync(path.dirname(generatedWire), {recursive: true});
     fs.writeFileSync(generatedWire, "record FixtureOtpResponse(String testCode) {}\n");
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_OTP_GENERATED_WIRE_EXPOSURE_NOT_DETECTED"); }
-    catch (error) { if (!String(error.message).includes(`P3_A_OTP_TEST_CODE_EXTERNAL_EXPOSURE:${EDGE_ROOT}/generated/wire/FixtureOtpResponse.java`)) throw error; }
+    catch (error) { if (!String(error.message).includes(`P3_A_OTP_TEST_CODE_EXTERNAL_EXPOSURE:${EDGE_ROOT}/FixtureOtpResponse.java`)) throw error; }
     fs.rmSync(generatedWire, {force: true});
 
     writeFixture(root, publicOperation);
@@ -1084,7 +1311,7 @@ function selfTest() {
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_PROBLEM_ADVICE_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("P3_A_TYPED_PROBLEM_ADVICE_HANDLER_MISSING")) throw error; }
 
-    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
+    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

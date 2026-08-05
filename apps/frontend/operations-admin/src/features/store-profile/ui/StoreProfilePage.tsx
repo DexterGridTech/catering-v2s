@@ -54,10 +54,11 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
   const profile = operationsRtk.useGetOperationsStoreProfileQuery(profileRequest, {skip: !scopeReady});
   const definition = operationsRtk.useGetOperationsOrganizationStoreExtensionDefinitionQuery(definitionRequest, {skip: !scopeReady});
   const contracts = operationsRtk.useGetOperationsFixedStoreContractsQuery(contractRequest, {skip: !scopeReady});
-  const profileProblem = !scopeReady ? '请选择可查看范围。' : queryIssue(profile.error, '门店资料读取失败');
+  const profileProblem = queryIssue(profile.error, '门店资料读取失败');
   const contractProblem = queryIssue(contracts.error, '合同列表读取失败');
 
-  if (!scopeReady) return <Alert type="info" showIcon title="可查看范围" description={profileProblem} {...testId('operations-store-profile-scope-required')}/>;
+  // OperationsApp owns the one shared first-row scope prompt for every scoped page.
+  if (!scopeReady) return null;
   if (profile.error) return <Alert type="error" showIcon title="门店资料读取失败" description={profileProblem} action={<Button onClick={() => void profile.refetch()} {...testId('operations-store-profile-retry')}>重试</Button>} {...testId('operations-store-profile-error')}/>;
   if (profile.isLoading && !profile.data) return <Spin {...testId('operations-store-profile-loading')}/>;
   if (!profile.data) return <Alert type="error" showIcon title="门店资料暂不可用" description="暂时无法获取，请重试。" action={<Button onClick={() => void profile.refetch()} {...testId('operations-store-profile-retry')}>重试</Button>} {...testId('operations-store-profile-error')}/>;
@@ -65,7 +66,8 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
   const store: OrganizationStore = profile.data;
   return <Card aria-label={storeProfilePageTitle} {...testId('operations-store-profile-page')}>
     <Descriptions title="我的门店" bordered column={1} size="small" items={[
-      {key: 'identity', label: '名称', children: formatNameCode(store.name, store.code)},
+      {key: 'name', label: '名称', children: store.name},
+      {key: 'code', label: '编码', children: store.code},
       {key: 'project', label: '项目', children: formatNameCode(store.project.name, store.project.code)},
       {key: 'brand', label: '品牌', children: formatNameCode(store.brand.name, store.brand.code)},
       {key: 'tenant', label: '经营租户', children: formatNameCode(store.tenant.name, store.tenant.code)},

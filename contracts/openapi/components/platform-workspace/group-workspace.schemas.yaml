@@ -37,8 +37,7 @@
           "logoBindGrant": {
             "type": "string",
             "minLength": 32,
-            "maxLength": 256,
-            "description": "One-time opaque staging proof. It is consumed during the workspace command and is never returned or persisted by a workspace owner."
+            "maxLength": 256
           },
           "notes": {
             "type": "string",
@@ -293,8 +292,7 @@
               "KEEP",
               "REPLACE",
               "REMOVE"
-            ],
-            "description": "KEEP and REMOVE require logoAssetRef and logoBindGrant to be absent. REPLACE requires both values from a live platform-asset staging readback."
+            ]
           },
           "logoAssetRef": {
             "type": "string",
@@ -306,8 +304,7 @@
             "type": "string",
             "nullable": true,
             "minLength": 32,
-            "maxLength": 256,
-            "description": "Required exactly when logoIntent is REPLACE; consumed by the asset owner and never stored by this owner. It must be absent for KEEP and REMOVE."
+            "maxLength": 256
           },
           "expectedVersion": {
             "type": "integer",

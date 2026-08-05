@@ -7,6 +7,7 @@ public record StoreContractUpdateRequest(
     String effectiveTo,
     String note,
     tools.jackson.databind.JsonNode extensionValues,
+    Long expectedExtensionRuleRevision,
     Long expectedVersion,
     java.util.List<StoreContractItem> items,
     String phaseNameSnapshot

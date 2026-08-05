@@ -37,6 +37,11 @@
     "OPERATIONS-HEAD-COMPANY": "head-company-management",
     "OPERATIONS-BUSINESS-ENTITY": "business-entity-extension",
     "OPERATIONS-FIVE-USER-PAGES": "workspace-access",
+    "PG-IAM-GROUP-USERS": "workspace-access",
+    "PG-IAM-REGION-USERS": "workspace-access",
+    "PG-IAM-PROJECT-USERS": "workspace-access",
+    "PG-IAM-HEAD-COMPANY-USERS": "workspace-access",
+    "PG-IAM-STORE-USERS": "workspace-access",
     "OPERATIONS-ORG-STRUCTURE": "organization-hierarchy",
     "OPERATIONS-STORE-MANAGEMENT": "store-management",
     "OPERATIONS-STORE-PROFILE": "store-profile",
@@ -68,15 +73,15 @@
     {"match": "^(GroupWorkspace)", "family": "group-workspace"},
     {"match": "^(CommercialGroup)", "family": "commercial-group"},
     {"match": "^(PlatformAsset|BinaryAssetContent)", "family": "asset"},
-    {"match": "^(PlatformAdmin|PlatformSession|PlatformCurrent|LoginRequest)", "family": "platform-identity"},
+    {"match": "^(PlatformAdmin|PlatformSession|PlatformCurrent|PlatformLoginOtp|PlatformOtpDispatch|PlatformPasswordRecovery|LoginRequest)", "family": "platform-identity"},
     {"match": "^(ContractOverview|StoreContract)", "family": "contract"},
     {"match": "^(Extension)", "family": "extension"},
     {"match": "^(Brand|Tenant|HeadCompany|BusinessEntity)", "family": "business-entity"},
     {"match": "^(OrganizationOverview)", "family": "organization-overview"},
     {"match": "^(OrganizationNode|OrganizationHierarchy|OrganizationProject)", "family": "organization-hierarchy"},
-    {"match": "^(OrganizationStore)", "family": "store"},
+    {"match": "^(OrganizationStore|OrganizationCandidate)", "family": "store"},
     {"match": "^(WorkspaceSession|WorkspaceLogin|WorkspacePasswordLogin|WorkspaceCurrent|WorkspaceSelect)", "family": "workspace-session"},
-    {"match": "^(Workspace|PublicInvitation)", "family": "workspace-access"}
+    {"match": "^(Workspace|OperationsPasswordRecovery|PublicInvitation)", "family": "workspace-access"}
   ],
   "familyToOwner": {
     "common": "common",
@@ -101,8 +106,11 @@
     "WorkspaceCurrentPasswordChangeRequest": "components/workspace-iam/workspace-session.schemas.yaml",
     "WorkspaceCurrentPasswordChangeResult": "components/workspace-iam/workspace-session.schemas.yaml",
     "WorkspaceSelectDataNodeRequest": "components/workspace-iam/workspace-session.schemas.yaml",
+    "PlatformWorkspaceInvitation": "components/workspace-iam/workspace-access.schemas.yaml",
+    "PlatformWorkspaceInvitationPage": "components/workspace-iam/workspace-access.schemas.yaml",
     "PlatformAssetStageMultipart": "components/platform-asset/asset.schemas.yaml",
     "BinaryAssetContent": "components/platform-asset/asset.schemas.yaml",
+    "PublicAssetReference": "components/platform-asset/asset.schemas.yaml",
     "Problem": "components/common/problem.schemas.yaml",
     "EpochMillis": "components/common/time.schemas.yaml",
     "SortDirection": "components/common/enum.schemas.yaml",
@@ -134,19 +142,19 @@
   },
   "closure": {
     "sourceOperationCount": 104,
-    "plannedAdditionalOperationCount": 14,
-    "expectedResolvedOperationCount": 118,
+    "plannedAdditionalOperationCount": 17,
+    "expectedResolvedOperationCount": 154,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
-    "sourceComponentCount": 140,
-    "expectedResolvedComponentCount": 139,
+    "sourceComponentCount": 165,
+    "expectedResolvedComponentCount": 164,
     "expectedExplicitNotCarriedComponentCount": 1,
     "expectedUnresolvedComponentCount": 0,
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
-      "platform-admin": 47,
-      "operations-admin": 56,
-      "public": 15
+      "platform-admin": 50,
+    "operations-admin": 92,
+      "public": 12
     }
   }
 }

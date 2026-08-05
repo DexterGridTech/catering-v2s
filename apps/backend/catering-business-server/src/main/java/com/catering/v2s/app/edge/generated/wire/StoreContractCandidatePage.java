@@ -7,5 +7,5 @@ public record StoreContractCandidatePage(
     StoreContractCandidatePageMetadata metadata,
     java.util.List<StoreContractStoreCandidate> stores,
     java.util.List<String> phases,
-    StoreContractSelectedTenant selectedStoreTenant
+    tools.jackson.databind.JsonNode selectedStoreTenant
 ) {}

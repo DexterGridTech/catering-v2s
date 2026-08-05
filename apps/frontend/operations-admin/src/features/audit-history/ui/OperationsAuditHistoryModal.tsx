@@ -22,7 +22,7 @@ const actionLabels: Record<string, string> = {
   WORKSPACE_ROLE_CREATED: '已创建业务角色', ROLE_PERMISSIONS_REPLACED: '已更新业务角色授权', WORKSPACE_ROLE_STATUS_CHANGED: '已更新业务角色状态',
 };
 const fieldLabels: Record<string, string> = {
-  status: '状态', displayName: '显示名称', name: '名称', legalName: '法定名称', creditCode: '统一社会信用代码',
+  status: '状态', displayName: '显示名称', name: '名称', legalName: '法定名称', creditCode: '统一代码',
   alias: '别名', remark: '备注', notes: '说明', description: '说明', contractNo: '合同编号', effectiveFrom: '生效日期', effectiveTo: '失效日期',
   relationship: '关联关系', lifecycleEvent: '生命周期事件', serviceNodeAssignment: '任职', pageAccessKeys: '可使用的功能菜单', capabilityKeys: '可执行的操作', phaseName: '项目分期', items: '货号',
 };

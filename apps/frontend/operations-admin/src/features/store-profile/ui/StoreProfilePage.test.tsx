@@ -12,6 +12,9 @@ describe('store profile focused contract', () => {
     expect(pageSource).toContain('operations-store-profile-contract-state-tabs');
     expect(pageSource).toContain('operations-store-profile-retry');
     expect(pageSource).toContain('profile.error');
+    expect(pageSource).toContain('if (!scopeReady) return null;');
+    expect(pageSource).not.toContain('operations-store-profile-scope-required');
+    expect(pageSource).not.toContain('请选择可查看范围。');
     expect(pageSource).not.toMatch(/createOperations|updateOperations|invalidateOperations|transitionOperations/);
   });
 

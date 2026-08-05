@@ -47,6 +47,7 @@ export function WorkspaceUserDetailDrawer({open, loading, problem, pageTitle, us
     onClose={onClose}
     size={640}
     destroyOnHidden
+    maskClosable
     {...adminDrawerSurfaceProps}
     {...testId('operations-workspace-user-detail-drawer')}
     extra={user ? <Button onClick={onOpenAudit} {...testId('operations-workspace-user-detail-audit')}>操作历史</Button> : undefined}

@@ -4,6 +4,5 @@ package com.catering.v2s.app.edge.generated.wire;
 public record ContractOverviewPageFilterOptionsItem(
     String kind,
     String id,
-    String code,
     String name
 ) {}

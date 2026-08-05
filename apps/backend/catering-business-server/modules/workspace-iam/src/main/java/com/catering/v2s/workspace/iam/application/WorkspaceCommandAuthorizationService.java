@@ -38,12 +38,33 @@ public class WorkspaceCommandAuthorizationService {
         UUID targetOrganizationId,
         UserManagementAction action
     ) {
+        requireUserManagementCapabilityOnScope(
+            workspaceUuid, groupWorkspaceKey, actorAssignmentId,
+            targetOrganizationType, action, targetOrganizationType, targetOrganizationId
+        );
+    }
+
+    /**
+     * The endpoint-fixed user-management capability and the server-resolved scope target
+     * are deliberately separate.  A GROUP role may, for example, operate the aggregate
+     * HEAD_COMPANY page while its first owner query is the commercial-group root.
+     */
+    @Transactional(readOnly = true)
+    public void requireUserManagementCapabilityOnScope(
+        UUID workspaceUuid,
+        String groupWorkspaceKey,
+        UUID actorAssignmentId,
+        String capabilityTargetType,
+        UserManagementAction action,
+        String scopeTargetType,
+        UUID scopeTargetId
+    ) {
         if (assignments == null || taskPaths == null) throw new AuthorizationDeniedException();
         WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(workspaceUuid, groupWorkspaceKey, actorAssignmentId);
-        OrganizationTaskPathLookup.TaskPath target = taskPaths.requireTaskPath(workspaceUuid, groupWorkspaceKey, targetOrganizationType, targetOrganizationId);
+        OrganizationTaskPathLookup.TaskPath target = taskPaths.requireTaskPath(workspaceUuid, groupWorkspaceKey, scopeTargetType, scopeTargetId);
         if (!taskPaths.isScopeAllowed(workspaceUuid, groupWorkspaceKey, assignment.serviceNodeType(), assignment.serviceNodeId(), target)) throw new AuthorizationDeniedException();
         String capability = WorkspaceAuthorizationCatalog
-            .requiredUserManagementCapabilityForTarget(targetOrganizationType, action)
+            .requiredUserManagementCapabilityForTarget(capabilityTargetType, action)
             .orElseThrow(AuthorizationDeniedException::new);
         Boolean allowed = jdbc.query(
             "SELECT EXISTS(SELECT 1 FROM workspace_iam.role_assignment assignment "

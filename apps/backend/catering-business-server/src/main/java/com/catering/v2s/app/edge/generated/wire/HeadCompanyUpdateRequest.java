@@ -8,6 +8,6 @@ public record HeadCompanyUpdateRequest(
     String unifiedSocialCreditCode,
     String remark,
     tools.jackson.databind.JsonNode extensionValues,
-    Long expectedVersion,
-    Long expectedContextVersion
+    Long expectedExtensionRuleRevision,
+    Long expectedVersion
 ) {}

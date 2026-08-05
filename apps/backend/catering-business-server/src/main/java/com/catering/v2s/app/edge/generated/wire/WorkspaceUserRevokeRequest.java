@@ -2,6 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceUserRevokeRequest(
-    Long expectedVersion,
-    Long expectedContextVersion
+    Long expectedVersion
 ) {}

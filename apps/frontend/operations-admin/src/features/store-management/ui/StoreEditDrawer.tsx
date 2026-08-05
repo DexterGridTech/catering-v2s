@@ -70,7 +70,7 @@ export function StoreEditDrawer({store, queryContext, onClose, onUpdated}: {stor
     try {
       const updated = await operationsClient.updateOperationsOrganizationStore(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeId: store.id},
-        {body: {name: value.name.trim(), headCompanyId: value.headCompanyId || null, notes: value.notes?.trim() || null, extensionValues: serializedExtensionValues(definition.data, value.extensionValues), expectedVersion: store.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {name: value.name.trim(), headCompanyId: value.headCompanyId || null, notes: value.notes?.trim() || null, extensionValues: serializedExtensionValues(definition.data, value.extensionValues), extensionRuleRevision: store.extensionRuleRevision, expectedVersion: store.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onUpdated(updated);
@@ -82,7 +82,7 @@ export function StoreEditDrawer({store, queryContext, onClose, onUpdated}: {stor
     }
   };
 
-  return <Drawer title={store ? `编辑门店资料：${store.name}` : '编辑门店资料'} open={open} size={620} destroyOnHidden keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-store-edit-drawer')} footer={<Space>
+  return <Drawer title={store ? `编辑门店资料：${store.name}` : '编辑门店资料'} open={open} size={620} destroyOnHidden maskClosable keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-store-edit-drawer')} footer={<Space>
     <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('operations-store-edit-cancel')}>取消</Button>
     <Button type="primary" loading={lifecycle.submitting} disabled={!ready} onClick={() => form.submit()} {...testId('operations-store-edit-submit')}>保存</Button>
   </Space>}>
@@ -93,7 +93,7 @@ export function StoreEditDrawer({store, queryContext, onClose, onUpdated}: {stor
       <Form.Item label="经营租户"><Typography.Text {...testId('operations-store-edit-tenant')}>{store ? formatNameCode(store.tenant.name, store.tenant.code) : '—'}</Typography.Text></Form.Item>
       <Form.Item label="门店编码"><Typography.Text {...testId('operations-store-edit-code')}>{store?.code ?? '—'}</Typography.Text></Form.Item>
       <Form.Item name="name" label="门店名称" rules={[{required: true, whitespace: true, message: '请输入门店名称'}]}><Input maxLength={120} {...testId('operations-store-edit-name')}/></Form.Item>
-      <Form.Item name="headCompanyId" label="总公司"><Select showSearch={{filterOption: false, onSearch: setHeadCompanySearch}} onPopupScroll={candidates.onPopupScroll} allowClear aria-label="总公司" loading={candidates.isFetching} options={candidates.items.map((item) => ({value: item.id, label: formatNameCode(item.name, item.code)}))} {...testId('operations-store-edit-head-company')}/></Form.Item>
+      <Form.Item name="headCompanyId" label="总公司"><Select showSearch filterOption={false} onSearch={setHeadCompanySearch} onPopupScroll={candidates.onPopupScroll} allowClear aria-label="总公司" loading={candidates.isFetching} options={candidates.items.map((item) => ({value: item.id, label: formatNameCode(item.name, item.code)}))} {...testId('operations-store-edit-head-company')}/></Form.Item>
       <Form.Item name="notes" label="备注"><Input.TextArea rows={3} maxLength={2000} {...testId('operations-store-edit-notes')}/></Form.Item>
       {extensionFields(definition.data)}
     </Form>

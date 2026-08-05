@@ -20,8 +20,8 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
 
   const definitionRequest = useMemo(() => operationsAdminRtkRequest.getOperationsContractExtensionDefinition(
     {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-    {query: {expectedContextVersion: queryContext.expectedContextVersion, projectId: selected?.project.id ?? ''}},
-  ), [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, selected?.project.id]);
+    {query: {expectedContextVersion: queryContext.expectedContextVersion}},
+  ), [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey]);
   const definition = operationsRtk.useGetOperationsContractExtensionDefinitionQuery(definitionRequest, {skip: !selected});
   const extensionItems = [...(definition.data?.definitions ?? [])]
     .filter((field) => field.status !== 'DISABLED')
@@ -38,6 +38,7 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
     open={Boolean(contract)}
     size={640}
     destroyOnHidden
+    maskClosable
     onClose={() => { closeDetail(); onClose(); }}
     {...adminDrawerSurfaceProps}
     {...testId('operations-store-profile-contract-detail-drawer')}

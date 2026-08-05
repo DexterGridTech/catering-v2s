@@ -20,7 +20,7 @@ list-to-detail flow, no-operation-column boundary, and all other IA behavior rem
 | original IA claim | current owning source | reconciled fact |
 | --- | --- | --- |
 | IA03 organization overview: filters unavailable pending `GAP-PLATFORM-ORG-OVERVIEW-FILTER-SEMANTICS` and `...-CANDIDATES` | `contracts/openapi/paths/platform-admin/organization-overview.paths.yaml`; `PlatformOrganizationOverviewController`; `OrganizationOverviewTaskReadService` | Generated request accepts category/type/name/code/status/source/projectId/brandId/tenantId/page/pageSize.  The controller forwards all values to the organization owner `Query`; page and count use the owner predicate, and owner returns PROJECT/BRAND/TENANT candidates. |
-| IA03 contract overview: filters unavailable pending `GAP-PLATFORM-CONTRACT-OVERVIEW-FILTER-SEMANTICS` | `contracts/openapi/paths/platform-admin/contract-overview.paths.yaml`; `PlatformContractOverviewController`; `ContractTaskReadService` | Generated request accepts contractNo/storeName/phaseName/tenantName/itemCode/status/page/pageSize.  The controller forwards all values; the contract owner constructs one predicate for count and page and validates status/sort/direction. |
+| IA03 contract overview: filters unavailable pending `GAP-PLATFORM-CONTRACT-OVERVIEW-FILTER-SEMANTICS` | `contracts/openapi/paths/platform-admin/contract-overview.paths.yaml`; `PlatformContractOverviewController`; `ContractTaskReadService#list(ContractListQuery)` | Generated request accepts contractNo/storeName/phaseName/tenantName/itemCode/status/page/pageSize.  The platform edge is only a transport/DTO adapter; both platform and operations pass their page-specific conditions into the same contract-owner `ContractListQuery`, whose one predicate is shared by count and page and validates status/sort/direction. |
 | UI must not client-filter/materialize a whole list | `PlatformReadPage.tsx`; `OrganizationOverviewFilters.ts`; `OrganizationOverviewFilters.test.ts`; `platform-read-boundary.test.mjs` | The selected workspace is passed through `contextScopedQueryArgs`; each submitted condition is placed in the generated request, tab changes remove STORE-only references, owner candidate options are consumed directly, and list rows open owner detail readback.  No client list filtering, operation column, or locally derived owner identifier is present. |
 
 ## Final control contract used by U06
@@ -39,6 +39,9 @@ list-to-detail flow, no-operation-column boundary, and all other IA behavior rem
 
 - The selected workspace is a prerequisite.  Contract number, store, phase, tenant, and item code are text inputs;
   status is a fixed select.  Submit resets pagination and forwards the complete condition set to the contract owner.
+  Platform sends no artificial project/store IDs: its different page purpose is expressed only by its own condition
+  set.  Operations supplies its role-scoped project ID through the same owner query, rather than calling a parallel
+  operations list implementation.
 - Refresh rereads the active request.  Contract-number links open owner detail readback.  The page is read-only and
   has no action column.
 
@@ -55,14 +58,14 @@ rows, and later managed L2 with separate business and cleanup PASS.
 | source | SHA-256 |
 | --- | --- |
 | IA03 decision | `88a26ba14ad8f0f4d314eab85f8848f49eb32592dae908edaca932f0fdc45d17` |
-| organization OpenAPI path | `0917471608bc7829e0d55d93d9da21612ac16a4eacad83c5e5caa301ac4c1916` |
-| contract OpenAPI path | `524e0bbcc32b0e4d7c7e77502f30595061e4b558241c50bb08cab289c5060632` |
-| organization controller | `bc416fd9a0f685da5cf4b9cb950b4f56bc3b89c585cd1bc62a0e75d3a220ac3e` |
-| contract controller | `22af7a2e4fe80a7ddb75249468e87a2fc027787901426c8b5c09329a9d0afb12` |
-| organization task read | `773d270b02f4165eb7e0766dfb571523e9772d5feac41aac31ed01644d7ded48` |
-| contract task read | `7036895f0afd6534f37b38d30ffa9d1d9161f0ded39899e6cb84d7157e2120ac` |
-| platform consumer | `1f207b076326fc22236e6e9ef5529f4a583d50ff6c961bc492f635780a4c3d16` |
-| organization query helper | `6d90a33b8f4df1a70bd7fd7e7bbdf825124f0872243bead314b881818dc831ce` |
+| organization OpenAPI path | `c36938fa43d75f5b5c1c731fe33fdadeca000c954f2c47a61534865bd47c70bf` |
+| contract OpenAPI path | `b5e3d1a77cfef554d8558397af468d2fb7071de871b8b140b51c4d2cc3a7a6fa` |
+| organization controller | `8d9563d8b67d580eeb043a7b0c86b03c8f89fbc83e5359175cbcaa5bc801b09f` |
+| contract controller | `0ef9a10656646c37348934ee90686fbe585086193d58531ef1c0d74b7e061f5d` |
+| organization task read | `076de4c784fd46ff91c92952e905cf04e5df8e668a39e3523e8ffe5a2b175ede` |
+| contract task read | `2180c11ff5b87eb30db68ed04916cd31d94a97d7688e536b9fee66673d42f23d` |
+| platform consumer | `9fe798d5fb6357c005ca65600481a5ccbb35e9f5df3535dddb5f37194ec25f1c` |
+| organization query helper | `f8b5c32f7c6ca54fbf835175c4dff46acb62311c99ef35b0bf5101fc49c13929` |
 
 ## Explicit exclusions
 

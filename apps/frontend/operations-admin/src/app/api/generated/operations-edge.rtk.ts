@@ -685,6 +685,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    updateOperationsCommercialGroup: (pathParameters: FaceOperationContracts["updateOperationsCommercialGroup"]["path"], options: FaceOperationOptions<"updateOperationsCommercialGroup">): FaceOperationRequest<"updateOperationsCommercialGroup"> => ({
+      operationId: "updateOperationsCommercialGroup",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     updateOperationsContract: (pathParameters: FaceOperationContracts["updateOperationsContract"]["path"], options: FaceOperationOptions<"updateOperationsContract">): FaceOperationRequest<"updateOperationsContract"> => ({
       operationId: "updateOperationsContract",
       method: "PATCH",
@@ -1085,6 +1093,10 @@ export function createOperationsAdminRtkEndpoints(
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),
     transitionOperationsOrganizationTenantStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationTenantStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationTenantStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+    }),
+    updateOperationsCommercialGroup: build.mutation<FaceOperationContracts["updateOperationsCommercialGroup"]["response"], FaceOperationRequest<"updateOperationsCommercialGroup">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
     }),

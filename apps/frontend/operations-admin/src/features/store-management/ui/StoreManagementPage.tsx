@@ -1,4 +1,4 @@
-import {Alert, Button, Select} from 'antd';
+import {Alert, Button} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {contextScopedQueryArgs, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useMemo, useState} from 'react';
@@ -12,9 +12,8 @@ import {StoreCreateDrawer} from './StoreCreateDrawer';
 import {StoreDetailDrawer} from './StoreDetailDrawer';
 import {StoreEditDrawer} from './StoreEditDrawer';
 import {StoreStatusModal} from './StoreStatusModal';
-import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
 
-type StoreFilters = {name?: string; projectId?: string; code?: string; status?: OrganizationStoreStatus};
+type StoreFilters = {name?: string; code?: string; status?: OrganizationStoreStatus};
 const page = adminCatalog.operationsPages.find((entry) => entry.pageDesignKey === operationsPageDesignKeys.PgOrgStoreManage);
 const storePageTitle = page?.pageTitle;
 if (!storePageTitle) throw new Error('ADMIN_CATALOG_STORE_PAGE_MISSING');
@@ -23,7 +22,6 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
   const [current, setCurrent] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<StoreFilters>({});
-  const [projectSearch, setProjectSearch] = useState('');
   const [sort, setSort] = useState<OrganizationStoreSortKey>('UPDATED_AT');
   const [direction, setDirection] = useState<OrganizationStoreSortDirection>('DESC');
   const [createOpen, setCreateOpen] = useState(false);
@@ -39,28 +37,31 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
     {groupWorkspaceKey: queryContext.groupWorkspaceKey}, {query: {...context, ...filters, sort, direction, page: current, pageSize}},
   ), [context, current, direction, filters, pageSize, queryContext.groupWorkspaceKey, sort]);
   const list = operationsRtk.useGetOperationsOrganizationStoresQuery(listRequest, {skip: !scopeReady});
-  const candidates = useOrganizationCandidates({open: scopeReady, queryContext, subjectType: 'PROJECT', queryText: projectSearch, selectedId: filters.projectId});
   const openDetail = useCallback((row: OrganizationStore) => {
     setMessage(undefined);
     detail.open(row);
   }, [detail]);
   const columns = useMemo<ProColumns<OrganizationStore>[]>(() => [
-    {key: 'name', title: '门店名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('operations-store-filter-name'), allowClear: true, placeholder: '门店名称'}, render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`operations-store-open-detail-${row.id}`)}>{formatNameCode(row.name, row.code)}</Button>},
+    {key: 'name', title: '门店名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('operations-store-filter-name'), allowClear: true, placeholder: '门店名称'}, render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`operations-store-open-detail-${row.id}`)}>{row.name}</Button>},
     {key: 'code', title: '编码', dataIndex: 'code', sorter: true, fieldProps: {...testId('operations-store-filter-code'), allowClear: true, placeholder: '门店编码'}},
-    {title: '项目', dataIndex: 'projectId', hideInTable: true, renderFormItem: () => <Select aria-label="项目" showSearch={{filterOption: false, onSearch: setProjectSearch}} onPopupScroll={candidates.onPopupScroll} allowClear placeholder="项目" loading={candidates.isFetching} options={candidates.items.map((item) => ({value: item.id, label: formatNameCode(item.name, item.code)}))} {...testId('operations-store-filter-project')}/>},
     {title: '项目', search: false, render: (_, row) => formatNameCode(row.project.name, row.project.code)},
     {title: '品牌', search: false, render: (_, row) => formatNameCode(row.brand.name, row.brand.code)}, {title: '经营租户', search: false, render: (_, row) => formatNameCode(row.tenant.name, row.tenant.code)},
     {title: '总公司', search: false, render: (_, row) => row.headCompany ? formatNameCode(row.headCompany.name, row.headCompany.code) : '未设置'},
+    {key: 'notes', title: '备注', dataIndex: 'notes', search: false, render: (_, row) => row.notes ?? '—'},
     {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {ENABLED: {text: '启用', status: 'Success'}, DISABLED: {text: '停用', status: 'Default'}}, fieldProps: {...testId('operations-store-filter-status'), allowClear: true, placeholder: '状态'}},
-  ], [candidates.items, candidates.isFetching, candidates.onPopupScroll, openDetail]);
-  const problem = !scopeReady ? '请选择可查看范围。' : message ?? (list.error || candidates.error ? '门店数据暂时无法获取，请重试。' : undefined);
+  ], [openDetail]);
+  // The shell-owned context bar is the sole missing-project prompt for every
+  // scoped page. This page only reports a real list or command failure.
+  const problem = message ?? (list.error ? '门店数据暂时无法获取，请重试。' : undefined);
   const selected = detail.target;
   return <section {...testId('operations-store-page')}>
     {problem && <Alert type="error" showIcon title="门店管理未完成" description={problem} style={{marginBottom: 16}}/>}
-    <ProTable<OrganizationStore> aria-label={storePageTitle} rowKey="id" search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-store-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setCurrent(1); }} {...testId('operations-store-filter-reset')}>重置</Button>]}} onSubmit={(value) => { setFilters({name: value.name?.trim() || undefined, projectId: value.projectId, code: value.code?.trim() || undefined, status: value.status}); setCurrent(1); }} options={false} loading={list.isLoading && !list.data} dataSource={list.data?.items ?? []} columns={columns}
+    <ProTable<OrganizationStore> aria-label={storePageTitle} rowKey="id" search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-store-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setCurrent(1); }} {...testId('operations-store-filter-reset')}>重置</Button>]}} onSubmit={(value) => { setFilters({name: value.name?.trim() || undefined, code: value.code?.trim() || undefined, status: value.status}); setCurrent(1); }} options={false} loading={list.isLoading && !list.data} dataSource={list.data?.items ?? []} columns={columns}
       toolBarRender={() => actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_STORE_CREATE) ? [<Button key="create" type="primary" onClick={() => setCreateOpen(true)} {...testId('operations-store-create-open')}>新建门店</Button>] : []}
-      pagination={{current, pageSize, total: list.data?.metadata.total ?? 0, showSizeChanger: true, onChange: (next, size) => { setCurrent(next); setPageSize(size); }}}
-      onChange={(_, __, sorter) => {
+      pagination={{current, pageSize, total: list.data?.metadata.total ?? 0, showSizeChanger: true}}
+      onChange={(pagination, _, sorter, extra) => {
+        if (extra.action === 'paginate') { setCurrent(pagination.current ?? current); setPageSize(pagination.pageSize ?? pageSize); return; }
+        if (extra.action !== 'sort') return;
         const currentSorter = Array.isArray(sorter) ? sorter[0] : sorter;
         if (!currentSorter?.order) {
           setSort('UPDATED_AT');

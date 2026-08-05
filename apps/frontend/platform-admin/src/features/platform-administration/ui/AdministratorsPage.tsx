@@ -86,7 +86,7 @@ export function AdministratorsPage() {
       rowKey="id" loading={listState.loading} locale={listState.locale} dataSource={result?.items} options={false}
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-admin-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setPage(1); setFilters({}); }} {...testId('platform-admin-filter-reset')}>重置</Button>]}}
       onSubmit={(value) => { setPage(1); setFilters({userName: value.userName?.trim() || undefined, loginName: value.loginName?.trim() || undefined, status: value.status}); }}
-      pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }} : false}
+      pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total} : false}
       columns={[
         {key: 'userName', title: '姓名', dataIndex: 'userName', sorter: true, fieldProps: {...testId('platform-admin-filter-user-name'), allowClear: true}, render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`platform-admin-detail-${row.id}`)}>{row.userName}</Button>},
         {title: '账号类型', dataIndex: 'builtIn', search: false, render: (_, row) => row.builtIn ? '内置管理员' : '平台管理员'},
@@ -95,7 +95,9 @@ export function AdministratorsPage() {
         {key: 'lastLoginAt', title: '最近登录', dataIndex: 'lastLoginAt', valueType: 'dateTime', sorter: true, search: false},
         {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
       ]}
-      onChange={(_, __, sorter) => {
+      onChange={(pagination, _, sorter, extra) => {
+        if (extra.action === 'paginate') { setPage(pagination.current ?? page); setPageSize(pagination.pageSize ?? pageSize); return; }
+        if (extra.action !== 'sort') return;
         const current = Array.isArray(sorter) ? sorter[0] : sorter;
         if (!current?.order) {
           setSortKey('USER_NAME');

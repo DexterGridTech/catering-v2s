@@ -1,6 +1,5 @@
 package com.catering.v2s.app.edge.workspaceiam;
 
-import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationCandidatePageMetadata;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationCandidatePageOrganizationsItem;
@@ -14,7 +13,7 @@ public final class WorkspaceInvitationCandidatePageWireMapper {
     private WorkspaceInvitationCandidatePageWireMapper() { }
 
     public static WorkspaceInvitationCandidatePage page(WorkspaceUserService.CandidatePage value) {
-        return new WorkspaceInvitationCandidatePage(metadata(value.metadata()), value.organizations().stream().map(WorkspaceInvitationCandidatePageWireMapper::organization).toList(), value.roles().stream().map(WorkspaceInvitationCandidatePageWireMapper::role).toList());
+        return new WorkspaceInvitationCandidatePage(value.organizations().stream().map(WorkspaceInvitationCandidatePageWireMapper::organization).toList(), value.roles().stream().map(WorkspaceInvitationCandidatePageWireMapper::role).toList(), metadata(value.metadata()));
     }
 
     private static WorkspaceInvitationCandidatePageMetadata metadata(WorkspaceUserService.CandidateQueryMetadata value) {
@@ -22,10 +21,10 @@ public final class WorkspaceInvitationCandidatePageWireMapper {
     }
 
     private static WorkspaceInvitationCandidatePageOrganizationsItem organization(WorkspaceUserService.CandidateOrganization value) {
-        return new WorkspaceInvitationCandidatePageOrganizationsItem(ServiceNodeType.valueOf(value.serviceNodeType()), value.organizationRef().toString(), value.path());
+        return new WorkspaceInvitationCandidatePageOrganizationsItem(value.serviceNodeType(), value.organizationRef().toString(), value.path());
     }
 
     private static WorkspaceRole role(WorkspaceRoleReadback value) {
-        return new WorkspaceRole(value.id().toString(), value.groupWorkspaceKey(), value.name(), value.description(), ServiceNodeType.valueOf(value.serviceNodeType()), value.actionCapabilityKeys().stream().sorted().toList(), value.pageAccessKeys().stream().sorted().toList(), WorkspaceRoleStatus.valueOf(value.status()), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis());
+        return new WorkspaceRole(value.id().toString(), value.groupWorkspaceKey(), value.name(), value.description(), value.serviceNodeType(), value.actionCapabilityKeys().stream().sorted().toList(), value.pageAccessKeys().stream().sorted().toList(), WorkspaceRoleStatus.valueOf(value.status()), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis());
     }
 }

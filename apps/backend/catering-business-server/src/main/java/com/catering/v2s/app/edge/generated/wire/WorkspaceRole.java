@@ -6,7 +6,7 @@ public record WorkspaceRole(
     String groupWorkspaceKey,
     String name,
     String description,
-    ServiceNodeType serviceNodeType,
+    String serviceNodeType,
     java.util.List<String> capabilityKeys,
     java.util.List<String> pageAccessKeys,
     WorkspaceRoleStatus status,

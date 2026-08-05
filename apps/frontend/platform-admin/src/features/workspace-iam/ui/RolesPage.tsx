@@ -85,7 +85,7 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
       rowKey="id" loading={listState.loading} locale={listState.locale} dataSource={result?.items} options={false}
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('workspace-role-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId('workspace-role-filter-reset')}>重置</Button>]}}
       onSubmit={(value) => { setPage(1); setFilters({name: value.name?.trim() || undefined, organizationType: value.organizationType, status: value.status}); }}
-      pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }} : false}
+      pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total} : false}
       columns={[
         {key: 'name', title: '名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('workspace-role-filter-name'), allowClear: true}, render: (_, row) => <Button type="link" onClick={() => void loadDetail(row.id)} {...testId(`workspace-role-detail-${row.id}`)}>{row.name}</Button>},
         {title: '任职机构类型', dataIndex: 'serviceNodeType', valueType: 'select', valueEnum: {GROUP: {text: '集团'}, REGION: {text: '大区'}, PROJECT: {text: '项目'}, HEAD_COMPANY: {text: '总公司'}, STORE: {text: '门店'}}, fieldProps: {...testId('workspace-role-filter-service-node-type'), allowClear: true}, render: (_, row) => serviceNodeTypeLabel(row.serviceNodeType)},
@@ -93,7 +93,9 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
         {title: '说明', dataIndex: 'description', search: false, render: (value) => value || '—'},
         {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
       ]}
-      onChange={(_, __, sorter) => {
+      onChange={(pagination, _, sorter, extra) => {
+        if (extra.action === 'paginate') { setPage(pagination.current ?? page); setPageSize(pagination.pageSize ?? pageSize); return; }
+        if (extra.action !== 'sort') return;
         const current = Array.isArray(sorter) ? sorter[0] : sorter;
         if (!current?.order) {
           setSort('NAME');

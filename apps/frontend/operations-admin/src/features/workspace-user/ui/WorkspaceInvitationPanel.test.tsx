@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 
 const panel = readFileSync(new URL('./WorkspaceInvitationPanel.tsx', import.meta.url), 'utf8');
 const createDrawer = readFileSync(new URL('./WorkspaceInvitationCreateDrawer.tsx', import.meta.url), 'utf8');
+const candidateHook = readFileSync(new URL('../application/useWorkspaceInvitationCandidates.ts', import.meta.url), 'utf8');
 const actionModal = readFileSync(new URL('./WorkspaceInvitationActionModal.tsx', import.meta.url), 'utf8');
 const detailDrawer = readFileSync(new URL('./WorkspaceInvitationDetailDrawer.tsx', import.meta.url), 'utf8');
 
@@ -23,11 +24,12 @@ describe('workspace invitation focused IA contract', () => {
   });
 
   it('builds invitation candidate queries through the shared context-scoped query helper', () => {
-    expect(createDrawer).toMatch(/contextScopedQueryArgs\(\{/);
+    expect(createDrawer).toMatch(/useWorkspaceInvitationCandidates/);
+    expect(candidateHook).toMatch(/contextScopedQueryArgs\(\{/);
     expect(createDrawer).toMatch(/subjectType: 'ORGANIZATION'/);
     expect(createDrawer).toMatch(/subjectType: 'ROLE'/);
-    expect(createDrawer).toMatch(/groupWorkspaceKey: queryContext\.groupWorkspaceKey/);
-    expect(createDrawer).toMatch(/expectedContextVersion: queryContext\.expectedContextVersion/);
+    expect(candidateHook).toMatch(/groupWorkspaceKey: queryContext\.groupWorkspaceKey/);
+    expect(candidateHook).toMatch(/expectedContextVersion: queryContext\.expectedContextVersion/);
     expect(createDrawer).toMatch(/formatCodeNamePath\(candidate\.path\)/);
     expect(panel).toMatch(/formatCodeNamePath\(value\.targetOrganizationPath\)/);
     expect(detailDrawer).toMatch(/formatCodeNamePath\(invitation\.targetOrganizationPath\)/);
@@ -42,10 +44,19 @@ describe('workspace invitation focused IA contract', () => {
     expect(actionModal).not.toMatch(/error\.problem\.detail/);
   });
 
+  it('submits the owner-confirmed page scope and current context version for invitation actions', () => {
+    expect(actionModal).toMatch(/scopeRef: queryContext\.scopeRef/);
+    expect(actionModal).toMatch(/expectedContextVersion: queryContext\.expectedContextVersion/);
+  });
+
   it('sorts by the owner-supported expiry fact and restores the owner default when cleared', () => {
     expect(panel).toMatch(/useState<WorkspaceInvitationSortKey>\('CREATED_AT'\)/);
     expect(panel).toMatch(/sorter\.columnKey === 'expiresAt' \? 'EXPIRES_AT' : 'CREATED_AT'/);
     expect(panel).toMatch(/setDirection\('DESC'\)/);
     expect(panel).not.toMatch(/title: '业务角色'[^}]*sorter:\s*true/);
+  });
+
+  it('keeps one additional owner-backed visible fact beyond invitation search conditions', () => {
+    expect(panel).toMatch(/title: '发起时间', dataIndex: 'createdAt', search: false/);
   });
 });

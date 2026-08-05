@@ -25,7 +25,8 @@ class OperationsStoreProfileControllerTest {
     @Test
     void forwardsTypedStateAndPagingWithoutAnyClientClassification() {
         UUID workspaceId = UUID.randomUUID(); UUID storeId = UUID.randomUUID();
-        WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, "store-profile-test", UUID.randomUUID(), UUID.randomUUID(), storeId, 7L, 1L, Set.of(), Set.of(), "tester");
+        var selectedStore = new com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.VisibleDataNodeCandidate("STORE", storeId, "Test store", "STORE-01", List.of("Test store"), null, null, storeId, null);
+        WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, "store-profile-test", UUID.randomUUID(), UUID.randomUUID(), new com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext(null, null, selectedStore, null), 7L, 1L, Set.of(), Set.of(), "tester");
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(session);
         ContractTaskReadService reads = mock(ContractTaskReadService.class);

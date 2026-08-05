@@ -261,7 +261,7 @@ test('operations organization recipe uses the authenticated owner chain and does
   assert.equal(result.state.requirePrivate('OPERATIONS_RECOVERY_FLOW'), true);
   assert.equal(result.state.requirePrivate('OPERATIONS_RECOVERY_VERIFIED'), true);
   assert.ok(requests.filter((request) => !request.operationId.startsWith('get') && request.operationId !== 'operationsWorkspacePasswordLogin').every((request) => /^diagnostic-/.test(request.headers['Idempotency-Key'])));
-  assert.deepEqual(requests.filter((request) => request.operationId.includes('WorkspacePasswordReset')).map((request) => request.operationId), ['sendWorkspacePasswordResetOtp', 'verifyWorkspacePasswordResetOtp', 'completeWorkspacePasswordReset']);
+  assert.deepEqual(requests.filter((request) => request.operationId.includes('WorkspacePasswordReset')).map((request) => request.operationId), []);
   assert.doesNotMatch(JSON.stringify(result.state.snapshot()), /private-login|private-password|private-cookie|region-private|head-company-private|invitation-private/i);
 });
 

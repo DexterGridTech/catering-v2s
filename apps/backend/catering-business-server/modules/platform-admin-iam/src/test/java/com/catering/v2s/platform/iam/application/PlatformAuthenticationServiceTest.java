@@ -42,7 +42,7 @@ class PlatformAuthenticationServiceTest {
         jdbc = new JdbcTemplate(dataSource);
         TimeProvider time = CLOCK::get;
         service = new PlatformAuthenticationService(jdbc, time);
-        debugService = new PlatformAuthenticationService(jdbc, time, new PlatformCommandReceiptService(jdbc, time), "platform-auth-test-hmac", true);
+        debugService = new PlatformAuthenticationService(jdbc, time, new PlatformCommandReceiptService(jdbc, time), "platform-auth-test-hmac", new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("test-debug-enabled", true));
     }
 
     @BeforeEach void resetPlatformIamState() {

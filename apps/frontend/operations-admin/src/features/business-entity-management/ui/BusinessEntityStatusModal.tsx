@@ -1,7 +1,7 @@
 import {Alert, Button, Modal} from 'antd';
 import {testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
-import {operationsClient} from '../../../app/api/OperationsTransport';
+import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {BusinessEntityStatus} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import type {BusinessEntity, BusinessEntityKind} from './BusinessEntityDetailDrawer';
@@ -57,8 +57,8 @@ export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, 
           );
       onUpdated(updated);
       onClose();
-    } catch {
-      setProblem('状态更新未完成，请重新确认后再试。');
+    } catch (error) {
+      setProblem(operationsProblemOf(error)?.detail ?? '状态更新未完成，请重新确认后再试。');
     } finally {
       setSubmitting(false);
     }

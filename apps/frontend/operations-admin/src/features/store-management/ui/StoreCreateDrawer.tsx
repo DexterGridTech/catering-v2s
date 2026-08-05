@@ -1,4 +1,4 @@
-import {Alert, Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space, Switch} from 'antd';
+import {Alert, Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography} from 'antd';
 import {adminDrawerSurfaceProps, formatNameCode, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect, useMemo, useState} from 'react';
@@ -9,7 +9,6 @@ import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
 
 type Values = {
-  projectId?: string;
   brandId?: string;
   tenantId?: string;
   headCompanyId?: string;
@@ -61,15 +60,15 @@ export function StoreCreateDrawer({open, queryContext, onClose, onCreated}: {ope
     diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.createOperationsOrganizationStore,
   });
   useOverlayLock(open);
-  const projectId = Form.useWatch('projectId', form);
+  // Store management is a PROJECT-context page. The selected project is
+  // supplied only by the owner-confirmed page context, never by a form field.
+  const projectId = queryContext.scopeRef;
   const brandId = Form.useWatch('brandId', form);
   const tenantId = Form.useWatch('tenantId', form);
   const headCompanyId = Form.useWatch('headCompanyId', form);
-  const [projectSearch, setProjectSearch] = useState('');
   const [brandSearch, setBrandSearch] = useState('');
   const [tenantSearch, setTenantSearch] = useState('');
   const [headCompanySearch, setHeadCompanySearch] = useState('');
-  const projects = useOrganizationCandidates({open, queryContext, subjectType: 'PROJECT', queryText: projectSearch, selectedId: projectId});
   const brands = useOrganizationCandidates({open, queryContext, subjectType: 'BRAND', queryText: brandSearch, selectedId: brandId});
   const tenants = useOrganizationCandidates({open: Boolean(open && projectId && brandId), queryContext, subjectType: 'TENANT', queryText: tenantSearch, selectedId: tenantId, projectId, brandId});
   const headCompanies = useOrganizationCandidates({open: Boolean(open && brandId && tenantId), queryContext, subjectType: 'HEAD_COMPANY', queryText: headCompanySearch, selectedId: headCompanyId, brandId, tenantId});
@@ -89,20 +88,20 @@ export function StoreCreateDrawer({open, queryContext, onClose, onCreated}: {ope
 
   const options = (values: Array<{id: string; name: string; code: string}>) => values.map((value) => ({value: value.id, label: formatNameCode(value.name, value.code)}));
   const definitionReady = Boolean(definition.data) && !definition.isFetching;
-  const activeCandidateRequests = [projects, brands, tenants, headCompanies].filter((candidate) => candidate.data || candidate.isFetching || candidate.error);
+  const activeCandidateRequests = [brands, tenants, headCompanies].filter((candidate) => candidate.data || candidate.isFetching || candidate.error);
   const candidatesReady = activeCandidateRequests.every((candidate) => Boolean(candidate.data) && !candidate.isFetching);
-  const ready = definitionReady && candidatesReady;
-  const candidateError = projects.error || brands.error || tenants.error || headCompanies.error;
+  const ready = Boolean(projectId) && definitionReady && candidatesReady;
+  const candidateError = brands.error || tenants.error || headCompanies.error;
   const problem = commandProblem ?? (definition.error ? '扩展字段加载失败，请关闭后重新进入。' : candidateError ? '门店关系候选加载失败，请关闭后重新进入。' : undefined);
 
   const submit = async (value: Values) => {
-    if (!ready || lifecycle.submitting || !value.projectId || !value.brandId || !value.tenantId) return;
+    if (!ready || lifecycle.submitting || !projectId || !value.brandId || !value.tenantId) return;
     lifecycle.setSubmitting(true);
     setCommandProblem(undefined);
     try {
       const store = await operationsClient.createOperationsOrganizationStore(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-        {body: {projectId: value.projectId, brandId: value.brandId, tenantId: value.tenantId, headCompanyId: value.headCompanyId || null, code: value.code.trim(), name: value.name.trim(), notes: value.notes?.trim() || null, extensionValues: serializedExtensionValues(definition.data, value.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {brandId: value.brandId, tenantId: value.tenantId, headCompanyId: value.headCompanyId || null, code: value.code.trim(), name: value.name.trim(), notes: value.notes?.trim() || null, extensionValues: serializedExtensionValues(definition.data, value.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onCreated(store);
@@ -114,7 +113,7 @@ export function StoreCreateDrawer({open, queryContext, onClose, onCreated}: {ope
     }
   };
 
-  return <Drawer title="新建门店" open={open} size={620} destroyOnHidden keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-store-create-drawer')} footer={<Space>
+  return <Drawer title="新建门店" open={open} size={620} destroyOnHidden maskClosable keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-store-create-drawer')} footer={<Space>
     <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('operations-store-create-cancel')}>取消</Button>
     <Button type="primary" onClick={() => form.submit()} loading={lifecycle.submitting} disabled={!ready} {...testId('operations-store-create-submit')}>创建</Button>
   </Space>}>
@@ -122,13 +121,13 @@ export function StoreCreateDrawer({open, queryContext, onClose, onCreated}: {ope
     <Form form={form} layout="vertical" disabled={lifecycle.submitting || !ready} onFinish={(value) => void submit(value)} onValuesChange={(changed) => {
       lifecycle.setDirty(true);
       lifecycle.markBusinessIntentChanged();
-      if ('projectId' in changed || 'brandId' in changed) form.setFieldsValue({tenantId: undefined, headCompanyId: undefined});
+      if ('brandId' in changed) form.setFieldsValue({tenantId: undefined, headCompanyId: undefined});
       if ('tenantId' in changed) form.setFieldValue('headCompanyId', undefined);
     }}>
-      <Form.Item name="projectId" label="所属项目" rules={[{required: true, message: '请选择所属项目'}]}><Select showSearch={{filterOption: false, onSearch: setProjectSearch}} onPopupScroll={projects.onPopupScroll} aria-label="所属项目" loading={projects.isFetching} options={options(projects.items)} {...testId('operations-store-create-project')}/></Form.Item>
-      <Form.Item name="brandId" label="品牌" rules={[{required: true, message: '请选择品牌'}]}><Select showSearch={{filterOption: false, onSearch: setBrandSearch}} onPopupScroll={brands.onPopupScroll} aria-label="品牌" loading={brands.isFetching} options={options(brands.items)} {...testId('operations-store-create-brand')}/></Form.Item>
-      <Form.Item name="tenantId" label="经营租户" rules={[{required: true, message: '请选择经营租户'}]}><Select showSearch={{filterOption: false, onSearch: setTenantSearch}} onPopupScroll={tenants.onPopupScroll} aria-label="经营租户" disabled={!projectId || !brandId} loading={tenants.isFetching} options={options(tenants.items)} {...testId('operations-store-create-tenant')}/></Form.Item>
-      <Form.Item name="headCompanyId" label="总公司"><Select showSearch={{filterOption: false, onSearch: setHeadCompanySearch}} onPopupScroll={headCompanies.onPopupScroll} allowClear aria-label="总公司" disabled={!tenantId} loading={headCompanies.isFetching} options={options(headCompanies.items)} {...testId('operations-store-create-head-company')}/></Form.Item>
+      <Form.Item label="所属项目"><Typography.Text type={projectId ? undefined : 'secondary'} {...testId('operations-store-create-project')}>{projectId ? '当前已选择项目（创建将归属该项目）' : '请先在左下角选择要管理的项目'}</Typography.Text></Form.Item>
+      <Form.Item name="brandId" label="品牌" rules={[{required: true, message: '请选择品牌'}]}><Select showSearch filterOption={false} onSearch={setBrandSearch} onPopupScroll={brands.onPopupScroll} aria-label="品牌" loading={brands.isFetching} options={options(brands.items)} {...testId('operations-store-create-brand')}/></Form.Item>
+      <Form.Item name="tenantId" label="经营租户" rules={[{required: true, message: '请选择经营租户'}]}><Select showSearch filterOption={false} onSearch={setTenantSearch} onPopupScroll={tenants.onPopupScroll} aria-label="经营租户" disabled={!projectId || !brandId} loading={tenants.isFetching} options={options(tenants.items)} {...testId('operations-store-create-tenant')}/></Form.Item>
+      <Form.Item name="headCompanyId" label="总公司"><Select showSearch filterOption={false} onSearch={setHeadCompanySearch} onPopupScroll={headCompanies.onPopupScroll} allowClear aria-label="总公司" disabled={!tenantId} loading={headCompanies.isFetching} options={options(headCompanies.items)} {...testId('operations-store-create-head-company')}/></Form.Item>
       <Form.Item name="code" label="门店编码" rules={[{required: true, whitespace: true, message: '请输入门店编码'}]}><Input maxLength={64} {...testId('operations-store-create-code')}/></Form.Item>
       <Form.Item name="name" label="门店名称" rules={[{required: true, whitespace: true, message: '请输入门店名称'}]}><Input maxLength={120} {...testId('operations-store-create-name')}/></Form.Item>
       <Form.Item name="notes" label="备注"><Input.TextArea rows={3} maxLength={2000} {...testId('operations-store-create-notes')}/></Form.Item>

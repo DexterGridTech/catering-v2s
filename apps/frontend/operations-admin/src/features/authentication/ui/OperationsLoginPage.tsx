@@ -19,7 +19,6 @@ export function OperationsLoginPage({groupWorkspaceKey, onEntry}: {groupWorkspac
   const [pending, setPending] = useState(false);
   const [mode, setMode] = useState<'password' | 'otp'>('password');
   const [otpSent, setOtpSent] = useState(false);
-  const [debugCode, setDebugCode] = useState<string>();
   const [entryReload, setEntryReload] = useState(0);
   const [entryState, setEntryState] = useState<EntryState>({kind: 'loading'});
   const [form] = Form.useForm<LoginFields>();
@@ -29,7 +28,7 @@ export function OperationsLoginPage({groupWorkspaceKey, onEntry}: {groupWorkspac
   const locked = useOverlayLock();
   useEffect(() => {
     const request = generation.begin();
-    setEntryState({kind: 'loading'}); setProblem(null); setOtpSent(false); setDebugCode(undefined);
+    setEntryState({kind: 'loading'}); setProblem(null); setOtpSent(false);
     void operationsClient.getOperationsWorkspaceLoginEntry({groupWorkspaceKey}, {})
       .then((entry) => {
         if (!generation.isCurrent(request)) return;
@@ -67,11 +66,9 @@ export function OperationsLoginPage({groupWorkspaceKey, onEntry}: {groupWorkspac
       lifecycle.markBusinessIntentChanged();
       setPending(true);
       setProblem(null);
-      const sent = await operationsClient.sendOperationsWorkspaceOtp({groupWorkspaceKey}, {body: {mobile: value.mobile.trim()}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
-      const debugCode = sent.debugVerificationCode ?? undefined;
+      const result = await operationsClient.sendOperationsWorkspaceOtp({groupWorkspaceKey}, {body: {mobile: value.mobile.trim()}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
+      form.setFieldValue('code', result.debugVerificationCode ?? undefined);
       setOtpSent(true);
-      setDebugCode(debugCode);
-      form.setFieldValue('code', debugCode);
     } catch (error) {
       setProblem(operationsProblemOf(error));
     } finally {
@@ -108,8 +105,8 @@ export function OperationsLoginPage({groupWorkspaceKey, onEntry}: {groupWorkspac
     onFinish={async (value) => { await (mode === 'password' ? submitPassword(value) : verifyOtp(value)); return false; }}
     actions={mode === 'password' && <Button type="link" disabled={locked || pending} onClick={() => void navigate(`/operations/${encodeURIComponent(groupWorkspaceKey)}/password-recovery`)} {...testId('operations-login-forgot-password')}>忘记密码</Button>}
   >
-    <Tabs activeKey={mode} onChange={(key) => { setMode(key as 'password' | 'otp'); setProblem(null); setOtpSent(false); setDebugCode(undefined); form.resetFields(); }} items={[{key: 'password', label: '账号密码登录', disabled: pending || locked}, {key: 'otp', label: '手机号验证码登录', disabled: pending || locked}]}/>
-    {mode === 'password' ? <><Form.Item name="loginName" label="登录名" rules={[{required: true, whitespace: true}]}><Input autoComplete="username" disabled={pending || locked} {...testId('operations-login-name')}/></Form.Item><Form.Item name="password" label="登录密码" rules={[{required: true}]}><Input.Password autoComplete="current-password" disabled={pending || locked} {...testId('operations-login-password')}/></Form.Item></> : <><Form.Item name="mobile" label="手机号" rules={[{required: true, pattern: /^1\d{10}$/, message: '请输入正确的手机号'}]}><Input autoComplete="tel" disabled={pending || locked} onChange={() => { setOtpSent(false); setDebugCode(undefined); form.setFieldValue('code', undefined); }} {...testId('operations-login-mobile')}/></Form.Item><Form.Item label="验证码" required><Space.Compact block><Form.Item name="code" noStyle rules={[{required: true, pattern: /^\d{6}$/, message: '请输入6位验证码'}]}><Input inputMode="numeric" maxLength={6} disabled={!otpSent || pending || locked} {...testId('operations-login-otp')}/></Form.Item><Button htmlType="button" onClick={() => void sendOtp()} loading={pending} disabled={locked || pending} {...testId('operations-login-send-otp')}>获取验证码</Button></Space.Compact></Form.Item>{otpSent && <Alert type="success" showIcon title="验证码已发送，请在有效期内填写"/>}{debugCode && <Alert type="info" showIcon title={`当前为测试环境，验证码：${debugCode}`}/>}</>}
+    <Tabs activeKey={mode} onChange={(key) => { setMode(key as 'password' | 'otp'); setProblem(null); setOtpSent(false); form.resetFields(); }} items={[{key: 'password', label: '账号密码登录', disabled: pending || locked}, {key: 'otp', label: '手机号验证码登录', disabled: pending || locked}]}/>
+    {mode === 'password' ? <><Form.Item name="loginName" label="登录名" rules={[{required: true, whitespace: true}]}><Input autoComplete="username" disabled={pending || locked} {...testId('operations-login-name')}/></Form.Item><Form.Item name="password" label="登录密码" rules={[{required: true}]}><Input.Password autoComplete="current-password" disabled={pending || locked} {...testId('operations-login-password')}/></Form.Item></> : <><Form.Item name="mobile" label="手机号" rules={[{required: true, pattern: /^1\d{10}$/, message: '请输入正确的手机号'}]}><Input autoComplete="tel" disabled={pending || locked} onChange={() => { setOtpSent(false); form.setFieldValue('code', undefined); }} {...testId('operations-login-mobile')}/></Form.Item><Form.Item label="验证码" required><Space.Compact block><Form.Item name="code" noStyle rules={[{required: true, pattern: /^\d{6}$/, message: '请输入6位验证码'}]}><Input inputMode="numeric" maxLength={6} disabled={!otpSent || pending || locked} {...testId('operations-login-otp')}/></Form.Item><Button htmlType="button" onClick={() => void sendOtp()} loading={pending} disabled={locked || pending} {...testId('operations-login-send-otp')}>获取验证码</Button></Space.Compact></Form.Item>{otpSent && <Alert type="success" showIcon title="验证码已发送，请在有效期内填写"/>}</>}
   </LoginFormPage>;
 }
 

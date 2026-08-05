@@ -20,10 +20,73 @@ export function resolveGeneratedOperation(registry, method, pathname) {
   return matches[0];
 }
 
+/**
+ * Consumers select a generated operation by its stable contract identifier.
+ * They must never write a concrete edge path and reverse-match it to this
+ * registry: that makes a contract drift visible only at runtime.
+ */
+export function resolveGeneratedOperationById(registry, operationId) {
+  if (!Array.isArray(registry) || typeof operationId !== 'string' || !operationId) {
+    throw new Error('SEED_OPERATION_ID_INVALID');
+  }
+  const matches = registry.filter((entry) => entry?.operationId === operationId);
+  if (matches.length !== 1) throw new Error(matches.length === 0 ? 'SEED_OPERATION_ID_UNRESOLVED' : 'SEED_OPERATION_ID_AMBIGUOUS');
+  return matches[0];
+}
+
+/**
+ * Materialize a concrete request path only from a generated OpenAPI template
+ * and explicit typed parameters.  Missing, surplus or structurally invalid
+ * parameters are failures rather than a best-effort route reconstruction.
+ */
+export function materializeGeneratedOperationPath(operation, {pathParameters = {}, queryParameters = {}} = {}) {
+  if (!operation || typeof operation.path !== 'string' || !operation.path.startsWith('/')) {
+    throw new Error('SEED_OPERATION_TEMPLATE_INVALID');
+  }
+  assertPlainObject(pathParameters, 'SEED_OPERATION_PATH_PARAMETERS_INVALID');
+  assertPlainObject(queryParameters, 'SEED_OPERATION_QUERY_PARAMETERS_INVALID');
+  const placeholders = [...operation.path.matchAll(/\{([^{}]+)\}/g)].map((match) => match[1]);
+  if (new Set(placeholders).size !== placeholders.length) throw new Error('SEED_OPERATION_TEMPLATE_INVALID');
+  const providedPathKeys = Object.keys(pathParameters).sort();
+  const expectedPathKeys = [...placeholders].sort();
+  if (JSON.stringify(providedPathKeys) !== JSON.stringify(expectedPathKeys)) {
+    throw new Error('SEED_OPERATION_PATH_PARAMETERS_MISMATCH');
+  }
+  const pathname = operation.path.replace(/\{([^{}]+)\}/g, (_match, name) => encodePathValue(pathParameters[name]));
+  const query = new URLSearchParams();
+  for (const [name, value] of Object.entries(queryParameters)) {
+    if (!name || value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      if (!value.length) throw new Error('SEED_OPERATION_QUERY_PARAMETERS_INVALID');
+      for (const item of value) query.append(name, encodeQueryValue(item));
+    } else {
+      query.append(name, encodeQueryValue(value));
+    }
+  }
+  const encodedQuery = query.toString();
+  return encodedQuery ? `${pathname}?${encodedQuery}` : pathname;
+}
+
 function templateMatches(template, pathname) {
   const expression = `^${template.split('/').map((part) => part.startsWith('{') && part.endsWith('}') ? '[^/]+' : escapeRegExp(part)).join('/')}\/?$`;
   return new RegExp(expression).test(pathname);
 }
+
+function assertPlainObject(value, code) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) throw new Error(code);
+}
+
+function encodePathValue(value) {
+  if (!isScalar(value) || String(value).trim() === '') throw new Error('SEED_OPERATION_PATH_PARAMETER_INVALID');
+  return encodeURIComponent(String(value));
+}
+
+function encodeQueryValue(value) {
+  if (!isScalar(value)) throw new Error('SEED_OPERATION_QUERY_PARAMETER_INVALID');
+  return String(value);
+}
+
+function isScalar(value) { return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'; }
 
 function escapeRegExp(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 

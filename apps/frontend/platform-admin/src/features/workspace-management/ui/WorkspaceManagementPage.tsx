@@ -110,10 +110,10 @@ export function WorkspaceManagementPage() {
       rowKey="groupWorkspaceKey" loading={listState.loading} locale={listState.locale} dataSource={result?.items} options={false}
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-workspace-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId('platform-workspace-filter-reset')}>重置</Button>]}}
       onSubmit={(value) => submitFilters({name: value.name?.trim() || undefined, groupWorkspaceKey: value.groupWorkspaceKey?.trim() || undefined, operationsTitle: value.operationsTitle?.trim() || undefined, status: value.status})}
-      pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }} : false}
+      pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total} : false}
       columns={[
-        {title: '集团空间名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('platform-workspace-filter-name'), allowClear: true}, render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`platform-workspace-detail-${row.groupWorkspaceKey}`)}>{formatNameCode(row.name, row.groupWorkspaceKey)}</Button>},
-        {title: '集团空间编码', dataIndex: 'groupWorkspaceKey', sorter: true, hideInTable: true, fieldProps: {...testId('platform-workspace-filter-key'), allowClear: true}},
+        {title: '集团空间名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('platform-workspace-filter-name'), allowClear: true}, render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`platform-workspace-detail-${row.groupWorkspaceKey}`)}>{row.name}</Button>},
+        {title: '集团空间编码', dataIndex: 'groupWorkspaceKey', sorter: true, fieldProps: {...testId('platform-workspace-filter-key'), allowClear: true}},
         {title: 'Logo', dataIndex: 'logoUrl', search: false, render: (_, row) => row.logoUrl ? <Avatar src={row.logoUrl} alt={`${row.name} Logo`}/> : '未配置'},
         {title: '运营管理后台标题名称', dataIndex: 'operationsTitle', fieldProps: {...testId('platform-workspace-filter-operations-title'), allowClear: true}, render: (value) => value ?? '—'},
         {title: '运营后台地址', dataIndex: 'groupWorkspaceKey', search: false, render: (_, row) => <a href={operationsLoginUrl(row.groupWorkspaceKey)} target="_blank" rel="noreferrer" {...testId(`platform-workspace-operations-entry-${row.groupWorkspaceKey}`)}>打开运营后台</a>},
@@ -121,7 +121,9 @@ export function WorkspaceManagementPage() {
         {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {ENABLED: {text: '已启用'}, DISABLED: {text: '已停用'}}, fieldProps: {...testId('platform-workspace-filter-status'), style: {minWidth: 120}}, render: (_, row) => <Tag color={row.status === 'ENABLED' ? 'success' : 'default'}>{row.status === 'ENABLED' ? '已启用' : '已停用'}</Tag>},
         {title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
       ]}
-      onChange={(_, __, sorter) => {
+      onChange={(pagination, _, sorter, extra) => {
+        if (extra.action === 'paginate') { setPage(pagination.current ?? page); setPageSize(pagination.pageSize ?? pageSize); return; }
+        if (extra.action !== 'sort') return;
         const current = Array.isArray(sorter) ? sorter[0] : sorter;
         if (!current?.order) {
           setSortKey('UPDATED_AT');

@@ -3,7 +3,6 @@
     "/api/platform/auth/password-login": {
       "post": {
         "operationId": "platformPasswordLogin",
-        "x-required-owner-protocol": "REQ_PLATFORM_PASSWORD_LOGIN",
         "tags": [
           "platform-iam"
         ],
@@ -16,7 +15,6 @@
         ],
         "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
           "PLATFORM_IAM_ACCOUNT_DISABLED",
@@ -50,27 +48,28 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-owner-protocol": "REQ_PLATFORM_PASSWORD_LOGIN",
         "requestBody": {
           "required": true,
           "content": {
@@ -81,54 +80,6 @@
             }
           }
         }
-      }
-    },
-    "/api/platform/auth/login-otp/send": {
-      "post": {
-        "operationId": "sendPlatformLoginOtp", "x-required-owner-protocol": "REQ_SEND_PLATFORM_LOGIN_OTP", "tags": ["platform-iam"], "x-consumer-faces": ["platform-admin"], "x-owner-module": "platform-iam", "x-scenario-ids": ["D01-S01"], "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD", "x-idempotency-policy": "REQUIRED_16_128", "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "x-error-codes": ["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_IAM_ACCOUNT_DISABLED", "PLATFORM_IAM_INVALID_CREDENTIALS", "PLATFORM_IAM_RATE_LIMITED", "PLATFORM_IAM_RESULT_UNKNOWN"], "security": [],
-        "parameters": [{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],
-        "responses": {"200":{"description":"Owner dispatch result","content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformOtpDispatchResponse"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"401":{"$ref":"#/components/responses/ProblemResponse"},"403":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"429":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},
-        "requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformLoginOtpSendRequest"}}}}
-      }
-    },
-    "/api/platform/auth/login-otp/verify": {
-      "post": {
-        "operationId": "verifyPlatformLoginOtp", "x-required-owner-protocol": "REQ_VERIFY_PLATFORM_LOGIN_OTP", "tags": ["platform-iam"], "x-consumer-faces": ["platform-admin"], "x-owner-module": "platform-iam", "x-scenario-ids": ["D01-S01"], "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD", "x-idempotency-policy": "REQUIRED_16_128", "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "x-error-codes": ["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_IAM_ACCOUNT_DISABLED", "PLATFORM_IAM_INVALID_CREDENTIALS", "PLATFORM_IAM_RATE_LIMITED", "PLATFORM_IAM_RESULT_UNKNOWN"], "security": [],
-        "parameters": [{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],
-        "responses": {"200":{"description":"Owner readback","content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformSessionView"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"401":{"$ref":"#/components/responses/ProblemResponse"},"403":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"429":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},
-        "requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformLoginOtpVerifyRequest"}}}}
-      }
-    },
-    "/api/platform/auth/password-recovery/start": {
-      "post": {
-        "operationId": "startPlatformPasswordRecovery", "x-required-owner-protocol": "REQ_START_PLATFORM_PASSWORD_RECOVERY", "tags": ["platform-iam"], "x-consumer-faces": ["platform-admin"], "x-owner-module": "platform-iam", "x-scenario-ids": ["D01-S01"], "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD", "x-idempotency-policy": "REQUIRED_16_128", "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "x-error-codes": ["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_IAM_RATE_LIMITED", "PLATFORM_IAM_RESULT_UNKNOWN"], "security": [],
-        "parameters": [{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],
-        "responses": {"200":{"description":"Opaque recovery started","content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryStartResponse"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"429":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},
-        "requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryStartRequest"}}}}
-      }
-    },
-    "/api/platform/auth/password-recovery/otp/send": {
-      "post": {
-        "operationId": "sendPlatformPasswordRecoveryOtp", "x-required-owner-protocol": "REQ_SEND_PLATFORM_PASSWORD_RECOVERY_OTP", "tags": ["platform-iam"], "x-consumer-faces": ["platform-admin"], "x-owner-module": "platform-iam", "x-scenario-ids": ["D01-S01"], "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD", "x-idempotency-policy": "REQUIRED_16_128", "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "x-error-codes": ["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_IAM_RATE_LIMITED", "PLATFORM_IAM_RESULT_UNKNOWN"], "security": [],
-        "parameters": [{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],
-        "responses": {"200":{"description":"Owner dispatch result","content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformOtpDispatchResponse"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"401":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"429":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},
-        "requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryOtpSendRequest"}}}}
-      }
-    },
-    "/api/platform/auth/password-recovery/otp/verify": {
-      "post": {
-        "operationId": "verifyPlatformPasswordRecoveryOtp", "x-required-owner-protocol": "REQ_VERIFY_PLATFORM_PASSWORD_RECOVERY_OTP", "tags": ["platform-iam"], "x-consumer-faces": ["platform-admin"], "x-owner-module": "platform-iam", "x-scenario-ids": ["D01-S01"], "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD", "x-idempotency-policy": "REQUIRED_16_128", "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "x-error-codes": ["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_IAM_INVALID_CREDENTIALS", "PLATFORM_IAM_RESULT_UNKNOWN"], "security": [],
-        "parameters": [{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],
-        "responses": {"200":{"description":"Opaque recovery verified","content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryVerification"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"401":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},
-        "requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryOtpVerifyRequest"}}}}
-      }
-    },
-    "/api/platform/auth/password-recovery/complete": {
-      "post": {
-        "operationId": "completePlatformPasswordRecovery", "x-required-owner-protocol": "REQ_COMPLETE_PLATFORM_PASSWORD_RECOVERY", "tags": ["platform-iam"], "x-consumer-faces": ["platform-admin"], "x-owner-module": "platform-iam", "x-scenario-ids": ["D01-S01"], "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD", "x-idempotency-policy": "REQUIRED_16_128", "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "x-error-codes": ["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "PLATFORM_IAM_INVALID_CREDENTIALS", "PLATFORM_IAM_RESULT_UNKNOWN"], "security": [],
-        "parameters": [{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":16,"maxLength":128}}],
-        "responses": {"200":{"description":"Recovery completed","content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryCompletion"}}}},"400":{"$ref":"#/components/responses/ProblemResponse"},"401":{"$ref":"#/components/responses/ProblemResponse"},"409":{"$ref":"#/components/responses/ProblemResponse"},"500":{"$ref":"#/components/responses/ProblemResponse"}},
-        "requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryCompleteRequest"}}}}
       }
     },
     "/api/platform/auth/session": {
@@ -146,7 +97,6 @@
         ],
         "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -172,25 +122,25 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         }
       }
@@ -198,7 +148,6 @@
     "/api/platform/auth/password": {
       "post": {
         "operationId": "changeCurrentPlatformPassword",
-        "x-required-platform-authorization": "REQ_CHANGE_CURRENT_PLATFORM_PASSWORD",
         "tags": [
           "platform-iam"
         ],
@@ -211,7 +160,6 @@
         ],
         "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -254,27 +202,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_CHANGE_CURRENT_PLATFORM_PASSWORD",
         "requestBody": {
           "required": true,
           "content": {
@@ -290,7 +240,6 @@
     "/api/platform/auth/logout": {
       "post": {
         "operationId": "platformLogout",
-        "x-required-platform-authorization": "REQ_PLATFORM_LOGOUT",
         "tags": [
           "platform-iam"
         ],
@@ -303,7 +252,6 @@
         ],
         "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -338,38 +286,503 @@
             "description": "No content"
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-platform-authorization": "REQ_PLATFORM_LOGOUT"
+      }
+    },
+    "/api/platform/auth/login-otp/send": {
+      "post": {
+        "operationId": "sendPlatformLoginOtp",
+        "tags": [
+          "platform-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-iam",
+        "x-scenario-ids": [
+          "D01-S01"
+        ],
+        "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_IAM_ACCOUNT_DISABLED",
+          "PLATFORM_IAM_INVALID_CREDENTIALS",
+          "PLATFORM_IAM_RATE_LIMITED",
+          "PLATFORM_IAM_RESULT_UNKNOWN"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformOtpDispatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_SEND_PLATFORM_LOGIN_OTP",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformLoginOtpSendRequest"
+              }
+            }
           }
         }
       }
-    }
-  }
-,  "components": {
-    "responses": {
-      "ProblemResponse": {
-        "description": "Problem response",
-        "content": {
-          "application/json": {
+    },
+    "/api/platform/auth/login-otp/verify": {
+      "post": {
+        "operationId": "verifyPlatformLoginOtp",
+        "tags": [
+          "platform-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-iam",
+        "x-scenario-ids": [
+          "D01-S01"
+        ],
+        "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_IAM_ACCOUNT_DISABLED",
+          "PLATFORM_IAM_INVALID_CREDENTIALS",
+          "PLATFORM_IAM_RATE_LIMITED",
+          "PLATFORM_IAM_RESULT_UNKNOWN"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
             "schema": {
-              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformSessionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_VERIFY_PLATFORM_LOGIN_OTP",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformLoginOtpVerifyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/platform/auth/password-recovery/start": {
+      "post": {
+        "operationId": "startPlatformPasswordRecovery",
+        "tags": [
+          "platform-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-iam",
+        "x-scenario-ids": [
+          "D01-S01"
+        ],
+        "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_IAM_RATE_LIMITED",
+          "PLATFORM_IAM_RESULT_UNKNOWN"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryStartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_START_PLATFORM_PASSWORD_RECOVERY",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryStartRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/platform/auth/password-recovery/otp/send": {
+      "post": {
+        "operationId": "sendPlatformPasswordRecoveryOtp",
+        "tags": [
+          "platform-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-iam",
+        "x-scenario-ids": [
+          "D01-S01"
+        ],
+        "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_IAM_RATE_LIMITED",
+          "PLATFORM_IAM_RESULT_UNKNOWN"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformOtpDispatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_SEND_PLATFORM_PASSWORD_RECOVERY_OTP",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryOtpSendRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/platform/auth/password-recovery/otp/verify": {
+      "post": {
+        "operationId": "verifyPlatformPasswordRecoveryOtp",
+        "tags": [
+          "platform-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-iam",
+        "x-scenario-ids": [
+          "D01-S01"
+        ],
+        "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_IAM_INVALID_CREDENTIALS",
+          "PLATFORM_IAM_RESULT_UNKNOWN"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryVerification"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_VERIFY_PLATFORM_PASSWORD_RECOVERY_OTP",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryOtpVerifyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/platform/auth/password-recovery/complete": {
+      "post": {
+        "operationId": "completePlatformPasswordRecovery",
+        "tags": [
+          "platform-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-iam",
+        "x-scenario-ids": [
+          "D01-S01"
+        ],
+        "x-page-key": "PLATFORM-LOGIN-OR-PASSWORD",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_IAM_INVALID_CREDENTIALS",
+          "PLATFORM_IAM_RESULT_UNKNOWN"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryCompletion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_COMPLETE_PLATFORM_PASSWORD_RECOVERY",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryCompleteRequest"
+              }
             }
           }
         }

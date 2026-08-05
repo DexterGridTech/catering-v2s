@@ -6,8 +6,6 @@ public record WorkspaceCredentialResetResult(
     String loginName,
     WorkspaceAccountStatus status,
     String credentialStatus,
-    Long generation,
-    Long expiresAt,
-    String deliveryStatus,
-    Long revision
+    Long revision,
+    Boolean sessionsRevoked
 ) {}

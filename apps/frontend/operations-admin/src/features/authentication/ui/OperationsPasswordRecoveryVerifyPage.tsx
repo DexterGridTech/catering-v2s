@@ -14,7 +14,6 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
   const [entryState, setEntryState] = useState<EntryState>({kind: 'loading'});
   const [entryReload, setEntryReload] = useState(0);
   const [sent, setSent] = useState(false);
-  const [debugCode, setDebugCode] = useState<string>();
   const [identityFields, setIdentityFields] = useState<Pick<Fields, 'loginName' | 'mobile'>>({});
   const [verificationCode, setVerificationCode] = useState<string>();
   const [codeFieldKey, setCodeFieldKey] = useState(0);
@@ -41,7 +40,6 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
 
   const invalidateOtp = () => {
     setSent(false);
-    setDebugCode(undefined);
     setVerificationCode(undefined);
     form.setFieldValue('code', undefined);
     setCodeFieldKey((value) => value + 1);
@@ -61,12 +59,9 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
     try {
       await publicClient.startOperationsPasswordRecovery({groupWorkspaceKey}, {body: {loginName, mobile}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
       lifecycle.markBusinessIntentChanged();
-      const dispatched = await publicClient.sendOperationsPasswordRecoveryOtp({groupWorkspaceKey}, {body: {}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
-      const debugCode = dispatched.debugVerificationCode ?? undefined;
+      const result = await publicClient.sendOperationsPasswordRecoveryOtp({groupWorkspaceKey}, {body: {}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
+      form.setFieldValue('code', result.debugVerificationCode ?? undefined);
       setSent(true);
-      setDebugCode(debugCode);
-      setVerificationCode(debugCode);
-      form.setFieldValue('code', debugCode);
     } catch {
       invalidateOtp();
       setFailed(true);
@@ -123,6 +118,5 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
     <Form.Item name="loginName" label="登录名"><Input disabled={locked || pending} {...testId('operations-recovery-login-name')}/></Form.Item>
     <Form.Item name="mobile" label="手机号"><Input disabled={locked || pending} {...testId('operations-recovery-mobile')}/></Form.Item>
     <Form.Item label="验证码" required><Space.Compact block><Form.Item key={codeFieldKey} name="code" noStyle><Input disabled={!sent || pending || locked} {...testId('operations-recovery-otp')}/></Form.Item><Button htmlType="button" onClick={() => void send()} loading={pending} disabled={locked || pending} {...testId('operations-recovery-send-otp')}>获取验证码</Button></Space.Compact></Form.Item>
-    {debugCode && <Alert type="info" showIcon title={`当前为测试环境，验证码：${debugCode}`}/>}
   </LoginFormPage>;
 }

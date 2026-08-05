@@ -1,10 +1,10 @@
 import {Alert, Button, Drawer, Form, Input, Select, Space} from 'antd';
-import {adminDrawerSurfaceProps, contextScopedQueryArgs, formatCodeNamePath, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, formatCodeNamePath, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
-import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
+import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {WorkspaceInvitation, WorkspaceInvitationCandidatePage} from '../../../app/api/generated/operations-edge';
-import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
+import {useWorkspaceInvitationCandidates} from '../application/useWorkspaceInvitationCandidates';
 
 type TargetType = 'GROUP' | 'REGION' | 'PROJECT' | 'HEAD_COMPANY' | 'STORE';
 type InvitationForm = {mobile: string; targetOrganizationRef?: string; roleIds?: string[]};
@@ -51,44 +51,8 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
   const [submitProblem, setSubmitProblem] = useState<string>();
   const selectedOrganizationRef = Form.useWatch('targetOrganizationRef', form);
   const path = useMemo(() => ({groupWorkspaceKey: queryContext.groupWorkspaceKey}), [queryContext.groupWorkspaceKey]);
-  const organizationCandidateOptions = useMemo(() => ({
-    query: contextScopedQueryArgs({
-      scopeRef: queryContext.scopeRef,
-      subjectType: 'ORGANIZATION' as const,
-      queryText: organizationQueryText || undefined,
-      page: organizationPage,
-      pageSize: candidatePageSize,
-    }, {
-      groupWorkspaceKey: queryContext.groupWorkspaceKey,
-      expectedContextVersion: queryContext.expectedContextVersion,
-    }),
-  }), [organizationPage, organizationQueryText, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, queryContext.scopeRef]);
-  const roleCandidateOptions = useMemo(() => ({
-    query: contextScopedQueryArgs({
-      scopeRef: queryContext.scopeRef,
-      subjectType: 'ROLE' as const,
-      queryText: roleQueryText || undefined,
-      page: rolePage,
-      pageSize: candidatePageSize,
-      selectedOrganizationRef: selectedOrganizationRef || undefined,
-    }, {
-      groupWorkspaceKey: queryContext.groupWorkspaceKey,
-      expectedContextVersion: queryContext.expectedContextVersion,
-    }),
-  }), [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, queryContext.scopeRef, rolePage, roleQueryText, selectedOrganizationRef]);
-
-  const groupOrganizationCandidates = operationsRtk.useGetOperationsWorkspaceGroupInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceGroupInvitationCandidates(path, organizationCandidateOptions), {skip: !open || targetType !== 'GROUP'});
-  const regionOrganizationCandidates = operationsRtk.useGetOperationsWorkspaceRegionInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceRegionInvitationCandidates(path, organizationCandidateOptions), {skip: !open || targetType !== 'REGION'});
-  const projectOrganizationCandidates = operationsRtk.useGetOperationsWorkspaceProjectInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceProjectInvitationCandidates(path, organizationCandidateOptions), {skip: !open || targetType !== 'PROJECT'});
-  const headCompanyOrganizationCandidates = operationsRtk.useGetOperationsWorkspaceHeadCompanyInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceHeadCompanyInvitationCandidates(path, organizationCandidateOptions), {skip: !open || targetType !== 'HEAD_COMPANY'});
-  const storeOrganizationCandidates = operationsRtk.useGetOperationsWorkspaceStoreInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceStoreInvitationCandidates(path, organizationCandidateOptions), {skip: !open || targetType !== 'STORE'});
-  const groupRoleCandidates = operationsRtk.useGetOperationsWorkspaceGroupInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceGroupInvitationCandidates(path, roleCandidateOptions), {skip: !open || targetType !== 'GROUP' || !selectedOrganizationRef});
-  const regionRoleCandidates = operationsRtk.useGetOperationsWorkspaceRegionInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceRegionInvitationCandidates(path, roleCandidateOptions), {skip: !open || targetType !== 'REGION' || !selectedOrganizationRef});
-  const projectRoleCandidates = operationsRtk.useGetOperationsWorkspaceProjectInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceProjectInvitationCandidates(path, roleCandidateOptions), {skip: !open || targetType !== 'PROJECT' || !selectedOrganizationRef});
-  const headCompanyRoleCandidates = operationsRtk.useGetOperationsWorkspaceHeadCompanyInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceHeadCompanyInvitationCandidates(path, roleCandidateOptions), {skip: !open || targetType !== 'HEAD_COMPANY' || !selectedOrganizationRef});
-  const storeRoleCandidates = operationsRtk.useGetOperationsWorkspaceStoreInvitationCandidatesQuery(operationsAdminRtkRequest.getOperationsWorkspaceStoreInvitationCandidates(path, roleCandidateOptions), {skip: !open || targetType !== 'STORE' || !selectedOrganizationRef});
-  const organizationResult = targetType === 'GROUP' ? groupOrganizationCandidates : targetType === 'REGION' ? regionOrganizationCandidates : targetType === 'PROJECT' ? projectOrganizationCandidates : targetType === 'HEAD_COMPANY' ? headCompanyOrganizationCandidates : storeOrganizationCandidates;
-  const roleResult = targetType === 'GROUP' ? groupRoleCandidates : targetType === 'REGION' ? regionRoleCandidates : targetType === 'PROJECT' ? projectRoleCandidates : targetType === 'HEAD_COMPANY' ? headCompanyRoleCandidates : storeRoleCandidates;
+  const organizationResult = useWorkspaceInvitationCandidates({targetType, queryContext, subjectType: 'ORGANIZATION', candidateUsage: 'INVITATION_TARGET', queryText: organizationQueryText, page: organizationPage, pageSize: candidatePageSize, enabled: open});
+  const roleResult = useWorkspaceInvitationCandidates({targetType, queryContext, subjectType: 'ROLE', candidateUsage: 'INVITATION_TARGET', queryText: roleQueryText, page: rolePage, pageSize: candidatePageSize, selectedOrganizationRef, enabled: open && Boolean(selectedOrganizationRef)});
   const organizationPageResult = organizationResult.data as WorkspaceInvitationCandidatePage | undefined;
   const rolePageResult = roleResult.data as WorkspaceInvitationCandidatePage | undefined;
   const organizationProblem = organizationResult.error ? queryIssue(organizationResult.error, '机构候选读取失败，请重试') : undefined;
@@ -166,6 +130,7 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
     open={open}
     size={600}
     destroyOnHidden
+    maskClosable
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
     {...adminDrawerSurfaceProps}
@@ -199,7 +164,9 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
       </Form.Item>
       <Form.Item name="targetOrganizationRef" label="任职机构" rules={[{required: true, message: '请选择任职机构'}]}>
         <Select
-          showSearch={{filterOption: false, onSearch: (value) => { setOrganizationQueryText(value); setOrganizationPage(1); }}}
+          showSearch
+          filterOption={false}
+          onSearch={(value) => { setOrganizationQueryText(value); setOrganizationPage(1); }}
           placeholder="搜索机构名称或路径..."
           options={organizationOptions}
           loading={organizationResult.isFetching && organizationOptions.length === 0}
@@ -216,7 +183,9 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
       <Form.Item name="roleIds" label="业务角色" rules={[{required: true, message: '请选择业务角色'}]}>
         <Select
           mode="multiple"
-          showSearch={{filterOption: false, onSearch: (value) => { setRoleQueryText(value); setRolePage(1); }}}
+          showSearch
+          filterOption={false}
+          onSearch={(value) => { setRoleQueryText(value); setRolePage(1); }}
           disabled={!selectedOrganizationRef}
           placeholder={selectedOrganizationRef ? '请选择业务角色' : '请先选择任职机构'}
           options={roleOptions}

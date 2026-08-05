@@ -54,7 +54,7 @@ export function StoreDetailDrawer({store, queryContext, canEdit, canTransition, 
     next(selected);
   };
 
-  return <Drawer title={selected ? `门店详情：${selected.name}` : '门店详情'} open={Boolean(store)} loading={loading} onClose={() => { closeLatest(); onClose(); }} size={620} destroyOnHidden {...adminDrawerSurfaceProps} {...testId('operations-store-detail-drawer')} extra={ready && selected && <Space>
+  return <Drawer title={selected ? `门店详情：${selected.name}` : '门店详情'} open={Boolean(store)} loading={loading} onClose={() => { closeLatest(); onClose(); }} size={620} destroyOnHidden maskClosable {...adminDrawerSurfaceProps} {...testId('operations-store-detail-drawer')} extra={ready && selected && <Space>
     <Button onClick={onAudit} {...testId('operations-store-detail-audit')}>操作历史</Button>
     {canEdit && <Button onClick={() => closeThen(onEdit)} {...testId('operations-store-detail-edit')}>编辑</Button>}
     {canTransition && <Button onClick={() => closeThen(onStatus)} {...testId('operations-store-detail-status')}>{selected.status === 'ENABLED' ? '停用' : '启用'}</Button>}
@@ -63,7 +63,8 @@ export function StoreDetailDrawer({store, queryContext, canEdit, canTransition, 
     {problem && <Alert type="error" showIcon title="门店详情未完成" description={problem} {...testId('operations-store-detail-problem')}/>}
     {definitionWarning && <Alert type="warning" showIcon title="扩展字段暂时无法获取" description={definitionWarning} style={{marginBottom: 16}} {...testId('operations-store-detail-definition-warning')}/>}
     {ready && selected && <Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={[
-      {key: 'identity', label: '门店名称', children: formatNameCode(selected.name, selected.code)},
+      {key: 'name', label: '门店名称', children: selected.name},
+      {key: 'code', label: '门店编码', children: selected.code},
       {key: 'project', label: '所属项目', children: formatNameCode(selected.project.name, selected.project.code)},
       {key: 'brand', label: '品牌', children: formatNameCode(selected.brand.name, selected.brand.code)},
       {key: 'tenant', label: '经营租户', children: formatNameCode(selected.tenant.name, selected.tenant.code)},

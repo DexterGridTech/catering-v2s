@@ -14,12 +14,16 @@ import {OperationsPasswordRecoveryPasswordPage} from '../features/authentication
 import {OperationsPasswordRecoveryVerifyPage} from '../features/authentication/ui/OperationsPasswordRecoveryVerifyPage';
 import {OperationsPasswordChangeDrawer} from '../features/authentication/ui/OperationsPasswordChangeDrawer';
 import {OperationsPasswordChangeResult} from '../features/authentication/ui/OperationsPasswordChangeResult';
+import {OperationsForcedPasswordChangePage} from '../features/authentication/ui/OperationsForcedPasswordChangePage';
 import {RoleContextSelector} from '../features/role-home-bootstrap/ui/RoleContextSelector';
 import {DataScopeSelector} from '../features/role-home-bootstrap/ui/DataScopeSelector';
 import {adminCatalog, operationsPageDesignKeys} from './catalog/generatedAdminCatalog';
 import {operationsPageRegistry, parseOperationsPageDesignKey} from './routing/pageRegistry';
 import type {OperationsPageDesignKey} from './catalog/generatedAdminCatalog';
 import type {OperationsSession as Session} from './state/OperationsSession';
+import {operationsStore} from './state/OperationsStore';
+import {clearOwnerScopeContext, replaceOwnerScopeContext} from './state/OperationsScopeContext';
+import {OperationsRequiredScopeSurface} from './components/OperationsRequiredScopeSurface';
 import type {WorkspaceSessionEntry} from './api/generated/operations-edge';
 import {operationsAdminChromeProps} from './theme/operationsAdminTheme';
 import '../styles.css';
@@ -73,6 +77,7 @@ function Shell({
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
   const [openPages, setOpenPages] = useState<OperationsPageDesignKey[]>([]);
+  const tabAssignmentRef = useRef<string | null>(null);
   const [pageReload, setPageReload] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [siderCollapsed, setSiderCollapsed] = useState(false);
@@ -108,20 +113,34 @@ function Shell({
   useEffect(() => { setBrandLogoBroken(false); }, [entry.logoUrl]);
   useEffect(() => {
     const firstAccessibleKey = accessiblePages[0]?.key;
-    setOpenPages(firstAccessibleKey ? [firstAccessibleKey] : []);
+    const accessibleKeys = new Set(accessiblePages.map(({key}) => key));
+    if (tabAssignmentRef.current !== session.assignmentId) {
+      tabAssignmentRef.current = session.assignmentId;
+      setOpenPages(firstAccessibleKey ? [firstAccessibleKey] : []);
+      return;
+    }
+    setOpenPages((current) => {
+      const retained = current.filter((key) => accessibleKeys.has(key));
+      return retained.length ? retained : firstAccessibleKey ? [firstAccessibleKey] : [];
+    });
   }, [accessiblePages, session.assignmentId]);
   useEffect(() => {
     if (!selected) return;
     setOpenPages((current) => current.includes(selected) ? current : [...current, selected]);
   }, [selected]);
+  const registration = selected ? operationsPageRegistry[selected] : undefined;
+  const selectedCatalogPage = selected ? catalogByKey.get(selected) : undefined;
+  const selectedScopeRef = selectedCatalogPage?.requiredDataNodeType === 'REGION' ? entry.scopeContext?.region?.dataNodeRef
+    : selectedCatalogPage?.requiredDataNodeType === 'PROJECT' ? entry.scopeContext?.project?.dataNodeRef
+      : selectedCatalogPage?.requiredDataNodeType === 'STORE' ? entry.scopeContext?.store?.dataNodeRef
+        : selectedCatalogPage?.requiredDataNodeType === 'HEAD_COMPANY' ? entry.scopeContext?.headCompany?.dataNodeRef
+          : undefined;
   const queryContext = useMemo(() => contextScopedQueryArgs({}, {
     groupWorkspaceKey: session.groupWorkspaceKey,
     expectedContextVersion: session.contextVersion,
     identityKey: undefined,
-    scopeRef: session.visibleDataNodeId ?? undefined,
-  }), [session.contextVersion, session.groupWorkspaceKey, session.visibleDataNodeId]);
-  const registration = selected ? operationsPageRegistry[selected] : undefined;
-  const selectedCatalogPage = selected ? catalogByKey.get(selected) : undefined;
+    scopeRef: selectedScopeRef,
+  }), [selectedScopeRef, session.contextVersion, session.groupWorkspaceKey]);
   const currentPageKey = selected ?? accessiblePages[0]?.key;
   const pageBodyKey = `${currentPageKey ?? 'none'}-${session.assignmentId}-${session.contextVersion}-${pageReload}`;
   const closePage = (target: OperationsPageDesignKey) => {
@@ -145,7 +164,7 @@ function Shell({
     },
   };
   const page = registration && selectedCatalogPage
-    ? <registration.Component key={session.contextVersion} queryContext={queryContext} actionCapabilityKeys={session.actionCapabilityKeys}/>
+    ? <OperationsRequiredScopeSurface requiredDataNodeType={selectedCatalogPage.requiredDataNodeType} scopeContext={entry.scopeContext}><registration.Component key={session.contextVersion} queryContext={queryContext} actionCapabilityKeys={session.actionCapabilityKeys}/></OperationsRequiredScopeSurface>
     : <Alert type="info" title={routeSegment ? '当前角色没有该页面准入' : '当前角色没有页面准入'}/>;
   return <Layout className="operations-shell" {...operationsAdminChromeProps} style={{height: '100vh', overflow: 'hidden'}}>
     {!fullscreen && <Layout.Header className="operations-header">
@@ -168,6 +187,7 @@ function Shell({
     <Layout hasSider>
     {!fullscreen && <Layout.Sider
       className="operations-sider"
+      width={210}
       collapsible
       collapsed={siderCollapsed}
       onCollapse={(next) => { if (!locked) setSiderCollapsed(next); }}
@@ -265,7 +285,7 @@ function toSession(entry: WorkspaceSessionEntry): Session | undefined {
   return {
     groupWorkspaceKey: entry.groupWorkspaceKey,
     assignmentId: entry.selected.roleAssignmentRef,
-    visibleDataNodeId: entry.selectedDataNode?.dataNodeRef ?? null,
+    visibleDataNodeId: entry.scopeContext?.project?.dataNodeRef ?? null,
     contextVersion: entry.contextVersion,
     pageAccessKeys: entry.selected.pageDesignKeys.flatMap((key) => {
       const parsed = parseOperationsPageDesignKey(key);
@@ -293,8 +313,12 @@ function WorkspaceRoute() {
   const sessionEntryLoaded = !sessionEntryRequest || entryOverride !== null || sessionEntryQuery.isSuccess || sessionEntryQuery.isError;
   const clearLocalSession = () => {
     clearOperationsTransportState();
+    operationsStore.dispatch(clearOwnerScopeContext());
     setEntryOverride(null);
   };
+  useEffect(() => {
+    operationsStore.dispatch(replaceOwnerScopeContext(entry?.scopeContext ?? null));
+  }, [entry?.contextVersion, entry?.scopeContext]);
   useEffect(() => registerOperationsSessionRecovery(async () => {
     if (sessionInvalidating.current) return;
     sessionInvalidating.current = true;
@@ -306,11 +330,11 @@ function WorkspaceRoute() {
     setEntryOverride(null);
   }, [groupWorkspaceKey]);
   const logout = async () => {
-    if (!session) return;
+    if (!entry) return;
     lifecycle.markBusinessIntentChanged();
     try {
       await operationsClient.operationsWorkspaceLogout(
-        {groupWorkspaceKey: session.groupWorkspaceKey},
+        {groupWorkspaceKey: entry.groupWorkspaceKey},
         {headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
     } finally {
@@ -325,6 +349,7 @@ function WorkspaceRoute() {
     const page = selectedSession?.pageAccessKeys[0];
     if (page) void navigate(`/operations/${encodeURIComponent(next.groupWorkspaceKey)}/${operationsPageRegistry[page].routeSegment}`, {replace: true});
   };
+  if (entry?.outcome === 'PASSWORD_CHANGE_REQUIRED') return <OperationsForcedPasswordChangePage groupWorkspaceKey={entry.groupWorkspaceKey} contextVersion={entry.contextVersion} onCompleted={() => void logout()}/>;
   if (entry && !session) return <main className="auth-page"><div className="auth-card"><RoleContextSelector entry={entry} variant="initial" onSelected={enterSelectedHome}/></div></main>;
   return session && entry ? <Shell session={session} entry={entry} onLogout={logout} onEntry={setEntryOverride} onRoleSelected={enterSelectedHome}/> : <OperationsLoginPage groupWorkspaceKey={groupWorkspaceKey} onEntry={(next) => {
     sessionInvalidating.current = false;

@@ -16,22 +16,25 @@ export async function signInPlatform(page: Page) {
 
 export async function selectWorkspace(page: Page) {
   const optionLabel = requiredL2Env('R5_L2_PLATFORM_WORKSPACE_LABEL');
-  await page.getByTestId('platform-workspace-selector').locator('input').click();
-  const option = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible .ant-select-item-option:visible').filter({hasText: optionLabel}).first();
-  await expect(option).toBeVisible();
-  await option.click();
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible')).toHaveCount(0);
-  await expect(page.getByTestId('platform-workspace-selector')).toContainText(optionLabel);
+  await chooseAntOption(page, '集团空间', optionLabel, 'platform-workspace-selector');
 }
 
 export async function chooseAntOption(page: Page, label: string, optionLabel: string, testId?: string) {
   const control = testId ? page.getByTestId(testId) : page.getByLabel(label, {exact: true}).locator('xpath=../..');
   await control.click();
-  const option = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible .ant-select-item-option:visible').filter({hasText: optionLabel}).first();
+  const input = control.locator('input');
+  await expect(input).toBeVisible();
+  // A label rendered as `名称(代码)` is display text, not necessarily a
+  // server-side candidate search term. The control has already loaded its
+  // owner-returned options; filtering by display copy can empty that portal.
+  const dropdown = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible').last();
+  await expect(dropdown).toBeVisible();
+  const option = dropdown.locator('.ant-select-item-option:visible').filter({hasText: optionLabel}).last();
   await expect(option).toBeVisible();
   await option.click();
+  await expect(control).toContainText(optionLabel);
   await page.keyboard.press('Escape');
+  await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible')).toHaveCount(0);
 }
 
 export async function signOutPlatform(page: Page) {
@@ -47,7 +50,11 @@ export async function signOutPlatform(page: Page) {
     await expect(page.locator('[role="dialog"]:visible')).toHaveCount(0);
   }
   const principal = page.getByRole('button', {name: /^平台管理员 /});
-  const signOut = page.getByRole('menuitem', {name: /退出登录$/});
   if (await principal.isVisible()) await principal.click();
-  if (await signOut.isVisible()) { await expect(signOut).toBeEnabled(); await signOut.click(); }
+  const visibleMenu = page.locator('.ant-dropdown:not(.ant-dropdown-hidden):visible');
+  await expect(visibleMenu).toBeVisible();
+  const signOut = visibleMenu.getByRole('menuitem', {name: /退出登录$/});
+  await expect(signOut).toBeVisible();
+  await expect(signOut).toBeEnabled();
+  await signOut.click();
 }

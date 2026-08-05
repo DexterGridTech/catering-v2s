@@ -9,7 +9,7 @@ describe('platform login focused contract', () => {
     expect(source).toContain(PLATFORM_ADMIN_OPERATION_IDS.sendPlatformLoginOtp);
     expect(source).toContain(PLATFORM_ADMIN_OPERATION_IDS.verifyPlatformLoginOtp);
     expect(source).toContain("form.setFieldValue(mode === 'PASSWORD' ? 'password' : 'code', undefined)");
-    expect(source).toContain("form.setFieldValue('code', debugCode)");
+    expect(source).toContain("form.setFieldValue('code', result.debugVerificationCode ?? undefined)");
     expect(source).toContain('验证码已发送，请在有效期内填写');
     expect(source).toContain("message: '请输入正确的手机号'");
     expect(source).toContain("message: '请输入6位验证码'");

@@ -448,7 +448,8 @@
       "pageAccess": {
         "pageAccessManaged": true,
         "grantableRoleNodeTypes": [
-          "GROUP"
+          "GROUP",
+          "HEAD_COMPANY"
         ],
         "requiredDataNodeType": "NONE"
       }
@@ -481,7 +482,8 @@
       "pageAccess": {
         "pageAccessManaged": true,
         "grantableRoleNodeTypes": [
-          "GROUP"
+          "GROUP",
+          "HEAD_COMPANY"
         ],
         "requiredDataNodeType": "NONE"
       }
@@ -514,7 +516,8 @@
       "pageAccess": {
         "pageAccessManaged": true,
         "grantableRoleNodeTypes": [
-          "GROUP"
+          "GROUP",
+          "HEAD_COMPANY"
         ],
         "requiredDataNodeType": "NONE"
       }
@@ -555,7 +558,7 @@
           "REGION",
           "PROJECT"
         ],
-        "requiredDataNodeType": "STORE"
+        "requiredDataNodeType": "PROJECT"
       }
     },
     {
@@ -724,10 +727,10 @@
       },
       "experience": {
         "pageDescription": "查看总公司用户和总公司邀请。",
-        "dataNodeCascaderLabel": null,
-        "noDataNodePrompt": null,
-        "noCandidatePrompt": null,
-        "cascadeLevelLabels": [],
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择总公司",
+        "noCandidatePrompt": "当前运营角色没有可选择的总公司",
+        "cascadeLevelLabels": ["总公司"],
         "forbiddenAlternatives": [
           "总公司成员管理",
           "总公司节点用户"
@@ -739,7 +742,7 @@
           "GROUP",
           "HEAD_COMPANY"
         ],
-        "requiredDataNodeType": "NONE",
+        "requiredDataNodeType": "HEAD_COMPANY",
         "userManagementTargetOrganizationType": "HEAD_COMPANY"
       }
     },
@@ -1063,7 +1066,8 @@
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-HEAD-COMPANY",
         "grantableRoleNodeTypes": [
-          "GROUP"
+          "GROUP",
+          "HEAD_COMPANY"
         ],
         "scopeApplicability": "NONE"
       }
@@ -1079,7 +1083,8 @@
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-HEAD-COMPANY",
         "grantableRoleNodeTypes": [
-          "GROUP"
+          "GROUP",
+          "HEAD_COMPANY"
         ],
         "scopeApplicability": "NONE"
       }
@@ -1095,7 +1100,8 @@
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-HEAD-COMPANY",
         "grantableRoleNodeTypes": [
-          "GROUP"
+          "GROUP",
+          "HEAD_COMPANY"
         ],
         "scopeApplicability": "NONE"
       }
@@ -1111,7 +1117,8 @@
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-HEAD-COMPANY",
         "grantableRoleNodeTypes": [
-          "GROUP"
+          "GROUP",
+          "HEAD_COMPANY"
         ],
         "scopeApplicability": "NONE"
       }
@@ -1247,7 +1254,7 @@
           "GROUP",
           "HEAD_COMPANY"
         ],
-        "scopeApplicability": "NONE",
+        "scopeApplicability": "HEAD_COMPANY_TARGET",
         "userManagement": {
           "targetOrganizationType": "HEAD_COMPANY",
           "purpose": "ROLE_REVOKE"

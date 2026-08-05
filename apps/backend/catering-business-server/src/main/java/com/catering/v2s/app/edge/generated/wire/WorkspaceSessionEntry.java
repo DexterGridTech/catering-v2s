@@ -5,15 +5,15 @@ public record WorkspaceSessionEntry(
     String groupWorkspaceKey,
     String accountId,
     String displayName,
-    String workspaceName,
-    String operationsTitle,
-    String logoUrl,
     Long contextVersion,
     String mode,
     String outcome,
     java.util.List<WorkspaceSessionEntryCandidatesItem> candidates,
     java.util.List<String> actionGrants,
-    java.util.List<WorkspaceSessionEntryDataNodeCandidatesItem> dataNodeCandidates,
+    java.util.List<WorkspaceScopeNode> dataNodeCandidates,
     WorkspaceSessionEntrySelected selected,
-    tools.jackson.databind.JsonNode selectedDataNode
+    WorkspaceScopeContext scopeContext,
+    String workspaceName,
+    String operationsTitle,
+    String logoUrl
 ) {}

@@ -114,6 +114,13 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "getPlatformOrganizationCandidates",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates",
+    "owner": "organization",
+    "requiresSession": true
+  },
+  {
     "operationId": "getPlatformOrganizationHierarchyTree",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy",
@@ -363,6 +370,7 @@ export const PLATFORM_ADMIN_OPERATION_IDS = {
   "getPlatformContractOverviewPage": "getPlatformContractOverviewPage",
   "getPlatformEntityAuditHistory": "getPlatformEntityAuditHistory",
   "getPlatformGroupWorkspaceDetail": "getPlatformGroupWorkspaceDetail",
+  "getPlatformOrganizationCandidates": "getPlatformOrganizationCandidates",
   "getPlatformOrganizationHierarchyTree": "getPlatformOrganizationHierarchyTree",
   "getPlatformOrganizationOverviewDetail": "getPlatformOrganizationOverviewDetail",
   "getPlatformOrganizationOverviewPage": "getPlatformOrganizationOverviewPage",
@@ -478,8 +486,8 @@ export type AuditTarget = {
 export type CommercialGroupInitializeRequest = {
   groupCode: string;
   groupName: string;
-  extensionValues?: (Record<string, JsonValue>) | null;
   idempotencyKey: string;
+  extensionValues?: (Record<string, JsonValue>) | null;
 };
 
 export type CommercialGroupRoot = {
@@ -487,11 +495,11 @@ export type CommercialGroupRoot = {
   groupWorkspaceKey: string;
   groupCode: string;
   groupName: string;
-  extensionValues: Record<string, JsonValue>;
-  extensionRuleRevision: number;
   version: number;
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
 };
 
 export type ContractOverviewItem = {
@@ -507,12 +515,6 @@ export type ContractOverviewItem = {
   name: string;
   resolutionStatus: "RESOLVED" | "UNRESOLVED";
 };
-  projectRef: {
-  id: string;
-  code: string;
-  name: string;
-  resolutionStatus: "RESOLVED" | "UNRESOLVED";
-};
   phaseName: string;
   tenantRef: {
   id: string;
@@ -523,8 +525,6 @@ export type ContractOverviewItem = {
   effectiveFrom?: string;
   effectiveTo?: string;
   note?: (string) | null;
-  itemSummary?: string;
-  items: Array<StoreContractItem>;
   status: StoreContractStatus;
   source: "MANUAL";
   revision: number;
@@ -532,7 +532,15 @@ export type ContractOverviewItem = {
   updatedAt: number;
   storeResolutionStatus: "RESOLVED" | "UNRESOLVED";
   tenantResolutionStatus: "RESOLVED" | "UNRESOLVED";
-  extensionFields?: Array<{
+  projectRef: {
+  id: string;
+  code: string;
+  name: string;
+  resolutionStatus: "RESOLVED" | "UNRESOLVED";
+};
+  itemSummary: string;
+  items: Array<StoreContractItem>;
+  extensionFields: Array<{
   name: string;
   value?: (string) | null;
 }>;
@@ -552,12 +560,10 @@ export type ContractOverviewPage = {
   itemsAsOf: (number) | null;
   itemsUnresolved: Array<string>;
   filterOptions: Array<{
-  kind: "PROJECT" | "STORE" | "TENANT";
+  kind: "STORE" | "TENANT";
   id: string;
-  code: string;
   name: string;
 }>;
-  phaseOptions: Array<string>;
   filterOptionsSourceStatus: "AVAILABLE" | "UNAVAILABLE";
   filterOptionsAsOf: (number) | null;
   filterOptionsUnresolved: Array<string>;
@@ -605,7 +611,7 @@ export type ExtensionEntityCatalogPage = {
 }>;
 };
 
-export type ExtensionEntityType = "COMMERCIAL_GROUP" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "REGION" | "PROJECT" | "STORE" | "CONTRACT";
+export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT" | "COMMERCIAL_GROUP" | "REGION" | "PROJECT";
 
 export type GroupWorkspaceCreateRequest = {
   groupWorkspaceKey: string;
@@ -710,6 +716,28 @@ export type NoBody = Record<string, never>;
 
 export type NoContent = null;
 
+export type OrganizationCandidatePage = {
+  metadata: OrganizationCandidatePageMetadata;
+  items: Array<OrganizationCandidatePageItemsItem>;
+};
+
+export type OrganizationCandidatePageItemsItem = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type OrganizationCandidatePageMetadata = {
+  subjectType: OrganizationCandidateQuerySubjectType;
+  queryText: (string) | null;
+  page: number;
+  pageSize: number;
+  total: number;
+  selectedId: (string) | null;
+};
+
+export type OrganizationCandidateQuerySubjectType = "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
+
 export type OrganizationHierarchyTree = {
   groupCode: string;
   groupName: string;
@@ -774,6 +802,9 @@ export type OrganizationOverviewItem = {
   resolved: boolean;
 };
   unresolvedReferences?: Array<string>;
+  alias?: (string) | null;
+  legalName?: (string) | null;
+  unifiedSocialCreditCode?: (string) | null;
   extensionFields?: Array<{
   name: string;
   value?: (string) | null;
@@ -917,7 +948,7 @@ export type PlatformLoginOtpVerifyRequest = {
 };
 
 export type PlatformOtpDispatchResponse = {
-  expiresAt: EpochMillis;
+  expiresAt: number;
   debugVerificationCode?: (string) | null;
 };
 
@@ -952,10 +983,10 @@ export type PlatformPasswordRecoveryVerification = {
 
 export type PlatformSessionView = {
   sessionId: string;
-  sessionVersion: number;
   displayName: string;
   capabilities: Array<"platform.admin.access" | "platform.workspace.initialize">;
   platformAdminAccessible: boolean;
+  sessionVersion: number;
 };
 
 export type PlatformWorkspaceInvitation = {
@@ -984,8 +1015,9 @@ export type PlatformWorkspaceInvitationPage = {
   total: number;
   criteria: {
   mobile?: (string) | null;
-  organizationQuery?: (string) | null;
-  roleQuery?: (string) | null;
+  targetOrganizationType?: (ServiceNodeType) | null;
+  targetOrganizationRef?: (string) | null;
+  roleId?: (string) | null;
   status?: (WorkspaceInvitationStatus) | null;
   expiresFrom?: (EpochMillis) | null;
   expiresTo?: (EpochMillis) | null;
@@ -1002,13 +1034,6 @@ export type Problem = {
   instance?: (string) | null;
   errorCode: EdgeProblemCode;
   correlationId: string;
-  brandAuthorizationBlockers?: {
-  visibleStores: Array<{
-  id: string;
-  code: string;
-  name: string;
-}>;
-};
 };
 
 export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
@@ -1033,9 +1058,9 @@ export type WorkspaceAccount = {
   mobile: string;
   loginName: string;
   status: WorkspaceAccountStatus;
-  credentialStatus: "SET" | "RESET_PENDING";
+  credentialStatus: "SET" | "CHANGE_REQUIRED";
   activeAssignmentCount: number;
-  lastLoginAt: (EpochMillis) | null;
+  lastLoginAt?: (EpochMillis) | null;
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
   revision: number;
@@ -1094,11 +1119,9 @@ export type WorkspaceCredentialResetResult = {
   accountId: string;
   loginName: string;
   status: WorkspaceAccountStatus;
-  credentialStatus: "SET" | "RESET_PENDING";
-  generation: number;
-  expiresAt: EpochMillis;
-  deliveryStatus: "QUEUED" | "SENT" | "UNAVAILABLE";
+  credentialStatus: "CHANGE_REQUIRED";
   revision: number;
+  sessionsRevoked: boolean;
 };
 
 export type WorkspaceInvitationCancelRequest = {
@@ -1106,25 +1129,25 @@ export type WorkspaceInvitationCancelRequest = {
 };
 
 export type WorkspaceInvitationCandidatePage = {
-  metadata?: ({
-  subjectType: "ORGANIZATION" | "ROLE";
-  queryText: (string) | null;
-  page: number;
-  pageSize: number;
-  total: number;
-  selectedOrganizationRef: (string) | null;
-}) | null;
   organizations: Array<{
-  serviceNodeType: ServiceNodeType;
+  serviceNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   organizationRef: string;
   path: string;
 }>;
   roles: Array<WorkspaceRole>;
+  metadata: ({
+  subjectType: string;
+  queryText?: (string) | null;
+  page: number;
+  pageSize: number;
+  total: number;
+  selectedOrganizationRef?: (string) | null;
+}) | null;
 };
 
 export type WorkspaceInvitationCreateRequest = {
   mobile: string;
-  targetOrganizationType: ServiceNodeType;
+  targetOrganizationType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   targetOrganizationRef: string;
   roleIds: Array<string>;
 };
@@ -1144,7 +1167,7 @@ export type WorkspaceRole = {
   groupWorkspaceKey: string;
   name: string;
   description?: (string) | null;
-  serviceNodeType: ServiceNodeType;
+  serviceNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   capabilityKeys: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
   pageAccessKeys: Array<string>;
   status: WorkspaceRoleStatus;
@@ -1156,7 +1179,7 @@ export type WorkspaceRole = {
 export type WorkspaceRoleCreateRequest = {
   name: string;
   description?: (string) | null;
-  serviceNodeType: ServiceNodeType;
+  serviceNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   capabilityKeys: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
   pageAccessKeys: Array<string>;
 };
@@ -1166,8 +1189,6 @@ export type WorkspaceRolePage = {
   page: number;
   pageSize: number;
   total: number;
-  sort: WorkspaceRoleSortKey;
-  direction: SortDirection;
   capabilityCatalog: Array<{
   key: "BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE";
   actionGroupKey: string;
@@ -1175,7 +1196,7 @@ export type WorkspaceRolePage = {
   actionGroupOrder: number;
   label: string;
   description: string;
-  organizationTypes: Array<ServiceNodeType>;
+  organizationTypes: Array<"GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE">;
 }>;
   pageAccessCatalog: Array<{
   pageDesignKey: string;
@@ -1183,7 +1204,7 @@ export type WorkspaceRolePage = {
   menuGroup: string;
   menuOrder: number;
   requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE";
-  eligibleOrganizationTypes: Array<ServiceNodeType>;
+  eligibleOrganizationTypes: Array<"GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE">;
 }>;
 };
 
@@ -1396,11 +1417,11 @@ export type FaceOperationContracts = {
     groupWorkspaceKey: string;
   };
     query: {
-    projectId?: string;
     storeId?: string;
     contractNo?: string;
     phaseName?: string;
-    tenantName?: string;
+    tenantId?: string;
+    itemCode?: string;
     status?: StoreContractStatus;
     sort?: StoreContractSortKey;
     direction?: StoreContractSortDirection;
@@ -1438,6 +1459,27 @@ export type FaceOperationContracts = {
   };
     query: Record<string, never>;
     queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getPlatformOrganizationCandidates": {
+    request: NoBody;
+    response: OrganizationCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    subjectType: OrganizationCandidateQuerySubjectType;
+    candidateUsage?: "CONTRACT_LIST";
+    queryText?: string;
+    page?: number;
+    pageSize?: number;
+    selectedId?: string;
+    projectId?: string;
+  };
+    queryRequired: true;
     headers: Record<string, never>;
     headersRequired: false;
   };
@@ -1482,11 +1524,14 @@ export type FaceOperationContracts = {
     type?: OrganizationOverviewType;
     name?: string;
     code?: string;
+    legalName?: string;
+    unifiedSocialCreditCode?: string;
     status?: OrganizationOverviewStatus;
     source?: OrganizationOverviewSource;
     projectId?: string;
     brandId?: string;
     tenantId?: string;
+    headCompanyId?: string;
     sort?: OrganizationOverviewSortKey;
     direction?: OrganizationOverviewSortDirection;
     page?: number;
@@ -1522,14 +1567,14 @@ export type FaceOperationContracts = {
     userName?: string;
     mobile?: string;
     loginName?: string;
-    roleQuery?: string;
+    roleId?: string;
     status?: WorkspaceAccountStatus;
     serviceNodeType?: ServiceNodeType;
     organizationRef?: string;
-    sort?: WorkspacePlatformAccountSortKey;
-    direction?: SortDirection;
     page?: number;
     pageSize?: number;
+    sort?: WorkspacePlatformAccountSortKey;
+    direction?: SortDirection;
   };
     queryRequired: false;
     headers: Record<string, never>;
@@ -1560,6 +1605,7 @@ export type FaceOperationContracts = {
     query: {
     targetOrganizationType: ServiceNodeType;
     subjectType: "ORGANIZATION" | "ROLE";
+    candidateUsage: "INVITATION_TARGET" | "LIST_FILTER";
     queryText?: string;
     page?: number;
     pageSize?: number;
@@ -1581,8 +1627,7 @@ export type FaceOperationContracts = {
     mobile?: string;
     targetOrganizationType?: ServiceNodeType;
     targetOrganizationRef?: string;
-    organizationQuery?: string;
-    roleQuery?: string;
+    roleId?: string;
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
@@ -2119,6 +2164,14 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       operationId: "getPlatformGroupWorkspaceDetail",
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getPlatformOrganizationCandidates: (pathParameters: FaceOperationContracts["getPlatformOrganizationCandidates"]["path"], options: FaceOperationOptions<"getPlatformOrganizationCandidates">) => execute({
+      operationId: "getPlatformOrganizationCandidates",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates",
       pathParameters,
       requiresSession: true,
       ...options,

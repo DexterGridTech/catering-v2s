@@ -8,7 +8,9 @@ describe('platform authenticated shell focused contract', () => {
     expect(source).toContain('icon: <SettingOutlined/>');
     expect(source).toContain('mode="inline" inlineCollapsed={siderCollapsed}');
     expect(source).toContain("disabled: !selectedGroupWorkspaceKey");
-    expect(source).toContain('<WorkspaceScopeSelector collapsed={siderCollapsed}/>');
+    expect(source).toContain('<WorkspaceScopeSelector/>');
+    expect(source).toContain('<Space align="center"><WorkspaceScopeSelector/><Dropdown menu={principalMenu}');
+    expect(source).not.toContain('platform-workspace-selector');
     expect(source).toContain('collapsible\n        collapsed={siderCollapsed}');
     expect(source).toContain('onCollapse={(next) => { if (!locked) setSiderCollapsed(next); }}');
     expect(source).toContain('trigger={null}');

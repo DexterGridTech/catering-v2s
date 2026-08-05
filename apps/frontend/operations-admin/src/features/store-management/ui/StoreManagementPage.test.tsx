@@ -12,13 +12,13 @@ describe('store management focused contract', () => {
     expect(source).toContain("from './StoreCreateDrawer'");
     expect(source).toContain("from './StoreEditDrawer'");
     expect(source).toContain("from './StoreStatusModal'");
-    expect(source).toContain('useOrganizationCandidates');
-    expect(source).toContain('useOrganizationCandidates');
     expect(source).toContain('contextScopedQueryArgs');
     expect(source).toContain('queryContext={queryContext}');
     expect(source).toContain('operations-store-page');
     expect(source).toContain('operations-store-filter-name');
-    expect(source).toContain('operations-store-filter-project');
+    expect(source).not.toContain('operations-store-filter-project');
+    expect(source).toContain("const scopeReady = Boolean(queryContext.scopeRef)");
+    expect(source).not.toContain('请在左下角选择要管理的项目。');
     expect(source).toContain('operations-store-filter-code');
     expect(source).toContain('operations-store-filter-status');
     expect(source).toContain('operations-store-filter-submit');
@@ -30,6 +30,7 @@ describe('store management focused contract', () => {
     expect(source).toContain('sort, direction, page: current, pageSize');
     expect(source).toContain("key: 'name'");
     expect(source).toContain("key: 'code'");
+    expect(source).toContain("key: 'notes', title: '备注'");
     expect(source).toContain("'NAME'");
     expect(source).toContain("'CODE'");
     expect(source).toContain("'UPDATED_AT'");
@@ -53,6 +54,9 @@ describe('store management focused contract', () => {
       expect(drawer).toContain('extensionValues: serializedExtensionValues');
     }
     expect(create).toContain('operations-store-create-project');
+    expect(create).toContain('const projectId = queryContext.scopeRef');
+    expect(create).not.toContain('name="projectId"');
+    expect(create).not.toContain('body: {projectId');
     expect(create).toContain('operations-store-create-head-company');
     expect(edit).toContain('operations-store-edit-code');
     expect(edit).toContain('operations-store-edit-head-company');
@@ -64,6 +68,7 @@ describe('store management focused contract', () => {
     expect(status).toContain('expectedVersion: store.revision');
     expect(status).toContain('onUpdated(updated)');
     expect(status).toContain('operations-store-status-confirm');
+    expect(status).toContain('operationsProblemOf(error)?.detail');
     expect(status).toContain('门店状态操作未完成，请重试。');
   });
 });

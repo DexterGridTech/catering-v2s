@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "project-memory-index",
-  "denominatorSha256": "cca6f31259ae0f5d19496b5972ee7be5836950e868e65b3a98f2a8c99cab4db1",
+  "denominatorSha256": "717c5380b128a1fd3cf570bae8d194b6a2483bb0f541503c0092dd7a4a24f487",
   "entries": [
     {
       "id": "kernel.workspace-roadmap",
@@ -622,6 +622,7 @@
         "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
         "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT",
         "CONTRACT_ROUTE_CLOSURE",
+        "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS",
         "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
         "EXECUTION_EVIDENCE_TAXONOMY"
       ],
@@ -662,6 +663,11 @@
           "anchor": "## 3.1 契约分母（第一交付单元）"
         },
         {
+          "assertionKey": "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
+          "anchor": "## Dexter-authorized generated edge route consumer closure"
+        },
+        {
           "assertionKey": "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
           "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
           "anchor": "## 5.1 受管执行分类与敏感数据流"
@@ -674,10 +680,11 @@
       ],
       "sourceRefs": [
         "PLATFORM-BLUEPRINT.md",
+        "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
         "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
       ],
-      "sha256": "15dd44b1f4e8c82e282c48c6db1192fd13d210ff201c8b720090875ca8a4dd76"
+      "sha256": "ccc7fce9a7498b1ec528f2a2dad200a50f3ec187824456fd1a5df5de7c82a742"
     },
     {
       "id": "decisions.distributed-topology-is-not-current",
@@ -1143,7 +1150,7 @@
       "sourceRefs": [
         "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
       ],
-      "sha256": "51415f7d3b024967b10d89414534deb16c1c09e5eced2883f3573d98891b4503"
+      "sha256": "3dba1c80579d4a0eca281efd59d27fbfb20aa86572648f8e36c83a68a603b4f3"
     },
     {
       "id": "operations.business-corpus-adoption-and-read-policy",
@@ -1193,7 +1200,7 @@
       "sourceRefs": [
         "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
       ],
-      "sha256": "04d9329413131e369e8c1ea841f172d4c295f953b07b9768a0e597405fd28353"
+      "sha256": "d362c4f78c5fc0cb1225a7a4465f82ebbd0c41b886535d69b9f698ea162cd7a9"
     },
     {
       "id": "operations.phase-retrospective-and-systemic-repair",

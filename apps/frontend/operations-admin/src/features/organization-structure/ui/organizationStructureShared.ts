@@ -1,4 +1,4 @@
-import {type JsonValue, type OrganizationHierarchySnapshot, type OrganizationNode} from '../../../app/api/generated/operations-edge';
+import {type CommercialGroupRoot, type JsonValue, type OrganizationHierarchySnapshot, type OrganizationNode} from '../../../app/api/generated/operations-edge';
 import {ApiFailure} from '../../../app/api/OperationsTransport';
 import {
   ACTION_CAPABILITIES,
@@ -56,6 +56,10 @@ export const organizationProjectEditLabel = actionLabelFor(
   ACTION_CAPABILITIES.ORG_PROJECT_EDIT,
   'ADMIN_CATALOG_ORGANIZATION_PROJECT_EDIT_ACTION_MISSING',
 );
+export const organizationGroupEditLabel = actionLabelFor(
+  ACTION_CAPABILITIES.ORG_GROUP_EDIT,
+  'ADMIN_CATALOG_ORGANIZATION_GROUP_EDIT_ACTION_MISSING',
+);
 
 export function issue(error: unknown) {
   return error instanceof ApiFailure
@@ -66,18 +70,22 @@ export function issue(error: unknown) {
 export function rowsOf(snapshot?: OrganizationHierarchySnapshot): HierarchyRow[] {
   if (!snapshot) return [];
   return [
-    {
-      id: snapshot.commercialGroup.id,
-      nodeType: 'GROUP',
-      parentId: null,
-      code: snapshot.commercialGroup.groupCode,
-      name: snapshot.commercialGroup.groupName,
-      extensionValues: snapshot.commercialGroup.extensionValues,
-      phases: [],
-      revision: snapshot.commercialGroup.version,
-    },
+    rowFromCommercialGroup(snapshot.commercialGroup),
     ...snapshot.items.map((node) => rowFromNode(node)),
   ];
+}
+
+export function rowFromCommercialGroup(group: CommercialGroupRoot): HierarchyRow {
+  return {
+    id: group.id,
+    nodeType: 'GROUP',
+    parentId: null,
+    code: group.groupCode,
+    name: group.groupName,
+    extensionValues: group.extensionValues,
+    phases: [],
+    revision: group.version,
+  };
 }
 
 export function rowFromNode(node: OrganizationNode): HierarchyRow {

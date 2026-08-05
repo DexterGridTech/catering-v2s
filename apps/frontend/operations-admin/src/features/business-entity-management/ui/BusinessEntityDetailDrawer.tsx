@@ -68,7 +68,7 @@ function typeSpecificItems(entity: BusinessEntity, kind: BusinessEntityKind) {
   const legalEntity = entity as Tenant | HeadCompany;
   return [
     {key: 'legalName', label: '法定名称', children: legalEntity.legalName},
-    {key: 'unifiedSocialCreditCode', label: '统一社会信用代码', children: legalEntity.unifiedSocialCreditCode},
+    {key: 'unifiedSocialCreditCode', label: '统一代码', children: legalEntity.unifiedSocialCreditCode},
   ];
 }
 
@@ -161,6 +161,7 @@ export function BusinessEntityDetailDrawer({
     loading={detailLoading}
     size={640}
     destroyOnHidden
+    maskClosable
     onClose={() => {
       clearLatestDetail();
       onClose();
@@ -192,7 +193,8 @@ export function BusinessEntityDetailDrawer({
     {detailLoading && <Skeleton active {...testId('operations-business-entity-detail-loading')} />}
     {detailError && <Alert type="error" showIcon title="详情加载失败" description="请关闭后重新进入详情。"/>}
     {selected && <Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={[
-      {key: 'identity', label: '名称', children: formatNameCode(selected.name, selected.code)},
+      {key: 'name', label: '名称', children: selected.name},
+      {key: 'code', label: '编码', children: selected.code},
       ...typeSpecificItems(selected, kind),
       {key: 'status', label: '状态', children: selected.status === 'ENABLED' ? '已启用' : '已停用'},
       {key: 'remark', label: '备注', children: selected.remark ?? '—'},

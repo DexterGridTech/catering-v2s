@@ -70,6 +70,7 @@ export function OperationsPasswordChangeDrawer({
     open={open}
     size={480}
     destroyOnHidden
+    maskClosable
     keyboard={!lifecycle.submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}

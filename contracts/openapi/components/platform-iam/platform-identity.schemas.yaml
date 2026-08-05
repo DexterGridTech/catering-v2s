@@ -127,7 +127,7 @@
             "type": "string",
             "maxLength": 32,
             "nullable": true,
-            "description": "Governance-authorized platform-admin edit/detail value; platform-admin renders the plaintext mobile while other consumer faces retain their own masking policy."
+            "description": "Governance-authorized edit prefill only; the detail surface must render maskedMobile instead."
           },
           "maskedMobile": {
             "type": "string",
@@ -356,56 +356,20 @@
           }
         }
       },
-      "PlatformLoginOtpSendRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["mobile"],
-        "properties": {"mobile": {"type": "string", "minLength": 6, "maxLength": 32, "pattern": "^\\+?[0-9][0-9 -]{5,30}$"}}
-      },
-      "PlatformLoginOtpVerifyRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["mobile", "code"],
-        "properties": {"mobile": {"type": "string", "minLength": 6, "maxLength": 32, "pattern": "^\\+?[0-9][0-9 -]{5,30}$"}, "code": {"type": "string", "minLength": 6, "maxLength": 6, "pattern": "^[0-9]{6}$"}}
-      },
-      "PlatformOtpDispatchResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["expiresAt"],
-        "properties": {"expiresAt": {"$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"}, "debugVerificationCode": {"type": "string", "nullable": true, "minLength": 6, "maxLength": 6, "pattern": "^[0-9]{6}$"}}
-      },
-      "PlatformPasswordRecoveryStartRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["loginName", "mobile"],
-        "properties": {"loginName": {"type": "string", "minLength": 1, "maxLength": 64}, "mobile": {"type": "string", "minLength": 6, "maxLength": 32, "pattern": "^\\+?[0-9][0-9 -]{5,30}$"}}
-      },
-      "PlatformPasswordRecoveryStartResponse": {"type": "object", "additionalProperties": false, "required": ["status"], "properties": {"status": {"type": "string", "enum": ["OTP_REQUIRED"]}}},
-      "PlatformPasswordRecoveryOtpSendRequest": {"type": "object", "additionalProperties": false},
-      "PlatformPasswordRecoveryOtpVerifyRequest": {"type": "object", "additionalProperties": false, "required": ["code"], "properties": {"code": {"type": "string", "minLength": 6, "maxLength": 6, "pattern": "^[0-9]{6}$"}}},
-      "PlatformPasswordRecoveryVerification": {"type": "object", "additionalProperties": false, "required": ["status"], "properties": {"status": {"type": "string", "enum": ["PASSWORD_REQUIRED"]}}},
-      "PlatformPasswordRecoveryCompleteRequest": {"type": "object", "additionalProperties": false, "required": ["newPassword"], "properties": {"newPassword": {"type": "string", "writeOnly": true, "minLength": 8, "maxLength": 128}}},
-      "PlatformPasswordRecoveryCompletion": {"type": "object", "additionalProperties": false, "required": ["status", "sessionsRevoked", "reauthenticationRequired"], "properties": {"status": {"type": "string", "enum": ["COMPLETED"]}, "sessionsRevoked": {"type": "boolean"}, "reauthenticationRequired": {"type": "boolean"}}},
       "PlatformSessionView": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "sessionId",
-          "sessionVersion",
           "displayName",
           "capabilities",
-          "platformAdminAccessible"
+          "platformAdminAccessible",
+          "sessionVersion"
         ],
         "properties": {
           "sessionId": {
             "type": "string",
             "format": "uuid"
-          },
-          "sessionVersion": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 1,
-            "description": "Optimistic version required by the current-password command."
           },
           "displayName": {
             "type": "string",
@@ -427,6 +391,11 @@
           "platformAdminAccessible": {
             "type": "boolean",
             "description": "Gateway-derived UI admission projection. It never replaces owner-side typed authorization."
+          },
+          "sessionVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -445,6 +414,174 @@
           "ACTIVE",
           "DISABLED"
         ]
+      },
+      "PlatformLoginOtpSendRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mobile"
+        ],
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{6,30}$"
+          }
+        }
+      },
+      "PlatformLoginOtpVerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mobile",
+          "code"
+        ],
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{6,30}$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$"
+          }
+        }
+      },
+      "PlatformOtpDispatchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expiresAt"
+        ],
+        "properties": {
+          "expiresAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "debugVerificationCode": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$",
+            "description": "DEV/UAT-only OTP readback. It is null outside the managed non-production exposure policy."
+          }
+        }
+      },
+      "PlatformPasswordRecoveryStartRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "loginName",
+          "mobile"
+        ],
+        "properties": {
+          "loginName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": ".*\\S.*"
+          },
+          "mobile": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{6,30}$"
+          }
+        }
+      },
+      "PlatformPasswordRecoveryStartResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OTP_REQUIRED"
+            ]
+          }
+        }
+      },
+      "PlatformPasswordRecoveryOtpSendRequest": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PlatformPasswordRecoveryOtpVerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$"
+          }
+        }
+      },
+      "PlatformPasswordRecoveryVerification": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASSWORD_REQUIRED"
+            ]
+          }
+        }
+      },
+      "PlatformPasswordRecoveryCompleteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "newPassword"
+        ],
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "writeOnly": true
+          }
+        }
+      },
+      "PlatformPasswordRecoveryCompletion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "sessionsRevoked",
+          "reauthenticationRequired"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "sessionsRevoked": {
+            "type": "boolean"
+          },
+          "reauthenticationRequired": {
+            "type": "boolean"
+          }
+        }
       }
     }
   }

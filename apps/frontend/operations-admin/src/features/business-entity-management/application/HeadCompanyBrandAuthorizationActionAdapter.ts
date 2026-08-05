@@ -31,7 +31,7 @@ export class HeadCompanyBrandAuthorizationActionAdapter {
 
   searchEnabledBrands(
     context: Pick<HeadCompanyBrandAuthorizationContext, 'groupWorkspaceKey' | 'expectedContextVersion'>,
-    name: string | undefined,
+    queryText: string | undefined,
     page = 1,
     pageSize = 20,
   ): Promise<BrandPage> {
@@ -40,7 +40,8 @@ export class HeadCompanyBrandAuthorizationActionAdapter {
       {
         query: {
           expectedContextVersion: context.expectedContextVersion,
-          name: name?.trim() || undefined,
+          name: queryText?.trim() || undefined,
+          code: queryText?.trim() || undefined,
           status: 'ENABLED',
           page,
           pageSize,

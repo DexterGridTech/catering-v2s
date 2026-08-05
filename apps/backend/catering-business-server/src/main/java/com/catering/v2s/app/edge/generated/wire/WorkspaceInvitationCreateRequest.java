@@ -3,7 +3,7 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceInvitationCreateRequest(
     String mobile,
-    ServiceNodeType targetOrganizationType,
+    String targetOrganizationType,
     String targetOrganizationRef,
     java.util.List<String> roleIds
 ) {}

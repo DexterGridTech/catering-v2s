@@ -13,7 +13,6 @@ import com.catering.v2s.organization.application.OrganizationAuditHistoryService
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuditAuthorizationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
-import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog.PageDesignKeys;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -75,33 +74,27 @@ public final class OperationsAuditHistoryController {
         switch (entityType) {
             case "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION" ->
                 authorization.requireWorkspaceSubject(session, entityType, id);
-            case "COMMERCIAL_GROUP" -> authorization.requireGroupHost(session, PageDesignKeys.PG_ORG_STRUCTURE);
+            case "COMMERCIAL_GROUP" -> authorization.requireGroupHost(session);
             case "ORGANIZATION_NODE" -> {
                 var item = organizationOverview.detail(
                     session.workspaceUuid(), session.groupWorkspaceKey(), "HIERARCHY", id
                 );
-                authorization.requireScopedHost(session, PageDesignKeys.PG_ORG_STRUCTURE, item.id(), null);
+                authorization.requireScopedHost(session, item.type(), item.id());
             }
-            case "BRAND" -> requireGroupEntity(session, "BRAND", id, PageDesignKeys.PG_ORG_BRAND);
-            case "TENANT" -> requireGroupEntity(session, "TENANT", id, PageDesignKeys.PG_ORG_TENANT);
-            case "HEAD_COMPANY" ->
-                requireGroupEntity(session, "HEAD_COMPANY", id, PageDesignKeys.PG_ORG_HEAD_COMPANY);
+            case "BRAND" -> requireGroupEntity(session, "BRAND", id);
+            case "TENANT" -> requireGroupEntity(session, "TENANT", id);
+            case "HEAD_COMPANY" -> requireScopedEntity(session, "HEAD_COMPANY", id);
             case "STORE" -> {
                 var item = organizationOverview.detail(
                     session.workspaceUuid(), session.groupWorkspaceKey(), "STORE", id
                 );
-                authorization.requireScopedHost(
-                    session, PageDesignKeys.PG_ORG_STORE_MANAGE, item.project().id(), item.id()
-                );
+                authorization.requireScopedHost(session, "PROJECT", item.project().id());
             }
             case "STORE_CONTRACT" -> {
                 var contract = contractReads.view(
                     session.workspaceUuid(), session.groupWorkspaceKey(), id
                 );
-                authorization.requireScopedHost(
-                    session, PageDesignKeys.PG_CONTRACT_STORE_MANAGE,
-                    contract.project().id(), contract.store().id()
-                );
+                authorization.requireScopedHost(session, "PROJECT", contract.project().id());
             }
             default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
         }
@@ -110,8 +103,7 @@ public final class OperationsAuditHistoryController {
     private void requireGroupEntity(
         com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session,
         String entityType,
-        UUID id,
-        String pageKey
+        UUID id
     ) {
         var item = organizationOverview.detail(
             session.workspaceUuid(), session.groupWorkspaceKey(), "BUSINESS_ENTITY", id
@@ -119,7 +111,21 @@ public final class OperationsAuditHistoryController {
         if (!entityType.equals(item.type())) {
             throw new InvalidEdgeRequestException("audit target type does not match host entity");
         }
-        authorization.requireGroupHost(session, pageKey);
+        authorization.requireGroupHost(session);
+    }
+
+    private void requireScopedEntity(
+        com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session,
+        String entityType,
+        UUID id
+    ) {
+        var item = organizationOverview.detail(
+            session.workspaceUuid(), session.groupWorkspaceKey(), "BUSINESS_ENTITY", id
+        );
+        if (!entityType.equals(item.type())) {
+            throw new InvalidEdgeRequestException("audit target type does not match host entity");
+        }
+        authorization.requireScopedHost(session, entityType, id);
     }
 
     private static UUID uuid(String value) {

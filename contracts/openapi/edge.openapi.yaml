@@ -5,14 +5,44 @@
     "version": "0.5.0"
   },
   "paths": {
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitation-candidates"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1status"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1credential-reset"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1assignments~1{assignmentId}~1revoke"
+    },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview": {
       "$ref": "./paths/platform-admin/contract-overview.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1contract-overview"
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}": {
       "$ref": "./paths/platform-admin/contract-overview.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1contract-overview~1{contractId}"
     },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy": {
-      "$ref": "./paths/platform-admin/organization-overview.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1hierarchy"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates": {
+      "$ref": "./paths/platform-admin/contract-overview.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1candidates"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry": {
       "$ref": "./paths/operations-admin/workspace-auth.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1login-entry"
@@ -59,6 +89,9 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview": {
       "$ref": "./paths/platform-admin/organization-overview.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview"
     },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy": {
+      "$ref": "./paths/platform-admin/organization-overview.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1hierarchy"
+    },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}": {
       "$ref": "./paths/platform-admin/organization-overview.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1{category}~1{itemId}"
     },
@@ -74,36 +107,6 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status": {
       "$ref": "./paths/platform-admin/role-management.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1roles~1{roleId}~1status"
     },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitation-candidates"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1status"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1credential-reset"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1assignments~1{assignmentId}~1revoke"
-    },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions": {
       "$ref": "./paths/platform-admin/extension-definition.paths.yaml#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1extension-definitions"
     },
@@ -113,12 +116,6 @@
     "/api/platform/auth/password-login": {
       "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-login"
     },
-    "/api/platform/auth/login-otp/send": {"$ref":"./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1login-otp~1send"},
-    "/api/platform/auth/login-otp/verify": {"$ref":"./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1login-otp~1verify"},
-    "/api/platform/auth/password-recovery/start": {"$ref":"./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-recovery~1start"},
-    "/api/platform/auth/password-recovery/otp/send": {"$ref":"./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-recovery~1otp~1send"},
-    "/api/platform/auth/password-recovery/otp/verify": {"$ref":"./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-recovery~1otp~1verify"},
-    "/api/platform/auth/password-recovery/complete": {"$ref":"./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-recovery~1complete"},
     "/api/platform/auth/session": {
       "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1session"
     },
@@ -127,6 +124,24 @@
     },
     "/api/platform/auth/logout": {
       "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1logout"
+    },
+    "/api/platform/auth/login-otp/send": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1login-otp~1send"
+    },
+    "/api/platform/auth/login-otp/verify": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1login-otp~1verify"
+    },
+    "/api/platform/auth/password-recovery/start": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-recovery~1start"
+    },
+    "/api/platform/auth/password-recovery/otp/send": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-recovery~1otp~1send"
+    },
+    "/api/platform/auth/password-recovery/otp/verify": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-recovery~1otp~1verify"
+    },
+    "/api/platform/auth/password-recovery/complete": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.yaml#/paths/~1api~1platform~1auth~1password-recovery~1complete"
     },
     "/api/public/assets/{assetRef}/content": {
       "$ref": "./paths/public/asset-content.paths.yaml#/paths/~1api~1public~1assets~1{assetRef}~1content"
@@ -185,104 +200,104 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user~1assignments~1{assignmentId}~1revoke"
-    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user~1assignments~1{assignmentId}~1revoke"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user~1assignments~1{assignmentId}~1revoke"
-    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user~1assignments~1{assignmentId}~1revoke"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations"
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1candidates"
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1{invitationId}~1cancel"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1{invitationId}~1cancel"
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1{invitationId}~1reissue"
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user"
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user~1accounts~1{accountId}"
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user~1assignments~1{assignmentId}~1revoke"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user~1assignments~1{assignmentId}~1revoke"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user~1assignments~1{assignmentId}~1revoke"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user~1assignments~1{assignmentId}~1revoke"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke": {
       "$ref": "./paths/operations-admin/workspace-access.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user~1assignments~1{assignmentId}~1revoke"
@@ -298,6 +313,9 @@
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects": {
       "$ref": "./paths/operations-admin/organization-hierarchy.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1regions~1{regionId}~1projects"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1commercial-group"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}": {
       "$ref": "./paths/operations-admin/organization-hierarchy.paths.yaml#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1{nodeId}"
@@ -362,24 +380,23 @@
     "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion": {
       "$ref": "./paths/public/invitation-acceptance.paths.yaml#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1completion"
     },
-    "/api/public/password-reset/{resetGenerationKey}/otp/send": {
-      "$ref": "./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1password-reset~1{resetGenerationKey}~1otp~1send"
-    },
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start": {"$ref":"./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1start"},
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send": {"$ref":"./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1otp~1send"},
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify": {"$ref":"./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1otp~1verify"},
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete": {"$ref":"./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1complete"},
-    "/api/public/password-reset/{resetGenerationKey}/otp/verify": {
-      "$ref": "./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1password-reset~1{resetGenerationKey}~1otp~1verify"
-    },
-    "/api/public/password-reset/{resetGenerationKey}/complete": {
-      "$ref": "./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1password-reset~1{resetGenerationKey}~1complete"
-    },
     "/api/platform/audit-history": {
       "$ref": "./paths/platform-admin/audit-history.paths.yaml#/paths/~1api~1platform~1audit-history"
     },
     "/api/operations/audit-history": {
       "$ref": "./paths/operations-admin/audit-history.paths.yaml#/paths/~1api~1operations~1audit-history"
+    },
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start": {
+      "$ref": "./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1start"
+    },
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send": {
+      "$ref": "./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1otp~1send"
+    },
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify": {
+      "$ref": "./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1otp~1verify"
+    },
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete": {
+      "$ref": "./paths/public/access-recovery.paths.yaml#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1complete"
     }
   },
   "components": {
@@ -465,6 +482,9 @@
       "CommercialGroupRoot": {
         "$ref": "./components/organization/commercial-group.schemas.yaml#/components/schemas/CommercialGroupRoot"
       },
+      "CommercialGroupUpdateRequest": {
+        "$ref": "./components/organization/commercial-group.schemas.yaml#/components/schemas/CommercialGroupUpdateRequest"
+      },
       "ContractOverviewItem": {
         "$ref": "./components/contract/contract.schemas.yaml#/components/schemas/ContractOverviewItem"
       },
@@ -498,8 +518,14 @@
       "StoreContractUpdateRequest": {
         "$ref": "./components/contract/contract.schemas.yaml#/components/schemas/StoreContractUpdateRequest"
       },
+      "StoreContractViewState": {
+        "$ref": "./components/contract/contract.schemas.yaml#/components/schemas/StoreContractViewState"
+      },
       "StoreContractStoreCandidate": {
         "$ref": "./components/contract/contract.schemas.yaml#/components/schemas/StoreContractStoreCandidate"
+      },
+      "StoreContractSelectedTenant": {
+        "$ref": "./components/contract/contract.schemas.yaml#/components/schemas/StoreContractSelectedTenant"
       },
       "StoreContractItem": {
         "$ref": "./components/contract/contract.schemas.yaml#/components/schemas/StoreContractItem"
@@ -576,6 +602,36 @@
       "PlatformAdminStatus": {
         "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformAdminStatus"
       },
+      "PlatformLoginOtpSendRequest": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformLoginOtpSendRequest"
+      },
+      "PlatformLoginOtpVerifyRequest": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformLoginOtpVerifyRequest"
+      },
+      "PlatformOtpDispatchResponse": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformOtpDispatchResponse"
+      },
+      "PlatformPasswordRecoveryStartRequest": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryStartRequest"
+      },
+      "PlatformPasswordRecoveryStartResponse": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryStartResponse"
+      },
+      "PlatformPasswordRecoveryOtpSendRequest": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryOtpSendRequest"
+      },
+      "PlatformPasswordRecoveryOtpVerifyRequest": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryOtpVerifyRequest"
+      },
+      "PlatformPasswordRecoveryVerification": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryVerification"
+      },
+      "PlatformPasswordRecoveryCompleteRequest": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryCompleteRequest"
+      },
+      "PlatformPasswordRecoveryCompletion": {
+        "$ref": "./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryCompletion"
+      },
       "OrganizationHierarchySnapshot": {
         "$ref": "./components/organization/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchySnapshot"
       },
@@ -593,6 +649,12 @@
       },
       "OrganizationProjectCreateRequest": {
         "$ref": "./components/organization/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationProjectCreateRequest"
+      },
+      "OrganizationHierarchyTree": {
+        "$ref": "./components/organization/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchyTree"
+      },
+      "OrganizationHierarchyTreeNode": {
+        "$ref": "./components/organization/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchyTreeNode"
       },
       "OrganizationOverviewCategory": {
         "$ref": "./components/organization/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewCategory"
@@ -621,6 +683,18 @@
       "OrganizationStore": {
         "$ref": "./components/organization/store.schemas.yaml#/components/schemas/OrganizationStore"
       },
+      "OrganizationCandidatePage": {
+        "$ref": "./components/organization/store.schemas.yaml#/components/schemas/OrganizationCandidatePage"
+      },
+      "OrganizationCandidatePageMetadata": {
+        "$ref": "./components/organization/store.schemas.yaml#/components/schemas/OrganizationCandidatePageMetadata"
+      },
+      "OrganizationCandidatePageItemsItem": {
+        "$ref": "./components/organization/store.schemas.yaml#/components/schemas/OrganizationCandidatePageItemsItem"
+      },
+      "OrganizationCandidateQuerySubjectType": {
+        "$ref": "./components/organization/store.schemas.yaml#/components/schemas/OrganizationCandidateQuerySubjectType"
+      },
       "OrganizationStoreCandidatePage": {
         "$ref": "./components/organization/store.schemas.yaml#/components/schemas/OrganizationStoreCandidatePage"
       },
@@ -648,27 +722,23 @@
       "PlatformAssetStagingResult": {
         "$ref": "./components/platform-asset/asset.schemas.yaml#/components/schemas/PlatformAssetStagingResult"
       },
-      "PlatformLoginOtpSendRequest": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformLoginOtpSendRequest"},
-      "PlatformLoginOtpVerifyRequest": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformLoginOtpVerifyRequest"},
-      "PlatformOtpDispatchResponse": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformOtpDispatchResponse"},
-      "PlatformPasswordRecoveryStartRequest": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryStartRequest"},
-      "PlatformPasswordRecoveryStartResponse": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryStartResponse"},
-      "PlatformPasswordRecoveryOtpSendRequest": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryOtpSendRequest"},
-      "PlatformPasswordRecoveryOtpVerifyRequest": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryOtpVerifyRequest"},
-      "PlatformPasswordRecoveryVerification": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryVerification"},
-      "PlatformPasswordRecoveryCompleteRequest": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryCompleteRequest"},
-      "PlatformPasswordRecoveryCompletion": {"$ref":"./components/platform-iam/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordRecoveryCompletion"},
       "PlatformAssetUsage": {
         "$ref": "./components/platform-asset/asset.schemas.yaml#/components/schemas/PlatformAssetUsage"
-      },
-      "PublicAssetReference": {
-        "$ref": "./components/platform-asset/asset.schemas.yaml#/components/schemas/PublicAssetReference"
       },
       "PlatformAssetStageMultipart": {
         "$ref": "./components/platform-asset/asset.schemas.yaml#/components/schemas/PlatformAssetStageMultipart"
       },
       "BinaryAssetContent": {
         "$ref": "./components/platform-asset/asset.schemas.yaml#/components/schemas/BinaryAssetContent"
+      },
+      "PublicAssetReference": {
+        "$ref": "./components/platform-asset/asset.schemas.yaml#/components/schemas/PublicAssetReference"
+      },
+      "PlatformWorkspaceInvitation": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitation"
+      },
+      "PlatformWorkspaceInvitationPage": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PlatformWorkspaceInvitationPage"
       },
       "PublicInvitationAcceptIntent": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationAcceptIntent"
@@ -697,22 +767,11 @@
       "PublicInvitationView": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/PublicInvitationView"
       },
-      "OperationsPasswordRecoveryStartRequest": {"$ref":"./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryStartRequest"},
-      "OperationsPasswordRecoveryStartResponse": {"$ref":"./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryStartResponse"},
-      "OperationsPasswordRecoveryOtpSendRequest": {"$ref":"./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpSendRequest"},
-      "OperationsPasswordRecoveryOtpSendResponse": {"$ref":"./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpSendResponse"},
-      "OperationsPasswordRecoveryOtpVerifyRequest": {"$ref":"./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpVerifyRequest"},
-      "OperationsPasswordRecoveryVerification": {"$ref":"./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryVerification"},
-      "OperationsPasswordRecoveryCompleteRequest": {"$ref":"./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryCompleteRequest"},
-      "OperationsPasswordRecoveryCompletion": {"$ref":"./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryCompletion"},
       "WorkspaceAccount": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceAccount"
       },
       "WorkspaceAccountPage": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceAccountPage"
-      },
-      "WorkspacePlatformAccountSortKey": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePlatformAccountSortKey"
       },
       "WorkspaceAccountStatus": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceAccountStatus"
@@ -750,14 +809,17 @@
       "WorkspaceInvitationStatus": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceInvitationStatus"
       },
+      "WorkspacePlatformAccountSortKey": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePlatformAccountSortKey"
+      },
+      "WorkspaceUserSortKey": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUserSortKey"
+      },
       "WorkspaceUser": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUser"
       },
       "WorkspaceUserPage": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUserPage"
-      },
-      "WorkspaceUserSortKey": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUserSortKey"
       },
       "WorkspaceUserRevokeRequest": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceUserRevokeRequest"
@@ -780,24 +842,6 @@
       "WorkspaceOtpVerifyRequest": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceOtpVerifyRequest"
       },
-      "WorkspacePasswordResetCompleteRequest": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetCompleteRequest"
-      },
-      "WorkspacePasswordResetCompletion": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetCompletion"
-      },
-      "WorkspacePasswordResetOtpSendRequest": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpSendRequest"
-      },
-      "WorkspacePasswordResetOtpSendResponse": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpSendResponse"
-      },
-      "WorkspacePasswordResetOtpVerifyRequest": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpVerifyRequest"
-      },
-      "WorkspacePasswordResetReadiness": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspacePasswordResetReadiness"
-      },
       "WorkspaceRole": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRole"
       },
@@ -806,9 +850,6 @@
       },
       "WorkspaceRolePage": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRolePage"
-      },
-      "WorkspaceRoleSortKey": {
-        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRoleSortKey"
       },
       "WorkspaceRoleStatusTransitionRequest": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRoleStatusTransitionRequest"
@@ -821,6 +862,33 @@
       },
       "WorkspaceAssignmentRevokeResult": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceAssignmentRevokeResult"
+      },
+      "OperationsPasswordRecoveryStartRequest": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryStartRequest"
+      },
+      "OperationsPasswordRecoveryStartResponse": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryStartResponse"
+      },
+      "OperationsPasswordRecoveryOtpSendRequest": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpSendRequest"
+      },
+      "OperationsPasswordRecoveryOtpSendResponse": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpSendResponse"
+      },
+      "OperationsPasswordRecoveryOtpVerifyRequest": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryOtpVerifyRequest"
+      },
+      "OperationsPasswordRecoveryVerification": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryVerification"
+      },
+      "OperationsPasswordRecoveryCompleteRequest": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryCompleteRequest"
+      },
+      "OperationsPasswordRecoveryCompletion": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/OperationsPasswordRecoveryCompletion"
+      },
+      "WorkspaceRoleSortKey": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRoleSortKey"
       },
       "WorkspaceRoleStatus": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRoleStatus"

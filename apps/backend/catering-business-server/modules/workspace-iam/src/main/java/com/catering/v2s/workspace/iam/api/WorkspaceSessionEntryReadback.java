@@ -19,10 +19,10 @@ public record WorkspaceSessionEntryReadback(
     Set<String> actionGrants,
     List<VisibleDataNodeCandidate> dataNodeCandidates,
     RoleAssignmentCandidate selected,
-    VisibleDataNodeCandidate selectedDataNode
+    ScopeContext scopeContext
 ) {
     public enum Mode { DIRECT, SELECT, EMPTY }
-    public enum Outcome { HOME, SELECT_IDENTITY, SELECT_SCOPE, EMPTY_WORKBENCH }
+    public enum Outcome { HOME, SELECT_IDENTITY, SELECT_SCOPE, EMPTY_WORKBENCH, PASSWORD_CHANGE_REQUIRED }
 
     public record RoleAssignmentCandidate(
         UUID roleAssignmentId,
@@ -51,9 +51,31 @@ public record WorkspaceSessionEntryReadback(
         String dataNodeType,
         UUID dataNodeId,
         String dataNodeName,
+        String dataNodeCode,
         List<String> ancestorPath,
         UUID regionId,
         UUID projectId,
-        UUID storeId
+        UUID storeId,
+        UUID headCompanyId
     ) { }
+
+    /** Persisted owner-confirmed selections; the selector never supplies authorization truth. */
+    public record ScopeContext(
+        VisibleDataNodeCandidate region,
+        VisibleDataNodeCandidate project,
+        VisibleDataNodeCandidate store,
+        VisibleDataNodeCandidate headCompany
+    ) {
+        public static ScopeContext empty() { return new ScopeContext(null, null, null, null); }
+
+        public VisibleDataNodeCandidate selectionFor(String requiredDataNodeType) {
+            return switch (requiredDataNodeType) {
+                case "REGION" -> region;
+                case "PROJECT" -> project;
+                case "STORE" -> store;
+                case "HEAD_COMPANY" -> headCompany;
+                default -> null;
+            };
+        }
+    }
 }

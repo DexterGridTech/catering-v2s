@@ -10,6 +10,15 @@ public interface OrganizationTaskPathLookup {
     TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId);
 
     /**
+     * Resolves the persisted target facts needed solely to authorize an owner status transition.
+     * This may include disabled target and ancestry facts so an authorized actor can re-enable
+     * them, but it must not be used for ordinary authority, session, candidate, or presentation reads.
+     */
+    default TaskPath requireStatusTransitionTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+        throw new UnsupportedOperationException("status-transition task paths are not provided by this test double");
+    }
+
+    /**
      * Resolves display and ancestry facts for a bounded set of persisted task targets.
      * This is a display/read API only: it neither grants authority nor replaces
      * {@link #isScopeAllowed(UUID, String, String, UUID, TaskPath)}.

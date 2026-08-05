@@ -57,8 +57,7 @@ public final class PlatformWorkspaceInvitationController {
         @RequestParam(required = false) String mobile,
         @RequestParam(required = false) ServiceNodeType targetOrganizationType,
         @RequestParam(required = false) UUID targetOrganizationRef,
-        @RequestParam(required = false) String organizationQuery,
-        @RequestParam(required = false) String roleQuery,
+        @RequestParam(required = false) UUID roleId,
         @RequestParam(required = false) WorkspaceInvitationStatus status,
         @RequestParam(required = false) Long expiresFrom,
         @RequestParam(required = false) Long expiresTo,
@@ -70,7 +69,7 @@ public final class PlatformWorkspaceInvitationController {
         var workspace = workspace(request, groupWorkspaceKey);
         return PlatformWorkspaceInvitationPageWireMapper.page(invitations.managementPage(
             workspace.workspaceUuid(), groupWorkspaceKey,
-            new WorkspaceInvitationService.ManagementInvitationPageRequest(mobile, targetOrganizationType == null ? null : targetOrganizationType.name(), targetOrganizationRef, organizationQuery, roleQuery, status == null ? null : status.name(), expiresFrom, expiresTo, sort == null ? WorkspaceInvitationSortKey.CREATED_AT.name() : sort.name(), direction == null ? SortDirection.DESC.name() : direction.name(), page, pageSize)
+            new WorkspaceInvitationService.ManagementInvitationPageRequest(mobile, targetOrganizationType == null ? null : targetOrganizationType.name(), targetOrganizationRef, roleId, status == null ? null : status.name(), expiresFrom, expiresTo, sort == null ? WorkspaceInvitationSortKey.CREATED_AT.name() : sort.name(), direction == null ? SortDirection.DESC.name() : direction.name(), page, pageSize)
         ));
     }
 
@@ -80,13 +79,14 @@ public final class PlatformWorkspaceInvitationController {
         @PathVariable String groupWorkspaceKey,
         @RequestParam ServiceNodeType targetOrganizationType,
         @RequestParam String subjectType,
+        @RequestParam String candidateUsage,
         @RequestParam(required = false) String queryText,
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer pageSize,
         @RequestParam(required = false) UUID selectedOrganizationRef
     ) {
         var workspace = workspace(request, groupWorkspaceKey);
-        return WorkspaceInvitationCandidatePageWireMapper.page(users.candidatesForPlatform(workspace.workspaceUuid(), groupWorkspaceKey, targetOrganizationType.name(), subjectType, queryText, page, pageSize, selectedOrganizationRef));
+        return WorkspaceInvitationCandidatePageWireMapper.page(users.candidates(WorkspaceUserService.CandidateQuery.forPlatform(workspace.workspaceUuid(), groupWorkspaceKey, targetOrganizationType.name(), subjectType, candidateUsage, queryText, page, pageSize, selectedOrganizationRef)));
     }
 
     @GetMapping("/invitations/{invitationId}")
@@ -107,7 +107,7 @@ public final class PlatformWorkspaceInvitationController {
         validKey(idempotencyKey);
         if (body == null || body.targetOrganizationType() == null || body.targetOrganizationRef() == null || body.roleIds() == null || body.roleIds().isEmpty()) throw new InvalidEdgeRequestException("invitation target and role ids are required");
         UUID targetId = uuid(body.targetOrganizationRef());
-        List<WorkspaceInvitationService.AssignmentIntent> intents = body.roleIds().stream().map(PlatformWorkspaceInvitationController::uuid).map(roleId -> new WorkspaceInvitationService.AssignmentIntent(roleId, body.targetOrganizationType().name(), targetId)).toList();
+        List<WorkspaceInvitationService.AssignmentIntent> intents = body.roleIds().stream().map(PlatformWorkspaceInvitationController::uuid).map(roleId -> new WorkspaceInvitationService.AssignmentIntent(roleId, body.targetOrganizationType(), targetId)).toList();
         return ResponseEntity.status(HttpStatus.CREATED).body(PlatformWorkspaceInvitationWireMapper.wire(invitations.managementView(invitations.create(workspace.workspaceUuid(), groupWorkspaceKey, body.mobile(), intents, idempotencyKey, sessions.actor(session)))));
     }
 

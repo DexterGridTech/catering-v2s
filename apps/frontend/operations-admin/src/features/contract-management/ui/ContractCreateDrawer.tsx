@@ -17,16 +17,17 @@ function extensionFields(definition?: ExtensionDefinition) {
   });
 }
 
-export function ContractCreateDrawer({open, queryContext, projectId, onClose, onCreated}: {open: boolean; queryContext: OperationsPageProps['queryContext']; projectId?: string; onClose: () => void; onCreated: (contract: StoreContract) => void}) {
+export function ContractCreateDrawer({open, queryContext, onClose, onCreated}: {open: boolean; queryContext: OperationsPageProps['queryContext']; onClose: () => void; onCreated: (contract: StoreContract) => void}) {
   const [form] = Form.useForm<Values>();
   const [problem, setProblem] = useState<string>();
   const lifecycle = useDrawerFormLifecycle({open, onOpenChange: (next) => { if (!next) onClose(); }, dirtyMessage: '已填写的合同资料不会保存。', idempotencyKey: true, diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.createOperationsContract});
   const storeId = Form.useWatch('storeId', form);
   useOverlayLock(open);
-  const candidates = useContractStoreCandidates({open, queryContext, projectId, selectedStoreId: storeId});
+  const projectId = queryContext.scopeRef;
+  const candidates = useContractStoreCandidates({open: open && Boolean(projectId), queryContext, selectedStoreId: storeId});
   const setStoreSearch = candidates.setStoreSearch;
-  const definitionRequest = useMemo(() => operationsAdminRtkRequest.getOperationsContractExtensionDefinition({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {query: {expectedContextVersion: queryContext.expectedContextVersion, projectId: projectId ?? ''}}), [projectId, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey]);
-  const definition = operationsRtk.useGetOperationsContractExtensionDefinitionQuery(definitionRequest, {skip: !open || !projectId});
+  const definitionRequest = useMemo(() => operationsAdminRtkRequest.getOperationsContractExtensionDefinition({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {query: {expectedContextVersion: queryContext.expectedContextVersion}}), [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey]);
+  const definition = operationsRtk.useGetOperationsContractExtensionDefinitionQuery(definitionRequest, {skip: !open});
 
   useEffect(() => { if (open) { form.resetFields(); form.setFieldsValue({extensionValues: {}, items: [{code: '', name: ''}]}); lifecycle.reset(); setProblem(undefined); setStoreSearch(''); } }, [form, lifecycle, open, setStoreSearch]);
 
@@ -34,18 +35,18 @@ export function ContractCreateDrawer({open, queryContext, projectId, onClose, on
     if (!projectId || !value.storeId || lifecycle.submitting) return;
     lifecycle.setSubmitting(true); setProblem(undefined);
     try {
-      const contract = await operationsClient.createOperationsContract({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {body: {projectId, storeId: value.storeId, phaseName: value.phaseName?.trim() ?? '', contractNo: value.contractNo.trim(), effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, note: value.note?.trim() || null, items: value.items.map((item) => ({code: item.code.trim(), name: item.name.trim()})), extensionValues: value.extensionValues ?? {}}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
+      const contract = await operationsClient.createOperationsContract({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {body: {storeId: value.storeId, phaseName: value.phaseName?.trim() ?? '', contractNo: value.contractNo.trim(), effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, note: value.note?.trim() || null, items: value.items.map((item) => ({code: item.code.trim(), name: item.name.trim()})), extensionValues: value.extensionValues ?? {}}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
       lifecycle.setDirty(false); onCreated(contract); lifecycle.closeAfterSuccess();
     } catch { setProblem('合同创建未完成，请检查后重试。'); } finally { lifecycle.setSubmitting(false); }
   };
   const selectedTenant = candidates.data?.selectedStoreTenant;
   const ready = Boolean(projectId && definition.data && candidates.data && !candidates.error) && !definition.isFetching && !candidates.isFetching;
-  return <Drawer title="新建合同" open={open} size={620} destroyOnHidden keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-contract-create-drawer')} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('operations-contract-create-cancel')}>取消</Button><Button type="primary" loading={lifecycle.submitting} disabled={!ready} onClick={() => form.submit()} {...testId('operations-contract-create-submit')}>创建</Button></Space>}>
+  return <Drawer title="新建合同" open={open} size={620} destroyOnHidden maskClosable keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-contract-create-drawer')} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('operations-contract-create-cancel')}>取消</Button><Button type="primary" loading={lifecycle.submitting} disabled={!ready} onClick={() => form.submit()} {...testId('operations-contract-create-submit')}>创建</Button></Space>}>
     {problem && <Alert type="error" showIcon title="合同创建未完成" description={problem} style={{marginBottom: 16}} {...testId('operations-contract-create-problem')}/>}
     {candidates.error && <Alert type="error" showIcon title="门店候选读取失败" description="请关闭后重新打开，或稍后重试；候选未确认前不能创建合同。" {...testId('operations-contract-create-candidate-error')}/>}
     <Form form={form} layout="vertical" disabled={lifecycle.submitting || !ready} onFinish={(value) => void submit(value)} onValuesChange={(changed) => { lifecycle.setDirty(true); lifecycle.markBusinessIntentChanged(); if ('storeId' in changed) form.setFieldsValue({phaseName: undefined}); }}>
       <Form.Item label="所属项目"><Typography.Text {...testId('operations-contract-create-project')}>{candidates.data?.project ? formatNameCode(candidates.data.project.name, candidates.data.project.code) : '—'}</Typography.Text></Form.Item>
-      <Form.Item name="storeId" label="门店" rules={[{required: true, message: '请选择门店'}]}><Select showSearch={{filterOption: false, onSearch: candidates.setStoreSearch}} onPopupScroll={candidates.onPopupScroll} loading={candidates.isFetching} options={candidates.stores.map((store) => ({value: store.id, label: formatNameCode(store.name, store.code)}))} {...testId('operations-contract-create-store')}/></Form.Item>
+      <Form.Item name="storeId" label="门店" rules={[{required: true, message: '请选择门店'}]}><Select showSearch filterOption={false} onSearch={candidates.setStoreSearch} onPopupScroll={candidates.onPopupScroll} loading={candidates.isFetching} options={candidates.stores.map((store) => ({value: store.id, label: formatNameCode(store.name, store.code)}))} {...testId('operations-contract-create-store')}/></Form.Item>
       <Form.Item label="经营租户"><Typography.Text type={selectedTenant ? undefined : 'secondary'} {...testId('operations-contract-create-tenant')}>{selectedTenant ? formatNameCode(selectedTenant.name, selectedTenant.code) : '随门店确定'}</Typography.Text></Form.Item>
       <Form.Item name="phaseName" label="项目分期" rules={[{required: true, whitespace: true, message: '请输入项目分期'}]}><Select options={(candidates.data?.phases ?? []).map((phaseName) => ({value: phaseName, label: phaseName}))} {...testId('operations-contract-create-phase')}/></Form.Item>
       <Form.Item name="contractNo" label="合同编号" rules={[{required: true, whitespace: true, message: '请输入合同编号'}]}><Input maxLength={120} {...testId('operations-contract-create-number')}/></Form.Item>

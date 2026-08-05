@@ -17,6 +17,7 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
+import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -32,12 +33,13 @@ class OperationsHeadCompanyAuthorizationControllerTest {
         Fixture fixture = fixture();
         UUID headCompanyId = UUID.randomUUID();
         UUID brandId = UUID.randomUUID();
+        stubGrant(fixture, "REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId);
 
         var response = fixture.controller().add(fixture.request(), WORKSPACE_KEY, headCompanyId, IDEMPOTENCY_KEY, new HeadCompanyBrandAuthorizationAddRequest(brandId.toString()));
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         assertEquals(null, response.getBody());
-        verify(fixture.entities()).addHeadCompanyBrandAuthorization(fixture.workspaceId(), WORKSPACE_KEY, headCompanyId, brandId, IDEMPOTENCY_KEY, fixture.actor());
+        verify(fixture.entities()).addHeadCompanyBrandAuthorization(fixture.workspaceId(), WORKSPACE_KEY, headCompanyId, brandId, IDEMPOTENCY_KEY, fixture.actor(), grant(fixture, "REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId));
         verifyNoMoreInteractions(fixture.entities());
     }
 
@@ -46,12 +48,13 @@ class OperationsHeadCompanyAuthorizationControllerTest {
         Fixture fixture = fixture();
         UUID headCompanyId = UUID.randomUUID();
         UUID brandId = UUID.randomUUID();
+        stubGrant(fixture, "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId);
 
         var response = fixture.controller().remove(fixture.request(), WORKSPACE_KEY, headCompanyId, brandId.toString(), IDEMPOTENCY_KEY);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         assertEquals(null, response.getBody());
-        verify(fixture.entities()).removeHeadCompanyBrandAuthorization(fixture.workspaceId(), WORKSPACE_KEY, headCompanyId, brandId, IDEMPOTENCY_KEY, fixture.actor());
+        verify(fixture.entities()).removeHeadCompanyBrandAuthorization(fixture.workspaceId(), WORKSPACE_KEY, headCompanyId, brandId, IDEMPOTENCY_KEY, fixture.actor(), grant(fixture, "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId));
         verifyNoMoreInteractions(fixture.entities());
     }
 
@@ -67,14 +70,24 @@ class OperationsHeadCompanyAuthorizationControllerTest {
     private static Fixture fixture() {
         UUID workspaceId = UUID.randomUUID();
         UUID accountId = UUID.randomUUID();
-        WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, accountId, UUID.randomUUID(), UUID.randomUUID(), 1L, 1L, Set.of(), Set.of(), "Operations tester");
+        WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, accountId, UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 1L, Set.of(), Set.of(), "Operations tester");
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(session);
         BusinessEntityService entities = mock(BusinessEntityService.class);
-        OperationsHeadCompanyAuthorizationController controller = new OperationsHeadCompanyAuthorizationController(new OperationsSessionResolver(authentication), entities);
+        WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);
+        OperationsHeadCompanyAuthorizationController controller = new OperationsHeadCompanyAuthorizationController(new OperationsSessionResolver(authentication), entities, capabilityScopes);
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
-        return new Fixture(controller, entities, request, workspaceId, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"));
+        return new Fixture(controller, entities, capabilityScopes, request, session, workspaceId, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"));
     }
 
-    private record Fixture(OperationsHeadCompanyAuthorizationController controller, BusinessEntityService entities, EdgeRequestContext request, UUID workspaceId, AuditActor actor) { }
+    private static void stubGrant(Fixture fixture, String requirementId, UUID headCompanyId) {
+        when(fixture.capabilityScopes().resolve(fixture.session(), requirementId, new WorkspaceCapabilityScopeResolver.ServerResolvedResource("HEAD_COMPANY", headCompanyId)))
+            .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(WorkspaceCapabilityScopeResolver.Decision.ALLOW, "BC-ORG-HEAD-COMPANY-BRAND", new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(fixture.workspaceId(), WORKSPACE_KEY, "HEAD_COMPANY", headCompanyId, "HEAD_COMPANY", headCompanyId, java.util.List.of(headCompanyId))));
+    }
+
+    private static com.catering.v2s.organization.api.OperationsOwnerScopeGrant grant(Fixture fixture, String requirementId, UUID headCompanyId) {
+        return new com.catering.v2s.organization.api.OperationsOwnerScopeGrant(fixture.workspaceId(), WORKSPACE_KEY, requirementId, "BC-ORG-HEAD-COMPANY-BRAND", "HEAD_COMPANY", headCompanyId, "HEAD_COMPANY", headCompanyId, java.util.List.of(headCompanyId));
+    }
+
+    private record Fixture(OperationsHeadCompanyAuthorizationController controller, BusinessEntityService entities, WorkspaceCapabilityScopeResolver capabilityScopes, EdgeRequestContext request, WorkspaceSessionReadback session, UUID workspaceId, AuditActor actor) { }
 }

@@ -208,6 +208,103 @@
           }
         }
       },
+      "OrganizationCandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metadata",
+          "items"
+        ],
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/OrganizationCandidatePageMetadata"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationCandidatePageItemsItem"
+            }
+          }
+        }
+      },
+      "OrganizationCandidatePageMetadata": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subjectType",
+          "queryText",
+          "page",
+          "pageSize",
+          "total",
+          "selectedId"
+        ],
+        "properties": {
+          "subjectType": {
+            "$ref": "#/components/schemas/OrganizationCandidateQuerySubjectType"
+          },
+          "queryText": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "selectedId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        }
+      },
+      "OrganizationCandidatePageItemsItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        }
+      },
+      "OrganizationCandidateQuerySubjectType": {
+        "type": "string",
+        "enum": [
+          "PROJECT",
+          "BRAND",
+          "TENANT",
+          "HEAD_COMPANY",
+          "STORE"
+        ]
+      },
       "OrganizationStoreCandidatePage": {
         "type": "object",
         "additionalProperties": false,
@@ -235,7 +332,14 @@
             ],
             "properties": {
               "nodeType": {
-                "$ref": "../common/enum.schemas.yaml#/components/schemas/ServiceNodeType"
+                "type": "string",
+                "enum": [
+                  "GROUP",
+                  "REGION",
+                  "PROJECT",
+                  "HEAD_COMPANY",
+                  "STORE"
+                ]
               },
               "nodeRef": {
                 "type": "string",
@@ -387,68 +491,16 @@
           }
         }
       },
-      "OrganizationCandidateQuerySubjectType": {
-        "type": "string",
-        "enum": [
-          "PROJECT",
-          "BRAND",
-          "TENANT",
-          "HEAD_COMPANY",
-          "STORE"
-        ]
-      },
-      "OrganizationCandidatePage": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "metadata",
-          "items"
-        ],
-        "properties": {
-          "metadata": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["subjectType", "queryText", "page", "pageSize", "total", "selectedId"],
-            "properties": {
-              "subjectType": {"$ref": "#/components/schemas/OrganizationCandidateQuerySubjectType"},
-              "queryText": {"type": "string", "nullable": true, "maxLength": 120},
-              "page": {"type": "integer", "format": "int32", "minimum": 1},
-              "pageSize": {"type": "integer", "format": "int32", "minimum": 1, "maximum": 100},
-              "total": {"type": "integer", "format": "int64", "minimum": 0},
-              "selectedId": {"type": "string", "nullable": true, "maxLength": 64}
-            }
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["id", "code", "name"],
-              "properties": {
-                "id": {"type": "string", "minLength": 1, "maxLength": 64},
-                "code": {"type": "string", "minLength": 1, "maxLength": 64},
-                "name": {"type": "string", "minLength": 1, "maxLength": 120}
-              }
-            }
-          }
-        }
-      },
       "OrganizationStoreCreateRequest": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "projectId",
           "brandId",
           "tenantId",
           "code",
           "name"
         ],
         "properties": {
-          "projectId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
           "brandId": {
             "type": "string",
             "minLength": 1,
@@ -521,7 +573,14 @@
                 ],
                 "properties": {
                   "nodeType": {
-                    "$ref": "../common/enum.schemas.yaml#/components/schemas/ServiceNodeType"
+                    "type": "string",
+                    "enum": [
+                      "GROUP",
+                      "REGION",
+                      "PROJECT",
+                      "HEAD_COMPANY",
+                      "STORE"
+                    ]
                   },
                   "nodeRef": {
                     "type": "string",
@@ -611,6 +670,7 @@
         "required": [
           "name",
           "extensionValues",
+          "extensionRuleRevision",
           "expectedVersion"
         ],
         "properties": {
@@ -632,6 +692,11 @@
           "extensionValues": {
             "type": "object",
             "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "expectedVersion": {
             "type": "integer",

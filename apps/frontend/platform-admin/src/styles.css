@@ -57,6 +57,53 @@ body {
   padding: 4px;
 }
 
+/* The hierarchy is the only page-level master/detail surface: both panels own the
+ * shell's remaining height, while each panel keeps its own scroll boundary. */
+.platform-organization-hierarchy-page {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.platform-organization-hierarchy-layout {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(340px, 1.35fr);
+  gap: 16px;
+}
+
+.platform-organization-hierarchy-panel {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.platform-organization-hierarchy-panel > .ant-card-body {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.platform-organization-hierarchy-tree-panel > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.platform-organization-hierarchy-tree-scroll,
+.platform-organization-hierarchy-detail-panel > .ant-card-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.platform-organization-hierarchy-tree-scroll {
+  padding-right: 4px;
+}
+
 .brand {
   display: flex;
   height: 64px;
@@ -66,17 +113,6 @@ body {
   font-size: 18px;
   letter-spacing: 0.02em;
   font-weight: 700;
-}
-
-.platform-workspace-selector {
-  flex: 0 0 auto;
-  margin-top: auto;
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--platform-admin-color-border);
-}
-
-.platform-workspace-selector-label {
-  color: var(--platform-admin-color-text);
 }
 
 .auth-page {
@@ -126,7 +162,7 @@ body:has(.auth-login-page) .ant-pro-form-login-page-container {
   align-items: stretch;
 }
 
-.workspace-role-permission-grid .ant-form-item,
+.workspace-role-permission-grid .workspace-role-permission-field,
 .workspace-role-permission-grid > section {
   min-width: 0;
   min-height: 0;
@@ -150,4 +186,40 @@ body:has(.auth-login-page) .ant-pro-form-login-page-container {
 
 .workspace-role-permission-grid-readonly {
   margin-top: 16px;
+}
+
+/* Role detail/edit only: let their two permission trees use the Drawer body's remaining height. */
+.workspace-role-permission-drawer-content,
+.workspace-role-permission-drawer-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.workspace-role-permission-drawer-content {
+  height: 100%;
+}
+
+.workspace-role-permission-drawer-form,
+.workspace-role-permission-drawer-form > .workspace-role-permission-grid,
+.workspace-role-permission-drawer-content > .workspace-role-permission-grid {
+  flex: 1 1 auto;
+}
+
+.workspace-role-permission-drawer-form > .workspace-role-permission-grid,
+.workspace-role-permission-drawer-content > .workspace-role-permission-grid {
+  min-height: 0;
+}
+
+.workspace-role-permission-drawer-form > .workspace-role-permission-grid > section,
+.workspace-role-permission-drawer-content > .workspace-role-permission-grid > section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.workspace-role-permission-drawer-content .workspace-role-permission-tree,
+.workspace-role-permission-drawer-form .workspace-role-permission-tree {
+  flex: 1 1 auto;
+  max-height: none;
 }

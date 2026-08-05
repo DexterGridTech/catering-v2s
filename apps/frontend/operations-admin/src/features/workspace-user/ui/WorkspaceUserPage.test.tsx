@@ -46,4 +46,22 @@ describe('workspace user focused IA contract', () => {
     expect(page).toMatch(/sorter\.columnKey === 'displayName' \? 'DISPLAY_NAME' : 'LOGIN_NAME'/);
     expect(page).not.toMatch(/title: '业务角色'[^}]*sorter:\s*true/);
   });
+
+  it('maps the display-name form field to the canonical owner userName predicate', () => {
+    expect(page).toMatch(/onSubmit=\{\(values\) => submitFilters\(\{[\s\S]*userName: typeof values\.displayName === 'string' \? values\.displayName : undefined/);
+    expect(page).toMatch(/mobile: typeof values\.mobile === 'string' \? values\.mobile : undefined/);
+    expect(page).toMatch(/roleId: typeof values\.roleId === 'string' \? values\.roleId : undefined/);
+  });
+
+  it('keeps the mobile search result privacy-safe and visible as a masked scalar fact', () => {
+    expect(page).toMatch(/dataIndex: 'mobile', hideInTable: true/);
+    expect(page).toMatch(/dataIndex: 'maskedMobile', search: false/);
+  });
+
+  it('uses the owner-confirmed selected node for every non-group user page, including head-company', () => {
+    expect(page).toMatch(/const requestScopeRef = targetType === 'GROUP' \? undefined : queryContext\.scopeRef/);
+    expect(page).toMatch(/const scopeRequired = targetType !== 'GROUP' && !queryContext\.scopeRef/);
+    expect(page).toMatch(/targetType !== 'HEAD_COMPANY' \|\| !queryContext\.scopeRef/);
+    expect(page).not.toMatch(/scopeRequired \? '请选择可查看范围。'/);
+  });
 });

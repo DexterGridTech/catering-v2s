@@ -26,13 +26,48 @@ public interface OrganizationVisibilityLookup {
         throw new UnsupportedOperationException("visible data-node candidate enumeration is unavailable");
     }
 
+    /**
+     * Describes the owner-persisted selector context without widening the
+     * candidate set.  In particular, a STORE assignment can display its
+     * fixed region and project even though neither is selectable by that role.
+     */
+    default ScopeContext describeScopeContext(
+        UUID workspaceUuid,
+        String groupWorkspaceKey,
+        UUID regionId,
+        UUID projectId,
+        UUID storeId,
+        UUID headCompanyId
+    ) {
+        List<VisibleDataNodeCandidate> candidates = listVisibleDataNodeCandidates(workspaceUuid, groupWorkspaceKey, "GROUP", null);
+        return new ScopeContext(
+            find(candidates, "REGION", regionId),
+            find(candidates, "PROJECT", projectId),
+            find(candidates, "STORE", storeId),
+            find(candidates, "HEAD_COMPANY", headCompanyId)
+        );
+    }
+
+    private static VisibleDataNodeCandidate find(List<VisibleDataNodeCandidate> candidates, String type, UUID id) {
+        return id == null ? null : candidates.stream().filter(value -> type.equals(value.dataNodeType()) && id.equals(value.dataNodeId())).findFirst().orElse(null);
+    }
+
+    record ScopeContext(
+        VisibleDataNodeCandidate region,
+        VisibleDataNodeCandidate project,
+        VisibleDataNodeCandidate store,
+        VisibleDataNodeCandidate headCompany
+    ) { }
+
     record VisibleDataNodeCandidate(
         String dataNodeType,
         UUID dataNodeId,
         String dataNodeName,
+        String dataNodeCode,
         List<String> ancestorPath,
         UUID regionId,
         UUID projectId,
-        UUID storeId
+        UUID storeId,
+        UUID headCompanyId
     ) { }
 }

@@ -5,7 +5,7 @@ public record WorkspaceInvitation(
     String id,
     String groupWorkspaceKey,
     String maskedMobile,
-    ServiceNodeType targetOrganizationType,
+    String targetOrganizationType,
     String targetOrganizationPath,
     java.util.List<String> roleNames,
     WorkspaceInvitationStatus status,

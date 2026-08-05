@@ -6,9 +6,9 @@ public record GroupWorkspacePageItemsItemCommercialGroupRoot(
     String groupWorkspaceKey,
     String groupCode,
     String groupName,
-    tools.jackson.databind.JsonNode extensionValues,
-    Long extensionRuleRevision,
     Long version,
     Long createdAt,
-    Long updatedAt
+    Long updatedAt,
+    tools.jackson.databind.JsonNode extensionValues,
+    Long extensionRuleRevision
 ) {}

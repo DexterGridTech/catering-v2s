@@ -5,6 +5,7 @@ import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
@@ -121,6 +122,15 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         });
     }
 
+    /** Operations command path: bind the server-resolved commercial-group target before receipt replay. */
+    @Transactional
+    public OrganizationNodeReadback createRegion(UUID workspaceUuid, String groupWorkspaceKey, String code, String name, String notes, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireCommercialGroup(workspaceUuid, groupWorkspaceKey, ownerScopeGrant);
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("createRegion", workspaceUuid, groupWorkspaceKey, code, name, notes, extensionValues), () ->
+            create(workspaceUuid, groupWorkspaceKey, "REGION", null, code, name, notes, List.of(), extensionValues, actor)
+        );
+    }
+
     @Transactional
     public OrganizationNodeReadback createProject(UUID workspaceUuid, String groupWorkspaceKey, UUID regionId, String code, String name, String notes, List<String> phaseNames, String idempotencyKey) {
         return receipts.execute(workspaceUuid, idempotencyKey, canonical("createProject", workspaceUuid, groupWorkspaceKey, regionId, code, name, notes, phaseNames), () -> create(workspaceUuid, groupWorkspaceKey, "PROJECT", regionId, code, name, notes, phaseNames));
@@ -136,6 +146,13 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         return receipts.execute(workspaceUuid, idempotencyKey, canonical("createProject", workspaceUuid, groupWorkspaceKey, regionId, code, name, notes, phaseNames, extensionValues), () -> create(workspaceUuid, groupWorkspaceKey, "PROJECT", regionId, code, name, notes, phaseNames, extensionValues, actor));
     }
 
+    /** Operations command path: bind the parent-region target before receipt replay. */
+    @Transactional
+    public OrganizationNodeReadback createProject(UUID workspaceUuid, String groupWorkspaceKey, UUID regionId, String code, String name, String notes, List<String> phaseNames, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireNode(workspaceUuid, groupWorkspaceKey, regionId, "REGION", ownerScopeGrant);
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("createProject", workspaceUuid, groupWorkspaceKey, regionId, code, name, notes, phaseNames, extensionValues), () -> create(workspaceUuid, groupWorkspaceKey, "PROJECT", regionId, code, name, notes, phaseNames, extensionValues, actor));
+    }
+
     @Transactional(readOnly = true)
     public List<OrganizationNodeReadback> list(UUID workspaceUuid, String groupWorkspaceKey) {
         List<NodeListRow> nodes = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, version, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text, extension_rule_revision FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND node_type IN ('REGION','PROJECT') ORDER BY node_type, code", (result, row) -> new NodeListRow(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class), result.getString(5), result.getString(6), result.getString(7), result.getString(8), result.getString(9), result.getLong(10), result.getLong(11), result.getLong(12), result.getString(13), result.getLong(14)), workspaceUuid, groupWorkspaceKey);
@@ -143,6 +160,48 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         Map<UUID, List<String>> phases = new java.util.LinkedHashMap<>();
         if (!projectIds.isEmpty()) jdbc.query("SELECT project_id, phase_name FROM organization.project_phase_name WHERE project_id IN (" + String.join(",", java.util.Collections.nCopies(projectIds.size(), "?")) + ") ORDER BY project_id, display_order", statement -> { for (int index = 0; index < projectIds.size(); index++) statement.setObject(index + 1, projectIds.get(index)); }, result -> { while (result.next()) phases.computeIfAbsent(result.getObject(1, UUID.class), ignored -> new ArrayList<>()).add(result.getString(2)); });
         return nodes.stream().map(node -> new OrganizationNodeReadback(node.id(), node.workspaceUuid(), node.groupWorkspaceKey(), node.parentId(), node.nodeType(), node.code(), node.name(), node.notes(), node.status(), node.version(), node.createdAtEpochMillis(), node.updatedAtEpochMillis(), phases.getOrDefault(node.id(), List.of()), ExtensionDefinitionService.readValues(node.extensionValuesJson()), node.extensionRuleRevision())).toList();
+    }
+
+    /**
+     * Canonical paged hierarchy read for every consumer face.  A consumer may
+     * choose its own condition vocabulary at the edge, but the owner keeps the
+     * predicate, count and node-path resolution together.
+     */
+    @Transactional(readOnly = true)
+    public HierarchyPage page(UUID workspaceUuid, String groupWorkspaceKey, HierarchyQuery query) {
+        HierarchyQuery safe = (query == null ? HierarchyQuery.empty() : query).validated();
+        int safePage = Math.max(1, safe.page());
+        int safeSize = Math.min(100, Math.max(1, safe.pageSize()));
+        String where = " WHERE workspace_uuid=? AND group_workspace_key=?"
+            + " AND (?::text IS NULL OR name ILIKE ? ESCAPE '!')"
+            + " AND (?::text IS NULL OR code ILIKE ? ESCAPE '!')"
+            + " AND (?::text IS NULL OR status=?)"
+            + " AND (?::text IS NULL OR node_type=?)"
+            + " AND (?::uuid IS NULL OR id=?)";
+        String namePattern = like(safe.name());
+        String codePattern = like(safe.code());
+        List<Object> values = new ArrayList<>();
+        java.util.Collections.addAll(values, workspaceUuid, groupWorkspaceKey, namePattern, namePattern, codePattern, codePattern, safe.status(), safe.status(), safe.type(), safe.type(), safe.projectId(), safe.projectId());
+        long total = jdbc.queryForObject("SELECT COUNT(*) FROM organization.organization_node" + where, Long.class, values.toArray());
+        String order = switch (safe.sort()) { case "NAME" -> "name"; case "CODE" -> "code"; default -> "updated_at_epoch_millis"; };
+        List<Object> paged = new ArrayList<>(values); paged.add(safeSize); paged.add((safePage - 1) * safeSize);
+        List<OrganizationNodeReadback> nodes = jdbc.query(
+            "SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, version, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text, extension_rule_revision FROM organization.organization_node"
+                + where + " ORDER BY " + order + " " + safe.direction() + ", id DESC LIMIT ? OFFSET ?",
+            (result, row) -> node(result, List.of()), paged.toArray()
+        );
+        Map<UUID, List<String>> phases = phases(nodes.stream().filter(node -> "PROJECT".equals(node.nodeType())).map(OrganizationNodeReadback::id).toList());
+        Map<UUID, List<HierarchyPathNode>> paths = paths(workspaceUuid, groupWorkspaceKey, nodes.stream().map(OrganizationNodeReadback::id).toList());
+        return new HierarchyPage(safePage, safeSize, total, safe.sort(), safe.direction(), nodes.stream()
+            .map(node -> new HierarchyPageItem(withPhases(node, phases.getOrDefault(node.id(), List.of())), paths.getOrDefault(node.id(), List.of())))
+            .toList());
+    }
+
+    /** The canonical single-node hierarchy read, including its resolved ancestry. */
+    @Transactional(readOnly = true)
+    public HierarchyPageItem requireNodeWithPath(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId) {
+        OrganizationNodeReadback node = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        return new HierarchyPageItem(node, paths(workspaceUuid, groupWorkspaceKey, List.of(nodeId)).getOrDefault(nodeId, List.of()));
     }
 
     @Transactional
@@ -192,6 +251,13 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         return receipts.execute(workspaceUuid, idempotencyKey, canonical("transitionStatus", workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status), () -> transitionStatus(workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status, actor));
     }
 
+    /** Operations command path: bind the current node before receipt replay. */
+    @Transactional
+    public OrganizationNodeReadback transitionStatus(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, long expectedVersion, String status, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null, ownerScopeGrant);
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("transitionStatus", workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status), () -> transitionStatus(workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status, actor));
+    }
+
     @Transactional
     public OrganizationNodeReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String code, String name, long expectedVersion) {
         OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
@@ -234,6 +300,13 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         return receipts.execute(workspaceUuid, idempotencyKey, canonical("update", workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion, extensionValues), () -> update(workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion, extensionValues, actor));
     }
 
+    /** Operations command path: bind the current node before receipt replay. */
+    @Transactional
+    public OrganizationNodeReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String code, String name, UUID parentId, String notes, List<String> phaseNames, long expectedVersion, Map<String, String> extensionValues, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null, ownerScopeGrant);
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("update", workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion, extensionValues), () -> update(workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion, extensionValues, actor));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public OrganizationNodeReadback requireNode(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String requiredType) {
@@ -249,6 +322,12 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         );
         List<String> phases = jdbc.query("SELECT phase_name FROM organization.project_phase_name WHERE project_id=? ORDER BY display_order", (rs, row) -> rs.getString(1), node.id());
         return new OrganizationNodeReadback(node.id(), node.workspaceUuid(), node.groupWorkspaceKey(), node.parentId(), node.nodeType(), node.code(), node.name(), node.notes(), node.status(), node.version(), node.createdAtEpochMillis(), node.updatedAtEpochMillis(), phases, node.extensionValues(), node.extensionRuleRevision());
+    }
+
+    private OrganizationNodeReadback requireNode(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String requiredType, OperationsOwnerScopeGrant ownerScopeGrant) {
+        OrganizationNodeReadback node = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, requiredType);
+        if (ownerScopeGrant == null || !ownerScopeGrant.matches(workspaceUuid, groupWorkspaceKey, node.nodeType(), node.id())) throw new OrganizationAuthorizationException();
+        return node;
     }
 
     @Override
@@ -281,6 +360,52 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
     }
     private record NodeListRow(UUID id, UUID workspaceUuid, String groupWorkspaceKey, UUID parentId, String nodeType, String code, String name, String notes, String status, long version, long createdAtEpochMillis, long updatedAtEpochMillis, String extensionValuesJson, long extensionRuleRevision) { }
 
+    private static OrganizationNodeReadback node(java.sql.ResultSet result, List<String> phases) throws java.sql.SQLException {
+        return new OrganizationNodeReadback(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class), result.getString(5), result.getString(6), result.getString(7), result.getString(8), result.getString(9), result.getLong(10), result.getLong(11), result.getLong(12), phases, ExtensionDefinitionService.readValues(result.getString(13)), result.getLong(14));
+    }
+
+    private static OrganizationNodeReadback withPhases(OrganizationNodeReadback node, List<String> phases) {
+        return new OrganizationNodeReadback(node.id(), node.workspaceUuid(), node.groupWorkspaceKey(), node.parentId(), node.nodeType(), node.code(), node.name(), node.notes(), node.status(), node.version(), node.createdAtEpochMillis(), node.updatedAtEpochMillis(), phases, node.extensionValues(), node.extensionRuleRevision());
+    }
+
+    private Map<UUID, List<String>> phases(List<UUID> projectIds) {
+        if (projectIds.isEmpty()) return Map.of();
+        return jdbc.query("SELECT project_id, phase_name FROM organization.project_phase_name WHERE project_id IN (" + String.join(",", java.util.Collections.nCopies(projectIds.size(), "?")) + ") ORDER BY project_id, display_order", statement -> {
+            for (int index = 0; index < projectIds.size(); index++) statement.setObject(index + 1, projectIds.get(index));
+        }, result -> {
+            Map<UUID, List<String>> values = new java.util.LinkedHashMap<>();
+            while (result.next()) values.computeIfAbsent(result.getObject(1, UUID.class), ignored -> new ArrayList<>()).add(result.getString(2));
+            return Map.copyOf(values);
+        });
+    }
+
+    private Map<UUID, List<HierarchyPathNode>> paths(UUID workspaceUuid, String key, List<UUID> nodeIds) {
+        if (nodeIds.isEmpty()) return Map.of();
+        String sql = "WITH RECURSIVE ancestry AS ("
+            + "SELECT node.id AS target_id, node.id, node.parent_id, node.code, node.name, 0 AS depth FROM organization.organization_node node WHERE node.workspace_uuid=? AND node.group_workspace_key=? AND node.id IN (" + String.join(",", java.util.Collections.nCopies(nodeIds.size(), "?")) + ") "
+            + "UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id, parent.code, parent.name, ancestry.depth + 1 FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?"
+            + ") SELECT target_id, array_agg(id ORDER BY depth DESC) AS path_ids, array_agg(code ORDER BY depth DESC) AS path_codes, array_agg(name ORDER BY depth DESC) AS path_names FROM ancestry GROUP BY target_id";
+        return jdbc.query(sql, statement -> {
+            int index = 1;
+            statement.setObject(index++, workspaceUuid); statement.setString(index++, key);
+            for (UUID nodeId : nodeIds) statement.setObject(index++, nodeId);
+            statement.setObject(index++, workspaceUuid); statement.setString(index, key);
+        }, result -> {
+            Map<UUID, List<HierarchyPathNode>> values = new java.util.LinkedHashMap<>();
+            while (result.next()) {
+                Object[] ids = (Object[]) result.getArray("path_ids").getArray();
+                Object[] codes = (Object[]) result.getArray("path_codes").getArray();
+                Object[] names = (Object[]) result.getArray("path_names").getArray();
+                List<HierarchyPathNode> path = new ArrayList<>();
+                for (int index = 0; index < ids.length; index++) path.add(new HierarchyPathNode((UUID) ids[index], (String) codes[index], (String) names[index]));
+                values.put(result.getObject("target_id", UUID.class), List.copyOf(path));
+            }
+            return Map.copyOf(values);
+        });
+    }
+
+    private static String like(String value) { return value == null || value.isBlank() ? null : "%" + value.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"; }
+
     private void validateParent(UUID workspaceUuid, String key, String type, UUID parentId) {
         String parentType = switch (type) { case "REGION" -> null; case "PROJECT" -> "REGION"; default -> throw new OrganizationValidationException(); };
         if ((parentType == null) != (parentId == null)) throw new OrganizationValidationException();
@@ -293,6 +418,13 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
     private void requireCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey) {
         if (commercialGroups == null) return;
         commercialGroups.requireCommercialGroupRef(workspaceUuid, groupWorkspaceKey);
+    }
+    private void requireCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, OperationsOwnerScopeGrant ownerScopeGrant) {
+        if (commercialGroups == null) {
+            throw new OrganizationAuthorizationException();
+        }
+        UUID groupId = commercialGroups.requireCommercialGroupRef(workspaceUuid, groupWorkspaceKey);
+        if (ownerScopeGrant == null || !ownerScopeGrant.matches(workspaceUuid, groupWorkspaceKey, "GROUP", groupId)) throw new OrganizationAuthorizationException();
     }
     private ExtensionValues extensionValues(UUID workspaceUuid, String groupWorkspaceKey, String hostType, String currentValuesJson, Map<String, String> requestedValues) {
         Map<String, String> requested = requestedValues == null ? Map.of() : requestedValues;
@@ -346,8 +478,21 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         }
         return result.toString();
     }
+    public record HierarchyQuery(String type, String name, String code, String status, UUID projectId, String sort, String direction, int page, int pageSize) {
+        public static HierarchyQuery empty() { return new HierarchyQuery(null, null, null, null, null, "UPDATED_AT", "DESC", 1, 50); }
+        private HierarchyQuery validated() {
+            String safeSort = sort == null ? "UPDATED_AT" : sort;
+            String safeDirection = direction == null ? "DESC" : direction;
+            if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort) || !List.of("ASC", "DESC").contains(safeDirection) || (type != null && !NODE_TYPES.contains(type)) || (status != null && !List.of("ENABLED", "DISABLED").contains(status)) || (projectId != null && !"PROJECT".equals(type))) throw new OrganizationValidationException();
+            return new HierarchyQuery(type, name, code, status, projectId, safeSort, safeDirection, page, pageSize);
+        }
+    }
+    public record HierarchyPage(int page, int pageSize, long total, String sort, String direction, List<HierarchyPageItem> items) { }
+    public record HierarchyPageItem(OrganizationNodeReadback node, List<HierarchyPathNode> path) { }
+    public record HierarchyPathNode(UUID id, String code, String name) { }
     public static final class OrganizationNotFoundException extends RuntimeException { }
     public static final class OrganizationConflictException extends RuntimeException { }
     public static final class OrganizationValidationException extends RuntimeException { }
+    public static final class OrganizationAuthorizationException extends RuntimeException { }
     private record ExtensionValues(String json, long revision) { }
 }

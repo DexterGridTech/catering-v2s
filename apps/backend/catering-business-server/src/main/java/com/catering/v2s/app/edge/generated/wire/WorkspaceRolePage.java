@@ -6,8 +6,6 @@ public record WorkspaceRolePage(
     Long page,
     Long pageSize,
     Long total,
-    WorkspaceRoleSortKey sort,
-    SortDirection direction,
     java.util.List<WorkspaceRolePageCapabilityCatalogItem> capabilityCatalog,
     java.util.List<WorkspaceRolePagePageAccessCatalogItem> pageAccessCatalog
 ) {}

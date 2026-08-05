@@ -1,5 +1,5 @@
 import {expect, test, type Page} from '@playwright/test';
-import {selectOperationsDataScope} from './operationsL2';
+import {selectOperationsDataScope, selectOperationsOption} from './operationsL2';
 
 function requiredL2Env(name: string) {
   const value = process.env[name];
@@ -17,8 +17,7 @@ async function signInStoreOperator(page: Page) {
   const shellMenu = page.getByTestId('operations-shell-menu');
   await roleSelector.or(shellMenu).waitFor({state: 'visible'});
   if (await roleSelector.isVisible()) {
-    await roleSelector.click();
-    await page.getByRole('option', {name: requiredL2Env('R5_L2_STORE_PROFILE_ROLE_LABEL'), exact: true}).click();
+    await selectOperationsOption(page, 'operations-role-context-select', requiredL2Env('R5_L2_STORE_PROFILE_ROLE_LABEL'));
     await page.getByTestId('operations-role-context-enter').click();
   }
   await expect(shellMenu).toBeVisible();
@@ -38,16 +37,16 @@ test('store operator reads owner-returned profile and all four contract state vi
   await signInStoreOperator(page);
   await page.goto(requiredL2Env('R5_L2_STORE_PROFILE_ROUTE'));
   await expect(page).toHaveURL(/\/store\/profile$/);
-  // The profile read is scope-bound; select the owner-returned store before
-  // asserting the data surface (the shell selector remains available while
-  // the initial unscoped read is rejected).
-  await selectOperationsDataScope(page);
+  // The profile child is not mounted until its owner-returned store scope is confirmed.
+  await selectOperationsDataScope(page, 'STORE', {regionName: requiredL2Env('R5_L2_ORGANIZATION_REGION_NAME'), projectName: requiredL2Env('R5_L2_OPERATIONS_SCOPE_PROJECT_NAME'), storeName: requiredL2Env('R5_L2_OPERATIONS_SCOPE_STORE_NAME')});
   await expect(page.getByTestId('operations-store-profile-page')).toBeVisible();
   await expect(page.getByTestId('operations-store-profile-fields')).toBeVisible();
   await expect(page.getByText(current, {exact: true})).toBeVisible();
-  await page.getByTestId('operations-store-profile-contract-detail-open').click();
+  await page.getByTestId('operations-store-profile-contract-detail-open').filter({hasText: current}).click();
   await expect(page.getByTestId('operations-store-profile-contract-detail-drawer')).toBeVisible();
-  await page.getByTestId('operations-store-profile-contract-detail-drawer').getByRole('button', {name: '关闭'}).click();
+  const detailDrawer = page.getByTestId('operations-store-profile-contract-detail-drawer');
+  await page.keyboard.press('Escape');
+  await expect(detailDrawer).toBeHidden();
 
   await stateTabs.getByRole('tab', {name: '待生效', exact: true}).click();
   await expect(page.getByTestId('operations-store-profile-contract-pending_effective').getByText(pending, {exact: true})).toBeVisible();

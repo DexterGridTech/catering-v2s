@@ -28,6 +28,7 @@ describe('operations shell focused IA contract', () => {
     expect(source).toMatch(/<Layout hasSider>[\s\S]*?<Layout\.Sider[\s\S]*?<Layout\.Content/);
     expect(source).toContain('collapsible\n      collapsed={siderCollapsed}\n      onCollapse={(next) => { if (!locked) setSiderCollapsed(next); }}');
     expect(source).toMatch(/<Layout\.Sider[\s\S]*?theme="light"/);
+    expect(source).toContain('className="operations-sider"\n      width={210}');
     expect(source).toContain('trigger={null}');
     expect(source).toContain('<CollapsedIcon');
     expect(source).toContain('className="operations-sider-collapsed-button"');
@@ -37,6 +38,13 @@ describe('operations shell focused IA contract', () => {
     expect(source).not.toContain('breakpoint="lg"');
     expect(source).toContain('<DataScopeSelector\n          entry={entry}');
     expect(source).toContain('collapsed={siderCollapsed}');
+    expect(source).toContain('<OperationsRequiredScopeSurface requiredDataNodeType={selectedCatalogPage.requiredDataNodeType} scopeContext={entry.scopeContext}>');
+    expect(source).toContain('</OperationsRequiredScopeSurface>');
+    expect(source).toContain('const tabAssignmentRef = useRef<string | null>(null);');
+    expect(source).toContain('if (tabAssignmentRef.current !== session.assignmentId)');
+    expect(source).toContain('tabAssignmentRef.current = session.assignmentId;');
+    expect(source).toContain('const retained = current.filter((key) => accessibleKeys.has(key));');
+    expect(source).toContain('return retained.length ? retained : firstAccessibleKey ? [firstAccessibleKey] : [];');
   });
 
   it('still keeps page and menu labels sourced from catalog metadata instead of raw shell strings', () => {
@@ -56,5 +64,11 @@ describe('operations shell focused IA contract', () => {
     expect(styles).toContain('.auth-page,\n.login-layout {');
     expect(styles).toContain('place-items: center;');
     expect(styles).toContain('.auth-card,\n.login-card {');
+  });
+
+  it('places a mandatory password transition before role selection or the application shell', () => {
+    expect(source).toContain("entry?.outcome === 'PASSWORD_CHANGE_REQUIRED'");
+    expect(source).toContain('<OperationsForcedPasswordChangePage');
+    expect(source).toContain('onCompleted={() => void logout()}');
   });
 });

@@ -6,10 +6,9 @@ import type {OperationsPageContext} from '../../../app/routing/model';
 
 const PAGE_SIZE = 50;
 
-export function useContractStoreCandidates({open, queryContext, projectId, selectedStoreId}: {
+export function useContractStoreCandidates({open, queryContext, selectedStoreId}: {
   open: boolean;
   queryContext: OperationsPageContext;
-  projectId?: string;
   selectedStoreId?: string;
 }) {
   const [storeSearch, setStoreSearchState] = useState<string>();
@@ -19,15 +18,14 @@ export function useContractStoreCandidates({open, queryContext, projectId, selec
     {groupWorkspaceKey: queryContext.groupWorkspaceKey},
     {query: {
       expectedContextVersion: queryContext.expectedContextVersion,
-      projectId: projectId ?? '',
       selectedStoreId,
       storeSearch,
       page,
       pageSize: PAGE_SIZE,
     }},
-  ), [page, projectId, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, selectedStoreId, storeSearch]);
-  const result = operationsRtk.useGetOperationsContractCandidatesQuery(request, {skip: !open || !projectId});
-  const queryIdentity = `${queryContext.groupWorkspaceKey}|${queryContext.expectedContextVersion}|${projectId ?? ''}|${selectedStoreId ?? ''}|${storeSearch ?? ''}`;
+  ), [page, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, selectedStoreId, storeSearch]);
+  const result = operationsRtk.useGetOperationsContractCandidatesQuery(request, {skip: !open});
+  const queryIdentity = `${queryContext.groupWorkspaceKey}|${queryContext.expectedContextVersion}|${selectedStoreId ?? ''}|${storeSearch ?? ''}`;
   const previousIdentity = useRef(queryIdentity);
 
   useEffect(() => {

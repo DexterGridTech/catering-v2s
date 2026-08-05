@@ -23,7 +23,9 @@ import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.organization.application.StoreCandidateTaskReadService;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
+import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
+import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import tools.jackson.databind.node.JsonNodeFactory;
 import java.util.List;
@@ -38,35 +40,35 @@ class OperationsStoreManagementControllerCandidateScopeTest {
     private static final String IDEMPOTENCY_KEY = "operations-store-scope-idempotency";
 
     @Test
-    void candidatesDelegateAssignmentVisibleNodeAndCascadeFiltersToOwner() {
+    void candidatesUseTheRetainedSelectedProjectAndCascadeFiltersToOwner() {
         Fixture fixture = fixture();
-        UUID projectId = UUID.randomUUID();
+        UUID projectId = selectedProjectId(fixture);
         UUID brandId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
         StoreCandidateTaskReadService.Page page = new StoreCandidateTaskReadService.Page(
             KEY,
-            new StoreCandidateTaskReadService.DataScope("PROJECT", fixture.session.visibleDataNodeId(), "集团 / 项目"),
+            new StoreCandidateTaskReadService.DataScope("PROJECT", projectId, "集团 / 项目"),
             List.of(new StoreCandidateTaskReadService.Candidate(projectId, "PRJ-01", "项目一", null)),
             List.of(new StoreCandidateTaskReadService.Candidate(brandId, "BR-01", "品牌一", null)),
             List.of(new StoreCandidateTaskReadService.Candidate(tenantId, "TEN-01", "经营主体一", null)),
             List.of()
         );
-        when(fixture.storeCandidates.candidates(fixture.workspaceId, KEY, fixture.session.currentAssignmentId(), fixture.session.visibleDataNodeId(), projectId, brandId, tenantId))
+        selectedProject(fixture, projectId);
+        when(fixture.storeCandidates.candidates(fixture.workspaceId, KEY, fixture.session.currentAssignmentId(), projectId, projectId, brandId, tenantId))
             .thenReturn(page);
 
-        var result = fixture.controller.candidates(fixture.request, KEY, fixture.session.contextVersion(), projectId, brandId, tenantId);
+        var result = fixture.controller.candidates(fixture.request, KEY, fixture.session.contextVersion(), brandId, tenantId);
 
         assertEquals(page, result);
-        verify(fixture.storeCandidates).candidates(fixture.workspaceId, KEY, fixture.session.currentAssignmentId(), fixture.session.visibleDataNodeId(), projectId, brandId, tenantId);
+        verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
+        verify(fixture.storeCandidates).candidates(fixture.workspaceId, KEY, fixture.session.currentAssignmentId(), projectId, projectId, brandId, tenantId);
     }
 
     @Test
-    void listPassesProjectFilterToOwnerQueryWithoutLocalSlicing() {
+    void listUsesRetainedSelectedProjectWithoutAClientProjectFilter() {
         Fixture fixture = fixture();
-        UUID projectId = UUID.randomUUID();
-        UUID scopedProjectId = UUID.randomUUID();
-        when(fixture.user.resolveTaskScope(fixture.session, "PROJECT", projectId))
-            .thenReturn(new OrganizationTaskPathLookup.TaskPath("PROJECT", scopedProjectId, List.of(scopedProjectId), "集团 / 项目"));
+        UUID scopedProjectId = selectedProjectId(fixture);
+        selectedProject(fixture, scopedProjectId);
         when(fixture.overview.page(
             eq(fixture.workspaceId),
             eq(KEY),
@@ -86,22 +88,24 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             List.of()
         ));
 
-        fixture.controller.list(fixture.request, KEY, fixture.session.contextVersion(), "门店", projectId, "STORE-01", null, null, null, 2, 20);
+        fixture.controller.list(fixture.request, KEY, fixture.session.contextVersion(), "门店", "STORE-01", null, null, null, 2, 20);
 
-        verify(fixture.user).resolveTaskScope(fixture.session, "PROJECT", projectId);
+        verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
         verify(fixture.overview).page(
             fixture.workspaceId,
             KEY,
             "STORE",
-            new OrganizationOverviewTaskReadService.Query("STORE", "门店", "STORE-01", null, null, scopedProjectId, null, null, null, null, fixture.session.visibleDataNodeId()),
+            new OrganizationOverviewTaskReadService.Query("STORE", "门店", "STORE-01", null, null, null, null, scopedProjectId, null, null, null, null, scopedProjectId),
             2,
             20
         );
     }
 
     @Test
-    void listWithoutProjectFilterPassesVisibleDataNodeToOwnerQuery() {
+    void listUsesSelectedProjectForBothProjectAndOwnerScopePredicate() {
         Fixture fixture = fixture();
+        UUID projectId = selectedProjectId(fixture);
+        selectedProject(fixture, projectId);
         when(fixture.overview.page(
             eq(fixture.workspaceId),
             eq(KEY),
@@ -114,38 +118,42 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             List.of(), "AVAILABLE", 0L, List.of(), List.of(), "AVAILABLE", 0L, List.of()
         ));
 
-        fixture.controller.list(fixture.request, KEY, fixture.session.contextVersion(), null, null, null, null, null, null, 1, 20);
+        fixture.controller.list(fixture.request, KEY, fixture.session.contextVersion(), null, null, null, null, null, 1, 20);
 
         verify(fixture.overview).page(
             fixture.workspaceId,
             KEY,
             "STORE",
-            new OrganizationOverviewTaskReadService.Query("STORE", null, null, null, null, null, null, null, null, null, fixture.session.visibleDataNodeId()),
+            new OrganizationOverviewTaskReadService.Query("STORE", null, null, null, null, null, null, projectId, null, null, null, null, projectId),
             1,
             20
         );
-        verifyNoInteractions(fixture.user);
+        verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
     }
 
     @Test
-    void listRejectsMissingVisibleScopeBeforeOwnerRead() {
+    void listRejectsMissingSelectedProjectBeforeOwnerRead() {
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(
-            UUID.randomUUID(), UUID.randomUUID(), KEY, UUID.randomUUID(), UUID.randomUUID(), null,
+            UUID.randomUUID(), UUID.randomUUID(), KEY, UUID.randomUUID(), UUID.randomUUID(), WorkspaceSessionEntryReadback.ScopeContext.empty(),
             9L, 5L, Set.of(), Set.of(), "Operations tester"
         );
         Fixture fixture = fixture(session);
+        when(fixture.user.resolveSelectedProjectScope(session, null)).thenThrow(new WorkspaceAuthenticationService.SessionInvalidException());
 
         assertThrows(
             WorkspaceAuthenticationService.SessionInvalidException.class,
-            () -> fixture.controller.list(fixture.request, KEY, session.contextVersion(), null, null, null, null, null, null, 1, 20)
+            () -> fixture.controller.list(fixture.request, KEY, session.contextVersion(), null, null, null, null, null, 1, 20)
         );
 
-        verifyNoInteractions(fixture.overview, fixture.user);
+        verifyNoInteractions(fixture.overview);
+        verify(fixture.user).resolveSelectedProjectScope(session, null);
     }
 
     @Test
     void listPassesGeneratedSortAndDirectionToOwnerWithoutChangingScopePredicate() {
         Fixture fixture = fixture();
+        UUID projectId = selectedProjectId(fixture);
+        selectedProject(fixture, projectId);
         when(fixture.overview.page(
             eq(fixture.workspaceId),
             eq(KEY),
@@ -165,7 +173,6 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             null,
             null,
             null,
-            null,
             OrganizationStoreSortKey.CODE,
             OrganizationStoreSortDirection.ASC,
             1,
@@ -176,24 +183,25 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             fixture.workspaceId,
             KEY,
             "STORE",
-            new OrganizationOverviewTaskReadService.Query("STORE", null, null, null, null, null, null, null, "CODE", "ASC", fixture.session.visibleDataNodeId()),
+            new OrganizationOverviewTaskReadService.Query("STORE", null, null, null, null, null, null, projectId, null, null, "CODE", "ASC", projectId),
             1,
             20
         );
-        verifyNoInteractions(fixture.user);
+        verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
     }
 
     @Test
-    void createUsesOnlyWorkspaceIamResolvedProjectForOwnerWrite() {
+    void createUsesOwnerProjectFactAndPassesAProjectGrantToTheOwnerWrite() {
         Fixture fixture = fixture();
-        UUID requestedProjectId = UUID.randomUUID();
-        UUID scopedProjectId = UUID.randomUUID();
+        UUID scopedProjectId = selectedProjectId(fixture);
         UUID brandId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
         UUID headCompanyId = UUID.randomUUID();
         UUID storeId = UUID.randomUUID();
-        when(fixture.user.resolveTaskScope(fixture.session, "PROJECT", requestedProjectId))
-            .thenReturn(new OrganizationTaskPathLookup.TaskPath("PROJECT", scopedProjectId, List.of(scopedProjectId), "集团 / 项目"));
+        var grant = new com.catering.v2s.organization.api.OperationsOwnerScopeGrant(fixture.workspaceId, KEY, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", "BC-ORG-STORE-CREATE", "PROJECT", scopedProjectId, "PROJECT", scopedProjectId, List.of(scopedProjectId));
+        selectedProject(fixture, scopedProjectId);
+        when(fixture.capabilityScopes.resolve(fixture.session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId)))
+            .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(WorkspaceCapabilityScopeResolver.Decision.ALLOW, "BC-ORG-STORE-CREATE", new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(fixture.workspaceId, KEY, "PROJECT", scopedProjectId, "PROJECT", scopedProjectId, List.of(scopedProjectId))));
         when(fixture.entities.createStore(
             fixture.workspaceId,
             KEY,
@@ -206,7 +214,8 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             "备注",
             Map.of(),
             IDEMPOTENCY_KEY,
-            fixture.actor
+            fixture.actor,
+            grant
         )).thenReturn(new OrganizationEntityReadback(storeId, "STORE", fixture.workspaceId, KEY, "STORE-01", "门店一", null, null, "ENABLED", 3L, null, null, "备注", 0L, 10L, 11L, Map.of()));
         when(fixture.overview.detail(fixture.workspaceId, KEY, "STORE", storeId)).thenReturn(new OrganizationOverviewTaskReadService.Item(
             storeId,
@@ -222,12 +231,15 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             10L,
             11L,
             "备注",
+            null,
+            null,
             new OrganizationOverviewTaskReadService.Reference(scopedProjectId, "PRJ-01", "项目一", true),
             new OrganizationOverviewTaskReadService.Reference(brandId, "BR-01", "品牌一", true),
             new OrganizationOverviewTaskReadService.Reference(tenantId, "TEN-01", "经营主体一", true),
             new OrganizationOverviewTaskReadService.Reference(headCompanyId, "HC-01", "总公司一", true),
             List.of(),
-            List.of()
+            List.of(),
+            null
         ));
         when(fixture.contracts.derivedStoreStatus(fixture.workspaceId, KEY, storeId)).thenReturn("OPERATING");
 
@@ -236,7 +248,6 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             KEY,
             IDEMPOTENCY_KEY,
             new OrganizationStoreCreateRequest(
-                requestedProjectId.toString(),
                 brandId.toString(),
                 tenantId.toString(),
                 headCompanyId.toString(),
@@ -250,7 +261,8 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals("门店一", response.getBody().name());
         assertEquals(scopedProjectId.toString(), response.getBody().project().id());
-        verify(fixture.user).resolveTaskScope(fixture.session, "PROJECT", requestedProjectId);
+        verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
+        verify(fixture.capabilityScopes).resolve(fixture.session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId));
         verify(fixture.entities).createStore(
             fixture.workspaceId,
             KEY,
@@ -263,21 +275,21 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             "备注",
             Map.of(),
             IDEMPOTENCY_KEY,
-            fixture.actor
+            fixture.actor,
+            grant
         );
     }
 
     @Test
     void candidatesRejectMissingAssignmentBeforeOwnerRead() {
         UUID workspaceId = UUID.randomUUID();
-        UUID visibleNodeId = UUID.randomUUID();
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(
             UUID.randomUUID(),
             workspaceId,
             KEY,
             UUID.randomUUID(),
             null,
-            visibleNodeId,
+            WorkspaceSessionEntryReadback.ScopeContext.empty(),
             9L,
             5L,
             Set.of(),
@@ -288,7 +300,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
 
         assertThrows(
             WorkspaceAuthenticationService.SessionInvalidException.class,
-            () -> fixture.controller.candidates(fixture.request, KEY, fixture.session.contextVersion(), null, null, null)
+            () -> fixture.controller.candidates(fixture.request, KEY, fixture.session.contextVersion(), null, null)
         );
 
         verifyNoInteractions(fixture.storeCandidates);
@@ -297,7 +309,9 @@ class OperationsStoreManagementControllerCandidateScopeTest {
     private static Fixture fixture() {
         UUID workspaceId = UUID.randomUUID();
         UUID accountId = UUID.randomUUID();
-        WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, KEY, accountId, UUID.randomUUID(), UUID.randomUUID(), 9L, 5L, Set.of(), Set.of(), "Operations tester");
+        UUID projectId = UUID.randomUUID();
+        WorkspaceSessionEntryReadback.VisibleDataNodeCandidate project = new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate("PROJECT", projectId, "项目一", "PRJ-01", List.of("集团", "项目一"), null, projectId, null, null);
+        WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, KEY, accountId, UUID.randomUUID(), new WorkspaceSessionEntryReadback.ScopeContext(null, project, null, null), 9L, 5L, Set.of(), Set.of(), "Operations tester");
         return fixture(session);
     }
 
@@ -309,10 +323,11 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         OrganizationOverviewTaskReadService overview = mock(OrganizationOverviewTaskReadService.class);
         ContractTaskReadService contracts = mock(ContractTaskReadService.class);
         WorkspaceUserService user = mock(WorkspaceUserService.class);
-        OperationsStoreManagementController controller = new OperationsStoreManagementController(new OperationsSessionResolver(authentication), entities, storeCandidates, overview, contracts, user);
+        WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);
+        OperationsStoreManagementController controller = new OperationsStoreManagementController(new OperationsSessionResolver(authentication), entities, storeCandidates, overview, contracts, user, capabilityScopes);
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
         AuditActor actor = new AuditActor("WORKSPACE_ACCOUNT", session.accountId(), session.accountDisplayName());
-        return new Fixture(controller, entities, storeCandidates, overview, contracts, user, request, session, session.workspaceUuid(), actor);
+        return new Fixture(controller, entities, storeCandidates, overview, contracts, user, capabilityScopes, request, session, session.workspaceUuid(), actor);
     }
 
     private record Fixture(
@@ -322,9 +337,19 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         OrganizationOverviewTaskReadService overview,
         ContractTaskReadService contracts,
         WorkspaceUserService user,
+        WorkspaceCapabilityScopeResolver capabilityScopes,
         EdgeRequestContext request,
         WorkspaceSessionReadback session,
         UUID workspaceId,
         AuditActor actor
     ) { }
+
+    private static UUID selectedProjectId(Fixture fixture) {
+        return fixture.session.scopeContext().project().dataNodeId();
+    }
+
+    private static void selectedProject(Fixture fixture, UUID projectId) {
+        when(fixture.user.resolveSelectedProjectScope(fixture.session, null))
+            .thenReturn(new OrganizationTaskPathLookup.TaskPath("PROJECT", projectId, List.of(projectId), "集团 / 项目"));
+    }
 }

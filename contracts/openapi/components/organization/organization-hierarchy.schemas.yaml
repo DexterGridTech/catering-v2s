@@ -16,7 +16,7 @@
             "maxLength": 64
           },
           "commercialGroup": {
-            "$ref": "./commercial-group.schemas.yaml#/components/schemas/CommercialGroupRoot"
+            "$ref": "commercial-group.schemas.yaml#/components/schemas/CommercialGroupRoot"
           },
           "items": {
             "type": "array",
@@ -37,13 +37,13 @@
           "parentId",
           "code",
           "name",
-          "extensionValues",
-          "extensionRuleRevision",
           "status",
           "phases",
           "revision",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "extensionValues",
+          "extensionRuleRevision"
         ],
         "properties": {
           "id": {
@@ -84,15 +84,6 @@
             "nullable": true,
             "maxLength": 2000
           },
-          "extensionValues": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "extensionRuleRevision": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -129,6 +120,15 @@
           "updatedAt": {
             "type": "integer",
             "format": "int64"
+          },
+          "extensionValues": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -232,15 +232,15 @@
             "nullable": true,
             "maxLength": 2000
           },
-          "extensionValues": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": true
-          },
           "expectedVersion": {
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
           }
         }
       },
@@ -271,7 +271,105 @@
               }
             }
           }
-        ]
+        ],
+        "properties": {
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          }
+        }
+      },
+      "OrganizationHierarchyTree": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groupCode",
+          "groupName",
+          "regions"
+        ],
+        "properties": {
+          "groupCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationHierarchyTreeNode"
+            }
+          }
+        }
+      },
+      "OrganizationHierarchyTreeNode": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "code",
+          "name",
+          "status",
+          "updatedAt",
+          "children",
+          "phases"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "REGION",
+              "PROJECT"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "$ref": "organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewStatus"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationHierarchyTreeNode"
+            }
+          },
+          "phases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        }
       }
     }
   }

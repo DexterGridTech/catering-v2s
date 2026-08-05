@@ -1,16 +1,9 @@
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`${name}_REQUIRED`);
   return value;
-}
-
-async function ownerReturnedTestOtp(page: Page): Promise<string> {
-  const message = await page.getByText(/当前为测试环境，验证码：\d{6}/).textContent();
-  const code = message?.match(/验证码：(\d{6})/)?.[1];
-  if (!code) throw new Error('OWNER_RETURNED_TEST_OTP_REQUIRED');
-  return code;
 }
 
 test('operations user recovers a password through the branded anonymous flow and returns to login without a session', async ({page}) => {
@@ -39,8 +32,7 @@ test('operations user recovers a password through the branded anonymous flow and
   expect(startRequest?.headers()['idempotency-key']).toBeTruthy();
   expect(otpSendRequest?.postDataJSON()).toEqual({});
   expect(otpSendRequest?.headers()['idempotency-key']).toBeTruthy();
-  const otp = await ownerReturnedTestOtp(page);
-  await page.getByTestId('operations-recovery-otp').fill(otp);
+  await expect(page.getByTestId('operations-recovery-otp')).toHaveValue(/^\d{6}$/);
   const verifyRequests: import('@playwright/test').Request[] = [];
   const onVerifyRequest = (request: import('@playwright/test').Request) => {
     if (request.url().includes('/password-recovery/otp/verify') && request.method() === 'POST') verifyRequests.push(request);
@@ -49,7 +41,7 @@ test('operations user recovers a password through the branded anonymous flow and
   await page.getByTestId('operations-recovery-verify-submit').click();
   await expect.poll(() => verifyRequests.length).toBe(1);
   const verifyRequest = verifyRequests[0];
-  expect(verifyRequest.postDataJSON()).toMatchObject({code: otp});
+  expect(verifyRequest.postDataJSON()).toMatchObject({code: expect.stringMatching(/^\d{6}$/)});
   expect(verifyRequest.headers()['idempotency-key']).toBeTruthy();
 
   await expect(page.getByTestId('operations-recovery-new-password')).toBeVisible();

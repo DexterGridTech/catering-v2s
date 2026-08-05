@@ -52,31 +52,6 @@
           "GROUP_WORKSPACE_LOGO"
         ]
       },
-      "PublicAssetReference": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "publicUrl",
-          "contentType",
-          "sha256"
-        ],
-        "properties": {
-          "publicUrl": {
-            "type": "string",
-            "format": "uri",
-            "minLength": 1,
-            "maxLength": 2048
-          },
-          "contentType": {
-            "type": "string",
-            "enum": ["image/png", "image/jpeg", "image/webp", "video/mp4"]
-          },
-          "sha256": {
-            "type": "string",
-            "pattern": "^[a-f0-9]{64}$"
-          }
-        }
-      },
       "PlatformAssetStageMultipart": {
         "type": "object",
         "required": [
@@ -102,7 +77,39 @@
         },
         "additionalProperties": false
       },
-      "BinaryAssetContent": {"type": "string", "format": "binary"}
+      "BinaryAssetContent": {
+        "type": "string",
+        "format": "binary"
+      },
+      "PublicAssetReference": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "publicUrl",
+          "contentType",
+          "sha256"
+        ],
+        "properties": {
+          "publicUrl": {
+            "type": "string",
+            "format": "uri",
+            "minLength": 1
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "video/mp4"
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
     }
   }
 }

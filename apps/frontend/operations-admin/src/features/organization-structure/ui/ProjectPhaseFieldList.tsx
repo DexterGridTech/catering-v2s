@@ -7,7 +7,7 @@ export function ProjectPhaseFieldList() {
     {(fields, {add, remove, move}) => <Form.Item label="项目分期名称">
       <Space orientation="vertical" style={{width: '100%'}}>
         {fields.map((field, index) => <Space key={field.key} align="start" style={{width: '100%'}}>
-          <Form.Item {...field} noStyle rules={[{required: true, whitespace: true, message: '请输入项目分期名称'}]}>
+          <Form.Item name={[field.name, 'name']} noStyle rules={[{required: true, whitespace: true, message: '请输入项目分期名称'}]}>
             <Input aria-label={`项目分期名称 ${index + 1}`} maxLength={120}/>
           </Form.Item>
           <Button disabled={index === 0} icon={<UpOutlined/>} onClick={() => move(index, index - 1)} {...testId(`operations-project-phase-up-${index}`)}/>

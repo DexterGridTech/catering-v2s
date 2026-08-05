@@ -23,8 +23,8 @@ export function ContractEditDrawer({contract, queryContext, onClose, onUpdated, 
   const open = Boolean(contract);
   const lifecycle = useDrawerFormLifecycle({open, onOpenChange: (next) => { if (!next) onClose(); }, dirtyMessage: '已修改的合同资料不会保存。', idempotencyKey: true, diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsContract});
   useOverlayLock(open);
-  const candidates = useContractStoreCandidates({open, queryContext, projectId: contract?.project.id, selectedStoreId: contract?.store.id});
-  const definitionRequest = useMemo(() => operationsAdminRtkRequest.getOperationsContractExtensionDefinition({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {query: {expectedContextVersion: queryContext.expectedContextVersion, projectId: contract?.project.id ?? ''}}), [contract?.project.id, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey]);
+  const candidates = useContractStoreCandidates({open, queryContext, selectedStoreId: contract?.store.id});
+  const definitionRequest = useMemo(() => operationsAdminRtkRequest.getOperationsContractExtensionDefinition({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {query: {expectedContextVersion: queryContext.expectedContextVersion}}), [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey]);
   const definition = operationsRtk.useGetOperationsContractExtensionDefinitionQuery(definitionRequest, {skip: !open});
   useEffect(() => { if (contract) { form.setFieldsValue({phaseName: contract.phaseName, effectiveFrom: contract.effectiveFrom, effectiveTo: contract.effectiveTo ?? undefined, note: contract.note ?? undefined, items: contract.items, extensionValues: contract.extensionValues}); lifecycle.reset(); setProblem(undefined); } }, [contract, form, lifecycle]);
   const submit = async (value: Values) => {
@@ -36,7 +36,7 @@ export function ContractEditDrawer({contract, queryContext, onClose, onUpdated, 
     } catch { setProblem('合同已更新，请查看最新内容后重试。'); onConflict(contract); } finally { lifecycle.setSubmitting(false); }
   };
   const ready = Boolean(definition.data && candidates.data && !candidates.error) && !definition.isFetching && !candidates.isFetching;
-  return <Drawer title="编辑合同" open={open} size={620} destroyOnHidden keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-contract-edit-drawer')} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('operations-contract-edit-cancel')}>取消</Button><Button type="primary" loading={lifecycle.submitting} disabled={!ready} onClick={() => form.submit()} {...testId('operations-contract-edit-submit')}>保存</Button></Space>}>
+  return <Drawer title="编辑合同" open={open} size={620} destroyOnHidden maskClosable keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-contract-edit-drawer')} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('operations-contract-edit-cancel')}>取消</Button><Button type="primary" loading={lifecycle.submitting} disabled={!ready} onClick={() => form.submit()} {...testId('operations-contract-edit-submit')}>保存</Button></Space>}>
     {problem && <Alert type="error" showIcon title="合同编辑未完成" description={problem} style={{marginBottom: 16}} {...testId('operations-contract-edit-problem')}/>}
     {candidates.error && <Alert type="error" showIcon title="合同候选读取失败" description="请关闭后重新打开，或稍后重试；候选未确认前不能保存合同。" {...testId('operations-contract-edit-candidate-error')}/>}
     <Form form={form} layout="vertical" disabled={lifecycle.submitting || !ready} onFinish={(value) => void submit(value)} onValuesChange={() => { lifecycle.setDirty(true); lifecycle.markBusinessIntentChanged(); }}>

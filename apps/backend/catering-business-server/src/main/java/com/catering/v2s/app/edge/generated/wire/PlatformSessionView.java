@@ -3,8 +3,8 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformSessionView(
     String sessionId,
-    Long sessionVersion,
     String displayName,
     java.util.List<String> capabilities,
-    Boolean platformAdminAccessible
+    Boolean platformAdminAccessible,
+    Long sessionVersion
 ) {}

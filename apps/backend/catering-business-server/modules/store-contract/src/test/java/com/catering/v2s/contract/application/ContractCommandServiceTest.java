@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.time.LocalDate;
@@ -101,8 +102,9 @@ class ContractCommandServiceTest {
 
     @Test void taskPageKeepsTheSelectedProjectAndFiltersByBusinessFields() {
         UUID projectId = jdbc().queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
+        UUID tenantId = jdbc().queryForObject("SELECT tenant_id FROM organization.store WHERE id=?", UUID.class, storeId);
         contracts.create(workspaceId, "contract-test", "CT-page", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", List.of(new ContractCommandService.ItemInput("tea-001", "茉莉茶")), Map.of());
-        var page = reads.page(workspaceId, "contract-test", projectId, storeId, "CT-page", "筹备", "Tenant", "tea-001", LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31), "VALID", "CONTRACT_NO", "ASC", 1, 20);
+        var page = reads.list(workspaceId, "contract-test", new ContractTaskReadService.ContractListQuery(projectId, storeId, tenantId, "CT-page", "筹备", "tea-001", LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31), "VALID", "CONTRACT_NO", "ASC", 1, 20));
         assertEquals(projectId, page.metadata().projectRef());
         assertEquals(1, page.items().size());
         assertEquals("CT-page", page.items().getFirst().contractNo());
@@ -112,20 +114,25 @@ class ContractCommandServiceTest {
 
     @Test void ownerActorIdempotentCreateReplaysAndPlatformOverviewKeepsValidStatus() {
         UUID projectId = jdbc().queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
+        UUID tenantId = jdbc().queryForObject("SELECT tenant_id FROM organization.store WHERE id=?", UUID.class, storeId);
         AuditActor actor = new AuditActor("WORKSPACE_ACCOUNT", UUID.randomUUID(), "Operations tester");
         String idempotencyKey = "contract-owner-receipt-001";
-        var first = contracts.create(workspaceId, "contract-test", "CT-owner-receipt", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "owner actor", List.of(new ContractCommandService.ItemInput("tea-owner", "茉莉茶")), Map.of(), idempotencyKey, actor);
-        var replay = contracts.create(workspaceId, "contract-test", "CT-owner-receipt", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "owner actor", List.of(new ContractCommandService.ItemInput("tea-owner", "茉莉茶")), Map.of(), idempotencyKey, actor);
+        OperationsOwnerScopeGrant grant = new OperationsOwnerScopeGrant(workspaceId, "contract-test", "REQ_CREATE_OPERATIONS_CONTRACT", "BC-CONTRACT-CREATE", "PROJECT", projectId, "PROJECT", projectId, List.of(projectId));
+        var first = contracts.create(workspaceId, "contract-test", "CT-owner-receipt", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "owner actor", List.of(new ContractCommandService.ItemInput("tea-owner", "茉莉茶")), Map.of(), idempotencyKey, actor, grant);
+        var replay = contracts.create(workspaceId, "contract-test", "CT-owner-receipt", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "owner actor", List.of(new ContractCommandService.ItemInput("tea-owner", "茉莉茶")), Map.of(), idempotencyKey, actor, grant);
         assertEquals(first, replay);
+        OperationsOwnerScopeGrant staleGrant = new OperationsOwnerScopeGrant(workspaceId, "contract-test", "REQ_CREATE_OPERATIONS_CONTRACT", "BC-CONTRACT-CREATE", "PROJECT", UUID.randomUUID(), "PROJECT", projectId, List.of(projectId));
+        assertThrows(ContractCommandService.ContractAuthorizationException.class, () -> contracts.create(workspaceId, "contract-test", "CT-owner-receipt", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "owner actor", List.of(new ContractCommandService.ItemInput("tea-owner", "茉莉茶")), Map.of(), idempotencyKey, actor, staleGrant));
+        assertThrows(ContractCommandService.ContractAuthorizationException.class, () -> contracts.create(workspaceId, "contract-test", "CT-owner-receipt", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "owner actor", List.of(new ContractCommandService.ItemInput("tea-owner", "茉莉茶")), Map.of(), idempotencyKey, actor, null));
         assertEquals(first.id(), reads.view(workspaceId, "contract-test", first.id()).id());
-        assertEquals("VALID", reads.platformOverview(workspaceId, "contract-test", 1, 20).items().stream().filter(item -> item.contractRef().id().equals(first.id())).findFirst().orElseThrow().status());
-        var byProjectAndStore = reads.platformOverview(workspaceId, "contract-test", projectId, storeId, "CT-owner-receipt", null, null, null, "CONTRACT_NO", "ASC", 1, 20);
-        var byTenantCode = reads.platformOverview(workspaceId, "contract-test", null, null, "CT-owner-receipt", null, "tenant-code", null, "CONTRACT_NO", "ASC", 1, 20);
-        var projectAndStoreItem = byProjectAndStore.items().stream().filter(item -> item.contractRef().id().equals(first.id())).findFirst().orElseThrow();
-        assertEquals(first.id(), projectAndStoreItem.contractRef().id());
-        assertEquals(projectId, projectAndStoreItem.projectRef().id());
+        assertEquals("VALID", reads.list(workspaceId, "contract-test", ContractTaskReadService.ContractListQuery.empty()).items().stream().filter(item -> item.id().equals(first.id())).findFirst().orElseThrow().status());
+        var byProjectAndStore = reads.list(workspaceId, "contract-test", new ContractTaskReadService.ContractListQuery(projectId, storeId, null, "CT-owner-receipt", null, null, null, null, null, "CONTRACT_NO", "ASC", 1, 20));
+        var byTenantId = reads.list(workspaceId, "contract-test", new ContractTaskReadService.ContractListQuery(null, null, tenantId, "CT-owner-receipt", null, null, null, null, null, "CONTRACT_NO", "ASC", 1, 20));
+        var projectAndStoreItem = byProjectAndStore.items().stream().filter(item -> item.id().equals(first.id())).findFirst().orElseThrow();
+        assertEquals(first.id(), projectAndStoreItem.id());
+        assertEquals(projectId, projectAndStoreItem.project().id());
         assertEquals("tea-owner", projectAndStoreItem.items().getFirst().code());
-        assertEquals(first.id(), byTenantCode.items().stream().filter(item -> item.contractRef().id().equals(first.id())).findFirst().orElseThrow().contractRef().id());
+        assertEquals(first.id(), byTenantId.items().stream().filter(item -> item.id().equals(first.id())).findFirst().orElseThrow().id());
     }
 
     private static JdbcTemplate jdbc() { return new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())); }

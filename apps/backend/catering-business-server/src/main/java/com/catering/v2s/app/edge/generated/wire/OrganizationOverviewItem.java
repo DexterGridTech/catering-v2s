@@ -20,5 +20,8 @@ public record OrganizationOverviewItem(
     OrganizationOverviewItemTenant tenant,
     OrganizationOverviewItemHeadCompany headCompany,
     java.util.List<String> unresolvedReferences,
+    String alias,
+    String legalName,
+    String unifiedSocialCreditCode,
     java.util.List<OrganizationOverviewItemExtensionFieldsItem> extensionFields
 ) {}

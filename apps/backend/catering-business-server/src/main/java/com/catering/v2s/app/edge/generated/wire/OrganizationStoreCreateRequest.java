@@ -2,7 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationStoreCreateRequest(
-    String projectId,
     String brandId,
     String tenantId,
     String headCompanyId,

@@ -147,7 +147,7 @@ test("operations shell is owner-branded, catalog-tabbed, and icon-mapped", () =>
   assert.doesNotMatch(app, />运营管理后台</);
 });
 
-test("operations Drawers use the common mask-close surface, and immutable form facts are not inputs", () => {
+test("operations Drawers are mask-closeable without changing the other app, and immutable form facts are not inputs", () => {
   const drawerFiles = [
     "authentication/ui/OperationsPasswordChangeDrawer.tsx",
     "business-entity-management/ui/BusinessEntityCreateDrawer.tsx",
@@ -168,7 +168,11 @@ test("operations Drawers use the common mask-close surface, and immutable form f
     "workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx",
     "workspace-user/ui/WorkspaceUserDetailDrawer.tsx",
   ];
-  for (const path of drawerFiles) assert.match(fs.readFileSync(new URL(`../../features/${path}`, import.meta.url), "utf8"), /adminDrawerSurfaceProps/, path);
+  for (const path of drawerFiles) {
+    const source = fs.readFileSync(new URL(`../../features/${path}`, import.meta.url), "utf8");
+    assert.match(source, /adminDrawerSurfaceProps/, path);
+    assert.match(source, /\bmaskClosable\b/, path);
+  }
   const draftFiles = [
     "authentication/ui/OperationsPasswordChangeDrawer.tsx",
     "business-entity-management/ui/BusinessEntityCreateDrawer.tsx",
@@ -197,6 +201,4 @@ test("operations Drawers use the common mask-close surface, and immutable form f
     "workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx",
   ];
   for (const path of immutableValueFiles) assert.doesNotMatch(fs.readFileSync(new URL(`../../features/${path}`, import.meta.url), "utf8"), /<Input(?:\.TextArea)?\b[^>]*\breadOnly\b/, path);
-  const drawerSurface = fs.readFileSync(new URL("../../../../../../libraries/frontend/admin-ui-foundation/src/overlay/drawerSurface.ts", import.meta.url), "utf8");
-  assert.match(drawerSurface, /mask: \{closable: true\}/);
 });

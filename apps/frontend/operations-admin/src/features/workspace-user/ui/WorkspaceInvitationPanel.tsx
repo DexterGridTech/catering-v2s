@@ -11,19 +11,20 @@ import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-e
 import {WorkspaceInvitationActionModal} from './WorkspaceInvitationActionModal';
 import {WorkspaceInvitationCreateDrawer} from './WorkspaceInvitationCreateDrawer';
 import {WorkspaceInvitationDetailDrawer} from './WorkspaceInvitationDetailDrawer';
+import {useWorkspaceInvitationCandidates} from '../application/useWorkspaceInvitationCandidates';
 
 type InvitationAction = 'cancel' | 'reissue';
 type InvitationFilterForm = {
   mobile?: string;
-  organizationQuery?: string;
-  roleQuery?: string;
+  organizationRef?: string;
+  roleId?: string;
   status?: WorkspaceInvitationStatus;
   expiresRange?: [Dayjs, Dayjs];
 };
 type AppliedFilters = {
   mobile?: string;
-  organizationQuery?: string;
-  roleQuery?: string;
+  organizationRef?: string;
+  roleId?: string;
   status?: WorkspaceInvitationStatus;
   expiresFrom?: number;
   expiresTo?: number;
@@ -48,8 +49,8 @@ function toAppliedFilters(values: InvitationFilterForm): AppliedFilters {
   const range = values.expiresRange;
   return {
     mobile: trimOrUndefined(values.mobile),
-    organizationQuery: trimOrUndefined(values.organizationQuery),
-    roleQuery: trimOrUndefined(values.roleQuery),
+    organizationRef: typeof values.organizationRef === 'string' ? values.organizationRef : undefined,
+    roleId: typeof values.roleId === 'string' ? values.roleId : undefined,
     status: values.status,
     expiresFrom: range?.[0]?.startOf('day').valueOf(),
     expiresTo: range?.[1]?.endOf('day').valueOf(),
@@ -72,6 +73,8 @@ export function WorkspaceInvitationPanel({
   const [sort, setSort] = useState<WorkspaceInvitationSortKey>('CREATED_AT');
   const [direction, setDirection] = useState<SortDirection>('DESC');
   const [filters, setFilters] = useState<AppliedFilters>({});
+  const [organizationCandidateQuery, setOrganizationCandidateQuery] = useState('');
+  const [roleCandidateQuery, setRoleCandidateQuery] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [actionKind, setActionKind] = useState<InvitationAction>();
   const detail = useDetailDrawer<WorkspaceInvitation>();
@@ -82,8 +85,8 @@ export function WorkspaceInvitationPanel({
     query: contextScopedQueryArgs({
       scopeRef: queryContext.scopeRef,
       mobile: filters.mobile,
-      organizationQuery: filters.organizationQuery,
-      roleQuery: filters.roleQuery,
+      organizationRef: filters.organizationRef,
+      roleId: filters.roleId,
       status: filters.status,
       expiresFrom: filters.expiresFrom,
       expiresTo: filters.expiresTo,
@@ -95,7 +98,7 @@ export function WorkspaceInvitationPanel({
       groupWorkspaceKey: queryContext.groupWorkspaceKey,
       expectedContextVersion: queryContext.expectedContextVersion,
     }),
-  }), [direction, filters.expiresFrom, filters.expiresTo, filters.mobile, filters.organizationQuery, filters.roleQuery, filters.status, page, pageSize, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, queryContext.scopeRef, sort]);
+  }), [direction, filters.expiresFrom, filters.expiresTo, filters.mobile, filters.organizationRef, filters.roleId, filters.status, page, pageSize, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, queryContext.scopeRef, sort]);
   const groupInvitations = operationsRtk.useGetOperationsWorkspaceGroupInvitationsQuery(operationsAdminRtkRequest.getOperationsWorkspaceGroupInvitations(path, invitationOptions), {skip: targetType !== 'GROUP'});
   const regionInvitations = operationsRtk.useGetOperationsWorkspaceRegionInvitationsQuery(operationsAdminRtkRequest.getOperationsWorkspaceRegionInvitations(path, invitationOptions), {skip: targetType !== 'REGION'});
   const projectInvitations = operationsRtk.useGetOperationsWorkspaceProjectInvitationsQuery(operationsAdminRtkRequest.getOperationsWorkspaceProjectInvitations(path, invitationOptions), {skip: targetType !== 'PROJECT'});
@@ -104,18 +107,23 @@ export function WorkspaceInvitationPanel({
   const activeInvitations = targetType === 'GROUP' ? groupInvitations : targetType === 'REGION' ? regionInvitations : targetType === 'PROJECT' ? projectInvitations : targetType === 'HEAD_COMPANY' ? headCompanyInvitations : storeInvitations;
   const result = activeInvitations.data as WorkspaceInvitationPage | undefined;
   const problem = activeInvitations.error ? queryIssue(activeInvitations.error, '邀请列表读取失败，请稍后重试') : undefined;
+  const organizationCandidateResult = useWorkspaceInvitationCandidates({targetType, queryContext, subjectType: 'ORGANIZATION', candidateUsage: 'LIST_FILTER', queryText: organizationCandidateQuery});
+  const roleCandidateResult = useWorkspaceInvitationCandidates({targetType, queryContext, subjectType: 'ROLE', candidateUsage: 'LIST_FILTER', queryText: roleCandidateQuery});
+  const organizationOptions = (organizationCandidateResult.data?.organizations ?? []).filter((candidate) => candidate.serviceNodeType === targetType).map((candidate) => ({value: candidate.organizationRef, label: formatCodeNamePath(candidate.path)}));
+  const roleOptions = (roleCandidateResult.data?.roles ?? []).map((role) => ({value: role.id, label: role.name}));
   const selected = detail.target;
   const columns = useMemo<ProColumns<WorkspaceInvitation>[]>(() => [
     {title: '邀请手机号', dataIndex: 'maskedMobile', ellipsis: true, search: false, render: (_, value) => <Button type="link" onClick={() => detail.open(value)} {...testId('operations-workspace-invitation-open-detail')}>{value.maskedMobile}</Button>},
     {title: '邀请手机号', dataIndex: 'mobile', hideInTable: true, fieldProps: {...testId('operations-workspace-invitation-query-mobile'), allowClear: true, placeholder: '请输入邀请手机号'}},
-    {title: '任职机构', dataIndex: 'organizationQuery', hideInTable: true, fieldProps: {...testId('operations-workspace-invitation-query-organization'), allowClear: true, placeholder: '请输入机构名称'}},
-    {title: '业务角色', dataIndex: 'roleQuery', hideInTable: true, fieldProps: {...testId('operations-workspace-invitation-query-role'), allowClear: true, placeholder: '请输入业务角色'}},
+    {title: '任职机构', dataIndex: 'organizationRef', hideInTable: true, valueType: 'select', fieldProps: {showSearch: true, filterOption: false, onSearch: setOrganizationCandidateQuery, options: organizationOptions, loading: organizationCandidateResult.isFetching, allowClear: true, placeholder: '搜索机构名称或编码', ...testId('operations-workspace-invitation-query-organization')}},
+    {title: '业务角色', dataIndex: 'roleId', hideInTable: true, valueType: 'select', fieldProps: {showSearch: true, filterOption: false, onSearch: setRoleCandidateQuery, options: roleOptions, loading: roleCandidateResult.isFetching, allowClear: true, placeholder: '搜索业务角色', ...testId('operations-workspace-invitation-query-role')}},
     {title: '任职机构', dataIndex: 'targetOrganizationPath', ellipsis: true, search: false, render: (_, value) => formatCodeNamePath(value.targetOrganizationPath)},
     {title: '业务角色', dataIndex: 'roleNames', search: false, render: (_, value) => <Space size={[4, 4]} wrap>{value.roleNames.map((role) => <Tag key={role}>{role}</Tag>)}</Space>},
     {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: Object.fromEntries(Object.entries(statusLabel).map(([value, text]) => [value, {text}])), fieldProps: {...testId('operations-workspace-invitation-query-status'), allowClear: true}, render: (_, value) => <Tag color={value.status === 'ACTIVE' ? 'blue' : value.status === 'COMPLETED' ? 'green' : 'default'}>{statusLabel[value.status]}</Tag>},
     {title: '有效期', dataIndex: 'expiresRange', hideInTable: true, valueType: 'dateRange', renderFormItem: () => <DatePicker.RangePicker {...testId('operations-workspace-invitation-query-expires-range')}/>},
     {title: '有效期', dataIndex: 'expiresAt', search: false, sorter: true, render: (_, value) => time(value.expiresAt)},
-  ], [detail]);
+    {title: '发起时间', dataIndex: 'createdAt', search: false, sorter: true, render: (_, value) => time(value.createdAt)},
+  ], [detail, organizationCandidateResult.isFetching, organizationOptions, roleCandidateResult.isFetching, roleOptions]);
 
   return <>
     {problem && <Alert type="error" showIcon title="邀请管理失败" description={problem} style={{marginBottom: 16}}/>}
@@ -127,7 +135,9 @@ export function WorkspaceInvitationPanel({
       loading={activeInvitations.isLoading && !result}
       dataSource={result?.items ?? []}
       columns={columns}
-      onChange={(_, __, nextSorter) => {
+      onChange={(pagination, _, nextSorter, extra) => {
+        if (extra.action === 'paginate') { setPage(pagination.current ?? page); setPageSize(pagination.pageSize ?? pageSize); return; }
+        if (extra.action !== 'sort') return;
         const sorter = Array.isArray(nextSorter) ? nextSorter[0] : nextSorter;
         if (!sorter?.order) {
           setSort('CREATED_AT');
@@ -144,10 +154,6 @@ export function WorkspaceInvitationPanel({
         pageSize,
         total: result?.total ?? 0,
         showSizeChanger: true,
-        onChange: (nextPage, nextSize) => {
-          setPage(nextPage);
-          setPageSize(nextSize);
-        },
       }}
       locale={{emptyText: '当前范围暂无邀请'}}
       {...testId('operations-workspace-invitation-table')}

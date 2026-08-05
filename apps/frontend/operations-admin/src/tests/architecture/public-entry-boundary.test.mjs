@@ -19,6 +19,7 @@ test('public invitation and recovery preserve the public-only, anonymous owner-f
   }
   assert.match(generatedCatalog, /\/api\/public\/invitations/);
   assert.match(generatedCatalog, /\/api\/public\/operations-workspaces/);
+  assert.doesNotMatch(generatedCatalog, /\/api\/public\/password-reset|completeWorkspacePasswordReset|sendWorkspacePasswordResetOtp|verifyWorkspacePasswordResetOtp/);
   assert.doesNotMatch(recoverySource + appSource, /resetGenerationKey|sendWorkspacePasswordResetOtp|verifyWorkspacePasswordResetOtp|completeWorkspacePasswordReset/);
   assert.doesNotMatch(recoverySource, /['"`]\s*\/api\//);
   assert.match(recoverySource, /Idempotency-Key/);

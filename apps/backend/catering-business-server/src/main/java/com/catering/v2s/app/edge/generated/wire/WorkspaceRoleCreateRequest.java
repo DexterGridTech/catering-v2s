@@ -4,7 +4,7 @@ package com.catering.v2s.app.edge.generated.wire;
 public record WorkspaceRoleCreateRequest(
     String name,
     String description,
-    ServiceNodeType serviceNodeType,
+    String serviceNodeType,
     java.util.List<String> capabilityKeys,
     java.util.List<String> pageAccessKeys
 ) {}

@@ -40,7 +40,7 @@ export function WorkspaceInvitationActionModal({open, kind, invitation, queryCon
     setProblem(undefined);
     setSubmitting(true);
     const idempotencyKey = submission.getIdempotencyKey();
-    const options = {body: {expectedVersion: invitation.revision, expectedContextVersion: queryContext.expectedContextVersion, idempotencyKey}, headers: {'Idempotency-Key': idempotencyKey}};
+    const options = {body: {scopeRef: queryContext.scopeRef, expectedVersion: invitation.revision, expectedContextVersion: queryContext.expectedContextVersion, idempotencyKey}, headers: {'Idempotency-Key': idempotencyKey}};
     try {
       const updated = kind === 'cancel'
         ? targetType === 'GROUP'

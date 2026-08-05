@@ -16,7 +16,6 @@
         ],
         "x-page-key": "PLATFORM-ROLES",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -113,31 +112,30 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         }
       },
       "post": {
         "operationId": "createWorkspaceRole",
-        "x-required-platform-authorization": "REQ_CREATE_WORKSPACE_ROLE",
         "tags": [
           "workspace-iam"
         ],
@@ -151,7 +149,6 @@
         ],
         "x-page-key": "PLATFORM-ROLES",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -209,27 +206,28 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-required-platform-authorization": "REQ_CREATE_WORKSPACE_ROLE",
         "requestBody": {
           "required": true,
           "content": {
@@ -245,13 +243,19 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}": {
       "get": {
         "operationId": "getWorkspaceRole",
-        "tags": ["workspace-iam"],
-        "x-consumer-faces": ["platform-admin"],
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
         "x-owner-module": "workspace-iam",
-        "x-scenario-ids": ["D04-S01", "D04-S02"],
+        "x-scenario-ids": [
+          "D04-S01",
+          "D04-S02"
+        ],
         "x-page-key": "PLATFORM-ROLES",
         "x-idempotency-policy": "FORBIDDEN",
-        "x-expected-version-policy": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -259,24 +263,69 @@
           "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
           "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
         ],
-        "security": [{"platformSessionCookie": []}],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
         "parameters": [
-          {"name": "groupWorkspaceKey", "in": "path", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128}},
-          {"name": "roleId", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
         ],
         "responses": {
-          "200": {"description": "Owner latest readback", "content": {"application/json": {"schema": {"$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRole"}}}},
-          "400": {"$ref": "#/components/responses/ProblemResponse"},
-          "401": {"$ref": "#/components/responses/ProblemResponse"},
-          "403": {"$ref": "#/components/responses/ProblemResponse"},
-          "404": {"$ref": "#/components/responses/ProblemResponse"},
-          "429": {"$ref": "#/components/responses/ProblemResponse"},
-          "500": {"$ref": "#/components/responses/ProblemResponse"}
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRole"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
+          }
         }
       },
       "patch": {
         "operationId": "updateWorkspaceRole",
-        "x-required-platform-authorization": "REQ_UPDATE_WORKSPACE_ROLE",
         "tags": [
           "workspace-iam"
         ],
@@ -290,7 +339,6 @@
         ],
         "x-page-key": "PLATFORM-ROLES",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -359,27 +407,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_UPDATE_WORKSPACE_ROLE",
         "requestBody": {
           "required": true,
           "content": {
@@ -395,7 +445,6 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status": {
       "post": {
         "operationId": "transitionWorkspaceRoleStatus",
-        "x-required-platform-authorization": "REQ_TRANSITION_WORKSPACE_ROLE_STATUS",
         "tags": [
           "workspace-iam"
         ],
@@ -409,7 +458,6 @@
         ],
         "x-page-key": "PLATFORM-ROLES",
         "x-idempotency-policy": "REQUIRED_16_128",
-        "x-expected-version-policy": "REQUIRED",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -473,27 +521,29 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "401": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "403": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "404": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "409": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "429": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           },
           "500": {
-            "$ref": "#/components/responses/ProblemResponse"
+            "$ref": "../../edge.openapi.yaml#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_TRANSITION_WORKSPACE_ROLE_STATUS",
         "requestBody": {
           "required": true,
           "content": {
@@ -501,20 +551,6 @@
               "schema": {
                 "$ref": "../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRoleStatusTransitionRequest"
               }
-            }
-          }
-        }
-      }
-    }
-  }
-,  "components": {
-    "responses": {
-      "ProblemResponse": {
-        "description": "Problem response",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "../../components/common/problem.schemas.yaml#/components/schemas/Problem"
             }
           }
         }

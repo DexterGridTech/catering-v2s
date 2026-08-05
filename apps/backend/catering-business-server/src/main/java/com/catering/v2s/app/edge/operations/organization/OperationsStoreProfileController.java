@@ -56,9 +56,7 @@ public final class OperationsStoreProfileController {
     }
 
     private WorkspaceSessionReadback context(EdgeRequestContext request, String key, long expected) {
-        WorkspaceSessionReadback session = sessions.requireWorkspace(request, key);
-        if (session.contextVersion() != expected) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        return session;
+        return sessions.requireWorkspaceAtContextVersion(request, key, expected);
     }
     private static StoreContractPage contractPage(ContractTaskReadService.FixedStoreContractPage value) {
         return new StoreContractPage(new StoreContractPageMetadata(value.groupWorkspaceKey(), value.project().id().toString(), value.project().name(), (long) value.page(), (long) value.pageSize(), value.total(), StoreContractSortKey.CONTRACT_NO, StoreContractSortDirection.ASC), value.items().stream().map(OperationsStoreProfileController::contract).toList());
@@ -74,5 +72,8 @@ public final class OperationsStoreProfileController {
         values.forEach((key, raw) -> { try { result.set(key, JSON.readTree(raw)); } catch (Exception exception) { throw new IllegalStateException("contract owner emitted invalid extension JSON", exception); } });
         return result;
     }
-    private static java.util.UUID requireStore(WorkspaceSessionReadback value) { if (value.visibleDataNodeId() == null) throw new WorkspaceAuthenticationService.SessionInvalidException(); return value.visibleDataNodeId(); }
+    private static java.util.UUID requireStore(WorkspaceSessionReadback value) {
+        if (value.scopeContext() == null || value.scopeContext().store() == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        return value.scopeContext().store().dataNodeId();
+    }
 }

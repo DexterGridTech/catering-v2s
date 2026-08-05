@@ -1,18 +1,19 @@
 import {ProTable} from '@ant-design/pro-components';
-import {Alert, Button, Card, Descriptions, Empty, Input, Spin, Tabs, Tag, Tree} from 'antd';
+import {Alert, Button, Card, Descriptions, Empty, Input, Select, Spin, Tabs, Tag, Tree} from 'antd';
 import {adminListState, contextScopedQueryArgs, formatNameCode, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState, type ReactNode} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformProblemOf, platformRtk, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
-import type {ContractOverviewItem, ContractOverviewPage, OrganizationHierarchyTreeNode, OrganizationOverviewItem, OrganizationOverviewStatus, StoreContractSortDirection, StoreContractSortKey, StoreContractStatus} from '../../../app/api/generated/platform-edge';
+import type {ContractOverviewItem, OrganizationHierarchyTreeNode, OrganizationOverviewItem, OrganizationOverviewStatus, StoreContractSortDirection, StoreContractSortKey, StoreContractStatus} from '../../../app/api/generated/platform-edge';
 import {ContractOverviewDetailDrawer} from './ContractOverviewDetailDrawer';
 import {OrganizationOverviewDetailDrawer} from './OrganizationOverviewDetailDrawer';
 import {defaultOrganizationTabQueryState, filtersForOrganizationTab, organizationOverviewQuery, ownerFilterOptions, updateOrganizationTabQueryState, type OrganizationFilters, type OrganizationTab, type OrganizationTabQueryState} from './OrganizationOverviewFilters';
 import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-history';
 import {organizationOverviewExtensionItems} from './OrganizationOverviewPresentation';
+import {usePlatformOrganizationCandidates} from '../../../app/queries/usePlatformOrganizationCandidates';
 
-type ContractFilters = {projectId?: string; storeId?: string; contractNo?: string; phaseName?: string; tenantName?: string; status?: StoreContractStatus};
+type ContractFilters = {contractNo?: string; storeId?: string; phaseName?: string; tenantId?: string; itemCode?: string; status?: StoreContractStatus};
 
 const organizationTabs: OrganizationTab[] = [
   {key: 'HIERARCHY', label: '组织架构', category: 'HIERARCHY'}, {key: 'BRAND', label: '品牌', category: 'BUSINESS_ENTITY', type: 'BRAND'},
@@ -20,7 +21,6 @@ const organizationTabs: OrganizationTab[] = [
   {key: 'STORE', label: '门店', category: 'STORE', type: 'STORE'},
 ];
 const statusLabel = (value: string) => value === 'ENABLED' ? '已启用' : value === 'DISABLED' ? '已停用' : value === 'VALID' ? '生效中' : '已失效';
-const contractFilterOptions = (options: ContractOverviewPage['filterOptions'] | undefined, kind: 'PROJECT' | 'STORE' | 'TENANT') => (options ?? []).filter((option) => option.kind === kind).map((option) => ({value: option.id, label: formatNameCode(option.name, option.code)}));
 export function PlatformReadPage({kind}: {kind: 'organization' | 'contracts'}) {
   return <WorkspaceScope>{(groupWorkspaceKey) => <PlatformReadForWorkspace key={`${groupWorkspaceKey}-${kind}`} groupWorkspaceKey={groupWorkspaceKey} kind={kind}/>}</WorkspaceScope>;
 }
@@ -68,6 +68,8 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
   const [organizationTab, setOrganizationTab] = useState('HIERARCHY');
   const [organizationTabStates, setOrganizationTabStates] = useState<Record<string, OrganizationTabQueryState>>({});
   const [contractFilters, setContractFilters] = useState<ContractFilters>({});
+  const [contractStoreSearch, setContractStoreSearch] = useState('');
+  const [contractTenantSearch, setContractTenantSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [contractSort, setContractSort] = useState<StoreContractSortKey>('UPDATED_AT');
@@ -83,6 +85,7 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
   const [auditTarget, setAuditTarget] = useState<PlatformAuditTarget>();
   useOverlayLock(organizationDetail.isOpen || contractDetail.isOpen || Boolean(auditTarget));
   const tab = organizationTabs.find((item) => item.key === organizationTab) ?? organizationTabs[0];
+  const legalEntityTab = tab.category === 'BUSINESS_ENTITY' && (tab.type === 'TENANT' || tab.type === 'HEAD_COMPANY');
   const organizationTabState = organizationTabStates[tab.key] ?? defaultOrganizationTabQueryState;
   const context = useMemo(() => contextScopedQueryArgs({}, {groupWorkspaceKey}), [groupWorkspaceKey]);
   const workspaceDetailRequest = useMemo(() => platformAdminRtkRequest.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: context.groupWorkspaceKey}, {}), [context.groupWorkspaceKey]);
@@ -99,6 +102,8 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
   const hierarchyQuery = platformRtk.useGetPlatformOrganizationHierarchyTreeQuery(treeRequest, {skip: kind !== 'organization' || tab.category !== 'HIERARCHY' || !workspaceIsInitialized});
   const commercialGroupDefinitionQuery = platformRtk.useGetExtensionDefinitionQuery(commercialGroupDefinitionRequest, {skip: kind !== 'organization' || tab.category !== 'HIERARCHY' || !workspaceIsInitialized});
   const contractQuery = platformRtk.useGetPlatformContractOverviewPageQuery(contractRequest, {skip: kind !== 'contracts'});
+  const contractStoreCandidates = usePlatformOrganizationCandidates({open: kind === 'contracts', groupWorkspaceKey: context.groupWorkspaceKey, subjectType: 'STORE', queryText: contractStoreSearch, selectedId: contractFilters.storeId});
+  const contractTenantCandidates = usePlatformOrganizationCandidates({open: kind === 'contracts', groupWorkspaceKey: context.groupWorkspaceKey, subjectType: 'TENANT', queryText: contractTenantSearch, selectedId: contractFilters.tenantId});
   const [loadOrganizationDetail] = platformRtk.useLazyGetPlatformOrganizationOverviewDetailQuery();
   const [loadContractDetail] = platformRtk.useLazyGetPlatformContractOverviewDetailQuery();
   const openOrganizationDetail = (itemId: string, category = tab.category) => {
@@ -166,13 +171,15 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
   const resetOrganizationFilters = () => { updateOrganizationTabState(tab.key, {filters: {}, page: 1}); };
   const submitContractFilters = (next: ContractFilters) => { setContractFilters(next); setPage(1); };
   const resetContractFilters = () => { setContractFilters({}); setPage(1); };
-  return <>
+  const hierarchyPage = kind === 'organization' && tab.category === 'HIERARCHY';
+  return <div className={hierarchyPage ? 'platform-organization-hierarchy-page' : undefined}>
     {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 12}} {...testId(`platform-${kind}-list-error`)}/>}
     {kind === 'organization' && <Tabs activeKey={organizationTab} onChange={setOrganizationTab} items={organizationTabs.map((item) => ({key: item.key, label: item.label}))} {...testId('platform-organization-tabs')}/>}
-    {kind === 'organization' && tab.category === 'HIERARCHY' && <div style={{display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) minmax(340px, 1.35fr)', gap: 16}}>
-      {hierarchyLoading ? <Spin description={<span {...testId('platform-organization-hierarchy-loading')}>正在加载</span>}/> : problem ? null : !workspaceIsInitialized ? <Empty description={<span {...testId('platform-organization-hierarchy-uninitialized')}>当前集团空间尚未初始化商业集团</span>}/> : !hierarchyQuery.data || !hierarchyRootProjection ? <Empty description={<span {...testId('platform-organization-hierarchy-empty')}>暂无组织架构</span>}/> : <Card size="small" title="组织架构" style={{minWidth: 0}} styles={{body: {display: 'flex', flexDirection: 'column', gap: 12, minHeight: 360}}}><Input allowClear placeholder="按名称或编码搜索" value={hierarchySearch} onChange={(event) => setHierarchySearch(event.target.value)} {...testId('platform-organization-hierarchy-search')}/><div style={{flex: 1, minHeight: 0, maxHeight: 440, overflow: 'auto', paddingRight: 4}}>{hierarchyTreeData.length ? <Tree showLine defaultExpandAll selectedKeys={hierarchyNodeId ? [hierarchyNodeId] : []} onSelect={(keys) => { const id = String(keys[0] ?? ''); if (!id) return; if (id === hierarchyRootProjection.id) { setHierarchyNodeId(id); setHierarchyDetail(hierarchyRootProjection); return; } openOrganizationDetail(id, 'HIERARCHY'); }} treeData={hierarchyTreeData} {...testId('platform-organization-hierarchy-tree')}/> : <Empty description="未找到匹配的组织"/>}</div></Card>}
-      <Card size="small" title="组织详情" style={{minWidth: 0, alignSelf: 'start'}}><Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={displayedHierarchyDetail ? [
-        {key: 'identity', label: '名称', children: formatNameCode(displayedHierarchyDetail.name, displayedHierarchyDetail.code)},
+    {hierarchyPage && <div className="platform-organization-hierarchy-layout">
+      {hierarchyLoading ? <Spin description={<span {...testId('platform-organization-hierarchy-loading')}>正在加载</span>}/> : problem ? null : !workspaceIsInitialized ? <Empty description={<span {...testId('platform-organization-hierarchy-uninitialized')}>当前集团空间尚未初始化商业集团</span>}/> : !hierarchyQuery.data || !hierarchyRootProjection ? <Empty description={<span {...testId('platform-organization-hierarchy-empty')}>暂无组织架构</span>}/> : <Card className="platform-organization-hierarchy-panel platform-organization-hierarchy-tree-panel" size="small" title="组织架构"><Input allowClear placeholder="按名称或编码搜索" value={hierarchySearch} onChange={(event) => setHierarchySearch(event.target.value)} {...testId('platform-organization-hierarchy-search')}/><div className="platform-organization-hierarchy-tree-scroll">{hierarchyTreeData.length ? <Tree showLine defaultExpandAll selectedKeys={hierarchyNodeId ? [hierarchyNodeId] : []} onSelect={(keys) => { const id = String(keys[0] ?? ''); if (!id) return; if (id === hierarchyRootProjection.id) { setHierarchyNodeId(id); setHierarchyDetail(hierarchyRootProjection); return; } openOrganizationDetail(id, 'HIERARCHY'); }} treeData={hierarchyTreeData} {...testId('platform-organization-hierarchy-tree')}/> : <Empty description="未找到匹配的组织"/>}</div></Card>}
+      <Card className="platform-organization-hierarchy-panel platform-organization-hierarchy-detail-panel" size="small" title="组织详情"><Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={displayedHierarchyDetail ? [
+        {key: 'name', label: '名称', children: displayedHierarchyDetail.name},
+        {key: 'code', label: '编码', children: displayedHierarchyDetail.code},
         {key: 'status', label: '状态', children: statusLabel(displayedHierarchyDetail.status)}, {key: 'notes', label: '备注', children: displayedHierarchyDetail.notes || '—'},
         ...(displayedHierarchyDetail.type === 'PROJECT' ? [{key: 'phases', label: '项目分期名称', children: selectedHierarchyNode?.phases?.join('、') || '—'}] : []),
         {key: 'updatedAt', label: '更新时间', children: new Date(displayedHierarchyDetail.updatedAt).toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'})},
@@ -180,41 +187,53 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
       ] : [{key: 'empty', label: '提示', children: '请选择左侧组织查看详情。'}]}/></Card>
     </div>}
     {kind === 'organization' && tab.category !== 'HIERARCHY' && <div {...testId('platform-organization-table')}><ProTable<OrganizationOverviewItem> key={tab.key} rowKey="id" loading={organizationListState.loading} locale={organizationListState.locale} dataSource={organizationPage?.items ?? []} options={false}
-       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-organization-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); resetOrganizationFilters(); }} {...testId('platform-organization-filter-reset')}>重置</Button>]}}
+       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-organization-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); searchConfig.form?.setFieldsValue({name: undefined, code: undefined, legalName: undefined, unifiedSocialCreditCode: undefined, status: undefined, source: undefined, projectId: undefined, brandId: undefined, tenantId: undefined, headCompanyId: undefined}); resetOrganizationFilters(); }} {...testId('platform-organization-filter-reset')}>重置</Button>]}}
        form={{initialValues: organizationTabState.filters}}
-       onSubmit={(value) => submitOrganizationFilters({name: value.name?.trim() || undefined, code: value.code?.trim() || undefined, status: value.status, source: value.source, projectId: value.projectId, brandId: value.brandId, tenantId: value.tenantId})}
-      pagination={organizationPage ? {current: organizationPage.metadata.page, pageSize: organizationPage.metadata.pageSize, total: organizationPage.metadata.total, onChange: (nextPage, nextPageSize) => updateOrganizationTabState(tab.key, {page: nextPage, pageSize: nextPageSize})} : false}
-      onChange={(_, __, sorter) => { const current = Array.isArray(sorter) ? sorter[0] : sorter; if (!current?.order) { updateOrganizationTabState(tab.key, {sort: 'UPDATED_AT', direction: 'DESC'}); return; } const nextSort = current.columnKey === 'name' ? 'NAME' : current.columnKey === 'code' ? 'CODE' : 'UPDATED_AT'; updateOrganizationTabState(tab.key, {sort: nextSort, direction: current.order === 'ascend' ? 'ASC' : 'DESC', page: 1}); }}
+       onSubmit={(value) => submitOrganizationFilters({name: value.name?.trim() || undefined, code: value.code?.trim() || undefined, legalName: value.legalName?.trim() || undefined, unifiedSocialCreditCode: value.unifiedSocialCreditCode?.trim() || undefined, status: value.status, source: value.source, projectId: value.projectId, brandId: value.brandId, tenantId: value.tenantId, headCompanyId: value.headCompanyId})}
+      pagination={organizationPage ? {current: organizationPage.metadata.page, pageSize: organizationPage.metadata.pageSize, total: organizationPage.metadata.total} : false}
+      onChange={(pagination, _, sorter, extra) => { if (extra.action === 'paginate') { updateOrganizationTabState(tab.key, {page: pagination.current ?? organizationTabState.page, pageSize: pagination.pageSize ?? organizationTabState.pageSize}); return; } if (extra.action !== 'sort') return; const current = Array.isArray(sorter) ? sorter[0] : sorter; if (!current?.order) { updateOrganizationTabState(tab.key, {sort: 'UPDATED_AT', direction: 'DESC'}); return; } const nextSort = current.columnKey === 'name' ? 'NAME' : current.columnKey === 'code' ? 'CODE' : 'UPDATED_AT'; updateOrganizationTabState(tab.key, {sort: nextSort, direction: current.order === 'ascend' ? 'ASC' : 'DESC', page: 1}); }}
       columns={[
-        {key: 'name', title: '名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('platform-organization-filter-name'), allowClear: true, placeholder: '输入名称'}, render: (_, row) => <Button type="link" onClick={() => openOrganizationDetail(row.id)} {...testId(`platform-organization-detail-${row.id}`)}>{formatNameCode(row.name, row.code)}</Button>},
+        {key: 'name', title: '名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('platform-organization-filter-name'), allowClear: true, placeholder: '输入名称'}, render: (_, row) => <Button type="link" onClick={() => openOrganizationDetail(row.id)} {...testId(`platform-organization-detail-${row.id}`)}>{row.name}</Button>},
         {key: 'code', title: '编码', dataIndex: 'code', sorter: true, fieldProps: {...testId('platform-organization-filter-code'), allowClear: true, placeholder: '输入编码'}},
+        ...(legalEntityTab ? [
+          {key: 'legalName', title: '法人公司', dataIndex: 'legalName', fieldProps: {...testId('platform-organization-filter-legal-name'), allowClear: true, placeholder: '输入法人公司'}},
+          {key: 'unifiedSocialCreditCode', title: '统一代码', dataIndex: 'unifiedSocialCreditCode', fieldProps: {...testId('platform-organization-filter-unified-code'), allowClear: true, placeholder: '输入统一代码'}},
+        ] : []),
+        ...(tab.type === 'BRAND' ? [{title: '别名', dataIndex: 'alias', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.alias || '—'}] : []),
         {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {ENABLED: {text: '已启用'}, DISABLED: {text: '已停用'}}, fieldProps: {...testId('platform-organization-filter-status'), allowClear: true, placeholder: '全部'}, render: (_, row) => statusLabel(row.status)},
-        {title: '来源', dataIndex: 'source', valueType: 'select', valueEnum: {MANUAL: {text: '人工维护'}, SYSTEM: {text: '系统生成'}}, hideInTable: true, fieldProps: {...testId('platform-organization-filter-source'), allowClear: true, placeholder: '全部'}},
+        {title: '来源', dataIndex: 'source', valueType: 'select', valueEnum: {MANUAL: {text: '人工维护'}, SYSTEM: {text: '系统生成'}}, fieldProps: {...testId('platform-organization-filter-source'), allowClear: true, placeholder: '全部'}},
         ...(tab.category === 'STORE' ? [
           {title: '项目', dataIndex: 'projectId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-project'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'PROJECT'), placeholder: '全部'}},
           {title: '品牌', dataIndex: 'brandId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-brand'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'BRAND'), placeholder: '全部'}},
           {title: '经营租户', dataIndex: 'tenantId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-tenant'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'TENANT'), placeholder: '全部'}},
+          {title: '总公司', dataIndex: 'headCompanyId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-head-company'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'HEAD_COMPANY'), placeholder: '全部'}},
+          {title: '项目', dataIndex: 'project', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.project ? formatNameCode(row.project.name, row.project.code) : '—'},
+          {title: '品牌', dataIndex: 'brand', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.brand ? formatNameCode(row.brand.name, row.brand.code) : '—'},
+          {title: '经营租户', dataIndex: 'tenant', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.tenant ? formatNameCode(row.tenant.name, row.tenant.code) : '—'},
+          {title: '总公司', dataIndex: 'headCompany', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.headCompany ? formatNameCode(row.headCompany.name, row.headCompany.code) : '未设置'},
         ] : []),
+        {title: '备注', dataIndex: 'notes', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.notes || '—'},
         {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
       ]}
     /></div>}
     {kind === 'contracts' && <div {...testId('platform-contract-table')}><ProTable<ContractOverviewItem> rowKey={(row) => row.contractRef.id} loading={contractListState.loading} locale={contractListState.locale} dataSource={contractPage?.items ?? []} options={false}
-       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-contract-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); resetContractFilters(); }} {...testId('platform-contract-filter-reset')}>重置</Button>]}}
+       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-contract-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); searchConfig.form?.setFieldsValue({contractNo: undefined, storeId: undefined, phaseName: undefined, tenantId: undefined, itemCode: undefined, status: undefined}); setContractStoreSearch(''); setContractTenantSearch(''); resetContractFilters(); }} {...testId('platform-contract-filter-reset')}>重置</Button>]}}
        form={{initialValues: contractFilters}}
-       onSubmit={(value) => submitContractFilters({projectId: value.projectId, storeId: value.storeId, contractNo: value.contractNo?.trim() || undefined, phaseName: value.phaseName || undefined, tenantName: value.tenantName?.trim() || undefined, status: value.status})}
-      pagination={contractPage ? {current: contractPage.metadata.page, pageSize: contractPage.metadata.pageSize, total: contractPage.metadata.total, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); }} : false}
-      onChange={(_, __, sorter) => { const current = Array.isArray(sorter) ? sorter[0] : sorter; if (!current?.order) { setContractSort('UPDATED_AT'); setContractDirection('DESC'); return; } const nextSort = current.columnKey === 'contractNo' ? 'CONTRACT_NO' : current.columnKey === 'effectiveFrom' ? 'EFFECTIVE_FROM' : 'UPDATED_AT'; setContractSort(nextSort); setContractDirection(current.order === 'ascend' ? 'ASC' : 'DESC'); setPage(1); }}
+      onSubmit={(value) => submitContractFilters({contractNo: value.contractNo?.trim() || undefined, storeId: value.storeId, phaseName: value.phaseName?.trim() || undefined, tenantId: value.tenantId, itemCode: value.itemCode?.trim() || undefined, status: value.status})}
+      pagination={contractPage ? {current: contractPage.metadata.page, pageSize: contractPage.metadata.pageSize, total: contractPage.metadata.total} : false}
+      onChange={(pagination, _, sorter, extra) => { if (extra.action === 'paginate') { setPage(pagination.current ?? page); setPageSize(pagination.pageSize ?? pageSize); return; } if (extra.action !== 'sort') return; const current = Array.isArray(sorter) ? sorter[0] : sorter; if (!current?.order) { setContractSort('UPDATED_AT'); setContractDirection('DESC'); return; } const nextSort = current.columnKey === 'contractNo' ? 'CONTRACT_NO' : current.columnKey === 'effectiveFrom' ? 'EFFECTIVE_FROM' : 'UPDATED_AT'; setContractSort(nextSort); setContractDirection(current.order === 'ascend' ? 'ASC' : 'DESC'); setPage(1); }}
       columns={[
-        {title: '项目', dataIndex: 'projectId', hideInTable: true, valueType: 'select', fieldProps: {...testId('platform-contract-filter-project'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: contractFilterOptions(contractPage?.filterOptions, 'PROJECT'), placeholder: '请选择项目'}},
         {key: 'contractNo', title: '合同编号', dataIndex: 'contractNo', sorter: true, fieldProps: {...testId('platform-contract-filter-number'), allowClear: true}, render: (_, row) => <Button type="link" onClick={() => openContractDetail(row.contractRef.id)} {...testId(`platform-contract-detail-${row.contractRef.id}`)}>{row.contractRef.code}</Button>},
-        {title: '门店', dataIndex: 'storeId', hideInTable: true, valueType: 'select', fieldProps: {...testId('platform-contract-filter-store'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: contractFilterOptions(contractPage?.filterOptions, 'STORE'), disabled: !contractFilters.projectId, placeholder: '请选择门店'}},
-        {title: '分期', dataIndex: 'phaseName', hideInTable: true, valueType: 'select', fieldProps: {...testId('platform-contract-filter-phase'), allowClear: true, options: (contractPage?.phaseOptions ?? []).map((phase) => ({value: phase, label: phase})), disabled: !contractFilters.projectId, placeholder: '请选择分期'}},
-        {title: '经营租户', dataIndex: 'tenantName', hideInTable: true, fieldProps: {...testId('platform-contract-filter-tenant'), allowClear: true, placeholder: '输入租户名称或编码'}},
+        {title: '门店', dataIndex: 'storeId', hideInTable: true, valueType: 'select', fieldProps: {allowClear: true, showSearch: {filterOption: false, onSearch: setContractStoreSearch}, onPopupScroll: contractStoreCandidates.onPopupScroll, loading: contractStoreCandidates.isFetching, options: contractStoreCandidates.items.map((item) => ({value: item.id, label: formatNameCode(item.name, item.code)})), placeholder: '搜索门店名称或编码', ...testId('platform-contract-filter-store')}},
+        {title: '分期', dataIndex: 'phaseName', hideInTable: true, fieldProps: {...testId('platform-contract-filter-phase'), allowClear: true, placeholder: '输入项目分期'}},
+        {title: '经营租户', dataIndex: 'tenantId', hideInTable: true, valueType: 'select', fieldProps: {allowClear: true, showSearch: {filterOption: false, onSearch: setContractTenantSearch}, onPopupScroll: contractTenantCandidates.onPopupScroll, loading: contractTenantCandidates.isFetching, options: contractTenantCandidates.items.map((item) => ({value: item.id, label: formatNameCode(item.name, item.code)})), placeholder: '搜索经营租户名称或编码', ...testId('platform-contract-filter-tenant')}},
+        {title: '货号', dataIndex: 'itemCode', hideInTable: true, fieldProps: {...testId('platform-contract-filter-item-code'), allowClear: true, placeholder: '输入货号'}},
         {title: '项目', dataIndex: 'projectRef', search: false, render: (_, row) => formatNameCode(row.projectRef.name, row.projectRef.code)},
         {title: '门店', dataIndex: 'storeRef', search: false, render: (_, row) => formatNameCode(row.storeRef.name, row.storeRef.code)},
         {title: '分期', dataIndex: 'phaseName', search: false},
         {title: '经营租户', dataIndex: 'tenantRef', search: false, render: (_, row) => formatNameCode(row.tenantRef.name, row.tenantRef.code)},
         {title: '起止日期', key: 'effectiveFrom', search: false, sorter: true, render: (_, row) => `${row.effectiveFrom} 至 ${row.effectiveTo ?? '长期'}`},
+        {title: '货号', dataIndex: 'itemSummary', search: false, render: (_, row) => row.itemSummary || row.items.map((item) => item.code).join('、') || '—'},
         {title: '货号数量', dataIndex: 'items', search: false, render: (_, row) => String(row.items?.length ?? 0)},
         {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {VALID: {text: '生效中'}, INVALID: {text: '已失效'}}, fieldProps: {...testId('platform-contract-filter-status'), allowClear: true, placeholder: '全部'}, render: (_, row) => statusLabel(row.status)},
         {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
@@ -223,5 +242,5 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
     <OrganizationOverviewDetailDrawer open={organizationDetail.isOpen} loading={organizationDetail.loading} problem={problem} item={organizationDetail.target} onClose={closeOrganizationDetail}/>
     <ContractOverviewDetailDrawer open={contractDetail.isOpen} loading={contractDetail.loading} problem={problem} item={contractDetail.target} onClose={closeContractDetail} onAudit={() => contractDetail.target && setAuditTarget({entityType: 'STORE_CONTRACT', entityId: contractDetail.target.contractRef.id, displayName: contractDetail.target.contractRef.code})}/>
     <PlatformAuditHistoryModal open={Boolean(auditTarget)} target={auditTarget} groupWorkspaceKey={groupWorkspaceKey} onClose={() => setAuditTarget(undefined)}/>
-  </>;
+  </div>;
 }

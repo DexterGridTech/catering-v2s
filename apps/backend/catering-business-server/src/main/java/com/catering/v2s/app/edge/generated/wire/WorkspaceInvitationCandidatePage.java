@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceInvitationCandidatePage(
-    WorkspaceInvitationCandidatePageMetadata metadata,
     java.util.List<WorkspaceInvitationCandidatePageOrganizationsItem> organizations,
-    java.util.List<WorkspaceRole> roles
+    java.util.List<WorkspaceRole> roles,
+    WorkspaceInvitationCandidatePageMetadata metadata
 ) {}

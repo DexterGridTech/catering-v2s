@@ -17,7 +17,7 @@ public final class WorkspaceInvitationPageWireMapper {
             source.items().stream().map(WorkspaceInvitationWireMapper::wire).toList(),
             (long) source.page(), (long) source.pageSize(), source.total(),
             new WorkspaceInvitationPageCriteria(
-                criteria.mobile(), criteria.organizationQuery(), criteria.roleQuery(),
+                criteria.mobile(), criteria.targetOrganizationRef() == null ? null : criteria.targetOrganizationRef().toString(), criteria.roleId() == null ? null : criteria.roleId().toString(),
                 criteria.status() == null ? null : WorkspaceInvitationStatus.valueOf(criteria.status()),
                 criteria.expiresFrom(), criteria.expiresTo(),
                 WorkspaceInvitationSortKey.valueOf(criteria.sort()), SortDirection.valueOf(criteria.direction())

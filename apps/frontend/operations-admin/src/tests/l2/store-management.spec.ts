@@ -1,5 +1,5 @@
 import {expect, test, type Page} from '@playwright/test';
-import {selectOperationsDataScope} from './operationsL2';
+import {selectOperationsDataScope, selectOperationsOption} from './operationsL2';
 
 function requiredL2Env(name: string) {
   const value = process.env[name];
@@ -17,8 +17,7 @@ async function signInOperations(page: Page) {
   const shellMenu = page.getByTestId('operations-shell-menu');
   await roleSelector.or(shellMenu).waitFor({state: 'visible'});
   if (await roleSelector.isVisible()) {
-    await roleSelector.click();
-    await page.getByRole('option', {name: requiredL2Env('R5_L2_OPERATIONS_ROLE_LABEL'), exact: true}).click();
+    await selectOperationsOption(page, 'operations-role-context-select', requiredL2Env('R5_L2_OPERATIONS_ROLE_LABEL'));
     await page.getByTestId('operations-role-context-enter').click();
   }
   await expect(shellMenu).toBeVisible();
@@ -34,11 +33,14 @@ test('operations administrator filters an owner-backed store, reads its detail, 
   await signInOperations(page);
   await page.goto(requiredL2Env('R5_L2_STORE_ROUTE'));
   await expect(page).toHaveURL(/\/organization\/stores$/);
+  await expect(page.getByTestId('operations-page-data-scope-missing')).toBeVisible();
+  await expect(page.getByTestId('operations-page-data-scope-gated')).toBeVisible();
+  await expect(page.getByTestId('operations-store-page')).toHaveCount(0);
+  await selectOperationsDataScope(page, 'PROJECT', {regionName: requiredL2Env('R5_L2_ORGANIZATION_REGION_NAME'), projectName: requiredL2Env('R5_L2_OPERATIONS_SCOPE_PROJECT_NAME')});
   await expect(page.getByTestId('operations-store-page')).toBeVisible();
-  await selectOperationsDataScope(page);
   await page.getByTestId('operations-store-filter-name').fill(storeName);
   await page.getByTestId('operations-store-filter-submit').click();
-  await page.getByRole('button', {name: storeName, exact: true}).click();
+  await page.getByTestId('operations-store-table').locator('[data-testid^="operations-store-open-detail-"]').filter({hasText: storeName}).click();
   await expect(page.getByTestId('operations-store-detail-drawer')).toBeVisible();
   await expect(page.getByText('所属项目')).toBeVisible();
 

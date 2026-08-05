@@ -81,16 +81,15 @@ class P4SqlOperationBudgetTest {
 
     /** The prospective S6 is deliberately included before the ledger file is amended. */
     private static final Set<String> REQUIRED_LEDGER_IDS = Set.of(
-        "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13",
-        "S1", "S2", "S3", "S4", "S5", "S6", "O1", "O2", "O3", "O4", "O5", "O6", "R8"
+        "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13",
+        "S1", "S2", "S3", "S4", "S6", "O1", "O2", "O3", "O4", "O5", "O6", "R8"
     );
 
     /** Named source identities: no row may silently disappear while fixtures are being added. */
     private static final Map<String, String> NAMED_LEDGER_OPERATIONS = Map.ofEntries(
-        Map.entry("M1", "ContractTaskReadService#overview"),
         Map.entry("M2", "ContractTaskReadService#fixedStoreContracts"),
-        Map.entry("M3", "ContractTaskReadService#page"),
-        Map.entry("M4", "ContractTaskReadService#platformOverview"),
+        Map.entry("M3", "ContractTaskReadService#list"),
+        Map.entry("M4", "ContractTaskReadService#list"),
         Map.entry("M5", "ContractCommandService#list"),
         Map.entry("M6", "WorkspaceRoleService#list"),
         Map.entry("M7", "BusinessEntityService#listEntities"),
@@ -104,9 +103,8 @@ class P4SqlOperationBudgetTest {
         Map.entry("S2", "WorkspaceAuthenticationService#sessionEntry"),
         Map.entry("S3", "WorkspaceInvitationService#managementPage"),
         Map.entry("S4", "WorkspaceInvitationService#managementView"),
-        Map.entry("S5", "WorkspaceUserService#candidates"),
         Map.entry("S6", "WorkspaceInvitationService#managementPageForOperations"),
-        Map.entry("O1", "WorkspaceUserService#pageForOperations"),
+        Map.entry("O1", "WorkspaceUserService#page"),
         Map.entry("O2", "WorkspaceUserService#page"),
         Map.entry("O3", "OrganizationOverviewTaskReadService#page"),
         Map.entry("O4", "OrganizationOverviewTaskReadService#detail"),
@@ -228,7 +226,7 @@ class P4SqlOperationBudgetTest {
         countedDefinitions = new ExtensionDefinitionService(countedJdbc, time);
         countedHierarchy = new OrganizationHierarchyService(countedJdbc, time);
         countedEntities = new BusinessEntityService(countedJdbc, time, countedDefinitions, countedHierarchy);
-        overview = new OrganizationOverviewTaskReadService(countedJdbc);
+        overview = new OrganizationOverviewTaskReadService(countedJdbc, null, countedEntities);
         visibility = new OrganizationVisibilityService(countedJdbc);
         contracts = new ContractTaskReadService(countedJdbc, new BusinessDateProvider(time));
         contractCommands = new ContractCommandService(countedJdbc, time, new BusinessDateProvider(time), countedEntities, countedDefinitions);
@@ -262,18 +260,15 @@ class P4SqlOperationBudgetTest {
         assertEquals(REQUIRED_LEDGER_IDS, NAMED_LEDGER_OPERATIONS.keySet(), "named mapping must be an exact ledger set");
         Map<String, Integer> executed = new LinkedHashMap<>();
 
-        assertFixed(executed, "M1", 1,
-            () -> contracts.overview(workspace, KEY),
-            () -> contracts.overview(workspace, KEY));
         assertFixed(executed, "M2", 1,
             () -> contracts.fixedStoreContracts(workspace, KEY, storeIds.getFirst()),
             () -> contracts.fixedStoreContracts(workspace, KEY, storeIds.getLast()));
         assertFixed(executed, "M3", 3,
-            () -> contracts.page(workspace, KEY, projectId, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", 1, 1),
-            () -> contracts.page(workspace, KEY, projectId, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", 1, 100));
-        assertFixed(executed, "M4", 4,
-            () -> contracts.platformOverview(workspace, KEY, 1, 1),
-            () -> contracts.platformOverview(workspace, KEY, 1, 100));
+            () -> contracts.list(workspace, KEY, new ContractTaskReadService.ContractListQuery(projectId, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", 1, 1)),
+            () -> contracts.list(workspace, KEY, new ContractTaskReadService.ContractListQuery(projectId, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", 1, 100)));
+        assertFixed(executed, "M4", 2,
+            () -> contracts.list(workspace, KEY, new ContractTaskReadService.ContractListQuery(null, null, null, "p4-contract", "p4-phase", "p4-item", null, null, null, "UPDATED_AT", "DESC", 1, 1)),
+            () -> contracts.list(workspace, KEY, new ContractTaskReadService.ContractListQuery(null, null, null, "p4-contract", "p4-phase", "p4-item", null, null, null, "UPDATED_AT", "DESC", 1, 100)));
         assertFixed(executed, "M5", 1,
             () -> assertEquals(100, contractCommands.list(workspace, KEY).size()),
             () -> assertEquals(100, contractCommands.list(workspace, KEY).size()));
@@ -310,9 +305,6 @@ class P4SqlOperationBudgetTest {
         assertFixed(executed, "O5", 5,
             () -> assertEquals(100, assignmentCandidates.listEnabled(workspace, KEY, "STORE").size()),
             () -> assertEquals(100, assignmentCandidates.listEnabled(workspace, KEY, "STORE").size()));
-        assertFixed(executed, "S5", 22,
-            () -> assertEquals(203, users.candidates(workspace, KEY, null, null).organizations().size()),
-            () -> assertEquals(203, users.candidates(workspace, KEY, null, null).organizations().size()));
         int s1One = measure("S1-DIRECT-A1", () -> assertTrue(authentication.login(KEY, "p4-auth-one", "p4-password".toCharArray()).session().currentAssignmentId() != null));
         int s1Hundred = measure("S1-SELECT-A100", () -> assertTrue(authentication.login(KEY, "p4-auth-hundred", "p4-password".toCharArray()).session().currentAssignmentId() == null));
         assertExactLedgerBudget(executed, "S1", "DIRECT_A1", 14, s1One);
@@ -332,13 +324,14 @@ class P4SqlOperationBudgetTest {
             () -> assertInvitationPage(invitations.managementPageForOperations(regionSession, "REGION", regionId, invitationPageRequest(1)), 1, 102),
             () -> assertInvitationPage(invitations.managementPageForOperations(regionSession, "REGION", regionId, invitationPageRequest(100)), 100, 102));
         assertExactLedgerBudget(executed, "M13", "SINGLE_CALL", 1, m13SqlMeasurement());
-        WorkspaceSessionReadback projectSession = new WorkspaceSessionReadback(UUID.randomUUID(), workspace, KEY, accountIds.getFirst(), firstProjectAssignmentId, projectId, 7L, 1L, Set.of(), Set.of(), "P4 project operator");
+        var selectedProject = new com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.VisibleDataNodeCandidate("PROJECT", projectId, "P4 project", "P4-PROJECT", List.of("P4 project"), regionId, projectId, null, null);
+        WorkspaceSessionReadback projectSession = new WorkspaceSessionReadback(UUID.randomUUID(), workspace, KEY, accountIds.getFirst(), firstProjectAssignmentId, new com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext(null, selectedProject, null, null), 7L, 1L, Set.of(), Set.of(), "P4 project operator");
         assertFixed(executed, "O1", 17,
-            () -> assertEquals(1, users.pageForOperations(projectSession, "PROJECT", projectId, null, null, null, null, 1, 1).items().size()),
-            () -> assertEquals(100, users.pageForOperations(projectSession, "PROJECT", projectId, null, null, null, null, 1, 100).items().size()));
+            () -> assertEquals(1, users.page(WorkspaceUserService.AccountPageQuery.forOperations(projectSession, "PROJECT", projectId, null, null, null, null, null, null, 1, 1)).items().size()),
+            () -> assertEquals(100, users.page(WorkspaceUserService.AccountPageQuery.forOperations(projectSession, "PROJECT", projectId, null, null, null, null, null, null, 1, 100)).items().size()));
         assertFixed(executed, "O2", 12,
-            () -> assertEquals(1, users.page(workspace, KEY, "PROJECT", projectId, 1, 1, 7L).items().size()),
-            () -> assertEquals(100, users.page(workspace, KEY, "PROJECT", projectId, 1, 100, 7L).items().size()));
+            () -> assertEquals(1, users.page(WorkspaceUserService.AccountPageQuery.forPlatform(workspace, KEY, null, null, null, null, null, "PROJECT", projectId, null, null, 1, 1)).items().size()),
+            () -> assertEquals(100, users.page(WorkspaceUserService.AccountPageQuery.forPlatform(workspace, KEY, null, null, null, null, null, "PROJECT", projectId, null, null, 1, 100)).items().size()));
         assertFixed(executed, "R8", 2,
             () -> countedHierarchy.requireNode(workspace, KEY, projectId, "PROJECT"),
             () -> countedHierarchy.requireNode(workspace, KEY, projectId, "PROJECT"));
@@ -375,7 +368,7 @@ class P4SqlOperationBudgetTest {
     }
 
     private static WorkspaceInvitationService.ManagementInvitationPageRequest invitationPageRequest(int pageSize) {
-        return new WorkspaceInvitationService.ManagementInvitationPageRequest(null, null, null, null, null, null, "CREATED_AT", "DESC", 1, pageSize);
+        return new WorkspaceInvitationService.ManagementInvitationPageRequest(null, null, null, null, null, null, null, "CREATED_AT", "DESC", 1, pageSize);
     }
 
     private static void assertInvitationPage(WorkspaceInvitationService.ManagementInvitationPage page, int itemCount, long total) {

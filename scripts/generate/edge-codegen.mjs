@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCapabilityInvariants } from "../../tools/capability-invariants/cli.mjs";
+import { projectEdgeCatalog } from "./edge-operation-projections.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const catalogPath = "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json";
@@ -14,55 +15,7 @@ const adminCatalogPath = "contracts/catalog/admin-catalog.json";
 const frontendManifestPath = "contracts/policy/frontend-asset-carryover-manifest.json";
 const reportPath = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
 const problemComponentPath = "contracts/openapi/components/common/problem.schemas.yaml";
-const r24RetiredOperationId = "replaceOperationsOrganizationHeadCompanyBrandAuthorizations";
 const controlledWriteChannel = "EDGE_CODEGEN_CONTROLLED_WRITE";
-const r24AddOperation = {
-  operationId: "addOperationsOrganizationHeadCompanyBrandAuthorization",
-  method: "POST",
-  path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
-  requestSchema: "HeadCompanyBrandAuthorizationAddRequest",
-  responseSchema: "NoContent",
-  successStatus: "204",
-  expectedVersion: "FORBIDDEN",
-  focusedTestId: "edge.addOperationsOrganizationHeadCompanyBrandAuthorization",
-};
-const r24RemoveOperation = {
-  operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization",
-  method: "DELETE",
-  path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
-  requestSchema: "NoBody",
-  responseSchema: "NoContent",
-  successStatus: "204",
-  expectedVersion: "FORBIDDEN",
-  focusedTestId: "edge.removeOperationsOrganizationHeadCompanyBrandAuthorization",
-};
-const p3CAuthorizationOperationIds = new Set([
-  "getOperationsWorkspaceInvitations",
-  "getOperationsWorkspaceInvitationCandidates",
-  "getOperationsWorkspaceUser",
-  "getOperationsWorkspaceUserAccount",
-]);
-const p3CNonNarrowingScopeOperationIds = new Set([
-  "getOperationsWorkspaceUserAccount",
-]);
-const p3CUserManagementTargets = [
-  {key: "GROUP", slug: "group", suffix: "Group"},
-  {key: "REGION", slug: "region", suffix: "Region"},
-  {key: "PROJECT", slug: "project", suffix: "Project"},
-  {key: "HEAD_COMPANY", slug: "head-company", suffix: "HeadCompany"},
-  {key: "STORE", slug: "store", suffix: "Store"},
-];
-const p3CUserManagementOperationDescriptors = new Map([
-  ["getOperationsWorkspaceInvitations", {root: "getOperationsWorkspace", tail: "Invitations", pathSuffix: "/invitations"}],
-  ["createOperationsWorkspaceInvitation", {root: "createOperationsWorkspace", tail: "Invitation", pathSuffix: "/invitations"}],
-  ["getOperationsWorkspaceInvitationCandidates", {root: "getOperationsWorkspace", tail: "InvitationCandidates", pathSuffix: "/invitations/candidates"}],
-  ["cancelOperationsWorkspaceInvitation", {root: "cancelOperationsWorkspace", tail: "Invitation", pathSuffix: "/invitations/{invitationId}/cancel"}],
-  ["reissueOperationsWorkspaceInvitation", {root: "reissueOperationsWorkspace", tail: "Invitation", pathSuffix: "/invitations/{invitationId}/reissue"}],
-  ["getOperationsWorkspaceUser", {root: "getOperationsWorkspace", tail: "User", pathSuffix: "/user"}],
-  ["getOperationsWorkspaceUserAccount", {root: "getOperationsWorkspace", tail: "UserAccount", pathSuffix: "/user/accounts/{accountId}"}],
-  ["revokeOperationsWorkspaceUserAssignment", {root: "revokeOperationsWorkspace", tail: "UserAssignment", pathSuffix: "/user/assignments/{assignmentId}/revoke"}],
-]);
-const p3CUserManagementPathPrefix = "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management";
 const targets = {
   errorsJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
   r3CompatibilityJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
@@ -86,105 +39,6 @@ const targets = {
 function fail(code, detail = "") { const error = new Error(`${code}${detail ? `:${detail}` : ""}`); error.code = code; throw error; }
 function read(relative, base = root) { return JSON.parse(fs.readFileSync(path.join(base, relative), "utf8")); }
 function normalized(value) { return JSON.stringify(value, null, 2) + "\n"; }
-function r24Replacement(base, replacement) {
-  return {
-    ...base,
-    ...replacement,
-    ...(Array.isArray(base.pathParameters) ? {
-      pathParameters: replacement.operationId === r24RemoveOperation.operationId
-        ? [...base.pathParameters, "brandId"]
-        : [...base.pathParameters],
-    } : {}),
-  };
-}
-function r24Overlay(catalog, report) {
-  const legacyCatalog = catalog.operations.find((operation) => operation.operationId === r24RetiredOperationId);
-  const legacyReport = report.operations.find((operation) => operation.operationId === r24RetiredOperationId);
-  if (!legacyCatalog && !legacyReport) return {catalog, report};
-  if (!legacyCatalog || !legacyReport) fail("R24_LEGACY_CATALOG_REPORT_DRIFT");
-  const replacements = [r24Replacement(legacyCatalog, r24AddOperation), r24Replacement(legacyCatalog, r24RemoveOperation)];
-  const reportReplacements = [r24Replacement(legacyReport, r24AddOperation), r24Replacement(legacyReport, r24RemoveOperation)];
-  const replace = (entries, values) => entries.flatMap((entry) => entry.operationId === r24RetiredOperationId ? values : [entry]);
-  const operationErrorAugmentations = {...(catalog.operationErrorAugmentations || {})};
-  delete operationErrorAugmentations[r24RetiredOperationId];
-  operationErrorAugmentations[r24AddOperation.operationId] = ["ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED"];
-  operationErrorAugmentations[r24RemoveOperation.operationId] = [
-    "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE",
-    "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED",
-  ];
-  const operationErrorSelectionRules = {...(catalog.operationErrorSelectionRules || {})};
-  delete operationErrorSelectionRules[r24RetiredOperationId];
-  return {
-    catalog: {
-      ...catalog,
-      denominator: {
-        ...catalog.denominator,
-        operations: catalog.denominator.operations + 1,
-        faces: {...catalog.denominator.faces, "operations-admin": catalog.denominator.faces["operations-admin"] + 1},
-      },
-      operations: replace(catalog.operations, replacements),
-      operationErrorAugmentations,
-      operationErrorSelectionRules,
-    },
-    report: {
-      ...report,
-      closure: {
-        ...report.closure,
-        operations: report.closure.operations + 1,
-        faceCounts: {...report.closure.faceCounts, "operations-admin": report.closure.faceCounts["operations-admin"] + 1},
-      },
-      operations: replace(report.operations, reportReplacements),
-    },
-  };
-}
-function p3CAuthorizationOverlay(catalog) {
-  return {
-    ...catalog,
-    operations: catalog.operations.map((operation) => !p3CAuthorizationOperationIds.has(operation.operationId)
-      ? operation
-      : {
-        ...operation,
-        queryParameters: (operation.queryParameters || []).filter((parameter) => parameter.name !== "pageDesignKey" && !(p3CNonNarrowingScopeOperationIds.has(operation.operationId) && parameter.name === "scopeRef")),
-      }),
-  };
-}
-function p3CUserManagementOperationOverlay(catalog, report) {
-  const replace = (entries, project) => entries.flatMap((entry) => {
-    const descriptor = p3CUserManagementOperationDescriptors.get(entry.operationId);
-    if (!descriptor) return [entry];
-    return p3CUserManagementTargets.map((target) => project(entry, descriptor, target));
-  });
-  const project = (entry, descriptor, target) => ({
-    ...entry,
-    operationId: `${descriptor.root}${target.suffix}${descriptor.tail}`,
-    path: `${p3CUserManagementPathPrefix}/${target.slug}${descriptor.pathSuffix}`,
-    focusedTestId: entry.focusedTestId ? `${entry.focusedTestId}.${target.slug}` : undefined,
-  });
-  const operations = replace(catalog.operations, project);
-  const reportOperations = replace(report.operations, project);
-  const added = operations.length - catalog.operations.length;
-  if (added !== 32 || reportOperations.length - report.operations.length !== 32) fail("P3_C_STATIC_TARGET_EXPANSION_DRIFT");
-  return {
-    catalog: {
-      ...catalog,
-      denominator: {
-        ...catalog.denominator,
-        operations: catalog.denominator.operations + added,
-        faces: {...catalog.denominator.faces, "operations-admin": catalog.denominator.faces["operations-admin"] + added},
-      },
-      operations,
-    },
-    report: {
-      ...report,
-      closure: {
-        ...report.closure,
-        operations: report.closure.operations + added,
-        faceCounts: {...report.closure.faceCounts, "operations-admin": report.closure.faceCounts["operations-admin"] + added},
-      },
-      operations: reportOperations,
-    },
-  };
-}
 function activeCodes(errors) {
   const codes = [
     ...errors.heritageCodes.filter((row) => row.target).map((row) => row.target),
@@ -325,9 +179,7 @@ function assertRootOpenApiRouteRegistryExactSet(base, operations) {
 function load(base = root) {
   const sourceCatalog = read(catalogPath, base);
   const sourceReport = read(reportPath, base);
-  const r24 = r24Overlay(sourceCatalog, sourceReport);
-  const p3C = p3CUserManagementOperationOverlay(p3CAuthorizationOverlay(r24.catalog), r24.report);
-  const {catalog, report} = p3C;
+  const {catalog, report} = projectEdgeCatalog(sourceCatalog, sourceReport);
   const errors = read(errorsPath, base);
   const expectedOperationCount = catalog.denominator?.operations;
   if (!Number.isInteger(expectedOperationCount) || catalog.operations.length !== expectedOperationCount || report.operations.length !== expectedOperationCount) fail("R5_EDGE_CODEGEN_OPERATION_COUNT");
@@ -344,7 +196,7 @@ function load(base = root) {
   const faceCounts = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, operations.filter((operation) => operation.face === face).length]));
   if (JSON.stringify(faceCounts) !== JSON.stringify(catalog.denominator.faces)) fail("R5_EDGE_CODEGEN_FACE_COUNT");
   const codes = activeCodes(errors);
-  if (codes.length !== 106 || errors.closure.totalActiveTargetCount !== 106) fail("R5_EDGE_CODEGEN_ERROR_COUNT");
+  if (codes.length !== errors.closure.totalActiveTargetCount) fail("R5_EDGE_CODEGEN_ERROR_COUNT");
   const activeCodeSet = new Set(codes);
   const codesByFace = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, faceErrorCodes(catalog, face, activeCodeSet)]));
   return { catalog, operations, faceCounts, codes, codesByFace, expectedOperationCount };
@@ -499,7 +351,7 @@ function r3CompatibilityErrors() {
   return `// Generated R3 wire-compatibility subset from accepted R5 error disposition; do not edit.\npackage com.catering.v2s.app.edge.generated;\n\npublic enum CommercialGroupProblemCode {\n${codes.map((code) => `  ${code}("${code}")`).join(",\n")};\n\n  private final String wireValue;\n  CommercialGroupProblemCode(String wireValue) { this.wireValue = wireValue; }\n  public String wireValue() { return wireValue; }\n}\n`;
 }
 function generatedWireComponents(base = root) {
-  const {report} = r24Overlay(read(catalogPath, base), read(reportPath, base));
+  const {report} = projectEdgeCatalog(read(catalogPath, base), read(reportPath, base));
   if (report.closure?.operations !== report.operations?.length || !Array.isArray(report.operations)) {
     fail("R5_EDGE_WIRE_RESOLUTION_REPORT_INVALID");
   }
@@ -822,7 +674,7 @@ function javaCapabilityKey(value) {
 }
 function workspaceCapabilityRequirementCatalog(model) {
   const requirements = model.requirements
-    .filter((requirement) => requirement.authorizationMode === "AUTHENTICATED_WORKSPACE")
+    .filter((requirement) => requirement.authorizationMode === "AUTHENTICATED_WORKSPACE" && requirement.authorizationKind !== "ROLE_NODE_RANGE_READ")
     .sort((left, right) => left.requirementId.localeCompare(right.requirementId));
   const entries = requirements.map((requirement) => "        requirement("
     + [requirement.requirementId, requirement.capabilityKey || null, requirement.authorizationMode, requirement.resolverId, requirement.ownerModule, requirement.ownerRecheckId, requirement.typedProblemMappingId, requirement.redFixtureId].map((value, index) => index === 1 ? javaCapabilityKey(value) : javaString(value)).join(", ")
@@ -895,6 +747,7 @@ function capabilityResolverRegistry(model) {
 }
 function capabilityOperationCatalog(model) {
   const requirements = [...model.requirements]
+    .filter((requirement) => requirement.authorizationKind !== "ROLE_NODE_RANGE_READ")
     .sort((left, right) => left.requirementId.localeCompare(right.requirementId))
     .map((requirement) => ({
       operationIdentity: requirement.operationIdentity,
@@ -1269,7 +1122,7 @@ function selfTest() {
     fs.writeFileSync(publicTarget, publicSource.replace(/export const EDGE_PROBLEM_CODES = \[/, "export const EDGE_PROBLEM_CODES = [\n  \"PLATFORM_IAM_ACCOUNT_DISABLED\","));
     try { checkOutputs(scratch); fail("R5_EDGE_TS_PROBLEM_CODE_FACE_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT") throw error; }
     writeOutputs(scratch);
-    const exactRefFile = "contracts/openapi/components/organization/store.schemas.yaml";
+    const exactRefFile = "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml";
     const exactRefSource = fs.readFileSync(path.join(scratch, exactRefFile), "utf8");
     fs.writeFileSync(
       path.join(scratch, exactRefFile),
@@ -1302,12 +1155,11 @@ function selfTest() {
     const bodyOperation = load(scratch).operations.find((candidate) => candidate.path.includes("/user-management/") && candidate.requestSchema !== "NoBody");
     const bodyPathFile = "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml";
     const bodyPathDocument = read(bodyPathFile, scratch);
-    const bodyRequestReference = bodyPathDocument.paths[bodyOperation.path][bodyOperation.method.toLowerCase()].requestBody?.$ref;
-    const bodyRequestPrefix = "#/components/requestBodies/";
-    if (typeof bodyRequestReference !== "string" || !bodyRequestReference.startsWith(bodyRequestPrefix)) {
+    const bodyRequest = bodyPathDocument.paths[bodyOperation.path][bodyOperation.method.toLowerCase()].requestBody;
+    if (!bodyRequest || typeof bodyRequest !== "object" || bodyRequest.required !== true) {
       fail("R5_EDGE_REQUEST_REQUIRED_FIXTURE_INVALID");
     }
-    bodyPathDocument.components.requestBodies[bodyRequestReference.slice(bodyRequestPrefix.length)].required = false;
+    bodyRequest.required = false;
     fs.writeFileSync(path.join(scratch, bodyPathFile), normalized(bodyPathDocument));
     try { checkOutputs(scratch); fail("R5_EDGE_REQUEST_REQUIRED_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_TS_OPERATION_CONTRACT_MISSING") throw error; }
     process.stdout.write("R5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_CONTROLLED_WRITE_RECEIPT_HASH_MISMATCH,R5_EDGE_CONTROLLED_WRITE_INVOCATION_INVALID,R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_ADMIN_CATALOG_ROLE_HOME_RUNTIME_CARDINALITY_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");

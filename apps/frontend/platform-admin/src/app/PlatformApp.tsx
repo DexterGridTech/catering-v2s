@@ -75,7 +75,7 @@ function Shell({session, logout}: {session: Session; logout: () => Promise<void>
     },
   };
   return <Layout className="platform-shell" {...platformAdminChromeProps}>
-    {!fullscreen && <Layout.Header className="platform-header"><Typography.Text className="platform-brand">{adminCatalog.platformShellCopy[platformShellCopyKeys.PlatformShellBrand]}</Typography.Text><Dropdown menu={principalMenu} trigger={['click']} disabled={locked}><Button type="text" className="platform-principal" disabled={locked} aria-label={`平台管理员 ${session.displayName}`}><Avatar size="small" icon={<UserOutlined/>}/><span>{session.displayName}</span><DownOutlined aria-hidden="true"/></Button></Dropdown></Layout.Header>}
+    {!fullscreen && <Layout.Header className="platform-header"><Typography.Text className="platform-brand">{adminCatalog.platformShellCopy[platformShellCopyKeys.PlatformShellBrand]}</Typography.Text><Space align="center"><WorkspaceScopeSelector/><Dropdown menu={principalMenu} trigger={['click']} disabled={locked}><Button type="text" className="platform-principal" disabled={locked} aria-label={`平台管理员 ${session.displayName}`}><Avatar size="small" icon={<UserOutlined/>}/><span>{session.displayName}</span><DownOutlined aria-hidden="true"/></Button></Dropdown></Space></Layout.Header>}
     <Layout hasSider>
       {!fullscreen && <Layout.Sider
         className="platform-sider"
@@ -103,7 +103,6 @@ function Shell({session, logout}: {session: Session; logout: () => Promise<void>
           {...testId('platform-shell-toggle-sider')}
         />
         <Menu style={{flex: 1}} theme="light" mode="inline" inlineCollapsed={siderCollapsed} defaultOpenKeys={(menuItems ?? []).filter((item) => item?.type === 'submenu').map((item) => String(item?.key))} selectedKeys={[page]} onClick={({key}) => { const target = platformPageRegistry[key as keyof typeof platformPageRegistry]; if (target) void navigate(target.path); }} items={menuItems}/>
-        <div className="platform-workspace-selector"><WorkspaceScopeSelector collapsed={siderCollapsed}/></div>
       </Layout.Sider>}
       <Layout>
         <Layout.Content className="platform-content">

@@ -2,14 +2,14 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public enum ExtensionEntityType {
-    COMMERCIAL_GROUP,
     BRAND,
     TENANT,
     HEAD_COMPANY,
-    REGION,
-    PROJECT,
     STORE,
-    CONTRACT;
+    CONTRACT,
+    COMMERCIAL_GROUP,
+    REGION,
+    PROJECT;
 
     public String wire() { return name(); }
 }
