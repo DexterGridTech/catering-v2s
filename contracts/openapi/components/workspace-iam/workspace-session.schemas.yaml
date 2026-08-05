@@ -169,6 +169,102 @@
           }
         }
       },
+      "WorkspaceScopeNode": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dataNodeType",
+          "dataNodeRef",
+          "dataNodeName",
+          "dataNodeCode",
+          "ancestorPath"
+        ],
+        "properties": {
+          "dataNodeType": {
+            "type": "string",
+            "enum": [
+              "REGION",
+              "PROJECT",
+              "HEAD_COMPANY",
+              "STORE"
+            ]
+          },
+          "dataNodeRef": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "dataNodeName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "dataNodeCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Persisted business code displayed with the candidate name; never derive it from a label."
+          },
+          "ancestorPath": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "regionRef": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "projectRef": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "storeRef": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "headCompanyRef": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          }
+        }
+      },
+      "WorkspaceScopeContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "region",
+          "project",
+          "store",
+          "headCompany"
+        ],
+        "properties": {
+          "region": {
+            "$ref": "#/components/schemas/WorkspaceScopeNode",
+            "nullable": true
+          },
+          "project": {
+            "$ref": "#/components/schemas/WorkspaceScopeNode",
+            "nullable": true
+          },
+          "store": {
+            "$ref": "#/components/schemas/WorkspaceScopeNode",
+            "nullable": true
+          },
+          "headCompany": {
+            "$ref": "#/components/schemas/WorkspaceScopeNode",
+            "nullable": true
+          }
+        },
+        "description": "Owner-confirmed retained selections. Client state may mirror this readback but never decides authorization."
+      },
       "WorkspaceSessionEntry": {
         "type": "object",
         "additionalProperties": false,
@@ -342,8 +438,8 @@
                           "NONE",
                           "REGION",
                           "PROJECT",
-                          "HEAD_COMPANY",
-                          "STORE"
+                          "STORE",
+                          "HEAD_COMPANY"
                         ]
                       }
                     }
@@ -397,7 +493,9 @@
           },
           "dataNodeCandidates": {
             "type": "array",
-            "items": {"$ref": "#/components/schemas/WorkspaceScopeNode"}
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceScopeNode"
+            }
           },
           "selected": {
             "type": "object",
@@ -520,8 +618,8 @@
                                 "NONE",
                                 "REGION",
                                 "PROJECT",
-                                "HEAD_COMPANY",
-                                "STORE"
+                                "STORE",
+                                "HEAD_COMPANY"
                               ]
                             }
                           }
@@ -546,7 +644,10 @@
               }
             ]
           },
-          "scopeContext": {"$ref": "#/components/schemas/WorkspaceScopeContext", "nullable": true},
+          "scopeContext": {
+            "$ref": "#/components/schemas/WorkspaceScopeContext",
+            "nullable": true
+          },
           "workspaceName": {
             "type": "string",
             "minLength": 1,
@@ -564,34 +665,6 @@
             "maxLength": 2048
           }
         }
-      },
-      "WorkspaceScopeNode": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["dataNodeType", "dataNodeRef", "dataNodeName", "dataNodeCode", "ancestorPath"],
-        "properties": {
-          "dataNodeType": {"type": "string", "enum": ["REGION", "PROJECT", "HEAD_COMPANY", "STORE"]},
-          "dataNodeRef": {"type": "string", "minLength": 1, "maxLength": 240},
-          "dataNodeName": {"type": "string", "minLength": 1, "maxLength": 240},
-          "dataNodeCode": {"type": "string", "minLength": 1, "maxLength": 120, "description": "Persisted business code displayed with the candidate name; never derive it from a label."},
-          "ancestorPath": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 240}},
-          "regionRef": {"type": "string", "nullable": true, "maxLength": 64},
-          "projectRef": {"type": "string", "nullable": true, "maxLength": 64},
-          "storeRef": {"type": "string", "nullable": true, "maxLength": 64},
-          "headCompanyRef": {"type": "string", "nullable": true, "maxLength": 64}
-        }
-      },
-      "WorkspaceScopeContext": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["region", "project", "store", "headCompany"],
-        "properties": {
-          "region": {"$ref": "#/components/schemas/WorkspaceScopeNode", "nullable": true},
-          "project": {"$ref": "#/components/schemas/WorkspaceScopeNode", "nullable": true},
-          "store": {"$ref": "#/components/schemas/WorkspaceScopeNode", "nullable": true},
-          "headCompany": {"$ref": "#/components/schemas/WorkspaceScopeNode", "nullable": true}
-        },
-        "description": "Owner-confirmed retained selections. Client state may mirror this readback but never decides authorization."
       }
     }
   }

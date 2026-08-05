@@ -1,5 +1,7 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.CommercialGroupReadback;
 import com.catering.v2s.organization.api.InitializeCommercialGroupCommand;
@@ -8,9 +10,11 @@ import com.catering.v2s.organization.api.UpdateCommercialGroupCommand;
 import com.catering.v2s.organization.api.OrganizationProblem;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.util.Map;
@@ -165,7 +169,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
                 actor.actorId(),
                 actor.displaySnapshot(),
                 time.currentEpochMillis(),
-                "[{\"fieldKey\":\"commercialGroupCode\",\"after\":\"" + json(code) + "\"},{\"fieldKey\":\"commercialGroupName\",\"after\":\"" + json(name) + "\"}]"
+                AuditChangeJson.write(java.util.List.of(new com.catering.v2s.audit.contract.AuditChange("commercialGroupCode", null, code), new com.catering.v2s.audit.contract.AuditChange("commercialGroupName", null, name)))
             );
             return readback(id, groupWorkspaceKey, code, name, actor.displaySnapshot());
         } catch (DuplicateKeyException exception) {
@@ -204,7 +208,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
         requireEnabledWorkspace(workspaceUuid, groupWorkspaceKey);
         if (ownerScopeGrant != null) {
             CommercialGroupReadback current = requireCommercialGroup(groupWorkspaceKey);
-            if (!ownerScopeGrant.matches(workspaceUuid, groupWorkspaceKey, "GROUP", current.id())) {
+            if (!ownerScopeGrant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, current.id())) {
                 throw new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group authorization target does not match");
             }
         }
@@ -230,7 +234,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
         jdbcTemplate.update(
             "INSERT INTO organization.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'COMMERCIAL_GROUP', ?, ?, ?, ?, 'COMMERCIAL_GROUP_UPDATED', ?, CAST(? AS JSONB))",
             UUID.randomUUID(), workspaceUuid, groupWorkspaceKey, updated.id().toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), now,
-            "[{\"fieldKey\":\"commercialGroupCode\",\"before\":\"" + json(current.commercialGroupCode()) + "\",\"after\":\"" + json(updated.commercialGroupCode()) + "\"},{\"fieldKey\":\"commercialGroupName\",\"before\":\"" + json(current.commercialGroupName()) + "\",\"after\":\"" + json(updated.commercialGroupName()) + "\"}]"
+            AuditChangeJson.write(java.util.List.of(new com.catering.v2s.audit.contract.AuditChange("commercialGroupCode", current.commercialGroupCode(), updated.commercialGroupCode()), new com.catering.v2s.audit.contract.AuditChange("commercialGroupName", current.commercialGroupName(), updated.commercialGroupName())))
         );
         return updated;
     }
@@ -333,7 +337,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
             throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "extension definition lookup is unavailable");
         }
         try {
-            ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, "COMMERCIAL_GROUP");
+            ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.COMMERCIAL_GROUP);
             return new ExtensionValues(ExtensionDefinitionService.mergeValues(definition, currentValuesJson, requested), definition.version());
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (requested.isEmpty()) return new ExtensionValues(currentValuesJson, 0L);

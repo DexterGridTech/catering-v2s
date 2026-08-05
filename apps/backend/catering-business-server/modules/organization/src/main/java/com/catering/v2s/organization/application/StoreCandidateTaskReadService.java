@@ -1,5 +1,8 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.organization.api.BusinessEntityTypes;
+
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import java.util.List;
 import java.util.Map;
@@ -68,18 +71,18 @@ public class StoreCandidateTaskReadService {
 
     private List<Candidate> defaultCandidates(UUID workspaceUuid, String key, UUID assignmentId, UUID visibleNodeId, String subjectType, UUID projectId, UUID brandId, UUID tenantId) {
         return switch (subjectType) {
-            case "PROJECT" -> requiredVisibleProjects(workspaceUuid, key, assignmentId, visibleNodeId);
+            case ServiceNodeTypes.PROJECT -> requiredVisibleProjects(workspaceUuid, key, assignmentId, visibleNodeId);
             case "BRAND" -> queryCandidates("SELECT id, code, name FROM organization.brand WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'", workspaceUuid, key);
             case "TENANT" -> projectId == null || brandId == null ? List.of() : queryCandidates("SELECT DISTINCT t.id, t.code, t.name FROM organization.tenant t JOIN organization.store s ON s.tenant_id=t.id AND s.workspace_uuid=t.workspace_uuid AND s.group_workspace_key=t.group_workspace_key WHERE t.workspace_uuid=? AND t.group_workspace_key=? AND t.status='ENABLED' AND s.status='ENABLED' AND s.project_id=? AND s.brand_id=?", workspaceUuid, key, projectId, brandId);
-            case "HEAD_COMPANY" -> brandId == null || tenantId == null ? List.of() : queryCandidates("SELECT DISTINCT h.id, h.code, h.name FROM organization.head_company h JOIN organization.store s ON s.head_company_id=h.id AND s.workspace_uuid=h.workspace_uuid AND s.group_workspace_key=h.group_workspace_key WHERE h.workspace_uuid=? AND h.group_workspace_key=? AND h.status='ENABLED' AND s.status='ENABLED' AND s.brand_id=? AND s.tenant_id=? AND EXISTS (SELECT 1 FROM organization.head_company_brand_authorization a WHERE a.head_company_id=h.id AND a.brand_id=?)", workspaceUuid, key, brandId, tenantId, brandId);
-            case "STORE" -> visibleStoreCandidates(workspaceUuid, key, assignmentId, visibleNodeId, projectId);
+            case BusinessEntityTypes.HEAD_COMPANY -> brandId == null || tenantId == null ? List.of() : queryCandidates("SELECT DISTINCT h.id, h.code, h.name FROM organization.head_company h JOIN organization.store s ON s.head_company_id=h.id AND s.workspace_uuid=h.workspace_uuid AND s.group_workspace_key=h.group_workspace_key WHERE h.workspace_uuid=? AND h.group_workspace_key=? AND h.status='ENABLED' AND s.status='ENABLED' AND s.brand_id=? AND s.tenant_id=? AND EXISTS (SELECT 1 FROM organization.head_company_brand_authorization a WHERE a.head_company_id=h.id AND a.brand_id=?)", workspaceUuid, key, brandId, tenantId, brandId);
+            case ServiceNodeTypes.STORE -> visibleStoreCandidates(workspaceUuid, key, assignmentId, visibleNodeId, projectId);
             default -> throw new BusinessEntityService.OrganizationNotFoundException();
         };
     }
 
     private List<Candidate> contractListCandidates(UUID workspaceUuid, String key, String subjectType, UUID projectId) {
         return switch (subjectType) {
-            case "STORE" -> queryCandidates("SELECT id, code, name FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? AND (CAST(? AS uuid) IS NULL OR project_id=?)", workspaceUuid, key, projectId, projectId);
+            case ServiceNodeTypes.STORE -> queryCandidates("SELECT id, code, name FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? AND (CAST(? AS uuid) IS NULL OR project_id=?)", workspaceUuid, key, projectId, projectId);
             case "TENANT" -> queryCandidates("SELECT DISTINCT t.id, t.code, t.name FROM organization.tenant t JOIN organization.store s ON s.tenant_id=t.id AND s.workspace_uuid=t.workspace_uuid AND s.group_workspace_key=t.group_workspace_key WHERE t.workspace_uuid=? AND t.group_workspace_key=? AND (CAST(? AS uuid) IS NULL OR s.project_id=?)", workspaceUuid, key, projectId, projectId);
             default -> throw new BusinessEntityService.OrganizationNotFoundException();
         };
@@ -98,11 +101,11 @@ public class StoreCandidateTaskReadService {
     private OrganizationTaskPathLookup.TaskPath visibleScope(UUID workspaceUuid, String key, WorkspaceAssignmentScopeLookup.AssignmentScope assignment, UUID visibleNodeId) {
         if (visibleNodeId == null) throw new BusinessEntityService.OrganizationNotFoundException();
         List<OrganizationTaskPathLookup.TaskPathRef> candidates = List.of(
-            new OrganizationTaskPathLookup.TaskPathRef("GROUP", visibleNodeId),
-            new OrganizationTaskPathLookup.TaskPathRef("REGION", visibleNodeId),
-            new OrganizationTaskPathLookup.TaskPathRef("PROJECT", visibleNodeId),
-            new OrganizationTaskPathLookup.TaskPathRef("HEAD_COMPANY", visibleNodeId),
-            new OrganizationTaskPathLookup.TaskPathRef("STORE", visibleNodeId)
+            new OrganizationTaskPathLookup.TaskPathRef(ServiceNodeTypes.GROUP, visibleNodeId),
+            new OrganizationTaskPathLookup.TaskPathRef(ServiceNodeTypes.REGION, visibleNodeId),
+            new OrganizationTaskPathLookup.TaskPathRef(ServiceNodeTypes.PROJECT, visibleNodeId),
+            new OrganizationTaskPathLookup.TaskPathRef(ServiceNodeTypes.HEAD_COMPANY, visibleNodeId),
+            new OrganizationTaskPathLookup.TaskPathRef(ServiceNodeTypes.STORE, visibleNodeId)
         );
         // Do not probe the throwing single-target API for each possible type inside this
         // transaction. A normal "not this target family" miss marks a REQUIRED
@@ -141,13 +144,13 @@ public class StoreCandidateTaskReadService {
     }
 
     private List<Candidate> visibleProjects(UUID workspaceUuid, String key, OrganizationTaskPathLookup.TaskPath visibleScope) {
-        if ("STORE".equals(visibleScope.targetType())) {
+        if (ServiceNodeTypes.STORE.equals(visibleScope.targetType())) {
             return jdbc.query("SELECT n.id, n.code, n.name FROM organization.store s JOIN organization.organization_node n ON n.id=s.project_id WHERE s.workspace_uuid=? AND s.group_workspace_key=? AND s.id=? AND n.node_type='PROJECT' AND n.status='ENABLED'", (row, index) -> new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null), workspaceUuid, key, visibleScope.targetId());
         }
         List<Candidate> allProjects = jdbc.query("SELECT id, code, name FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND node_type='PROJECT' AND status='ENABLED' ORDER BY code", (row, index) -> new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null), workspaceUuid, key);
-        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths = taskPaths.requireTaskPaths(workspaceUuid, key, allProjects.stream().map(project -> new OrganizationTaskPathLookup.TaskPathRef("PROJECT", project.id())).toList());
+        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths = taskPaths.requireTaskPaths(workspaceUuid, key, allProjects.stream().map(project -> new OrganizationTaskPathLookup.TaskPathRef(ServiceNodeTypes.PROJECT, project.id())).toList());
         return allProjects.stream().filter(project -> {
-            OrganizationTaskPathLookup.TaskPath path = paths.get(new OrganizationTaskPathLookup.TaskPathRef("PROJECT", project.id()));
+            OrganizationTaskPathLookup.TaskPath path = paths.get(new OrganizationTaskPathLookup.TaskPathRef(ServiceNodeTypes.PROJECT, project.id()));
             return path != null && taskPaths.isScopeAllowed(workspaceUuid, key, visibleScope.targetType(), visibleScope.targetId(), path);
         }).toList();
     }

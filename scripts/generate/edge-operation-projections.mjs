@@ -48,6 +48,8 @@ const p3CUserManagementOperationDescriptors = new Map([
   ["revokeOperationsWorkspaceUserAssignment", {root: "revokeOperationsWorkspace", tail: "UserAssignment", pathSuffix: "/user/assignments/{assignmentId}/revoke"}],
 ]);
 const p3CUserManagementPathPrefix = "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management";
+const materializedProjectionStatus = "MATERIALIZED";
+const materializedProjectionPipeline = "R24_P3C";
 
 function replacement(base, value) {
   return {
@@ -69,8 +71,10 @@ function projectR24(catalog, report) {
   const values = [replacement(legacy, r24AddOperation), replacement(legacy, r24RemoveOperation)];
   const operationErrorAugmentations = {...(catalog.operationErrorAugmentations || {})};
   delete operationErrorAugmentations[r24RetiredOperationId];
-  operationErrorAugmentations[r24AddOperation.operationId] = ["ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED"];
-  operationErrorAugmentations[r24RemoveOperation.operationId] = ["ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE", "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED"];
+  // D6: the owner never emits ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED.
+  // Keep only the reachable remove conflict; do not project an impossible branch into the edge contract.
+  operationErrorAugmentations[r24AddOperation.operationId] = [];
+  operationErrorAugmentations[r24RemoveOperation.operationId] = ["ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE"];
   const operationErrorSelectionRules = {...(catalog.operationErrorSelectionRules || {})};
   delete operationErrorSelectionRules[r24RetiredOperationId];
   const componentFieldBaseline = {...catalog.componentFieldBaseline};
@@ -137,8 +141,34 @@ function projectP3C(catalog, report) {
   return {catalog: projectedCatalog, report: {...report, closure: {...report.closure, operations: report.closure.operations + added, faceCounts: {...report.closure.faceCounts, "operations-admin": report.closure.faceCounts["operations-admin"] + added}}, operations: reportOperations}};
 }
 
+function assertMaterializedCatalog(catalog, report) {
+  const state = catalog?.projectionState;
+  if (state?.status !== materializedProjectionStatus || state.pipeline !== materializedProjectionPipeline) {
+    throw new Error("R5_EDGE_MATERIALIZED_PROJECTION_STATE_INVALID");
+  }
+  const operations = catalog.operations;
+  const operationCount = state.operationCount;
+  if (!Number.isInteger(operationCount) || operationCount !== catalog.denominator?.operations
+    || !Array.isArray(operations) || operations.length !== operationCount) {
+    throw new Error("R5_EDGE_MATERIALIZED_OPERATION_DENOMINATOR_INVALID");
+  }
+  const ids = new Set(operations.map((operation) => operation?.operationId));
+  if (ids.size !== operations.length || operations.some((operation) => !operation?.operationId || operation.operationId === r24RetiredOperationId || p3CUserManagementOperationDescriptors.has(operation.operationId))) {
+    throw new Error("R5_EDGE_MATERIALIZED_OPERATION_IDENTITY_INVALID");
+  }
+  const faceCounts = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, operations.filter((operation) => operation.face === face).length]));
+  if (JSON.stringify(faceCounts) !== JSON.stringify(state.faceCounts)) throw new Error("R5_EDGE_MATERIALIZED_FACE_DENOMINATOR_INVALID");
+  if (report !== undefined) {
+    if (!report || report.closure?.operations !== operationCount || JSON.stringify(report.closure?.faceCounts) !== JSON.stringify(faceCounts)) {
+      throw new Error("R5_EDGE_MATERIALIZED_REPORT_INVALID");
+    }
+  }
+  return {catalog, report};
+}
+
 /** The only projection consumed by both root OpenAPI materialization and generated clients. */
 export function projectEdgeCatalog(catalog, report = undefined) {
+  if (catalog?.projectionState?.status === materializedProjectionStatus) return assertMaterializedCatalog(catalog, report);
   const r24 = projectR24(catalog, report);
   return projectP3C(r24.catalog, r24.report);
 }

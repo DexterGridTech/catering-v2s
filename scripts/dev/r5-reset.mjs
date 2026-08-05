@@ -5,6 +5,7 @@ import {appendFileSync, chmodSync, existsSync, mkdirSync, readFileSync, writeFil
 import crypto from "node:crypto";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
+import {resolveTrustedRemoteHost} from "./r5-remote-host-trust.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, ".runtime/r5"));
@@ -27,13 +28,11 @@ export function validateResetTopology(resolved) {
   const namespace = resolved?.namespace;
   const targetDatabase = resolved?.expectedDatabase;
   const environment = resolved?.environment;
-  const host = environment?.V2S_DEV_REMOTE_HOST;
-  const hostHash = environment?.V2S_DEV_REMOTE_HOST_SHA256;
   if (typeof namespace !== "string" || !/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace)) fail("NAMESPACE_INVALID");
   if (targetDatabase !== expectedDatabaseFor(namespace) || !/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(targetDatabase)) fail("TARGET_DATABASE_ALLOWLIST_INVALID");
-  if (typeof host !== "string" || !/^[a-f0-9]{64}$/i.test(hostHash ?? "") || sha256(host) !== hostHash) fail("REMOTE_HOST_BINDING_INVALID");
-  if (productionLike(host)) fail("REMOTE_HOST_PRODUCTION_LIKE");
-  return {namespace, targetDatabase, host};
+  let hostTrust;
+  try { hostTrust = resolveTrustedRemoteHost(environment); } catch (error) { fail(error.code === "R5_DEV_REMOTE_HOST_PRODUCTION_LIKE" ? "REMOTE_HOST_PRODUCTION_LIKE" : "REMOTE_HOST_BINDING_INVALID"); }
+  return {namespace, targetDatabase, host: hostTrust.host, hostTrust};
 }
 
 export function verifyRemoteResetTranscript(stdout) {
@@ -84,7 +83,7 @@ function createRun(topology) {
     kind: "r5-reset-run-manifest",
     runId,
     createdAtEpochMillis: Date.now(),
-    remoteHostSha256: sha256(topology.host),
+    remoteHostSha256: topology.hostTrust.fingerprint,
     expectedDatabase: topology.targetDatabase,
     logPath,
     firstFailure: null,
@@ -139,8 +138,7 @@ function recordFailure(run, stage, error) {
 }
 
 export function selfTest() {
-  const valid = {namespace: "v2s-dev-reset-test", expectedDatabase: "catering_v2s_dev_reset_test", environment: {V2S_DEV_REMOTE_HOST: "dev.example.internal"}};
-  valid.environment.V2S_DEV_REMOTE_HOST_SHA256 = sha256(valid.environment.V2S_DEV_REMOTE_HOST);
+  const valid = {namespace: "v2s-dev-reset-test", expectedDatabase: "catering_v2s_dev_reset_test", environment: {V2S_DEV_REMOTE_HOST: "catering-remote-dev"}};
   const expect = (code, callback) => {
     try { callback(); throw new Error(`SELF_TEST_RED_NOT_DETECTED:${code}`); }
     catch (error) { if (!(error instanceof ResetFailure) || error.code !== code) throw error; }

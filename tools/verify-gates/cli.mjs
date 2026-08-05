@@ -705,6 +705,9 @@ function flywayTestLocations(base = root) {
     `${modulePrefix}platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java`,
     `${modulePrefix}store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java`,
     `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java`,
+    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountPlatformReceiptTest.java`,
+    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationContextVersionTest.java`,
+    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryServiceTest.java`,
     `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java`,
     `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java`,
   ]);

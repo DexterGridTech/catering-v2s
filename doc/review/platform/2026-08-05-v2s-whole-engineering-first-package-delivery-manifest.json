@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-delivery-manifest",
+  "packageId": "WHOLE-ENGINEERING-FIRST-PACKAGE-20260805",
+  "unitId": "RP-09-RP-12-RP-13-RP-14-RP-15-RP-16-RP-17-RP-18-RP-19-RP-20-S2-S01",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "WHOLE-ENGINEERING-FIRST-PACKAGE-20260805",
+  "reviewRoundLimit": 2,
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "businessStatus": "NOT_APPLICABLE_WITH_REASON",
+  "cleanupStatus": "NOT_APPLICABLE_WITH_REASON",
+  "sourceDenominators": [
+    {"class":"RP12_CLASSIFICATION","owner":"production Java token inventory and D3 vocabulary","paths":["doc/evidence/platform/2026-08-05-v2s-whole-engineering-first-package-rp12-classification.json"],"predicate":"320 physical rows and 477 exact double-quoted token occurrences are individually assigned to one or more of five finite semantic sets; SQL is separate"},
+    {"class":"OWNER_SEMANTICS","owner":"module owner services and audit-model","paths":["apps/backend/catering-business-server/modules/asset/src/main/java/","apps/backend/catering-business-server/modules/workspace-iam/src/main/java/","apps/backend/catering-business-server/modules/organization/src/main/java/","apps/backend/catering-business-server/modules/extension/src/main/java/","apps/backend/catering-business-server/modules/audit-model/src/main/java/"],"predicate":"owner facts, typed failures and cardinality decisions are explicit and red-tested"},
+    {"class":"EDGE_CONTRACT_GENERATED","owner":"OpenAPI and edge adapters","paths":["contracts/openapi/","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/"],"predicate":"service-node vocabulary is contract/codegen sourced; other sets remain owner-local; dead declarations have no consumer"},
+    {"class":"QUERY_POLICY","owner":"registry, SQL projection and verification catalogs","paths":["contracts/policy/module-dependency-registry.json","tools/module-dependency-registry/","tools/verify-gates/cli.mjs","scripts/check/"],"predicate":"task-read, named projection, presentation catalog and Flyway denominators match current source"},
+    {"class":"FOCUSED_PROOF","owner":"tests and static checks","paths":["apps/backend/catering-business-server/**/src/test/java/","scripts/check/"],"predicate":"baseline and real red mutations pass; no dynamic environment claim"},
+    {"class":"COMPLIANCE_EVIDENCE","owner":"compliance-control and package evidence","paths":[".runtime/compliance-control/active-package.json","doc/plans/platform/2026-08-05-v2s-whole-engineering-first-package-implementation-design.md","doc/evidence/platform/2026-08-05-v2s-whole-engineering-first-package-exit.json"],"predicate":"successful hook receipt set equals changed paths and exit evidence is complete"}
+  ],
+  "forbiddenSurfaces":["DEV","UAT","HTTP","L2","database/migration","seed","reset","runtime deployment","Git"],
+  "staticPredicates":["RP12 classification independent GO precedes replacements","MinIO exists maps only explicit not-found to false","public security diagnostics include existing database tracker metrics","list/detail read models do not force relation expansion on list","one strict audit writer","typed owner/edge/contract error reachability","page-size and findFirst denominators remain owner-specific","registry/projection/catalog/Flyway discovery sets are exact","hook pre/post receipts cover every changed file"]
+}

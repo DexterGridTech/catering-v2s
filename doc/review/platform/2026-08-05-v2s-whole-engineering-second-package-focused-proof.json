@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "packageId": "WHOLE-ENGINEERING-SECOND-PACKAGE-20260805",
+  "kind": "second-package-focused-proof",
+  "status": "PASS",
+  "static": {
+    "standardsCoverage": "PASS:150",
+    "edgeCodegenCheck": "PASS:254",
+    "edgeCodegenSelfTest": "PASS",
+    "remoteHostTrustSelfTest": "PASS",
+    "managedProcessTreeSelfTest": "PASS",
+    "r5DevRunnerSelfTest": "PASS:leader-dead-child-alive-red",
+    "httpDiagnosticRunnerSelfTest": "PASS",
+    "frontendArchitectureTest": "PASS:3",
+    "frontendTypecheckAndTests": "PASS:76"
+  },
+  "focusedRuntime": {
+    "owner": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785932579123-66408",
+    "edge": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785931261770-38001",
+    "ownerBusiness": "PASS",
+    "ownerCleanup": "PASS",
+    "edgeBusiness": "PASS",
+    "edgeCleanup": "PASS"
+  },
+  "redMutations": [
+    "RP-08 bare maskClosable is rejected by exact FORM_DRAWER test",
+    "RP-10 missing host with multi-entry allowlist, unknown host, wrong fingerprint, attacker supplied hash and rotation mismatch are rejected",
+    "RP-11 leader-dead/child-alive tree produces cleanup FAIL with firstFailure/lastKnownGood/brokenBoundary"
+  ],
+  "rp08Denominator": {
+    "definition": "The RP-08 package denominator is the 13 operations-admin form drawers whose user task is create/edit/submit; detail/status/result/public surfaces are excluded, and platform-admin is a separate app boundary.",
+    "inScopeCount": 13,
+    "inScopeFiles": [
+      "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityCreateDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityEditDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/business-entity-management/ui/HeadCompanyBrandAuthorizationDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/organization-structure/ui/RegionCreateDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/organization-structure/ui/ProjectCreateDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationEditDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/organization-structure/ui/CommercialGroupEditDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/contract-management/ui/ContractCreateDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/contract-management/ui/ContractEditDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/store-management/ui/StoreCreateDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/store-management/ui/StoreEditDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationCreateDrawer.tsx",
+      "apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordChangeDrawer.tsx"
+    ],
+    "crossAppLifecycleConsumerCount": 24,
+    "outOfScopeCount": 11,
+    "outOfScopeReason": "The remaining 11 production lifecycle consumers are platform-admin components; they are not silently omitted and are outside this operations-admin package surface."
+  },
+  "hookEvidence": {"required": true, "prePostReceipts": "PASS"}
+}

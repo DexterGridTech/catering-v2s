@@ -1,7 +1,10 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
@@ -36,7 +39,7 @@ public class WorkspaceRoleService {
         .collect(java.util.stream.Collectors.toUnmodifiableMap(WorkspaceAuthorizationCatalog.PageAccessCatalogEntry::pageDesignKey, entry -> Set.copyOf(entry.eligibleOrganizationTypes())));
     private static final Map<String, Set<String>> ACTION_CATALOG = WorkspaceAuthorizationCatalog.capabilityCatalog().stream()
         .collect(java.util.stream.Collectors.toUnmodifiableMap(WorkspaceAuthorizationCatalog.CapabilityCatalogEntry::key, entry -> Set.copyOf(entry.organizationTypes())));
-    private static final Set<String> SERVICE_NODE_TYPES = Set.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE");
+    private static final Set<String> SERVICE_NODE_TYPES = Set.of(ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE);
     private final JdbcTemplate jdbc;
     private final TimeProvider time;
     private final WorkspaceIamCommandReceiptService receipts;
@@ -196,8 +199,7 @@ public class WorkspaceRoleService {
     }
     private String currentStatus(UUID workspaceUuid, String key, UUID roleId) { return require(workspaceUuid, key, roleId).status(); }
     private static String keys(Set<String> values) { return String.join(",", values.stream().sorted().toList()); }
-    private static String jsonChanges(List<AuditChange> changes) { StringBuilder value = new StringBuilder("["); for (int index = 0; index < changes.size(); index++) { if (index > 0) value.append(','); AuditChange change = changes.get(index); value.append("{\"fieldKey\":\"").append(escape(change.fieldKey())).append("\""); if (change.beforeValue() != null) value.append(",\"before\":\"").append(escape(change.beforeValue())).append("\""); if (change.afterValue() != null) value.append(",\"after\":\"").append(escape(change.afterValue())).append("\""); value.append('}'); } return value.append(']').toString(); }
-    private static String escape(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
+    private static String jsonChanges(List<AuditChange> changes) { return AuditChangeJson.write(changes); }
     private void requirePlatformActor(AuditActor actor) { if (platformAuthorization == null) throw new IllegalStateException("platform authorization is required"); platformAuthorization.requireEnabledPlatformAdministrator(actor); }
     private static WorkspaceStatusLookup localWorkspaceStatus(JdbcTemplate jdbc) { return (workspaceUuid, key) -> Boolean.TRUE.equals(jdbc.query("SELECT status='ENABLED' FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, workspaceUuid); statement.setString(2, key); }, result -> result.next() && result.getBoolean(1))); }
     private static String canonical(String operation, String key, UUID roleId, Object... values) { StringBuilder request = new StringBuilder(operation).append('|').append(key).append('|').append(roleId); for (Object value : values) request.append('|').append(value instanceof Set<?> set ? set.stream().map(String::valueOf).sorted().toList() : value); return request.toString(); }

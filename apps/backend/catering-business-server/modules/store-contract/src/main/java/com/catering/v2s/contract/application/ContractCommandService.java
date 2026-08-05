@@ -1,11 +1,15 @@
 package com.catering.v2s.contract.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.contract.api.StoreContractReadback;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.StoreContractLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
@@ -154,11 +158,11 @@ public class ContractCommandService {
 
     private void validateContract(LocalDate from, LocalDate to, String phase, List<String> projectPhases, List<ItemInput> items) { if (from == null || (to != null && to.isBefore(from)) || (phase != null && !phase.isBlank() && !projectPhases.contains(phase)) || items == null || items.isEmpty() || items.stream().anyMatch(item -> item == null || item.itemCode() == null || item.itemCode().isBlank() || item.itemCode().trim().length() > 120 || item.itemName() == null || item.itemName().isBlank() || item.itemName().trim().length() > 240) || items.stream().map(item -> item.itemCode().strip().toLowerCase(java.util.Locale.ROOT)).distinct().count() != items.size()) throw new ContractValidationException(); }
     private static void requireProjectGrant(UUID workspaceUuid, String key, UUID projectId, OperationsOwnerScopeGrant ownerScopeGrant) {
-        if (ownerScopeGrant == null || !ownerScopeGrant.matches(workspaceUuid, key, "PROJECT", projectId)) throw new ContractAuthorizationException();
+        if (ownerScopeGrant == null || !ownerScopeGrant.matches(workspaceUuid, key, ServiceNodeTypes.PROJECT, projectId)) throw new ContractAuthorizationException();
     }
     private static StoreContractReadback readback(java.sql.ResultSet result) throws java.sql.SQLException { List<StoreContractReadback.Item> items = readItems(result.getString(13)); return new StoreContractReadback(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getObject(5, UUID.class), result.getObject(6, UUID.class), result.getObject(7, LocalDate.class), result.getObject(8, LocalDate.class), result.getString(9), result.getString(10), result.getString(11), result.getLong(12), items); }
     private static String canonical(String operation, Object... values) { StringBuilder value = new StringBuilder(operation); for (Object part : values) { String text = String.valueOf(part == null ? "<null>" : part); value.append('|').append(text.length()).append(':').append(text); } return value.toString(); }
-    private void validateValues(UUID workspaceUuid, String key, Map<String, String> values) { Map<String, String> actual = values == null ? Map.of() : values; try { ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, key, "CONTRACT"); Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream().collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field)); if (actual.keySet().stream().anyMatch(field -> !fields.containsKey(field)) || actual.entrySet().stream().anyMatch(entry -> !"DISABLED".equals(fields.get(entry.getKey()).status()) && !isJsonNull(entry.getValue()) && !validJsonValue(fields.get(entry.getKey()), entry.getValue()))) throw new ContractValidationException(); } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) { if (!actual.isEmpty()) throw new ContractValidationException(); } }
+    private void validateValues(UUID workspaceUuid, String key, Map<String, String> values) { Map<String, String> actual = values == null ? Map.of() : values; try { ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT); Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream().collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field)); if (actual.keySet().stream().anyMatch(field -> !fields.containsKey(field)) || actual.entrySet().stream().anyMatch(entry -> !"DISABLED".equals(fields.get(entry.getKey()).status()) && !isJsonNull(entry.getValue()) && !validJsonValue(fields.get(entry.getKey()), entry.getValue()))) throw new ContractValidationException(); } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) { if (!actual.isEmpty()) throw new ContractValidationException(); } }
     private static String itemsJson(List<ItemInput> items) { var array = JSON.createArrayNode(); for (ItemInput item : items) { var value = array.addObject(); value.put("code", text(item.itemCode(), 120)); value.put("name", text(item.itemName(), 240)); } return array.toString(); }
     private static List<StoreContractReadback.Item> readItems(String source) { try { JsonNode array = JSON.readTree(source); if (!array.isArray()) throw new ContractValidationException(); java.util.ArrayList<StoreContractReadback.Item> values = new java.util.ArrayList<>(); int line = 1; for (JsonNode item : array) values.add(new StoreContractReadback.Item(line++, item.path("code").asText(), item.path("name").asText())); return List.copyOf(values); } catch (java.io.IOException failure) { throw new ContractValidationException(); } }
     private void replaceValues(UUID id, UUID workspaceUuid, String key, Map<String, String> values) {
@@ -167,7 +171,7 @@ public class ContractCommandService {
         try { JsonNode parsed = JSON.readTree(current); if (!parsed.isObject()) throw new ContractValidationException(); merged = (ObjectNode) parsed; }
         catch (java.io.IOException failure) { throw new ContractValidationException(); }
         ExtensionDefinitionReadback definition;
-        try { definition = definitions.requireDefinition(workspaceUuid, key, "CONTRACT"); }
+        try { definition = definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT); }
         catch (ExtensionDefinitionService.DefinitionNotFoundException absent) { if (values != null && !values.isEmpty()) throw new ContractValidationException(); jdbc.update("UPDATE contract.store_contract SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?", merged.toString(), 0L, id); return; }
         Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream().collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field));
         if (values != null) for (var value : values.entrySet()) {
@@ -193,8 +197,7 @@ public class ContractCommandService {
     }
     private static String items(List<StoreContractReadback.Item> values) { return String.join(",", values.stream().map(value -> value.itemCode() + ":" + value.itemName()).toList()); }
     private static String date(LocalDate value) { return value == null ? null : value.toString(); }
-    private static String auditJson(List<AuditChange> changes) { StringBuilder value = new StringBuilder("["); for (int index = 0; index < changes.size(); index++) { if (index > 0) value.append(','); AuditChange change = changes.get(index); value.append("{\"fieldKey\":\"").append(escape(change.fieldKey())).append("\""); if (change.beforeValue() != null) value.append(",\"before\":\"").append(escape(change.beforeValue())).append("\""); if (change.afterValue() != null) value.append(",\"after\":\"").append(escape(change.afterValue())).append("\""); value.append('}'); } return value.append(']').toString(); }
-    private static String escape(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
+    private static String auditJson(List<AuditChange> changes) { return AuditChangeJson.write(changes); }
     private static String text(String value, int limit) { String normalized = Objects.requireNonNullElse(value, "").trim(); if (normalized.isEmpty() || normalized.length() > limit) throw new ContractValidationException(); return normalized; }
     private static String optional(String value, int limit) { return value == null || value.isBlank() ? null : text(value, limit); }
     private static boolean isJsonNull(String value) { return value == null || "null".equals(value.trim()); }

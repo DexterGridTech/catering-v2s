@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-delivery-manifest",
+  "packageId": "WHOLE-ENGINEERING-RP-02A-IMPLEMENTATION-20260805",
+  "unitId": "RP-02A-U01",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "WHOLE-ENGINEERING-RP-02A-IMPLEMENTATION-20260805",
+  "reviewRoundLimit": 2,
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "sourceDenominators": [
+    {
+      "class": "GENERATED_ROUTE_FACE",
+      "owner": "edge-codegen",
+      "paths": ["apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"],
+      "predicate": "154 route-face tuples remain the exact generated denominator"
+    },
+    {
+      "class": "PLACEMENT",
+      "owner": "r5-edge-materialize",
+      "paths": ["doc/evidence/platform/r5-u01-edge-placement-resolution.json"],
+      "predicate": "placement tuples equal generated route-face tuples"
+    },
+    {
+      "class": "MATERIALIZED_CATALOG",
+      "owner": "edge-operation-projections",
+      "paths": ["doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json", "scripts/generate/edge-operation-projections.mjs"],
+      "predicate": "source catalog is 154 concrete operations and projection is identity"
+    },
+    {
+      "class": "SOURCE_BACKED_FACTS",
+      "owner": "http-diagnostic-scenarios",
+      "paths": ["scripts/test/http-diagnostic-scenarios.mjs", "scripts/test/http-diagnostic-scenarios.test.mjs"],
+      "predicate": "every generated operation has an explicit source-backed fact"
+    },
+    {
+      "class": "CONSUMER_PAYLOAD_QUERY",
+      "owner": "diagnostic-and-l2-consumers",
+      "paths": ["scripts/test/http-diagnostic-workload.mjs", "scripts/test/http-diagnostic-workload.test.mjs", "scripts/test/r5-platform-admin-l2-fixture-seed.mjs", "scripts/test/r5-platform-admin-l2-fixture-seed.test.mjs"],
+      "predicate": "four create bodies and five unsupported query call sites reject projectId; approved query/state allowlist remains"
+    },
+    {
+      "class": "ASSERTION_RECOVERY",
+      "owner": "rm1-diagnostic",
+      "paths": ["scripts/test/rm1-http-diagnostic.test.mjs", "scripts/test/http-diagnostic-workload.mjs", "scripts/test/http-diagnostic-workload.test.mjs"],
+      "predicate": "counts derive from generated registry and recovery order is exact start/send/verify/complete"
+    }
+  ],
+  "nFindingDispositions": {
+    "N1": "RESOLVED_BY_CATALOG_CROSSWALK_ARTIFACT",
+    "N2": "RESOLVED_BY_SCRIPTS_CHECK_R5_EDGE_MATERIALIZE_WRAPPER"
+  },
+  "forbiddenSurfaces": ["contracts/openapi", "apps/backend", "apps/frontend", "database", "DEV", "UAT", "HTTP", "L2", "seed", "reset", "roadmap", "Git"]
+}

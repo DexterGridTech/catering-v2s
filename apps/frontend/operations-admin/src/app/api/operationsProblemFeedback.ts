@@ -25,7 +25,6 @@ export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemF
   ORGANIZATION_COMMERCIAL_GROUP_NOT_INITIALIZED: {title: '集团空间尚未初始化', detail: '请先完成集团空间初始化。'},
   ORGANIZATION_COMMERCIAL_GROUP_REQUIRED: {title: '缺少集团空间资料', detail: '请选择集团空间后重试。'},
   ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE: {title: '品牌仍在使用中', detail: '该品牌仍被门店使用，暂时不能移除。'},
-  ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED: {title: '需要品牌授权', detail: '请先完成总公司品牌授权。'},
   ORGANIZATION_NODE_CODE_CONFLICT: {title: '组织编码已存在', detail: '请更换组织编码后重试。'},
   ORGANIZATION_NODE_NAME_CONFLICT: {title: '组织名称已存在', detail: '请更换组织名称后重试。'},
   ORGANIZATION_NODE_PARENT_INVALID: {title: '组织层级关系有误', detail: '请检查上级组织后重试。'},

@@ -1,6 +1,6 @@
 import {ProTable} from '@ant-design/pro-components';
 import {Alert, Button, Card, Descriptions, Empty, Input, Select, Spin, Tabs, Tag, Tree} from 'antd';
-import {adminListState, contextScopedQueryArgs, formatNameCode, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminHierarchyCollator, adminListState, contextScopedQueryArgs, formatNameCode, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState, type ReactNode} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
@@ -29,7 +29,7 @@ type OrganizationTreeData = {key: string; title: ReactNode; children: Organizati
 type OrganizationHierarchyDetail = Omit<OrganizationOverviewItem, 'extensionFields'> & {extensionFields: ReturnType<typeof organizationOverviewExtensionItems>};
 
 const hierarchyTypeLabels = {GROUP: '集团', REGION: '大区', PROJECT: '项目'} as const;
-const hierarchyNameCollator = new Intl.Collator('zh-CN', {numeric: true, sensitivity: 'base'});
+const hierarchyNameCollator = adminHierarchyCollator;
 
 function hierarchyNodeTitle(type: keyof typeof hierarchyTypeLabels, name: string, code: string, status: OrganizationOverviewStatus): ReactNode {
   return <span><Tag color="cyan">{hierarchyTypeLabels[type]}</Tag><span>{formatNameCode(name, code)}</span>{status === 'DISABLED' && <Tag color="default">已停用</Tag>}</span>;

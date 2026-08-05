@@ -1435,8 +1435,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "expectedVersion",
           "expectedContextVersion",
+          "expectedVersion",
           "idempotencyKey"
         ],
         "properties": {
@@ -1445,12 +1445,12 @@
             "nullable": true,
             "maxLength": 240
           },
-          "expectedVersion": {
+          "expectedContextVersion": {
             "type": "integer",
             "format": "int64",
             "minimum": 0
           },
-          "expectedContextVersion": {
+          "expectedVersion": {
             "type": "integer",
             "format": "int64",
             "minimum": 0
@@ -1924,7 +1924,8 @@
                     "NONE",
                     "REGION",
                     "PROJECT",
-                    "STORE"
+                    "STORE",
+                    "HEAD_COMPANY"
                   ]
                 },
                 "eligibleOrganizationTypes": {

@@ -1,5 +1,7 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
@@ -31,19 +33,19 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
     @Transactional(readOnly = true)
     public List<AssignmentCandidate> listEnabled(UUID workspaceUuid, String key, String type) {
         return switch (type) {
-            case "GROUP" -> {
+            case ServiceNodeTypes.GROUP -> {
                 UUID id = groups.requireCommercialGroupRef(workspaceUuid, key);
                 yield List.of(new AssignmentCandidate(type, id, groups.describeCommercialGroup(workspaceUuid, key, id)));
             }
-            case "REGION", "PROJECT" -> candidates(workspaceUuid, key, type, jdbc.query(
+            case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> candidates(workspaceUuid, key, type, jdbc.query(
                 "SELECT id FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND node_type=? AND status='ENABLED' ORDER BY code",
                 (row, index) -> row.getObject(1, UUID.class),
                 workspaceUuid,
                 key,
                 type
             ));
-            case "HEAD_COMPANY", "STORE" -> {
-                String table = "HEAD_COMPANY".equals(type) ? "head_company" : "store";
+            case ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> {
+                String table = ServiceNodeTypes.HEAD_COMPANY.equals(type) ? "head_company" : "store";
                 yield candidates(workspaceUuid, key, type, jdbc.query(
                     "SELECT id FROM organization." + table + " WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' ORDER BY code",
                     (row, index) -> row.getObject(1, UUID.class),

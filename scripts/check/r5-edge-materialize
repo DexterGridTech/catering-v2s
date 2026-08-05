@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+case "${1:-}" in
+  --self-test) exec node "$root_dir/scripts/generate/r5-edge-materialize.mjs" --self-test ;;
+  --check) exec node "$root_dir/scripts/generate/r5-edge-materialize.mjs" --check ;;
+  "") exec node "$root_dir/scripts/generate/r5-edge-materialize.mjs" --check ;;
+  *) echo "usage: scripts/check/r5-edge-materialize [--check|--self-test]" >&2; exit 2 ;;
+esac

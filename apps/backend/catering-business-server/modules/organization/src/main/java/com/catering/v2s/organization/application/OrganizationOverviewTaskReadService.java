@@ -1,5 +1,10 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.organization.api.OrganizationNodeTypes;
+import com.catering.v2s.extension.api.ExtensionHostTypes;
+import com.catering.v2s.organization.api.BusinessEntityTypes;
+
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
@@ -53,7 +58,7 @@ public class OrganizationOverviewTaskReadService {
         List<Item> items = switch (category) {
             case "HIERARCHY" -> hierarchyPage.items().stream().map(value -> hierarchyItem(key, value)).toList();
             case "BUSINESS_ENTITY" -> businessEntityPage.items().stream().map(item -> entityItem(key, item.entityType(), item.entity())).toList();
-            case "STORE" -> storePage(workspaceUuid, key, safeQuery, safeSize, offset);
+            case ServiceNodeTypes.STORE -> storePage(workspaceUuid, key, safeQuery, safeSize, offset);
             default -> throw new IllegalArgumentException("unsupported overview category");
         };
         long total = businessEntityPage != null ? businessEntityPage.total() : hierarchyPage != null ? hierarchyPage.total() : count(workspaceUuid, key, category, safeQuery);
@@ -66,7 +71,7 @@ public class OrganizationOverviewTaskReadService {
         return switch (category) {
             case "HIERARCHY" -> hierarchyDetail(workspaceUuid, key, itemId);
             case "BUSINESS_ENTITY" -> entityDetail(workspaceUuid, key, itemId);
-            case "STORE" -> storeDetail(workspaceUuid, key, itemId);
+            case ServiceNodeTypes.STORE -> storeDetail(workspaceUuid, key, itemId);
             default -> throw new IllegalArgumentException("unsupported overview category");
         };
     }
@@ -79,8 +84,8 @@ public class OrganizationOverviewTaskReadService {
             .map(node -> new TreeRow(node.id(), node.parentId(), node.nodeType(), node.code(), node.name(), node.status(), node.notes(), node.updatedAtEpochMillis(), node.phaseNames()))
             .toList();
         Map<UUID, List<TreeRow>> projectsByRegion = new LinkedHashMap<>();
-        rows.stream().filter(row -> "PROJECT".equals(row.type())).forEach(row -> projectsByRegion.computeIfAbsent(row.parentId(), ignored -> new ArrayList<>()).add(row));
-        List<TreeNode> regions = rows.stream().filter(row -> "REGION".equals(row.type())).map(row -> treeNode(row, projectsByRegion.getOrDefault(row.id(), List.of()))).toList();
+        rows.stream().filter(row -> OrganizationNodeTypes.PROJECT.equals(row.type())).forEach(row -> projectsByRegion.computeIfAbsent(row.parentId(), ignored -> new ArrayList<>()).add(row));
+        List<TreeNode> regions = rows.stream().filter(row -> OrganizationNodeTypes.REGION.equals(row.type())).map(row -> treeNode(row, projectsByRegion.getOrDefault(row.id(), List.of()))).toList();
         return new HierarchyTree(root.commercialGroupCode(), root.commercialGroupName(), regions);
     }
 
@@ -144,20 +149,20 @@ public class OrganizationOverviewTaskReadService {
             return storeItem(key, result, append(references(result.getArray("path_ids"), result.getArray("path_codes"), result.getArray("path_names")), new Reference(result.getObject("id", UUID.class), result.getString("code"), result.getString("name"), true)));
         });
         Item required = required(item);
-        return withExtensionFields(required, extensionFields(workspaceUuid, key, "STORE", required.id()));
+        return withExtensionFields(required, extensionFields(workspaceUuid, key, ExtensionHostTypes.STORE, required.id()));
     }
 
     private long count(UUID workspaceUuid, String key, String category, Query query) {
         return switch (category) {
             case "HIERARCHY" -> throw new IllegalStateException("hierarchy count is owned by OrganizationHierarchyService");
             case "BUSINESS_ENTITY" -> throw new IllegalStateException("business-entity count is owned by BusinessEntityService");
-            case "STORE" -> { List<Object> values = baseValues(workspaceUuid, key, query); addVisibleStoreValues(values, workspaceUuid, key, query.scopeNodeId()); values.add(query.projectId()); values.add(query.projectId()); values.add(query.brandId()); values.add(query.brandId()); values.add(query.tenantId()); values.add(query.tenantId()); values.add(query.headCompanyId()); values.add(query.headCompanyId()); yield jdbc.queryForObject("SELECT count(*)" + storeRowsSql().substring(storeRowsSql().indexOf(" FROM")) + baseFilters("s.", null, query) + visibleStorePredicate(query.scopeNodeId(), "s.id", "s.project_id") + " AND (?::uuid IS NULL OR s.project_id=?) AND (?::uuid IS NULL OR s.brand_id=?) AND (?::uuid IS NULL OR s.tenant_id=?) AND (?::uuid IS NULL OR s.head_company_id=?)", Long.class, values.toArray()); }
+            case ServiceNodeTypes.STORE -> { List<Object> values = baseValues(workspaceUuid, key, query); addVisibleStoreValues(values, workspaceUuid, key, query.scopeNodeId()); values.add(query.projectId()); values.add(query.projectId()); values.add(query.brandId()); values.add(query.brandId()); values.add(query.tenantId()); values.add(query.tenantId()); values.add(query.headCompanyId()); values.add(query.headCompanyId()); yield jdbc.queryForObject("SELECT count(*)" + storeRowsSql().substring(storeRowsSql().indexOf(" FROM")) + baseFilters("s.", null, query) + visibleStorePredicate(query.scopeNodeId(), "s.id", "s.project_id") + " AND (?::uuid IS NULL OR s.project_id=?) AND (?::uuid IS NULL OR s.brand_id=?) AND (?::uuid IS NULL OR s.tenant_id=?) AND (?::uuid IS NULL OR s.head_company_id=?)", Long.class, values.toArray()); }
             default -> throw new IllegalArgumentException("unsupported overview category");
         };
     }
 
     private static String baseFilters(String prefix, String typeColumn, Query query) { return " AND (?::text IS NULL OR " + prefix + "name ILIKE ? ESCAPE '!') AND (?::text IS NULL OR " + prefix + "code ILIKE ? ESCAPE '!') AND (?::text IS NULL OR " + prefix + "status=?)" + (query.type() == null || typeColumn == null ? "" : " AND " + typeColumn + "=?") + ("SYSTEM".equals(query.source()) ? " AND 1=0" : ""); }
-    private static List<Object> baseValues(UUID workspaceUuid, String key, Query query) { List<Object> values = new ArrayList<>(); values.add(workspaceUuid); values.add(key); values.add(like(query.name())); values.add(like(query.name())); values.add(like(query.code())); values.add(like(query.code())); values.add(query.status()); values.add(query.status()); if (query.type() != null && !"STORE".equals(query.type())) values.add(query.type()); return values; }
+    private static List<Object> baseValues(UUID workspaceUuid, String key, Query query) { List<Object> values = new ArrayList<>(); values.add(workspaceUuid); values.add(key); values.add(like(query.name())); values.add(like(query.name())); values.add(like(query.code())); values.add(like(query.code())); values.add(query.status()); values.add(query.status()); if (query.type() != null && !ServiceNodeTypes.STORE.equals(query.type())) values.add(query.type()); return values; }
     private static String visibleStorePredicate(UUID scopeNodeId, String storeColumn, String projectColumn) {
         return scopeNodeId == null ? "" : " AND (" + storeColumn + "=?::uuid OR " + projectColumn + " IN (WITH RECURSIVE visible_scope(id, parent_id, node_type) AS (SELECT id, parent_id, node_type FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND id=? UNION ALL SELECT child.id, child.parent_id, child.node_type FROM organization.organization_node child JOIN visible_scope parent ON child.parent_id=parent.id WHERE child.workspace_uuid=? AND child.group_workspace_key=?) SELECT id FROM visible_scope WHERE node_type='PROJECT'))";
     }
@@ -205,7 +210,7 @@ public class OrganizationOverviewTaskReadService {
         Reference tenant = new Reference(row.getObject("tenant_id", UUID.class), row.getString("tenant_code"), row.getString("tenant_name"), true);
         UUID headId = row.getObject("head_id", UUID.class);
         Reference head = headId == null ? null : new Reference(headId, row.getString("head_code"), row.getString("head_name"), true);
-        return new Item(row.getObject("id", UUID.class), key, "STORE", "STORE", row.getString("code"), row.getString("name"), path, row.getString("status"), "MANUAL", row.getLong("version"), row.getLong("created_at_epoch_millis"), row.getLong("updated_at_epoch_millis"), row.getString("notes"), null, null, project, brand, tenant, head, List.of(), List.of(), null);
+        return new Item(row.getObject("id", UUID.class), key, ServiceNodeTypes.STORE, ServiceNodeTypes.STORE, row.getString("code"), row.getString("name"), path, row.getString("status"), "MANUAL", row.getLong("version"), row.getLong("created_at_epoch_millis"), row.getLong("updated_at_epoch_millis"), row.getString("notes"), null, null, project, brand, tenant, head, List.of(), List.of(), null);
     }
 
     private static Item withPath(Item item, List<Reference> path) {
@@ -222,7 +227,7 @@ public class OrganizationOverviewTaskReadService {
         ExtensionDefinitionReadback definition;
         try { definition = definitions.requireDefinition(workspaceUuid, key, hostType); }
         catch (ExtensionDefinitionService.DefinitionNotFoundException absent) { return List.of(); }
-        String table = switch (hostType) { case "BRAND" -> "brand"; case "TENANT" -> "tenant"; case "HEAD_COMPANY" -> "head_company"; case "STORE" -> "store"; case "REGION", "PROJECT" -> "organization_node"; default -> throw new BusinessEntityService.OrganizationNotFoundException(); };
+        String table = switch (hostType) { case ExtensionHostTypes.BRAND -> "brand"; case ExtensionHostTypes.TENANT -> "tenant"; case ExtensionHostTypes.HEAD_COMPANY -> "head_company"; case ExtensionHostTypes.STORE -> "store"; case ExtensionHostTypes.REGION, ExtensionHostTypes.PROJECT -> "organization_node"; default -> throw new BusinessEntityService.OrganizationNotFoundException(); };
         String raw = jdbc.query("SELECT extension_values::text FROM organization." + table + " WHERE id=? AND workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, id); statement.setObject(2, workspaceUuid); statement.setString(3, key); }, result -> result.next() ? result.getString(1) : null);
         Map<String, String> values = jsonObject(raw);
         return definition.fields().stream().filter(field -> "ENABLED".equals(field.status())).sorted(java.util.Comparator.comparingInt(ExtensionDefinitionReadback.Field::displayOrder)).map(field -> new ExtensionDisplayField(field.label(), displayValue(values.get(field.fieldKey())))).toList();
@@ -266,9 +271,9 @@ public class OrganizationOverviewTaskReadService {
             String safeSort = sort == null ? "UPDATED_AT" : sort;
             String safeDirection = direction == null ? "DESC" : direction;
             if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort) || !List.of("ASC", "DESC").contains(safeDirection) || (status != null && !List.of("ENABLED", "DISABLED").contains(status)) || (source != null && !List.of("MANUAL", "SYSTEM").contains(source))) throw new IllegalArgumentException("invalid overview query");
-            if ("HIERARCHY".equals(category)) { if (type != null && !List.of("REGION", "PROJECT").contains(type) || brandId != null || tenantId != null || headCompanyId != null) throw new IllegalArgumentException("invalid hierarchy query"); }
-            else if ("BUSINESS_ENTITY".equals(category)) { if (type != null && !List.of("BRAND", "TENANT", "HEAD_COMPANY").contains(type) || projectId != null || brandId != null || tenantId != null || headCompanyId != null) throw new IllegalArgumentException("invalid entity query"); }
-            else if ("STORE".equals(category)) { if (type != null && !"STORE".equals(type)) throw new IllegalArgumentException("invalid store query"); }
+            if ("HIERARCHY".equals(category)) { if (type != null && !List.of(OrganizationNodeTypes.REGION, OrganizationNodeTypes.PROJECT).contains(type) || brandId != null || tenantId != null || headCompanyId != null) throw new IllegalArgumentException("invalid hierarchy query"); }
+            else if ("BUSINESS_ENTITY".equals(category)) { if (type != null && !List.of("BRAND", "TENANT", BusinessEntityTypes.HEAD_COMPANY).contains(type) || projectId != null || brandId != null || tenantId != null || headCompanyId != null) throw new IllegalArgumentException("invalid entity query"); }
+            else if (ServiceNodeTypes.STORE.equals(category)) { if (type != null && !ServiceNodeTypes.STORE.equals(type)) throw new IllegalArgumentException("invalid store query"); }
             else throw new IllegalArgumentException("unsupported overview category");
             if (!"BUSINESS_ENTITY".equals(category) && (legalName != null || unifiedSocialCreditCode != null)) throw new IllegalArgumentException("invalid overview query");
             if ("BUSINESS_ENTITY".equals(category) && ("BRAND".equals(type) && (legalName != null || unifiedSocialCreditCode != null))) throw new IllegalArgumentException("invalid brand legal query");

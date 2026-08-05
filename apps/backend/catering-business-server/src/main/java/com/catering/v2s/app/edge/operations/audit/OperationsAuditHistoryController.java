@@ -1,5 +1,8 @@
 package com.catering.v2s.app.edge.operations.audit;
 
+import com.catering.v2s.audit.contract.AuditEntityTypes;
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.app.edge.audit.AuditHistoryWireMapper;
 import com.catering.v2s.app.edge.generated.wire.AuditHistoryPage;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
@@ -58,7 +61,7 @@ public final class OperationsAuditHistoryController {
         var result = switch (entityType) {
             case "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION" -> workspaceIamAudit.read(scope, target, page, pageSize);
             case "COMMERCIAL_GROUP" -> organizationAudit.readCommercialGroup(scope, target, page, pageSize);
-            case "ORGANIZATION_NODE", "BRAND", "TENANT", "HEAD_COMPANY", "STORE" -> organizationAudit.read(scope, target, page, pageSize);
+            case "ORGANIZATION_NODE", "BRAND", "TENANT", AuditEntityTypes.HEAD_COMPANY, AuditEntityTypes.STORE -> organizationAudit.read(scope, target, page, pageSize);
             case "STORE_CONTRACT" -> contractAudit.read(scope, target, page, pageSize);
             default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
         };
@@ -83,18 +86,18 @@ public final class OperationsAuditHistoryController {
             }
             case "BRAND" -> requireGroupEntity(session, "BRAND", id);
             case "TENANT" -> requireGroupEntity(session, "TENANT", id);
-            case "HEAD_COMPANY" -> requireScopedEntity(session, "HEAD_COMPANY", id);
-            case "STORE" -> {
+            case AuditEntityTypes.HEAD_COMPANY -> requireScopedEntity(session, AuditEntityTypes.HEAD_COMPANY, id);
+            case AuditEntityTypes.STORE -> {
                 var item = organizationOverview.detail(
-                    session.workspaceUuid(), session.groupWorkspaceKey(), "STORE", id
+                    session.workspaceUuid(), session.groupWorkspaceKey(), AuditEntityTypes.STORE, id
                 );
-                authorization.requireScopedHost(session, "PROJECT", item.project().id());
+                authorization.requireScopedHost(session, ServiceNodeTypes.PROJECT, item.project().id());
             }
             case "STORE_CONTRACT" -> {
                 var contract = contractReads.view(
                     session.workspaceUuid(), session.groupWorkspaceKey(), id
                 );
-                authorization.requireScopedHost(session, "PROJECT", contract.project().id());
+                authorization.requireScopedHost(session, ServiceNodeTypes.PROJECT, contract.project().id());
             }
             default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
         }

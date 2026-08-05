@@ -1,5 +1,7 @@
 package com.catering.v2s.app.bootstrap;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
@@ -21,6 +23,8 @@ import java.util.UUID;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Explicit, non-web isolated-fixture bootstrap for invitation acceptance verification.
@@ -28,7 +32,8 @@ import org.springframework.context.ConfigurableApplicationContext;
  * it is not a component or controller and may only invoke the two owner APIs below.
  */
 public final class ManagedInvitationBootstrap {
-    private static final Set<String> TARGET_TYPES = Set.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE");
+    private static final Logger LOG = LoggerFactory.getLogger(ManagedInvitationBootstrap.class);
+    private static final Set<String> TARGET_TYPES = Set.of(ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE);
     private static final Set<PosixFilePermission> OWNER_ONLY = EnumSet.of(
         PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE
     );
@@ -47,10 +52,13 @@ public final class ManagedInvitationBootstrap {
                 WorkspaceInvitationService invitations = context.getBean(WorkspaceInvitationService.class);
                 Result result = create(workspaces, invitations, input);
                 writePrivateOutput(input.outputPath(), result);
-                System.out.println("MANAGED_INVITATION_BOOTSTRAP=PASS; STATUS=" + result.status());
+                LOG.info("managed-invitation-bootstrap outcome=SUCCEEDED status={}", result.status());
             }
         } catch (Exception failure) {
             writePrivateFailure(input.outputPath(), failure);
+            Throwable root = failure;
+            while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+            LOG.error("managed-invitation-bootstrap outcome=FAILED failureType={} failureMessagePresent={}", root.getClass().getName(), root.getMessage() != null && !root.getMessage().isBlank());
             throw failure;
         }
     }

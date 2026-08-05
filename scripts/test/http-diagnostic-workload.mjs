@@ -342,7 +342,6 @@ export async function executeOperationsOrganizationWorkload({publicFlow, uniqueS
   const cookie = () => ({Cookie: state.requirePrivate('OPERATIONS_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
   const workspace = (pathParameters = {}, queryParameters = {}) => ({pathParameters: {groupWorkspaceKey: workspaceKey, ...pathParameters}, queryParameters});
   const context = () => ({expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')});
-  const projectContext = () => ({...context(), projectId: state.requirePrivate('PROJECT').id});
 
   await invoke('getOperationsWorkspaceLoginEntry', {replayKey: 'operations-login-entry', ...workspace()});
   await invoke('operationsWorkspacePasswordLogin', {
@@ -411,10 +410,10 @@ export async function executeOperationsOrganizationWorkload({publicFlow, uniqueS
     headCompanyId: state.requirePrivate('HEAD_COMPANY').id,
     dataNode: state.requirePrivate('VISIBLE_DATA_NODE'),
   });
-  await invoke('getOperationsOrganizationStoreCandidates', {replayKey: 'operations-store-candidates', ...workspace({}, {...projectContext(), brandId: state.requirePrivate('BRAND').id, tenantId: state.requirePrivate('TENANT').id}), headers: cookie()});
+  await invoke('getOperationsOrganizationStoreCandidates', {replayKey: 'operations-store-candidates', ...workspace({}, {...context(), brandId: state.requirePrivate('BRAND').id, tenantId: state.requirePrivate('TENANT').id}), headers: cookie()});
   await invoke('createOperationsOrganizationStore', {
     replayKey: 'operations-create-store', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('store')},
-    body: {projectId: state.requirePrivate('PROJECT').id, brandId: state.requirePrivate('BRAND').id, tenantId: state.requirePrivate('TENANT').id, code: `ST${uniqueSuffix.toUpperCase()}`, name: `诊断门店${uniqueSuffix}`},
+    body: {brandId: state.requirePrivate('BRAND').id, tenantId: state.requirePrivate('TENANT').id, code: `ST${uniqueSuffix.toUpperCase()}`, name: `诊断门店${uniqueSuffix}`},
     capturePrivateResponse: (response) => requireJson(response, 'STORE', ['id', 'revision']),
   });
   const platformCookie = () => ({Cookie: state.requirePrivate('PLATFORM_SESSION').map((value) => String(value).split(';', 1)[0]).join('; ')});
@@ -434,14 +433,14 @@ export async function executeOperationsOrganizationWorkload({publicFlow, uniqueS
     replayKey: 'platform-replace-store-extension', ...workspace({entityType: 'STORE'}), headers: {...platformCookie(), 'Idempotency-Key': key('replace-store-extension')},
     body: {expectedVersion: state.requirePrivate('STORE_EXTENSION_VERSION').revision, definitions: [{key: 'diagnosticStoreField', label: '诊断门店字段', type: 'TEXT', required: false, options: []}]},
   });
-  await invoke('getOperationsContractExtensionDefinition', {replayKey: 'operations-contract-extension', ...workspace({}, projectContext()), headers: cookie()});
-  await invoke('getOperationsContractCandidates', {replayKey: 'operations-contract-candidates', ...workspace({}, {...projectContext(), selectedStoreId: state.requirePrivate('STORE').id}), headers: cookie()});
+  await invoke('getOperationsContractExtensionDefinition', {replayKey: 'operations-contract-extension', ...workspace({}, context()), headers: cookie()});
+  await invoke('getOperationsContractCandidates', {replayKey: 'operations-contract-candidates', ...workspace({}, {...context(), selectedStoreId: state.requirePrivate('STORE').id}), headers: cookie()});
   await invoke('createOperationsContract', {
     replayKey: 'operations-create-contract', ...workspace(), headers: {...cookie(), 'Idempotency-Key': key('contract')},
-    body: {projectId: state.requirePrivate('PROJECT').id, storeId: state.requirePrivate('STORE').id, phaseName: '一期', contractNo: `DG-${uniqueSuffix.toUpperCase()}-001`, effectiveFrom: '2026-07-01', effectiveTo: '2026-12-31', items: [{code: `SKU-${uniqueSuffix.toUpperCase()}`, name: `诊断商品${uniqueSuffix}`}]},
+    body: {storeId: state.requirePrivate('STORE').id, phaseName: '一期', contractNo: `DG-${uniqueSuffix.toUpperCase()}-001`, effectiveFrom: '2026-07-01', effectiveTo: '2026-12-31', items: [{code: `SKU-${uniqueSuffix.toUpperCase()}`, name: `诊断商品${uniqueSuffix}`}]},
     capturePrivateResponse: (response) => requireJson(response, 'CONTRACT', ['id', 'revision', 'effectiveFrom', 'effectiveTo', 'phaseName', 'items']),
   });
-  await invoke('getOperationsContracts', {replayKey: 'operations-list-contracts', ...workspace({}, {...projectContext(), storeId: state.requirePrivate('STORE').id, page: 1, pageSize: 20}), headers: cookie()});
+  await invoke('getOperationsContracts', {replayKey: 'operations-list-contracts', ...workspace({}, {...context(), storeId: state.requirePrivate('STORE').id, page: 1, pageSize: 20}), headers: cookie()});
   await invoke('getOperationsContract', {replayKey: 'operations-read-contract', ...workspace({contractId: state.requirePrivate('CONTRACT').id}, context()), headers: cookie()});
   await invoke('updateOperationsContract', {
     replayKey: 'operations-update-contract', ...workspace({contractId: state.requirePrivate('CONTRACT').id}), headers: {...cookie(), 'Idempotency-Key': key('contract-update')},
@@ -454,7 +453,7 @@ export async function executeOperationsOrganizationWorkload({publicFlow, uniqueS
     capturePrivateResponse: (response) => requireJson(response, 'CONTRACT', ['id', 'revision']),
   });
   await invoke('getOperationsOrganizationStoreExtensionDefinition', {replayKey: 'operations-store-extension', ...workspace({}, context()), headers: cookie()});
-  await invoke('getOperationsOrganizationStores', {replayKey: 'operations-list-stores', ...workspace({}, {...projectContext(), page: 1, pageSize: 20}), headers: cookie()});
+  await invoke('getOperationsOrganizationStores', {replayKey: 'operations-list-stores', ...workspace({}, {...context(), page: 1, pageSize: 20}), headers: cookie()});
   await invoke('getOperationsOrganizationStore', {replayKey: 'operations-read-store', ...workspace({storeId: state.requirePrivate('STORE').id}, context()), headers: cookie()});
   await invoke('updateOperationsOrganizationStore', {
     replayKey: 'operations-update-store', ...workspace({storeId: state.requirePrivate('STORE').id}), headers: {...cookie(), 'Idempotency-Key': key('store-update')},
@@ -469,17 +468,17 @@ export async function executeOperationsOrganizationWorkload({publicFlow, uniqueS
   await invoke('getOperationsOrganizationHeadCompany', {replayKey: 'operations-read-head-company', ...workspace({headCompanyId: state.requirePrivate('HEAD_COMPANY').id}, context()), headers: cookie()});
   await invoke('updateOperationsOrganizationBrand', {
     replayKey: 'operations-update-brand', ...workspace({brandId: state.requirePrivate('BRAND').id}), headers: {...cookie(), 'Idempotency-Key': key('brand-update')},
-    body: {code: state.requirePrivate('BRAND').code, name: `诊断品牌更新${uniqueSuffix}`, expectedVersion: state.requirePrivate('BRAND').revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')},
+    body: {code: state.requirePrivate('BRAND').code, name: `诊断品牌更新${uniqueSuffix}`, expectedVersion: state.requirePrivate('BRAND').revision},
     capturePrivateResponse: (response) => requireJson(response, 'BRAND', ['id', 'revision']),
   });
   await invoke('updateOperationsOrganizationTenant', {
     replayKey: 'operations-update-tenant', ...workspace({tenantId: state.requirePrivate('TENANT').id}), headers: {...cookie(), 'Idempotency-Key': key('tenant-update')},
-    body: {code: state.requirePrivate('TENANT').code, name: `诊断租户更新${uniqueSuffix}`, legalName: state.requirePrivate('TENANT').legalName, unifiedSocialCreditCode: state.requirePrivate('TENANT').unifiedSocialCreditCode, expectedVersion: state.requirePrivate('TENANT').revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')},
+    body: {code: state.requirePrivate('TENANT').code, name: `诊断租户更新${uniqueSuffix}`, legalName: state.requirePrivate('TENANT').legalName, unifiedSocialCreditCode: state.requirePrivate('TENANT').unifiedSocialCreditCode, expectedVersion: state.requirePrivate('TENANT').revision},
     capturePrivateResponse: (response) => requireJson(response, 'TENANT', ['id', 'revision']),
   });
   await invoke('updateOperationsOrganizationHeadCompany', {
     replayKey: 'operations-update-head-company', ...workspace({headCompanyId: state.requirePrivate('HEAD_COMPANY').id}), headers: {...cookie(), 'Idempotency-Key': key('head-company-update')},
-    body: {code: state.requirePrivate('HEAD_COMPANY').code, name: `诊断总公司更新${uniqueSuffix}`, legalName: state.requirePrivate('HEAD_COMPANY').legalName, unifiedSocialCreditCode: state.requirePrivate('HEAD_COMPANY').unifiedSocialCreditCode, expectedVersion: state.requirePrivate('HEAD_COMPANY').revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION')},
+    body: {code: state.requirePrivate('HEAD_COMPANY').code, name: `诊断总公司更新${uniqueSuffix}`, legalName: state.requirePrivate('HEAD_COMPANY').legalName, unifiedSocialCreditCode: state.requirePrivate('HEAD_COMPANY').unifiedSocialCreditCode, expectedVersion: state.requirePrivate('HEAD_COMPANY').revision},
     capturePrivateResponse: (response) => requireJson(response, 'HEAD_COMPANY', ['id', 'revision']),
   });
   // These task reads share the already owner-created store and contract facts.  They must happen
@@ -551,7 +550,7 @@ export async function executeOperationsAccessWorkload({operationsFlow, uniqueSuf
     const invitationHandle = `${targetType}_INVITATION`;
     await invoke(`createOperationsWorkspace${family}Invitation`, {
       replayKey: `operations-${pathSegment}-invitation-create`, ...workspace(), headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-create`)},
-      body: {scopeRef: target, mobile: `137${uniqueSuffix.replace(/\D/g, '').padEnd(8, '0').slice(0, 6)}${String(targetIndex + 10).slice(-2)}`, roleIds: [state.requirePrivate(roleHandle).id], expectedContextVersion: state.requirePrivate('CONTEXT_VERSION'), idempotencyKey: key(`${pathSegment}-invitation-create`)},
+      body: {scopeRef: target, mobile: `137${uniqueSuffix.replace(/\D/g, '').padEnd(8, '0').slice(0, 6)}${String(targetIndex + 10).slice(-2)}`, roleIds: [state.requirePrivate(roleHandle).id], idempotencyKey: key(`${pathSegment}-invitation-create`)},
       capturePrivateResponse: (response) => {
         if (!response?.json?.id || response.json.revision === undefined) throw new Error(`HTTP_DIAGNOSTIC_WORKLOAD_RESPONSE_INVALID:${invitationHandle}`);
         state.setPrivate(invitationHandle, response.json);
@@ -559,12 +558,12 @@ export async function executeOperationsAccessWorkload({operationsFlow, uniqueSuf
     });
     await invoke(`reissueOperationsWorkspace${family}Invitation`, {
       replayKey: `operations-${pathSegment}-invitation-reissue`, ...workspace({invitationId: state.requirePrivate(invitationHandle).id}), headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-reissue`)},
-      body: {expectedVersion: state.requirePrivate(invitationHandle).revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION'), idempotencyKey: key(`${pathSegment}-invitation-reissue`)},
+      body: {...context(), expectedVersion: state.requirePrivate(invitationHandle).revision, idempotencyKey: key(`${pathSegment}-invitation-reissue`)},
       capturePrivateResponse: (response) => state.setPrivate(invitationHandle, response.json),
     });
     await invoke(`cancelOperationsWorkspace${family}Invitation`, {
       replayKey: `operations-${pathSegment}-invitation-cancel`, ...workspace({invitationId: state.requirePrivate(invitationHandle).id}), headers: {...cookie(), 'Idempotency-Key': key(`${pathSegment}-invitation-cancel`)},
-      body: {expectedVersion: state.requirePrivate(invitationHandle).revision, expectedContextVersion: state.requirePrivate('CONTEXT_VERSION'), idempotencyKey: key(`${pathSegment}-invitation-cancel`)},
+      body: {...context(), expectedVersion: state.requirePrivate(invitationHandle).revision, idempotencyKey: key(`${pathSegment}-invitation-cancel`)},
     });
   }
   return {calls, state, workspaceKey, execute};
@@ -606,7 +605,7 @@ export async function executeOperationsUserReadbackWorkload({operationsFlow, tar
     if (target.deferRevoke) continue;
     await invoke(`revokeOperationsWorkspace${family}UserAssignment`, {
       replayKey: `operations-${pathSegment}-user-revoke-${target.loginName}-${uniqueSuffix}`, ...workspace({assignmentId: user.assignmentId}), headers: {...cookie(), 'Idempotency-Key': `diagnostic-${pathSegment}-user-revoke-${uniqueSuffix}`},
-      body: {expectedVersion: user.revision, expectedContextVersion: Number(context())},
+      body: {expectedVersion: user.revision},
       capturePrivateResponse: (response) => {
         if (response?.json?.revokedAssignmentId !== user.assignmentId || response?.json?.accountRetained !== true) throw new Error(`HTTP_DIAGNOSTIC_WORKLOAD_USER_REVOKE_READBACK_INVALID:${target.targetType}`);
       },

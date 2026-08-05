@@ -461,6 +461,9 @@
       "HeadCompanyPage": {
         "$ref": "./components/organization/business-entity.schemas.yaml#/components/schemas/HeadCompanyPage"
       },
+      "HeadCompanySummary": {
+        "$ref": "./components/organization/business-entity.schemas.yaml#/components/schemas/HeadCompanySummary"
+      },
       "HeadCompanyUpdateRequest": {
         "$ref": "./components/organization/business-entity.schemas.yaml#/components/schemas/HeadCompanyUpdateRequest"
       },
@@ -922,6 +925,12 @@
       },
       "WorkspaceSelectDataNodeRequest": {
         "$ref": "./components/workspace-iam/workspace-session.schemas.yaml#/components/schemas/WorkspaceSelectDataNodeRequest"
+      },
+      "WorkspaceScopeNode": {
+        "$ref": "./components/workspace-iam/workspace-session.schemas.yaml#/components/schemas/WorkspaceScopeNode"
+      },
+      "WorkspaceScopeContext": {
+        "$ref": "./components/workspace-iam/workspace-session.schemas.yaml#/components/schemas/WorkspaceScopeContext"
       },
       "WorkspaceSessionEntry": {
         "$ref": "./components/workspace-iam/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionEntry"

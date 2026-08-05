@@ -1,3 +1,3 @@
-export type {FrontendLogEvent, FrontendLogInput, FrontendLogLevel, SafeLogger} from './safeLogger';
-export {createSafeLogger} from './safeLogger';
+export type {FrontendLogEvent, FrontendLogInput, FrontendLogLevel, FrontendLogSink, SafeLogger} from './safeLogger';
+export {createBeaconLogSink, createSafeLogger} from './safeLogger';
 export {createObservedBaseQuery} from './observedBaseQuery';

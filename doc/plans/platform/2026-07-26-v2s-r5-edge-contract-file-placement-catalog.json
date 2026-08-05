@@ -106,6 +106,8 @@
     "WorkspaceCurrentPasswordChangeRequest": "components/workspace-iam/workspace-session.schemas.yaml",
     "WorkspaceCurrentPasswordChangeResult": "components/workspace-iam/workspace-session.schemas.yaml",
     "WorkspaceSelectDataNodeRequest": "components/workspace-iam/workspace-session.schemas.yaml",
+    "WorkspaceScopeNode": "components/workspace-iam/workspace-session.schemas.yaml",
+    "WorkspaceScopeContext": "components/workspace-iam/workspace-session.schemas.yaml",
     "PlatformWorkspaceInvitation": "components/workspace-iam/workspace-access.schemas.yaml",
     "PlatformWorkspaceInvitationPage": "components/workspace-iam/workspace-access.schemas.yaml",
     "PlatformAssetStageMultipart": "components/platform-asset/asset.schemas.yaml",

@@ -4,6 +4,7 @@ import {spawnSync} from 'node:child_process';
 import crypto from 'node:crypto';
 import {existsSync, readFileSync} from 'node:fs';
 import path from 'node:path';
+import {resolveTrustedRemoteHost} from './r5-remote-host-trust.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -30,7 +31,7 @@ const credentials = Object.fromEntries(readFileSync(credentialsPath, 'utf8').tri
 if (credentials.V2S_SEED_PLATFORM_ROOT_PASSWORD !== 'root') fail('ROOT_PASSWORD_MUST_BE_FIXED_ROOT');
 const environment = JSON.parse(command(process.execPath, [environmentScript, 'seed', '--json'], {env: {...process.env, ...credentials}}));
 if (!/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(environment.expectedDatabase ?? '')) fail('DEV_DATABASE_NOT_ALLOWLISTED');
-if (!environment.environment?.V2S_DEV_REMOTE_HOST || !/^[a-z0-9._-]{3,128}$/.test(environment.environment.V2S_DEV_REMOTE_HOST)) fail('DEV_REMOTE_HOST_NOT_ALLOWLISTED');
+try { resolveTrustedRemoteHost(environment.environment); } catch { fail('DEV_REMOTE_HOST_NOT_ALLOWLISTED'); }
 const bcryptLine = command('/usr/sbin/htpasswd', ['-nBiC', '10', ''], {input: 'root\n'}).trim();
 const passwordHash = bcryptLine.startsWith(':') ? bcryptLine.slice(1) : '';
 if (!/^\$2[aby]\$10\$[./A-Za-z0-9]{53}$/.test(passwordHash)) fail('BCRYPT_HASH_INVALID');

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "identified-problem-family-disposition",
+  "status": "CLOSED_FOR_RP_02A_U01",
+  "packageId": "WHOLE-ENGINEERING-RP-02A-IMPLEMENTATION-20260805",
+  "problemFamily": "GENERATED_CONTRACT_DENOMINATOR_DRIFT_IN_HANDWRITTEN_CONSUMERS",
+  "failurePattern": "generated route-face denominator evolves while facts, catalog, request literals and historical assertions remain on the predecessor shape",
+  "rootCause": "OpenAPI-to-registry generation has no finite source-backed crosswalk for semantic facts and request/query consumers",
+  "applicableDenominator": [
+    "generated route-face registry",
+    "placement report",
+    "materialized catalog",
+    "source-backed scenario facts",
+    "four create bodies",
+    "five unsupported query call sites",
+    "RM1 count/recovery assertions"
+  ],
+  "counterexamples": [
+    "business facts remain owner-sourced and are not generated from operationId/method/path",
+    "projectId remains valid in the three declared query contracts and two in-memory scope records",
+    "public invitation remains a separate seven-step flow",
+    "RP-02b validator and RP-00b verify aggregate wiring are out of scope"
+  ],
+  "minimumPrevention": {
+    "machine": "exact registry/placement/catalog/fact set checks; materialized projection identity; finite body/query boundary assertions; registry-derived counts; exact recovery order",
+    "review": "independent implementation review must re-open owner/source refs and test red mutations",
+    "notApplicable": "business and cleanup evidence remain explicit NOT_APPLICABLE_WITH_REASON until a dynamic package"
+  },
+  "findingsDisposition": [
+    {
+      "finding": "N1",
+      "result": "CONFIRMED_RESOLVED",
+      "evidence": "catalog crosswalk artifact with 154 rows plus 42/9 replacement sets"
+    },
+    {
+      "finding": "N2",
+      "result": "CONFIRMED_RESOLVED",
+      "evidence": "scripts/check/r5-edge-materialize wrapper without verify wiring"
+    }
+  ]
+}

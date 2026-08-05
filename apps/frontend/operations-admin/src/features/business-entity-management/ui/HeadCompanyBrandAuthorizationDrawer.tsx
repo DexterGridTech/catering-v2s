@@ -28,7 +28,6 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
   const [candidateProblem, setCandidateProblem] = useState<string>();
   const [selectedBrandId, setSelectedBrandId] = useState<string>();
   const [commandProblem, setCommandProblem] = useState<string>();
-  const [submitting, setSubmitting] = useState(false);
   const lifecycle = useDrawerFormLifecycle({
     open: Boolean(headCompany),
     onOpenChange: (next) => { if (!next) onClose(); },
@@ -74,9 +73,9 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
   };
 
   const act = async (brandId: string, action: 'add' | 'remove') => {
-    if (!headCompany || submitting) return;
+    if (!headCompany || lifecycle.submitting) return;
     submission.markBusinessIntentChanged();
-    setSubmitting(true);
+    lifecycle.setSubmitting(true);
     setCommandProblem(undefined);
     try {
       const context = {...searchContext, headCompanyId: headCompany.id};
@@ -88,9 +87,7 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
       } else {
         setCommandProblem(messageFor(result));
       }
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { lifecycle.setSubmitting(false); }
   };
 
   const authorizedBrandIds = new Set(headCompany?.authorizedBrands.map((brand) => brand.id));
@@ -100,12 +97,13 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     open={Boolean(headCompany)}
     size={600}
     destroyOnHidden
-    maskClosable
-    keyboard={!submitting}
+    maskClosable={!lifecycle.submitting}
+    closable={!lifecycle.submitting}
+    keyboard={!lifecycle.submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
     {...adminDrawerSurfaceProps}
-    footer={<Button onClick={lifecycle.requestClose} disabled={submitting}>关闭</Button>}
+    footer={<Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>关闭</Button>}
   >
     {commandProblem && <Alert type="error" showIcon title={authorizationActionLabel} description={commandProblem} style={{marginBottom: 16}}/>}
     <Space.Compact block style={{marginBottom: 16}}>
@@ -116,7 +114,7 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
         onSearch={searchCandidates}
         value={selectedBrandId}
         placeholder="搜索并选择可授权品牌"
-        loading={submitting}
+        loading={lifecycle.submitting}
         options={candidateChoices}
         onChange={setSelectedBrandId}
         notFoundContent={candidateProblem ?? undefined}
@@ -124,8 +122,8 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
       />
       <Button
         type="primary"
-        disabled={!selectedBrandId || submitting}
-        loading={submitting}
+        disabled={!selectedBrandId || lifecycle.submitting}
+        loading={lifecycle.submitting}
         onClick={() => { if (selectedBrandId) void act(selectedBrandId, 'add'); }}
         {...testId('operations-head-company-brand-add')}
       >
@@ -137,8 +135,8 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
         <Tag>{formatNameCode(brand.name, brand.code)}</Tag>
         <Button
           danger
-          disabled={submitting}
-          loading={submitting}
+          disabled={lifecycle.submitting}
+          loading={lifecycle.submitting}
           onClick={() => void act(brand.id, 'remove')}
           {...testId(`operations-head-company-brand-remove-${brand.id}`)}
         >

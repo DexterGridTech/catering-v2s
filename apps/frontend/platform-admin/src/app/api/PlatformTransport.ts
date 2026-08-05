@@ -63,6 +63,9 @@ export function registerPlatformSessionRecovery(recovery: () => void | Promise<v
   return registerPlatformUnauthorizedRecovery(recovery);
 }
 
+/** The app shell observes render failures through the transport boundary. */
+export {recordPlatformRenderError} from './PlatformApi';
+
 export {platformRefreshSignal};
 /** Feature-facing generated RTK hooks stay behind the app transport boundary. */
 export const platformRtk = platformApi;

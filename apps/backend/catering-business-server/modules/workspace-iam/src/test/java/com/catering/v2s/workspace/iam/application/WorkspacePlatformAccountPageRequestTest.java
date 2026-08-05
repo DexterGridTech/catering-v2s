@@ -40,6 +40,7 @@ class WorkspacePlatformAccountPageRequestTest {
         var service = new WorkspaceUserService(new RecordingJdbcTemplate(), null, null, null);
         assertThrows(WorkspaceAccountService.AccountNotFoundException.class, () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, "PENDING", null, null, null, null, 1, 20)));
         assertThrows(WorkspaceAccountService.AccountNotFoundException.class, () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, null, null, null, 0, 20)));
+        assertThrows(WorkspaceUserService.PageValidationException.class, () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, null, null, null, 1, 101)));
     }
 
     @Test void ownerTypesEveryOptionalPlatformFilterBeforeItsNullGuard() {

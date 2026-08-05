@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "packageId": "WHOLE-ENGINEERING-SECOND-PACKAGE-20260805",
+  "kind": "second-package-business-evidence",
+  "businessStatus": "PASS",
+  "proof": {
+    "remoteOwner": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785932579123-66408",
+    "remoteEdge": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785931261770-38001",
+    "managedL2": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785931623610-45615-0bbb7341/evidence/terminal-report.json",
+    "ownerReadbackOracle": "fixture owner command, fresh detail reads and 19 operations-admin Playwright specs",
+    "queryText": "name/code matching, uppercase/trimmed input, no-match and one paged owner request",
+    "drawerLifecycle": "all 13 operations-admin FORM_DRAWER surfaces disable mask/icon/Esc/cancel close while submitting; cross-app inventory is 24 lifecycle consumers, with 11 platform-admin consumers outside this package denominator",
+    "browser": "platform-admin 10/10 PASS; operations-admin 19/19 PASS"
+  },
+  "firstFailure": null,
+  "lastKnownGood": "CLEANUP",
+  "brokenBoundary": null
+}

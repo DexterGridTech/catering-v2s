@@ -25,6 +25,29 @@ function write(relative, value, base = root) {
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
   fs.writeFileSync(absolute, `${JSON.stringify(value, null, 2)}\n`);
 }
+function generatedOutputSnapshot(base = root) {
+  const outputRoot = path.join(base, generatedRoot);
+  const files = new Map();
+  const visit = (directory) => {
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(absolute);
+      else if (entry.isFile()) files.set(path.relative(outputRoot, absolute).split(path.sep).join('/'), fs.readFileSync(absolute, 'utf8'));
+    }
+  };
+  visit(outputRoot);
+  return files;
+}
+function assertGeneratedOutputSnapshots(actual, expected) {
+  const actualPaths = [...actual.keys()].sort();
+  const expectedPaths = [...expected.keys()].sort();
+  if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) fail('R5_EDGE_GENERATED_OUTPUT_SET_DRIFT');
+  for (const relative of expectedPaths) if (actual.get(relative) !== expected.get(relative)) fail('R5_EDGE_GENERATED_OUTPUT_DRIFT', relative);
+}
+function compareGeneratedOutputs(actualBase, expectedBase) {
+  assertGeneratedOutputSnapshots(generatedOutputSnapshot(actualBase), generatedOutputSnapshot(expectedBase));
+}
 function yamlAsJson(file) {
   const result = spawnSync("ruby", ["-ryaml", "-rjson", "-e", "puts JSON.generate(YAML.load_file(ARGV[0]))", file], { encoding: "utf8" });
   if (result.status !== 0) fail("R5_EDGE_HERITAGE_YAML_INVALID", `${file}:${result.stderr.trim()}`);
@@ -47,8 +70,9 @@ function convertSymbolRefs(value) {
   if (!value || typeof value !== "object") return value;
   const result = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, convertSymbolRefs(item)]));
   if (Object.hasOwn(result, "ref")) {
-    if (Object.keys(result).length !== 1 || typeof result.ref !== "string") fail("R5_EDGE_SYMBOL_REF_INVALID");
-    return { $ref: `#/components/schemas/${result.ref}` };
+    if (typeof result.ref !== "string" || Object.keys(result).some((key) => key !== "ref" && !["nullable", "description"].includes(key))) fail("R5_EDGE_SYMBOL_REF_INVALID");
+    const {ref, ...annotations} = result;
+    return { $ref: `#/components/schemas/${ref}`, ...annotations };
   }
   return result;
 }
@@ -62,8 +86,8 @@ function removeProperty(schema, property) {
   if (Array.isArray(schema.required)) schema.required = schema.required.filter((name) => name !== property);
   for (const value of Object.values(schema)) removeProperty(value, property);
 }
-function inlineMissingReferences(value, knownComponents, sourceSchemas, renames, forbiddenProperties, resolving = new Set()) {
-  if (Array.isArray(value)) return value.map((item) => inlineMissingReferences(item, knownComponents, sourceSchemas, renames, forbiddenProperties, resolving));
+function inlineMissingReferences(value, knownComponents, sourceSchemas, renames, forbiddenPropertiesForComponent, resolving = new Set()) {
+  if (Array.isArray(value)) return value.map((item) => inlineMissingReferences(item, knownComponents, sourceSchemas, renames, forbiddenPropertiesForComponent, resolving));
   if (!value || typeof value !== "object") return value;
   if (typeof value.$ref === "string" && value.$ref.includes("#/components/schemas/")) {
     const name = value.$ref.slice(value.$ref.lastIndexOf("#/components/schemas/") + "#/components/schemas/".length);
@@ -71,16 +95,27 @@ function inlineMissingReferences(value, knownComponents, sourceSchemas, renames,
       if (resolving.has(name) || !sourceSchemas.has(name)) fail("R5_EDGE_COMPONENT_REF_UNRESOLVED", name);
       resolving.add(name);
       const replacement = replaceNames(clone(sourceSchemas.get(name)), renames);
-      for (const property of forbiddenProperties) removeProperty(replacement, property);
-      const resolved = inlineMissingReferences(convertSymbolRefs(replacement), knownComponents, sourceSchemas, renames, forbiddenProperties, resolving);
+      for (const property of forbiddenPropertiesForComponent(name)) removeProperty(replacement, property);
+      const resolved = inlineMissingReferences(convertSymbolRefs(replacement), knownComponents, sourceSchemas, renames, forbiddenPropertiesForComponent, resolving);
       resolving.delete(name);
       return resolved;
     }
   }
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, inlineMissingReferences(item, knownComponents, sourceSchemas, renames, forbiddenProperties, resolving)]));
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, inlineMissingReferences(item, knownComponents, sourceSchemas, renames, forbiddenPropertiesForComponent, resolving)]));
 }
 function addRequired(schema, names) {
   schema.required = [...new Set([...(schema.required || []), ...names])];
+}
+function addEnumValues(schema, propertyName, values) {
+  if (Array.isArray(schema)) {
+    for (const item of schema) addEnumValues(item, propertyName, values);
+    return;
+  }
+  if (!schema || typeof schema !== "object") return;
+  if (schema.properties?.[propertyName]?.enum && Array.isArray(values)) {
+    schema.properties[propertyName].enum = [...new Set([...schema.properties[propertyName].enum, ...values])];
+  }
+  for (const value of Object.values(schema)) addEnumValues(value, propertyName, values);
 }
 function resolveCapability(operation, placement) {
   const override = placement.operationOverrides[operation.operationId];
@@ -207,6 +242,10 @@ function materializeComponents(catalog, placement) {
   }
   components.set("NoBody", { type: "object", additionalProperties: false });
   components.set("NoContent", { type: "null" });
+  const forbiddenPropertiesForComponent = (name) => {
+    const preserved = new Set(catalog.componentOverrides[name]?.preserveProperties || []);
+    return (catalog.componentOverrides.forbiddenProperties || []).filter((property) => !preserved.has(property));
+  };
   for (const [name, override] of Object.entries(catalog.componentOverrides)) {
     if (["globalRenames", "forbiddenProperties", "forbiddenSymbols", "sourceResolution", "propertyPolicies", "zeroReferenceClosure", "StoreContractDateFields", "readbackMinimum"].includes(name)) continue;
     const prior = components.get(name) || {};
@@ -225,15 +264,22 @@ function materializeComponents(catalog, placement) {
     if (override.enum) next.enum = clone(override.enum);
     components.set(name, next);
   }
-  for (const schema of components.values()) {
+  for (const [name, schema] of components) {
     const renamed = replaceNames(schema, catalog.componentOverrides.globalRenames);
     Object.keys(schema).forEach((key) => delete schema[key]);
     Object.assign(schema, convertSymbolRefs(renamed));
-    for (const property of catalog.componentOverrides.forbiddenProperties) removeProperty(schema, property);
+    for (const property of forbiddenPropertiesForComponent(name)) removeProperty(schema, property);
   }
   const generated = ["Problem", "EpochMillis", "ServiceNodeType", "ProjectPhaseNames", "WorkspaceRoleAuthorizationReplaceRequest"];
   for (const name of generated) if (!components.has(name)) fail("R5_EDGE_GENERATED_COMPONENT_MISSING", name);
-  for (const [name, schema] of components) components.set(name, inlineMissingReferences(schema, components, sourceSchemas, catalog.componentOverrides.globalRenames, catalog.componentOverrides.forbiddenProperties));
+  for (const [name, schema] of components) {
+    const inlined = inlineMissingReferences(schema, components, sourceSchemas, catalog.componentOverrides.globalRenames, forbiddenPropertiesForComponent);
+    const override = catalog.componentOverrides[name];
+    if (override?.enumAdditions) {
+      for (const [propertyName, values] of Object.entries(override.enumAdditions)) addEnumValues(inlined, propertyName, values);
+    }
+    components.set(name, inlined);
+  }
   const files = new Map();
   for (const [name, schema] of components) {
     if (name === "BusinessEntitySource") continue;
@@ -321,9 +367,7 @@ function check() {
   try {
     fs.cpSync(root, scratch, { recursive: true, filter: (file) => !file.includes("/build") && !file.includes("/dist") && !file.includes("/.git") });
     const materialized = materialize(scratch, true);
-    const actual = fs.readFileSync(path.join(root, "contracts/openapi/edge.openapi.yaml"), "utf8");
-    const expected = fs.readFileSync(path.join(scratch, "contracts/openapi/edge.openapi.yaml"), "utf8");
-    if (actual !== expected) fail("R5_EDGE_SOURCE_DRIFT", "contracts/openapi/edge.openapi.yaml");
+    compareGeneratedOutputs(root, scratch);
     const report = fs.readFileSync(path.join(root, outputReport), "utf8");
     const expectedReport = fs.readFileSync(path.join(scratch, outputReport), "utf8");
     if (report !== expectedReport) fail("R5_EDGE_RESOLUTION_REPORT_DRIFT");
@@ -356,11 +400,56 @@ function selfTest() {
       fail("R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED");
     }
     fs.cpSync(root, scratch, { recursive: true, filter: (file) => !file.includes("/build") && !file.includes("/dist") && !file.includes("/.git") });
+    const requiredDataNodeTypeEnums = (value, result = []) => {
+      if (Array.isArray(value)) {
+        for (const item of value) requiredDataNodeTypeEnums(item, result);
+      } else if (value && typeof value === "object") {
+        if (value.properties?.requiredDataNodeType?.enum) result.push(value.properties.requiredDataNodeType.enum);
+        for (const child of Object.values(value)) requiredDataNodeTypeEnums(child, result);
+      }
+      return result;
+    };
+    materialize(scratch, true);
+    const sessionOutput = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-session.schemas.yaml"));
+    const sessionEnums = requiredDataNodeTypeEnums(sessionOutput);
+    if (sessionEnums.length < 2 || sessionEnums.some((values) => !values.includes("HEAD_COMPANY"))) {
+      fail("R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING");
+    }
+    const accessOutput = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-access.schemas.yaml"));
+    const rolePageEnums = requiredDataNodeTypeEnums(accessOutput.components?.schemas?.WorkspaceRolePage);
+    if (rolePageEnums.length !== 1 || !rolePageEnums[0].includes("HEAD_COMPANY")) {
+      fail("R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING");
+    }
+    const acceptedCatalog = readJson(catalogPath, scratch);
+    const enumMutation = clone(acceptedCatalog);
+    enumMutation.componentOverrides.WorkspaceSessionEntry.enumAdditions.requiredDataNodeType = [];
+    enumMutation.componentOverrides.WorkspaceRolePage.enumAdditions.requiredDataNodeType = [];
+    write(catalogPath, enumMutation, scratch);
+    materialize(scratch, true);
+    const mutatedSession = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-session.schemas.yaml"));
+    const mutatedEnums = requiredDataNodeTypeEnums(mutatedSession);
+    if (mutatedEnums.some((values) => values.includes("HEAD_COMPANY"))) {
+      fail("R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED");
+    }
+    const mutatedAccess = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-access.schemas.yaml"));
+    const mutatedRolePageEnums = requiredDataNodeTypeEnums(mutatedAccess.components?.schemas?.WorkspaceRolePage);
+    if (mutatedRolePageEnums.some((values) => values.includes("HEAD_COMPANY"))) {
+      fail("R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED");
+    }
+    write(catalogPath, acceptedCatalog, scratch);
     const catalog = readJson(catalogPath, scratch);
     catalog.operations[0].pageKey = "UNKNOWN-PAGE";
     write(catalogPath, catalog, scratch);
     try { materialize(scratch, true); fail("R5_EDGE_MATERIALIZE_RED_NOT_DETECTED"); } catch (error) { if (!String(error.message).includes("R5_EDGE_CAPABILITY_UNRESOLVED")) throw error; }
-    process.stdout.write("R5_EDGE_MATERIALIZE_SELF_TEST=PASS\nRED=R5_EDGE_JSON_POINTER_TOKEN_RED_NOT_DETECTED,R5_EDGE_NESTED_FORBIDDEN_PROPERTY_RED_NOT_DETECTED,R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED,R5_EDGE_CAPABILITY_UNRESOLVED\n");
+    const expectedOutputs = generatedOutputSnapshot(scratch);
+    const pathOutput = path.join(scratch, generatedRoot, "paths/operations-admin/store-management.paths.yaml");
+    fs.appendFileSync(pathOutput, "\n");
+    try { assertGeneratedOutputSnapshots(generatedOutputSnapshot(scratch), expectedOutputs); fail("R5_EDGE_PATH_OUTPUT_DRIFT_RED_NOT_DETECTED"); } catch (error) { if (!String(error.message).includes("R5_EDGE_GENERATED_OUTPUT_DRIFT")) throw error; }
+    fs.writeFileSync(pathOutput, expectedOutputs.get("paths/operations-admin/store-management.paths.yaml"));
+    const componentOutput = path.join(scratch, generatedRoot, "components/organization/store.schemas.yaml");
+    fs.appendFileSync(componentOutput, "\n");
+    try { assertGeneratedOutputSnapshots(generatedOutputSnapshot(scratch), expectedOutputs); fail("R5_EDGE_COMPONENT_OUTPUT_DRIFT_RED_NOT_DETECTED"); } catch (error) { if (!String(error.message).includes("R5_EDGE_GENERATED_OUTPUT_DRIFT")) throw error; }
+    process.stdout.write("R5_EDGE_MATERIALIZE_SELF_TEST=PASS\nRED=R5_EDGE_JSON_POINTER_TOKEN_RED_NOT_DETECTED,R5_EDGE_NESTED_FORBIDDEN_PROPERTY_RED_NOT_DETECTED,R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED,R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING,R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED,R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING,R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED,R5_EDGE_CAPABILITY_UNRESOLVED,R5_EDGE_PATH_OUTPUT_DRIFT_RED_NOT_DETECTED,R5_EDGE_COMPONENT_OUTPUT_DRIFT_RED_NOT_DETECTED\n");
   } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 

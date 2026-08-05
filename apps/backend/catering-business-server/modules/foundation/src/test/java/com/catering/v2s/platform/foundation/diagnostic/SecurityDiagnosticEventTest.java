@@ -10,7 +10,7 @@ class SecurityDiagnosticEventTest {
     void exposesTheClosedSecretSafeEventEnvelopeAsTypedFields() {
         SecurityDiagnosticEvent event = new SecurityDiagnosticEvent(
                 new RequestDiagnosticContext("corr-1", "req-1", "PLATFORM_LOGIN", "/api/platform/auth/password-login", "platform-iam"),
-                "REQUEST_COMPLETED", "EDGE", "SUCCEEDED", 14, 200, null);
+                "REQUEST_COMPLETED", "EDGE", "SUCCEEDED", 14, 200, null, 3, 27);
 
         SecurityDiagnosticEvent.Fields fields = event.fields();
 
@@ -25,5 +25,7 @@ class SecurityDiagnosticEventTest {
         assertEquals(14, fields.durationMillis());
         assertEquals(200, fields.status());
         assertNull(fields.errorCode());
+        assertEquals(3, fields.databaseOperationCount());
+        assertEquals(27, fields.databaseDurationMillis());
     }
 }

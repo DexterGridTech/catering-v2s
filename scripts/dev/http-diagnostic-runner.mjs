@@ -4,6 +4,8 @@ import {chmodSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, rm
 import {spawn, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+import {resolveTrustedRemoteHost} from './r5-remote-host-trust.mjs';
+import {snapshotProcessTree, evaluateCleanupReadback, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -12,10 +14,10 @@ const compact = (value, limit = 240) => String(value ?? '').replace(/[\r\n\t]+/g
 const secretKey = /(?:password|secret|token|cookie|authorization|otp|mobile|login|identity|payload|sql|bind)/i;
 export const redact = (value, environment = {}) => Object.entries(environment).reduce((result, [key, secret]) => secretKey.test(key) && secret ? result.replaceAll(String(secret), `[REDACTED:${key}]`) : result, String(value ?? ''));
 
-export function validateRuntimePlan({runtime, namespace, host, hostSha256, database, role, backendPort}) {
+export function validateRuntimePlan({runtime, namespace, host, hostSha256, database, role, backendPort, hostAllowlist}) {
   if (!runtime.startsWith(path.join(root, '.runtime', 'rm1', 'http-diagnostic'))) throw new Error('HTTP_DIAGNOSTIC_RUNTIME_LAYOUT_INVALID');
   if (!/^v2s-http-diagnostic-[a-z0-9-]{8,48}$/.test(namespace)) throw new Error('HTTP_DIAGNOSTIC_NAMESPACE_INVALID');
-  if (!host || sha256(host) !== hostSha256 || /(?:^|[._/-])(?:prod|production)(?:$|[._/-])/i.test(host)) throw new Error('HTTP_DIAGNOSTIC_REMOTE_HOST_INVALID');
+  try { resolveTrustedRemoteHost({V2S_DEV_REMOTE_HOST: host, V2S_DEV_REMOTE_HOST_SHA256: hostSha256}, {allowlist: hostAllowlist}); } catch { throw new Error('HTTP_DIAGNOSTIC_REMOTE_HOST_INVALID'); }
   if (!/^catering_v2s_diag_[a-z0-9_]{8,48}$/.test(database) || !/^r5diag_[a-z0-9]+$/.test(role)) throw new Error('HTTP_DIAGNOSTIC_REMOTE_IDENTITY_INVALID');
   if (!Number.isInteger(backendPort) || backendPort < 1024 || backendPort > 65535 || backendPort === 8080) throw new Error('HTTP_DIAGNOSTIC_BACKEND_PORT_INVALID');
 }
@@ -29,7 +31,8 @@ function identity(processValue) {
   const match = result.stdout.trim().match(/^(\d+)\s+(\d+)\s+(.{24})\s+(.*)$/);
   if (!match) throw new Error(`HTTP_DIAGNOSTIC_PROCESS_IDENTITY_INVALID:${processValue.name}`);
   const startToken = match[3].trim();
-  return {name: processValue.name, pid: Number(match[1]), pgid: Number(match[2]), processStart: startToken, startToken, commandSha256: sha256(match[4]), logPath: processValue.log ?? processValue.logPath};
+  const value = {name: processValue.name, pid: Number(match[1]), pgid: Number(match[2]), processStart: startToken, startToken, commandSha256: sha256(match[4]), logPath: processValue.log ?? processValue.logPath};
+  return {...value, tree: snapshotProcessTree(value)};
 }
 
 function persistManifest(manifestPath, manifest) {
@@ -73,13 +76,14 @@ function plan() {
   const runId = `rm1-http-diagnostic-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const runtime = path.join(root, '.runtime', 'rm1', 'http-diagnostic', runId);
   const namespace = `v2s-http-diagnostic-${randomBytes(8).toString('hex')}`;
-  const host = process.env.V2S_DEV_REMOTE_HOST ?? 'catering-remote-dev';
-  const hostSha256 = process.env.V2S_DEV_REMOTE_HOST_SHA256 ?? sha256(host);
+  const trust = resolveTrustedRemoteHost(process.env);
+  const host = trust.host;
+  const hostSha256 = trust.fingerprint;
   const database = `catering_v2s_diag_${namespace.replace(/^v2s-http-diagnostic-/, '').replaceAll('-', '_')}`;
   const role = `r5diag_${randomBytes(12).toString('hex')}`;
   const backendPort = Number(process.env.V2S_HTTP_DIAGNOSTIC_BACKEND_PORT ?? 8081);
   validateRuntimePlan({runtime, namespace, host, hostSha256, database, role, backendPort});
-  return {runId, runtime, namespace, host, hostSha256, database, role, backendPort, tunnelPort: backendPort === 8081 ? 25433 : 25434};
+  return {runId, runtime, namespace, host, hostSha256, hostTrust: trust, database, role, backendPort, tunnelPort: backendPort === 8081 ? 25433 : 25434};
 }
 
 function writePrivateCredentials(value, secrets = {
@@ -162,14 +166,11 @@ function hasMatchingIdentity(processValue) {
 
 async function stopOwnedProcesses(processes) {
   for (const processValue of processes) {
-    if (!pidAlive(processValue.pid)) continue;
-    if (processValue.pgid !== processValue.pid || !hasMatchingIdentity(processValue)) throw new Error(`HTTP_DIAGNOSTIC_PROCESS_IDENTITY_DRIFT:${processValue.name}`);
-    process.kill(-processValue.pgid, 'SIGTERM');
+    if (pidAlive(processValue.pid) && (processValue.pgid !== processValue.pid || !hasMatchingIdentity(processValue))) throw new Error(`HTTP_DIAGNOSTIC_PROCESS_IDENTITY_DRIFT:${processValue.name}`);
+    const result = await terminateOwnedProcessTree(processValue, {readTable: readProcessTable});
+    processValue.treeReadback = result.treeReadback;
+    if (result.status !== 'PASS') throw new Error(`HTTP_DIAGNOSTIC_LOCAL_PROCESS_TREE_REMAINS:${result.treeReadback.map((value) => value.pid).join(',')}`);
   }
-  const deadline = Date.now() + 15_000;
-  while (processes.some((processValue) => pidAlive(processValue.pid)) && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 250));
-  const remaining = processes.filter((processValue) => pidAlive(processValue.pid));
-  if (remaining.length > 0) throw new Error(`HTTP_DIAGNOSTIC_LOCAL_PROCESS_REMAINS:${remaining.map((value) => value.name).join(',')}`);
   return true;
 }
 
@@ -197,7 +198,9 @@ export function isCleanupAlreadyPassed(manifest) {
   return manifest?.cleanup?.status === 'PASS'
     && manifest.cleanup.localProcessesStopped === true
     && manifest.cleanup.remoteNamespaceRemoved === true
-    && manifest.cleanup.privateCredentialsRemoved === true;
+    && manifest.cleanup.privateCredentialsRemoved === true
+    && Array.isArray(manifest.processes)
+    && manifest.processes.every((processValue) => Array.isArray(processValue.treeReadback) && evaluateCleanupReadback(processValue.treeReadback));
 }
 
 async function cleanup(manifest) {
@@ -337,7 +340,7 @@ async function stop(manifestPath) {
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain && process.argv[2] === '--self-test') {
-  const valid = {runtime: path.join(root, '.runtime', 'rm1', 'http-diagnostic', 'test'), namespace: 'v2s-http-diagnostic-1234abcd', host: 'dev.example.internal', hostSha256: sha256('dev.example.internal'), database: 'catering_v2s_diag_1234abcd', role: 'r5diag_1234abcd', backendPort: 8081};
+  const valid = {runtime: path.join(root, '.runtime', 'rm1', 'http-diagnostic', 'test'), namespace: 'v2s-http-diagnostic-1234abcd', host: 'catering-remote-dev', hostSha256: '416201af7e30f6fb2d8b1de9e0492dca889f90a095619d60f78a267145e8d2eb', database: 'catering_v2s_diag_1234abcd', role: 'r5diag_1234abcd', backendPort: 8081};
   validateRuntimePlan(valid);
   try { validateRuntimePlan({...valid, backendPort: 8080}); throw new Error('HTTP_DIAGNOSTIC_RUNNER_RED_NOT_DETECTED'); } catch (error) { if (error.message !== 'HTTP_DIAGNOSTIC_BACKEND_PORT_INVALID') throw error; }
   const secret = 'test-run-secret'; if (redact(`failure ${secret}`, {V2S_HTTP_DIAGNOSTIC_SECRET: secret}).includes(secret)) throw new Error('HTTP_DIAGNOSTIC_REDACTION_MISSING');

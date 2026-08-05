@@ -7,6 +7,7 @@ import {createHash, randomUUID} from 'node:crypto';
 import {spawn, spawnSync} from 'node:child_process';
 import {appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
+import {resolveTrustedRemoteHost} from '../dev/r5-remote-host-trust.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const gradleArguments = process.argv.slice(2);
@@ -15,7 +16,8 @@ const extraGradleArguments = gradleArguments.slice(1);
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
 const evidence = path.join(runtime, 'evidence', 'remote-testcontainers');
 const gradleHome = process.env.V2S_GRADLE_HOME ?? '/opt/homebrew/Cellar/gradle/9.6.1/libexec';
-const remoteHost = process.env.V2S_DEV_REMOTE_HOST ?? 'catering-remote-dev';
+const remoteHostTrust = resolveTrustedRemoteHost(process.env);
+const remoteHost = remoteHostTrust.host;
 const runId = `r5-tc-${Date.now()}-${process.pid}`;
 const remoteRoot = `/tmp/${runId}`;
 const remoteWorkspace = `${remoteRoot}/workspace`;
@@ -121,7 +123,7 @@ class ManagedRun {
     this.manifestPath = path.join(directory, 'run-manifest.json');
     this.manifest = {
       schemaVersion: 1, kind: 'r5-managed-testcontainers-run', runId, task, startedAt: now(),
-      remote: {hostAlias: remoteHost, root: remoteRoot, dependencyCache: remoteDependencyCache},
+      remote: {hostAlias: remoteHost, hostTrust: remoteHostTrust, root: remoteRoot, dependencyCache: remoteDependencyCache},
       sourceSha256: sha256(readFileSync(process.argv[1], 'utf8')), logPath: expected.logPath,
       phaseEvents: [], lifecycleEvents: [], heartbeats: [], stallDiagnostics: [], logInspection: {readCount: 0, observedBytes: 0, status: 'PENDING'},
       controlRecord: {expected, verified: false, reusedAfterReconnect: false},

@@ -113,7 +113,7 @@ export function StoreCreateDrawer({open, queryContext, onClose, onCreated}: {ope
     }
   };
 
-  return <Drawer title="新建门店" open={open} size={620} destroyOnHidden maskClosable keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-store-create-drawer')} footer={<Space>
+  return <Drawer title="新建门店" open={open} size={620} destroyOnHidden maskClosable={!lifecycle.submitting} closable={!lifecycle.submitting} keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-store-create-drawer')} footer={<Space>
     <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('operations-store-create-cancel')}>取消</Button>
     <Button type="primary" onClick={() => form.submit()} loading={lifecycle.submitting} disabled={!ready} {...testId('operations-store-create-submit')}>创建</Button>
   </Space>}>

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-delivery-manifest",
+  "packageId": "WHOLE-ENGINEERING-CONTRACT-GENERATED-WIRE-20260805",
+  "unitId": "WHOLE-ENGINEERING-CONTRACT-GENERATED-WIRE-20260805",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "WHOLE-ENGINEERING-CONTRACT-GENERATED-WIRE-20260805",
+  "reviewRoundLimit": 2,
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "sourceDenominators": [
+    {"class":"CONTRACT_SOURCE","owner":"edge-contract-catalog","paths":["doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json","doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json"],"predicate":"Heritage hash validation plus explicit v2s component overrides and normative placement are the only schema truth"},
+    {"class":"ENUM_PROPERTY_SURFACE","owner":"r5-edge-materialize+edge-codegen","paths":["doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json","scripts/generate/r5-edge-materialize.mjs","contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml","contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml","apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts","apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts"],"predicate":"all same-name requiredDataNodeType schema occurrences are enumerated once; every emitted enum accepts owner-catalog HEAD_COMPANY"},
+    {"class":"MATERIALIZER_CONTROL","owner":"r5-edge-materialize","paths":["scripts/generate/r5-edge-materialize.mjs","scripts/check/r5-edge-materialize"],"predicate":"full contracts/openapi output path-set and bytes compare; component exception remains fail-closed"},
+    {"class":"OPENAPI_OUTPUT","owner":"r5-edge-materialize","paths":["contracts/openapi/components/contract/contract.schemas.yaml","contracts/openapi/components/organization/store.schemas.yaml","contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml","contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml","doc/evidence/platform/r5-u01-edge-placement-resolution.json"],"predicate":"affected component outputs and placement report equal deterministic replay; all requiredDataNodeType sites are checked"},
+    {"class":"GENERATED_WIRE","owner":"edge-codegen","paths":["apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/","apps/backend/catering-business-server/src/main/resources/generated/","apps/frontend/platform-admin/src/app/api/generated/","apps/frontend/operations-admin/src/app/api/generated/"],"predicate":"generated Java/TS/catalog outputs equal accepted OpenAPI and operation catalog"},
+    {"class":"CONSUMER_PAYLOAD","owner":"diagnostic-workload","paths":["scripts/test/http-diagnostic-workload.mjs","scripts/test/http-diagnostic-workload.test.mjs"],"predicate":"create body/project query and invitation action four-field owner-consumption boundaries are exact finite assertions"},
+    {"class":"EVIDENCE_CONTROL","owner":"compliance-and-review","paths":["doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-delivery-manifest.json","doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-package-input.md","doc/evidence/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-focused-static-proof.json"],"predicate":"implementation, evidence, independent review and Claude handoff close with changed-path set equality"}
+  ],
+  "business": "NOT_APPLICABLE_WITH_REASON: static artifact reconciliation; no managed runtime or owner business run authorized",
+  "cleanup": "NOT_APPLICABLE_WITH_REASON: no process, tunnel, database, browser or remote resource started",
+  "forbiddenSurfaces": ["backend owner source","frontend business source","database","migration","DEV","UAT","HTTP","L2","seed","reset","roadmap","Git"]
+}

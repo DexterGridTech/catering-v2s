@@ -11,5 +11,8 @@
 | DEPLOYMENT_ROLLBACK | 单服务器重启即部署，无独立回滚故事 | 当前无第二部署环境 | 失败发布恢复依赖人工 | SECOND_DEPLOYMENT_ENVIRONMENT_ENABLED | 前后版本部署/回滚演练、schema compatibility 与 cleanup PASS | [{"path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.2 本阶段明确不做"}] |
 | METRICS_ALERTING | run-scoped 结构化日志，无生产指标/告警平台 | 当前无生产流量 | 故障只能被动发现 | PRODUCTION_TRAFFIC_ENABLED | SLI/SLO、告警触发/恢复红绿证据、owner routing | [{"path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.2 本阶段明确不做"}] |
 | RUNTIME_DB_ROLE_ISOLATION | 单 runtime DB role，可访问多 owner schema | solo+AI 单 deployable 暂不拆 credential | 单凭据扩大 schema blast radius | SECURITY_REVIEW_REQUIRES_SCHEMA_SCOPED_RUNTIME_CREDENTIALS | schema-scoped credential design、权限矩阵、跨 schema command/read/FK 回归 | [{"path":"doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md","anchor":"## 11. HANDOFF 初始生产化欠账"}] |
+| DIAGNOSTIC_RETENTION_POLICY | S2 诊断事件已结构化输出，但保留期未按部署环境裁定 | 当前仍是本地/受管非生产诊断边界 | 无界增长或过短保留导致缺证 | NON_LOCAL_OBSERVABILITY_DEPLOYMENT_ENABLED | 环境级保留策略、清理证明、故障回放证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"D1"}] |
+| DIAGNOSTIC_ACCESS_SUBJECTS | S2 诊断日志访问主体与权限未按部署环境裁定 | 当前无生产日志平台与访问角色 | 敏感诊断被越权读取 | NON_LOCAL_OBSERVABILITY_DEPLOYMENT_ENABLED | 访问主体、最小权限、审计与撤销证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"D1"}] |
+| DIAGNOSTIC_COST_SAMPLING | S2 诊断成本采样/限流未按部署流量裁定 | 当前无生产流量，静态事件保持常开 | 高流量下日志成本不可控 | PRODUCTION_TRAFFIC_ENABLED | 采样策略、成本基线、关键失败不丢失与恢复证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"D1"}] |
 
 激活 token 只允许上表 exact 值。`WHEN_NEEDED`、`SCALE_GROWS`、`TEAM_GT_N`、复合 `AND/OR` 或任意自由文本都不具备可验收性，不能通过校验。

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "packageId": "WHOLE-ENGINEERING-SECOND-PACKAGE-20260805",
+  "kind": "second-package-cleanup-evidence",
+  "cleanupStatus": "PASS",
+  "managedL2": {
+    "report": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1785931623610-45615-0bbb7341/evidence/terminal-report.json",
+    "localProcessTree": "PASS",
+    "privateEnvironmentRemoved": "PASS",
+    "remoteDatabaseRemoved": "PASS",
+    "remoteRoleRemoved": "PASS",
+    "remoteAssetPrefixEmpty": "PASS",
+    "hostTrust": "catering-remote-dev/416201af7e30f6fb2d8b1de9e0492dca889f90a095619d60f78a267145e8d2eb"
+  },
+  "focusedRemoteCleanup": [".runtime/r5/evidence/remote-testcontainers/r5-tc-1785932579123-66408", ".runtime/r5/evidence/remote-testcontainers/r5-tc-1785931261770-38001"],
+  "redCleanupFixture": "r5-dev-runner --self-test PASS: leader-dead/child-alive remains cleanup FAIL"
+}

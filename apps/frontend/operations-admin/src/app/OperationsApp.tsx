@@ -5,7 +5,7 @@ import {CollapsedIcon} from '@ant-design/pro-components/es/layout/components/Col
 import {AdminErrorBoundary, OverlayLockProvider, contextScopedQueryArgs, testId, useShellInteractionLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode} from 'react';
 import {BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams} from 'react-router';
-import {clearOperationsTransportState, operationsClient, operationsRtk, registerOperationsSessionRecovery} from './api/OperationsTransport';
+import {clearOperationsTransportState, operationsClient, operationsRtk, recordOperationsRenderError, registerOperationsSessionRecovery} from './api/OperationsTransport';
 import {operationsAdminRtkRequest} from './api/generated/operations-edge.rtk';
 import {PublicInvitationEntry} from '../features/invitation-acceptance/ui/PublicInvitationEntry';
 import {OperationsLoginPage} from '../features/authentication/ui/OperationsLoginPage';
@@ -358,6 +358,7 @@ function WorkspaceRoute() {
 }
 
 function OperationsRoot() { return <App><OverlayLockProvider><AdminErrorBoundary
+  onError={recordOperationsRenderError}
   fallback={({reset}) => <Result status="error" title="页面暂时无法显示" subTitle="请重试当前页面。" extra={<Button type="primary" onClick={reset}>重试页面</Button>}/>}
 ><Routes>
   <Route path="/operations/invitations/:groupWorkspaceKey/:invitationToken" element={<InvitationRoute/>}/>

@@ -22,7 +22,30 @@ public final class Slf4jSecurityDiagnosticRecorder implements SecurityDiagnostic
                 .addKeyValue("durationMillis", fields.durationMillis())
                 .addKeyValue("status", fields.status() == null ? "unassigned" : fields.status())
                 .addKeyValue("errorCode", fields.errorCode() == null ? "unassigned" : fields.errorCode())
+                .addKeyValue("databaseOperationCount", fields.databaseOperationCount())
+                .addKeyValue("databaseDurationMillis", fields.databaseDurationMillis())
                 .log(render(fields));
+    }
+
+    @Override
+    public void recordCompletion(RequestCompletionEvent event) {
+        var fields = event.fields();
+        LOG.atInfo()
+                .addKeyValue("correlationId", fields.correlationId())
+                .addKeyValue("requestId", fields.requestId())
+                .addKeyValue("operationId", fields.operationId())
+                .addKeyValue("routeTemplate", fields.routeTemplate())
+                .addKeyValue("owner", fields.owner())
+                .addKeyValue("consumerFace", fields.consumerFace())
+                .addKeyValue("event", "REQUEST_COMPLETED")
+                .addKeyValue("phase", "EDGE")
+                .addKeyValue("outcome", fields.outcome())
+                .addKeyValue("durationMillis", fields.durationMillis())
+                .addKeyValue("status", fields.status())
+                .addKeyValue("errorCode", fields.errorCode() == null ? "unassigned" : fields.errorCode())
+                .addKeyValue("databaseOperationCount", fields.databaseOperationCount())
+                .addKeyValue("databaseDurationMillis", fields.databaseDurationMillis())
+                .log(renderCompletion(fields));
     }
 
     @Override
@@ -32,6 +55,14 @@ public final class Slf4jSecurityDiagnosticRecorder implements SecurityDiagnostic
                 .addKeyValue("event", "DIAGNOSTIC_WRITE_FAILED")
                 .addKeyValue("operationId", failedEvent.context().operationId())
                 .log("security-diagnostic event=DIAGNOSTIC_WRITE_FAILED operationId={}", failedEvent.context().operationId());
+    }
+
+    @Override
+    public void recordCompletionWriteFailure(RequestCompletionEvent failedEvent) {
+        LOG.atWarn()
+                .addKeyValue("event", "DIAGNOSTIC_COMPLETION_WRITE_FAILED")
+                .addKeyValue("operationId", failedEvent.fields().operationId())
+                .log("security-diagnostic event=DIAGNOSTIC_COMPLETION_WRITE_FAILED operationId={}", failedEvent.fields().operationId());
     }
 
     static String render(SecurityDiagnosticEvent.Fields fields) {
@@ -45,6 +76,24 @@ public final class Slf4jSecurityDiagnosticRecorder implements SecurityDiagnostic
                 + " outcome=" + fields.outcome()
                 + " durationMillis=" + fields.durationMillis()
                 + " status=" + (fields.status() == null ? "unassigned" : fields.status())
-                + " errorCode=" + (fields.errorCode() == null ? "unassigned" : fields.errorCode());
+                + " errorCode=" + (fields.errorCode() == null ? "unassigned" : fields.errorCode())
+                + " databaseOperationCount=" + fields.databaseOperationCount()
+                + " databaseDurationMillis=" + fields.databaseDurationMillis();
+    }
+
+    static String renderCompletion(RequestCompletionEvent.Fields fields) {
+        return "request-completed correlationId=" + fields.correlationId()
+                + " requestId=" + fields.requestId()
+                + " operationId=" + fields.operationId()
+                + " routeTemplate=" + fields.routeTemplate()
+                + " owner=" + fields.owner()
+                + " consumerFace=" + fields.consumerFace()
+                + " event=REQUEST_COMPLETED phase=EDGE"
+                + " outcome=" + fields.outcome()
+                + " durationMillis=" + fields.durationMillis()
+                + " status=" + fields.status()
+                + " errorCode=" + (fields.errorCode() == null ? "unassigned" : fields.errorCode())
+                + " databaseOperationCount=" + fields.databaseOperationCount()
+                + " databaseDurationMillis=" + fields.databaseDurationMillis();
     }
 }

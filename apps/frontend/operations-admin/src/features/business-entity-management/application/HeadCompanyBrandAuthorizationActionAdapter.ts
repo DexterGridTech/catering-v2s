@@ -40,8 +40,7 @@ export class HeadCompanyBrandAuthorizationActionAdapter {
       {
         query: {
           expectedContextVersion: context.expectedContextVersion,
-          name: queryText?.trim() || undefined,
-          code: queryText?.trim() || undefined,
+          queryText: queryText?.trim() || undefined,
           status: 'ENABLED',
           page,
           pageSize,

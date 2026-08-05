@@ -262,13 +262,19 @@ class OrganizationOwnerServiceTest {
         entities.createEntity("BRAND", workspaceId, "organization-test", "owner-page-b", "Owner page bravo", null, null, Map.of());
         entities.createEntity("BRAND", workspaceId, "organization-test", "owner-page-c", "Owner page charlie", null, null, Map.of());
 
-        var result = entities.pageBrands(workspaceId, "organization-test", "Owner page", "owner-page", "ENABLED", "NAME", "ASC", 2, 1);
+        var result = entities.pageBrands(workspaceId, "organization-test", "Owner page", "ENABLED", "NAME", "ASC", 2, 1);
 
         assertEquals(3, result.total());
         assertEquals(2, result.page());
         assertEquals(1, result.pageSize());
         assertEquals(List.of("Owner page bravo"), result.items().stream().map(value -> value.name()).toList());
-        assertThrows(BusinessEntityService.OrganizationValidationException.class, () -> entities.pageBrands(workspaceId, "organization-test", null, null, null, "UNKNOWN", "ASC", 1, 20));
+        var codeMatch = entities.pageBrands(workspaceId, "organization-test", "owner-page-b", "ENABLED", "NAME", "ASC", 1, 20);
+        var normalizedCodeMatch = entities.pageBrands(workspaceId, "organization-test", "  OWNER-PAGE-B  ", "ENABLED", "NAME", "ASC", 1, 20);
+        var noMatch = entities.pageBrands(workspaceId, "organization-test", "does-not-exist", "ENABLED", "NAME", "ASC", 1, 20);
+        assertEquals(List.of("Owner page bravo"), codeMatch.items().stream().map(value -> value.name()).toList());
+        assertEquals(List.of("Owner page bravo"), normalizedCodeMatch.items().stream().map(value -> value.name()).toList());
+        assertEquals(0, noMatch.total());
+        assertThrows(BusinessEntityService.OrganizationValidationException.class, () -> entities.pageBrands(workspaceId, "organization-test", null, null, "UNKNOWN", "ASC", 1, 20));
     }
 
     @Test void tenantAndHeadCompanyPagesKeepPredicateTotalAndSliceInsideTheOrganizationOwner() {

@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {appendFileSync, chmodSync, mkdtempSync, readFileSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {loadGeneratedDiagnosticRegistry} from './http-diagnostic-inventory.mjs';
 import {executeDiagnosticInteraction, executeDiagnosticRequest, executePlatformBootstrapLogin, executePlatformFoundation, finalizeHttpDiagnostic, readDiagnosticEvents, recordDiagnosticFailure, waitForDiagnosticCompletions} from './rm1-http-diagnostic.mjs';
+
+const generatedRegistryPath = new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url);
 
 test('orchestrator refuses to manufacture a report without a managed manifest', () => {
   assert.throws(() => finalizeHttpDiagnostic({manifestPath: '/missing/manifest.json', registryOperations: [], scenarios: [], calls: [], events: []}), /HTTP_DIAGNOSTIC_MANIFEST_MISSING/);
@@ -102,9 +105,10 @@ test('platform bootstrap execution reports one correlated route and explicitly d
       return new Response('{}', {status: 200, headers: {'X-Correlation-Id': correlationId, 'X-Request-Id': 'req-abcdefgh'}});
     },
   });
-  assert.equal(result.report.coverage.declared, 147);
+  const declared = loadGeneratedDiagnosticRegistry(generatedRegistryPath).length;
+  assert.equal(result.report.coverage.declared, declared);
   assert.equal(result.report.coverage.passed, 1);
-  assert.equal(result.report.coverage.unexecuted, 146);
+  assert.equal(result.report.coverage.unexecuted, declared - result.report.coverage.passed);
   assert.doesNotMatch(JSON.stringify(result.report), /this-is-a-test-secret-that-is-long-enough|diagnostic-admin|not-persisted/i);
 });
 
@@ -131,9 +135,10 @@ test('platform foundation execution reports precisely its source-bound operation
       return new Response(JSON.stringify(payload), {status, headers: {'X-Correlation-Id': correlationId, 'X-Request-Id': requestId, ...(operationId === 'platformPasswordLogin' ? {'Set-Cookie': 'session=private-cookie'} : {})}});
     },
   });
-  assert.equal(result.report.coverage.declared, 147);
+  const declared = loadGeneratedDiagnosticRegistry(generatedRegistryPath).length;
+  assert.equal(result.report.coverage.declared, declared);
   assert.equal(result.report.coverage.passed, 17);
-  assert.equal(result.report.coverage.unexecuted, 130);
+  assert.equal(result.report.coverage.unexecuted, declared - result.report.coverage.passed);
   assert.doesNotMatch(JSON.stringify(result.report), /private-cookie|diagnostic-admin|grant-private/i);
 });
 

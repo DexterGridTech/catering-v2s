@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "packageId": "WHOLE-ENGINEERING-SECOND-PACKAGE-20260805",
+  "kind": "problem-family-discovery",
+  "status": "PASS",
+  "families": [
+    {"findingId":"RP-07","problemFamilyId":"DUPLICATED_QUERY_SEMANTICS","root":"one search concept split across name/code consumers","prevention":"single queryText contract, normalized owner predicate, generated wire and frontend architecture assertion","red":"duplicate name/code assertion fails"},
+    {"findingId":"RP-08","problemFamilyId":"FORM_CLOSE_LIFECYCLE_DRIFT","root":"secondary local submitting truth or unguarded Drawer close path","prevention":"finite operations-admin FORM_DRAWER denominator bound to shared lifecycle.submitting, with cross-app consumer count recorded separately","red":"bare maskClosable mutation fails"},
+    {"findingId":"RP-10","problemFamilyId":"SELF_AUTHENTICATED_REMOTE_HOST","root":"runtime-derived host hash treated as trust or implicit multi-entry environment selection","prevention":"repository allowlist with exact fingerprint and metadata readback; missing env is allowed implicitly only for a single entry","red":"missing multi-entry host, unknown/wrong/attacker/rotation cases fail"},
+    {"findingId":"RP-11","problemFamilyId":"LEADER_ONLY_CLEANUP","root":"leader exit mistaken for process-tree cleanup","prevention":"owned PGID tree snapshot and empty readback required before PASS","red":"leader-dead/child-alive fixture fails closed"}
+  ],
+  "preventionSetEquality": "PASS"
+}

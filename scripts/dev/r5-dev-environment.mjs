@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import crypto from "node:crypto";
+import {hostTrustEnvironment, resolveTrustedRemoteHost} from "./r5-remote-host-trust.mjs";
 
 const requiredSecrets = [
   "V2S_SEED_PLATFORM_ROOT_PASSWORD",
@@ -19,15 +19,14 @@ function databaseName(value) {
 function productionLike(value) { return /(?:^|[._/-])(?:prod|production)(?:$|[._/-])/i.test(value); }
 function effectiveEnvironment(env) {
   const namespace = env.V2S_DEV_NAMESPACE ?? "v2s-dev-r5-full";
-  const host = env.V2S_DEV_REMOTE_HOST ?? env.CATERING_ALL_V2_DEV_SSH_HOST ?? "catering-remote-dev";
+  const hostTrust = hostTrustEnvironment(env);
   const expectedDatabase = `catering_v2s_dev_${namespace.replace(/^v2s-dev-/, "").replaceAll("-", "_")}`;
   return {
     ...env,
     V2S_DEV_NAMESPACE: namespace,
     V2S_DEV_PROFILE: env.V2S_DEV_PROFILE ?? "r5-full",
     V2S_RUNTIME_ENVIRONMENT: env.V2S_RUNTIME_ENVIRONMENT ?? "non-production",
-    V2S_DEV_REMOTE_HOST: host,
-    V2S_DEV_REMOTE_HOST_SHA256: env.V2S_DEV_REMOTE_HOST_SHA256 ?? crypto.createHash("sha256").update(host).digest("hex"),
+    ...hostTrust,
     V2S_DEV_DATABASE_URL: env.V2S_DEV_DATABASE_URL ?? `jdbc:postgresql://127.0.0.1:25432/${expectedDatabase}`,
     V2S_DEV_ASSET_ROOT: env.V2S_DEV_ASSET_ROOT ?? "s3://catering-v2s-r5-assets",
   };
@@ -38,9 +37,7 @@ function validate(input, mode) {
   if (!/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace)) fail("R5_DEV_NAMESPACE_INVALID");
   if (env.V2S_DEV_PROFILE !== "r5-full") fail("R5_DEV_PROFILE_REQUIRED");
   if (env.V2S_RUNTIME_ENVIRONMENT !== "non-production") fail("R5_DEV_NON_PRODUCTION_MARKER_REQUIRED");
-  const host = env.V2S_DEV_REMOTE_HOST ?? "";
-  const hostHash = env.V2S_DEV_REMOTE_HOST_SHA256 ?? "";
-  if (!host || !/^[a-f0-9]{64}$/i.test(hostHash) || crypto.createHash("sha256").update(host).digest("hex") !== hostHash) fail("R5_DEV_REMOTE_HOST_BINDING_INVALID");
+  const host = resolveTrustedRemoteHost(env).host;
   if (productionLike(host)) fail("R5_DEV_REMOTE_HOST_PRODUCTION_LIKE");
   const expectedDatabase = `catering_v2s_dev_${namespace.replace(/^v2s-dev-/, "").replaceAll("-", "_")}`;
   if (!/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(expectedDatabase)) fail("R5_DEV_DATABASE_NAME_INVALID");
@@ -55,8 +52,8 @@ function main() {
   const [, , mode = "start", flag] = process.argv;
   if (!["start", "seed", "reset", "check"].includes(mode)) fail("R5_DEV_USAGE");
   if (flag === "--self-test") {
-    const valid = { V2S_DEV_NAMESPACE: "v2s-dev-alpha", V2S_DEV_PROFILE: "r5-full", V2S_RUNTIME_ENVIRONMENT: "non-production", V2S_DEV_REMOTE_HOST: "dev.example.internal", V2S_DEV_DATABASE_URL: "jdbc:postgresql://dev.example.internal/catering_v2s_dev_alpha", V2S_DEV_ASSET_ROOT: "s3://dev-assets", ...Object.fromEntries(requiredSecrets.map((name) => [name, "test-only"])) };
-    valid.V2S_DEV_REMOTE_HOST_SHA256 = crypto.createHash("sha256").update(valid.V2S_DEV_REMOTE_HOST).digest("hex");
+    const valid = { V2S_DEV_NAMESPACE: "v2s-dev-alpha", V2S_DEV_PROFILE: "r5-full", V2S_RUNTIME_ENVIRONMENT: "non-production", V2S_DEV_REMOTE_HOST: "catering-remote-dev", V2S_DEV_DATABASE_URL: "jdbc:postgresql://catering-remote-dev/catering_v2s_dev_alpha", V2S_DEV_ASSET_ROOT: "s3://dev-assets", ...Object.fromEntries(requiredSecrets.map((name) => [name, "test-only"])) };
+    Object.assign(valid, hostTrustEnvironment(valid));
     validate(valid, "seed");
     let red = false;
     try { validate({ ...valid, V2S_DEV_REMOTE_HOST_SHA256: "0".repeat(64) }, "start"); } catch (error) { red = error.code === "R5_DEV_REMOTE_HOST_BINDING_INVALID"; }

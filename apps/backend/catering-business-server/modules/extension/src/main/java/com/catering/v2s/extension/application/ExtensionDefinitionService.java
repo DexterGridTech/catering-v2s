@@ -1,7 +1,10 @@
 package com.catering.v2s.extension.application;
 
+import com.catering.v2s.extension.api.ExtensionHostTypes;
+
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
@@ -23,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
-    private static final List<String> MANAGEMENT_HOST_TYPES = List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT");
+    private static final List<String> MANAGEMENT_HOST_TYPES = List.of(ExtensionHostTypes.BRAND, ExtensionHostTypes.TENANT, ExtensionHostTypes.HEAD_COMPANY, ExtensionHostTypes.STORE, ExtensionHostTypes.CONTRACT, ExtensionHostTypes.COMMERCIAL_GROUP, ExtensionHostTypes.REGION, ExtensionHostTypes.PROJECT);
     private static final Set<String> HOST_TYPES = Set.copyOf(MANAGEMENT_HOST_TYPES);
     private static final Set<String> AUDIT_FIELDS = Set.of("fieldDefinitions", "revision");
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -158,8 +161,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     private void audit(UUID workspaceUuid, String groupWorkspaceKey, String hostType, Long previousRevision, long revision, List<ExtensionDefinitionReadback.Field> before, List<Field> after, AuditActor actor) { AuditChangePolicy policy = new AuditChangePolicy("EXTENSION_DEFINITION", "EXTENSION_DEFINITION_REPLACED", AUDIT_FIELDS); List<AuditChange> changes = List.of(new AuditChange("fieldDefinitions", summarize(before), summarize(after)), new AuditChange("revision", previousRevision == null ? null : previousRevision.toString(), String.valueOf(revision))).stream().filter(change -> !Objects.equals(change.beforeValue(), change.afterValue())).toList(); jdbc.update("INSERT INTO extension.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'EXTENSION_DEFINITION', ?, ?, ?, ?, 'EXTENSION_DEFINITION_REPLACED', ?, CAST(? AS JSONB))", UUID.randomUUID(), workspaceUuid, groupWorkspaceKey, hostType, actor.actorType(), actor.actorId(), actor.displaySnapshot(), time.currentEpochMillis(), auditJson(policy.allow(changes))); }
     private static String summarize(List<?> fields) { return fields.stream().map(ExtensionDefinitionService::describe).sorted().reduce((left, right) -> left + ";" + right).orElse(""); }
     private static String describe(Object value) { if (value instanceof Field field) return field.fieldKey() + "|" + field.label() + "|" + field.fieldType() + "|" + field.required(); if (value instanceof ExtensionDefinitionReadback.Field field) return field.fieldKey() + "|" + field.label() + "|" + field.fieldType() + "|" + field.required(); throw new IllegalArgumentException("unknown extension field"); }
-    private static String auditJson(List<AuditChange> changes) { StringBuilder value = new StringBuilder("["); for (int index = 0; index < changes.size(); index++) { if (index > 0) value.append(','); AuditChange change = changes.get(index); value.append("{\"fieldKey\":\"").append(escape(change.fieldKey())).append("\""); if (change.beforeValue() != null) value.append(",\"before\":\"").append(escape(change.beforeValue())).append("\""); if (change.afterValue() != null) value.append(",\"after\":\"").append(escape(change.afterValue())).append("\""); value.append('}'); } return value.append(']').toString(); }
-    private static String escape(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
+    private static String auditJson(List<AuditChange> changes) { return AuditChangeJson.write(changes); }
     private static void validateHost(String value) { if (!HOST_TYPES.contains(value)) throw new DefinitionInvalidException(); }
     private static List<Field> normalize(List<Field> fields) {
         if (fields == null || fields.stream().anyMatch(java.util.Objects::isNull) || fields.stream().map(Field::fieldKey).distinct().count() != fields.size()) throw new DefinitionInvalidException();

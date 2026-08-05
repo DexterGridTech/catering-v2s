@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "identified-problem-family",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "WHOLE-ENGINEERING-S2-OBSERVABILITY-20260805",
+  "family": "completion-observability-and-managed-output-gaps",
+  "rootCause": "各层日志存在但没有同一完成事件与可出港边界：backend 只覆盖局部 security、frontend 只在内存/开发 console、ErrorBoundary 未接消费者、bootstrap 使用自由 stdout；补齐后又暴露公开邀请 token 与前后端 correlation/requestId 未对齐的跨层 join 缺口。",
+  "generalizedFailureMode": "有调用却没有 owner/route/face/status/outcome 的可关联 completion 证据，或把敏感 payload/自由输出当作可观测性。",
+  "finiteDenominator": ["generated edge route-face registry", "foundation SafeLogger and AdminErrorBoundary", "platform-admin and operations-admin app consumers", "ManagedInvitationBootstrap", "observability/logging-boundary standards"],
+  "redMutations": ["remove completion interceptor registration", "allow production INFO to sink", "retain password key", "retain public invitation token in route event", "ignore backend X-Request-Id", "derive EdgeRequestContext correlation independently", "remove either App ErrorBoundary onError", "restore bootstrap System.out"],
+  "minimalRepair": "typed foundation completion event + one generated-route edge observer + optional redacted frontend sink + both app boundary callbacks + structured bootstrap logger",
+  "excludedCounterexamples": ["public security operations retain their existing dedicated observer", "managed diagnostic/seed requests are excluded from the new observer to avoid harness double counting", "no runtime endpoint or remote sink is claimed by static proof"],
+  "prevention": ["logging-boundaries check", "focused typed/redaction tests", "six-class source denominator in S2 manifest", "package-exit hook receipt exact-set validation"]
+}

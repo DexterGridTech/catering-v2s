@@ -243,6 +243,16 @@
       "referencedSchemaObject": "workspace_iam.role_assignment"
     },
     {
+      "edgeId": "r5-task-read-organization-commercial-group-audit",
+      "edgeKind": "TASK_READ",
+      "fromModule": "organization",
+      "toModule": "platform-workspace",
+      "rationale": "The organization audit reader validates the selected commercial-group identity through a bounded cross-schema task read before reading its owned audit events.",
+      "queryId": "organization-commercial-group-audit-workspace-read",
+      "initiatingModule": "organization",
+      "referencedSchemaObject": "platform_workspace.group_workspace"
+    },
+    {
       "edgeId": "r5-task-read-contract-workspace-identity",
       "edgeKind": "TASK_READ",
       "fromModule": "contract",

@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {existsSync, mkdirSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
+import {resolveTrustedRemoteHost} from './r5-remote-host-trust.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -58,7 +59,7 @@ export function validateTerminalEligibility({environment, expectedDatabase, name
   if (environment?.V2S_RUNTIME_ENVIRONMENT !== 'non-production') fail('TERMINAL_FIXTURE_NON_PRODUCTION_REQUIRED');
   if (!/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace ?? '')) fail('TERMINAL_FIXTURE_NAMESPACE_INVALID');
   if (!/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(expectedDatabase ?? '')) fail('TERMINAL_FIXTURE_DATABASE_ALLOWLIST_INVALID');
-  if (!environment?.V2S_DEV_REMOTE_HOST || !/^[a-f0-9]{64}$/i.test(environment.V2S_DEV_REMOTE_HOST_SHA256 ?? '')) fail('TERMINAL_FIXTURE_REMOTE_BINDING_INVALID');
+  try { resolveTrustedRemoteHost(environment); } catch { fail('TERMINAL_FIXTURE_REMOTE_BINDING_INVALID'); }
 }
 
 export function validateTerminalFixtureInput(input, now = Date.now()) {

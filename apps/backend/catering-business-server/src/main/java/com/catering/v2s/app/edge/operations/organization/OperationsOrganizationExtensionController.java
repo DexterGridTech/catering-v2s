@@ -1,5 +1,7 @@
 package com.catering.v2s.app.edge.operations.organization;
 
+import com.catering.v2s.extension.api.ExtensionHostTypes;
+
 import com.catering.v2s.app.edge.catalog.OrganizationEntityType;
 import com.catering.v2s.app.edge.extension.ExtensionDefinitionWireMapper;
 import com.catering.v2s.app.edge.generated.wire.ExtensionDefinition;
@@ -33,14 +35,14 @@ public final class OperationsOrganizationExtensionController {
     @GetMapping("/business-entities/extension-definition")
     ExtensionDefinition businessEntityDefinition(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion, @org.springframework.web.bind.annotation.RequestParam("entityType") String hostType) {
         var session = requireContext(request, groupWorkspaceKey, expectedContextVersion);
-        if (!java.util.Set.of(OrganizationEntityType.BRAND.wire(), OrganizationEntityType.TENANT.wire(), OrganizationEntityType.HEAD_COMPANY.wire()).contains(hostType)) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("unsupported host type");
+        if (!java.util.Set.of(ExtensionHostTypes.BRAND, ExtensionHostTypes.TENANT, ExtensionHostTypes.HEAD_COMPANY).contains(hostType)) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("unsupported host type");
         return ExtensionDefinitionWireMapper.wire(definitions.managementDefinition(session.workspaceUuid(), groupWorkspaceKey, hostType));
     }
 
     @GetMapping("/hierarchy/extension-definition")
     ExtensionDefinition hierarchyDefinition(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion, @org.springframework.web.bind.annotation.RequestParam("entityType") String hostType) {
         var session = requireContext(request, groupWorkspaceKey, expectedContextVersion);
-        if (!java.util.Set.of("COMMERCIAL_GROUP", "REGION", "PROJECT").contains(hostType)) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("unsupported host type");
+        if (!java.util.Set.of(ExtensionHostTypes.COMMERCIAL_GROUP, ExtensionHostTypes.REGION, ExtensionHostTypes.PROJECT).contains(hostType)) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("unsupported host type");
         return ExtensionDefinitionWireMapper.wire(definitions.managementDefinition(session.workspaceUuid(), groupWorkspaceKey, hostType));
     }
 

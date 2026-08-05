@@ -38,9 +38,9 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
   const [transitioning, setTransitioning] = useState<BusinessEntity>();
   const [authorizing, setAuthorizing] = useState<HeadCompany>();
   const query = useMemo(() => contextScopedQueryArgs({
-    name: filters.name?.trim() || undefined,
-    code: filters.code?.trim() || undefined,
-    ...(config.kind === 'BRAND' ? {} : {
+    ...(config.kind === 'BRAND' ? {queryText: filters.name?.trim() || undefined} : {
+      name: filters.name?.trim() || undefined,
+      code: filters.code?.trim() || undefined,
       legalName: filters.legalName?.trim() || undefined,
       unifiedSocialCreditCode: filters.unifiedSocialCreditCode?.trim() || undefined,
     }),
@@ -62,14 +62,14 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
   );
   const activeQuery = config.kind === 'BRAND' ? brandQuery : config.kind === 'TENANT' ? tenantQuery : headCompanyQuery;
   const result = activeQuery.data;
-  const rows = (result?.items ?? []) as BusinessEntity[];
+  const rows = (result?.items ?? []) as unknown as BusinessEntity[];
   const canCreate = actionCapabilityKeys.includes(config.create);
   const createLabel = actionLabel.get(config.create);
   if (!createLabel) throw new Error('ADMIN_CATALOG_BUSINESS_ENTITY_ACTION_MISSING');
 
   const columns: ProColumns<BusinessEntity>[] = [
     {key: 'name', title: config.kind === 'BRAND' ? '品牌名称' : '名称', dataIndex: 'name', sorter: true, fieldProps: {...testId(`operations-business-entity-filter-name-${config.kind.toLowerCase()}`), allowClear: true}, render: (_, entity) => <Button type="link" onClick={() => setDetail(entity)} {...testId(`operations-business-entity-detail-${entity.id}`)}>{entity.name}</Button>},
-    {key: 'code', title: '编码', dataIndex: 'code', sorter: true, fieldProps: {...testId(`operations-business-entity-filter-code-${config.kind.toLowerCase()}`), allowClear: true}},
+    {key: 'code', title: '编码', dataIndex: 'code', sorter: true, search: config.kind !== 'BRAND', fieldProps: {...testId(`operations-business-entity-filter-code-${config.kind.toLowerCase()}`), allowClear: true}},
     ...(config.kind === 'BRAND' ? [
       {key: 'alias', title: '别名', dataIndex: 'alias', search: false, render: (_: unknown, entity: BusinessEntity) => ('alias' in entity ? entity.alias ?? '—' : '—')},
     ] : [

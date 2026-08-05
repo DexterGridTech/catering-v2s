@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "packageId": "WHOLE-ENGINEERING-FIRST-PACKAGE-20260805",
+  "kind": "RP12_FINAL_IMPLEMENTATION_BINDING",
+  "reviewScope": "materially new final-state binding scope; not a third review of the closed pre-replacement classification sub-cycle",
+  "reason": "The original 320-row raw-literal admission was consumed by the ordered replacement. This scope proves the final source state through qualified owner-constant occurrence mapping, raw-literal escape control, and complete source hashes.",
+  "machineControl": {
+    "script": "scripts/check/rp12-final-state",
+    "scriptSha256": "b2768122ce7f7f8945f3308312658a9f8236b862c89efee8c322f7d7d06f066e",
+    "baselineCommand": "node scripts/check/rp12-final-state",
+    "selfTestCommand": "node scripts/check/rp12-final-state --self-test",
+    "baselineResult": "PASS",
+    "selfTestResult": "PASS",
+    "qualifiedOccurrences": 362,
+    "rawAllowedOccurrences": 152,
+    "logicalOccurrences": 514,
+    "matchingLines": 347,
+    "files": 38,
+    "occurrenceDigest": "f3de780491f944755d26cfe40dc095840063c6a0376ab82be2e1fa0f7cb05d3a",
+    "sourceManifestDigest": "878d093aa82a7e7b0547ee7a973ca55ce2dc1d2c7671aeb5ad558ad91387c8b1",
+    "redMutation": "unknown qualified owner constant, raw service-node literal outside the explicit definition/generated-catalog allowlist, and raw extension-host invocation arguments all fail closed"
+  },
+  "ownerSets": {
+    "ServiceNodeTypes": ["GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"],
+    "OrganizationNodeTypes": ["REGION", "PROJECT"],
+    "BusinessEntityTypes": ["BRAND", "TENANT", "HEAD_COMPANY", "STORE"],
+    "ExtensionHostTypes": ["BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT"],
+    "AuditEntityTypes": ["HEAD_COMPANY", "STORE", "REGION", "PROJECT"]
+  },
+  "sourceBinding": {
+    "productionRoot": "apps/backend/catering-business-server",
+    "excludes": ["src/test"],
+    "perFileSha256": true,
+    "qualifiedConstantMap": "script CONSTANT owner -> finite set map",
+    "rawAllowlist": "five constant definition files plus generated workspace IAM catalogs",
+    "unclassifiedProductionRawEscapes": 0
+  },
+  "independentReview": {
+    "reviewCycleId": "WHOLE-ENGINEERING-FIRST-PACKAGE-RP12-FINAL-BINDING-20260805",
+    "reviewTarget": "IMPLEMENTATION",
+    "reviewRound": 1,
+    "reviewRoundLimit": 2,
+    "reviewerKind": "INDEPENDENT_SUBAGENT",
+    "authorizationBoundary": "static final-state binding only; no runtime, DEV/UAT, HTTP/L2, database/migration, seed/reset, deployment or Git"
+  }
+}

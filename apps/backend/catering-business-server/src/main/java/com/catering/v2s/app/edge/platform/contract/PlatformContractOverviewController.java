@@ -15,6 +15,7 @@ import com.catering.v2s.app.edge.generated.wire.StoreContractSortKey;
 import com.catering.v2s.app.edge.generated.wire.StoreContractStatus;
 import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -76,7 +77,7 @@ public final class PlatformContractOverviewController {
     private static ContractOverviewItemProjectRef projectRef(ContractTaskReadService.Reference value) { return new ContractOverviewItemProjectRef(value.id().toString(), value.code(), value.name(), "RESOLVED"); }
     private static ContractOverviewItemTenantRef tenantRef(ContractTaskReadService.Reference value) { return new ContractOverviewItemTenantRef(value.id().toString(), value.code(), value.name(), "RESOLVED"); }
     private java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields(UUID workspaceUuid, String groupWorkspaceKey, java.util.Map<String, String> values) {
-        try { return definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, "CONTRACT").fields().stream().filter(field -> "ENABLED".equals(field.status())).sorted(java.util.Comparator.comparingInt(ExtensionDefinitionReadback.Field::displayOrder)).map(field -> new ContractOverviewItemExtensionFieldsItem(field.label(), displayValue(values.get(field.fieldKey())))).toList(); }
+        try { return definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.CONTRACT).fields().stream().filter(field -> "ENABLED".equals(field.status())).sorted(java.util.Comparator.comparingInt(ExtensionDefinitionReadback.Field::displayOrder)).map(field -> new ContractOverviewItemExtensionFieldsItem(field.label(), displayValue(values.get(field.fieldKey())))).toList(); }
         catch (ExtensionDefinitionService.DefinitionNotFoundException absent) { return java.util.List.of(); }
     }
     private static String displayValue(String encoded) { if (encoded == null) return null; try { JsonNode value = JSON.readTree(encoded); return value.isValueNode() ? value.asText() : value.toString(); } catch (java.io.IOException failure) { throw new IllegalArgumentException("invalid contract extension value", failure); } }

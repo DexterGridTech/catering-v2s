@@ -2,6 +2,7 @@ package com.catering.v2s.platform.iam.application;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
@@ -517,8 +518,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     private void audit(UUID subjectRef, String action, long now, AuditActor actor, List<AuditChange> changes) {
         jdbc.update("INSERT INTO platform_iam.audit_event (id, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, 'PLATFORM_ADMIN', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))", UUID.randomUUID(), subjectRef.toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), action, now, json(changes));
     }
-    private static String json(List<AuditChange> changes) { StringBuilder value = new StringBuilder("["); for (int index = 0; index < changes.size(); index++) { if (index > 0) value.append(','); AuditChange change = changes.get(index); value.append("{\"fieldKey\":\"").append(escape(change.fieldKey())).append("\""); if (change.beforeValue() != null) value.append(",\"before\":\"").append(escape(change.beforeValue())).append("\""); if (change.afterValue() != null) value.append(",\"after\":\"").append(escape(change.afterValue())).append("\""); value.append('}'); } return value.append(']').toString(); }
-    private static String escape(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
+    private static String json(List<AuditChange> changes) { return AuditChangeJson.write(changes); }
     private static String readbackSql(String suffix) { return """
         SELECT a.id, a.login_name, a.display_name, a.mobile_mask_source, a.status, a.is_builtin, a.version, a.created_at_epoch_millis, a.updated_at_epoch_millis,
                (SELECT max(coalesce(s.last_seen_at_epoch_millis, s.created_at_epoch_millis)) FROM platform_iam.platform_session s WHERE s.platform_admin_id=a.id) AS last_login_at,

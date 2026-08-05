@@ -759,7 +759,6 @@ export const EDGE_PROBLEM_CODES = [
   "ORGANIZATION_COMMERCIAL_GROUP_NOT_INITIALIZED",
   "ORGANIZATION_COMMERCIAL_GROUP_REQUIRED",
   "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE",
-  "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED",
   "ORGANIZATION_NODE_CODE_CONFLICT",
   "ORGANIZATION_NODE_NAME_CONFLICT",
   "ORGANIZATION_NODE_PARENT_INVALID",
@@ -967,7 +966,21 @@ export type HeadCompanyPage = {
   sort: BusinessEntitySortKey;
   direction: BusinessEntitySortDirection;
 };
-  items: Array<HeadCompany>;
+  items: Array<HeadCompanySummary>;
+};
+
+export type HeadCompanySummary = {
+  id: string;
+  groupWorkspaceKey: string;
+  code: string;
+  name: string;
+  legalName: string;
+  unifiedSocialCreditCode: string;
+  remark: (string) | null;
+  status: BusinessEntityStatus;
+  revision: number;
+  createdAt: number;
+  updatedAt: number;
 };
 
 export type HeadCompanyUpdateRequest = (HeadCompanyCreateRequest) & ({
@@ -1432,8 +1445,8 @@ export type WorkspaceLoginEntry = {
 
 export type WorkspaceOperationsInvitationActionRequest = {
   scopeRef?: (string) | null;
-  expectedVersion: number;
   expectedContextVersion: number;
+  expectedVersion: number;
   idempotencyKey: string;
 };
 
@@ -1532,7 +1545,7 @@ export type WorkspaceSessionEntry = {
   menuOrder: number;
   kind: "ROLE_HOME" | "BUSINESS";
   pageAccessManaged: boolean;
-  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
+  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE" | "HEAD_COMPANY";
 }>;
 }>;
   actionGrants: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
@@ -1553,7 +1566,7 @@ export type WorkspaceSessionEntry = {
   menuOrder: number;
   kind: "ROLE_HOME" | "BUSINESS";
   pageAccessManaged: boolean;
-  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
+  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE" | "HEAD_COMPANY";
 }>;
 }) & ({
   contextVersion: number;
@@ -2057,8 +2070,7 @@ export type FaceOperationContracts = {
   };
     query: {
     expectedContextVersion: number;
-    name?: string;
-    code?: string;
+    queryText?: string;
     status?: BusinessEntityStatus;
     sort?: BusinessEntitySortKey;
     direction?: BusinessEntitySortDirection;

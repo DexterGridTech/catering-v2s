@@ -39,6 +39,8 @@ export type FrontendLogInput = Omit<FrontendLogEvent, 'eventId' | 'occurredAt' |
   attempt?: number;
 };
 
+export type FrontendLogSink = (event: FrontendLogEvent) => void | Promise<void>;
+
 export type SafeLogger = {
   info: (event: FrontendLogInput) => void;
   warn: (event: FrontendLogInput) => void;
@@ -62,7 +64,23 @@ const clean = (event: FrontendLogEvent): FrontendLogEvent => {
   return copy;
 };
 
-export const createSafeLogger = (options?: {service?: string; enabled?: boolean; maxEvents?: number; runId?: string}): SafeLogger => {
+export const createBeaconLogSink = (endpoint?: string): FrontendLogSink | undefined => {
+  const target = endpoint?.trim();
+  if (!target) return undefined;
+  return (event) => {
+    const body = JSON.stringify(event);
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+        if (navigator.sendBeacon(target, new Blob([body], {type: 'application/json'}))) return;
+      }
+    } catch { /* telemetry must never change the user operation */ }
+    if (typeof fetch === 'function') {
+      void fetch(target, {method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'}, body, keepalive: true}).catch(() => undefined);
+    }
+  };
+};
+
+export const createSafeLogger = (options?: {service?: string; enabled?: boolean; maxEvents?: number; runId?: string; sink?: FrontendLogSink}): SafeLogger => {
   const service = options?.service ?? 'admin-ui';
   const enabled = options?.enabled ?? false;
   const maxEvents = options?.maxEvents ?? 100;
@@ -96,6 +114,12 @@ export const createSafeLogger = (options?: {service?: string; enabled?: boolean;
     if (operationKey) parentEventByOperationInstance.set(operationKey, safe.eventId);
     events.push(safe);
     if (events.length > maxEvents) events.shift();
+    if (options?.sink && (enabled || level === 'WARN' || level === 'ERROR')) {
+      try {
+        const result = options.sink(safe);
+        if (result && typeof (result as Promise<void>).catch === 'function') void (result as Promise<void>).catch(() => undefined);
+      } catch { /* telemetry must never change the user operation */ }
+    }
     if (!enabled) return;
     const line = `[${service}] ${JSON.stringify(safe)}`;
     if (level === 'ERROR') console.error(line);

@@ -1,5 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import java.util.List;
@@ -33,8 +35,8 @@ public class WorkspaceAuditAuthorizationService {
     @Transactional(readOnly = true)
     public void requireGroupHost(WorkspaceSessionReadback session) {
         Assignment assignment = requireCurrentAssignment(session);
-        if (!"GROUP".equals(assignment.nodeType())) denyAccess();
-        requireScope(session, assignment, "GROUP", assignment.nodeId());
+        if (!ServiceNodeTypes.GROUP.equals(assignment.nodeType())) denyAccess();
+        requireScope(session, assignment, ServiceNodeTypes.GROUP, assignment.nodeId());
     }
 
     @Transactional(readOnly = true)

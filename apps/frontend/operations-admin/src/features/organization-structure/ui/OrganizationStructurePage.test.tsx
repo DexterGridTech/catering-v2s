@@ -25,7 +25,7 @@ describe('organization structure focused IA contract', () => {
     expect(page).toContain('formatNameCode(row.name, row.code)');
     expect(page).toContain("placeholder=\"按名称或编码搜索\"");
     expect(page).toContain("testId('operations-organization-hierarchy-search')");
-    expect(page).toContain("new Intl.Collator('zh-CN', {numeric: true, sensitivity: 'base'})");
+    expect(page).toContain('adminHierarchyCollator');
     expect(page).toContain('hierarchySearchMatches(project, hierarchySearch)');
     expect(page).toContain('<Tag color="default">已停用</Tag>');
     expect(page).toContain('<Card size="small" title="组织架构"');

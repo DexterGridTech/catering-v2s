@@ -1,9 +1,7 @@
 package com.catering.v2s.app.edge.operations.organization;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -17,7 +15,6 @@ import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,18 +31,18 @@ class OperationsBusinessEntityControllerTest {
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, UUID.randomUUID(), UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 9L, Set.of(), Set.of(), "Operations tester"));
         BusinessEntityService entities = mock(BusinessEntityService.class);
-        when(entities.pageBrands(workspaceId, WORKSPACE_KEY, "brand", "BR", "ENABLED", "NAME", "ASC", 3, 7))
+        when(entities.pageBrands(workspaceId, WORKSPACE_KEY, "brand", "ENABLED", "NAME", "ASC", 3, 7))
             .thenReturn(new BusinessEntityService.BrandPage(List.of(), 51, 3, 7));
         OperationsBusinessEntityController controller = new OperationsBusinessEntityController(new OperationsSessionResolver(authentication), entities, mock(WorkspaceCapabilityScopeResolver.class));
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
 
-        var response = controller.brands(request, WORKSPACE_KEY, 1L, "brand", "BR", BusinessEntityStatus.ENABLED, "NAME", "ASC", 3, 7);
+        var response = controller.brands(request, WORKSPACE_KEY, 1L, "brand", BusinessEntityStatus.ENABLED, "NAME", "ASC", 3, 7);
 
         assertEquals(51L, response.metadata().total());
         assertEquals(3L, response.metadata().page());
         assertEquals(7L, response.metadata().pageSize());
         assertEquals(List.of(), response.items());
-        verify(entities).pageBrands(workspaceId, WORKSPACE_KEY, "brand", "BR", "ENABLED", "NAME", "ASC", 3, 7);
+        verify(entities).pageBrands(workspaceId, WORKSPACE_KEY, "brand", "ENABLED", "NAME", "ASC", 3, 7);
         verifyNoMoreInteractions(entities);
     }
 
@@ -71,7 +68,7 @@ class OperationsBusinessEntityControllerTest {
     }
 
     @Test
-    void headCompanyPagesUseOneBatchAuthorizedBrandReadForOneTwentyAndFiftyRows() {
+    void headCompanyPagesReturnSummaryRowsWithoutHydratingAuthorizedBrands() {
         UUID workspaceId = UUID.randomUUID();
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, UUID.randomUUID(), UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 9L, Set.of(), Set.of(), "Operations tester"));
@@ -81,21 +78,14 @@ class OperationsBusinessEntityControllerTest {
 
         for (int itemCount : List.of(1, 20, 50)) {
             List<OrganizationEntityReadback> heads = IntStream.range(0, itemCount).mapToObj(index -> entity("HEAD_COMPANY", workspaceId, "head-" + index)).toList();
-            List<UUID> headIds = heads.stream().map(OrganizationEntityReadback::id).toList();
-            Map<UUID, List<OrganizationEntityReadback>> brandsByHead = new LinkedHashMap<>();
-            heads.forEach(head -> brandsByHead.put(head.id(), List.of()));
-            brandsByHead.put(headIds.getFirst(), List.of(entity("BRAND", workspaceId, "brand-" + itemCount)));
             when(entities.pageEntities("HEAD_COMPANY", workspaceId, WORKSPACE_KEY, null, null, null, null, null, "NAME", "ASC", 1, itemCount))
                 .thenReturn(new BusinessEntityService.EntityPage(heads, itemCount, 1, itemCount));
-            when(entities.authorizedBrandsByHeadCompanyIds(workspaceId, WORKSPACE_KEY, headIds)).thenReturn(brandsByHead);
 
             var response = controller.headCompanies(request, WORKSPACE_KEY, 1L, null, null, null, null, null, "NAME", "ASC", 1, itemCount);
 
             assertEquals(itemCount, response.items().size());
-            assertEquals(1, response.items().getFirst().authorizedBrands().size());
-            verify(entities).authorizedBrandsByHeadCompanyIds(workspaceId, WORKSPACE_KEY, headIds);
         }
-        verify(entities, never()).authorizedBrands(any(), any(), any());
+        verifyNoMoreInteractions(entities);
     }
 
     private static OrganizationEntityReadback entity(String type, UUID workspaceId, String code) {

@@ -3,14 +3,18 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {SCENARIO_FACT_GROUPS, declareSourceBoundDiagnosticScenarios} from './http-diagnostic-scenarios.mjs';
 import {loadGeneratedDiagnosticRegistry} from './http-diagnostic-inventory.mjs';
+import {projectEdgeCatalog} from '../generate/edge-operation-projections.mjs';
 
 const registryPath = new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url);
 const registry = loadGeneratedDiagnosticRegistry(registryPath);
 
 test('source-bound scenario facts exact-match all generated route-face tuples', () => {
   const scenarios = declareSourceBoundDiagnosticScenarios(registry);
-  assert.equal(scenarios.length, 147);
-  assert.deepEqual(Object.fromEntries(['platform-admin', 'operations-admin', 'public'].map((face) => [face, scenarios.filter((scenario) => scenario.consumerFace === face).length])), {'platform-admin': 43, 'operations-admin': 89, public: 15});
+  assert.equal(scenarios.length, registry.length);
+  assert.deepEqual(
+    Object.fromEntries(['platform-admin', 'operations-admin', 'public'].map((face) => [face, scenarios.filter((scenario) => scenario.consumerFace === face).length])),
+    Object.fromEntries(['platform-admin', 'operations-admin', 'public'].map((face) => [face, registry.filter((operation) => operation.consumerFace === face).length])),
+  );
   assert.ok(scenarios.every((scenario) => scenario.businessTask && scenario.sourceRefs.length >= 2 && scenario.ownerReadback));
 });
 
@@ -30,4 +34,22 @@ test('a source-less declaration or sensitive request field fails closed', () => 
 test('generated source is used rather than a static copied registry', () => {
   assert.throws(() => loadGeneratedDiagnosticRegistry(new URL(import.meta.url)), /HTTP_DIAGNOSTIC_REGISTRY_INVALID/);
   assert.equal(JSON.parse(readFileSync(registryPath, 'utf8')).closure.operations, registry.length);
+});
+
+test('materialized edge catalog is an identity projection and rejects generic reintroduction', () => {
+  const catalogPath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json', import.meta.url);
+  const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
+  const projected = projectEdgeCatalog(catalog);
+  assert.equal(projected.catalog, catalog);
+  assert.equal(projected.catalog.projectionState.status, 'MATERIALIZED');
+  assert.equal(projected.catalog.projectionState.pipeline, 'R24_P3C');
+  assert.equal(projected.catalog.operations.length, registry.length);
+  assert.deepEqual(projected.catalog.projectionState.faceCounts, {'platform-admin': 50, 'operations-admin': 92, public: 12});
+
+  const missingState = structuredClone(catalog);
+  delete missingState.projectionState;
+  assert.throws(() => projectEdgeCatalog(missingState), /P3_C_STATIC_TARGET_EXPANSION_DRIFT/);
+  const generic = structuredClone(catalog);
+  generic.operations[0] = {...generic.operations[0], operationId: 'getOperationsWorkspaceInvitations'};
+  assert.throws(() => projectEdgeCatalog(generic), /R5_EDGE_MATERIALIZED_OPERATION_IDENTITY_INVALID/);
 });

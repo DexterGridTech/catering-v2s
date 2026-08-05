@@ -189,8 +189,8 @@ const TYPED_OWNER_EXCEPTION_ROOTS = [
   "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application",
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application",
 ];
-const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 93;
-const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "58f3440909ea2c1f479aae1ebe54d982516b0574cec05cad5d7af2cf894970f3";
+const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 94;
+const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "5aa8e91794bbc8aba87582c7bdd0561951db31e236fe62dcaaba946a2f27fc96";
 const EXACT_TYPED_OWNER_EXCEPTION_MAPPINGS = [
   "com.catering.v2s.organization.application.BusinessEntityService.HeadCompanyBrandAuthorizationInUseException",
 ];
@@ -1029,7 +1029,7 @@ function writeR24ContractFixture(root) {
   fs.writeFileSync(path.join(root, R24_PATH_DOCUMENT), JSON.stringify({
     paths: {
       [addPath]: {post: {operationId: "addOperationsOrganizationHeadCompanyBrandAuthorization", "x-consumer-faces": ["operations-admin"], "x-owner-module": "organization", "x-required-capability": "REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", responses: {204: {}}}},
-      [removePath]: {delete: {operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization", "x-consumer-faces": ["operations-admin"], "x-owner-module": "organization", "x-required-capability": "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", "x-error-codes": ["ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE", "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED"], responses: {204: {}}}},
+      [removePath]: {delete: {operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization", "x-consumer-faces": ["operations-admin"], "x-owner-module": "organization", "x-required-capability": "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", "x-error-codes": ["ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE"], responses: {204: {}}}},
     },
   }));
   fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.yaml"), JSON.stringify({

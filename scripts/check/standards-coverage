@@ -160,9 +160,6 @@ function validateCoverage({
   matrix,
   phase = "R2",
 }) {
-  if (!phaseOrder.has(phase)) {
-    fail(`UNKNOWN_PHASE:${phase}`);
-  }
   const candidate = matrix || readMatrix(root, matrixPath);
   if (
     candidate.schemaVersion !== 1 ||
@@ -170,6 +167,15 @@ function validateCoverage({
     candidate.programId !== "V2S_W0_W4_EXECUTION"
   ) {
     fail("MATRIX_IDENTITY_INVALID");
+  }
+  const phaseAliases = candidate.phaseAliases || {};
+  if (typeof phaseAliases !== "object" || Array.isArray(phaseAliases)
+    || Object.entries(phaseAliases).some(([alias, target]) => !alias || !phaseOrder.has(target))) {
+    fail("PHASE_ALIAS_INVALID");
+  }
+  const effectivePhase = phaseAliases[phase] || phase;
+  if (!phaseOrder.has(effectivePhase)) {
+    fail(`UNKNOWN_PHASE:${phase}`);
   }
   const sourcePath = candidate.source?.path;
   const sourceAbsolutePath = sourcePath && path.join(root, sourcePath);
@@ -269,7 +275,7 @@ function validateCoverage({
     }
     if (
       enforcement.status === "PLANNED" &&
-      phaseOrder.get(enforcement.enforcementPhase) <= phaseOrder.get(phase)
+      phaseOrder.get(enforcement.enforcementPhase) <= phaseOrder.get(effectivePhase)
     ) {
       fail(`PLANNED_ENFORCEMENT_OVERDUE:${unit.ruleId}`);
     }
@@ -586,7 +592,8 @@ if (process.argv.includes("--self-test")) {
       console.log(`ENFORCEMENT_REFS=${executed.join(",")}`);
     }
     console.log("STANDARDS_COVERAGE=PASS");
-    console.log(`PHASE=${phase}`);
+    console.log(`PHASE=${matrix.phaseAliases?.[phase] || phase}`);
+    if (matrix.phaseAliases?.[phase]) console.log(`PHASE_ALIAS=${phase}->${matrix.phaseAliases[phase]}`);
     console.log(`RULES=${matrix.rules.length}`);
   } catch (error) {
     console.error("STANDARDS_COVERAGE=FAIL");

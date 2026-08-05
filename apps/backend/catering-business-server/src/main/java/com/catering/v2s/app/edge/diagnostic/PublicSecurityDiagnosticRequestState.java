@@ -2,6 +2,7 @@ package com.catering.v2s.app.edge.diagnostic;
 
 import com.catering.v2s.platform.foundation.diagnostic.RequestDiagnosticContext;
 import com.catering.v2s.platform.foundation.diagnostic.SecurityDiagnosticEvent;
+import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,6 +63,7 @@ public final class PublicSecurityDiagnosticRequestState {
         boolean failed = terminal != null || exception != null || responseStatus >= 400;
         int status = terminal == null ? responseStatus : terminal.status();
         String errorCode = terminal == null ? (failed ? UNKNOWN_ERROR : null) : terminal.errorCode();
+        DatabaseOperationTracker.Snapshot database = DatabaseOperationTracker.snapshot();
         return new SecurityDiagnosticEvent(
                 context,
                 failed ? "REQUEST_FAILED" : "REQUEST_SUCCEEDED",
@@ -69,7 +71,9 @@ public final class PublicSecurityDiagnosticRequestState {
                 failed ? "FAILED" : "SUCCEEDED",
                 Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000),
                 status,
-                errorCode);
+                errorCode,
+                database.count(),
+                database.durationMillis());
     }
 
     private void freeze(int status, String errorCode) {

@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync, writeFileSync} from 'node:fs';
+import {mkdtempSync, readFileSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {createDiagnosticRecipeExecutor, createDiagnosticWorkloadState, executeOperationsAccessWorkload, executeOperationsOrganizationWorkload, executeOperationsRecoveryWorkload, executeOperationsStatusTerminalWorkload, executeOperationsUserReadbackWorkload, executePlatformFoundationWorkload, executePlatformMaintenanceWorkload, executePublicInvitationWorkload, replayDiagnosticOperation} from './http-diagnostic-workload.mjs';
 import {loadGeneratedDiagnosticRegistry} from './http-diagnostic-inventory.mjs';
 import {declareSourceBoundDiagnosticScenarios} from './http-diagnostic-scenarios.mjs';
 
+const root = path.resolve(import.meta.dirname, '../..');
 const scenario = {
   operationId: 'getCurrentPlatformSession',
   method: 'GET',
@@ -168,7 +169,7 @@ test('platform maintenance keeps disposable credential and staged-asset facts pr
     foundation: {
       state, workspaceKey: 'diagabc12345',
       execute: async (operationId, request) => {
-        requests.push({operationId, path: request.path, body: request.body, headers: request.headers});
+        requests.push({operationId, path: request.path, query: request.queryParameters, body: request.body, headers: request.headers});
         const json = operationId === 'stagePlatformAsset' ? {assetRef: 'private-asset', bindGrant: 'private-grant'}
           : operationId === 'updatePlatformGroupWorkspaceDisplay' ? {groupWorkspaceKey: 'diagabc12345', version: 2}
           : operationId === 'createPlatformAdmin' ? {id: 'private-admin', version: 1}
@@ -194,7 +195,7 @@ test('public invitation chain keeps token, OTP and credential only in workload s
     foundation: {
       state, workspaceKey: 'diagabc12345',
       execute: async (operationId, request) => {
-        requests.push({operationId, path: request.path, body: request.body, headers: request.headers});
+        requests.push({operationId, path: request.path, query: request.queryParameters, body: request.body, headers: request.headers});
         const response = operationId === 'sendPublicInvitationOtp' ? {json: {debugVerificationCode: 'private-otp'}} : operationId === 'verifyPublicInvitationOtp' ? {json: {verificationGrant: 'private-grant'}} : operationId === 'savePublicInvitationCredentials' ? {json: {nextStep: 'COMPLETE'}} : {json: {}};
         request.capturePrivateResponse?.(response, state);
         return {operationId, method: operationId.startsWith('get') ? 'GET' : 'POST', path: '/safe-template', owner: 'workspace-iam', consumerFace: 'public', correlationId: `corr-${requests.length}`, requestId: `req-${requests.length}`, status: 200, durationMs: 1};
@@ -226,7 +227,7 @@ test('operations organization recipe uses the authenticated owner chain and does
     publicFlow: {
       state, workspaceKey: 'diagabc12345',
       execute: async (operationId, request) => {
-        requests.push({operationId, path: request.path, body: request.body, headers: request.headers});
+        requests.push({operationId, path: request.path, query: request.queryParameters, body: request.body, headers: request.headers});
         serial += 1;
         const json = operationId === 'operationsWorkspacePasswordLogin' ? {contextVersion: 1}
           : operationId === 'sendOperationsPasswordRecoveryOtp' ? {debugVerificationCode: 'private-recovery-otp'}
@@ -252,12 +253,34 @@ test('operations organization recipe uses the authenticated owner chain and does
   assert.equal(result.calls.length, 44);
   const brand = requests.find((request) => request.operationId === 'createOperationsOrganizationBrand');
   assert.deepEqual(brand.body, {code: 'BRABC12345', name: '诊断品牌abc12345'});
+  const storeCreate = requests.find((request) => request.operationId === 'createOperationsOrganizationStore');
+  assert.deepEqual(Object.keys(storeCreate.body).sort(), ['brandId', 'code', 'name', 'tenantId']);
+  const contractCreate = requests.find((request) => request.operationId === 'createOperationsContract');
+  assert.deepEqual(Object.keys(contractCreate.body).sort(), ['contractNo', 'effectiveFrom', 'effectiveTo', 'items', 'phaseName', 'storeId']);
+  const queryKeys = (operationId) => Object.keys(requests.find((request) => request.operationId === operationId)?.query ?? {}).sort();
+  assert.deepEqual(queryKeys('getOperationsOrganizationStoreCandidates'), ['brandId', 'expectedContextVersion', 'tenantId']);
+  assert.deepEqual(queryKeys('getOperationsContractExtensionDefinition'), ['expectedContextVersion']);
+  assert.deepEqual(queryKeys('getOperationsContractCandidates'), ['expectedContextVersion', 'selectedStoreId']);
+  assert.deepEqual(queryKeys('getOperationsContracts'), ['expectedContextVersion', 'page', 'pageSize', 'storeId']);
+  assert.deepEqual(queryKeys('getOperationsOrganizationStores'), ['expectedContextVersion', 'page', 'pageSize']);
+  assert.deepEqual(queryKeys('getPlatformOrganizationOverviewPage'), ['category', 'page', 'pageSize', 'projectId', 'type']);
+  assert.deepEqual(Object.keys(result.state.requirePrivate('PROJECT_SCOPE')).sort(), ['dataNode', 'projectId']);
+  assert.deepEqual(Object.keys(result.state.requirePrivate('SCOPED_STORE_FACTS')).sort(), ['brandId', 'dataNode', 'headCompanyId', 'projectId', 'tenantId']);
+  const catalog = JSON.parse(readFileSync(path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json'), 'utf8'));
+  const preservedInvitationActionFields = new Set(catalog.componentOverrides?.WorkspaceOperationsInvitationActionRequest?.preserveProperties ?? []);
+  const forbiddenBodyFields = new Set((catalog.componentOverrides?.forbiddenProperties ?? []).filter((field) => !preservedInvitationActionFields.has(field)));
+  for (const request of requests) for (const field of forbiddenBodyFields) assert.equal(Object.hasOwn(request.body ?? {}, field), false, `${request.operationId} body contains forbidden ${field}`);
+  const declaredProjectQueryOperations = catalog.operations.filter((operation) => (operation.queryParameters ?? []).some((parameter) => parameter.name === 'projectId')).map((operation) => operation.operationId).sort();
+  assert.deepEqual(declaredProjectQueryOperations, ['getOperationsOrganizationCandidates', 'getPlatformOrganizationCandidates', 'getPlatformOrganizationOverviewPage']);
   const access = await executeOperationsAccessWorkload({operationsFlow: result, uniqueSuffix: 'abc12345'});
   const terminal = await executeOperationsStatusTerminalWorkload({operationsFlow: result, uniqueSuffix: 'abc12345'});
   const recovery = await executeOperationsRecoveryWorkload({operationsFlow: result, uniqueSuffix: 'abc12345'});
   assert.equal(access.calls.length, 30);
+  const invitationActions = requests.filter((request) => request.operationId.startsWith('reissueOperationsWorkspace') || request.operationId.startsWith('cancelOperationsWorkspace'));
+  assert.ok(invitationActions.length > 0);
+  for (const request of invitationActions) assert.equal(Object.hasOwn(request.body ?? {}, 'expectedContextVersion'), true, `${request.operationId} body misses expectedContextVersion`);
   assert.equal(terminal.calls.length, 4);
-  assert.equal(recovery.calls.length, 7);
+  assert.deepEqual(recovery.calls.map((call) => call.operationId), ['startOperationsPasswordRecovery', 'sendOperationsPasswordRecoveryOtp', 'verifyOperationsPasswordRecoveryOtp', 'completeOperationsPasswordRecovery']);
   assert.equal(result.state.requirePrivate('OPERATIONS_RECOVERY_FLOW'), true);
   assert.equal(result.state.requirePrivate('OPERATIONS_RECOVERY_VERIFIED'), true);
   assert.ok(requests.filter((request) => !request.operationId.startsWith('get') && request.operationId !== 'operationsWorkspacePasswordLogin').every((request) => /^diagnostic-/.test(request.headers['Idempotency-Key'])));
@@ -281,6 +304,6 @@ test('operations user readback uses owner assignment revision for detail and rev
   });
   assert.equal(result.calls.length, 3);
   assert.equal(requests[2].body.expectedVersion, 4);
-  assert.equal(requests[2].body.expectedContextVersion, 7);
+  assert.equal(Object.hasOwn(requests[2].body, 'expectedContextVersion'), false);
   assert.doesNotMatch(JSON.stringify(result.state.snapshot()), /account-private|assignment-private|private-cookie/);
 });

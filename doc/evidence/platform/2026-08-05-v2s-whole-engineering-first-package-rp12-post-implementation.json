@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "packageId": "WHOLE-ENGINEERING-FIRST-PACKAGE-20260805",
+  "kind": "RP12_POST_IMPLEMENTATION_VERIFICATION",
+  "purpose": "Bind the final implementation state to deterministic owner constants without pretending that the pre-rebase classification review was repeated.",
+  "preReplacementAdmission": {
+    "reviewPath": "doc/review/platform/2026-08-05-v2s-whole-engineering-first-package-classification-review.md",
+    "reviewedArtifactSha256": "cea91e4948fb012e28666dd315ae9cdcdb195b67203329ed3409b34614b22c58",
+    "verdict": "GO",
+    "m": 0,
+    "s": 0,
+    "n": 0,
+    "denominator": {"occurrences": 477, "matchingLines": 320, "files": 32, "rows": 320}
+  },
+  "finalSourceScan": {
+    "command": "scan apps/backend/catering-business-server production Java excluding src/test with token regex \"(GROUP|REGION|PROJECT|HEAD_COMPANY|STORE)\"",
+    "occurrences": 152,
+    "matchingLines": 85,
+    "files": 7,
+    "interpretation": "The decrease is expected after the ordered replacement: owner constants now carry the classified values. Remaining literals are finite-set definitions and generated/owner catalogs, not unclassified replacement sites.",
+    "productionJavaFileCount": 439,
+    "productionJavaManifestDigest": "05d6c2d172f1f2ed0135a03b817605b5978be9d5c1fb4cd6b623d0182aa21950"
+  },
+  "ownerConstantSets": {
+    "SERVICE_NODE": {"source":"apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/contract/ServiceNodeTypes.java","values":["GROUP","REGION","PROJECT","HEAD_COMPANY","STORE"]},
+    "ORGANIZATION_TREE": {"source":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationNodeTypes.java","values":["REGION","PROJECT"]},
+    "BUSINESS_ENTITY": {"source":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/BusinessEntityTypes.java","values":["BRAND","TENANT","HEAD_COMPANY","STORE"]},
+    "EXTENSION_HOST": {"source":"apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/api/ExtensionHostTypes.java","values":["BRAND","TENANT","HEAD_COMPANY","STORE","CONTRACT","COMMERCIAL_GROUP","REGION","PROJECT"]},
+    "AUDIT_ENTITY_TYPE": {"source":"apps/backend/catering-business-server/modules/audit-model/src/main/java/com/catering/v2s/audit/contract/AuditEntityTypes.java","values":["HEAD_COMPANY","STORE","REGION","PROJECT"]}
+  },
+  "consumerChecks": [
+    {"check":"all extension host consumers use ExtensionHostTypes named constants","result":"PASS","paths":["apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java:29","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationExtensionController.java:38-45"]},
+    {"check":"all five replacement sets have owner constants and consumers","result":"PASS","fileCount":35},
+    {"check":"unknown service-node branch is fail-closed","result":"PASS","path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java"}
+  ],
+  "claudeReviewReconciliation": {
+    "verdict": "GO",
+    "m": 0,
+    "s": 0,
+    "n": 2,
+    "n01": {
+      "status": "REGISTERED_FUTURE_MIGRATION_PREREQUISITE",
+      "finding": "WorkspaceAuthenticationService.enterable fails closed for an unknown service-node type and is called from availableAssignments filtering; a stale assignment row therefore fails session creation rather than merely hiding one assignment.",
+      "evidence": [
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java:246-256",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java:304-306",
+        "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/contract/ServiceNodeTypes.java:7-12"
+      ],
+      "currentRisk": "NONE_CONFIRMED",
+      "guard": "Before removing or retiring any ServiceNodeTypes value, perform an owner/data migration and prove zero stale role_assignment.service_node_type rows; retain fail-closed behavior for genuinely unknown values."
+    },
+    "n02": {
+      "status": "REGISTERED_EPOCH_RECONCILIATION",
+      "finding": "The closed classification review used 477 occurrences / 320 matching lines / 32 files / 320 rows; the mechanically rebased implementation artifact records 477 occurrences / 323 matching lines / 32 files / 323 rows.",
+      "evidence": [
+        "doc/review/platform/2026-08-05-v2s-whole-engineering-first-package-classification-review.md:218-221",
+        "doc/evidence/platform/2026-08-05-v2s-whole-engineering-first-package-rp12-classification.json:counts",
+        "doc/evidence/platform/2026-08-05-v2s-whole-engineering-first-package-rp12-post-implementation.json:preReplacementAdmission and finalSourceScan"
+      ],
+      "semanticImpact": "NONE_CONFIRMED",
+      "guard": "Keep reviewed pre-rebase denominator, mechanically rebased implementation state, and final qualified/raw binding in separate named fields; never overwrite a reviewed snapshot or compare counts across epochs without labeling."
+    }
+  },
+  "reviewDisposition": "This artifact is implementation-state evidence for the implementation review Round 2. It is not a third RP12 classification review and does not change the closed classification sub-cycle.",
+  "authorizationBoundary": "Static implementation only; no DEV/UAT/HTTP/L2, database/migration, seed/reset, runtime deployment, or Git authority."
+}

@@ -7,6 +7,7 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.SetBucketPolicyArgs;
 import io.minio.StatObjectArgs;
+import io.minio.errors.ErrorResponseException;
 import java.io.InputStream;
 import java.net.URI;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,9 +66,24 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
     }
 
     @Override public boolean exists(String objectKey) {
-        try { client.statObject(StatObjectArgs.builder().bucket(bucket).object(validKey(objectKey)).build()); return true; }
-        catch (Exception failure) { return false; }
+        return existsWith(() -> client.statObject(StatObjectArgs.builder().bucket(bucket).object(validKey(objectKey)).build()));
     }
+
+    static boolean existsWith(StatLookup lookup) {
+        try { lookup.stat(); return true; }
+        catch (ErrorResponseException failure) {
+            if (isObjectNotFound(failure)) return false;
+            throw new AssetObjectStorageUnavailableException(failure);
+        } catch (Exception failure) { throw new AssetObjectStorageUnavailableException(failure); }
+    }
+
+    static boolean isObjectNotFound(ErrorResponseException failure) {
+        if (failure == null || failure.response() == null || failure.response().code() != 404 || failure.errorResponse() == null) return false;
+        return java.util.Set.of("NoSuchKey", "NoSuchObject", "NoSuchVersion").contains(failure.errorResponse().code());
+    }
+
+    @FunctionalInterface
+    interface StatLookup { void stat() throws Exception; }
 
     @Override public String publicUrl(String objectKey) { return publicBaseUrl + "/" + bucket + "/" + validKey(objectKey); }
 

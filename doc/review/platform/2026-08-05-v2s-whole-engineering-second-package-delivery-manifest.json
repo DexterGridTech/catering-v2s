@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-implementation-delivery-manifest",
+  "packageId": "WHOLE-ENGINEERING-SECOND-PACKAGE-20260805",
+  "unitId": "RP-07-RP-08-RP-10-RP-11",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "WHOLE-ENGINEERING-SECOND-PACKAGE-20260805",
+  "reviewRoundLimit": 2,
+  "implementationAuthority": true,
+  "runtimeAuthority": true,
+  "seedResetAuthority": false,
+  "businessStatus": "PENDING",
+  "cleanupStatus": "PENDING",
+  "sourceDenominators": {
+    "USER_TASK_JOURNEY_IA": [
+      "doc/review/platform/2026-08-05-v2s-whole-engineering-remediation-design-and-execution-plan-codex.md#RP-07",
+      "doc/decisions/2026-07-29-v2s-rm1-ia-04-operations-organization-and-contract-interaction.md#IA04-HEAD-COMPANY-BRANDS",
+      "doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md#D2"
+    ],
+    "OWNER_CONTRACT_GENERATED": [
+      "contracts/openapi/paths/operations-admin/brand-management.paths.yaml",
+      "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/",
+      "apps/frontend/operations-admin/src/app/api/generated/"
+    ],
+    "RUNTIME_RUNNER": [
+      "contracts/policy/r5-remote-host-allowlist.json",
+      "scripts/dev/r5-remote-host-trust.mjs",
+      "scripts/dev/managed-process-tree.mjs",
+      "scripts/dev/r5-dev-environment.mjs",
+      "scripts/dev/r5-reset.mjs",
+      "scripts/dev/r5-dev-runner.mjs",
+      "scripts/dev/http-diagnostic-runner.mjs",
+      "scripts/dev/r5-seed-bootstrap.mjs",
+      "scripts/dev/terminal-fixture-state.mjs",
+      "scripts/test/r5-joint-remote-l2.mjs",
+      "scripts/test/r5-remote-testcontainers.mjs"
+    ],
+    "FOCUSED_PROOF": [
+      "apps/backend/catering-business-server/modules/organization/src/test/",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityControllerTest.java",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityCreateDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/business-entity-management/ui/BusinessEntityEditDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/business-entity-management/ui/HeadCompanyBrandAuthorizationDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/organization-structure/ui/RegionCreateDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/organization-structure/ui/ProjectCreateDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationEditDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/organization-structure/ui/CommercialGroupEditDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/contract-management/ui/ContractCreateDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/contract-management/ui/ContractEditDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/store-management/ui/StoreCreateDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/store-management/ui/StoreEditDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationCreateDrawer.tsx",
+      "FORM_DRAWER:apps/frontend/operations-admin/src/features/authentication/ui/OperationsPasswordChangeDrawer.tsx",
+      "apps/frontend/operations-admin/src/tests/architecture/",
+      "scripts/dev/r5-remote-host-trust.mjs --self-test",
+      "scripts/dev/managed-process-tree.mjs --self-test",
+      "scripts/dev/r5-dev-runner.mjs --self-test (production cleanup evaluator leader-dead/child-alive red)"
+    ],
+    "BUSINESS_EVIDENCE": [
+      "doc/evidence/platform/2026-08-05-v2s-whole-engineering-second-package-business.json",
+      "managed local L2 report and red/green journey assertions",
+      "IA04 oracle: name-only, code-only, uppercase/trimmed, no-match, one paged request, add/remove followed by fresh owner detail, stale/denied re-check and unknown-outcome replay/readback"
+    ],
+    "CLEANUP_EVIDENCE": [
+      "doc/evidence/platform/2026-08-05-v2s-whole-engineering-second-package-cleanup.json",
+      "run-scoped manifest process-tree readback",
+      "managed local L2 cleanup report"
+    ]
+  },
+  "staticPredicates": [
+    "brand operation has only queryText and owner OR-matches name/code using q=lower(trim(queryText)), blank=null",
+    "generated Java and TypeScript consumers are regenerated from the changed contract",
+    "all finite operations form Drawers bind mask, icon, keyboard and cancel close paths to submitting",
+    "remote host trust has no input-derived expected fingerprint",
+    "cleanup requires empty owned process tree, not only dead leader"
+  ],
+  "dynamicPredicates": [
+    "name-only, code-only, no-match and paginated brand authorization behavior pass",
+    "submission-time close attempts are blocked and post-failure/post-completion close is restored",
+    "unknown/wrong/attacker host trust fails and legal allowlist rotation succeeds",
+    "leader-dead/child-alive red mutation runs through r5-dev-runner cleanup evaluator and fails cleanup while business result remains independently visible"
+  ],
+  "forbiddenSurfaces": [
+    "database or migration changes",
+    "seed/reset execution authority",
+    "UAT or remote application/browser execution",
+    "Git operations"
+  ]
+}

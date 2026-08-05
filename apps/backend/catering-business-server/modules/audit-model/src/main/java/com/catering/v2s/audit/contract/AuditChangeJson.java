@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /** Strict wire-safe codec for the fixed audit change triplet; no nested values are accepted. */
 public final class AuditChangeJson {
@@ -21,5 +22,20 @@ public final class AuditChangeJson {
             }
             return List.copyOf(result);
         } catch (Exception failure) { throw new IllegalArgumentException("audit changes are invalid", failure); }
+    }
+
+    /** The single strict writer for audit change arrays; values remain scalar and display-safe. */
+    public static String write(List<AuditChange> changes) {
+        if (changes == null) throw new IllegalArgumentException("audit changes are required");
+        ArrayNode root = JSON.createArrayNode();
+        for (AuditChange change : changes) {
+            if (change == null) throw new IllegalArgumentException("audit change is required");
+            var node = root.addObject();
+            node.put("fieldKey", change.fieldKey());
+            if (change.beforeValue() != null) node.put("before", change.beforeValue());
+            if (change.afterValue() != null) node.put("after", change.afterValue());
+        }
+        try { return JSON.writeValueAsString(root); }
+        catch (Exception failure) { throw new IllegalArgumentException("audit changes are not writable", failure); }
     }
 }

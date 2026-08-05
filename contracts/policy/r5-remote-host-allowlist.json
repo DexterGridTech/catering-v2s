@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-remote-host-allowlist",
+  "version": "r5-dev-remote-v1",
+  "entries": [
+    {
+      "host": "catering-remote-dev",
+      "fingerprint": "416201af7e30f6fb2d8b1de9e0492dca889f90a095619d60f78a267145e8d2eb",
+      "maintainer": "Dexter",
+      "rotatedAt": "2026-08-05"
+    }
+  ]
+}

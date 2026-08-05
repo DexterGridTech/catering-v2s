@@ -39,7 +39,7 @@ describe('HeadCompanyBrandAuthorizationActionAdapter', () => {
 
     expect(getBrands).toHaveBeenCalledWith(
       {groupWorkspaceKey: context.groupWorkspaceKey},
-      {query: {expectedContextVersion: context.expectedContextVersion, name: 'BRAND-01', code: 'BRAND-01', status: 'ENABLED', page: 1, pageSize: 20}},
+      {query: {expectedContextVersion: context.expectedContextVersion, queryText: 'BRAND-01', status: 'ENABLED', page: 1, pageSize: 20}},
     );
   });
 

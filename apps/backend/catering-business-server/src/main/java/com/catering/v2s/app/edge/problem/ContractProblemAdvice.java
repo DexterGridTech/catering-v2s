@@ -27,6 +27,7 @@ import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
+import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.core.annotation.Order;
@@ -131,6 +132,7 @@ public final class ContractProblemAdvice {
         BusinessEntityService.OrganizationValidationException.class,
         OrganizationHierarchyService.OrganizationValidationException.class,
         WorkspaceInvitationService.InvitationValidationException.class,
+        WorkspaceUserService.PageValidationException.class,
         WorkspaceRoleService.RoleValidationException.class,
         WorkspaceAdministrationService.WorkspaceInputInvalidException.class,
         PlatformAssetService.AssetInputInvalidException.class,
@@ -145,6 +147,7 @@ public final class ContractProblemAdvice {
             : exception instanceof ExtensionDefinitionService.DefinitionInvalidException ? "EXTENSION_DEFINITION_INVALID"
             : exception instanceof WorkspaceRoleService.RoleCapabilityUnknownException ? "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN"
             : exception instanceof WorkspaceRoleService.PageAccessCatalogMismatchException ? "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH"
+            : exception instanceof WorkspaceUserService.PageValidationException ? "PLATFORM_COMMON_VALIDATION_FAILED"
             : exception instanceof WorkspaceRoleService.RoleValidationException ? "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE"
             : "PLATFORM_COMMON_VALIDATION_FAILED";
         return problem(exception instanceof PlatformAssetService.AssetStorageUnavailableException ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.UNPROCESSABLE_ENTITY, code, exception instanceof PlatformAssetService.AssetStorageUnavailableException ? "静态资源存储暂时不可用" : "请求不满足 owner 约束", request);
@@ -242,7 +245,11 @@ public final class ContractProblemAdvice {
 
     public static ResponseEntity<Problem> problem(HttpStatus status, String code, String detail, HttpServletRequest request) {
         PublicSecurityDiagnosticRequestState.freezeFailure(request, status.value(), code);
-        String correlationId = PublicSecurityDiagnosticRequestState.correlationId(request);
+        RequestCompletionDiagnosticState.freezeFailure(request, code);
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
+        String correlationId = completion == null
+            ? PublicSecurityDiagnosticRequestState.correlationId(request)
+            : completion.correlationId();
         return ResponseEntity.status(status).contentType(MediaType.valueOf("application/problem+json"))
             .body(new Problem("about:blank", code, status.value(), detail, request.getRequestURI(), code, correlationId));
     }

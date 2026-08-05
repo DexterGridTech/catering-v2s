@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.util.List;
 import java.util.UUID;
@@ -62,7 +63,7 @@ class ExtensionDefinitionServiceTest {
 
     @Test void managementReadExposesEveryBusinessObjectBeforeFirstConfigurationWithoutWeakeningOperationsLookup() {
         var catalog = service.listManagementDefinitions(workspaceId, "extension-test");
-        assertEquals(List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT"), catalog.stream().map(value -> value.hostType()).toList());
+        assertEquals(List.of(ExtensionHostTypes.BRAND, ExtensionHostTypes.TENANT, ExtensionHostTypes.HEAD_COMPANY, ExtensionHostTypes.STORE, ExtensionHostTypes.CONTRACT, ExtensionHostTypes.COMMERCIAL_GROUP, ExtensionHostTypes.REGION, ExtensionHostTypes.PROJECT), catalog.stream().map(value -> value.hostType()).toList());
         var brand = service.managementDefinition(workspaceId, "extension-test", "BRAND");
         assertEquals(0, brand.version());
         assertTrue(brand.fields().isEmpty());

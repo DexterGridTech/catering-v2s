@@ -1,6 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.util.UUID;
@@ -50,8 +51,8 @@ public class WorkspacePasswordResetService {
         jdbc.update("UPDATE workspace_iam.workspace_credential SET password_hash=?, changed_at_epoch_millis=?, failed_attempts=0, locked_until_epoch_millis=NULL, password_change_required=TRUE, version=version+1 WHERE account_id=?",
             passwords.encode(account.loginName()), now, account.id());
         int revoked = jdbc.update("UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE account_id=? AND status='ACTIVE'", now, account.id());
-        jdbc.update("INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'WORKSPACE_ACCOUNT', ?, ?, ?, ?, 'WORKSPACE_ACCOUNT_CREDENTIAL_RESET', ?, '[]'::jsonb)",
-            UUID.randomUUID(), workspaceUuid, groupWorkspaceKey, account.id().toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), now);
+        jdbc.update("INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'WORKSPACE_ACCOUNT', ?, ?, ?, ?, 'WORKSPACE_ACCOUNT_CREDENTIAL_RESET', ?, CAST(? AS JSONB))",
+            UUID.randomUUID(), workspaceUuid, groupWorkspaceKey, account.id().toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), now, AuditChangeJson.write(java.util.List.of()));
         return new PlatformRequestResult(account.id(), account.loginName(), account.status(), "CHANGE_REQUIRED", expectedVersion + 1, revoked > 0);
     }
 

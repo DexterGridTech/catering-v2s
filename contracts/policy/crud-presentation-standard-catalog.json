@@ -54,22 +54,22 @@
       "source": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
       "primaryKinds": ["STORE"],
       "tableIndex": 0,
-      "filterKeys": ["name", "code", "projectId", "status"],
-      "filterColumnMappings": [{"filterKey":"name","visibleColumnTitle":"门店名称"},{"filterKey":"code","visibleColumnTitle":"编码"},{"filterKey":"projectId","visibleColumnTitle":"项目"},{"filterKey":"status","visibleColumnTitle":"状态"}],
-      "additionalVisibleColumnTitles": ["品牌", "总公司", "备注"],
+      "filterKeys": ["name", "code", "status"],
+      "filterColumnMappings": [{"filterKey":"name","visibleColumnTitle":"门店名称"},{"filterKey":"code","visibleColumnTitle":"编码"},{"filterKey":"status","visibleColumnTitle":"状态"}],
+      "additionalVisibleColumnTitles": ["品牌", "经营租户", "总公司", "备注"],
       "primaryIdentityForbidden": ["formatNameCode(row.name, row.code)"],
       "primaryIdentityRequired": [">{row.name}</Button>"],
-      "relatedIdentityRequired": ["formatNameCode(row.project.name, row.project.code)", "formatNameCode(row.brand.name, row.brand.code)", "formatNameCode(row.tenant.name, row.tenant.code)"]
+      "relatedIdentityRequired": ["formatNameCode(row.brand.name, row.brand.code)", "formatNameCode(row.tenant.name, row.tenant.code)"]
     },
     {
       "id": "operations-contracts",
       "source": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
       "primaryKinds": ["CONTRACT"],
       "tableIndex": 0,
-      "filterKeys": ["contractNo", "projectId", "storeId", "phaseName", "tenantId", "status", "dateRange"],
-      "filterColumnMappings": [{"filterKey":"contractNo","visibleColumnTitle":"合同编号"},{"filterKey":"projectId","visibleColumnTitle":"项目"},{"filterKey":"storeId","visibleColumnTitle":"门店"},{"filterKey":"phaseName","visibleColumnTitle":"分期"},{"filterKey":"tenantId","visibleColumnTitle":"经营租户"},{"filterKey":"status","visibleColumnTitle":"状态"},{"filterKey":"dateRange","visibleColumnTitle":"起止日期"}],
+      "filterKeys": ["contractNo", "storeId", "phaseName", "tenantId", "status", "dateRange"],
+      "filterColumnMappings": [{"filterKey":"contractNo","visibleColumnTitle":"合同编号"},{"filterKey":"storeId","visibleColumnTitle":"门店"},{"filterKey":"phaseName","visibleColumnTitle":"分期"},{"filterKey":"tenantId","visibleColumnTitle":"经营租户"},{"filterKey":"status","visibleColumnTitle":"状态"},{"filterKey":"dateRange","visibleColumnTitle":"起止日期"}],
       "additionalVisibleColumnTitles": ["更新时间"],
-      "relatedIdentityRequired": ["formatNameCode(row.project.name, row.project.code)", "formatNameCode(row.store.name, row.store.code)", "formatNameCode(row.tenant.name, row.tenant.code)"],
+      "relatedIdentityRequired": ["formatNameCode(row.store.name, row.store.code)", "formatNameCode(row.tenant.name, row.tenant.code)"],
       "externalFilterRequiredExpressions": ["dataIndex: 'tenantId'"]
     },
     {

@@ -1,0 +1,1082 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "WHOLE_ENGINEERING_REMEDIATION_20260805",
+  "reviewCycleId": "WHOLE-ENGINEERING-RP-02A-DESIGN-20260805",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+  "blindReviewRequired": true,
+  "implementationAuthority": false,
+  "designReviewInputPath": "doc/review/platform/2026-08-05-v2s-whole-engineering-rp-02a-design-independent-review-input.md",
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md",
+    "sha256": "1b59e62ba838886e12c2eb2d22ac644ec58c23204e38f3349fa87ac310f09fd7"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-08-05-v2s-rp-02a-implementation-authorization.md",
+    "sha256": "89aac5f0e3ebe862598bfc61a364fccbe72ea1293a387b2531fd4c3ade663c62",
+    "scope": "design-only"
+  },
+  "businessSources": [
+    {
+      "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-merged-review-claude.md",
+      "anchor": "## 1.2 契约演进到 154 之后，分母与发送方都没跟上"
+    },
+    {
+      "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-dialectical-assessment.md",
+      "anchor": "## 6. 执行前冻结条件"
+    },
+    {
+      "path": "doc/decisions/2026-08-05-v2s-rp-02a-contract-consumer-recovery.md",
+      "anchor": "## 1. 这不是一个新产品 Journey"
+    }
+  ],
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "42f4940417c7287bac966b45faff41ed292604c0049bb01ae3dc36dd61a0fdb8"
+    },
+    "tool": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "MISSING_FACT_OR_DUPLICATE_FACT",
+      "CATALOG_SET_DRIFT",
+      "PROJECT_ID_IN_CREATE_BODY",
+      "RECOVERY_ORDER_DRIFT",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "ROUND_THREE"
+    ]
+  },
+  "candidateJourney": {
+    "id": "R5-EDGE-CONSUMER-COVERAGE-RECOVERY",
+    "status": "DEXTER_ACCEPTED",
+    "actor": "edge contract/owner maintenance team",
+    "task": "restore source-backed consumer coverage after contract denominator evolution",
+    "pageKey": "NOT_UI_BEARING_RP02A",
+    "ownerReadback": "registry/placement/catalog/fact exact set plus owner-backed static payload and recovery order",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "WHOLE-ENGINEERING-RP-02A-U01",
+      "title": "RP-02a 同源契约消费者与 workload 静态恢复",
+      "approvedAssertions": [
+        "154 registry route-face tuples remain the mandatory denominator",
+        "every tuple has one hand-written source-backed fact or explicit owner/source disposition",
+        "materialized catalog and identity projection metadata equal registry and placement; generic obsolete IDs are absent",
+        "store/contract create request bodies do not contain projectId while allowed query/read context remains",
+        "operations password recovery is exactly start/send/verify/complete and public invitation remains seven calls",
+        "all static red mutations fail closed without running HTTP/L2/seed"
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md",
+          "sha256": "1b59e62ba838886e12c2eb2d22ac644ec58c23204e38f3349fa87ac310f09fd7",
+          "anchor": "# 2. 现状与 source-owned 分母"
+        },
+        {
+          "path": "doc/decisions/2026-08-05-v2s-rp-02a-implementation-authorization.md",
+          "sha256": "89aac5f0e3ebe862598bfc61a364fccbe72ea1293a387b2531fd4c3ade663c62",
+          "anchor": "## Allowed after design GO"
+        },
+        {
+          "path": "doc/decisions/2026-08-05-v2s-rp-02a-contract-consumer-recovery.md",
+          "sha256": "e87332a52b4912dd14f03e96df2bc6f131817385f510c50ba0c16d1b045b125e",
+          "anchor": "## 1. 这不是一个新产品 Journey"
+        },
+        {
+          "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-merged-review-claude.md",
+          "sha256": "16b9991ca368eeaf8791271cbab7273cb7958d60d95e78ad1ac2513c4a5f0f3d",
+          "anchor": "## 1.2 契约演进到 154 之后，分母与发送方都没跟上"
+        },
+        {
+          "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-remediation-design-and-execution-plan-codex.md",
+          "sha256": "50f1b3004566599971420320d95dd0e5db0f27a910a911332bc9b07cd6f83d62",
+          "anchor": "| RP-02a / P0 |"
+        },
+        {
+          "path": "doc/plans/platform/2026-08-05-v2s-whole-engineering-s0-implementation-design.md",
+          "sha256": "f7601bb7efc351324f29919c1e02fca7501246dd3665a631d84e047b5417419d",
+          "anchor": "### S0-B · RP-01/RP-02a 契约消费者与工作负载恢复"
+        },
+        {
+          "path": "doc/evidence/platform/2026-08-05-v2s-whole-engineering-s0-baseline.json",
+          "sha256": "8c645517beb52c8758b8f417d267f29ce45e8ef93e53d9a81871fd990925f3bf",
+          "anchor": "\"id\": \"S0-B\""
+        },
+        {
+          "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-dialectical-assessment.md",
+          "sha256": "4627038d6fe5a803c07b8e4fabf3fb5590b93e1a60fa4f1c148eefcc35d610a8",
+          "anchor": "## 6. 执行前冻结条件"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+          "sha256": "1f7900fb24b930dfb41fd5c73659a094c75f7e4e827de1ecd2e763596d7e2824",
+          "anchor": "\"closure\":"
+        },
+        {
+          "path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+          "sha256": "251d54c685f299d12410378d0664b79ce15476d79dca35dbfea9f45a92d21b27",
+          "anchor": "\"operations\": 154,"
+        },
+        {
+          "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+          "sha256": "81d7c84aa77c0f0787b3fc7fea6407d79995dde391105e9ac5616bf9b3eff723",
+          "anchor": "  \"denominator\": {"
+        },
+        {
+          "path": "scripts/generate/edge-operation-projections.mjs",
+          "sha256": "575dc2e198393946bb6f9d9931e88c0c79719971de4690a2b2e115d982bad761",
+          "anchor": "export function projectEdgeCatalog"
+        },
+        {
+          "path": "scripts/generate/edge-codegen.mjs",
+          "sha256": "176fc90d04a876a456b882e5d7c059d65decaed10932ba36ad37ae5210d84529",
+          "anchor": "function load(base = root)"
+        },
+        {
+          "path": "scripts/generate/r5-edge-materialize.mjs",
+          "sha256": "89b5d3197d1a2d327f95ebd3e1684dafb9bede8ffddc625da788394dfb02dbb4",
+          "anchor": "function materialize(rootDir = root, writeOutputs = true)"
+        },
+        {
+          "path": "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml",
+          "sha256": "d4257f91e39345aeb5abbf86a42eb622a00fdb92d4c59cff66cd6edceb8bc502",
+          "anchor": "\"operationId\": \"getOperationsWorkspaceGroupInvitations\""
+        },
+        {
+          "path": "contracts/openapi/components/organization/store.schemas.yaml",
+          "sha256": "42e13e183cbb8bc494eda434b5e595223122151c4962008adb74edf5abb0b313",
+          "anchor": "\"OrganizationStoreCreateRequest\""
+        },
+        {
+          "path": "contracts/openapi/components/contract/contract.schemas.yaml",
+          "sha256": "19ed2f73619366e935b7eb4371fdc71cb29c68006b2e85d084eac76cd7970911",
+          "anchor": "\"StoreContractCreateRequest\""
+        },
+        {
+          "path": "contracts/openapi/paths/platform-admin/workspace-access.paths.yaml",
+          "sha256": "51b3555a774e208e604aac91a064d228216c4ed17b7edba78c123c98f7ae6d2f",
+          "anchor": "\"operationId\": \"createWorkspaceInvitation\""
+        },
+        {
+          "path": "contracts/openapi/paths/operations-admin/store-management.paths.yaml",
+          "sha256": "b008219b6332db0f95a11ee51f3c4b34eb3fcbd366711ac4499662bae51931f6",
+          "anchor": "\"operationId\": \"getOperationsOrganizationCandidates\""
+        },
+        {
+          "path": "contracts/openapi/paths/operations-admin/contract-management.paths.yaml",
+          "sha256": "f4797339e35680f48f5a3668dc9746e8de6c0deb83bb6235d27263ac03509e2a",
+          "anchor": "\"operationId\": \"getOperationsContracts\""
+        },
+        {
+          "path": "contracts/openapi/paths/platform-admin/organization-overview.paths.yaml",
+          "sha256": "75083b869a70268071ffe4f01b555da931ef84b15c50df497e4376557ff0aa8a",
+          "anchor": "\"operationId\": \"getPlatformOrganizationOverviewPage\""
+        },
+        {
+          "path": "contracts/openapi/paths/operations-admin/organization-hierarchy.paths.yaml",
+          "sha256": "21745fbfd08d06240b42ff2ca69e9c8a3b471d0d518273b4d78b7ddca9a5ba93",
+          "anchor": "\"operationId\": \"updateOperationsCommercialGroup\""
+        },
+        {
+          "path": "contracts/openapi/paths/platform-admin/contract-overview.paths.yaml",
+          "sha256": "b82dc1df4fc37cb8cc9b4f7f506cc164c4d916edde1077a9d79f6d0150f5def7",
+          "anchor": "\"operationId\": \"getPlatformOrganizationCandidates\""
+        },
+        {
+          "path": "scripts/test/http-diagnostic-inventory.mjs",
+          "sha256": "1a10013d4f0904063cb46caf790621d2912fa05ffed00f74ced361437f3e991b",
+          "anchor": "export function validateDiagnosticScenarios"
+        },
+        {
+          "path": "scripts/test/http-diagnostic-scenarios.mjs",
+          "sha256": "a57037e2ea4a75e9f5475f47459205cc1d957a6f45ec38c69d4c2cea0ff073ed",
+          "anchor": "export const SCENARIO_FACT_GROUPS"
+        },
+        {
+          "path": "scripts/test/http-diagnostic-scenarios.test.mjs",
+          "sha256": "8c22a124615418e6d4e5c21c567835119d2fa1e65f0651817fb476099dd5df63",
+          "anchor": "source-bound scenario facts exact-match"
+        },
+        {
+          "path": "scripts/test/http-diagnostic-workload.mjs",
+          "sha256": "b7c1bb209b80da38cac313639a0d764b84a09c534af70f97116a26f4c2639362",
+          "anchor": "export async function executeOperationsRecoveryWorkload"
+        },
+        {
+          "path": "scripts/test/http-diagnostic-workload.test.mjs",
+          "sha256": "b1b3abc947a258cc7997e165e3306788fcdc9fdb39d6c9b4d04e1127684d19c1",
+          "anchor": "operations organization recipe"
+        },
+        {
+          "path": "scripts/test/rm1-http-diagnostic.mjs",
+          "sha256": "0a69ed6469f4f2d1d8e6cbaa8b034d4139701afc86d185c6d0bbc9e8fbdef172",
+          "anchor": "export function finalizeHttpDiagnostic"
+        },
+        {
+          "path": "scripts/test/rm1-http-diagnostic.test.mjs",
+          "sha256": "91b4b3a5a5cae6581e188e428a1c0b5bba6016652017413fdc224e2963f220b3",
+          "anchor": "platform bootstrap execution reports"
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+          "sha256": "05f89b153c6d760d2844f6ba8efda19d713b133b3332576197a31a68197ccce7",
+          "anchor": "const store ="
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2-fixture-seed.test.mjs",
+          "sha256": "c3164907c91830ee509600eafcb578accc65dbc12042ee3c54b90a373563bbfa",
+          "anchor": "platform L2 fixture consumes"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
+          "sha256": "3fc5b547c81244b49e20689d25bd2b171aa78d41f61a1498ec8a0abdd3794c75",
+          "anchor": "const expectedBrowserInputKeys"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.test.mjs",
+          "sha256": "d1d3dd10613351732f9ec4a09ef52bfd9513c05ac35925ac3f41477ef8dc94f5",
+          "anchor": "joint L2 fixture declares"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+          "sha256": "03960ce36be86c32940fbafc3b602ca13bf50b84a0b09e594c8b540ef29d0b86",
+          "anchor": "public final class PlatformWorkspaceInvitationController"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationCandidateController.java",
+          "sha256": "cfd4184afe3f638d09f317274de91f3498eac2a42d6686c6d3ac392e22635fe7",
+          "anchor": "public final class OperationsOrganizationCandidateController"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+          "sha256": "4d4e37679dc643fee7651f5095371958948203c552dcd7fe92df86b5eae54515",
+          "anchor": "public final class OperationsOrganizationHierarchyController"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationExtensionController.java",
+          "sha256": "4818653a7aebf2162b87fc89619eab5c97849e86bec7b08d179ccd265649ae5b",
+          "anchor": "public final class OperationsOrganizationExtensionController"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java",
+          "sha256": "909e8e6877cf57e14b0843e8f9d5243c2e391303dc2c6b6e059f189dc961f633",
+          "anchor": "public final class PlatformOrganizationOverviewController"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+          "sha256": "4b13df723e4dfb9e7227775ba4fb986157cafc34254f54008e7d78d7b2846374",
+          "anchor": "public class WorkspaceInvitationService"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+          "sha256": "721a707241a807157e5a07465dbb3603deeb658d6df1b9e5f3060f9b0f018e93",
+          "anchor": "public class WorkspaceUserService"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java",
+          "sha256": "504928362a2edccdc61374ca8aca7b6a2a39356c83bc2796f1855a7c7f0eb0a4",
+          "anchor": "public class StoreCandidateTaskReadService"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java",
+          "sha256": "883027c130d7ebf2286978acd7cabac826808371cca331b8aef5e87adab1561b",
+          "anchor": "public class OrganizationCommandService"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java",
+          "sha256": "0711a6b3ec6e10c2d3f08366f887a423fc6407225122522426cc2cf1444cb4b3",
+          "anchor": "public class OrganizationHierarchyService"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+          "sha256": "09b0f08a126193b885b6b5cb91719729bffb4fe5c948b8e599867b3c961e0b7d",
+          "anchor": "public class ExtensionDefinitionService"
+        },
+        {
+          "path": "project-memory/decisions/deterministic-context-only.md",
+          "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20",
+          "anchor": "# Deterministic context only"
+        },
+        {
+          "path": "project-memory/decisions/independent-subagent-adversarial-review.md",
+          "sha256": "891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf",
+          "anchor": "# Independent subagent adversarial review"
+        },
+        {
+          "path": "project-memory/operations/implementation-source-reread-discipline.md",
+          "sha256": "6944ae47f0e059a52e75096b17620a3c43852e52a9b44e69737554ac646293ce",
+              "anchor": "# Implementation source reread discipline"
+        },
+        {
+          "path": "project-memory/decisions/incremental-compliance-hook.md",
+          "sha256": "a75469c7eb945b35f06d95cead2e11c368cc4a47dca851f32652556546985f81",
+          "anchor": "# Incremental compliance hook"
+        },
+        {
+          "path": "contracts/policy/standards-coverage-matrix.json",
+          "sha256": "b0519ea0e8691b204fc41f9a481665eaf381e067c1bf4f002b7913171476b149",
+          "anchor": "\"kind\": \"standards-coverage-matrix\""
+        },
+        {
+          "path": "tools/implementation-design-granularity/cli.mjs",
+          "sha256": "42f4940417c7287bac966b45faff41ed292604c0049bb01ae3dc36dd61a0fdb8",
+          "anchor": "function validateManifest"
+        },
+        {
+          "path": "scripts/check/implementation-design-granularity",
+          "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43",
+          "anchor": "#!/usr/bin/env bash"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md",
+        "anchor": "# 2. 现状与 source-owned 分母"
+      },
+      "currentDeviation": "Generated registry is 154/50/92/12 but facts are 144, source catalog is 121 before generator projection, tests retain 147 literals, four create bodies still send obsolete projectId, and projection metadata is not yet materialized into the source catalog.",
+      "changeSurfaces": [
+        {
+          "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+          "disposition": "update",
+          "target": "materialize the 154 concrete projection result, migrate error/component metadata, and update scenario crosswalk"
+        },
+        {
+          "path": "scripts/generate/edge-operation-projections.mjs",
+          "disposition": "update",
+          "target": "make MATERIALIZED source catalog projection idempotent while retaining generic-source compatibility"
+        },
+        {
+          "path": "doc/evidence/platform/2026-08-05-v2s-whole-engineering-rp-02a-catalog-crosswalk.json",
+          "disposition": "create",
+          "target": "record 154 semantic rows, 42 registry-only and 9 catalog-only mappings, and exact projected/report/source equality"
+        },
+        {
+          "path": "scripts/test/http-diagnostic-scenarios.mjs",
+          "disposition": "update",
+          "target": "add ten hand-written source-backed facts"
+        },
+        {
+          "path": "scripts/test/http-diagnostic-scenarios.test.mjs",
+          "disposition": "update",
+          "target": "derive registry/fact denominator and preserve real red mutations"
+        },
+        {
+          "path": "scripts/test/http-diagnostic-workload.mjs",
+          "disposition": "update",
+          "target": "remove projectId from store/contract create bodies only"
+        },
+        {
+          "path": "scripts/test/http-diagnostic-workload.test.mjs",
+          "disposition": "update",
+          "target": "assert exact four recovery order and preserve seven invitation calls"
+        },
+        {
+          "path": "scripts/test/rm1-http-diagnostic.mjs",
+          "disposition": "update",
+          "target": "keep completion denominator source-bound"
+        },
+        {
+          "path": "scripts/test/rm1-http-diagnostic.test.mjs",
+          "disposition": "update",
+          "target": "remove 147/146/130 historical literals"
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+          "disposition": "update",
+          "target": "remove projectId from store/contract create bodies"
+        },
+        {
+          "path": "scripts/test/r5-platform-admin-l2-fixture-seed.test.mjs",
+          "disposition": "update",
+          "target": "static red proof for create body field boundary"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
+          "disposition": "retain",
+          "target": "verify it already honors the body boundary"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.test.mjs",
+          "disposition": "update",
+          "target": "add static body-boundary coverage for joint fixture"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+          "disposition": "retain",
+          "target": "source-owned generated denominator; no manual edit"
+        },
+        {
+          "path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+          "disposition": "retain",
+          "target": "source-owned 154 placement evidence; no manual edit"
+        },
+        {
+          "path": "contracts/openapi/edge.openapi.yaml",
+          "disposition": "retain",
+          "target": "owner contract is read-only input in RP-02a"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+          "disposition": "retain",
+          "target": "owner source reread only"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationCandidateController.java",
+          "disposition": "retain",
+          "target": "owner source reread only"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+          "disposition": "retain",
+          "target": "owner source reread only"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java",
+          "disposition": "retain",
+          "target": "owner source reread only"
+        }
+      ],
+      "sourceComplianceDenominators": [
+        {
+          "id": "PROJECT_MEMORY_ASSERTION_OCCURRENCES",
+          "owningSourceBindings": [
+            {
+              "path": "project-memory/decisions/deterministic-context-only.md",
+              "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"
+            },
+            {
+              "path": "project-memory/decisions/independent-subagent-adversarial-review.md",
+              "sha256": "891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf"
+            },
+            {
+              "path": "project-memory/operations/implementation-source-reread-discipline.md",
+              "sha256": "6944ae47f0e059a52e75096b17620a3c43852e52a9b44e69737554ac646293ce"
+            },
+            {
+              "path": "project-memory/decisions/incremental-compliance-hook.md",
+              "sha256": "a75469c7eb945b35f06d95cead2e11c368cc4a47dca851f32652556546985f81"
+            }
+          ],
+          "scope": "routed memory for deterministic context, independent review, source reread and incremental hooks"
+        },
+        {
+          "id": "ORIGINAL_BUSINESS_AND_STANDARD_SOURCES",
+          "owningSourceBindings": [
+            {
+              "path": "doc/decisions/2026-08-05-v2s-rp-02a-contract-consumer-recovery.md",
+              "sha256": "e87332a52b4912dd14f03e96df2bc6f131817385f510c50ba0c16d1b045b125e"
+            },
+            {
+              "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-merged-review-claude.md",
+              "sha256": "16b9991ca368eeaf8791271cbab7273cb7958d60d95e78ad1ac2513c4a5f0f3d"
+            },
+            {
+              "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-remediation-design-and-execution-plan-codex.md",
+              "sha256": "50f1b3004566599971420320d95dd0e5db0f27a910a911332bc9b07cd6f83d62"
+            },
+            {
+              "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-dialectical-assessment.md",
+              "sha256": "4627038d6fe5a803c07b8e4fabf3fb5590b93e1a60fa4f1c148eefcc35d610a8"
+            },
+            {
+              "path": "contracts/policy/standards-coverage-matrix.json",
+              "sha256": "b0519ea0e8691b204fc41f9a481665eaf381e067c1bf4f002b7913171476b149"
+            }
+          ],
+          "scope": "business problem, approved R5 task semantics and due standards"
+        },
+        {
+          "id": "APPROVED_ASSERTIONS",
+          "owningSourceBindings": [
+            {
+              "path": "doc/plans/platform/2026-08-05-v2s-whole-engineering-s0-implementation-design.md",
+              "sha256": "f7601bb7efc351324f29919c1e02fca7501246dd3665a631d84e047b5417419d"
+            },
+            {
+              "path": "doc/evidence/platform/2026-08-05-v2s-whole-engineering-s0-baseline.json",
+              "sha256": "8c645517beb52c8758b8f417d267f29ce45e8ef93e53d9a81871fd990925f3bf"
+            }
+          ],
+          "scope": "S0-B frozen 154/144/121 and four-step recovery assertions"
+        },
+        {
+          "id": "FORBIDDEN_PSEUDO_FIXES",
+          "owningSourceBindings": [
+            {
+              "path": "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md",
+              "sha256": "1b59e62ba838886e12c2eb2d22ac644ec58c23204e38f3349fa87ac310f09fd7"
+            },
+            {
+              "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-remediation-design-and-execution-plan-codex.md",
+              "sha256": "50f1b3004566599971420320d95dd0e5db0f27a910a911332bc9b07cd6f83d62"
+            }
+          ],
+          "scope": "no blind number replacement, route-derived facts, global projectId deletion, seed/runtime substitution"
+        },
+        {
+          "id": "OWNED_SURFACE_AND_OPERATION_KEYS",
+          "owningSourceBindings": [
+            {
+              "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+              "sha256": "1f7900fb24b930dfb41fd5c73659a094c75f7e4e827de1ecd2e763596d7e2824"
+            },
+            {
+              "path": "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+              "sha256": "251d54c685f299d12410378d0664b79ce15476d79dca35dbfea9f45a92d21b27"
+            },
+            {
+              "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+              "sha256": "81d7c84aa77c0f0787b3fc7fea6407d79995dde391105e9ac5616bf9b3eff723"
+            },
+            {
+              "path": "contracts/openapi/paths/operations-admin/contract-management.paths.yaml",
+              "sha256": "f4797339e35680f48f5a3668dc9746e8de6c0deb83bb6235d27263ac03509e2a"
+            },
+            {
+              "path": "contracts/openapi/paths/platform-admin/organization-overview.paths.yaml",
+              "sha256": "75083b869a70268071ffe4f01b555da931ef84b15c50df497e4376557ff0aa8a"
+            },
+            {
+              "path": "scripts/test/http-diagnostic-scenarios.mjs",
+              "sha256": "a57037e2ea4a75e9f5475f47459205cc1d957a6f45ec38c69d4c2cea0ff073ed"
+            },
+            {
+              "path": "scripts/test/http-diagnostic-workload.mjs",
+              "sha256": "b7c1bb209b80da38cac313639a0d764b84a09c534af70f97116a26f4c2639362"
+            },
+            {
+              "path": "scripts/test/rm1-http-diagnostic.mjs",
+              "sha256": "0a69ed6469f4f2d1d8e6cbaa8b034d4139701afc86d185c6d0bbc9e8fbdef172"
+            },
+            {
+              "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+              "sha256": "05f89b153c6d760d2844f6ba8efda19d713b133b3332576197a31a68197ccce7"
+            }
+          ],
+          "scope": "finite owned operation keys and exact implementation surface"
+        },
+        {
+          "id": "DETAIL_DESIGN_COMPLETION_AND_INCREMENTAL_CRITERIA",
+          "owningSourceBindings": [
+            {
+              "path": "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md",
+              "sha256": "1b59e62ba838886e12c2eb2d22ac644ec58c23204e38f3349fa87ac310f09fd7"
+            },
+            {
+              "path": "project-memory/decisions/incremental-compliance-hook.md",
+              "sha256": "a75469c7eb945b35f06d95cead2e11c368cc4a47dca851f32652556546985f81"
+            }
+          ],
+          "scope": "ordered chain, red mutations, receipts and package exit"
+        },
+        {
+          "id": "DUE_STANDARDS_RULE_IDS",
+          "owningSourceBindings": [
+            {
+              "path": "contracts/policy/standards-coverage-matrix.json",
+              "sha256": "b0519ea0e8691b204fc41f9a481665eaf381e067c1bf4f002b7913171476b149"
+            },
+            {
+              "path": "project-memory/decisions/deterministic-context-only.md",
+              "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"
+            }
+          ],
+          "scope": "Part B/C/D rule and memory anchors"
+        }
+      ],
+      "memoryRoute": {
+        "taskKind": "implementation",
+        "domain": "platform-contract",
+        "consumerFace": "platform-admin|operations-admin|public",
+        "owner": "edge-contract-and-owner-services",
+        "impacts": [
+          "contract",
+          "runtime",
+          "evidence",
+          "governance"
+        ],
+        "trigger": "implementation"
+      },
+      "orderedChain": [
+        "reopen Journey and original merged finding",
+        "freeze registry/placement/source catalog/projection/fact crosswalk",
+        "materialize projection metadata and add ten hand-written facts",
+        "remove four obsolete create-body fields and assert finite allowed query/read contexts",
+        "assert exact recovery order and preserve invitation seven",
+        "run projection, codegen, focused static red/green checks and package-exit receipts",
+        "fresh implementation adversarial review then Claude review"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "catalog transformation and facts are one serial semantic write path",
+        "tests and crosswalk evidence follow coherent source bytes",
+        "RP-02a does not depend on D4/RP-02b but RP-02b must wait for frozen RP-02a bytes",
+        "no runtime/seed/L2/HTTP process may start in this package"
+      ],
+      "dataEvolution": {
+        "owner": "no database/schema/migration change; only evidence/catalog/test source bytes",
+        "migrations": "NOT_APPLICABLE_WITH_REASON: static consumer restoration does not change persisted data",
+        "backwardCompatibility": "retain projectId in explicitly allowed query/read contexts; remove only strict create body field"
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "No user-facing page, route, Drawer, Modal, selector, form or login interaction changes; R5 business task semantics are reused from accepted assessment.",
+        "termSource": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-dialectical-assessment.md#5. consumer face 处置"
+      },
+      "evidence": {
+        "l1": "source/hash map over registry, placement, source catalog, projection, report, facts, workloads, tests and owner sources",
+        "l2": "real static red mutations for exact-set, projection metadata, crosswalk row shape, four projectId body sites and recovery order",
+        "l3": "NOT_APPLICABLE_WITH_REASON: no runtime or managed environment started",
+        "business": "NOT_APPLICABLE_WITH_REASON: no HTTP/L2/owner business run authorized in RP-02a static package",
+        "cleanup": "NOT_APPLICABLE_WITH_REASON: no process, tunnel, database or remote asset started"
+      },
+      "forbiddenPseudoFixes": [
+        "change 147 to 154 without adding source-backed facts",
+        "derive business facts from route/method/operationId",
+        "change only catalog denominator while retaining generic operation IDs",
+        "delete projectId from all requests including allowed query/read context",
+        "collapse four operations recovery into nearby seven-step invitation flow",
+        "run seed/L2 and call static payload proof business PASS",
+        "add D4 validator or runtime dependency before Dexter decision"
+      ],
+      "discriminator": {
+        "fixture": "delete one fact, duplicate one fact, restore generic catalog ID, re-add projectId create field, reorder recovery calls; each must fail the focused static suite"
+      }
+    }
+  ],
+  "standardsCoverage": {
+    "matrix": {
+      "path": "contracts/policy/standards-coverage-matrix.json",
+      "sha256": "b0519ea0e8691b204fc41f9a481665eaf381e067c1bf4f002b7913171476b149",
+      "anchor": "\"kind\": \"standards-coverage-matrix\""
+    },
+    "partB": {
+      "B.1": {
+        "ruleIds": [
+          "B.1.N01",
+          "B.1.N02",
+          "B.1.N03",
+          "B.1.N04",
+          "B.1.N05",
+          "B.1.N06",
+          "B.1.N07",
+          "B.1.N08",
+          "B.1.N09",
+          "B.1.N10",
+          "B.1.N11",
+          "B.1.N12",
+          "B.1.N13",
+          "B.1.N14",
+          "B.1.N15",
+          "B.1.N16",
+          "B.1.N17"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "B.2": {
+        "ruleIds": [
+          "B.2.N01",
+          "B.2.N02",
+          "B.2.N03",
+          "B.2.N04",
+          "B.2.N05",
+          "B.2.N06",
+          "B.2.N07",
+          "B.2.N08",
+          "B.2.N09",
+          "B.2.N10",
+          "B.2.N11",
+          "B.2.N12",
+          "B.2.N13",
+          "B.2.N14",
+          "B.2.N15"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "B.3": {
+        "ruleIds": [
+          "B.3.N01",
+          "B.3.N02",
+          "B.3.N03",
+          "B.3.N04",
+          "B.3.N05",
+          "B.3.N06",
+          "B.3.N07",
+          "B.3.N08",
+          "B.3.N09",
+          "B.3.N10",
+          "B.3.N11",
+          "B.3.N12"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "B.4": {
+        "ruleIds": [
+          "B.4.N01",
+          "B.4.N02",
+          "B.4.N03",
+          "B.4.N04",
+          "B.4.N05",
+          "B.4.N06",
+          "B.4.N07",
+          "B.4.N08",
+          "B.4.N09",
+          "B.4.N10",
+          "B.4.N11",
+          "B.4.N12",
+          "B.4.N13",
+          "B.4.N14",
+          "B.4.N15",
+          "B.4.N16",
+          "B.4.N17",
+          "B.4.N18",
+          "B.4.N19",
+          "B.4.N20"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "B.5": {
+        "ruleIds": [
+          "B.5.N01",
+          "B.5.N02",
+          "B.5.N03",
+          "B.5.N04",
+          "B.5.N05",
+          "B.5.N06",
+          "B.5.N07",
+          "B.5.N08",
+          "B.5.N09",
+          "B.5.N10",
+          "B.5.N11",
+          "B.5.N12",
+          "B.5.N13",
+          "B.5.N14",
+          "B.5.N15"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "B.6": {
+        "ruleIds": [
+          "B.6.N01",
+          "B.6.N02",
+          "B.6.N03",
+          "B.6.N04",
+          "B.6.N05",
+          "B.6.N06"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      }
+    },
+    "partC": {
+      "C.T01": {
+        "ruleIds": [
+          "C.T01"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T02": {
+        "ruleIds": [
+          "C.T02"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T03": {
+        "ruleIds": [
+          "C.T03"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T04": {
+        "ruleIds": [
+          "C.T04"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T05": {
+        "ruleIds": [
+          "C.T05"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T06": {
+        "ruleIds": [
+          "C.T06"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T07": {
+        "ruleIds": [
+          "C.T07"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T08": {
+        "ruleIds": [
+          "C.T08"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T09": {
+        "ruleIds": [
+          "C.T09"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T10": {
+        "ruleIds": [
+          "C.T10"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T11": {
+        "ruleIds": [
+          "C.T11"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T12": {
+        "ruleIds": [
+          "C.T12"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T13": {
+        "ruleIds": [
+          "C.T13"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T14": {
+        "ruleIds": [
+          "C.T14"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T15": {
+        "ruleIds": [
+          "C.T15"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T16": {
+        "ruleIds": [
+          "C.T16"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T17": {
+        "ruleIds": [
+          "C.T17"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T18": {
+        "ruleIds": [
+          "C.T18"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T19": {
+        "ruleIds": [
+          "C.T19"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T20": {
+        "ruleIds": [
+          "C.T20"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T21": {
+        "ruleIds": [
+          "C.T21"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T22": {
+        "ruleIds": [
+          "C.T22"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "C.T23": {
+        "ruleIds": [
+          "C.T23"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      }
+    },
+    "partD": {
+      "D.1": {
+        "ruleIds": [
+          "D.1.L01",
+          "D.1.L02",
+          "D.1.L03",
+          "D.1.L04"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "D.2": {
+        "ruleIds": [
+          "D.2.L01",
+          "D.2.L02",
+          "D.2.L03",
+          "D.2.L04"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "D.3": {
+        "ruleIds": [
+          "D.3.L01",
+          "D.3.L02",
+          "D.3.L03"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "D.4": {
+        "ruleIds": [
+          "D.4.L01",
+          "D.4.L02",
+          "D.4.L03",
+          "D.4.L04",
+          "D.4.L05"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "D.5": {
+        "ruleIds": [
+          "D.5.L01",
+          "D.5.L02",
+          "D.5.L03",
+          "D.5.L04",
+          "D.5.L05"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "D.6": {
+        "ruleIds": [
+          "D.6.T01",
+          "D.6.T02",
+          "D.6.T03",
+          "D.6.T04",
+          "D.6.T05",
+          "D.6.L01",
+          "D.6.L02",
+          "D.6.L03",
+          "D.6.L04",
+          "D.6.L05",
+          "D.6.L06"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "D.7": {
+        "ruleIds": [
+          "D.7.T01",
+          "D.7.T02",
+          "D.7.T03",
+          "D.7.T04",
+          "D.7.T05",
+          "D.7.T06",
+          "D.7.T07"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      },
+      "D.8": {
+        "ruleIds": [
+          "D.8.L01",
+          "D.8.L02",
+          "D.8.L03"
+        ],
+        "locations": [
+          "doc/plans/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-design.md# 4. Evidence and red mutations"
+        ]
+      }
+    }
+  }
+}

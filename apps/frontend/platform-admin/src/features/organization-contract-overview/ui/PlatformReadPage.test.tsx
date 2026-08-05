@@ -55,7 +55,7 @@ describe('platform overview content tabs', () => it('uses the catalog shell refr
   expect(styles).toContain('flex: 1 1 auto;');
   expect(styles).toContain('.platform-organization-hierarchy-detail-panel > .ant-card-body');
   expect(source).toContain('styles={{label: {width: 164}}}');
-  expect(source).toContain('filterHierarchyNodes'); expect(source).toContain("new Intl.Collator('zh-CN', {numeric: true, sensitivity: 'base'})");
+  expect(source).toContain('filterHierarchyNodes'); expect(source).toContain('adminHierarchyCollator');
   expect(source).toContain('hierarchyNameCollator.compare(left.name, right.name)');
   expect(source).toContain('hierarchySearchMatches(node, query) || children.length');
   expect(source).toContain("label: '项目分期名称'");

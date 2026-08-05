@@ -1,5 +1,7 @@
 package com.catering.v2s.organization.api;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -39,12 +41,12 @@ public interface OrganizationVisibilityLookup {
         UUID storeId,
         UUID headCompanyId
     ) {
-        List<VisibleDataNodeCandidate> candidates = listVisibleDataNodeCandidates(workspaceUuid, groupWorkspaceKey, "GROUP", null);
+        List<VisibleDataNodeCandidate> candidates = listVisibleDataNodeCandidates(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, null);
         return new ScopeContext(
-            find(candidates, "REGION", regionId),
-            find(candidates, "PROJECT", projectId),
-            find(candidates, "STORE", storeId),
-            find(candidates, "HEAD_COMPANY", headCompanyId)
+            find(candidates, ServiceNodeTypes.REGION, regionId),
+            find(candidates, ServiceNodeTypes.PROJECT, projectId),
+            find(candidates, ServiceNodeTypes.STORE, storeId),
+            find(candidates, ServiceNodeTypes.HEAD_COMPANY, headCompanyId)
         );
     }
 

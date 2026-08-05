@@ -1,5 +1,7 @@
 package com.catering.v2s.app.edge.operations.organization;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.app.edge.generated.wire.HeadCompanyBrandAuthorizationAddRequest;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
@@ -56,7 +58,7 @@ public final class OperationsHeadCompanyAuthorizationController {
     }
 
     private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(WorkspaceSessionReadback session, String requirementId, UUID headCompanyId) {
-        var resolution = capabilityScopes.resolve(session, requirementId, new WorkspaceCapabilityScopeResolver.ServerResolvedResource("HEAD_COMPANY", headCompanyId));
+        var resolution = capabilityScopes.resolve(session, requirementId, new WorkspaceCapabilityScopeResolver.ServerResolvedResource(ServiceNodeTypes.HEAD_COMPANY, headCompanyId));
         if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW) throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
         return resolution.ownerScopeGrant(requirementId);
     }

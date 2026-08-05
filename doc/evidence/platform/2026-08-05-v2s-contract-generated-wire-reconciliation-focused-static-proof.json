@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "kind": "contract-generated-wire-reconciliation-focused-static-proof",
+  "status": "PASS",
+  "packageId": "WHOLE-ENGINEERING-CONTRACT-GENERATED-WIRE-20260805",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "WHOLE-ENGINEERING-CONTRACT-GENERATED-WIRE-20260805",
+  "scope": "Dexter-authorized static reconciliation only; no runtime, DEV, UAT, HTTP, L2, seed, reset or Git operation",
+  "rootCause": "A global materializer forbidden-property pass removed accepted U27 fields from unrelated components, while the heritage source under-modelled the accepted scopeContext/session wire. The diagnostic workload also omitted the context-version field required by invitation action commands. A follow-up compile review exposed single-reference allOf typing and post-inline enum ordering defects, and Claude then found a third same-name requiredDataNodeType site in WorkspaceRolePage; all are repaired in the catalog/materializer and regenerated consumers.",
+  "businessTruthReconciled": [
+    "WorkspaceSessionEntry retains owner-confirmed scopeContext and dataNodeCandidates using WorkspaceScopeNode.",
+    "WorkspaceOperationsInvitationActionRequest retains expectedContextVersion for cancel/reissue.",
+    "OrganizationStoreCreateRequest and StoreContractCreateRequest do not carry projectId; owner derives project from server session scope.",
+    "WorkspaceSessionEntry requiredDataNodeType retains HEAD_COMPANY from accepted U27 semantics.",
+    "WorkspaceRolePage.pageAccessCatalog[].requiredDataNodeType accepts the owner-emitted HEAD_COMPANY page scope."
+  ],
+  "commands": [
+    {"command": "scripts/check/r5-edge-materialize --check", "result": "PASS", "evidence": "R5_EDGE_MATERIALIZE_CHECK=PASS; OPERATIONS=154; FACES=50/92/12"},
+    {"command": "scripts/check/r5-edge-materialize --self-test", "result": "PASS", "evidence": "R5_EDGE_MATERIALIZE_SELF_TEST=PASS with session and role-page HEAD_COMPANY missing/red mutations"},
+    {"command": "scripts/check/edge-codegen --check", "result": "PASS", "evidence": "R5_EDGE_CODEGEN_CHECK=PASS; FILES=253"},
+    {"command": "scripts/check/edge-codegen --self-test", "result": "PASS", "evidence": "R5_EDGE_CODEGEN_SELF_TEST=PASS with controlled-write, wire, TS, RTK and catalog red mutations"},
+    {"command": "scripts/check/openapi-contracts", "result": "PASS", "evidence": "R5_OPENAPI_CONTRACTS=PASS"},
+    {"command": "scripts/check/contract-face", "result": "PASS", "evidence": "R5_CONTRACT=PASS; STATE=POST_GATE_0"},
+    {"command": "scripts/check/standards-coverage --phase R5", "result": "PASS", "evidence": "RULES=150"},
+    {"command": "same-property requiredDataNodeType scan across contracts/openapi and generated platform/operations outputs", "result": "PASS", "evidence": "3 emitted schema occurrences; all enum sets include HEAD_COMPANY; admin-catalog owner distribution NONE=5/PROJECT=3/REGION=1/HEAD_COMPANY=1/STORE=2"},
+    {"command": "gradle :apps:backend:catering-business-server:compileJava --no-daemon --console=plain", "result": "PASS", "evidence": "BUILD SUCCESSFUL; 11 actionable tasks"},
+    {"command": "gradle :apps:backend:catering-business-server:compileJava --rerun-tasks --no-daemon --console=plain", "result": "PASS", "evidence": "BUILD SUCCESSFUL; 11 tasks executed; only existing deprecation warnings"},
+    {"command": "yarn --cwd apps/frontend/operations-admin typecheck", "result": "PASS", "evidence": "exit 0"},
+    {"command": "yarn --cwd apps/frontend/platform-admin typecheck", "result": "PASS", "evidence": "exit 0"},
+    {"command": "node --test scripts/test/http-diagnostic-inventory.test.mjs scripts/test/http-diagnostic-scenarios.test.mjs scripts/test/http-diagnostic-workload.test.mjs scripts/test/rm1-http-diagnostic.test.mjs scripts/test/r5-platform-admin-l2-fixture-seed.test.mjs scripts/test/r5-joint-remote-l2-fixture.test.mjs scripts/test/seed-report.test.mjs", "result": "PASS", "evidence": "40 tests; 40 pass; 0 fail"}
+  ],
+  "redMutations": [
+    "global forbidden field removal remains covered by materializer nested-property red test",
+    "generated path/component byte drift remains covered by materializer self-test",
+    "generated TS/RTK/wire/catalog drift remains covered by edge-codegen self-test",
+    "invitation reissue/cancel workload requests are asserted to carry expectedContextVersion",
+    "create store/contract payload assertions reject projectId",
+    "WorkspaceRolePage enum addition removal is a real red mutation: R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING and R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED"
+  ],
+  "changedPathSet": {
+    "sourceTruth": [
+      "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+      "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json",
+      "scripts/generate/r5-edge-materialize.mjs"
+    ],
+    "contractOutputs": [
+      "contracts/openapi/components/contract/contract.schemas.yaml",
+      "contracts/openapi/components/organization/store.schemas.yaml",
+      "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+      "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml",
+      "contracts/openapi/edge.openapi.yaml"
+    ],
+    "generatedConsumers": [
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceScopeContext.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceSessionEntry.java",
+      "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+      "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts"
+    ],
+    "generatorControls": [
+      "scripts/generate/edge-codegen.mjs"
+    ],
+    "diagnosticConsumer": [
+      "scripts/test/http-diagnostic-workload.mjs",
+    "scripts/test/http-diagnostic-workload.test.mjs"
+  ]
+  },
+  "samePropertyEnumSurface": {
+    "propertyName": "requiredDataNodeType",
+    "expectedOwnerValues": ["NONE", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"],
+    "contractOccurrences": [
+      "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/WorkspaceRolePage/properties/pageAccessCatalog/items/properties/requiredDataNodeType",
+      "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionEntry/properties/candidates/items/properties/navigation/items/properties/requiredDataNodeType",
+      "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionEntry/properties/selected/allOf/0/allOf/0/properties/navigation/items/properties/requiredDataNodeType"
+    ],
+    "ownerReadback": [
+      "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java#pageCatalog",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#pageAccessCatalogWire"
+    ],
+    "adminCatalogDistribution": {"NONE": 5, "PROJECT": 3, "REGION": 1, "HEAD_COMPANY": 1, "STORE": 2}
+  },
+  "business": "NOT_APPLICABLE_WITH_REASON: static contract/generated-wire package; no managed runtime started",
+  "cleanup": "NOT_APPLICABLE_WITH_REASON: no process, tunnel, database, browser or remote resource started"
+}

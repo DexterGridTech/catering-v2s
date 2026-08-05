@@ -1203,7 +1203,7 @@ export type WorkspaceRolePage = {
   title: string;
   menuGroup: string;
   menuOrder: number;
-  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE";
+  requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE" | "HEAD_COMPANY";
   eligibleOrganizationTypes: Array<"GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE">;
 }>;
 };

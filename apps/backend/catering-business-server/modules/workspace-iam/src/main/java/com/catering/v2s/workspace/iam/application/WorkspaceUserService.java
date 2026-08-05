@@ -1,5 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
@@ -50,11 +52,11 @@ public class WorkspaceUserService {
         WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId());
         String requiredDataNodeType = requiredDataNodeType(expectedTargetType);
         if ("NONE".equals(requiredDataNodeType)) {
-            if ("GROUP".equals(assignment.serviceNodeType()) && "HEAD_COMPANY".equals(expectedTargetType)) {
+            if (ServiceNodeTypes.GROUP.equals(assignment.serviceNodeType()) && ServiceNodeTypes.HEAD_COMPANY.equals(expectedTargetType)) {
                 // The catalog declares this page as fixed-target/no-scope. A GROUP
                 // operator therefore receives the owner-approved aggregate, never a
                 // scope selection from a different required page type.
-                return taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), "GROUP", assignment.serviceNodeId());
+                return taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), ServiceNodeTypes.GROUP, assignment.serviceNodeId());
             }
             if (expectedTargetType == null || !expectedTargetType.equals(assignment.serviceNodeType())) throw new TaskScopeDeniedException();
             return taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId());
@@ -73,11 +75,11 @@ public class WorkspaceUserService {
     public OrganizationTaskPathLookup.TaskPath resolveSelectedProjectScope(WorkspaceSessionReadback session, UUID requestedProjectRef) {
         if (session == null || session.currentAssignmentId() == null || assignments == null || taskPaths == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
         WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId());
-        var selected = session.scopeContext() == null ? null : session.scopeContext().selectionFor("PROJECT");
+        var selected = session.scopeContext() == null ? null : session.scopeContext().selectionFor(ServiceNodeTypes.PROJECT);
         UUID effectiveProjectRef = selected == null ? null : selected.dataNodeId();
         if (requestedProjectRef != null && !requestedProjectRef.equals(effectiveProjectRef)) throw new TaskScopeDeniedException();
         if (effectiveProjectRef == null) throw new TaskScopeDeniedException();
-        OrganizationTaskPathLookup.TaskPath project = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), "PROJECT", effectiveProjectRef);
+        OrganizationTaskPathLookup.TaskPath project = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), ServiceNodeTypes.PROJECT, effectiveProjectRef);
         if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), project)) throw new TaskScopeDeniedException();
         return project;
     }
@@ -332,7 +334,7 @@ public class WorkspaceUserService {
             .anyMatch(value -> targetId.equals(value.organizationRef()));
     }
 
-    private String path(UUID workspaceUuid, String key, String nodeType, UUID id) { return switch (nodeType) { case "GROUP" -> groups.describeCommercialGroup(workspaceUuid, key, id); case "REGION", "PROJECT" -> nodes.describePath(workspaceUuid, key, id); case "HEAD_COMPANY", "STORE" -> entities.describeEntityPath(workspaceUuid, key, nodeType, id); default -> throw new IllegalArgumentException("unsupported service node type"); }; }
+    private String path(UUID workspaceUuid, String key, String nodeType, UUID id) { return switch (nodeType) { case ServiceNodeTypes.GROUP -> groups.describeCommercialGroup(workspaceUuid, key, id); case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> nodes.describePath(workspaceUuid, key, id); case ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> entities.describeEntityPath(workspaceUuid, key, nodeType, id); default -> throw new IllegalArgumentException("unsupported service node type"); }; }
     private static CommercialGroupLookup legacyGroups(OrganizationNodeLookup nodes) { return new CommercialGroupLookup() { @Override public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) { throw new UnsupportedOperationException("legacy tests supply a GROUP node"); } @Override public boolean isEnterableCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.isEnterable(workspaceUuid, groupWorkspaceKey, commercialGroupRef); } @Override public String describeCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.describePath(workspaceUuid, groupWorkspaceKey, commercialGroupRef); } }; }
     private static PageOrder pageOrder(String sort, String direction, boolean operationsScoped) {
         String safeSort = sort == null ? "LOGIN_NAME" : sort;
@@ -354,13 +356,16 @@ public class WorkspaceUserService {
     private static String mask(String value) { return value.length() <= 4 ? "****" : value.substring(0, Math.min(3, value.length())) + "****" + value.substring(Math.max(3, value.length() - 4)); }
     /** A valid session attempted a direct primary read outside its role-node range. */
     public static final class TaskScopeDeniedException extends RuntimeException { }
+    /** Pagination bounds are request errors, not account-visibility signals. */
+    public static final class PageValidationException extends RuntimeException { }
 
     private record Account(UUID id, String displayName, String mobile, String loginName, String status, long version, long createdAt, long updatedAt) { }
     public record AccountPageQuery(UUID workspaceUuid, String groupWorkspaceKey, WorkspaceSessionReadback operationsSession, String targetType, UUID requestedScopeRef, UUID organizationRef, String userName, String mobile, String loginName, UUID roleId, String status, String sort, String direction, int page, int pageSize) {
         public static AccountPageQuery forOperations(WorkspaceSessionReadback session, String targetType, UUID requestedScopeRef, String userName, String mobile, UUID roleId, String status, String sort, String direction, int page, int pageSize) { return new AccountPageQuery(session.workspaceUuid(), session.groupWorkspaceKey(), session, targetType, requestedScopeRef, null, userName, mobile, null, roleId, status, sort, direction, page, pageSize); }
         public static AccountPageQuery forPlatform(UUID workspaceUuid, String groupWorkspaceKey, String userName, String mobile, String loginName, UUID roleId, String status, String targetType, UUID organizationRef, String sort, String direction, int page, int pageSize) { return new AccountPageQuery(workspaceUuid, groupWorkspaceKey, null, targetType, null, organizationRef, userName, mobile, loginName, roleId, status, sort, direction, page, pageSize); }
         private AccountPageQuery validated() {
-            if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || page < 1 || pageSize < 1 || pageSize > 100 || (status != null && !Set.of("ENABLED", "DISABLED").contains(status))) throw new WorkspaceAccountService.AccountNotFoundException();
+            if (pageSize > 100) throw new PageValidationException();
+            if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || page < 1 || pageSize < 1 || (status != null && !Set.of("ENABLED", "DISABLED").contains(status))) throw new WorkspaceAccountService.AccountNotFoundException();
             if (operationsSession != null && (targetType == null || targetType.isBlank() || loginName != null || organizationRef != null)) throw new WorkspaceAccountService.AccountNotFoundException();
             return this;
         }

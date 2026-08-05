@@ -1,0 +1,110 @@
+#!/usr/bin/env node
+
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const javaRoot = path.join(root, "apps/backend/catering-business-server");
+const token = /"(GROUP|REGION|PROJECT|HEAD_COMPANY|STORE)"|\b(ServiceNodeTypes|OrganizationNodeTypes|BusinessEntityTypes|ExtensionHostTypes|AuditEntityTypes)\.([A-Z_]+)/g;
+const extensionInvocation = /\b(?:requireDefinition|managementDefinition|replaceDraft|replace)\([^\n]*"(BRAND|TENANT|HEAD_COMPANY|STORE|CONTRACT|COMMERCIAL_GROUP|REGION|PROJECT)"/g;
+const sets = {
+  ServiceNodeTypes: new Set(["GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"]),
+  OrganizationNodeTypes: new Set(["REGION", "PROJECT"]),
+  BusinessEntityTypes: new Set(["BRAND", "TENANT", "HEAD_COMPANY", "STORE"]),
+  ExtensionHostTypes: new Set(["BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT"]),
+  AuditEntityTypes: new Set(["HEAD_COMPANY", "STORE", "REGION", "PROJECT"]),
+};
+const rawLiteralAllowlist = new Set([
+  "apps/backend/catering-business-server/modules/audit-model/src/main/java/com/catering/v2s/audit/contract/AuditEntityTypes.java",
+  "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/api/ExtensionHostTypes.java",
+  "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/contract/ServiceNodeTypes.java",
+  "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/BusinessEntityTypes.java",
+  "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationNodeTypes.java",
+  "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+  "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+]);
+
+function fail(reason) { throw new Error(reason); }
+function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
+function filesUnder(directory) {
+  const result = [];
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...filesUnder(absolute));
+    else if (entry.isFile() && absolute.endsWith(".java") && !absolute.includes(`${path.sep}src${path.sep}test${path.sep}`)) result.push(absolute);
+  }
+  return result.sort();
+}
+function scanSource(source, relativePath, enforceRawAllowlist = true) {
+  const rows = [];
+  const lines = source.split(/\r?\n/);
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const matches = [...lines[lineIndex].matchAll(token)];
+    if (matches.length === 0) continue;
+    const occurrences = matches.map((match, ordinal) => {
+      const raw = match[1];
+      const owner = match[2];
+      const value = raw || match[3];
+      if (owner) {
+        if (!sets[owner] || !sets[owner].has(value)) fail(`RP12_FINAL_UNKNOWN_CONSTANT:${relativePath}:${lineIndex + 1}:${owner}.${value}`);
+        return {ordinal: ordinal + 1, token: value, owner, set: owner};
+      }
+      if (enforceRawAllowlist && !rawLiteralAllowlist.has(relativePath)) fail(`RP12_FINAL_RAW_LITERAL_ESCAPE:${relativePath}:${lineIndex + 1}:${value}`);
+      return {ordinal: ordinal + 1, token: value, owner: "RAW_ALLOWED_DEFINITION_OR_GENERATED_CATALOG", set: "NOT_REPLACEMENT_SITE"};
+    });
+    rows.push({path: relativePath, line: lineIndex + 1, occurrences});
+  }
+  return rows;
+}
+function scanExtensionHostInvocations(source, relativePath) {
+  for (const match of source.matchAll(extensionInvocation)) {
+    fail(`RP12_FINAL_RAW_EXTENSION_HOST_INVOCATION:${relativePath}:${match[1]}`);
+  }
+}
+function scan() {
+  const rows = [];
+  const sourceHashes = {};
+  for (const absolute of filesUnder(javaRoot)) {
+    const relative = path.relative(root, absolute).split(path.sep).join("/");
+    const source = fs.readFileSync(absolute, "utf8");
+    sourceHashes[relative] = sha256(source);
+    scanExtensionHostInvocations(source, relative);
+    rows.push(...scanSource(source, relative));
+  }
+  const qualified = rows.flatMap((row) => row.occurrences.filter((occurrence) => occurrence.set !== "NOT_REPLACEMENT_SITE"));
+  if (qualified.length === 0) fail("RP12_FINAL_QUALIFIED_DENOMINATOR_EMPTY");
+  const sourceManifest = Object.entries(sourceHashes).sort().map(([file, hash]) => `${file}:${hash}`).join("\n");
+  const occurrenceDigest = sha256(JSON.stringify(rows));
+  return {rows, sourceHashes, sourceManifestDigest: sha256(sourceManifest), occurrenceDigest, rawOccurrences: rows.flatMap((row) => row.occurrences).filter((occurrence) => occurrence.set === "NOT_REPLACEMENT_SITE").length, qualifiedOccurrences: qualified.length};
+}
+function selfTest() {
+  let detected = false;
+  try { scanSource('String value = "GROUP";\n', "fixture/RawEscape.java"); } catch (error) { detected = String(error.message).startsWith("RP12_FINAL_RAW_LITERAL_ESCAPE"); }
+  if (!detected) fail("RP12_FINAL_SELF_TEST_RAW_ESCAPE_NOT_DETECTED");
+  detected = false;
+  try { scanSource('String value = ServiceNodeTypes.UNKNOWN;\n', "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/contract/ServiceNodeTypes.java", false); } catch (error) { detected = String(error.message).startsWith("RP12_FINAL_UNKNOWN_CONSTANT"); }
+  if (!detected) fail("RP12_FINAL_SELF_TEST_UNKNOWN_CONSTANT_NOT_DETECTED");
+  detected = false;
+  try { scanExtensionHostInvocations('definitions.requireDefinition(workspace, key, "CONTRACT");', "fixture/ExtensionConsumer.java"); } catch (error) { detected = String(error.message).startsWith("RP12_FINAL_RAW_EXTENSION_HOST_INVOCATION"); }
+  if (!detected) fail("RP12_FINAL_SELF_TEST_EXTENSION_HOST_RAW_NOT_DETECTED");
+  console.log("RP12_FINAL_STATE_SELF_TEST=PASS");
+}
+try {
+  if (process.argv.includes("--self-test")) selfTest();
+  else {
+    const result = scan();
+    console.log(`RP12_FINAL_STATE=PASS`);
+    console.log(`QUALIFIED_OCCURRENCES=${result.qualifiedOccurrences}`);
+    console.log(`RAW_ALLOWED_OCCURRENCES=${result.rawOccurrences}`);
+    console.log(`MATCHING_LINES=${result.rows.length}`);
+    console.log(`FILES=${new Set(result.rows.map((row) => row.path)).size}`);
+    console.log(`OCCURRENCE_DIGEST=${result.occurrenceDigest}`);
+    console.log(`SOURCE_MANIFEST_DIGEST=${result.sourceManifestDigest}`);
+  }
+} catch (error) {
+  console.error(`RP12_FINAL_STATE=FAIL`);
+  console.error(String(error.message || error));
+  process.exitCode = 1;
+}

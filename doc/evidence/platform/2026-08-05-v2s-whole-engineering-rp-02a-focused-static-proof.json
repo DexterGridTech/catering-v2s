@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "kind": "RP_02A_FOCUSED_STATIC_PROOF",
+  "status": "PASS",
+  "packageId": "WHOLE-ENGINEERING-RP-02A-IMPLEMENTATION-20260805",
+  "generatedAt": "2026-08-05T06:17:06.814Z",
+  "staticOnly": true,
+  "sourceHashes": [
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "sha256": "1503ffed4b9b8ddff9472f5515cf600865a8d28eafa1901b4ce4418eebc29a0c",
+      "postReceipt": true
+    },
+    {
+      "path": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+      "sha256": "bd4880eea59fc97d69a09cf136581ad54bb4d1e0d362a95ec09362118d2e6656",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/generate/edge-operation-projections.mjs",
+      "sha256": "fa68132a2710a46e8ff24e4b9a6b789a5678c2b14c3d04ee31bc9f41e3388270",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/check/r5-edge-materialize",
+      "sha256": "d5b485428d6b2f59e465768bc358ebb8fa1a4ee6b7f0cd06c771b47300bc1a57",
+      "postReceipt": true
+    },
+    {
+      "path": "doc/evidence/platform/2026-08-05-v2s-whole-engineering-rp-02a-catalog-crosswalk.json",
+      "sha256": "b96595eb5ac61ffb22866293760d104808d193c409e5155a12b17c566f6c2b96",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/test/http-diagnostic-scenarios.mjs",
+      "sha256": "13a6e9ac16df24af852bee877e2064c8263b9e36c477ea557a03b2f9baed932e",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/test/http-diagnostic-scenarios.test.mjs",
+      "sha256": "f317b42a95948f324b61d3ebd313eede034a7ee24b94885bd8210a99ab8f94e0",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/test/http-diagnostic-workload.mjs",
+      "sha256": "7002540d7a3ad6f786a6f191b6d00b314c8a8fd938aadb135a12c318ab400bfe",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/test/http-diagnostic-workload.test.mjs",
+      "sha256": "bfb4fbc394aaa1a85e2dad54c1580a47707ca05f0c95bec5211cb8083d2c9c8d",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2-fixture-seed.mjs",
+      "sha256": "0851f3cf17e667c72431afbcc56be157238faec70a17660cf1dbadd076253413",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/test/r5-platform-admin-l2-fixture-seed.test.mjs",
+      "sha256": "9362e62ccf6eb871574690f2a1ffbc050ea29aadec6ab07cdd600982f9286481",
+      "postReceipt": true
+    },
+    {
+      "path": "scripts/test/rm1-http-diagnostic.test.mjs",
+      "sha256": "6f725e9398641b822c52670453f05d45226bdd8d04ebe79e98ec9caf9d848d93",
+      "postReceipt": true
+    },
+    {
+      "path": "doc/decisions/2026-08-05-v2s-rp-02a-implementation-activation.md",
+      "sha256": "2b006003fff18b91cbb6927eb3abd2a1f5797eeea08ac13c8e36faa7edac8eaa",
+      "postReceipt": true
+    },
+    {
+      "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-delivery-manifest.json",
+      "sha256": "0bbdbd4a7abb4d03bf8d5438ddd9ea7522d1f28402e3d5c07c9951d18cbd32e5",
+      "postReceipt": true
+    },
+    {
+      "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-package-input.md",
+      "sha256": "b18fe611aa9496bb2bae54f6e431bebf1e610d9fd6af8a907d14df8c83784074",
+      "postReceipt": true
+    },
+    {
+      "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-amendment.md",
+      "sha256": "0d1fc205655bf939d78e8eccf9b46868e92ac59dd0134fbed4f6da056083ade2",
+      "postReceipt": true
+    },
+    {
+      "path": "doc/review/platform/2026-08-05-v2s-whole-engineering-rp-02a-implementation-independent-review-input.md",
+      "sha256": "8ef86ea97773728bb87520296e06f1f6ec87800059f7ca62af27b61a68c4d8be",
+      "postReceipt": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "REGISTRY_FACT_SET",
+      "result": "PASS",
+      "evidence": {
+        "registryOperations": 154,
+        "scenarioFacts": 154,
+        "faceCounts": {
+          "platform-admin": 50,
+          "operations-admin": 92,
+          "public": 12
+        }
+      }
+    },
+    {
+      "id": "CATALOG_PLACEMENT_PROJECTION",
+      "result": "PASS",
+      "evidence": {
+        "materializedOperations": 154,
+        "faceCounts": {
+          "platform-admin": 50,
+          "operations-admin": 92,
+          "public": 12
+        },
+        "projectionState": "MATERIALIZED",
+        "projectionPipeline": "R24_P3C",
+        "r5EdgeMaterializeCheck": "PASS",
+        "r5EdgeMaterializeSelfTest": "PASS",
+        "edgeCodegenCheck": "PASS",
+        "edgeCodegenSelfTest": "PASS"
+      }
+    },
+    {
+      "id": "PROJECT_ID_BOUNDARY",
+      "result": "PASS",
+      "evidence": {
+        "forbiddenCreateBodySites": 4,
+        "observedForbiddenCreateBodySites": 0,
+        "unsupportedQueryCallSites": 5,
+        "observedUnsupportedQueryProjectIds": 0,
+        "currentOutboundProjectQueryCallSites": 1,
+        "declaredProjectQueryOperationIds": [
+          "getOperationsOrganizationCandidates",
+          "getPlatformOrganizationCandidates",
+          "getPlatformOrganizationOverviewPage"
+        ],
+        "stateAllowlist": [
+          "PROJECT_SCOPE.projectId",
+          "SCOPED_STORE_FACTS.projectId"
+        ]
+      }
+    },
+    {
+      "id": "RECOVERY_ORDER",
+      "result": "PASS",
+      "evidence": {
+        "exactOrder": [
+          "startOperationsPasswordRecovery",
+          "sendOperationsPasswordRecoveryOtp",
+          "verifyOperationsPasswordRecoveryOtp",
+          "completeOperationsPasswordRecovery"
+        ],
+        "publicInvitationCallCount": 7
+      }
+    },
+    {
+      "id": "REAL_RED_MUTATIONS",
+      "result": "PASS",
+      "evidence": {
+        "missingFact": "HTTP_DIAGNOSTIC_SCENARIO_FACT_SET_INVALID",
+        "duplicateFact": "HTTP_DIAGNOSTIC_SCENARIO_FACT_SET_INVALID",
+        "missingMaterializedState": "P3_C_STATIC_TARGET_EXPANSION_DRIFT",
+        "genericOperationReintroduction": "R5_EDGE_MATERIALIZED_OPERATION_IDENTITY_INVALID",
+        "edgeCodegenRedMutationSet": "R5_EDGE_CODEGEN_SELF_TEST"
+      }
+    },
+    {
+      "id": "HOOK_RECEIPT_SET",
+      "result": "PASS",
+      "evidence": {
+        "changedFileCount": 17,
+        "postReceiptCount": 17,
+        "exactPathList": true
+      }
+    }
+  ],
+  "business": {
+    "status": "NOT_APPLICABLE_WITH_REASON",
+    "reason": "静态 package 未启动应用、HTTP、浏览器、数据库或 owner business flow"
+  },
+  "cleanup": {
+    "status": "NOT_APPLICABLE_WITH_REASON",
+    "reason": "静态 package 未创建受管 process、tunnel、remote resource 或 seed asset"
+  }
+}

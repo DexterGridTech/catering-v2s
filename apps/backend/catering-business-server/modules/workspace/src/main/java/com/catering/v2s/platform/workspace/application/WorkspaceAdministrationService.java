@@ -8,6 +8,7 @@ import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.workspace.api.WorkspaceIamSummaryLookup;
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -156,7 +157,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
     }
     private void audit(WorkspaceAdministrationReadback workspace, String action, long occurredAt, AuditActor actor, String changesJson) {
         Long legacyId = jdbc.queryForObject("SELECT id FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?", Long.class, workspace.workspaceUuid(), workspace.groupWorkspaceKey());
-        jdbc.update("INSERT INTO platform_workspace.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'GROUP_WORKSPACE', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))", UUID.randomUUID(), workspace.workspaceUuid(), workspace.groupWorkspaceKey(), String.valueOf(legacyId), actor.actorType(), actor.actorId(), actor.displaySnapshot(), action, occurredAt, changesJson);
+        jdbc.update("INSERT INTO platform_workspace.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'GROUP_WORKSPACE', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))", UUID.randomUUID(), workspace.workspaceUuid(), workspace.groupWorkspaceKey(), String.valueOf(legacyId), actor.actorType(), actor.actorId(), actor.displaySnapshot(), action, occurredAt, AuditChangeJson.write(AuditChangeJson.read(changesJson)));
     }
     private static String updateChanges(WorkspaceAdministrationReadback before, WorkspaceAdministrationReadback after, String logoIntent) {
         List<String> changes = new ArrayList<>();

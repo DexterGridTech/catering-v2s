@@ -130,7 +130,9 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
     open={open}
     size={600}
     destroyOnHidden
-    maskClosable
+    maskClosable={!lifecycle.submitting}
+    closable={!lifecycle.submitting}
+    keyboard={!lifecycle.submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}
     {...adminDrawerSurfaceProps}

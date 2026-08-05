@@ -11,6 +11,7 @@ const id = () => globalThis.crypto?.randomUUID?.() ?? 'frontend-' + Date.now() +
 
 const routeTemplate = (value: string) => value
   .split('?')[0]
+  .replace(/(\/api\/public\/invitations\/[^/]+\/)[^/]+/gi, '$1:invitation-token')
   .replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, ':id')
   .replace(/\/[0-9]{4,}(?=\/|$)/g, '/:id');
 
@@ -61,6 +62,7 @@ export const createObservedBaseQuery = (options: ObservedBaseQueryOptions): Base
     })();
     const response = result.meta?.response;
     const responseCorrelationId = response?.headers.get(CORRELATION_HEADER) ?? correlationId;
+    const responseRequestId = response?.headers.get(REQUEST_HEADER) ?? requestId;
     const responseTraceId = response?.headers.get(TRACE_HEADER) ?? traceId;
     const status = result.error?.status ?? response?.status;
     const baseEvent = {
@@ -70,7 +72,7 @@ export const createObservedBaseQuery = (options: ObservedBaseQueryOptions): Base
       operationId: routeTemplate(String(args.url)),
       routeTemplate: routeTemplate(String(args.url)),
       correlationId: responseCorrelationId,
-      requestId,
+      requestId: responseRequestId,
       traceId: responseTraceId,
       outcome: result.error ? 'ERROR' : 'SUCCESS',
       attempt: 1,

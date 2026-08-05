@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-package-exit",
+  "packageId": "WHOLE-ENGINEERING-CONTRACT-GENERATED-WIRE-20260805",
+  "unitId": "WHOLE-ENGINEERING-CONTRACT-GENERATED-WIRE-20260805",
+  "reviewCycleId": "WHOLE-ENGINEERING-CONTRACT-GENERATED-WIRE-20260805",
+  "reviewTarget": "IMPLEMENTATION",
+  "status": "PASS",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "reviewClosure": "PENDING_CLAUDE_POST_REMEDIATION_RECHECK",
+  "fullComplianceScan": "PASS",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/WorkspaceOperationsInvitationActionRequest.java",
+    "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts",
+    "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+    "contracts/openapi/components/contract/contract.schemas.yaml",
+    "contracts/openapi/components/organization/store.schemas.yaml",
+    "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+    "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml",
+    "contracts/openapi/edge.openapi.yaml",
+    "doc/evidence/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-focused-static-proof.json",
+    "doc/evidence/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-package-exit.json",
+    "doc/evidence/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-problem-family.json",
+    "doc/evidence/platform/r5-u01-edge-placement-resolution.json",
+    "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+    "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json",
+    "doc/plans/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-implementation-design.md",
+    "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-claude-review-request.md",
+    "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-delivery-manifest.json",
+    "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-independent-review-round1.md",
+    "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-independent-review-round2.md",
+    "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-intake-codex.md",
+    "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-package-input.md",
+    "scripts/generate/edge-codegen.mjs",
+    "scripts/generate/r5-edge-materialize.mjs",
+    "scripts/test/http-diagnostic-workload.mjs",
+    "scripts/test/http-diagnostic-workload.test.mjs"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "tests": "40/40 focused Node tests PASS; same-property requiredDataNodeType scan PASS; operations-admin typecheck PASS; backend compileJava PASS (normal and --rerun-tasks)",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "controls": [
+    {
+      "ruleId": "S1-CONTRACT-SOURCE-RECONCILIATION",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "implementation catalog + placement catalog + OpenAPI/component checks"
+    },
+    {
+      "ruleId": "S1-MATERIALIZER-POST-INLINE-ENUM",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "r5-edge-materialize check/self-test with nested HEAD_COMPANY red mutation"
+    },
+    {
+      "ruleId": "S1-ENUM-PROPERTY-SURFACE-COMPLETENESS",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "three requiredDataNodeType schema occurrences, owner catalog distribution and role-page red mutation"
+    },
+    {
+      "ruleId": "S1-GENERATED-WIRE-TYPING",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "edge-codegen check/self-test and forced backend compile"
+    },
+    {
+      "ruleId": "S1-CONSUMER-PAYLOAD-BOUNDARY",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "diagnostic workload exact-key assertions, four-field owner consumption and 40/40 suite"
+    },
+    {
+      "ruleId": "S1-INDEPENDENT-IMPLEMENTATION-REVIEW-ROUND2",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "historical Round2 report 0936b5ed503a546b6ea007a56c8e97b9c7e7c532437de9b87c01562c7b19711e; current external Claude post-recheck still pending"
+    },
+    {
+      "ruleId": "S1-DYNAMIC-BUSINESS-CLEANUP",
+      "state": "OUT_OF_SCOPE_THIS_PACKAGE",
+      "evidence": "static-only authorization; no runtime, DEV, UAT, HTTP, L2, process, tunnel, database or browser resource started"
+    }
+  ],
+  "focusedProof": {
+    "path": "doc/evidence/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-focused-static-proof.json",
+    "status": "PASS",
+    "materializer": "scripts/check/r5-edge-materialize --check --self-test",
+    "codegen": "scripts/check/edge-codegen --check --self-test",
+    "contract": "scripts/check/openapi-contracts; scripts/check/contract-face; scripts/check/standards-coverage --phase R5",
+    "independentReviewRound1": {
+      "path": "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-independent-review-round1.md",
+      "verdict": "NO-GO M1/S1/N0; findings fixed"
+    },
+    "independentReviewRound2": {
+      "path": "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-independent-review-round2.md",
+      "sha256": "0936b5ed503a546b6ea007a56c8e97b9c7e7c532437de9b87c01562c7b19711e",
+      "verdict": "GO M0/S0/N0",
+      "roundFinalDecision": "SELF_DECIDED"
+    },
+    "claudePostRemediation": {
+      "requestPath": "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-claude-review-request.md",
+      "priorVerdict": "NO-GO M1/S1/N1",
+      "currentStatus": "PENDING_RECHECK"
+    }
+  },
+  "sourceDenominators": {
+    "manifest": "doc/review/platform/2026-08-05-v2s-contract-generated-wire-reconciliation-delivery-manifest.json",
+    "classes": [
+      "CONTRACT_SOURCE",
+      "ENUM_PROPERTY_SURFACE",
+      "MATERIALIZER_CONTROL",
+      "OPENAPI_OUTPUT",
+      "GENERATED_WIRE",
+      "CONSUMER_PAYLOAD",
+      "EVIDENCE_CONTROL"
+    ],
+    "changedPathSet": "print-delta exact set; package-exit path excluded by validator self-reference rule"
+  },
+  "scopeStatement": "S1 static contract/generated-wire reconciliation only; machine proof is PASS after post-NO-GO repair, but final S1 GO remains pending Claude post-remediation recheck; no runtime, business, UAT, L2 or cleanup closure is claimed.",
+  "authorityBoundary": "No backend owner source, frontend business runtime, database/migration, DEV/UAT/HTTP/L2, seed/reset, remote resource, or Git operation was authorized or performed."
+}

@@ -1,6 +1,7 @@
 package com.catering.v2s.app.edge.session;
 
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
+import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService.PasswordRecoveryFlowCredential;
@@ -30,9 +31,13 @@ public final class EdgeRequestContextArgumentResolver implements HandlerMethodAr
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer container, NativeWebRequest request, WebDataBinderFactory binderFactory) {
         HttpServletRequest servlet = request.getNativeRequest(HttpServletRequest.class);
         if (servlet == null) throw new IllegalStateException("servlet request is unavailable");
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(servlet);
+        String correlationId = completion == null
+                ? PublicSecurityDiagnosticRequestState.correlationId(servlet)
+                : completion.correlationId();
         return new EdgeRequestContext(
                 rateLimitSourceFingerprint(servlet.getRemoteAddr()),
-                PublicSecurityDiagnosticRequestState.correlationId(servlet),
+                correlationId,
                 PlatformSessionCookie.fromCookie(cookie(servlet, "V2S_PLATFORM_SESSION")),
                 OperationsSessionCookie.fromCookie(cookie(servlet, "V2S_OPERATIONS_SESSION")),
                 PasswordRecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_PLATFORM_PASSWORD_RECOVERY")),

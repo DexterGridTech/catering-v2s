@@ -1,5 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
@@ -126,8 +128,8 @@ public class WorkspaceCapabilityScopeResolver {
         OrganizationTaskPathLookup.TaskPath taskPath
     ) {
         return WorkspaceAuthorizationCatalog.CapabilityKeys.BC_ORG_HEAD_COMPANY_CREATE.equals(capability)
-            && "HEAD_COMPANY".equals(assignment.serviceNodeType())
-            && "GROUP".equals(taskPath.targetType());
+            && ServiceNodeTypes.HEAD_COMPANY.equals(assignment.serviceNodeType())
+            && ServiceNodeTypes.GROUP.equals(taskPath.targetType());
     }
 
     /**

@@ -1,14 +1,18 @@
 import {createApi} from '@reduxjs/toolkit/query/react';
 import type {FetchArgs} from '@reduxjs/toolkit/query';
-import {createObservedBaseQuery, createRefreshSignal, createSafeLogger, serializeJsonOrMultipartBody} from '@catering-v2s/admin-ui-foundation';
+import {createBeaconLogSink, createObservedBaseQuery, createRefreshSignal, createSafeLogger, serializeJsonOrMultipartBody} from '@catering-v2s/admin-ui-foundation';
 import {createPlatformAdminRtkEndpoints} from './generated/platform-edge.rtk';
 import type {FaceOperationContracts, FaceOperationRequest} from './generated/platform-edge';
 
-const logger = createSafeLogger({service: 'platform-admin', enabled: import.meta.env.DEV});
+const logger = createSafeLogger({service: 'platform-admin', enabled: import.meta.env.DEV, sink: createBeaconLogSink(import.meta.env.VITE_FRONTEND_LOG_SINK_URL)});
 const activeControllers = new Set<AbortController>();
 let unauthorizedRecovery: (() => void | Promise<void>) | undefined;
 /** Successful generated commands publish here; read models remain app-owned subscribers. */
 export const platformRefreshSignal = createRefreshSignal();
+
+export function recordPlatformRenderError(error: Error) {
+  logger.error({event: 'frontend.render.failed', phase: 'render', outcome: 'ERROR', errorCode: 'UI_RENDER_ERROR'});
+}
 
 /** The platform shell owns the outcome; this substrate only fans a 401 out once. */
 export function registerPlatformUnauthorizedRecovery(recovery: () => void | Promise<void>) {

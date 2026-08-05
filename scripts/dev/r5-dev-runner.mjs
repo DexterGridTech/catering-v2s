@@ -3,6 +3,7 @@ import {spawn, spawnSync} from 'node:child_process';
 import {chmodSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import {evaluateCleanupReadback, snapshotProcessTree, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -11,12 +12,21 @@ const portLockPath = path.join(root, '.runtime/r5/managed-port-lock');
 const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 const startToken = (pid) => run('ps', ['-o', 'lstart=', '-p', String(pid)]).trim();
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-const fail = (reason) => { process.stderr.write(`R5_DEV_RUNNER=REFUSED; REASON=${reason}\n`); process.exit(2); };
+const fail = (reason) => { throw new Error(`R5_DEV_RUNNER=REFUSED; REASON=${reason}`); };
 const run = (command, args, options = {}) => {
   const result = spawnSync(command, args, {cwd: root, encoding: 'utf8', ...options});
   if (result.status !== 0) fail(`${command}:${(result.stderr || result.stdout || 'FAILED').trim().replace(/\s+/g, '_').slice(0, 160)}`);
   return result.stdout;
 };
+const processIdentity = (value) => ({pid: value.pid, pgid: value.pgid ?? value.pid, startToken: value.startToken});
+const cleanupStatusFromTree = (treeReadback) => evaluateCleanupReadback(treeReadback) ? 'PASS' : 'FAIL';
+async function stopOwnedProcess(value) {
+  if (!Number.isInteger(value.pid) || typeof value.startToken !== 'string') fail(`PROCESS_IDENTITY_INVALID:${value.name}`);
+  if (pidAlive(value.pid) && startToken(value.pid) !== value.startToken) fail(`PROCESS_IDENTITY_MISMATCH:${value.name}`);
+  const result = await terminateOwnedProcessTree(processIdentity(value), {readTable: readProcessTable});
+  if (result.status !== 'PASS') fail(`R5_DEV_PROCESS_TREE_REMAINS:${value.name}`);
+  return result.treeReadback;
+}
 function environment(mode) {
   const stdout = run(process.execPath, [path.join(root, 'scripts/dev/r5-dev-environment.mjs'), mode, '--json']);
   return JSON.parse(stdout);
@@ -149,29 +159,42 @@ async function start() {
     const child = spawn(entry.command, entry.args, {cwd: root, detached: true, stdio: ['ignore', logFd, logFd], env: {...process.env, ...entry.env}});
     child.unref();
     return {name: entry.name, pid: child.pid, log, command: [entry.command, ...entry.args]};
-  })].map((value) => ({...value, startToken: startToken(value.pid)}));
+  })].map((value) => {
+    const withIdentity = {...value, pgid: Number(run('ps', ['-o', 'pgid=', '-p', String(value.pid)]).trim()), startToken: startToken(value.pid)};
+    return {...withIdentity, tree: snapshotProcessTree(processIdentity(withIdentity))};
+  });
   const businessServer = processes.find((value) => value.name === 'business-server');
   const readiness = await waitForBusinessReady(businessServer);
-  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, database: env.environment.V2S_DEV_DATABASE_URL, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, portLock, processes, readiness}, null, 2) + '\n');
+  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, portLock, processes, readiness}, null, 2) + '\n');
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
     for (const value of processes) {
-      if (Number.isInteger(value.pid) && pidAlive(value.pid) && startToken(value.pid) === value.startToken) {
-        try { process.kill(-value.pid, 'SIGTERM'); } catch { try { process.kill(value.pid, 'SIGTERM'); } catch { /* owned process already exited */ } }
+      if (Number.isInteger(value.pid) && typeof value.startToken === 'string') {
+        try { await terminateOwnedProcessTree(processIdentity(value), {readTable: readProcessTable}); } catch { /* cleanup status is surfaced by the failed start */ }
       }
     }
     releasePortLock(portLock); throw error;
   }
 }
-function stop() {
+async function stop() {
   if (!existsSync(manifestPath)) { process.stdout.write('R5_DEV_STOP=NO_MANAGED_PROCESS\n'); return; }
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   if (manifest.kind !== 'r5-dev-run-manifest' || !Array.isArray(manifest.processes)) fail('MANIFEST_INVALID');
-  for (const value of manifest.processes) if (Number.isInteger(value.pid) && pidAlive(value.pid)) {
-    if (typeof value.startToken !== 'string' || startToken(value.pid) !== value.startToken) fail(`PROCESS_IDENTITY_MISMATCH:${value.name}`);
-    try { process.kill(-value.pid, 'SIGTERM'); } catch { process.kill(value.pid, 'SIGTERM'); }
-  }
+  for (const value of manifest.processes) await stopOwnedProcess(value);
   releasePortLock(manifest.portLock); rmSync(manifestPath); process.stdout.write('R5_DEV_STOP=PASS\n');
 }
 const mode = process.argv[2];
-if (mode === 'start') start().catch((error) => fail(error?.message ?? 'START_FAILED')); else if (mode === 'stop') stop(); else fail('USAGE_START_OR_STOP');
+if (mode === '--self-test') {
+  const syntheticManifest = {kind: 'r5-dev-run-manifest', firstFailure: null, lastKnownGood: 'TREE_SNAPSHOT', brokenBoundary: null, business: 'PASS', cleanup: 'PENDING', processes: [{pid: 10, pgid: 10, startToken: 'root', tree: [{pid: 10, pgid: 10}, {pid: 11, pgid: 10}]}]};
+  if (cleanupStatusFromTree(syntheticManifest.processes[0].tree) !== 'FAIL' || cleanupStatusFromTree([]) !== 'PASS') fail('R5_DEV_RUNNER_CLEANUP_TREE_RED_NOT_DETECTED');
+  const processTable = [{pid: 10, ppid: 1, pgid: 10, startToken: 'root', command: 'runner'}, {pid: 11, ppid: 10, pgid: 10, startToken: 'child', command: 'child'}];
+  const deadLeaderTree = snapshotProcessTree({pid: 10, pgid: 10, startToken: 'reused'}, processTable);
+  if (cleanupStatusFromTree(deadLeaderTree) !== 'FAIL' || !deadLeaderTree.every((value) => value.ownershipUnverified === true)) fail('R5_DEV_RUNNER_PRODUCTION_RED_NOT_DETECTED');
+  syntheticManifest.firstFailure = 'R5_DEV_PROCESS_TREE_REMAINS:synthetic'; syntheticManifest.brokenBoundary = 'LOCAL_CLEANUP'; syntheticManifest.cleanup = 'FAIL';
+  if (syntheticManifest.business !== 'PASS' || syntheticManifest.cleanup !== 'FAIL' || !syntheticManifest.firstFailure || !syntheticManifest.lastKnownGood || !syntheticManifest.brokenBoundary) fail('R5_DEV_RUNNER_CLEANUP_EVIDENCE_RED_NOT_RETAINED');
+  process.stdout.write('R5_DEV_RUNNER_SELF_TEST=PASS\nRED=LEADER_DEAD_CHILD_ALIVE_CLEANUP_FAIL\nEVIDENCE=FIRST_FAILURE,LAST_KNOWN_GOOD,BROKEN_BOUNDARY\n');
+} else if (mode === 'start') start().catch((error) => { process.stderr.write(`${error?.message ?? 'START_FAILED'}\n`); process.exitCode = 2; }); else if (mode === 'stop') {
+  stop().catch((error) => { process.stderr.write(`${error?.message ?? 'STOP_FAILED'}\n`); process.exitCode = 2; });
+} else {
+  try { fail('USAGE_START_OR_STOP_OR_SELF_TEST'); } catch (error) { process.stderr.write(`${error.message}\n`); process.exitCode = 2; }
+}

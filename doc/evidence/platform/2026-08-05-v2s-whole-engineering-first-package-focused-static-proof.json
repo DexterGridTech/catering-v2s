@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "packageId": "WHOLE-ENGINEERING-FIRST-PACKAGE-20260805",
+  "scope": "static implementation only",
+  "reviewTarget": "IMPLEMENTATION",
+  "businessStatus": "NOT_APPLICABLE_WITH_REASON",
+  "businessReason": "The package has no DEV/UAT/HTTP/L2 execution authority; runtime and browser business proof belongs to the second package or a separately authorized environment run.",
+  "cleanupStatus": "NOT_APPLICABLE_WITH_REASON",
+  "cleanupReason": "No managed runtime, remote container, database, seed, reset, or browser process was started by this package.",
+  "claudeReview": {
+    "verdict": "GO",
+    "m": 0,
+    "s": 0,
+    "n": 2,
+    "artifact": "Claude review supplied by Dexter on 2026-08-05",
+    "nFindings": [
+      {"id":"N-01","status":"REGISTERED_FUTURE_MIGRATION_PREREQUISITE","impact":"No current risk; fail-closed unknown service-node types widen blast radius from one hidden assignment to login failure. Retire a type only after data migration and stale-row proof."},
+      {"id":"N-02","status":"REGISTERED_EPOCH_RECONCILIATION","impact":"No semantic impact; 320 is the closed review denominator and 323 is the mechanically rebased artifact denominator. Occurrences remain 477 and final binding is independent."}
+    ]
+  },
+  "classificationAdmission": {
+    "artifact": "doc/evidence/platform/2026-08-05-v2s-whole-engineering-first-package-rp12-classification.json",
+    "independentReview": "doc/review/platform/2026-08-05-v2s-whole-engineering-first-package-classification-review.md",
+    "reviewCycleId": "WHOLE-ENGINEERING-FIRST-PACKAGE-20260805-RP12-CLASSIFICATION",
+    "reviewRound": 2,
+    "reviewRoundLimit": 2,
+    "verdict": "GO",
+    "m": 0,
+    "s": 0,
+    "n": 0,
+    "reviewedArtifactSha256": "cea91e4948fb012e28666dd315ae9cdcdb195b67203329ed3409b34614b22c58",
+    "reviewedDenominator": {"occurrences": 477, "matchingLines": 320, "files": 32, "rows": 320},
+    "reviewedChecks": ["ordered row token/line equality", "per-occurrence ordinal/token/map equality", "row-set and mapping-set equality", "source hashes", "normative-source anchors", "owner and disposition completeness"],
+    "implementationState": {
+      "artifactSha256": "59ca56242b0e3610e4c5e557c6091b93b32de4bda59d5ce1e7ce5985788a494f",
+      "artifactCounts": {"occurrences": 477, "matchingLines": 323, "files": 32, "rows": 323},
+      "status": "MECHANICALLY_REBASED_AFTER_RP12_PRE_BEFORE_ORDERED_REPLACEMENTS",
+      "reviewStatus": "NOT_A_NEW_REVIEW_ROUND",
+      "disposition": "The independent GO is attached to the reviewed pre-rebase artifact. The rebased artifact is retained as implementation-state evidence only; no third review is opened. Post-replacement source is checked by the owner-specific constant usage and residual-literal scans below."
+    }
+  },
+  "implementationChecks": [
+    {"id":"RP-09","result":"PASS","evidence":["MinioAssetObjectStorage.exists delegates existsWith", "only explicit 404/not-found names map to false", "auth/server/network failures remain unavailable", "MinioAssetObjectStorageTest covers red cases"]},
+    {"id":"S2-S-01","result":"PASS","evidence":["SecurityDiagnosticEvent carries databaseOperationCount and databaseDurationMillis", "PublicSecurityDiagnosticRequestState snapshots DatabaseOperationTracker", "interceptor order closes public snapshot before metrics cleanup", "foundation tests pass"]},
+    {"id":"RP-12-pre","result":"PASS","evidence":["WorkspaceAuthenticationService.enterable rejects unknown service-node types instead of returning false", "WorkspaceAuthenticationServiceNodeTypeTest covers the unknown red case"]},
+    {"id":"RP-12a..n","result":"PASS","evidence":["five finite sets use owner-local constants", "ServiceNodeTypes is the only OpenAPI/codegen-owned set", "ExtensionHostTypes now names BRAND/TENANT/CONTRACT/COMMERCIAL_GROUP as well as the shared node values", "rp12-final-state self-test and baseline pass with 362 qualified and 152 raw-allowed occurrences", "final-state binding source and occurrence digests match evidence", "fresh independent final-binding review GO M=0/S=0/N=0"]},
+    {"id":"RP-13","result":"PASS","evidence":["HeadCompanySummary is the list wire model", "authorizedBrands remains detail-only", "edge codegen check passes"]},
+    {"id":"RP-14","result":"PASS","evidence":["AuditChangeJson.write is the strict audit writer", "all production audit INSERT writers route through it", "audit-model tests pass"]},
+    {"id":"RP-15","result":"PASS","evidence":["owner reachability search found no emission/consumer for ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_REQUIRED", "the unreachable disposition row and generated enum member were removed", "capability invariant self-test and edge codegen check pass", "fresh independent final-binding review GO M=0/S=0/N=0"]},
+    {"id":"RP-16","result":"PASS","evidence":["pageSize > 100 raises typed PageValidationException", "account visibility still uses concealment exception", "ContractProblemAdvice maps the typed parameter failure to the existing 422 validation problem"]},
+    {"id":"RP-17","result":"PASS_WITH_EXPLICIT_NOT_APPLICABLE","evidence":["the eight potentially ambiguous owner findFirst sites were inventoried", "six WorkspaceAuthenticationService lookups are filtered by unique assignment/data-node identity and throw or return nullable intentionally", "StoreCandidateTaskReadService selectedId is prevalidated against id and only re-inserts that selected item", "OrganizationVisibilityLookup is a nullable typed lookup by (type,id)", "catalog/repository/idempotency findFirst sites have existing unique-key or Optional semantics and were not changed"]},
+    {"id":"RP-18","result":"PASS","evidence":["adminHierarchyCollator is exported by admin-ui-foundation", "platform and operations pages import the same helper", "foundation typecheck/test and both focused page tests pass"]},
+    {"id":"RP-19a","result":"PASS","evidence":["task-read dependency is explicit in module-dependency-registry", "registry checker passes"]},
+    {"id":"RP-19b","result":"PASS","evidence":["BusinessEntityService list and require wrappers use BUSINESS_ENTITY_PROJECTION", "production SELECT * wrapper scan is empty"]},
+    {"id":"RP-19c","result":"PASS","evidence":["crud-presentation-standard-catalog removes redundant project identity from stores/contracts", "tenant/brand/store identity remains owner-relevant", "policy JSON parses"]},
+    {"id":"RP-19d","result":"PASS","evidence":["retired password-reset directory was empty and reference-free", "only the exact empty directory was removed"]},
+    {"id":"RP-19e","result":"PASS","evidence":["Flyway discovery denominator is 11", "flyway-test-locations gate passes"]},
+    {"id":"RP-19f","result":"DOCUMENTED_AUTHORITY_DRIFT","evidence":["ST-11 ledger records historical frontend manifest hash 8d53e1...", "current contracts/policy/frontend-asset-carryover-manifest.json is 32fd89d32b95f4386376a454f5d1fdec3cf0b3b519eb671e0a2f167531882a72", "the current manifest is source-owned and no blind ledger refresh was performed"]},
+    {"id":"RP-19g","result":"DOCUMENTED_AUTHORITY_DRIFT","evidence":["doc/heritage/registry.json is the current selected-asset policy authority", "selectedAssetPolicy/selectedAssets changed as registry evolution, so frozen historical hash evidence was not overwritten"]},
+    {"id":"RP-20","result":"PASS","evidence":["standards-coverage --phase R5 passes", "standards-coverage --phase RM1-P6-3 resolves RM1-P6-3->R5 and passes", "database-operation-budget is canonical; query-boundaries remains a byte-equivalent compatibility alias"]}
+  ],
+  "commands": [
+    {"command":"node scripts/generate/edge-codegen.mjs --check","result":"PASS","output":"R5_EDGE_CODEGEN_CHECK=PASS; FILES=254"},
+    {"command":"scripts/check/r5-edge-materialize --self-test","result":"PASS","output":"R5_EDGE_MATERIALIZE_SELF_TEST=PASS; real red list includes HEAD_COMPANY missing controls"},
+    {"command":"scripts/check/code-layout","result":"PASS"},
+    {"command":"scripts/check/openapi-contracts","result":"PASS"},
+    {"command":"scripts/check/logging-boundaries","result":"PASS"},
+    {"command":"scripts/check/frontend-architecture","result":"PASS"},
+    {"command":"scripts/check/standards-coverage --phase R5","result":"PASS","output":"RULES=150"},
+    {"command":"scripts/check/standards-coverage --phase RM1-P6-3","result":"PASS","output":"PHASE_ALIAS=RM1-P6-3->R5; RULES=150"},
+    {"command":"node tools/module-dependency-registry/check.mjs","result":"PASS"},
+    {"command":"node tools/verify-gates/cli.mjs flyway-test-locations","result":"PASS","output":"DENOMINATOR=11"},
+    {"command":"gradle :apps:backend:catering-business-server:compileJava ... --tests '*AuditChangeJsonTest' ... --tests '*SecurityDiagnosticEventTest' --no-daemon","result":"PASS","output":"BUILD SUCCESSFUL"},
+    {"command":"yarn workspace @catering-v2s/admin-ui-foundation typecheck","result":"PASS"},
+    {"command":"yarn workspace @catering-v2s/platform-admin typecheck","result":"PASS"},
+    {"command":"yarn workspace @catering-v2s/operations-admin typecheck","result":"PASS"},
+    {"command":"platform-admin and operations-admin focused App/page vitest files","result":"PASS","output":"PlatformApp 1 test; OperationsApp 5 tests; focused page tests pass"},
+    {"command":"workspace-iam and asset Docker-backed tests","result":"BLOCKED_BY_BOUNDARY","output":"V2S_TESTCONTAINERS_REMOTE_REQUIRED: execute only through scripts/test/r5-remote-testcontainers.mjs on the remote development host; no remote run authorized in this package"}
+  ],
+  "findFirstInventory": [
+    {"path":"WorkspaceAuthenticationService.java:114","reason":"candidate stream is filtered by scopeNodeId and throws SessionInvalidException when absent"},
+    {"path":"WorkspaceAuthenticationService.java:139","reason":"candidate stream is filtered by both scopeNodeId and dataNodeType and throws on absent"},
+    {"path":"WorkspaceAuthenticationService.java:200","reason":"role assignment candidate is filtered by persisted assignmentId; null is the intentional empty-workbench branch"},
+    {"path":"WorkspaceAuthenticationService.java:210","reason":"enterable assignment is filtered by selected role-assignment id and throws on absent"},
+    {"path":"WorkspaceAuthenticationService.java:265","reason":"locked selection is filtered by assignment node id and throws on absent"},
+    {"path":"WorkspaceAuthenticationService.java:296","reason":"nullable helper is a typed (dataNodeType,dataNodeId) lookup; null id intentionally returns null"},
+    {"path":"StoreCandidateTaskReadService.java:66","reason":"selectedId is prevalidated in the same list and only a selected row is inserted into a bounded page"},
+    {"path":"OrganizationVisibilityLookup.java:54","reason":"nullable visibility lookup is keyed by the typed pair (dataNodeType,dataNodeId)"}
+  ],
+  "authorityNotes": [
+    {"id":"ST-11","status":"CURRENT_SOURCE_OWNED_DRIFT","decision":"retain current manifest and record the mismatch; do not rewrite historical ledger hash in this package"},
+    {"id":"HERITAGE_SELECTED_ASSET_POLICY","status":"CURRENT_REGISTRY_AUTHORITY","decision":"use doc/heritage/registry.json for current policy; do not overwrite frozen historical evidence"}
+  ],
+  "authorizationBoundary": "Static implementation package only. No DEV/UAT/HTTP/L2, database/migration, seed/reset, runtime deployment, or Git authority."
+}

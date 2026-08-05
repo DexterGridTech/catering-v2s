@@ -34,4 +34,23 @@ describe('createObservedBaseQuery', () => {
 
     expect(onUnauthorized).toHaveBeenCalledOnce();
   });
+
+  it('redacts public invitation tokens and prefers the backend request id', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', {
+      status: 200,
+      headers: {'X-Request-Id': 'req-edge-1', 'X-Correlation-Id': 'corr-edge-1'},
+    })));
+    const logger = createSafeLogger();
+    const opaqueToken = ['invite', 'secret', 'not', 'for', 'logs'].join('-');
+
+    await createObservedBaseQuery({baseUrl: 'http://example.test/', logger})({
+      url: `/api/public/invitations/aurora/${opaqueToken}/otp/send`,
+      requiresSession: false,
+    } as never, api(), {});
+
+    const event = logger.snapshot()[0];
+    expect(event.requestId).toBe('req-edge-1');
+    expect(event.routeTemplate).not.toContain(opaqueToken);
+    expect(event.operationId).not.toContain(opaqueToken);
+  });
 });

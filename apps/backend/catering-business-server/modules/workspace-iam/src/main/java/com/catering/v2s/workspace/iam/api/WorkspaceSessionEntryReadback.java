@@ -1,5 +1,7 @@
 package com.catering.v2s.workspace.iam.api;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -70,10 +72,10 @@ public record WorkspaceSessionEntryReadback(
 
         public VisibleDataNodeCandidate selectionFor(String requiredDataNodeType) {
             return switch (requiredDataNodeType) {
-                case "REGION" -> region;
-                case "PROJECT" -> project;
-                case "STORE" -> store;
-                case "HEAD_COMPANY" -> headCompany;
+                case ServiceNodeTypes.REGION -> region;
+                case ServiceNodeTypes.PROJECT -> project;
+                case ServiceNodeTypes.STORE -> store;
+                case ServiceNodeTypes.HEAD_COMPANY -> headCompany;
                 default -> null;
             };
         }

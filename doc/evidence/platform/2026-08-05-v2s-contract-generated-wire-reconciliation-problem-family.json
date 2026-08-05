@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "status": "ACTIVE_RED_VERIFIED",
+  "latestDisposition": "FIXED_PENDING_CLAUDE_POST_REMEDIATION_RECHECK",
+  "problemFamilyId": "V2S-GENERATED-WIRE-GLOBAL-FORBIDDEN-FIELD-AND-HERITAGE-UNDERMODEL",
+  "genericProblem": "A generated contract pipeline can silently erase a valid component field or recreate an obsolete field when one global rule is applied without component-specific exceptions and when accepted v2s semantics are assumed to equal heritage schema shape.",
+  "rootCauseClass": "single-source reconciliation failure: global materializer policy plus missing explicit v2s override and incomplete consumer-payload proof",
+  "finiteDenominator": [
+    "all catalog componentOverrides forbiddenProperties and preserveProperties",
+    "all WorkspaceSessionEntry, WorkspaceOperationsInvitationActionRequest, OrganizationStoreCreateRequest and StoreContractCreateRequest surfaces",
+    "all same-name requiredDataNodeType property occurrences in materialized component schemas and generated platform/operations consumers",
+    "owner WorkspaceAuthorizationCatalog.pageCatalog() entries and PlatformWorkspaceRoleController.pageAccessCatalogWire passthrough",
+    "all generated OpenAPI outputs and edge-codegen Java/TypeScript consumers",
+    "all diagnostic workload request bodies for create and invitation action commands"
+  ],
+  "searchedSurfaces": [
+    "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+    "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json",
+    "scripts/generate/r5-edge-materialize.mjs",
+    "contracts/catalog/admin-catalog.json",
+    "contracts/openapi/components/contract/contract.schemas.yaml",
+    "contracts/openapi/components/organization/store.schemas.yaml",
+    "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+    "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java",
+    "apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts",
+    "scripts/test/http-diagnostic-workload.mjs",
+    "scripts/test/http-diagnostic-workload.test.mjs",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/",
+    "apps/frontend/operations-admin/src/app/api/generated/"
+  ],
+  "searchQueries": [
+    "forbiddenProperties preserveProperties expectedContextVersion projectId scopeContext selectedDataNode WorkspaceScopeNode",
+    "requiredDataNodeType all contract/generated schema occurrences HEAD_COMPANY",
+    "WorkspaceAuthorizationCatalog pageCatalog PlatformWorkspaceRoleController pageAccessCatalogWire",
+    "OperationsWorkspaceInvitationController required expectedContextVersion",
+    "WorkspaceSessionWireMapper scopeContext",
+    "operations diagnostic workload invitation reissue cancel create body"
+  ],
+  "counterexamples": [
+    "Workspace user assignment revoke intentionally remains without expectedContextVersion; the exception is limited to WorkspaceOperationsInvitationActionRequest.",
+    "Platform/operations read queries may legitimately carry projectId only where the catalog explicitly declares it; create commands do not.",
+    "Heritage selectedDataNode is not accepted v2s truth; runtime/backend/frontend already consume scopeContext.",
+    "WorkspaceRolePage.pageAccessCatalog previously lacked HEAD_COMPANY while owner pageCatalog emitted it; the corrected enum addition now covers the same-name site."
+  ],
+  "findings": [
+    {"findingId": "S1-F01", "classification": "CONFIRMED", "cause": "global forbidden-property pass removed the invitation action context field", "fix": "component-aware preserveProperties and explicit workload assertions"},
+    {"findingId": "S1-F02", "classification": "CONFIRMED", "cause": "contract source drifted from accepted U27 scopeContext/project-derivation semantics", "fix": "catalog/materializer/placement reconciliation and regenerated wire consumers"},
+    {"findingId": "S1-F03", "classification": "CONFIRMED", "cause": "single-reference allOf was resolved for schema merging but not for Java property type selection", "fix": "materialize accepted scope references as direct refs with nullable annotation and keep generated type selection deterministic"},
+    {"findingId": "S1-F04", "classification": "CONFIRMED", "cause": "nested enum additions were applied before missing references were inlined", "fix": "apply the narrow enum addition after inlining and assert both candidate and selected navigation enums"},
+    {"findingId": "S1-F05", "classification": "CONFIRMED", "cause": "same-name requiredDataNodeType scan stopped after session navigation and omitted WorkspaceRolePage.pageAccessCatalog", "fix": "add WorkspaceRolePage.enumAdditions plus a dedicated role-page positive/red materializer control and expand denominator to every same-name occurrence"},
+    {"findingId": "S1-F06", "classification": "CONFIRMED", "cause": "invitation action review criterion collapsed a four-field payload to expectedContextVersion only", "fix": "restate the criterion as owner consumption of optional scopeRef plus required expectedContextVersion, expectedVersion and idempotencyKey"}
+  ],
+  "preventionDispositions": [
+    {"findingId": "S1-F01", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/generate/r5-edge-materialize.mjs plus scripts/check/r5-edge-materialize --self-test and workload exception assertions"},
+    {"findingId": "S1-F02", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "S1 implementation review checklist: reopen U27 source truth, placement, generated wire and finite payload denominator"},
+    {"findingId": "S1-F03", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/generate/edge-codegen.mjs plus backend compileJava proof"},
+    {"findingId": "S1-F04", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/generate/r5-edge-materialize.mjs self-test red mutation for requiredDataNodeType"},
+    {"findingId": "S1-F05", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/generate/r5-edge-materialize.mjs role-page enum positive assertion and empty-additions red mutation"},
+    {"findingId": "S1-F06", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "S1 package input and Claude recheck brief require four-field invitation action owner-consumption evidence"}
+  ]
+}

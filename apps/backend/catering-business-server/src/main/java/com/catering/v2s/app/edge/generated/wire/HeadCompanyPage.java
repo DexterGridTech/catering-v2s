@@ -3,5 +3,5 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record HeadCompanyPage(
     HeadCompanyPageMetadata metadata,
-    java.util.List<HeadCompany> items
+    java.util.List<HeadCompanySummary> items
 ) {}

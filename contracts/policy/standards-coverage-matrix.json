@@ -5,6 +5,9 @@
   "programId": "V2S_W0_W4_EXECUTION",
   "roadmapStep": "R2",
   "currentPhase": "R2",
+  "phaseAliases": {
+    "RM1-P6-3": "R5"
+  },
   "authorityBoundary": {
     "r2FreshAcceptanceAuthorized": false,
     "w1Authorized": false,

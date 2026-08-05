@@ -2,7 +2,7 @@ import {ApartmentOutlined, AppstoreOutlined, DashboardOutlined, DownOutlined, Fi
 import {Alert, App, Avatar, Button, Dropdown, Layout, Menu, Result, Space, Tabs, Typography, type MenuProps} from 'antd';
 import {CollapsedIcon} from '@ant-design/pro-components/es/layout/components/CollapsedIcon';
 import {AdminErrorBoundary, OverlayLockProvider, contextScopedQueryArgs, testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {clearPlatformTransportState, platformClient, registerPlatformSessionRecovery} from './api/PlatformTransport';
+import {clearPlatformTransportState, platformClient, recordPlatformRenderError, registerPlatformSessionRecovery} from './api/PlatformTransport';
 import {PlatformLoginPage} from '../features/authentication/ui/PlatformLoginPage';
 import {PlatformPasswordChangeDrawer} from '../features/authentication/ui/PlatformPasswordChangeDrawer';
 import {PlatformPasswordChangeResult} from '../features/authentication/ui/PlatformPasswordChangeResult';
@@ -170,6 +170,7 @@ function Root() {
     }}/></WorkspaceScopeProvider></PlatformSessionProvider>
     : <Routes><Route path="/platform/login" element={<PlatformLoginPage onSession={(value) => { sessionInvalidating.current = false; setSession(value); void navigate('/platform/workspaces'); }}/>} /><Route path="/platform/password-recovery/verify" element={<PlatformPasswordRecoveryVerifyPage/>}/><Route path="/platform/password-recovery/password" element={<PlatformPasswordRecoveryPasswordPage/>}/><Route path="/platform/password-recovery/complete" element={<PlatformPasswordRecoveryCompletePage/>}/><Route path="*" element={<Navigate to="/platform/login" replace/>}/></Routes>}</>;
   return <App><OverlayLockProvider><AdminErrorBoundary
+    onError={recordPlatformRenderError}
     resetKeys={[session?.sessionVersion]}
     fallback={({reset}) => <Result status="error" title="页面暂时无法显示" subTitle="请重试当前页面。" extra={<Button type="primary" onClick={reset}>重试页面</Button>}/>}
   >{content}</AdminErrorBoundary></OverlayLockProvider></App>;

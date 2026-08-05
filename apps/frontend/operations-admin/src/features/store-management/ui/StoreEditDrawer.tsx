@@ -82,7 +82,7 @@ export function StoreEditDrawer({store, queryContext, onClose, onUpdated}: {stor
     }
   };
 
-  return <Drawer title={store ? `编辑门店资料：${store.name}` : '编辑门店资料'} open={open} size={620} destroyOnHidden maskClosable keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-store-edit-drawer')} footer={<Space>
+  return <Drawer title={store ? `编辑门店资料：${store.name}` : '编辑门店资料'} open={open} size={620} destroyOnHidden maskClosable={!lifecycle.submitting} closable={!lifecycle.submitting} keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} {...testId('operations-store-edit-drawer')} footer={<Space>
     <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId('operations-store-edit-cancel')}>取消</Button>
     <Button type="primary" loading={lifecycle.submitting} disabled={!ready} onClick={() => form.submit()} {...testId('operations-store-edit-submit')}>保存</Button>
   </Space>}>

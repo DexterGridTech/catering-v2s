@@ -150,7 +150,8 @@ export function BusinessEntityEditDrawer({entity, kind, queryContext, onClose, o
     open={Boolean(entity)}
     size={620}
     destroyOnHidden
-    maskClosable
+    maskClosable={!lifecycle.submitting}
+    closable={!lifecycle.submitting}
     keyboard={!lifecycle.submitting}
     onClose={lifecycle.requestClose}
     afterOpenChange={lifecycle.afterOpenChange}

@@ -1,5 +1,7 @@
 package com.catering.v2s.app.edge.operations.organization;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.app.edge.generated.wire.OrganizationHierarchySnapshot;
 import com.catering.v2s.app.edge.generated.wire.OrganizationNode;
 import com.catering.v2s.app.edge.generated.wire.OrganizationNodeCreateRequest;
@@ -60,14 +62,14 @@ public final class OperationsOrganizationHierarchyController {
     @PostMapping("/regions")
     ResponseEntity<OrganizationNode> createRegion(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody OrganizationNodeCreateRequest body) {
         var session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        var authorization = requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_REGION", "GROUP", commercialGroups.requireCommercialGroup(groupWorkspaceKey).id());
+        var authorization = requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_REGION", ServiceNodeTypes.GROUP, commercialGroups.requireCommercialGroup(groupWorkspaceKey).id());
         return ResponseEntity.status(HttpStatus.CREATED).body(OrganizationHierarchyWireMapper.node(hierarchy.createRegion(session.workspaceUuid(), groupWorkspaceKey, body.code(), body.name(), body.notes(), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey, sessions.actor(session), authorization.ownerScopeGrant("REQ_CREATE_OPERATIONS_ORGANIZATION_REGION"))));
     }
 
     @PostMapping("/regions/{regionId}/projects")
     ResponseEntity<OrganizationNode> createProject(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID regionId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody OrganizationProjectCreateRequest body) {
         var session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        var authorization = requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_PROJECT", "REGION", hierarchy.requireNode(session.workspaceUuid(), groupWorkspaceKey, regionId, "REGION").id());
+        var authorization = requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_PROJECT", ServiceNodeTypes.REGION, hierarchy.requireNode(session.workspaceUuid(), groupWorkspaceKey, regionId, ServiceNodeTypes.REGION).id());
         return ResponseEntity.status(HttpStatus.CREATED).body(OrganizationHierarchyWireMapper.node(hierarchy.createProject(session.workspaceUuid(), groupWorkspaceKey, regionId, body.code(), body.name(), body.notes(), projectPhaseNames(body.phases()), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey, sessions.actor(session), authorization.ownerScopeGrant("REQ_CREATE_OPERATIONS_ORGANIZATION_PROJECT"))));
     }
 
@@ -95,7 +97,7 @@ public final class OperationsOrganizationHierarchyController {
         if (body.expectedVersion() == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("expected version is required");
         var session = sessions.requireWorkspace(request, groupWorkspaceKey);
         var commercialGroup = commercialGroups.requireCommercialGroup(groupWorkspaceKey);
-        var authorization = requireCapability(session, "REQ_UPDATE_OPERATIONS_COMMERCIAL_GROUP", "GROUP", commercialGroup.id());
+        var authorization = requireCapability(session, "REQ_UPDATE_OPERATIONS_COMMERCIAL_GROUP", ServiceNodeTypes.GROUP, commercialGroup.id());
         return OrganizationHierarchyWireMapper.commercialGroup(commercialGroups.execute(
             session.workspaceUuid(), groupWorkspaceKey, idempotencyKey, body.groupCode(), body.groupName(), body.expectedVersion(), BusinessEntityWireMapper.requestValues(body.extensionValues()), sessions.actor(session), authorization.ownerScopeGrant("REQ_UPDATE_OPERATIONS_COMMERCIAL_GROUP")
         ));

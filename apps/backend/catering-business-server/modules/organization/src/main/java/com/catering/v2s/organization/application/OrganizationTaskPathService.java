@@ -1,5 +1,8 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.organization.api.OrganizationNodeTypes;
+
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import java.sql.Array;
@@ -31,11 +34,11 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         if (workspaceUuid == null || key == null || targetId == null) throw new TaskPathNotFoundException();
         UUID groupId = groups.requireCommercialGroupRef(workspaceUuid, key);
         return switch (targetType) {
-            case "GROUP" -> groupPath(workspaceUuid, key, groupId, targetId);
-            case "REGION" -> nodePath(workspaceUuid, key, groupId, targetId, "REGION");
-            case "PROJECT" -> nodePath(workspaceUuid, key, groupId, targetId, "PROJECT");
-            case "HEAD_COMPANY" -> headCompanyPath(workspaceUuid, key, groupId, targetId);
-            case "STORE" -> storePath(workspaceUuid, key, groupId, targetId);
+            case ServiceNodeTypes.GROUP -> groupPath(workspaceUuid, key, groupId, targetId);
+            case ServiceNodeTypes.REGION -> nodePath(workspaceUuid, key, groupId, targetId, ServiceNodeTypes.REGION);
+            case ServiceNodeTypes.PROJECT -> nodePath(workspaceUuid, key, groupId, targetId, ServiceNodeTypes.PROJECT);
+            case ServiceNodeTypes.HEAD_COMPANY -> headCompanyPath(workspaceUuid, key, groupId, targetId);
+            case ServiceNodeTypes.STORE -> storePath(workspaceUuid, key, groupId, targetId);
             default -> throw new TaskPathNotFoundException();
         };
     }
@@ -79,47 +82,47 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         LinkedHashSet<TaskPathRef> requested = new LinkedHashSet<>(targets);
         if (requested.isEmpty()) return Map.of();
         for (TaskPathRef target : requested) {
-            if (target == null || target.targetId() == null || !Set.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE").contains(target.targetType())) throw new TaskPathNotFoundException();
+            if (target == null || target.targetId() == null || !Set.of(ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE).contains(target.targetType())) throw new TaskPathNotFoundException();
         }
         UUID groupId = groups.requireCommercialGroupRef(workspaceUuid, key);
         LinkedHashMap<TaskPathRef, TaskPath> result = new LinkedHashMap<>();
 
-        Set<UUID> storeIds = idsFor(requested, "STORE");
+        Set<UUID> storeIds = idsFor(requested, ServiceNodeTypes.STORE);
         Map<UUID, Store> stores = stores(workspaceUuid, key, storeIds, includeDisabledFacts);
         if (stores.size() != storeIds.size()) throw new TaskPathNotFoundException();
 
-        Set<UUID> headCompanyIds = idsFor(requested, "HEAD_COMPANY");
+        Set<UUID> headCompanyIds = idsFor(requested, ServiceNodeTypes.HEAD_COMPANY);
         Map<UUID, Entity> headCompanies = headCompanies(workspaceUuid, key, headCompanyIds, includeDisabledFacts);
         if (headCompanies.size() != headCompanyIds.size()) throw new TaskPathNotFoundException();
 
         Set<UUID> nodeIds = new LinkedHashSet<>();
-        nodeIds.addAll(idsFor(requested, "REGION"));
-        nodeIds.addAll(idsFor(requested, "PROJECT"));
+        nodeIds.addAll(idsFor(requested, ServiceNodeTypes.REGION));
+        nodeIds.addAll(idsFor(requested, ServiceNodeTypes.PROJECT));
         stores.values().forEach(store -> nodeIds.add(store.projectId()));
         Map<UUID, NodePath> nodes = nodePaths(workspaceUuid, key, groupId, nodeIds, includeDisabledFacts);
 
         for (TaskPathRef target : requested) {
             switch (target.targetType()) {
-                case "GROUP" -> {
+                case ServiceNodeTypes.GROUP -> {
                     if (!groupId.equals(target.targetId())) throw new TaskPathNotFoundException();
-                    result.put(target, new TaskPath("GROUP", groupId, List.of(groupId), groups.describeCommercialGroup(workspaceUuid, key, groupId)));
+                    result.put(target, new TaskPath(ServiceNodeTypes.GROUP, groupId, List.of(groupId), groups.describeCommercialGroup(workspaceUuid, key, groupId)));
                 }
-                case "REGION", "PROJECT" -> {
+                case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> {
                     NodePath node = nodes.get(target.targetId());
                     if (node == null || !target.targetType().equals(node.type())) throw new TaskPathNotFoundException();
                     result.put(target, node.taskPath());
                 }
-                case "HEAD_COMPANY" -> {
+                case ServiceNodeTypes.HEAD_COMPANY -> {
                     Entity headCompany = headCompanies.get(target.targetId());
-                    result.put(target, new TaskPath("HEAD_COMPANY", headCompany.id(), List.of(groupId, headCompany.id()), headCompany.code() + " " + headCompany.name()));
+                    result.put(target, new TaskPath(ServiceNodeTypes.HEAD_COMPANY, headCompany.id(), List.of(groupId, headCompany.id()), headCompany.code() + " " + headCompany.name()));
                 }
-                case "STORE" -> {
+                case ServiceNodeTypes.STORE -> {
                     Store store = stores.get(target.targetId());
                     NodePath project = nodes.get(store.projectId());
-                    if (project == null || !"PROJECT".equals(project.type())) throw new TaskPathNotFoundException();
+                    if (project == null || !OrganizationNodeTypes.PROJECT.equals(project.type())) throw new TaskPathNotFoundException();
                     List<UUID> ancestors = new ArrayList<>(project.taskPath().ancestorIds());
                     ancestors.add(store.id());
-                    result.put(target, new TaskPath("STORE", store.id(), ancestors, project.taskPath().displayPath() + " / " + store.code() + " " + store.name()));
+                    result.put(target, new TaskPath(ServiceNodeTypes.STORE, store.id(), ancestors, project.taskPath().displayPath() + " / " + store.code() + " " + store.name()));
                 }
                 default -> throw new TaskPathNotFoundException();
             }
@@ -133,14 +136,14 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         if (workspaceUuid == null || key == null || targets == null) return Set.of();
         LinkedHashSet<TaskPathRef> requested = new LinkedHashSet<>(targets);
         if (requested.isEmpty()) return Set.of();
-        if (requested.stream().anyMatch(target -> target == null || target.targetId() == null || !Set.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE").contains(target.targetType()))) return Set.of();
+        if (requested.stream().anyMatch(target -> target == null || target.targetId() == null || !Set.of(ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE).contains(target.targetType()))) return Set.of();
         LinkedHashSet<TaskPathRef> available = new LinkedHashSet<>();
-        for (TaskPathRef group : requested.stream().filter(target -> "GROUP".equals(target.targetType())).toList()) {
+        for (TaskPathRef group : requested.stream().filter(target -> ServiceNodeTypes.GROUP.equals(target.targetType())).toList()) {
             if (groups.isEnterableCommercialGroup(workspaceUuid, key, group.targetId())) available.add(group);
         }
         available.addAll(availableNodes(workspaceUuid, key, requested));
-        available.addAll(availableEntities(workspaceUuid, key, requested, "HEAD_COMPANY", "head_company"));
-        available.addAll(availableEntities(workspaceUuid, key, requested, "STORE", "store"));
+        available.addAll(availableEntities(workspaceUuid, key, requested, ServiceNodeTypes.HEAD_COMPANY, "head_company"));
+        available.addAll(availableEntities(workspaceUuid, key, requested, ServiceNodeTypes.STORE, "store"));
         return Set.copyOf(available);
     }
 
@@ -151,20 +154,20 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         LinkedHashSet<TaskPathRef> requested = new LinkedHashSet<>(targets);
         if (requested.isEmpty()) return Map.of();
         if (requested.stream().anyMatch(target -> target == null || target.targetId() == null
-            || !Set.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE").contains(target.targetType()))) {
+            || !Set.of(ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE).contains(target.targetType()))) {
             throw new TaskPathNotFoundException();
         }
 
         UUID groupId = groups.requireCommercialGroupRef(workspaceUuid, key);
         LinkedHashMap<TaskPathRef, String> labels = new LinkedHashMap<>();
-        for (TaskPathRef group : requested.stream().filter(target -> "GROUP".equals(target.targetType())).toList()) {
+        for (TaskPathRef group : requested.stream().filter(target -> ServiceNodeTypes.GROUP.equals(target.targetType())).toList()) {
             if (!groupId.equals(group.targetId())) throw new TaskPathNotFoundException();
             labels.put(group, groups.describeCommercialGroup(workspaceUuid, key, groupId));
         }
 
         Set<UUID> nodeIds = new LinkedHashSet<>();
-        nodeIds.addAll(idsFor(requested, "REGION"));
-        nodeIds.addAll(idsFor(requested, "PROJECT"));
+        nodeIds.addAll(idsFor(requested, ServiceNodeTypes.REGION));
+        nodeIds.addAll(idsFor(requested, ServiceNodeTypes.PROJECT));
         if (!nodeIds.isEmpty()) {
             List<Node> nodes = jdbc.query(
                 "SELECT id, parent_id, node_type, code, name FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN (" + placeholders(nodeIds.size()) + ")",
@@ -177,20 +180,20 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
             }
         }
 
-        Set<UUID> headCompanyIds = idsFor(requested, "HEAD_COMPANY");
+        Set<UUID> headCompanyIds = idsFor(requested, ServiceNodeTypes.HEAD_COMPANY);
         for (Entity entity : headCompanies(workspaceUuid, key, headCompanyIds, false).values()) {
-            labels.put(new TaskPathRef("HEAD_COMPANY", entity.id()), nameCode(entity.name(), entity.code()));
+            labels.put(new TaskPathRef(ServiceNodeTypes.HEAD_COMPANY, entity.id()), nameCode(entity.name(), entity.code()));
         }
 
-        Set<UUID> storeIds = idsFor(requested, "STORE");
+        Set<UUID> storeIds = idsFor(requested, ServiceNodeTypes.STORE);
         Map<UUID, Store> stores = stores(workspaceUuid, key, storeIds, false);
         Map<UUID, NodePath> projects = nodePaths(
             workspaceUuid, key, groupId, stores.values().stream().map(Store::projectId).collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)), false
         );
         for (Store store : stores.values()) {
             NodePath project = projects.get(store.projectId());
-            if (project == null || !"PROJECT".equals(project.type())) throw new TaskPathNotFoundException();
-            labels.put(new TaskPathRef("STORE", store.id()), nameCode(store.name(), store.code()));
+            if (project == null || !OrganizationNodeTypes.PROJECT.equals(project.type())) throw new TaskPathNotFoundException();
+            labels.put(new TaskPathRef(ServiceNodeTypes.STORE, store.id()), nameCode(store.name(), store.code()));
         }
         if (labels.size() != requested.size()) throw new TaskPathNotFoundException();
         return Map.copyOf(labels);
@@ -202,29 +205,29 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         if (workspaceUuid == null || key == null || assignmentType == null || assignmentId == null || target == null
             || target.ancestorIds().isEmpty() || !target.ancestorIds().contains(target.targetId())) return false;
         return switch (assignmentType) {
-            case "GROUP", "REGION", "PROJECT" -> target.ancestorIds().contains(assignmentId);
-            case "HEAD_COMPANY", "STORE" -> assignmentType.equals(target.targetType()) && assignmentId.equals(target.targetId());
+            case ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> target.ancestorIds().contains(assignmentId);
+            case ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> assignmentType.equals(target.targetType()) && assignmentId.equals(target.targetId());
             default -> false;
         };
     }
 
     private TaskPath groupPath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
         if (!groupId.equals(targetId)) throw new TaskPathNotFoundException();
-        return new TaskPath("GROUP", groupId, List.of(groupId), groups.describeCommercialGroup(workspaceUuid, key, groupId));
+        return new TaskPath(ServiceNodeTypes.GROUP, groupId, List.of(groupId), groups.describeCommercialGroup(workspaceUuid, key, groupId));
     }
 
     private TaskPath nodePath(UUID workspaceUuid, String key, UUID groupId, UUID targetId, String expectedType) {
         Node target = node(workspaceUuid, key, targetId, expectedType);
-        if ("REGION".equals(expectedType)) {
-            return new TaskPath("REGION", target.id(), List.of(groupId, target.id()), target.code() + " " + target.name());
+        if (ServiceNodeTypes.REGION.equals(expectedType)) {
+            return new TaskPath(ServiceNodeTypes.REGION, target.id(), List.of(groupId, target.id()), target.code() + " " + target.name());
         }
-        Node region = node(workspaceUuid, key, target.parentId(), "REGION");
-        return new TaskPath("PROJECT", target.id(), List.of(groupId, region.id(), target.id()), region.code() + " " + region.name() + " / " + target.code() + " " + target.name());
+        Node region = node(workspaceUuid, key, target.parentId(), ServiceNodeTypes.REGION);
+        return new TaskPath(ServiceNodeTypes.PROJECT, target.id(), List.of(groupId, region.id(), target.id()), region.code() + " " + region.name() + " / " + target.code() + " " + target.name());
     }
 
     private TaskPath headCompanyPath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
         Entity target = entity(workspaceUuid, key, targetId, "head_company");
-        return new TaskPath("HEAD_COMPANY", target.id(), List.of(groupId, target.id()), target.code() + " " + target.name());
+        return new TaskPath(ServiceNodeTypes.HEAD_COMPANY, target.id(), List.of(groupId, target.id()), target.code() + " " + target.name());
     }
 
     private TaskPath storePath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
@@ -234,9 +237,9 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
             result -> result.next() ? new Store(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4)) : null
         );
         if (target == null) throw new TaskPathNotFoundException();
-        Node project = node(workspaceUuid, key, target.projectId(), "PROJECT");
-        Node region = node(workspaceUuid, key, project.parentId(), "REGION");
-        return new TaskPath("STORE", target.id(), List.of(groupId, region.id(), project.id(), target.id()), region.code() + " " + region.name() + " / " + project.code() + " " + project.name() + " / " + target.code() + " " + target.name());
+        Node project = node(workspaceUuid, key, target.projectId(), ServiceNodeTypes.PROJECT);
+        Node region = node(workspaceUuid, key, project.parentId(), ServiceNodeTypes.REGION);
+        return new TaskPath(ServiceNodeTypes.STORE, target.id(), List.of(groupId, region.id(), project.id(), target.id()), region.code() + " " + region.name() + " / " + project.code() + " " + project.name() + " / " + target.code() + " " + target.name());
     }
 
     private Map<UUID, Store> stores(UUID workspaceUuid, String key, Set<UUID> ids, boolean includeDisabledFacts) {
@@ -301,7 +304,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
 
     private Set<TaskPathRef> availableNodes(UUID workspaceUuid, String key, Set<TaskPathRef> targets) {
         Set<UUID> ids = new LinkedHashSet<>();
-        targets.stream().filter(target -> "REGION".equals(target.targetType()) || "PROJECT".equals(target.targetType())).forEach(target -> ids.add(target.targetId()));
+        targets.stream().filter(target -> ServiceNodeTypes.REGION.equals(target.targetType()) || ServiceNodeTypes.PROJECT.equals(target.targetType())).forEach(target -> ids.add(target.targetId()));
         if (ids.isEmpty()) return Set.of();
         List<TaskPathRef> values = jdbc.query(
             "SELECT id, node_type FROM organization.organization_node WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN (" + placeholders(ids.size()) + ")",

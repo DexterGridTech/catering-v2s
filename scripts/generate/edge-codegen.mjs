@@ -475,7 +475,8 @@ function javaWireType(name, schema, components, inlineTypes = new Map()) {
   }
   const fields = properties.map(([property, propertySchema]) => {
     const field = javaIdentifier(property);
-    const type = javaType(resolvedSchema(propertySchema, components, new Set([name])), components, `${name}${pascal(property)}`);
+    const resolved = resolvedSchema(propertySchema, components, new Set([name]));
+    const type = javaType(resolved, components, `${name}${pascal(property)}`);
     return field === property
       ? `    ${type} ${field}`
       : `    @com.fasterxml.jackson.annotation.JsonProperty("${property}") ${type} ${field}`;

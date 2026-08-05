@@ -1,5 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
@@ -241,10 +243,25 @@ public class WorkspaceAuthenticationService {
     private Account accountByMobile(String groupWorkspaceKey, String mobile) { Account account = jdbc.query("SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_change_required FROM workspace_iam.workspace_account a JOIN workspace_iam.workspace_credential c ON c.account_id=a.id WHERE a.group_workspace_key=? AND a.mobile_normalized=?", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, mobile); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), null, null, result.getBoolean(5)) : null); if (account == null) throw new InvalidCredentialsException(); if (!"ENABLED".equals(account.status())) throw new AccountDisabledException(); if (!workspaces.isEnabled(account.workspaceUuid(), account.key())) throw new WorkspaceDisabledException(); return account; }
     private SessionRow require(String raw) { return jdbc.query("SELECT s.id, s.workspace_uuid, s.group_workspace_key, s.account_id, s.current_assignment_id, s.selected_region_id, s.selected_project_id, s.selected_store_id, s.selected_head_company_id, s.context_version, s.authorization_revision, a.display_name, gw.name, gw.operations_title, gw.logo_asset_ref, c.password_change_required FROM workspace_iam.workspace_session s JOIN workspace_iam.workspace_account a ON a.id=s.account_id JOIN workspace_iam.workspace_credential c ON c.account_id=a.id JOIN platform_workspace.group_workspace gw ON gw.workspace_uuid=s.workspace_uuid AND gw.group_workspace_key=s.group_workspace_key WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?", statement -> { statement.setString(1, sha256(raw)); statement.setLong(2, time.currentEpochMillis()); }, result -> { if (!result.next()) throw new SessionInvalidException(); return new SessionRow(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class), result.getObject(5, UUID.class), result.getObject(6, UUID.class), result.getObject(7, UUID.class), result.getObject(8, UUID.class), result.getObject(9, UUID.class), result.getLong(10), result.getLong(11), result.getString(12), result.getString(13), result.getString(14), result.getString(15), result.getBoolean(16)); }); }
     private SessionRow requireNormal(String raw) { SessionRow row = require(raw); if (row.passwordChangeRequired()) throw new PasswordChangeRequiredException(); return row; }
-    private boolean enterable(UUID workspace, String key, String type, UUID node) { return switch(type) { case "STORE" -> stores.isEnterableStore(workspace, key, node); case "HEAD_COMPANY" -> entities.isEnterableEntity(workspace, key, "HEAD_COMPANY", node); case "GROUP" -> groups.isEnterableCommercialGroup(workspace, key, node); case "REGION", "PROJECT" -> nodes.isEnterable(workspace, key, node); default -> false; }; }
+    private boolean enterable(UUID workspace, String key, String type, UUID node) {
+        if (!isSupportedServiceNodeType(type)) throw new SessionInvalidException();
+        return switch (type) {
+            case ServiceNodeTypes.STORE -> stores.isEnterableStore(workspace, key, node);
+            case ServiceNodeTypes.HEAD_COMPANY -> entities.isEnterableEntity(workspace, key, ServiceNodeTypes.HEAD_COMPANY, node);
+            case ServiceNodeTypes.GROUP -> groups.isEnterableCommercialGroup(workspace, key, node);
+            case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> nodes.isEnterable(workspace, key, node);
+            default -> throw new SessionInvalidException();
+        };
+    }
+    static boolean isSupportedServiceNodeType(String type) {
+        return switch (type) {
+            case ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> true;
+            default -> false;
+        };
+    }
     private ScopeSelection lockedSelection(SessionRow current, Assignment assignment) { return lockedSelection(current.workspaceUuid(), current.key(), assignment); }
     private ScopeSelection lockedSelection(UUID workspaceUuid, String key, Assignment assignment) {
-        if ("GROUP".equals(assignment.nodeType())) return ScopeSelection.empty();
+        if (ServiceNodeTypes.GROUP.equals(assignment.nodeType())) return ScopeSelection.empty();
         OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = visibility.listVisibleDataNodeCandidates(workspaceUuid, key, assignment.nodeType(), assignment.nodeId()).stream().filter(value -> value.dataNodeId().equals(assignment.nodeId())).findFirst().orElseThrow(SessionInvalidException::new);
         return selectionFor(candidate, null);
     }
@@ -252,10 +269,10 @@ public class WorkspaceAuthenticationService {
     private static ScopeSelection selectionFor(OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate, ScopeSelection current) {
         ScopeSelection base = current == null ? ScopeSelection.empty() : current;
         return switch (candidate.dataNodeType()) {
-            case "REGION" -> new ScopeSelection(candidate.regionId(), null, null, base.headCompanyId());
-            case "PROJECT" -> new ScopeSelection(candidate.regionId(), candidate.projectId(), null, base.headCompanyId());
-            case "STORE" -> new ScopeSelection(candidate.regionId(), candidate.projectId(), candidate.storeId(), base.headCompanyId());
-            case "HEAD_COMPANY" -> new ScopeSelection(base.regionId(), base.projectId(), base.storeId(), candidate.headCompanyId());
+            case ServiceNodeTypes.REGION -> new ScopeSelection(candidate.regionId(), null, null, base.headCompanyId());
+            case ServiceNodeTypes.PROJECT -> new ScopeSelection(candidate.regionId(), candidate.projectId(), null, base.headCompanyId());
+            case ServiceNodeTypes.STORE -> new ScopeSelection(candidate.regionId(), candidate.projectId(), candidate.storeId(), base.headCompanyId());
+            case ServiceNodeTypes.HEAD_COMPANY -> new ScopeSelection(base.regionId(), base.projectId(), base.storeId(), candidate.headCompanyId());
             default -> throw new SessionInvalidException();
         };
     }
@@ -266,7 +283,7 @@ public class WorkspaceAuthenticationService {
         return scopeContext(row, visibleCandidates(row, assignment).stream().map(value -> new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(value.dataNodeType(), value.dataNodeId(), value.dataNodeName(), value.dataNodeCode(), value.ancestorPath(), value.regionId(), value.projectId(), value.storeId(), value.headCompanyId())).toList());
     }
     private WorkspaceSessionEntryReadback.ScopeContext scopeContext(SessionRow row, List<WorkspaceSessionEntryReadback.VisibleDataNodeCandidate> candidates) {
-        WorkspaceSessionEntryReadback.ScopeContext fallback = new WorkspaceSessionEntryReadback.ScopeContext(findCandidate(candidates, "REGION", row.selectedRegionId()), findCandidate(candidates, "PROJECT", row.selectedProjectId()), findCandidate(candidates, "STORE", row.selectedStoreId()), findCandidate(candidates, "HEAD_COMPANY", row.selectedHeadCompanyId()));
+        WorkspaceSessionEntryReadback.ScopeContext fallback = new WorkspaceSessionEntryReadback.ScopeContext(findCandidate(candidates, ServiceNodeTypes.REGION, row.selectedRegionId()), findCandidate(candidates, ServiceNodeTypes.PROJECT, row.selectedProjectId()), findCandidate(candidates, ServiceNodeTypes.STORE, row.selectedStoreId()), findCandidate(candidates, ServiceNodeTypes.HEAD_COMPANY, row.selectedHeadCompanyId()));
         OrganizationVisibilityLookup.ScopeContext ownerContext = visibility.describeScopeContext(row.workspaceUuid(), row.key(), row.selectedRegionId(), row.selectedProjectId(), row.selectedStoreId(), row.selectedHeadCompanyId());
         return new WorkspaceSessionEntryReadback.ScopeContext(
             ownerContext.region() == null ? fallback.region() : scopeNode(ownerContext.region()),
@@ -304,7 +321,7 @@ public class WorkspaceAuthenticationService {
             if (label == null) throw new SessionInvalidException();
             return label;
         }
-        return switch (type) { case "GROUP" -> groups.describeCommercialGroup(workspaceUuid, key, nodeId); case "REGION", "PROJECT" -> nodes.requireNode(workspaceUuid, key, nodeId, type).name(); case "HEAD_COMPANY", "STORE" -> entities.describeEntityPath(workspaceUuid, key, type, nodeId); default -> throw new SessionInvalidException(); };
+        return switch (type) { case ServiceNodeTypes.GROUP -> groups.describeCommercialGroup(workspaceUuid, key, nodeId); case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> nodes.requireNode(workspaceUuid, key, nodeId, type).name(); case ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> entities.describeEntityPath(workspaceUuid, key, type, nodeId); default -> throw new SessionInvalidException(); };
     }
     private String homePage(String type) {
         return WorkspaceAuthorizationCatalog.homePageForRoleNodeType(type).orElseThrow(SessionInvalidException::new);

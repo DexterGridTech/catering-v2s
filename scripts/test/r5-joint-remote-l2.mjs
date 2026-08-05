@@ -9,6 +9,8 @@ import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import {chmodSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
+import {resolveTrustedRemoteHost} from '../dev/r5-remote-host-trust.mjs';
+import {snapshotProcessTree, evaluateCleanupReadback} from '../dev/managed-process-tree.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runId = `rm1p6-joint-local-l2-${Date.now()}-${process.pid}-${randomUUID().slice(0, 8)}`;
@@ -112,7 +114,8 @@ const localProcess = (value) => {
   const match = line.match(/^(\d+)\s+(\d+)\s+(.{24})\s+(.*)$/);
   if (!match) fail(`LOCAL_PROCESS_IDENTITY_INVALID:${value.name}`, 'LOCAL_PROCESS_IDENTITY');
   const [, pid, pgid, lstart, commandLine] = match;
-  return {name: value.name, pid: Number(pid), pgid: Number(pgid), bootId: run('sysctl', ['-n', 'kern.boottime']).stdout.trim(), processStartTicks: lstart.trim(), commandSha256: sha256(commandLine), logPath: value.log};
+  const identity = {name: value.name, pid: Number(pid), pgid: Number(pgid), bootId: run('sysctl', ['-n', 'kern.boottime']).stdout.trim(), processStartTicks: lstart.trim(), startToken: lstart.trim(), commandSha256: sha256(commandLine), logPath: value.log};
+  return {...identity, tree: snapshotProcessTree(identity)};
 };
 const logMetadata = (file) => {
   if (!existsSync(file)) return {status: 'LOG_NOT_AVAILABLE'};
@@ -179,9 +182,10 @@ const remoteNamespaceCleanup = (identity) => {
   const database = identity.database;
   const role = identity.role;
   if (credentials.V2S_DEV_DATABASE_USERNAME !== role) fail('REMOTE_NAMESPACE_CREDENTIAL_IDENTITY_DRIFT', 'REMOTE_CLEANUP');
-  const host = process.env.V2S_DEV_REMOTE_HOST ?? 'catering-remote-dev';
-  const hostHash = process.env.V2S_DEV_REMOTE_HOST_SHA256 ?? sha256(host);
-  if (sha256(host) !== hostHash || !/^catering_v2s_dev_[a-z0-9_]+$/.test(database) || !/^catering_v2s_r5_dev$|^r5l2_[a-zA-Z0-9]+$/.test(role)) fail('REMOTE_NAMESPACE_IDENTITY_INVALID', 'REMOTE_CLEANUP');
+  let hostTrust;
+  try { hostTrust = resolveTrustedRemoteHost(process.env); } catch { fail('REMOTE_NAMESPACE_IDENTITY_INVALID', 'REMOTE_CLEANUP'); }
+  const host = hostTrust.host;
+  if (!/^catering_v2s_dev_[a-z0-9_]+$/.test(database) || !/^catering_v2s_r5_dev$|^r5l2_[a-zA-Z0-9]+$/.test(role)) fail('REMOTE_NAMESPACE_IDENTITY_INVALID', 'REMOTE_CLEANUP');
   const prefix = `catering-v2s/dev/${namespace}/`;
   const script = [
     'set -euo pipefail',
@@ -204,18 +208,18 @@ const remoteNamespaceCleanup = (identity) => {
   ].join('\n');
   const result = run('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', host, 'bash', '-s'], {input: script});
   if (result.status !== 0 || !result.stdout.includes('REMOTE_NAMESPACE_REMOVED=PASS')) fail(`REMOTE_NAMESPACE_CLEANUP_FAILED:${compact(result.stderr || result.stdout)}`, 'REMOTE_CLEANUP');
-  return {hostSha256: hostHash, database, role, assetBucket: 'catering-v2s-r5-assets', assetPrefix: prefix, databasePresentBeforeCleanup: result.stdout.includes('REMOTE_DATABASE_PRESENT=t'), rolePresentBeforeCleanup: result.stdout.includes('REMOTE_ROLE_PRESENT=t'), databaseAbsentAfterCleanup: result.stdout.includes('REMOTE_DATABASE_PRESENT_AFTER=f'), roleAbsentAfterCleanup: result.stdout.includes('REMOTE_ROLE_PRESENT_AFTER=f'), assetAbsentAfterCleanup: result.stdout.includes('REMOTE_ASSET_PRESENT_AFTER=false'), removed: true};
+  return {remoteHostTrust: hostTrust, hostSha256: hostTrust.fingerprint, database, role, assetBucket: 'catering-v2s-r5-assets', assetPrefix: prefix, databasePresentBeforeCleanup: result.stdout.includes('REMOTE_DATABASE_PRESENT=t'), rolePresentBeforeCleanup: result.stdout.includes('REMOTE_ROLE_PRESENT=t'), databaseAbsentAfterCleanup: result.stdout.includes('REMOTE_DATABASE_PRESENT_AFTER=f'), roleAbsentAfterCleanup: result.stdout.includes('REMOTE_ROLE_PRESENT_AFTER=f'), assetAbsentAfterCleanup: result.stdout.includes('REMOTE_ASSET_PRESENT_AFTER=false'), removed: true};
 };
 const stopAndVerifyLocal = async () => {
   command('LOCAL_STOP', process.execPath, [path.join(root, 'scripts/dev/r5-dev-runner.mjs'), 'stop'], {env: localBaseEnvironment()});
   const deadline = Date.now() + 15_000;
-  let remaining = (devManifest.processes ?? []).filter((value) => run('ps', ['-p', String(value.pid)]).status === 0);
+  let remaining = (devManifest.processes ?? []).flatMap((value) => snapshotProcessTree({pid: value.pid, pgid: value.pgid, startToken: value.startToken ?? value.processStartTicks}));
   while (remaining.length > 0 && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 250));
-    remaining = (devManifest.processes ?? []).filter((value) => run('ps', ['-p', String(value.pid)]).status === 0);
+    remaining = (devManifest.processes ?? []).flatMap((value) => snapshotProcessTree({pid: value.pid, pgid: value.pgid, startToken: value.startToken ?? value.processStartTicks}));
   }
-  if (remaining.length > 0) fail(`LOCAL_PROCESS_DESCENDANT_REMAINS:${remaining.map((value) => value.name).join(',')}`, 'LOCAL_CLEANUP');
-  phase('LOCAL_PROCESS_EXIT', 'PASS');
+  if (!evaluateCleanupReadback(remaining)) fail(`LOCAL_PROCESS_TREE_REMAINS:${remaining.map((value) => value.pid).join(',')}`, 'LOCAL_CLEANUP');
+  phase('LOCAL_PROCESS_TREE_EXIT', 'PASS', {treeEmptyReadback: true});
 };
 const snapshotLocalEvidence = () => {
   if (!devManifest) return;

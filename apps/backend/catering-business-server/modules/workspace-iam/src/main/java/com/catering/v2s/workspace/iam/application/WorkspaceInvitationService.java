@@ -1,7 +1,10 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
@@ -151,7 +154,7 @@ public class WorkspaceInvitationService {
     public ManagementInvitationPage managementPageForOperations(WorkspaceSessionReadback session, String expectedTargetType, UUID requestedScopeRef, ManagementInvitationPageRequest request) {
         if (user == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
         OrganizationTaskPathLookup.TaskPath scope = user.resolveTaskScope(session, expectedTargetType, requestedScopeRef);
-        boolean aggregate = "GROUP".equals(scope.targetType()) && "HEAD_COMPANY".equals(expectedTargetType);
+        boolean aggregate = ServiceNodeTypes.GROUP.equals(scope.targetType()) && ServiceNodeTypes.HEAD_COMPANY.equals(expectedTargetType);
         return managementPage(session.workspaceUuid(), session.groupWorkspaceKey(), request, expectedTargetType, aggregate ? null : scope.targetId());
     }
 
@@ -464,10 +467,10 @@ public class WorkspaceInvitationService {
 
     private void requireEnterable(Invitation invitation, AssignmentIntent intent) {
         boolean valid = switch (intent.serviceNodeType()) {
-            case "STORE" -> stores.isEnterableStore(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
-            case "HEAD_COMPANY" -> entities.isEnterableEntity(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), "HEAD_COMPANY", intent.serviceNodeId());
-            case "GROUP" -> groups.isEnterableCommercialGroup(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
-            case "REGION", "PROJECT" -> nodes.isEnterable(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
+            case ServiceNodeTypes.STORE -> stores.isEnterableStore(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
+            case ServiceNodeTypes.HEAD_COMPANY -> entities.isEnterableEntity(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), ServiceNodeTypes.HEAD_COMPANY, intent.serviceNodeId());
+            case ServiceNodeTypes.GROUP -> groups.isEnterableCommercialGroup(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
+            case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> nodes.isEnterable(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
             default -> false;
         };
         if (!valid) throw new InvitationValidationException();
@@ -602,9 +605,9 @@ public class WorkspaceInvitationService {
 
     private String path(Invitation invitation, AssignmentIntent intent) {
         return switch (intent.serviceNodeType()) {
-            case "GROUP" -> groups.describeCommercialGroup(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
-            case "REGION", "PROJECT" -> nodes.describePath(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
-            case "HEAD_COMPANY", "STORE" -> entities.describeEntityPath(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeType(), intent.serviceNodeId());
+            case ServiceNodeTypes.GROUP -> groups.describeCommercialGroup(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
+            case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> nodes.describePath(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeId());
+            case ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> entities.describeEntityPath(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.serviceNodeType(), intent.serviceNodeId());
             default -> throw new InvitationValidationException();
         };
     }
@@ -640,8 +643,7 @@ public class WorkspaceInvitationService {
             }
         );
     }
-    private static String auditJson(List<AuditChange> changes) { StringBuilder value = new StringBuilder("["); for (int index = 0; index < changes.size(); index++) { if (index > 0) value.append(','); AuditChange change = changes.get(index); value.append("{\"fieldKey\":\"").append(escape(change.fieldKey())).append("\""); if (change.beforeValue() != null) value.append(",\"before\":\"").append(escape(change.beforeValue())).append("\""); if (change.afterValue() != null) value.append(",\"after\":\"").append(escape(change.afterValue())).append("\""); value.append('}'); } return value.append(']').toString(); }
-    private static String escape(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
+    private static String auditJson(List<AuditChange> changes) { return AuditChangeJson.write(changes); }
 
     private boolean accountExists(Invitation invitation) { return jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.workspace_account WHERE workspace_uuid=? AND group_workspace_key=? AND mobile_normalized=?", Integer.class, invitation.workspaceUuid(), invitation.groupWorkspaceKey(), invitation.mobile()) > 0; }
     private boolean validGrant(UUID invitationId, String rawGrant) { return rawGrant != null && jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.invitation_public_progress WHERE invitation_id=? AND verification_grant_hash=? AND verification_grant_expires_at_epoch_millis>?", Integer.class, invitationId, sha256(rawGrant), time.currentEpochMillis()) == 1; }

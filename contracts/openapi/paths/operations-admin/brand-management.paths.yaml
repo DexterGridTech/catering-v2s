@@ -50,21 +50,12 @@
             }
           },
           {
-            "name": "name",
+            "name": "queryText",
             "in": "query",
             "required": false,
             "schema": {
               "type": "string",
               "maxLength": 120
-            }
-          },
-          {
-            "name": "code",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "maxLength": 64
             }
           },
           {
