@@ -33,6 +33,7 @@ describe('workspace invitation focused IA contract', () => {
     expect(createDrawer).toMatch(/formatCodeNamePath\(candidate\.path\)/);
     expect(panel).toMatch(/formatCodeNamePath\(value\.targetOrganizationPath\)/);
     expect(detailDrawer).toMatch(/formatCodeNamePath\(invitation\.targetOrganizationPath\)/);
+    expect(detailDrawer).toContain('adminDetailDescriptionsProps');
   });
 
   it('keeps write failures inside the active overlay with fixed safe copy', () => {

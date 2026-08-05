@@ -79,6 +79,12 @@ body {
   font-weight: 500;
 }
 
+/* ProTable may wrap an ellipsized cell value in Typography, whose text color
+ * otherwise overrides the semantic color of its enclosing link button. */
+.operations-content .ant-btn-link > .ant-typography {
+  color: inherit !important;
+}
+
 .operations-contract-effective-range {
   display: inline-flex;
   flex-direction: column;

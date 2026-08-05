@@ -1,5 +1,5 @@
 import {Alert, Button, Descriptions, Drawer, Space, Tag} from 'antd';
-import {adminDrawerSurfaceProps, formatCodeNamePath, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, formatCodeNamePath, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceUser} from '../../../app/api/generated/operations-edge';
 
 type Props = {
@@ -54,7 +54,7 @@ export function WorkspaceUserDetailDrawer({open, loading, problem, pageTitle, us
   >
     {problem && !user && <Alert type="error" showIcon title="详情加载失败" description={problem} {...testId('operations-workspace-user-detail-problem')}/>}
     {user && <>
-      <Descriptions bordered column={1} items={[
+      <Descriptions {...adminDetailDescriptionsProps} items={[
         {key: 'name', label: '姓名', children: user.displayName},
         {key: 'loginName', label: '登录账号', children: user.loginName},
         {key: 'organizations', label: '任职机构', children: summary.organizations.length > 0 ? <Space size={[4, 4]} wrap>{summary.organizations.map((value) => <Tag key={value}>{value}</Tag>)}</Space> : '—'},

@@ -268,7 +268,16 @@ function outcomes(events) {
   }, {success: 0, rejected: 0, error: 0});
 }
 
-function safeFailure(value) { return String(value).replaceAll(/[^A-Z0-9_:. -]/g, '').slice(0, 256); }
+function safeFailure(value) {
+  return String(value)
+    .replaceAll(/\b(?:authorization\s*:\s*)?bearer\s+[^\s,;]+/gi, '[REDACTED]')
+    .replaceAll(/\b(?:password|secret|token|cookie|otp|mobile|login|account)\s*(?:=|:)\s*[^\s,;]+/gi, '[REDACTED]')
+    .replaceAll(/\bjdbc:[^\s,;]+/gi, '[REDACTED]')
+    .replaceAll(/[^A-Za-z0-9_.: -]/g, '')
+    .slice(0, 256);
+}
+
+export function safeFailureForTest(value) { return safeFailure(value); }
 
 function assertSafe(value, key = '') {
   if (Array.isArray(value)) return value.forEach((entry) => assertSafe(entry, key));

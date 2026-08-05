@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "whole-engineering-s0-source-baseline",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "WHOLE_ENGINEERING_REMEDIATION_20260805",
+  "design": "doc/plans/platform/2026-08-05-v2s-whole-engineering-s0-implementation-design.md",
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "units": [
+    {"id":"S0-A","scope":"scripts/check 38-wrapper classification and RP-00b registry relation design","sourcePaths":["scripts/check","scripts/verify","tools/verify-gates/verify.mjs","contracts/policy/standards-enforcement-execution-catalog.json","doc/decisions/2026-07-24-v2s-verification-governance.md"]},
+    {"id":"S0-B","scope":"154-operation consumer equality and RP-02a static workload recovery","sourcePaths":["contracts/openapi/edge.openapi.yaml","apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json","doc/evidence/platform/r5-u01-edge-placement-resolution.json","doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json","scripts/test/http-diagnostic-scenarios.mjs","scripts/test/http-diagnostic-workload.mjs","scripts/test/r5-platform-admin-l2-fixture-seed.mjs","scripts/test/r5-joint-remote-l2-fixture.mjs"]},
+    {"id":"S0-C","scope":"observability architecture input","sourcePaths":["apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java","apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrap.java","libraries/frontend/admin-ui-foundation","doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md"]},
+    {"id":"S0-D","scope":"node token inventory and fail-closed enterable design","sourcePaths":["apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/ServiceNodeType.java","apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java","apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java","apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java","doc/review/platform/2026-08-05-v2s-whole-engineering-merged-review-claude.md"]}
+  ],
+  "redProofs": ["wrapper-not-registered","aggregate-reference-missing","fact-set-mismatch","stale-projectId","recovery-seven-vs-four","unknown-service-node-enterable"],
+  "dynamic": "NOT_APPLICABLE_WITH_REASON:S0 only freezes static design and does not authorize runtime, DEV, seed/reset or L2"
+}

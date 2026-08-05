@@ -31,6 +31,8 @@ describe('store management focused contract', () => {
     expect(source).toContain("key: 'name'");
     expect(source).toContain("key: 'code'");
     expect(source).toContain("key: 'notes', title: '备注'");
+    expect(source).not.toContain("title: '项目', search: false");
+    expect(source).not.toContain('row.project');
     expect(source).toContain("'NAME'");
     expect(source).toContain("'CODE'");
     expect(source).toContain("'UPDATED_AT'");
@@ -40,7 +42,7 @@ describe('store management focused contract', () => {
     expect(detail).toContain('useGetOperationsOrganizationStoreExtensionDefinitionQuery');
     expect(detail).toContain('operations-store-detail-loading');
     expect(detail).toContain('operations-store-detail-problem');
-    expect(detail).toContain('size="small" column={1} styles={{label: {width: 164}}}');
+    expect(detail).toContain('adminDetailDescriptionsProps');
   });
 
   it('keeps definition-driven, safe-to-submit create and edit forms', () => {

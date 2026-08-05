@@ -22,6 +22,7 @@ describe('store profile focused contract', () => {
     expect(detailSource).toContain('useDetailDrawer');
     expect(detailSource).toContain('useOverlayLock(Boolean(contract))');
     expect(detailSource).toContain('operations-store-profile-contract-detail');
+    expect(detailSource).toContain('adminDetailDescriptionsProps');
     expect(detailSource).not.toMatch(/<Button|createOperations|updateOperations|invalidateOperations/);
   });
 

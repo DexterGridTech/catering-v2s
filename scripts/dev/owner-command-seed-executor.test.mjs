@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, resolveExtensionValues, resolveInvitationCreationPlan, validateFormalSeedStaticInputs, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, createProjectScopeSelector, resolveExtensionValues, resolveInvitationCreationPlan, validateFormalSeedStaticInputs, invocationKeyForTest} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
@@ -39,10 +39,39 @@ test('formal seed maps only a role to a node of the same owner type and preserve
 });
 
 test('only generated owner operations may satisfy the executor input', () => {
-  const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment'];
+  const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract'];
   const registry = ids.map((operationId) => ({operationId}));
   assert.equal(validateFormalSeedStaticInputs({fixture, registry}).invitationPlan.length, 4);
   assert.throws(() => validateFormalSeedStaticInputs({fixture, registry: registry.slice(1)}), code('SEED_OPERATION_REGISTRY_MISSING:platformPasswordLogin'));
+  assert.throws(() => validateFormalSeedStaticInputs({fixture, registry: registry.filter((entry) => entry.operationId !== 'selectOperationsWorkspaceSessionDataNode')}), code('SEED_OPERATION_REGISTRY_MISSING:selectOperationsWorkspaceSessionDataNode'));
+});
+
+test('formal seed selects PROJECT scope only on project transitions and rolls owner context versions', async () => {
+  const calls = [];
+  const selectProject = createProjectScopeSelector({
+    initialContextVersion: 'v1',
+    select: async (request) => {
+      calls.push(request);
+      return {contextVersion: `v${calls.length + 1}`};
+    },
+  });
+  await selectProject({projectRef: 'project-a', stage: 'store-a'});
+  await selectProject({projectRef: 'project-a', stage: 'store-b'});
+  await selectProject({projectRef: 'project-b', stage: 'store-c'});
+  await selectProject({projectRef: 'project-a', stage: 'contract-a'});
+  assert.deepEqual(calls, [
+    {stage: 'store-a', body: {dataNodeRef: 'project-a', dataNodeType: 'PROJECT', requiredContextVersion: 'v1'}},
+    {stage: 'store-c', body: {dataNodeRef: 'project-b', dataNodeType: 'PROJECT', requiredContextVersion: 'v2'}},
+    {stage: 'contract-a', body: {dataNodeRef: 'project-a', dataNodeType: 'PROJECT', requiredContextVersion: 'v3'}},
+  ]);
+  const missingVersion = createProjectScopeSelector({initialContextVersion: 'v1', select: async () => ({})});
+  await assert.rejects(() => missingVersion({projectRef: 'project-a', stage: 'store-a'}), code('SEED_PROJECT_SCOPE_CONTEXT_VERSION'));
+});
+
+test('project-scoped create requests derive the project from session scope rather than request bodies', async () => {
+  const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
+  assert.equal(source.includes('projectId:'), false);
+  for (const stage of ['project-select-store-', 'project-select-store-disable-', 'project-select-contract-', 'project-select-contract-invalidate-']) assert.match(source, new RegExp(stage));
 });
 
 test('formal seed derives encoded request paths from one generated operation id', () => {
@@ -70,6 +99,13 @@ test('owner-command idempotency keys remain within the public contract limit for
 test('formal seed source requires the hard-locked managed OTP readback', async () => {
   const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
   assert.match(source, /manifest\.otpDebugExposure !== true/);
+});
+
+test('formal seed child-process failures retain only controlled diagnostic codes', async () => {
+  const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
+  for (const failure of ['SEED_ENVIRONMENT_REFUSED', 'SEED_BOOTSTRAP_FAILED', 'SEED_TERMINAL_INVITATION_EXPIRED_FAILED', 'SEED_EXECUTION_FAILED']) assert.match(source, new RegExp(`['\\"]${failure}['\\"]`));
+  assert.doesNotMatch(source, /safeCode\(/);
+  assert.doesNotMatch(source, /stderr \|\| .*stdout/);
 });
 
 test('formal seed group administrator owns every executor-required ORG and contract write capability', async () => {

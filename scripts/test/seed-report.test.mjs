@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildSeedReport, renderSeedReportMarkdown, writeSeedReport, writeSeedReportPair} from './seed-report.mjs';
+import {buildSeedReport, renderSeedReportMarkdown, safeFailureForTest, writeSeedReport, writeSeedReportPair} from './seed-report.mjs';
 import {mkdtempSync, readFileSync, statSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -60,4 +60,10 @@ test('zero database operations remain valid when a completion event exists', () 
   const report = buildSeedReport({runId: 'run-12345678', seedProfile: 'r5-full', startedAt: '2026-08-01T00:00:00Z', finishedAt: '2026-08-01T00:00:01Z', status: 'PASS', calls: [call(4)], events: [event(0, '4', 0)]});
   assert.equal(report.status, 'PASS');
   assert.deepEqual(report.apiEndpoints[0].databaseOperationCount, {average: 0, min: 0, max: 0});
+});
+
+test('failure reporting retains controlled lower-case stages while redacting sensitive values', () => {
+  assert.equal(safeFailureForTest('store-store-operating_HTTP_403_PLATFORM_COMMON_ACCESS_DENIED'), 'store-store-operating_HTTP_403_PLATFORM_COMMON_ACCESS_DENIED');
+  const redacted = safeFailureForTest('password: p4ss token=abc cookie: sid otp=123456 Authorization: Bearer bearer-secret jdbc:postgresql://user:pass@host/db');
+  for (const secret of ['p4ss', 'abc', 'sid', '123456', 'bearer-secret', 'user:pass@host/db']) assert.equal(redacted.includes(secret), false);
 });

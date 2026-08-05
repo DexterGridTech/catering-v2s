@@ -68,7 +68,6 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
 
   const columns = useMemo<ProColumns<StoreContract>[]>(() => [
     {key: 'contractNo', title: '合同编号', dataIndex: 'contractNo', sorter: true, ellipsis: true, search: false, render: (value, row) => <Button type="link" className="operations-contract-number-link" onClick={() => detail.open(row)} {...testId('operations-contract-detail-open')}>{value}</Button>},
-    {title: '项目', dataIndex: 'projectDisplay', search: false, render: (_, row) => formatNameCode(row.project.name, row.project.code)},
     {title: '门店', dataIndex: 'storeDisplay', search: false, render: (_, row) => formatNameCode(row.store.name, row.store.code)},
     {title: '分期', dataIndex: 'phaseName', search: false},
     {title: '经营租户', dataIndex: 'tenantDisplay', search: false, render: (_, row) => formatNameCode(row.tenant.name, row.tenant.code)},

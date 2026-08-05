@@ -1,4 +1,4 @@
-import type {DrawerProps} from 'antd';
+import type {DescriptionsProps, DrawerProps} from 'antd';
 
 /**
  * The single mechanical Drawer surface contract shared by both admin faces.
@@ -11,3 +11,11 @@ export const adminDrawerSurfaceProps = {
     footer: {display: 'flex', justifyContent: 'flex-end', flexShrink: 0, position: 'sticky' as const, bottom: 0, zIndex: 1},
   },
 } satisfies Pick<DrawerProps, 'resizable' | 'styles'>;
+
+/** Shared compact single-column fact table for persistent admin detail Drawers. */
+export const adminDetailDescriptionsProps = {
+  bordered: true,
+  size: 'small',
+  column: 1,
+  styles: {label: {width: 164}},
+} satisfies Pick<DescriptionsProps, 'bordered' | 'size' | 'column' | 'styles'>;

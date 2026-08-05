@@ -44,7 +44,6 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
   const columns = useMemo<ProColumns<OrganizationStore>[]>(() => [
     {key: 'name', title: '门店名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('operations-store-filter-name'), allowClear: true, placeholder: '门店名称'}, render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`operations-store-open-detail-${row.id}`)}>{row.name}</Button>},
     {key: 'code', title: '编码', dataIndex: 'code', sorter: true, fieldProps: {...testId('operations-store-filter-code'), allowClear: true, placeholder: '门店编码'}},
-    {title: '项目', search: false, render: (_, row) => formatNameCode(row.project.name, row.project.code)},
     {title: '品牌', search: false, render: (_, row) => formatNameCode(row.brand.name, row.brand.code)}, {title: '经营租户', search: false, render: (_, row) => formatNameCode(row.tenant.name, row.tenant.code)},
     {title: '总公司', search: false, render: (_, row) => row.headCompany ? formatNameCode(row.headCompany.name, row.headCompany.code) : '未设置'},
     {key: 'notes', title: '备注', dataIndex: 'notes', search: false, render: (_, row) => row.notes ?? '—'},

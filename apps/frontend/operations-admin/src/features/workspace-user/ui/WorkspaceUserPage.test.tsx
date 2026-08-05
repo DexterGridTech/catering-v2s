@@ -29,6 +29,7 @@ describe('workspace user focused IA contract', () => {
     expect(detail).toMatch(/pageTitle\.endsWith\('用户管理'\)/);
     expect(detail).toMatch(/任职详情/);
     expect(detail).toMatch(/formatCodeNamePath\(assignment\.organizationPath\)/);
+    expect(detail).toContain('adminDetailDescriptionsProps');
     expect(revoke).toMatch(/const confirmation = `确认撤销“/);
     expect(revoke).toMatch(/formatCodeNamePath\(organizationPath\)/);
     expect(revoke).toMatch(/title=\{confirmation\}/);

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-input",
+  "packageId": "RM1P6-CP-U28",
+  "status": "ACTIVE_NOT_EXIT",
+  "deliveryManifestPath": "doc/review/platform/rm1p6-cp-u28-formal-seed-project-scope-delivery-manifest.json",
+  "deliveryManifestSha256": "9ab36a51f6334eaca927994ca94b22087b82c3953d24a8ccda1aab924f947134",
+  "unitId": "RM1P6-CP-U28",
+  "standardsPhase": "R5",
+  "requiredStandardsRefs": ["scripts/check/standards-coverage", "scripts/check/remediation-compliance"],
+  "requiredControlRefs": ["scripts/check/remediation-compliance"],
+  "requiredControlRuleIds": ["FORMAL_SEED_PROJECT_SESSION_SCOPE"],
+  "businessEvidenceObligation": "FRESH_FORMAL_SEED_OWNER_READBACK_REPORT_MANIFEST_AND_CLEANUP",
+  "serialPredecessor": {
+    "packageId": "RM1P6-DATA-SCOPE-CONTEXT-U27",
+    "exitPath": "doc/evidence/platform/rm1/p6/rm1p6-data-scope-context-u27-package-exit.json",
+    "exitSha256": "4203797c9c6b00e005b587a66fe3009c85fdbd40e08270cce07cddf5c1b65e70"
+  },
+  "implementationAmendment": {
+    "path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u28-formal-seed-project-scope-implementation-amendment.md",
+    "sha256": "6820def116afd2b751ffa6e4ca0d7f5eb7b9243eeff8684b2acb3f7c3ea2b95c"
+  },
+  "authorizationBoundary": "Dexter authorized U28 only to repair the formal r5-full seed's owner-confirmed PROJECT session scope and safe failure-stage reporting. It may change only the declared executor/report source and focused tests, then perform the specified managed reset/start/formal-seed sequence. It adds no product API, capability, fixture SQL, UAT, browser L2 claim, manual middleware operation, or partial-database seed retry."
+}

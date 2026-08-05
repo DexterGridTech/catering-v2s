@@ -42,7 +42,7 @@ describe('BusinessEntityManagementPage', () => {
     expect(detail).toMatch(/useGetOperationsOrganizationBusinessEntityExtensionDefinitionQuery/);
     expect(detail).toMatch(/detailReady = Boolean\(selected\)/);
     expect(detail).toMatch(/extra=\{detailReady && selected/);
-    expect(detail).toContain('size="small" column={1} styles={{label: {width: 164}}}');
+    expect(detail).toContain('adminDetailDescriptionsProps');
     expect(detail).toContain("label: '统一代码'");
     expect(create + edit).toContain('label="统一代码"');
     expect(detail).toMatch(/if \(!detailReady \|\| !selected\) return/);

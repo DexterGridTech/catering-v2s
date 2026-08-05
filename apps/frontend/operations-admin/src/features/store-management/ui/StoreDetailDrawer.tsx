@@ -1,5 +1,5 @@
 import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {ExtensionDefinition, JsonValue, OrganizationStore} from '../../../app/api/generated/operations-edge';
@@ -62,7 +62,7 @@ export function StoreDetailDrawer({store, queryContext, canEdit, canTransition, 
     {loading && <Skeleton active {...testId('operations-store-detail-loading')}/>}
     {problem && <Alert type="error" showIcon title="门店详情未完成" description={problem} {...testId('operations-store-detail-problem')}/>}
     {definitionWarning && <Alert type="warning" showIcon title="扩展字段暂时无法获取" description={definitionWarning} style={{marginBottom: 16}} {...testId('operations-store-detail-definition-warning')}/>}
-    {ready && selected && <Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={[
+    {ready && selected && <Descriptions {...adminDetailDescriptionsProps} items={[
       {key: 'name', label: '门店名称', children: selected.name},
       {key: 'code', label: '门店编码', children: selected.code},
       {key: 'project', label: '所属项目', children: formatNameCode(selected.project.name, selected.project.code)},

@@ -1,5 +1,5 @@
 import {Button, Descriptions, Drawer, Space, Typography} from 'antd';
-import {adminDrawerSurfaceProps, formatCodeNamePath, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, formatCodeNamePath, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useState} from 'react';
 import type {WorkspaceInvitation} from '../../../app/api/generated/operations-edge';
 import {OperationsAuditHistoryModal} from '../../audit-history';
@@ -47,7 +47,7 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
       {actionable && <Button type="primary" onClick={() => onRequestAction('reissue')} {...testId('operations-workspace-invitation-reissue')}>重新发送</Button>}
     </Space> : undefined}
   >
-    {invitation && <Descriptions bordered column={1} items={[
+    {invitation && <Descriptions {...adminDetailDescriptionsProps} items={[
       {key: 'mobile', label: '邀请手机号', children: invitation.maskedMobile},
       {key: 'organization', label: '任职机构', children: formatCodeNamePath(invitation.targetOrganizationPath)},
       {key: 'roles', label: '业务角色', children: invitation.roleNames.join('、')},

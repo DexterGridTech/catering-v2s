@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {readFile} from 'node:fs/promises';
 
 const source = await readFile(new URL('./ContractManagementPage.tsx', import.meta.url), 'utf8');
+const styles = await readFile(new URL('../../../styles.css', import.meta.url), 'utf8');
 const createSource = await readFile(new URL('./ContractCreateDrawer.tsx', import.meta.url), 'utf8');
 const editSource = await readFile(new URL('./ContractEditDrawer.tsx', import.meta.url), 'utf8');
 const detailSource = await readFile(new URL('./ContractDetailDrawer.tsx', import.meta.url), 'utf8');
@@ -36,6 +37,8 @@ describe('contract management focused contract', () => {
     expect(source).not.toContain('请先选择项目。');
     expect(source).not.toContain('operations-contract-filter-project');
     expect(source).not.toContain('projectCandidates');
+    expect(source).not.toContain("title: '项目', dataIndex: 'projectDisplay'");
+    expect(source).not.toContain('row.project');
     expect(source).toContain('operations-contract-page-retry');
     expect(source).not.toMatch(/title:\s*['"]操作['"]/);
   });
@@ -51,6 +54,8 @@ describe('contract management focused contract', () => {
     expect(source).toContain('showSearch: true, filterOption: false, onSearch: candidates.setStoreSearch');
     expect(source).toContain('showSearch: true, filterOption: false, onSearch: setTenantSearch');
     expect(source).toContain('operations-contract-number-link');
+    expect(styles).toContain('.operations-content .ant-btn-link > .ant-typography');
+    expect(styles).toContain('color: inherit !important;');
     expect(source).toContain('operations-contract-effective-range');
     expect(createSource).toContain('Form.List name="items"');
     expect(createSource).toContain('货号编码不能重复');
@@ -72,6 +77,7 @@ describe('contract management focused contract', () => {
     expect(detailSource).toContain('const selected = detailQuery.error ? undefined : detailQuery.data;');
     expect(detailSource).toContain('const detailReady = Boolean(selected) && !detailQuery.isLoading;');
     expect(detailSource).toContain('extra={detailReady && selected && <Space>');
+    expect(detailSource).toContain('adminDetailDescriptionsProps');
     expect(detailSource).not.toContain('detailQuery.data ?? contract');
     expect(invalidateSource).toContain('useSubmissionLifecycle');
     expect(invalidateSource).toContain('operationsClient.invalidateOperationsContract');

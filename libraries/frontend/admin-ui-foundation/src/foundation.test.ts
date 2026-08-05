@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {platformHttpProtocol} from './http/platformHttpProtocol';
 import {contextScopedQueryArgs} from './list/contextScopedQueryArgs';
 import {updateDirtyRegistrations, updateOpenRegistrations} from './overlay/overlayLock';
-import {adminDrawerSurfaceProps} from './overlay/drawerSurface';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps} from './overlay/drawerSurface';
 import {createAsyncGenerationGuard} from './behavior/asyncGeneration';
 import {AdminErrorBoundary} from './behavior/AdminErrorBoundary';
 import {createRefreshSignal} from './behavior/refreshSignal';
@@ -54,6 +54,15 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
     expect(adminDrawerSurfaceProps.styles?.body?.minHeight).toBe(0);
     expect(adminDrawerSurfaceProps.styles?.footer?.justifyContent).toBe('flex-end');
     expect(adminDrawerSurfaceProps.styles?.footer?.position).toBe('sticky');
+  });
+
+  it('freezes the compact single-column fact table used by persistent admin detail Drawers', () => {
+    expect(adminDetailDescriptionsProps).toMatchObject({
+      bordered: true,
+      size: 'small',
+      column: 1,
+      styles: {label: {width: 164}},
+    });
   });
 
   it('rejects a late async response after a newer request generation begins', () => {

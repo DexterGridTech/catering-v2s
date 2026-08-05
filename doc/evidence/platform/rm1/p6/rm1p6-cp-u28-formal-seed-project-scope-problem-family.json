@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "RM1P6-FORMAL-SEED-PROJECT-SESSION-SCOPE-20260805",
+  "genericProblem": "An owner-command seed can authenticate a role but still fail every project-scoped command when it treats login as a project selection, omits the owner-issued context-version transition, or sends a retired client project field. Diagnostic sanitization can simultaneously hide the stage that identifies the broken boundary.",
+  "rootCauseClass": "OWNER_CONFIRMED_SESSION_SCOPE_AND_DIAGNOSTIC_NORMALIZATION_GAP",
+  "finiteDenominator": [
+    "formal executor session entry and select-data-node operations",
+    "formal executor store create and status transitions",
+    "formal executor contract create and invalidation",
+    "generated operation registry static denominator",
+    "store and contract closed request bodies",
+    "seed report first-failure normalization"
+  ],
+  "searchedSurfaces": [
+    "scripts/dev/owner-command-seed-executor.mjs",
+    "scripts/dev/owner-command-seed-executor.test.mjs",
+    "scripts/test/seed-report.mjs",
+    "scripts/test/seed-report.test.mjs",
+    "workspace-session OpenAPI path and schema",
+    "operations store and contract controllers",
+    "WorkspaceUserService",
+    "failed formal-seed manifest/report/events/backend log"
+  ],
+  "searchQueries": [
+    "selectOperationsWorkspaceSessionDataNode",
+    "contextVersion",
+    "projectId",
+    "createOperationsOrganizationStore",
+    "transitionOperationsOrganizationStoreStatus",
+    "createOperationsContract",
+    "invalidateOperationsContract",
+    "safeFailure"
+  ],
+  "counterexamples": [
+    "GROUP-scoped writes and project creation do not require a selected PROJECT.",
+    "Operations project-user invitation commands are not called by the formal executor and are not expanded into this repair.",
+    "A sensitive raw failure message must be redacted even when a controlled stage ID is retained."
+  ],
+  "findings": [
+    {
+      "findingId": "FORMAL-SEED-PROJECT-SCOPE-01",
+      "classification": "CONFIRMED",
+      "evidence": "The failed run completed login and all prerequisite owner commands, then received 403 on its first store create. The executor did not call selectOperationsWorkspaceSessionDataNode, while controllers resolve the owner-confirmed selected project.",
+      "minimumFix": "Read session context after login, select only on project transitions with rolling owner contextVersion, and cover every current project-scoped command."
+    },
+    {
+      "findingId": "FORMAL-SEED-DIAGNOSTIC-02",
+      "classification": "CONFIRMED",
+      "evidence": "seed-report safeFailure strips lower-case and hyphen characters, collapsing store-store-operating to --.",
+      "minimumFix": "Retain a controlled symbolic stage vocabulary while redacting all secret-bearing value shapes."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "FORMAL-SEED-PROJECT-SCOPE-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/dev/owner-command-seed-executor.test.mjs transition and generated-operation-registry proofs"
+    },
+    {
+      "findingId": "FORMAL-SEED-DIAGNOSTIC-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/test/seed-report.test.mjs controlled-stage and secret-redaction proofs"
+    }
+  ]
+}

@@ -106,15 +106,15 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
     <Button onClick={() => setAuditOpen(true)} {...testId('operations-organization-audit')}>操作历史</Button>
     {selected.nodeType === 'GROUP' && canCreateRegion && <Button type="primary" onClick={() => setRegionCreateOpen(true)} {...testId('operations-region-create')}>{organizationRegionCreateLabel}</Button>}
     {selected.nodeType === 'REGION' && canCreateProject && <Button type="primary" onClick={() => setProjectCreateOpen(true)} {...testId('operations-project-create')}>新建项目</Button>}
-    {canEdit(selected) && <Button onClick={() => { if (selected.nodeType === 'GROUP') setEditingCommercialGroup(selected); else setEditing(selected); setSelected(undefined); }} {...testId('operations-organization-edit')}>编辑</Button>}
-    {canTransition(selected) && <Button onClick={() => { setTransitionTarget(selected); setSelected(undefined); }} {...testId('operations-organization-status')}>{selected.status === 'ENABLED' ? '停用' : '启用'}</Button>}
+    {canEdit(selected) && <Button onClick={() => { if (selected.nodeType === 'GROUP') setEditingCommercialGroup(selected); else setEditing(selected); }} {...testId('operations-organization-edit')}>编辑</Button>}
+    {canTransition(selected) && <Button onClick={() => setTransitionTarget(selected)} {...testId('operations-organization-status')}>{selected.status === 'ENABLED' ? '停用' : '启用'}</Button>}
   </Space> : undefined;
 
   return <Card aria-label={organizationStructurePageTitle} {...testId('operations-organization-structure')}>
     <div style={{marginBottom: 16, color: 'var(--ant-color-text-secondary)'}}>维护集团、大区和项目的组织层级；选择节点查看详情并执行已获授权的管理操作。</div>
     {problem && <Alert type="error" showIcon title="组织结构页面失败" description={problem} style={{marginBottom: 16}}/>}
     <div style={{display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) minmax(340px, 1.35fr)', gap: 16}}>
-      <Card size="small" title="组织架构" style={{minWidth: 0}} styles={{body: {display: 'flex', flexDirection: 'column', gap: 12, minHeight: 360}}}><Input allowClear placeholder="按名称或编码搜索" value={hierarchySearch} onChange={(event) => setHierarchySearch(event.target.value)} {...testId('operations-organization-hierarchy-search')}/><div style={{flex: 1, minHeight: 0, maxHeight: 440, overflow: 'auto', paddingRight: 4}}>{treeData.length ? <Tree aria-label="集团大区项目组织树" treeData={treeData} expandedKeys={expandedKeys} onExpand={(keys) => setExpandedKeys(keys.map(String))} selectedKeys={selected ? [selected.id] : []} onSelect={(keys) => setSelected(rows.find((row) => row.id === keys[0]))}/> : <Empty description="未找到匹配的组织"/>}</div></Card>
+      <Card size="small" title="组织架构" style={{minWidth: 0}} styles={{body: {display: 'flex', flexDirection: 'column', gap: 12, minHeight: 360}}}><Input allowClear placeholder="按名称或编码搜索" value={hierarchySearch} onChange={(event) => setHierarchySearch(event.target.value)} {...testId('operations-organization-hierarchy-search')}/><div style={{flex: 1, minHeight: 0, maxHeight: 440, overflow: 'auto', paddingRight: 4}}>{treeData.length ? <Tree aria-label="集团大区项目组织树" treeData={treeData} expandedKeys={expandedKeys} onExpand={(keys) => setExpandedKeys(keys.map(String))} selectedKeys={selected ? [selected.id] : []} onSelect={(keys) => { const id = String(keys[0] ?? ''); if (!id) return; setSelected(rows.find((row) => row.id === id)); }}/> : <Empty description="未找到匹配的组织"/>}</div></Card>
       <Card size="small" title="组织详情" style={{minWidth: 0, alignSelf: 'start'}} extra={detailActions}>
         {selected ? <>
           {definition.error && <Alert type="error" showIcon title="扩展字段加载失败" description="请关闭后重新进入。" style={{marginBottom: 16}}/>}

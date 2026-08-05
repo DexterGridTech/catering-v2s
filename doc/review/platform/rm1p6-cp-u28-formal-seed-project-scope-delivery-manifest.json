@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-delivery-manifest",
+  "packageId": "RM1P6-CP-U28",
+  "deliveryUnits": [
+    {
+      "id": "RM1P6-CP-U28",
+      "title": "Formal seed PROJECT session-scope repair",
+      "approvedAssertions": [
+        "FORMAL_SEED_KEEPS_OWNER_CONFIRMED_PROJECT_SCOPE_IN_THE_SERVER_SESSION",
+        "PROJECT_SCOPED_SEED_WRITES_SELECT_ONLY_ON_PROJECT_TRANSITION_AND_ROLL_CONTEXT_VERSION",
+        "STORE_AND_CONTRACT_REQUESTS_DO_NOT_SEND_CLIENT_PROJECT_ID",
+        "FORMAL_SEED_REPORT_FAILURE_STAGE_REMAINS_DIAGNOSTIC_WITHOUT_SECRET_LEAKAGE"
+      ],
+      "forbiddenPseudoFixes": [
+        "adding projectId back to store or contract request bodies",
+        "trusting a client projectId instead of selecting owner-confirmed session scope",
+        "selecting the project before every command rather than only on transitions",
+        "new HTTP operation, capability, fixture SQL, reset workaround, or seed rerun on partial data",
+        "preserving authorization, token, cookie, OTP, password, JDBC, or bearer values in diagnostic failure text"
+      ],
+      "redDiscriminators": [
+        "missing selectOperationsWorkspaceSessionDataNode registry operation fails static input validation",
+        "A-A-B-A command traversal makes exactly three selections with rolled context versions",
+        "missing owner-returned contextVersion fails closed",
+        "store and contract request bodies reject stale projectId presence",
+        "safe report text retains store-store-operating but rejects secret-bearing strings"
+      ],
+      "sourceDenominators": {
+        "originalTask": ["/Users/dexter/.codex/attachments/c6636204-9eff-4d06-a591-74cb44d2f34c/pasted-text.txt"],
+        "governance": ["AGENTS.md", "PLATFORM-BLUEPRINT.md", "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md", "doc/evidence/platform/rm1/p6/rm1p6-data-scope-context-u27-package-input.json"],
+        "memory": ["project-memory/operations/dev-command-separation.md", "project-memory/pitfalls/log-first-failure-retry.md", "project-memory/operations/phase-retrospective-and-systemic-repair.md"],
+        "contractAndOwner": ["contracts/openapi/paths/operations-admin/workspace-session.paths.yaml", "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml", "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java", "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java", "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java"],
+        "implementation": ["scripts/dev/owner-command-seed-executor.mjs", "scripts/test/seed-report.mjs"],
+        "proof": ["scripts/dev/owner-command-seed-executor.test.mjs", "scripts/test/seed-report.test.mjs", ".runtime/r5/seed/rm1-seed-1254f68b-88e2-4a86-b889-e9d43f765960/run-manifest.json", ".runtime/r5/seed/rm1-seed-1254f68b-88e2-4a86-b889-e9d43f765960/seed-report.json"]
+      },
+      "changeSurfaces": [
+        {"path": ".runtime/compliance-control/active-package.json", "disposition": "update", "target": "activate U28 after exact bootstrap binding"},
+        {"path": "scripts/dev/owner-command-seed-executor.mjs", "disposition": "update", "target": "owner-confirmed project context transitions and request-body correction"},
+        {"path": "scripts/dev/owner-command-seed-executor.test.mjs", "disposition": "update", "target": "focused transition, registry and no-client-project proofs"},
+        {"path": "scripts/test/seed-report.mjs", "disposition": "update", "target": "diagnostic-safe failure normalization"},
+        {"path": "scripts/test/seed-report.test.mjs", "disposition": "update", "target": "stage retention and secret-redaction proof"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u28-formal-seed-project-scope-package-input.json", "disposition": "create", "target": "execution binding"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u28-formal-seed-project-scope-implementation-amendment.md", "disposition": "create", "target": "source-bound repair design"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u28-formal-seed-project-scope-problem-family.json", "disposition": "create", "target": "generalized finding and prevention"},
+        {"path": "doc/evidence/platform/rm1/p6/rm1p6-cp-u28-formal-seed-project-scope-package-exit.json", "disposition": "create", "target": "static and formal-seed handback"},
+        {"path": "doc/review/platform/rm1p6-cp-u28-formal-seed-project-scope-delivery-manifest.json", "disposition": "create", "target": "exact change-surface declaration"}
+      ],
+      "complianceRoute": {"taskKind": "implementation", "domain": "backend", "consumerFace": "operations-admin", "owner": "backend", "impact": "session", "trigger": "failure"},
+      "completion": "Focused proof closes the complete PROJECT-scoped seed command denominator; a fresh full reset/start/seed then proves owner readback, report, manifest, logs, business and cleanup separately."
+    }
+  ]
+}

@@ -10,7 +10,7 @@ export {createRefreshSignal, useRefreshVersion} from './behavior/refreshSignal';
 export {testId} from './automation/testId';
 export {OverlayLockProvider, useDirtyFormLock, useOverlayLock, useShellInteractionLock} from './overlay/overlayLock';
 export {useDetailDrawer} from './list/useDetailDrawer';
-export {adminDrawerSurfaceProps} from './overlay/drawerSurface';
+export {adminDetailDescriptionsProps, adminDrawerSurfaceProps} from './overlay/drawerSurface';
 export {contextScopedQueryArgs} from './list/contextScopedQueryArgs';
 export type {ContextScopedQueryContext} from './list/contextScopedQueryArgs';
 export {adminListState} from './list/adminListState';

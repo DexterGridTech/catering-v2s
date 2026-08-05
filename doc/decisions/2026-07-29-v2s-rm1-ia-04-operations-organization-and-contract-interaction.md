@@ -51,7 +51,7 @@ CONSUMER_FACE=operations-admin（运营管理后台）
 | IA04-BUSINESS-EDIT | 详情关闭后的编辑 Drawer | 修订对应经营实体资料 | `编辑品牌`：编码、名称、别名、备注及其后当前启用的定义字段；`编辑经营租户/总公司`：编码、名称、法定名称、统一社会信用代码、备注及其后当前启用的定义字段；取消/保存 | 同上；organization update |
 | IA04-HEAD-COMPANY-BRANDS | Drawer；总公司详情“经营品牌” | 为总公司维护可经营品牌集合 | `经营品牌`：可选品牌搜索选择、逐项添加或移除已授权品牌、关闭 | `adminDrawerSurfaceProps,useDrawerFormLifecycle,useSubmissionLifecycle,testId`；候选由 owner 返回，不把候选 id 暴露；逐项 command，不设多选草稿保存；organization authorization |
 | IA04-BUSINESS-STATUS | Modal；详情上下文动作 | 明确启用或停用一个经营实体 | `确认启用/停用“<名称>”？ [取消][确认]` | `useOverlayLock,useSubmissionLifecycle,testId`；organization transition |
-| IA04-STORE-PAGE | `PG-ORG-STORE-MANAGE`；独立内容页 | 门店维护者筛选、创建并打开门店详情 | `门店管理 [新建门店]`；筛选“门店名称/门店编码/项目/状态”；表“门店名称(链接)/编码/项目/品牌/经营租户/总公司/状态” | `contextScopedQueryArgs,testId`；organization list |
+| IA04-STORE-PAGE | `PG-ORG-STORE-MANAGE`；独立内容页 | 门店维护者在当前项目范围内筛选、创建并打开门店详情 | `门店管理 [新建门店]`；筛选“门店名称/门店编码/状态”；表“门店名称(链接)/编码/品牌/经营租户/总公司/状态” | `contextScopedQueryArgs,testId`；organization list |
 | IA04-STORE-DETAIL | Drawer；门店名称链接 | 核对门店归属和资料后再编辑或启停 | `门店详情 [编辑][启用/停用]`；门店名称、编码、项目、品牌、经营租户、总公司、状态、备注及其后当前启用的定义字段 | `adminDrawerSurfaceProps,useDetailDrawer,useOverlayLock,testId`；organization detail |
 | IA04-STORE-CREATE | Drawer；门店页“新建门店” | 在正确项目及经营关系下建立门店 | `新建门店`：项目、品牌、经营租户、总公司、门店名称、编码、备注及其后当前启用的定义字段、取消/创建 | `adminDrawerSurfaceProps,useDrawerFormLifecycle,useSubmissionLifecycle,testId`；organization create |
 | IA04-STORE-EDIT | Drawer；详情关闭后编辑 | 在固定归属下修订允许资料 | `编辑门店资料`：项目/品牌/经营租户/门店编码只读、门店名称、总公司、备注及其后当前启用的定义字段、取消/保存 | 同上；organization update |
@@ -440,14 +440,14 @@ HOST_AND_ENTRY=门店管理菜单
 ACTOR=具有门店维护资格的运营用户
 BUSINESS_SCENARIO=查找、查看或新建门店
 BUSINESS_GOAL=定位正确门店或开始创建
-USER_VISIBLE_COPY=“门店管理”“新建门店”；“筛选功能准备中”；筛选“门店名称”“门店编码”“项目”“状态”；列“门店名称”“编码”“项目”“品牌”“经营租户”“总公司”“状态”
+USER_VISIBLE_COPY=“门店管理”“新建门店”；“筛选功能准备中”；筛选“门店名称”“门店编码”“状态”；列“门店名称”“编码”“品牌”“经营租户”“总公司”“状态”；当前项目仅由页面数据范围显示，不在筛选或表格重复展示
 TECHNICAL_BOUNDARY=分页、范围、内部标识不显示
 FOUNDATION_PRIMITIVE=contextScopedQueryArgs,testId
 HERITAGE_COUNTERPART=EXACT_COUNTERPART; all-v2/apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx@4a4d270aefd097cd6f842327439c56180af396c63c642300997fb553e5d292a5
 ```
 ```text
-门店管理 [新建门店] 门店名称 [待补服务端筛选] 门店编码 [待补服务端筛选] 项目 [待补服务端筛选] 状态 [待补服务端筛选] [查询（不可用）]
-门店名称（链接） | 编码 | 项目 | 品牌 | 经营租户 | 总公司 | 状态
+门店管理 [新建门店] 门店名称 [待补服务端筛选] 门店编码 [待补服务端筛选] 状态 [待补服务端筛选] [查询（不可用）]
+门店名称（链接） | 编码 | 品牌 | 经营租户 | 总公司 | 状态
 ```
 
 <a id="IA04-STORE-DETAIL"></a>
@@ -700,7 +700,7 @@ HERITAGE_COUNTERPART=PARTIAL_COUNTERPART; H-PROFILE
 | `IA04-BRAND-PAGE` / 品牌 / 按品牌名称或状态定位维护记录 | “品牌名称”“状态” | 名称为文本 `Input`；状态为固定 `Select` | organization list query；状态为冻结业务词表 | 无级联；清空回 owner 默认分页 | organization owner 重验范围与状态 | 品牌名称是用户可键入的业务标识，状态有限；不需候选服务 | 无 |
 | `IA04-TENANT-PAGE` / 经营租户 / 按名称或状态定位经营租户 | “名称”“状态” | 名称文本 `Input`；状态固定 `Select` | organization list query / 冻结状态词表 | 无 | organization owner 重验 | 同上；统一标识为展示列，未获业务/contract 支持前不擅加为条件 | 无 |
 | `IA04-HEAD-COMPANY-PAGE`、`IA04-HEAD-COMPANY-BRANDS` / 总公司及可经营品牌 / 定位公司并维护其允许经营的品牌集合 | 总公司页“名称”“状态”；Drawer“可选品牌”“添加”及每项“移除” | 名称文本 `Input`、状态固定 `Select`；品牌为 owner searchable single-`Select` 加“添加”按钮 | organization list；总公司详情的品牌候选 task read 与当前授权 readback | 选择一个候选后明确点击“添加”即刻提交单条 add；每项“移除”即刻提交单条 remove；每次成功均以 owner detail readback 替换可见授权；无草稿、无保存 | 每条 add/remove command 重验总公司、品牌可用性、授权关系与引用关系 | 品牌会增长、同名可能存在且关系受授权约束，不能手填 brand id 或用全局固定表；多选草稿会恢复已退役 collection-replace 形状 | 无；候选读取失败不显示旧缓存为可提交值，失败保留 owner-confirmed 当前授权 |
-| `IA04-STORE-PAGE` / 门店 / 按名称、编码、项目或状态定位门店主数据 | “门店名称”“门店编码”“项目”“状态” | 名称为文本 contains `Input`；编码为精确/contract 语义 `Input`；状态固定 `Select`；项目为 searchable `Select` | OpenAPI `getOperationsOrganizationStores` 声明 `name/code/brandId/tenantId/headCompanyId/status`，但 current `OperationsStoreManagementController.list` 只接 context/page/pageSize；项目也缺 query 与候选 task read | 项目改选清空页码并重新查；其他条件独立 | organization owner 未来必须在当前范围内应用全部条件并以同一谓词计算 total | 项目是增长型、可能同名的业务归属，必须搜索选择，不能文本；名称/编码则是用户已知检索词 | `GAP-STORE-LIST-FILTER-SEMANTICS`：必须补 controller/task-read 的 name/code/brand/tenant/head-company/status server filtering + same-predicate total；`GAP-STORE-PROJECT-FILTER`：另补 projectId + 项目候选 read。线框不把任一项假称当前可工作，禁止 client-side filter |
+| `IA04-STORE-PAGE` / 门店 / 在页面已确定的项目范围内按名称、编码或状态定位门店主数据 | “门店名称”“门店编码”“状态” | 名称为文本 contains `Input`；编码为精确/contract 语义 `Input`；状态固定 `Select` | OpenAPI `getOperationsOrganizationStores` 声明 `name/code/brandId/tenantId/headCompanyId/status`，但 current `OperationsStoreManagementController.list` 只接 context/page/pageSize | 当前项目由页面数据范围唯一确定；其他条件独立、变更时清页码并重新查 | organization owner 未来必须在当前范围内应用全部条件并以同一谓词计算 total | 项目是当前范围事实，不是本列表需要再次选择、筛选或展示的行字段；名称/编码则是用户已知检索词 | `GAP-STORE-LIST-FILTER-SEMANTICS`：必须补 controller/task-read 的 name/code/brand/tenant/head-company/status server filtering + same-predicate total。线框不把任一项假称当前可工作，禁止 client-side filter |
 | `IA04-STORE-CREATE` / 新门店的项目、品牌、经营租户、总公司 / 在建立门店前选择一组真实可经营关系 | “项目”“品牌”“经营租户”“总公司” | 四项均为 owner searchable `Select`；名称/编码/备注才是文本 `Input` | 统一 `CandidateQuery` adapter 以各 subjectType + 已选项目/品牌/租户 dependencies 路由 organization owner | 先选项目和品牌；二者变更清经营租户/总公司；经营租户变更清总公司；每次重载候选 | create command 重验项目、品牌、租户、总公司之间的经营关系 | 这四项均为跨 owner 引用事实，手填会产生静默错归属；级联选择直接表达“先确定经营上下文再建门店” | `GAP-STORE-CREATE-CASCADE`：current owner candidates 仅接收 expectedContextVersion/brandId，未证明项目与租户约束。必须扩展 organization owner candidate contract；在此之前不能以客户端筛选、全量候选或自由文本冒充正确级联 |
 | `IA04-CONTRACT-PAGE` / 门店合同 / 先定位项目，再依合同编号、门店、项目分期、经营租户、状态和日期定位合同 | “项目”“合同编号”“门店”“项目分期”“经营租户”“状态”“起止日期” | 项目、门店为 searchable `Select`；编号/项目分期/经营租户名称为 contract 文本 `Input`；状态固定 `Select`；日期为 `DateRangePicker` | 合同列表仍用 `getOperationsContracts` 文本 query；项目/门店选择统一经 CandidateQuery adapter，项目来自 IA02 当前数据范围 owner source，门店由 contract owner source 提供 | 未选项目不发列表请求；改项目清门店、页码和候选，再重取门店；其余条件独立；日期清空恢复默认 | `GAP-CONTRACT-PROJECT-SCOPE-AUTHORIZATION` 未闭合前，当前 contract path 不得声称已以当前任职/数据范围重验；其余 workspace/relationship facts 仍由 contract owner 复核 | 项目是 API 强制且是合同归属，必须先搜索选择；门店受项目范围约束，随项目搜索；编号/阶段/租户名是用户已知检索词，文本更合适；日期范围回答有效期间问题 | `GAP-CONTRACT-PROJECT-SCOPE-AUTHORIZATION`：必须让 workspace-IAM 提供当前可写项目 public task input，并由 contract list/candidates/create/update 同一 owner 再验；不得由 scopeRef、URL 或页面选择代替 |
 | `IA04-CONTRACT-CREATE` / 新合同所归属的门店及项目分期 / 先选门店，再选择该门店可用分期 | “门店”“项目分期”“经营租户（随门店确定）” | 门店为服务端 searchable `Select`；分期为已选门店的 `Select`；经营租户只读 readback | `getOperationsContractsCandidates`，contract owner | 改门店立刻清分期和租户展示，重取门店候选事实；未选门店禁用分期 | create command 重验门店、分期和只读租户关联 | 门店/分期是合同归属事实，不能键入；租户来自门店而不是一项 mutation，避免错配 | `GAP-CONTRACT-TENANT-READBACK`：候选 readback 尚未返回租户展示值；须由 contract owner 同一 readback 补齐，禁止浏览器反查或向 command 添加租户 mutation |

@@ -112,19 +112,32 @@ export function resolveInvitationCreationPlan(fixture) {
 export function validateFormalSeedStaticInputs({fixture, registry}) {
   if (fixture?.profile?.id !== 'r5-full' || fixture?.profile?.version !== 1) fail('SEED_PROFILE_CONTRACT_INVALID');
   const operations = Array.isArray(registry) ? registry : [];
-  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment']) {
+  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract']) {
     if (operations.filter((entry) => entry.operationId === operationId).length !== 1) fail(`SEED_OPERATION_REGISTRY_MISSING:${operationId}`);
   }
   return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture)});
+}
+
+export function createProjectScopeSelector({initialContextVersion, select}) {
+  let selectedProjectRef;
+  let requiredContextVersion = requireValue(initialContextVersion, 'SEED_SESSION_CONTEXT_VERSION');
+  return async ({projectRef, stage}) => {
+    const nextProjectRef = requireValue(projectRef, 'SEED_PROJECT_SCOPE_ID');
+    if (nextProjectRef === selectedProjectRef) return requiredContextVersion;
+    const selected = await select({
+      stage: requireValue(stage, 'SEED_PROJECT_SCOPE_STAGE'),
+      body: {dataNodeRef: nextProjectRef, dataNodeType: 'PROJECT', requiredContextVersion},
+    });
+    requiredContextVersion = requireValue(selected?.contextVersion, 'SEED_PROJECT_SCOPE_CONTEXT_VERSION');
+    selectedProjectRef = nextProjectRef;
+    return requiredContextVersion;
+  };
 }
 
 export function loadFormalSeedStaticInputs() {
   return validateFormalSeedStaticInputs({fixture: JSON.parse(readFileSync(fixturePath, 'utf8')), registry: loadGeneratedOperationRegistry(registryPath)});
 }
 
-function safeCode(value) {
-  return String(value ?? 'FAILED').replaceAll(/(?:password|secret|token|cookie|authorization|otp|mobile|login|account|payload|jdbc:)[^\s]*/gi, '[REDACTED]').replaceAll(/\s+/g, '_').replaceAll(/[^A-Za-z0-9_.:-]/g, '').slice(0, 180);
-}
 function requireValue(value, code) { if (value === undefined || value === null || value === '') throw new FormalSeedFailure(code); return value; }
 function readEnv(file) {
   if (!existsSync(file) || (statSync(file).mode & 0o777) !== 0o600) throw new FormalSeedFailure('SEED_MANAGED_CREDENTIALS_INVALID');
@@ -143,7 +156,7 @@ function managedRuntime() {
 }
 function topology(credentials) {
   const result = spawnSync(process.execPath, [environmentScript, 'seed', '--json'], {cwd: root, encoding: 'utf8', env: {...process.env, ...credentials}});
-  if (result.status !== 0) throw new FormalSeedFailure(`SEED_ENVIRONMENT_REFUSED:${safeCode(result.stderr || result.stdout)}`);
+  if (result.status !== 0) throw new FormalSeedFailure('SEED_ENVIRONMENT_REFUSED');
   const parsed = JSON.parse(result.stdout);
   if (parsed.environment?.V2S_DEV_PROFILE !== 'r5-full' || parsed.environment?.V2S_RUNTIME_ENVIRONMENT !== 'non-production') throw new FormalSeedFailure('SEED_ENVIRONMENT_PROFILE_INVALID');
   return parsed;
@@ -268,7 +281,7 @@ async function executeFormalSeed() {
   try {
     const bootstrapStarted = Date.now();
     const bootstrap = spawnSync(process.execPath, [bootstrapScript], {cwd: root, encoding: 'utf8', env: {...process.env, ...credentials}});
-    if (bootstrap.status !== 0) throw new FormalSeedFailure(`SEED_BOOTSTRAP_FAILED:${safeCode(bootstrap.stderr || bootstrap.stdout)}`);
+    if (bootstrap.status !== 0) throw new FormalSeedFailure('SEED_BOOTSTRAP_FAILED');
     nonApiStages.push({stageId: 'bootstrap', status: 'PASS', durationMs: Date.now() - bootstrapStarted, summary: 'allowed-root-bootstrap'}); phase('bootstrap', 'PASS');
     const login = await request('platform-login', 'platformPasswordLogin', {}, {body: {accountName: 'root', password: credentials.V2S_SEED_PLATFORM_ROOT_PASSWORD}});
     const platformCookie = requireValue(login.cookie, 'SEED_PLATFORM_SESSION_MISSING');
@@ -357,6 +370,11 @@ async function executeFormalSeed() {
     const bootstrapInvitation = await createInvitation(groupPlan); await advanceInvitation(groupPlan, bootstrapInvitation);
     const operationsLogin = await request('operations-login', 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: aurora}, {body: {loginName: canonicalLogin(groupPlan.accountKey), password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
     const operationsCookie = requireValue(operationsLogin.cookie, 'SEED_OPERATIONS_SESSION_MISSING');
+    const operationsSession = await request('operations-session', 'getOperationsWorkspaceSessionEntry', {groupWorkspaceKey: aurora}, {cookie: operationsCookie});
+    const selectProjectScope = createProjectScopeSelector({
+      initialContextVersion: requireValue(operationsSession.json?.contextVersion, 'SEED_SESSION_CONTEXT_VERSION'),
+      select: async ({stage, body}) => (await request(stage, 'selectOperationsWorkspaceSessionDataNode', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, body})).json,
+    });
     // The remaining implementation continues through generated owner operations;
     // every created id is retained only in memory and verified by later owner reads.
     for (const region of fixture.stableFixtures.organization.regions) {
@@ -372,7 +390,12 @@ async function executeFormalSeed() {
     for (const tenant of fixture.stableFixtures.organization.tenants) { const extensionValues = extensionValuesFor('gw-aurora', 'TENANT', tenant.extensionValues); const created = await request(`tenant-${tenant.key}`, 'createOperationsOrganizationTenant', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: tenant.code, name: tenant.name, legalName: `${tenant.name}有限公司`, unifiedSocialCreditCode: `91310000${tenant.code.replaceAll('-', '').padEnd(8, '0')}A`, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.TENANT += 1; ids.tenant[tenant.key] = created.json; }
     for (const head of fixture.stableFixtures.organization.headCompanies) { const extensionValues = extensionValuesFor('gw-aurora', 'HEAD_COMPANY', head.extensionValues); const created = await request(`head-company-${head.key}`, 'createOperationsOrganizationHeadCompany', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: head.code, name: head.name, legalName: `${head.name}有限公司`, unifiedSocialCreditCode: `91320000${head.code.replaceAll('-', '').padEnd(8, '0')}B`, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.HEAD_COMPANY += 1; ids.headCompany[head.key] = created.json; }
     for (const authorization of fixture.stableFixtures.organization.brandAuthorizations) await request(`brand-authorization-${authorization.headCompany}-${authorization.brand}`, 'addOperationsOrganizationHeadCompanyBrandAuthorization', {groupWorkspaceKey: aurora, headCompanyId: requireValue(ids.headCompany[authorization.headCompany]?.id, 'SEED_HEAD_COMPANY_ID')}, {cookie: operationsCookie, expected: [204], body: {brandId: requireValue(ids.brand[authorization.brand]?.id, 'SEED_BRAND_ID')}});
-    for (const store of fixture.stableFixtures.organization.stores) { const extensionValues = extensionValuesFor('gw-aurora', 'STORE', store.extensionValues); const created = await request(`store-${store.key}`, 'createOperationsOrganizationStore', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {projectId: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.STORE += 1; ids.store[store.key] = created.json; }
+    for (const store of fixture.stableFixtures.organization.stores) {
+      await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-${store.key}`});
+      const extensionValues = extensionValuesFor('gw-aurora', 'STORE', store.extensionValues);
+      const created = await request(`store-${store.key}`, 'createOperationsOrganizationStore', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues}});
+      assertExtensionValueReadback(created, extensionValues); extensionReadback.STORE += 1; ids.store[store.key] = created.json;
+    }
     // Materialize every declared invitation state through public owner commands.
     // The only non-HTTP terminal fact is inv-expired, guarded by the narrowly
     // scoped adapter after the public PENDING invitation and intent exist.
@@ -391,7 +414,7 @@ async function executeFormalSeed() {
     const expiredPlan = invitationPlan.find((entry) => entry.invitationKey === 'inv-expired');
     const terminalStarted = Date.now();
     const terminal = spawnSync(process.execPath, [terminalFixtureScript], {cwd: root, encoding: 'utf8', input: JSON.stringify({fixtureKey: 'inv-expired', groupWorkspaceKey: aurora, invitationId: requireValue(ids.invitation['inv-expired']?.id, 'SEED_EXPIRED_INVITATION_ID'), roleId: requireValue(ids.role[expiredPlan.roleKey]?.id, 'SEED_EXPIRED_ROLE_ID'), serviceNodeType: expiredPlan.targetOrganizationType, serviceNodeId: nodeIdFor(expiredPlan), createdAtEpochMillis: Date.now() - 120_000, expiresAtEpochMillis: Date.now() - 60_000}), env: {...process.env, ...credentials}});
-    if (terminal.status !== 0) throw new FormalSeedFailure(`SEED_TERMINAL_INVITATION_EXPIRED_FAILED:${safeCode(terminal.stderr || terminal.stdout)}`);
+    if (terminal.status !== 0) throw new FormalSeedFailure('SEED_TERMINAL_INVITATION_EXPIRED_FAILED');
     nonApiStages.push({stageId: 'terminal-inv-expired', status: 'PASS', durationMs: Date.now() - terminalStarted, summary: 'allowlisted-invitation-expired'}); phase('terminal-inv-expired', 'PASS');
     const accountByKey = new Map(fixture.stableFixtures.workspaceIam.accounts.map((account) => [account.key, account]));
     for (const account of fixture.stableFixtures.workspaceIam.accounts) {
@@ -413,15 +436,22 @@ async function executeFormalSeed() {
     for (const brand of fixture.stableFixtures.organization.brands.filter((entry) => entry.status === 'DISABLED')) await transition(`brand-disable-${brand.key}`, 'transitionOperationsOrganizationBrandStatus', {groupWorkspaceKey: aurora, brandId: ids.brand[brand.key].id}, ids.brand[brand.key]);
     for (const tenant of fixture.stableFixtures.organization.tenants.filter((entry) => entry.status === 'DISABLED')) await transition(`tenant-disable-${tenant.key}`, 'transitionOperationsOrganizationTenantStatus', {groupWorkspaceKey: aurora, tenantId: ids.tenant[tenant.key].id}, ids.tenant[tenant.key]);
     for (const head of fixture.stableFixtures.organization.headCompanies.filter((entry) => entry.status === 'DISABLED')) await transition(`head-company-disable-${head.key}`, 'transitionOperationsOrganizationHeadCompanyStatus', {groupWorkspaceKey: aurora, headCompanyId: ids.headCompany[head.key].id}, ids.headCompany[head.key]);
-    for (const store of fixture.stableFixtures.organization.stores.filter((entry) => entry.status === 'DISABLED')) await transition(`store-disable-${store.key}`, 'transitionOperationsOrganizationStoreStatus', {groupWorkspaceKey: aurora, storeId: ids.store[store.key].id}, ids.store[store.key]);
+    for (const store of fixture.stableFixtures.organization.stores.filter((entry) => entry.status === 'DISABLED')) {
+      await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-disable-${store.key}`});
+      await transition(`store-disable-${store.key}`, 'transitionOperationsOrganizationStoreStatus', {groupWorkspaceKey: aurora, storeId: ids.store[store.key].id}, ids.store[store.key]);
+    }
     const contracts = {};
     for (const contract of fixture.stableFixtures.contracts) {
       const store = fixture.stableFixtures.organization.stores.find((entry) => entry.key === contract.store);
+      await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), stage: `project-select-contract-${contract.key}`});
       const extensionValues = extensionValuesFor('gw-aurora', 'CONTRACT', contract.extensionValues);
-      const created = await request(`contract-${contract.key}`, 'createOperationsContract', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {projectId: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), storeId: requireValue(ids.store[store.key]?.id, 'SEED_CONTRACT_STORE_ID'), phaseName: contract.phaseNameSnapshot ?? null, phaseNameSnapshot: contract.phaseNameSnapshot ?? null, contractNo: contract.contractNo, effectiveFrom: contract.effectiveFrom, effectiveTo: contract.effectiveTo, note: null, extensionValues, items: contract.items}});
+      const created = await request(`contract-${contract.key}`, 'createOperationsContract', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {storeId: requireValue(ids.store[store.key]?.id, 'SEED_CONTRACT_STORE_ID'), phaseName: contract.phaseNameSnapshot ?? null, phaseNameSnapshot: contract.phaseNameSnapshot ?? null, contractNo: contract.contractNo, effectiveFrom: contract.effectiveFrom, effectiveTo: contract.effectiveTo, note: null, extensionValues, items: contract.items}});
       assertExtensionValueReadback(created, extensionValues); extensionReadback.CONTRACT += 1;
       contracts[contract.key] = created.json;
-      if (contract.status === 'INVALID') await request(`contract-invalidate-${contract.key}`, 'invalidateOperationsContract', {groupWorkspaceKey: aurora, contractId: requireValue(created.json?.id, 'SEED_CONTRACT_ID')}, {cookie: operationsCookie, body: {expectedVersion: requireValue(created.json?.revision, 'SEED_CONTRACT_VERSION')}});
+      if (contract.status === 'INVALID') {
+        await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), stage: `project-select-contract-invalidate-${contract.key}`});
+        await request(`contract-invalidate-${contract.key}`, 'invalidateOperationsContract', {groupWorkspaceKey: aurora, contractId: requireValue(created.json?.id, 'SEED_CONTRACT_ID')}, {cookie: operationsCookie, body: {expectedVersion: requireValue(created.json?.revision, 'SEED_CONTRACT_VERSION')}});
+      }
     }
     // The public list face is intentionally a UI query surface.  Each invitation
     // is already read back by its lifecycle response, while account reads above
@@ -430,7 +460,7 @@ async function executeFormalSeed() {
     phase('owner-readback', 'PASS', {accounts: Object.keys(ids.account).length, invitations: Object.keys(ids.invitation).length, contracts: Object.keys(contracts).length, extensionDefinitions: fixture.stableFixtures.extensionDefinitions.length, extensionValueEntities: Object.values(extensionReadback).reduce((total, count) => total + count, 0), extensionHosts: Object.keys(extensionReadback)});
     finalize('PASS', 'PASS_NO_PERSISTENT_SEED_PROCESS');
   } catch (error) {
-    firstFailure ??= error.code ?? safeCode(error.message);
+    firstFailure ??= error.code ?? 'SEED_EXECUTION_FAILED';
     try { finalize('FAIL', 'PASS_NO_PERSISTENT_SEED_PROCESS'); } catch { persist('FAIL', 'FAIL_REPORT_FINALIZATION'); }
     throw error;
   }
@@ -467,5 +497,5 @@ function selfTest() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   if (process.argv.includes('--self-test')) selfTest();
-  else executeFormalSeed().then(() => process.stdout.write('R5_SEED=PASS\n')).catch((error) => { process.stderr.write(`R5_SEED=REFUSED; REASON=${safeCode(error.code ?? error.message)}\n`); process.exitCode = 2; });
+  else executeFormalSeed().then(() => process.stdout.write('R5_SEED=PASS\n')).catch((error) => { process.stderr.write(`R5_SEED=REFUSED; REASON=${error.code ?? 'SEED_EXECUTION_FAILED'}\n`); process.exitCode = 2; });
 }

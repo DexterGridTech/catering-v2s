@@ -1,5 +1,5 @@
 import {Alert, Descriptions, Drawer, Skeleton} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -46,7 +46,7 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
     {selected && <>
       {definition.isLoading && <Skeleton active {...testId('operations-store-profile-contract-detail-extension-loading')} />}
       {definition.error && <Alert type="warning" showIcon title="扩展字段读取失败" description="当前仅显示已确认的基础资料。" {...testId('operations-store-profile-contract-detail-extension-error')} />}
-      <Descriptions bordered column={1} items={[
+      <Descriptions {...adminDetailDescriptionsProps} items={[
         {key: 'contractNo', label: '合同编号', children: selected.contractNo},
         {key: 'store', label: '门店', children: formatNameCode(selected.store.name, selected.store.code)},
         {key: 'project', label: '项目', children: formatNameCode(selected.project.name, selected.project.code)},

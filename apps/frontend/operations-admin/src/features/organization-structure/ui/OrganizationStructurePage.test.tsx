@@ -57,9 +57,13 @@ describe('organization structure focused IA contract', () => {
     expect(phases).toContain('move(index, index + 1)');
   });
 
-  it('closes the detail context before independent edit/status surfaces and preserves owner readback', () => {
-    expect(page).toContain("if (selected.nodeType === 'GROUP') setEditingCommercialGroup(selected); else setEditing(selected); setSelected(undefined);");
-    expect(page).toContain('setTransitionTarget(selected); setSelected(undefined);');
+  it('preserves the tree selection while independent edit/status surfaces open and replaces it with owner readback', () => {
+    expect(page).toContain("if (selected.nodeType === 'GROUP') setEditingCommercialGroup(selected); else setEditing(selected);");
+    expect(page).toContain('onClick={() => setTransitionTarget(selected)}');
+    expect(page).toContain("const id = String(keys[0] ?? ''); if (!id) return;");
+    expect(page).toContain('setSelected(rows.find((row) => row.id === id));');
+    expect(page).not.toContain('setEditing(selected); setSelected(undefined)');
+    expect(page).not.toContain('setTransitionTarget(selected); setSelected(undefined)');
     expect(page).toContain('const readback = await operationsClient.transitionOperationsOrganizationNodeStatus');
     expect(page).toContain('setSelected(rowFromNode(readback));');
     expect(edit).toContain('parentId: node.parentId');

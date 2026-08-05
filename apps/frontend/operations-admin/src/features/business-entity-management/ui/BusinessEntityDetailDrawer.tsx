@@ -1,5 +1,5 @@
 import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -192,7 +192,7 @@ export function BusinessEntityDetailDrawer({
   >
     {detailLoading && <Skeleton active {...testId('operations-business-entity-detail-loading')} />}
     {detailError && <Alert type="error" showIcon title="详情加载失败" description="请关闭后重新进入详情。"/>}
-    {selected && <Descriptions bordered size="small" column={1} styles={{label: {width: 164}}} items={[
+    {selected && <Descriptions {...adminDetailDescriptionsProps} items={[
       {key: 'name', label: '名称', children: selected.name},
       {key: 'code', label: '编码', children: selected.code},
       ...typeSpecificItems(selected, kind),
