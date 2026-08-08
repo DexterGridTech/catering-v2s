@@ -1,10 +1,8 @@
 import {Alert, Typography} from 'antd';
-import {testId} from '@catering-v2s/admin-ui-foundation';
+import {NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceScopeContext, WorkspaceScopeNode} from '../api/generated/operations-edge';
 
 export type RequiredDataNodeType = 'NONE' | 'REGION' | 'PROJECT' | 'HEAD_COMPANY' | 'STORE';
-
-const nodeLabel = (node: WorkspaceScopeNode) => `${node.dataNodeName}(${node.dataNodeCode})`;
 
 function currentLines(type: RequiredDataNodeType, context: WorkspaceScopeContext | null): Array<[string, WorkspaceScopeNode | null | undefined]> {
   if (type === 'REGION') return [['大区', context?.region]];
@@ -42,6 +40,5 @@ export function OperationsDataScopeContextBar({requiredDataNodeType, scopeContex
   const lines = currentLines(requiredDataNodeType, context);
   const complete = isOperationsScopeComplete(requiredDataNodeType, context);
   if (!complete) return <Alert type="info" showIcon title={missingPrompt(requiredDataNodeType)} style={{marginBottom: 12}} {...testId('operations-page-data-scope-missing')}/>;
-  const selectedPath = lines.map(([, node]) => nodeLabel(node!)).join(' / ');
-  return <Typography.Text type="secondary" style={{display: 'block', marginBottom: 12}} {...testId('operations-page-data-scope-current')}><Typography.Text strong>{currentScopeName(requiredDataNodeType)}：</Typography.Text>{selectedPath}</Typography.Text>;
+  return <Typography.Text type="secondary" style={{display: 'block', marginBottom: 12}} {...testId('operations-page-data-scope-current')}><Typography.Text strong>{currentScopeName(requiredDataNodeType)}：</Typography.Text>{lines.map(([, node], index) => <span key={node!.dataNodeRef}>{index > 0 ? ' / ' : ''}<NameCodeText name={node!.dataNodeName} code={node!.dataNodeCode}/></span>)}</Typography.Text>;
 }

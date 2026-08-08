@@ -27,10 +27,10 @@ it('passes only owner-supported sorting to the generated list request', () => {
   expect(source).not.toContain("key: 'roles'");
   expect(source).not.toContain(".join('、')");
   expect(source).not.toMatch(/title: '任职机构'[^}]*sorter:\s*true/);
-  expect(source).toContain('formatCodeNamePath(candidate.path)');
-  expect(source).toContain('formatCodeNamePath(assignment.organizationPath)');
-  expect(detailDrawer).toContain('formatCodeNamePath(assignment.organizationPath)');
-  expect(actionModal).toContain('formatCodeNamePath(action.assignment.organizationPath)');
+  expect(source).toContain('NameCodePathText value={candidate.path}');
+  expect(source).toContain('NameCodePathText value={assignment.organizationPath}');
+  expect(detailDrawer).toContain('NameCodePathText value={assignment.organizationPath}');
+  expect(actionModal).toContain('NameCodePathText value={action.assignment.organizationPath}');
 });
 
 it('keeps permanent platform invitation governance outside the workspace capability model', () => {

@@ -1,5 +1,5 @@
 import {Alert, Button, Drawer, Form, Input, Space, Typography} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import {operationsClient} from '../../../app/api/OperationsTransport';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type OrganizationNode} from '../../../app/api/generated/operations-edge';
@@ -64,7 +64,7 @@ export function ProjectCreateDrawer({open, region, queryContext, onClose, onCrea
   return <Drawer title={organizationProjectCreateLabel} open={open} size={620} destroyOnHidden maskClosable={!lifecycle.submitting} closable={!lifecycle.submitting} keyboard={!lifecycle.submitting} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} {...adminDrawerSurfaceProps} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>取消</Button><Button type="primary" loading={lifecycle.submitting} disabled={!definitionReady} onClick={() => form.submit()} {...testId('operations-project-create-submit')}>创建</Button></Space>}>
     {displayProblem && <Alert type="error" showIcon title="新建项目未完成" description={displayProblem} style={{marginBottom: 16}}/>}
     <Form form={form} layout="vertical" disabled={lifecycle.submitting || !definitionReady} onFinish={(values) => void submit(values)} onValuesChange={() => { lifecycle.setDirty(true); lifecycle.markBusinessIntentChanged(); }}>
-      <Form.Item label="所属大区"><Typography.Text>{region ? formatNameCode(region.name, region.code) : '—'}</Typography.Text></Form.Item>
+      <Form.Item label="所属大区"><Typography.Text>{region ? <NameCodeText name={region.name} code={region.code}/> : '—'}</Typography.Text></Form.Item>
       <Form.Item name="name" label="项目名称" rules={[{required: true, whitespace: true, message: '请输入项目名称'}]}><Input maxLength={120}/></Form.Item>
       <Form.Item name="code" label="编码" rules={[{required: true, whitespace: true, message: '请输入编码'}]}><Input maxLength={64}/></Form.Item>
       <ProjectPhaseFieldList/>

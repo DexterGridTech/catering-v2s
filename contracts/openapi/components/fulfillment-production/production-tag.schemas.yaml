@@ -1,0 +1,373 @@
+{
+  "kind": "catalog-inventory-openapi-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "schemas": {
+    "ProductionTagPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "entries": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "tagKind": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "enum": [
+                      "PRODUCTION",
+                      "PACKAGE",
+                      "LABEL",
+                      "HANDOFF",
+                      "REVIEW",
+                      "OTHER"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "ownerType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "ownerRef": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "brandRef": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "linkedProductCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "updatedAt": {
+                    "type": "integer",
+                    "description": "design-bound field",
+                    "format": "epoch-millis"
+                  },
+                  "voidAvailability": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": false,
+                    "properties": {
+                      "canVoid": {
+                        "type": "boolean",
+                        "description": "design-bound field"
+                      },
+                      "blockingReferences": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "referenceKind": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "referenceRef": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            }
+                          },
+                          "required": [
+                            "referenceKind",
+                            "referenceRef"
+                          ]
+                        }
+                      },
+                      "dependentFacts": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "factKind": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "factRef": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            }
+                          },
+                          "required": [
+                            "factKind",
+                            "factRef"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "canVoid",
+                      "blockingReferences",
+                      "dependentFacts"
+                    ]
+                  }
+                },
+                "required": [
+                  "code",
+                  "name",
+                  "tagKind",
+                  "status",
+                  "ownerType",
+                  "ownerRef",
+                  "brandRef",
+                  "linkedProductCount",
+                  "version",
+                  "updatedAt",
+                  "voidAvailability"
+                ]
+              }
+            },
+            "cursor": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "total": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "generation": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "entries",
+            "cursor",
+            "total",
+            "generation"
+          ]
+        }
+      }
+    },
+    "ProductionTagCreateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "tagKind",
+        "name"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
+        },
+        "code": {
+          "type": "string",
+          "description": "immutable tag code"
+        },
+        "tagKind": {
+          "type": "string",
+          "enum": [
+            "PRODUCTION",
+            "PACKAGE",
+            "LABEL",
+            "HANDOFF",
+            "REVIEW",
+            "OTHER"
+          ],
+          "description": "closed production tag kind"
+        },
+        "name": {
+          "type": "string",
+          "description": "tag name"
+        }
+      }
+    },
+    "ProductionTagUpdateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tagCode",
+        "expectedVersion",
+        "tagKind",
+        "name"
+      ],
+      "properties": {
+        "tagCode": {
+          "type": "string",
+          "description": "tag code"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        },
+        "tagKind": {
+          "type": "string",
+          "enum": [
+            "PRODUCTION",
+            "PACKAGE",
+            "LABEL",
+            "HANDOFF",
+            "REVIEW",
+            "OTHER"
+          ],
+          "description": "immutable production tag kind"
+        },
+        "name": {
+          "type": "string",
+          "description": "tag name"
+        }
+      }
+    },
+    "ProductionTagReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "tagKind",
+            "name",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "tag code"
+            },
+            "tagKind": {
+              "type": "string",
+              "enum": [
+                "PRODUCTION",
+                "PACKAGE",
+                "LABEL",
+                "HANDOFF",
+                "REVIEW",
+                "OTHER"
+              ],
+              "description": "production tag kind"
+            },
+            "name": {
+              "type": "string",
+              "description": "tag name"
+            },
+            "ownerScope": {
+              "type": "object",
+              "description": "tag owner scope",
+              "additionalProperties": false,
+              "properties": {
+                "factType": {
+                  "type": "string",
+                  "description": "typed fact discriminator"
+                },
+                "revision": {
+                  "type": "string",
+                  "description": "fact revision"
+                }
+              }
+            },
+            "status": {
+              "type": "string",
+              "description": "status"
+            },
+            "version": {
+              "type": "integer",
+              "description": "version"
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "version"
+        }
+      }
+    },
+    "ProductionTagQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "page size"
+        }
+      }
+    },
+    "ProductionTagTransitionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tagCode",
+        "expectedVersion",
+        "targetStatus"
+      ],
+      "properties": {
+        "tagCode": {
+          "type": "string",
+          "description": "tag code"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        },
+        "targetStatus": {
+          "type": "string",
+          "description": "target lifecycle status"
+        }
+      }
+    }
+  }
+}

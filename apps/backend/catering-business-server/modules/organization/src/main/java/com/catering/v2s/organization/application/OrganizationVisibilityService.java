@@ -44,7 +44,20 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
             );
             return Boolean.TRUE.equals(visible);
         }
-        if (ServiceNodeTypes.PROJECT.equals(assignmentType) || ServiceNodeTypes.HEAD_COMPANY.equals(assignmentType) || ServiceNodeTypes.STORE.equals(assignmentType)) {
+        if (ServiceNodeTypes.PROJECT.equals(assignmentType)) {
+            if (assignmentNode.equals(visibleNode)) return true;
+            return Boolean.TRUE.equals(jdbc.query(
+                "SELECT EXISTS(SELECT 1 FROM organization.store WHERE id=? AND project_id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED')",
+                statement -> {
+                    statement.setObject(1, visibleNode);
+                    statement.setObject(2, assignmentNode);
+                    statement.setObject(3, workspaceUuid);
+                    statement.setString(4, key);
+                },
+                result -> result.next() && result.getBoolean(1)
+            ));
+        }
+        if (ServiceNodeTypes.HEAD_COMPANY.equals(assignmentType) || ServiceNodeTypes.STORE.equals(assignmentType)) {
             return assignmentNode.equals(visibleNode);
         }
         UUID candidateHierarchyNode = jdbc.query(
@@ -101,8 +114,8 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
                 null
             )));
         List<Store> stores = jdbc.query(
-            "SELECT id, code, name, project_id, status FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? ORDER BY code",
-            (row, index) -> new Store(row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getObject(4, UUID.class), row.getString(5)),
+            "SELECT id, code, name, project_id, head_company_id, status FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? ORDER BY code",
+            (row, index) -> new Store(row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getObject(4, UUID.class), row.getObject(5, UUID.class), row.getString(6)),
             workspaceUuid,
             key
         );
@@ -111,10 +124,15 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
             .filter(store -> visible(assignmentNodeType, assignmentNodeId, store.id(), nodes, store.projectId()))
             .forEach(store -> {
                 HierarchyNode project = nodes.get(store.projectId());
-                if (project == null) return;
+                // A store scope is only selectable while its owning project is
+                // enabled.  Keep this candidate gate consistent with
+                // storeContext(), which rejects disabled projects on the
+                // persisted scope readback; otherwise the selector would offer
+                // a store that the next owner read immediately invalidates.
+                if (project == null || !ServiceNodeTypes.PROJECT.equals(project.type()) || !"ENABLED".equals(project.status())) return;
                 List<String> path = new ArrayList<>(ancestorNames(project.id(), nodes));
                 path.add(store.name());
-                result.add(new VisibleDataNodeCandidate(ServiceNodeTypes.STORE, store.id(), store.name(), store.code(), List.copyOf(path), project.parentId(), project.id(), store.id(), null));
+                result.add(new VisibleDataNodeCandidate(ServiceNodeTypes.STORE, store.id(), store.name(), store.code(), List.copyOf(path), project.parentId(), project.id(), store.id(), store.headCompanyId()));
             });
         if (ServiceNodeTypes.GROUP.equals(assignmentNodeType) || ServiceNodeTypes.HEAD_COMPANY.equals(assignmentNodeType)) {
             String headCompanyQuery = "SELECT id, code, name FROM organization.head_company WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'" + (ServiceNodeTypes.HEAD_COMPANY.equals(assignmentNodeType) ? " AND id=?" : "") + " ORDER BY code";
@@ -167,15 +185,15 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
     private VisibleDataNodeCandidate storeContext(UUID workspaceUuid, String key, Map<UUID, HierarchyNode> nodes, UUID storeId) {
         if (storeId == null) return null;
         return jdbc.query(
-            "SELECT id, code, name, project_id, status FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
+            "SELECT id, code, name, project_id, head_company_id, status FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
             statement -> { statement.setObject(1, storeId); statement.setObject(2, workspaceUuid); statement.setString(3, key); },
             result -> {
-                if (!result.next() || !"ENABLED".equals(result.getString(5))) return null;
+                if (!result.next() || !"ENABLED".equals(result.getString(6))) return null;
                 HierarchyNode project = nodes.get(result.getObject(4, UUID.class));
                 if (project == null || !ServiceNodeTypes.PROJECT.equals(project.type()) || !"ENABLED".equals(project.status())) return null;
                 List<String> path = new ArrayList<>(ancestorNames(project.id(), nodes));
                 path.add(result.getString(3));
-                return new VisibleDataNodeCandidate(ServiceNodeTypes.STORE, result.getObject(1, UUID.class), result.getString(3), result.getString(2), List.copyOf(path), project.parentId(), project.id(), result.getObject(1, UUID.class), null);
+                return new VisibleDataNodeCandidate(ServiceNodeTypes.STORE, result.getObject(1, UUID.class), result.getString(3), result.getString(2), List.copyOf(path), project.parentId(), project.id(), result.getObject(1, UUID.class), result.getObject(5, UUID.class));
             }
         );
     }
@@ -196,7 +214,11 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
     private static boolean visible(String assignmentType, UUID assignmentNodeId, UUID visibleNodeId, Map<UUID, HierarchyNode> nodes, UUID hierarchyNodeId) {
         if (visibleNodeId == null || assignmentNodeId == null) return false;
         if (ServiceNodeTypes.GROUP.equals(assignmentType)) return true;
-        if (ServiceNodeTypes.PROJECT.equals(assignmentType) || ServiceNodeTypes.HEAD_COMPANY.equals(assignmentType) || ServiceNodeTypes.STORE.equals(assignmentType)) {
+        if (ServiceNodeTypes.PROJECT.equals(assignmentType)) {
+            return assignmentNodeId.equals(visibleNodeId)
+                || (!assignmentNodeId.equals(visibleNodeId) && assignmentNodeId.equals(hierarchyNodeId));
+        }
+        if (ServiceNodeTypes.HEAD_COMPANY.equals(assignmentType) || ServiceNodeTypes.STORE.equals(assignmentType)) {
             return assignmentNodeId.equals(visibleNodeId);
         }
         if (!ServiceNodeTypes.REGION.equals(assignmentType)) return false;
@@ -225,5 +247,5 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
     }
 
     private record HierarchyNode(UUID id, String type, String code, String name, UUID parentId, String status) { }
-    private record Store(UUID id, String code, String name, UUID projectId, String status) { }
+    private record Store(UUID id, String code, String name, UUID projectId, UUID headCompanyId, String status) { }
 }

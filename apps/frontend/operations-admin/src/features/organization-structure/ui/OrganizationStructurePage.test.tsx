@@ -22,7 +22,7 @@ describe('organization structure focused IA contract', () => {
     expect(page).toContain('treeNodeTitle(commercialGroup)');
     expect(page).toContain('treeNodeTitle(region)');
     expect(page).toContain('treeNodeTitle(project)');
-    expect(page).toContain('formatNameCode(row.name, row.code)');
+    expect(page).toContain('NameCodeText name={row.name} code={row.code}');
     expect(page).toContain("placeholder=\"按名称或编码搜索\"");
     expect(page).toContain("testId('operations-organization-hierarchy-search')");
     expect(page).toContain('adminHierarchyCollator');

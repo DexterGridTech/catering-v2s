@@ -1,6 +1,6 @@
 import {Alert, Button} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {contextScopedQueryArgs, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {contextScopedQueryArgs, NameCodeText, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {StoreContract, StoreContractSortDirection, StoreContractSortKey} from '../../../app/api/generated/operations-edge';
@@ -68,16 +68,16 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
 
   const columns = useMemo<ProColumns<StoreContract>[]>(() => [
     {key: 'contractNo', title: '合同编号', dataIndex: 'contractNo', sorter: true, ellipsis: true, search: false, render: (value, row) => <Button type="link" className="operations-contract-number-link" onClick={() => detail.open(row)} {...testId('operations-contract-detail-open')}>{value}</Button>},
-    {title: '门店', dataIndex: 'storeDisplay', search: false, render: (_, row) => formatNameCode(row.store.name, row.store.code)},
+    {title: '门店', dataIndex: 'storeDisplay', search: false, render: (_, row) => <NameCodeText name={row.store.name} code={row.store.code}/>},
     {title: '分期', dataIndex: 'phaseName', search: false},
-    {title: '经营租户', dataIndex: 'tenantDisplay', search: false, render: (_, row) => formatNameCode(row.tenant.name, row.tenant.code)},
+    {title: '经营租户', dataIndex: 'tenantDisplay', search: false, render: (_, row) => <NameCodeText name={row.tenant.name} code={row.tenant.code}/>},
     {key: 'effectiveFrom', title: '起止日期', dataIndex: 'effectiveDisplay', sorter: true, search: false, render: (_, row) => <span className="operations-contract-effective-range"><span>{row.effectiveFrom}</span><span>至 {row.effectiveTo ?? '长期'}</span></span>},
     {title: '状态', dataIndex: 'status', search: false, valueEnum: {VALID: {text: '有效', status: 'Success'}, INVALID: {text: '已失效', status: 'Default'}}},
     {title: '更新时间', dataIndex: 'updatedAt', search: false, render: (_, row) => new Date(row.updatedAt).toLocaleString('zh-CN')},
-    {title: '门店', dataIndex: 'storeId', hideInTable: true, valueType: 'select', fieldProps: {...testId('operations-contract-filter-store'), allowClear: true, disabled: Boolean(candidates.error), showSearch: true, filterOption: false, onSearch: candidates.setStoreSearch, onPopupScroll: candidates.onPopupScroll, loading: candidates.isFetching, options: candidates.stores.map((store) => ({value: store.id, label: formatNameCode(store.name, store.code)}))}},
+    {title: '门店', dataIndex: 'storeId', hideInTable: true, valueType: 'select', fieldProps: {...testId('operations-contract-filter-store'), allowClear: true, disabled: Boolean(candidates.error), showSearch: true, filterOption: false, onSearch: candidates.setStoreSearch, onPopupScroll: candidates.onPopupScroll, loading: candidates.isFetching, options: candidates.stores.map((store) => ({value: store.id, label: <NameCodeText name={store.name} code={store.code}/>}))}},
     {title: '合同编号', dataIndex: 'contractNo', hideInTable: true},
     {title: '分期', dataIndex: 'phaseName', hideInTable: true},
-    {title: '经营租户', dataIndex: 'tenantId', hideInTable: true, valueType: 'select', fieldProps: {...testId('operations-contract-filter-tenant'), allowClear: true, disabled: Boolean(tenantCandidates.error), showSearch: true, filterOption: false, onSearch: setTenantSearch, onPopupScroll: tenantCandidates.onPopupScroll, loading: tenantCandidates.isFetching, options: tenantCandidates.items.map((tenant) => ({value: tenant.id, label: formatNameCode(tenant.name, tenant.code)})), placeholder: '搜索经营租户名称或编码'}},
+    {title: '经营租户', dataIndex: 'tenantId', hideInTable: true, valueType: 'select', fieldProps: {...testId('operations-contract-filter-tenant'), allowClear: true, disabled: Boolean(tenantCandidates.error), showSearch: true, filterOption: false, onSearch: setTenantSearch, onPopupScroll: tenantCandidates.onPopupScroll, loading: tenantCandidates.isFetching, options: tenantCandidates.items.map((tenant) => ({value: tenant.id, label: <NameCodeText name={tenant.name} code={tenant.code}/>})), placeholder: '搜索经营租户名称或编码'}},
     {title: '状态', dataIndex: 'status', hideInTable: true, valueType: 'select', valueEnum: {VALID: {text: '有效'}, INVALID: {text: '已失效'}}},
     {title: '起止日期', dataIndex: 'dateRange', hideInTable: true, valueType: 'dateRange'},
   ], [candidates.error, candidates.isFetching, candidates.onPopupScroll, candidates.setStoreSearch, candidates.stores, detail, tenantCandidates.error, tenantCandidates.isFetching, tenantCandidates.items, tenantCandidates.onPopupScroll]);
@@ -88,6 +88,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
   return <>
     {problem && <Alert type="error" showIcon title="合同页面暂时不可用" description={problem} action={retry ? <Button onClick={retry} {...testId('operations-contract-page-retry')}>重试</Button> : undefined} style={{marginBottom: 16}}/>}
     <ProTable<StoreContract>
+      size="small"
       aria-label={contractPageTitle} rowKey="id" options={false} loading={list.isLoading && !list.data}
       dataSource={list.data?.items ?? []} columns={columns} search={{labelWidth: 'auto', optionRender: (searchConfig) => [
         <Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-contract-filter-submit')}>查询</Button>,

@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 2,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "CATALOG_INVENTORY_THREE_STAGE_DESIGN_20260806",
+  "reviewCycleId": "CATALOG-INVENTORY-THREE-STAGE-DESIGN-20260806",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+  "blindReviewRequired": true,
+  "implementationAuthority": false,
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "CATALOG-INVENTORY-THREE-STAGE-DESIGN-20260806",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-independent-review-round2.json",
+    "reviewSha256": "d6d66bcaa751d1b7a969b3c764bd40f68d89ff368d48409355caebf2d39fc089",
+    "reviewedManifestSha256": "88386b4d6b3ec188bc14357fc3572f37e4fb0d16234029bc6436ff4b9d216942",
+    "intake": {
+      "path": "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-final-review-intake-codex.md",
+      "sha256": "acda8e8e40109222b14c5fd4b01a2e1fab9a8e07743f73a6badf23e2ea37a4b6"
+    },
+    "reason": "round-two findings remain closed; Claude returned GO on the prior hash; its non-blocking S-02 and N-02 were source-verified and minimally remediated without adding a delivery unit, so current bytes remain honestly awaiting Claude rather than borrowing the prior hash verdict",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false
+  },
+  "scenarioDenominator": {
+    "apiDefinitions": 26,
+    "apiCases": 100,
+    "l2Definitions": 18,
+    "l2Cases": 43,
+    "iaIds": 89,
+    "differences": 18
+  },
+  "designReviewInputPath": "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-independent-review-input.md",
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+    "sha256": "a31a558b19bf41f6eed48093bc86895e01d1c400adae0c4185e633c00742f00b"
+  },
+  "backendOperationDesignContract": {
+    "path": "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json",
+    "sha256": "01013d203305fc574e2386cb17a3d692812f64622cf566d8d870e2f7661a3537"
+  },
+  "authorization": {
+    "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+    "sha256": "a31a558b19bf41f6eed48093bc86895e01d1c400adae0c4185e633c00742f00b",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {"path":"tools/implementation-design-granularity/cli.mjs","sha256":"0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"},
+    "tool": {"path":"scripts/check/implementation-design-granularity","sha256":"e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"},
+    "selfTest": true,
+    "redFixtures": ["DESIGN_HASH_DRIFT","MISSING_BUSINESS_EVIDENCE","CATALOG_SET_DRIFT","REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT","ROUND_THREE","OPERATION_LOGIC_STEPS_MISSING","OPERATION_CALL_CHAIN_OWNER_SET_DRIFT","OPERATION_PROBLEM_MAPPING_DRIFT","OPERATION_DB_COUNT_DRIFT"]
+  },
+  "candidateJourney": {
+    "id": "CATALOG-INVENTORY-TRANSACTION-PREPARATION",
+    "status": "IA_GO_DESIGN_ONLY",
+    "actor": "operations-admin catalog and store inventory operator",
+    "task": "maintain catalog facts, light inventory and safe headquarters-to-store copies before transaction runtime",
+    "pageKey": "PG-CATALOG-STORE-ITEMS",
+    "ownerReadback": "catalog inventory fulfillment-production organization and workspace owner judgments",
+    "mutations": ["catalog writes","production-tag writes","inventory writes","atomic headquarters-to-store copy"]
+  },
+  "deliveryUnits": [
+    {
+      "id": "CATALOG-INVENTORY-DEFINITION-U01",
+      "title": "契约 seed 测试场景与 canonical fixture 定义包",
+      "approvedAssertions": [
+        "read models and commands freeze together before runtime implementation",
+        "shape manifest OpenAPI and generated Java and TypeScript remain one truth",
+        "seed and test data are schema-separated inside one canonical fixture catalog",
+        "26 API definitions with 100 cases and 18 L2 definitions with 43 cases are machine-countable",
+        "89 IA IDs and 18 differences map to owned assertions with no stage-one locator",
+        "C-16 C-17 and C-19 are closed decisions with no remaining branch"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md","sha256":"a31a558b19bf41f6eed48093bc86895e01d1c400adae0c4185e633c00742f00b","anchor":"## 3. 第一阶段 `CI-P1-DEFINITION`"},
+        {"path":"doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json","sha256":"01013d203305fc574e2386cb17a3d692812f64622cf566d8d870e2f7661a3537","anchor":"\"kind\": \"backend-operation-design-contract\""},
+        {"path":"project-memory/decisions/http-crud-efficiency-design-redlines.md","sha256":"80efcb002dde542c9cbcc08f19b0cec62f20e66c54d6d581650809ef8f33c876","anchor":"- `PER_OPERATION_DESIGN_CONTRACT`: every backend operation"},
+        {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md","sha256":"21cfaa7ce6dced47d932db2ee9ea2d58bcbbe5b0ad2585dde7fa2829d4c9067a","anchor":"### 5.2 形态契约要携带的内容（在 §1 第 4 条基础上具体化）"},
+        {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md","sha256":"08be6b7b232e5bc220d5e2e79841e6a4dee0a7df965dbc71e49ceb3942101354","anchor":"## 9. 契约驱动 IA"},
+        {"path":"doc/review/platform/2026-08-06-v2s-catalog-inventory-ia-design-review-claude.md","sha256":"3f2a7bbb092ac05350079a939fd29b5286bb9cc0db79d37984a6a64a09407fe3","anchor":"# 9. Dexter 对 C-16 / C-17 / C-19 的裁决（2026-08-06）"}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md","anchor":"### 3.1 四项原子产物"},
+      "currentDeviation": "catalog and inventory contracts read models fixtures and scenario denominators do not yet exist",
+      "changeSurfaces": [
+        {"path":"contracts/catalog/catalog-item-editor-manifest.json","disposition":"create","target":"shape manifest truth"},
+        {"path":"contracts/catalog/catalog-inventory-edge-contract.json","disposition":"create","target":"operation and component exact-set"},
+        {"path":"contracts/catalog/catalog-inventory-edge-placement.json","disposition":"create","target":"OpenAPI placement truth"},
+        {"path":"contracts/policy/catalog-inventory-copy-policy.json","disposition":"create","target":"single adjustable selected and closure limit source"},
+        {"path":"contracts/policy/catalog-inventory-fixture-catalog.schema.json","disposition":"create","target":"canonical fixture schema"},
+        {"path":"contracts/policy/catalog-inventory-fixture-catalog.json","disposition":"create","target":"seed test and scenario truth"},
+        {"path":"contracts/policy/catalog-inventory-assertion-matrix.json","disposition":"create","target":"operation assertion IU stage source fixture scenario and evidence single truth"},
+        {"path":"contracts/policy/crud-presentation-standard-catalog.json","disposition":"update","target":"approved catalog workbench surface"},
+        {"path":"contracts/openapi/edge.openapi.yaml","disposition":"update","target":"generated root contract"},
+        {"path":"scripts/generate/r5-edge-materialize.mjs","disposition":"update","target":"baseline plus addendum materialization"},
+        {"path":"scripts/generate/edge-codegen.mjs","disposition":"update","target":"Java and TypeScript generation"},
+        {"path":"tools/catalog-inventory-fixtures/cli.mjs","disposition":"create","target":"fixture exact-set checker"},
+        {"path":"scripts/check/catalog-inventory-fixtures","disposition":"create","target":"static checker entrypoint"}
+      ],
+      "orderedChain": ["resolve decisions and limits","record policy surface","freeze source catalogs","materialize generated contracts","freeze fixtures and scenarios","run exact-set and red controls"],
+      "dependencyAndSerialBoundaries": ["shape manifest precedes generated consumers","read models precede expected results","canonical fixture catalog is single-writer","no runtime or locator implementation"],
+      "dataEvolution": {"schemaOrMigration":"not applicable","seed":"define only","testData":"one catalog with separated seedDatasets and testDatasets"},
+      "uiAndTerms": {"notApplicableReason":"defines L2 business assertions but no UI or locator","termSource":"approved IA and business-language corpus"},
+      "evidence": {"l1":"generated counts hashes and red mutations","l2":"not applicable; locator forbidden","l3":"not applicable","business":"not applicable; definition only","cleanup":"not applicable; no dynamic resources"},
+      "forbiddenPseudoFixes": ["write-only contract","copied API and L2 fixtures","invented structural blockers","dropping PRODUCIBLE","early locators"],
+      "discriminator": {"fixture":"remove an inventory detail section or preflight version vector and require failure"}
+    },
+    {
+      "id": "CATALOG-INVENTORY-BACKEND-U02",
+      "title": "owner 数据库 协调器 edge 与后台接口测试",
+      "approvedAssertions": [
+        "catalog inventory and fulfillment-production own separate facts",
+        "cross-owner writes use public APIs in one REQUIRED transaction",
+        "copy closure compatibility rewrite TOCTOU idempotency and atomicity close at API",
+        "26 API definitions and 100 cases consume the exact stage-one catalog SHA",
+        "set-based task reads avoid N plus one without copying owner judgment",
+        "business and cleanup evidence remain separate"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md","sha256":"a31a558b19bf41f6eed48093bc86895e01d1c400adae0c4185e633c00742f00b","anchor":"## 4. 第二阶段 `CI-P2-BACKEND-API`"},
+        {"path":"doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json","sha256":"01013d203305fc574e2386cb17a3d692812f64622cf566d8d870e2f7661a3537","anchor":"\"kind\": \"backend-operation-design-contract\""},
+        {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md","sha256":"21cfaa7ce6dced47d932db2ee9ea2d58bcbbe5b0ad2585dde7fa2829d4c9067a","anchor":"#### 预检与执行之间必须有一致性闭环（采纳 Codex M-03）"},
+        {"path":"PLATFORM-BLUEPRINT.md","sha256":"3b90bd602eb682c4718d6c51f399501c34f804cddd96da82d59495e60b115a8d","anchor":"## 当前产品形态"}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md","anchor":"### 4.1 物理模块与依赖方向"},
+      "currentDeviation": "owner modules schemas edge adapters and API proof do not yet exist",
+      "changeSurfaces": [
+        {"path":"apps/backend/catering-business-server/modules/catalog","disposition":"create","target":"catalog owner"},
+        {"path":"apps/backend/catering-business-server/modules/inventory","disposition":"create","target":"inventory owner"},
+        {"path":"apps/backend/catering-business-server/modules/fulfillment-production","disposition":"create","target":"production-tag owner"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/cataloginventory","disposition":"create","target":"stateless coordinator"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/catalog","disposition":"create","target":"catalog edge"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/inventory","disposition":"create","target":"inventory edge"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/production","disposition":"create","target":"production-tag edge"},
+        {"path":"settings.gradle.kts","disposition":"update","target":"module inclusion"},
+        {"path":"apps/backend/catering-business-server/src/main/resources/db/migration","disposition":"update","target":"single Flyway history"},
+        {"path":"contracts/policy/module-dependency-registry.json","disposition":"update","target":"dependency exact-set"},
+        {"path":"scripts/test/catalog-inventory-api-fixture.mjs","disposition":"create","target":"canonical API fixture consumer"}
+      ],
+      "orderedChain": ["bind stage-one bytes","create owner schemas and APIs","implement queries and commands","implement coordinator and edge","run 26 definitions and 100 API cases","close business and cleanup"],
+      "dependencyAndSerialBoundaries": ["stage-one exit first","migration and coordinator single-writer","copy logic closes here","no frontend implementation"],
+      "dataEvolution": {"schemaOrMigration":"one ordered migration across three owner schemas","seed":"owner-command materialization only","testData":"consume canonical revision and SHA"},
+      "uiAndTerms": {"notApplicableReason":"backend package has no UI","termSource":"approved requirements and IA"},
+      "evidence": {"l1":"compile migration dependency and contract checks","l2":"not applicable","l3":"managed API only when authorized","business":"26 definitions and 100 typed cases","cleanup":"separate PASS when dynamic resources used"},
+      "forbiddenPseudoFixes": ["cross-schema DML","client-submitted copy plan","partial copy","private DTO drift","browser proof for copy logic"],
+      "discriminator": {"fixture":"mutate source after preflight and require STALE_COPY_PREFLIGHT before writes"}
+    },
+    {
+      "id": "CATALOG-INVENTORY-FRONTEND-U03",
+      "title": "operations-admin 三页 locator 绑定与受管 L2",
+      "approvedAssertions": [
+        "three pages consume generated APIs and foundation",
+        "18 L2 definitions and 43 cases bind locators only here",
+        "hidden copy and diagnostics are absent from DOM and requests",
+        "89 IA IDs map to implementation and evidence without orphan",
+        "L2 references rather than duplicates API algorithm proof",
+        "business and cleanup both pass"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md","sha256":"a31a558b19bf41f6eed48093bc86895e01d1c400adae0c4185e633c00742f00b","anchor":"## 5. 第三阶段 `CI-P3-FRONTEND-L2`"},
+        {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md","sha256":"08be6b7b232e5bc220d5e2e79841e6a4dee0a7df965dbc71e49ceb3942101354","anchor":"## 5. 商品工作台 IA 与线框"},
+        {"path":"doc/review/platform/2026-08-06-v2s-catalog-inventory-ia-design-review-claude.md","sha256":"3f2a7bbb092ac05350079a939fd29b5286bb9cc0db79d37984a6a64a09407fe3","anchor":"## C-16｜权益商品壳的本期 UI 暴露 —— **出现，但创建时置灰不可选**"}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md","anchor":"### 5.1 实现面"},
+      "currentDeviation": "operations-admin features locator bindings and L2 proof do not yet exist",
+      "changeSurfaces": [
+        {"path":"apps/frontend/operations-admin/src/features/catalog-management","disposition":"create","target":"catalog workbenches and drawer"},
+        {"path":"apps/frontend/operations-admin/src/features/inventory-management","disposition":"create","target":"inventory workbench and drawer"},
+        {"path":"apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts","disposition":"update","target":"generated client"},
+        {"path":"contracts/catalog/admin-catalog.json","disposition":"update","target":"navigation group and pages"},
+        {"path":"libraries/frontend/admin-ui-foundation","disposition":"update","target":"approved shared detail-layout gap only"},
+        {"path":"contracts/policy/catalog-inventory-l2-locator-bindings.json","disposition":"create","target":"43-case locator exact-set"},
+        {"path":"scripts/test/catalog-inventory-l2-fixture.mjs","disposition":"create","target":"canonical L2 fixture consumer"},
+        {"path":"scripts/test/catalog-inventory-l2.mjs","disposition":"create","target":"managed L2 scenarios"}
+      ],
+      "orderedChain": ["bind P1 and P2 evidence","read-only verify P1 policy entries and register pages","close foundation gap","implement features","bind 43 locators","run v4 comparison and L2","close 89 IA IDs and cleanup"],
+      "dependencyAndSerialBoundaries": ["stage-two exit first","foundation and generated client single-writer","parallel features only after shared shape","no browser owner judgment"],
+      "dataEvolution": {"schemaOrMigration":"not applicable","seed":"consume canonical fixture through managed L2","testData":"bind cases without copying objects"},
+      "uiAndTerms": {
+        "pageKeys": ["PG-CATALOG-STORE-ITEMS","PG-INVENTORY-STORE-STATUS","PG-CATALOG-BRAND-ITEMS"],
+        "interactionArtifacts": [
+          {"pageKey":"PG-CATALOG-STORE-ITEMS","path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md","anchor":"### 5.1 门店商品管理"},
+          {"pageKey":"PG-INVENTORY-STORE-STATUS","path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md","anchor":"### 7.1 列表工作台"},
+          {"pageKey":"PG-CATALOG-BRAND-ITEMS","path":"doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md","anchor":"### 5.2 品牌商品管理（独立线框）"}
+        ],
+        "termSource": "approved IA and business-language corpus"
+      },
+      "evidence": {"l1":"typecheck foundation and locator checks","l2":"18 definitions and 43 cases","l3":"not applicable; UAT separate","business":"L2 plus 89 IA exact-set","cleanup":"local tunnel remote DB and asset cleanup PASS"},
+      "forbiddenPseudoFixes": ["hand-written routes","duplicate foundation","hidden placeholders","browser copy algorithm","business PASS with cleanup failure"],
+      "discriminator": {"fixture":"remove diagnostic capability and prove the sixth section and request are absent"}
+    }
+  ]
+}

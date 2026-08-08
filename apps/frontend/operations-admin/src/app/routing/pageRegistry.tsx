@@ -13,6 +13,8 @@ import {ContractManagementPage} from '../../features/contract-management/ui/Cont
 import {WorkspaceUserPage} from '../../features/workspace-user/ui/WorkspaceUserPage';
 import {RoleHomeBootstrapPage} from '../../features/role-home-bootstrap/ui/RoleHomeBootstrapPage';
 import {StoreProfilePage} from '../../features/store-profile/ui/StoreProfilePage';
+import {BrandCatalogManagementPage, StoreCatalogManagementPage} from '../../features/catalog-management';
+import {InventoryManagementPage} from '../../features/inventory-management';
 
 type Registration = {
   pageDesignKey: OperationsPageDesignKey;
@@ -51,6 +53,9 @@ export const operationsPageRegistry = {
   [operationsPageDesignKeys.PgIamHeadCompanyUsers]: {pageDesignKey: operationsPageDesignKeys.PgIamHeadCompanyUsers, routeSegment: 'access/head-company-users', Component: user(operationsPageDesignKeys.PgIamHeadCompanyUsers)},
   [operationsPageDesignKeys.PgIamStoreUsers]: {pageDesignKey: operationsPageDesignKeys.PgIamStoreUsers, routeSegment: 'access/store-users', Component: user(operationsPageDesignKeys.PgIamStoreUsers)},
   [operationsPageDesignKeys.PgStoreProfile]: {pageDesignKey: operationsPageDesignKeys.PgStoreProfile, routeSegment: 'store/profile', Component: StoreProfilePage},
+  [operationsPageDesignKeys.PgCatalogStoreItems]: {pageDesignKey: operationsPageDesignKeys.PgCatalogStoreItems, routeSegment: 'catalog/store-items', Component: StoreCatalogManagementPage},
+  [operationsPageDesignKeys.PgInventoryStoreStatus]: {pageDesignKey: operationsPageDesignKeys.PgInventoryStoreStatus, routeSegment: 'inventory/status', Component: InventoryManagementPage},
+  [operationsPageDesignKeys.PgCatalogBrandItems]: {pageDesignKey: operationsPageDesignKeys.PgCatalogBrandItems, routeSegment: 'catalog/brand-items', Component: BrandCatalogManagementPage},
 } satisfies Record<OperationsPageDesignKey, Registration>;
 
 const approvedKeys = new Set<string>(adminCatalog.operationsPages.map((page) => page.pageDesignKey));

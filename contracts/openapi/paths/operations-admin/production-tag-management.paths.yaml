@@ -1,0 +1,269 @@
+{
+  "kind": "catalog-inventory-openapi-path-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "operationIds": [
+    "getOperationsProductionTags",
+    "createOperationsProductionTag",
+    "updateOperationsProductionTag",
+    "transitionOperationsProductionTagStatus"
+  ],
+  "paths": {
+    "/operations/catalog-inventory/production-tags": {
+      "get": {
+        "operationId": "getOperationsProductionTags",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "fulfillment-production",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionTagPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "selected data node"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "cursor"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "page size"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createOperationsProductionTag",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "fulfillment-production",
+        "x-coordinated-owners": [
+          "organization"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionTagReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionTagCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/production-tags/{tagCode}": {
+      "patch": {
+        "operationId": "updateOperationsProductionTag",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "fulfillment-production",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionTagReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tagCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionTagUpdateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/production-tags/{tagCode}/status": {
+      "post": {
+        "operationId": "transitionOperationsProductionTagStatus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "fulfillment-production",
+        "x-coordinated-owners": [
+          "catalog"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionTagReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tagCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionTagTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,470 @@
+{
+  "kind": "catalog-inventory-openapi-path-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "operationIds": [
+    "createOperationsCatalogItem",
+    "saveOperationsCatalogItem",
+    "transitionOperationsCatalogItemStatus",
+    "preflightOperationsTemporaryCatalogItemPromotion",
+    "executeOperationsTemporaryCatalogItemPromotion",
+    "stageOperationsCatalogAsset",
+    "releaseOperationsCatalogStagedAsset"
+  ],
+  "paths": {
+    "/operations/catalog-inventory/items": {
+      "post": {
+        "operationId": "createOperationsCatalogItem",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "asset"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemCommandReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogItemCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/items/{itemCode}": {
+      "patch": {
+        "operationId": "saveOperationsCatalogItem",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory",
+          "asset"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemSaveReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "itemCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogItemSaveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/items/{itemCode}/status": {
+      "post": {
+        "operationId": "transitionOperationsCatalogItemStatus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemCommandReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "itemCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogItemTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/preflight": {
+      "post": {
+        "operationId": "preflightOperationsTemporaryCatalogItemPromotion",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemporaryPromotionPreflight"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "itemCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryPromotionPreflightRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/execute": {
+      "post": {
+        "operationId": "executeOperationsTemporaryCatalogItemPromotion",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemCommandReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "itemCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryPromotionExecuteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/assets/stage": {
+      "post": {
+        "operationId": "stageOperationsCatalogAsset",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "asset",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StagedCatalogAsset"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogAssetStageRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/assets/{assetRef}/release": {
+      "post": {
+        "operationId": "releaseOperationsCatalogStagedAsset",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "asset",
+        "x-coordinated-owners": [
+          "catalog"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogAssetReleaseReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogAssetReleaseRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

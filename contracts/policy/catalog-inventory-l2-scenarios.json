@@ -1,0 +1,1026 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-l2-scenarios",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "scenarioCount": 18,
+  "caseCount": 43,
+  "locatorBinding": "P3_ONLY",
+  "scenarios": [
+    {
+      "scenarioId": "CI-L2-001",
+      "layer": "L2",
+      "caseCount": 6,
+      "fixtureRefs": [
+        "FIXTURE-SCENARIO-CI-L2-001"
+      ],
+      "businessRequirement": "三页导航与角色/数据节点组合",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-001-01",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-001:journey/1",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+            }
+          },
+          "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}"
+        },
+        {
+          "caseId": "CI-L2-001-02",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-001:journey/2",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+            }
+          },
+          "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}"
+        },
+        {
+          "caseId": "CI-L2-001-03",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "parameterization": "journey-variant-3",
+          "parameter": {
+            "journeyVariant": 3,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-001:journey/3",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+            "parameter": {
+              "journeyVariant": 3,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+            }
+          },
+          "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}"
+        },
+        {
+          "caseId": "CI-L2-001-04",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "parameterization": "journey-variant-4",
+          "parameter": {
+            "journeyVariant": 4,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-001:journey/4",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+            "parameter": {
+              "journeyVariant": 4,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+            }
+          },
+          "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":4,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}"
+        },
+        {
+          "caseId": "CI-L2-001-05",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "parameterization": "journey-variant-5",
+          "parameter": {
+            "journeyVariant": 5,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-001:journey/5",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+            "parameter": {
+              "journeyVariant": 5,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+            }
+          },
+          "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":5,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}"
+        },
+        {
+          "caseId": "CI-L2-001-06",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "parameterization": "journey-variant-6",
+          "parameter": {
+            "journeyVariant": 6,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-001:journey/6",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+            "parameter": {
+              "journeyVariant": 6,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001"
+            }
+          },
+          "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":6,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-002",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-WORKBENCH-QUERY"
+      ],
+      "businessRequirement": "先选树节点再域内搜索并隔离旧响应",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-002-01",
+          "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
+          "parameterization": "canonical",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-WORKBENCH-QUERY"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-002:journey/1",
+            "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-WORKBENCH-QUERY"
+            }
+          },
+          "expectedBusinessResult": "先选树节点再域内搜索并隔离旧响应；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-WORKBENCH-QUERY\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-003",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SMART-VIEWS"
+      ],
+      "businessRequirement": "视图切换最左、品牌切换紧邻且结果域正确",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-003-01",
+          "fixtureRef": "FIXTURE-SMART-VIEWS",
+          "parameterization": "canonical",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-SMART-VIEWS"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-003:journey/1",
+            "fixtureRef": "FIXTURE-SMART-VIEWS",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-SMART-VIEWS"
+            }
+          },
+          "expectedBusinessResult": "视图切换最左、品牌切换紧邻且结果域正确；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SMART-VIEWS\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-004",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SCENARIO-CI-L2-004"
+      ],
+      "businessRequirement": "名称与弱化编码、复合单元格、compact table",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-004-01",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-004",
+          "parameterization": "canonical",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-004"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-004:journey/1",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-004",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-004"
+            }
+          },
+          "expectedBusinessResult": "名称与弱化编码、复合单元格、compact table；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-004\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-005",
+      "layer": "L2",
+      "caseCount": 4,
+      "fixtureRefs": [
+        "FIXTURE-MISSING-HEAD-COMPANY"
+      ],
+      "businessRequirement": "来源事实与写 capability 双条件控制复制入口",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-005-01",
+          "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-005:journey/1",
+            "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY"
+            }
+          },
+          "expectedBusinessResult": "来源事实与写 capability 双条件控制复制入口；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-MISSING-HEAD-COMPANY\"}"
+        },
+        {
+          "caseId": "CI-L2-005-02",
+          "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-005:journey/2",
+            "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY"
+            }
+          },
+          "expectedBusinessResult": "来源事实与写 capability 双条件控制复制入口；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-MISSING-HEAD-COMPANY\"}"
+        },
+        {
+          "caseId": "CI-L2-005-03",
+          "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+          "parameterization": "journey-variant-3",
+          "parameter": {
+            "journeyVariant": 3,
+            "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-005:journey/3",
+            "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+            "parameter": {
+              "journeyVariant": 3,
+              "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY"
+            }
+          },
+          "expectedBusinessResult": "来源事实与写 capability 双条件控制复制入口；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-MISSING-HEAD-COMPANY\"}"
+        },
+        {
+          "caseId": "CI-L2-005-04",
+          "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+          "parameterization": "journey-variant-4",
+          "parameter": {
+            "journeyVariant": 4,
+            "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-005:journey/4",
+            "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+            "parameter": {
+              "journeyVariant": 4,
+              "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY"
+            }
+          },
+          "expectedBusinessResult": "来源事实与写 capability 双条件控制复制入口；case={\"journeyVariant\":4,\"fixtureRef\":\"FIXTURE-MISSING-HEAD-COMPANY\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-006",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "SEED-LATTE",
+        "SEED-DINNER-SET",
+        "SEED-CAESAR",
+        "SEED-MATERIALS",
+        "SEED-WEIGHED",
+        "FIXTURE-SEED-READBACK"
+      ],
+      "businessRequirement": "同 Drawer 查看编辑、dirty 关闭、失败保留与焦点",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-006-01",
+          "fixtureRef": "SEED-LATTE",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "SEED-LATTE"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-006:journey/1",
+            "fixtureRef": "SEED-LATTE",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "SEED-LATTE"
+            }
+          },
+          "expectedBusinessResult": "同 Drawer 查看编辑、dirty 关闭、失败保留与焦点；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-LATTE\"}"
+        },
+        {
+          "caseId": "CI-L2-006-02",
+          "fixtureRef": "SEED-DINNER-SET",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "SEED-DINNER-SET"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-006:journey/2",
+            "fixtureRef": "SEED-DINNER-SET",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "SEED-DINNER-SET"
+            }
+          },
+          "expectedBusinessResult": "同 Drawer 查看编辑、dirty 关闭、失败保留与焦点；case={\"journeyVariant\":2,\"fixtureRef\":\"SEED-DINNER-SET\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-007",
+      "layer": "L2",
+      "caseCount": 7,
+      "fixtureRefs": [
+        "SEED-WEIGHED",
+        "FIXTURE-ARCHIVED-ONLY-SKU",
+        "FIXTURE-DISABLED-SKU",
+        "FIXTURE-SHAPE-ADMISSION",
+        "FIXTURE-PRODUCIBLE-RETAINED",
+        "FIXTURE-SHAPE-MATRIX"
+      ],
+      "businessRequirement": "七形态页签与权益壳可见置灰原因",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-007-01",
+          "fixtureRef": "SEED-WEIGHED",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "SEED-WEIGHED"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-007:journey/1",
+            "fixtureRef": "SEED-WEIGHED",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "SEED-WEIGHED"
+            }
+          },
+          "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-WEIGHED\"}"
+        },
+        {
+          "caseId": "CI-L2-007-02",
+          "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-007:journey/2",
+            "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU"
+            }
+          },
+          "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-ARCHIVED-ONLY-SKU\"}"
+        },
+        {
+          "caseId": "CI-L2-007-03",
+          "fixtureRef": "FIXTURE-DISABLED-SKU",
+          "parameterization": "journey-variant-3",
+          "parameter": {
+            "journeyVariant": 3,
+            "fixtureRef": "FIXTURE-DISABLED-SKU"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-007:journey/3",
+            "fixtureRef": "FIXTURE-DISABLED-SKU",
+            "parameter": {
+              "journeyVariant": 3,
+              "fixtureRef": "FIXTURE-DISABLED-SKU"
+            }
+          },
+          "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-DISABLED-SKU\"}"
+        },
+        {
+          "caseId": "CI-L2-007-04",
+          "fixtureRef": "FIXTURE-SHAPE-ADMISSION",
+          "parameterization": "journey-variant-4",
+          "parameter": {
+            "journeyVariant": 4,
+            "fixtureRef": "FIXTURE-SHAPE-ADMISSION"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-007:journey/4",
+            "fixtureRef": "FIXTURE-SHAPE-ADMISSION",
+            "parameter": {
+              "journeyVariant": 4,
+              "fixtureRef": "FIXTURE-SHAPE-ADMISSION"
+            }
+          },
+          "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":4,\"fixtureRef\":\"FIXTURE-SHAPE-ADMISSION\"}"
+        },
+        {
+          "caseId": "CI-L2-007-05",
+          "fixtureRef": "FIXTURE-PRODUCIBLE-RETAINED",
+          "parameterization": "journey-variant-5",
+          "parameter": {
+            "journeyVariant": 5,
+            "fixtureRef": "FIXTURE-PRODUCIBLE-RETAINED"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-007:journey/5",
+            "fixtureRef": "FIXTURE-PRODUCIBLE-RETAINED",
+            "parameter": {
+              "journeyVariant": 5,
+              "fixtureRef": "FIXTURE-PRODUCIBLE-RETAINED"
+            }
+          },
+          "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":5,\"fixtureRef\":\"FIXTURE-PRODUCIBLE-RETAINED\"}"
+        },
+        {
+          "caseId": "CI-L2-007-06",
+          "fixtureRef": "FIXTURE-SHAPE-MATRIX",
+          "parameterization": "journey-variant-6",
+          "parameter": {
+            "journeyVariant": 6,
+            "fixtureRef": "FIXTURE-SHAPE-MATRIX"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-007:journey/6",
+            "fixtureRef": "FIXTURE-SHAPE-MATRIX",
+            "parameter": {
+              "journeyVariant": 6,
+              "fixtureRef": "FIXTURE-SHAPE-MATRIX"
+            }
+          },
+          "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":6,\"fixtureRef\":\"FIXTURE-SHAPE-MATRIX\"}"
+        },
+        {
+          "caseId": "CI-L2-007-07",
+          "fixtureRef": "SEED-WEIGHED",
+          "parameterization": "journey-variant-7",
+          "parameter": {
+            "journeyVariant": 7,
+            "fixtureRef": "SEED-WEIGHED"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-007:journey/7",
+            "fixtureRef": "SEED-WEIGHED",
+            "parameter": {
+              "journeyVariant": 7,
+              "fixtureRef": "SEED-WEIGHED"
+            }
+          },
+          "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":7,\"fixtureRef\":\"SEED-WEIGHED\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-008",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "FIXTURE-SCENARIO-CI-L2-008"
+      ],
+      "businessRequirement": "catalog 与 production-tag quickManage 分 owner 并回填",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-008-01",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-008:journey/1",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008"
+            }
+          },
+          "expectedBusinessResult": "catalog 与 production-tag quickManage 分 owner 并回填；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-008\"}"
+        },
+        {
+          "caseId": "CI-L2-008-02",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-008:journey/2",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008"
+            }
+          },
+          "expectedBusinessResult": "catalog 与 production-tag quickManage 分 owner 并回填；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-008\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-009",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "FIXTURE-AUTO-SYNC",
+        "FIXTURE-TEMPORARY-ITEM"
+      ],
+      "businessRequirement": "自动同步锁定与临时商品治理转正",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-009-01",
+          "fixtureRef": "FIXTURE-AUTO-SYNC",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-AUTO-SYNC"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-009:journey/1",
+            "fixtureRef": "FIXTURE-AUTO-SYNC",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-AUTO-SYNC"
+            }
+          },
+          "expectedBusinessResult": "自动同步锁定与临时商品治理转正；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-AUTO-SYNC\"}"
+        },
+        {
+          "caseId": "CI-L2-009-02",
+          "fixtureRef": "FIXTURE-TEMPORARY-ITEM",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-TEMPORARY-ITEM"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-009:journey/2",
+            "fixtureRef": "FIXTURE-TEMPORARY-ITEM",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-TEMPORARY-ITEM"
+            }
+          },
+          "expectedBusinessResult": "自动同步锁定与临时商品治理转正；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-TEMPORARY-ITEM\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-010",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "FIXTURE-VOID-INBOUND-REFERENCE",
+        "FIXTURE-VOID-DEPENDENT-FACT",
+        "FIXTURE-LOCAL-COPY",
+        "FIXTURE-VOID-OBJECT-TYPES",
+        "FIXTURE-LIFECYCLE-CAS-IDEMPOTENCY"
+      ],
+      "businessRequirement": "生命周期矩阵与两种复制流程隔离",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-010-01",
+          "fixtureRef": "FIXTURE-VOID-INBOUND-REFERENCE",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-VOID-INBOUND-REFERENCE"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-010:journey/1",
+            "fixtureRef": "FIXTURE-VOID-INBOUND-REFERENCE",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-VOID-INBOUND-REFERENCE"
+            }
+          },
+          "expectedBusinessResult": "生命周期矩阵与两种复制流程隔离；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-VOID-INBOUND-REFERENCE\"}"
+        },
+        {
+          "caseId": "CI-L2-010-02",
+          "fixtureRef": "FIXTURE-VOID-DEPENDENT-FACT",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-VOID-DEPENDENT-FACT"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-010:journey/2",
+            "fixtureRef": "FIXTURE-VOID-DEPENDENT-FACT",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-VOID-DEPENDENT-FACT"
+            }
+          },
+          "expectedBusinessResult": "生命周期矩阵与两种复制流程隔离；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-VOID-DEPENDENT-FACT\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-011",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "FIXTURE-ASSET-PROCESSING"
+      ],
+      "businessRequirement": "多图排序/主图/失败重试/引用保护",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-011-01",
+          "fixtureRef": "FIXTURE-ASSET-PROCESSING",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-ASSET-PROCESSING"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-011:journey/1",
+            "fixtureRef": "FIXTURE-ASSET-PROCESSING",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-ASSET-PROCESSING"
+            }
+          },
+          "expectedBusinessResult": "多图排序/主图/失败重试/引用保护；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-ASSET-PROCESSING\"}"
+        },
+        {
+          "caseId": "CI-L2-011-02",
+          "fixtureRef": "FIXTURE-ASSET-PROCESSING",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-ASSET-PROCESSING"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-011:journey/2",
+            "fixtureRef": "FIXTURE-ASSET-PROCESSING",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-ASSET-PROCESSING"
+            }
+          },
+          "expectedBusinessResult": "多图排序/主图/失败重试/引用保护；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-ASSET-PROCESSING\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-012",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "SEED-MATERIALS",
+        "FIXTURE-SMART-VIEWS"
+      ],
+      "businessRequirement": "库存状态、需处理与三周期变化",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-012-01",
+          "fixtureRef": "SEED-MATERIALS",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "SEED-MATERIALS"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-012:journey/1",
+            "fixtureRef": "SEED-MATERIALS",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "SEED-MATERIALS"
+            }
+          },
+          "expectedBusinessResult": "库存状态、需处理与三周期变化；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-MATERIALS\"}"
+        },
+        {
+          "caseId": "CI-L2-012-02",
+          "fixtureRef": "FIXTURE-SMART-VIEWS",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-SMART-VIEWS"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-012:journey/2",
+            "fixtureRef": "FIXTURE-SMART-VIEWS",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-SMART-VIEWS"
+            }
+          },
+          "expectedBusinessResult": "库存状态、需处理与三周期变化；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SMART-VIEWS\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-013",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "SEED-MATERIALS",
+        "FIXTURE-ADVANCED-DIAGNOSTICS"
+      ],
+      "businessRequirement": "六区按需加载、诊断权限整区与请求不渲染",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-013-01",
+          "fixtureRef": "SEED-MATERIALS",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "SEED-MATERIALS"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-013:journey/1",
+            "fixtureRef": "SEED-MATERIALS",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "SEED-MATERIALS"
+            }
+          },
+          "expectedBusinessResult": "六区按需加载、诊断权限整区与请求不渲染；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-MATERIALS\"}"
+        },
+        {
+          "caseId": "CI-L2-013-02",
+          "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-013:journey/2",
+            "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS"
+            }
+          },
+          "expectedBusinessResult": "六区按需加载、诊断权限整区与请求不渲染；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-ADVANCED-DIAGNOSTICS\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-014",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "FIXTURE-INVENTORY-NEGATIVE",
+        "FIXTURE-COUNT-INCREASE-ADJUST",
+        "FIXTURE-CONFIG-ONLY"
+      ],
+      "businessRequirement": "四库存动作输入/预览/失败保留/统一结果面",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-014-01",
+          "fixtureRef": "FIXTURE-INVENTORY-NEGATIVE",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-INVENTORY-NEGATIVE"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-014:journey/1",
+            "fixtureRef": "FIXTURE-INVENTORY-NEGATIVE",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-INVENTORY-NEGATIVE"
+            }
+          },
+          "expectedBusinessResult": "四库存动作输入/预览/失败保留/统一结果面；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-INVENTORY-NEGATIVE\"}"
+        },
+        {
+          "caseId": "CI-L2-014-02",
+          "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-014:journey/2",
+            "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST"
+            }
+          },
+          "expectedBusinessResult": "四库存动作输入/预览/失败保留/统一结果面；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-COUNT-INCREASE-ADJUST\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-015",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "FIXTURE-UNIT-GRAM-EACH",
+        "FIXTURE-STALE-SOURCE",
+        "FIXTURE-STALE-TARGET",
+        "FIXTURE-SKU-STRUCTURE-CONFLICT",
+        "FIXTURE-BRAND-COPY",
+        "FIXTURE-COMPATIBILITY-MATRIX",
+        "FIXTURE-REPLAY-ROLLBACK"
+      ],
+      "businessRequirement": "预检五页签、阻断与 stale 回到预检",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-015-01",
+          "fixtureRef": "FIXTURE-UNIT-GRAM-EACH",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-UNIT-GRAM-EACH"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-015:journey/1",
+            "fixtureRef": "FIXTURE-UNIT-GRAM-EACH",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-UNIT-GRAM-EACH"
+            }
+          },
+          "expectedBusinessResult": "预检五页签、阻断与 stale 回到预检；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-UNIT-GRAM-EACH\"}"
+        },
+        {
+          "caseId": "CI-L2-015-02",
+          "fixtureRef": "FIXTURE-STALE-SOURCE",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-STALE-SOURCE"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-015:journey/2",
+            "fixtureRef": "FIXTURE-STALE-SOURCE",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-STALE-SOURCE"
+            }
+          },
+          "expectedBusinessResult": "预检五页签、阻断与 stale 回到预检；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-STALE-SOURCE\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-016",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "FIXTURE-WORKBENCH-QUERY",
+        "FIXTURE-SURFACE-STATES"
+      ],
+      "businessRequirement": "query generation、分页筛选、错误恢复状态保持",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-016-01",
+          "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-WORKBENCH-QUERY"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-016:journey/1",
+            "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-WORKBENCH-QUERY"
+            }
+          },
+          "expectedBusinessResult": "query generation、分页筛选、错误恢复状态保持；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-WORKBENCH-QUERY\"}"
+        },
+        {
+          "caseId": "CI-L2-016-02",
+          "fixtureRef": "FIXTURE-SURFACE-STATES",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-SURFACE-STATES"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-016:journey/2",
+            "fixtureRef": "FIXTURE-SURFACE-STATES",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-SURFACE-STATES"
+            }
+          },
+          "expectedBusinessResult": "query generation、分页筛选、错误恢复状态保持；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SURFACE-STATES\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-017",
+      "layer": "L2",
+      "caseCount": 2,
+      "fixtureRefs": [
+        "FIXTURE-SURFACE-STATES"
+      ],
+      "businessRequirement": "overlay lock、错误焦点与具体阻断原因",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-017-01",
+          "fixtureRef": "FIXTURE-SURFACE-STATES",
+          "parameterization": "journey-variant-1",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-SURFACE-STATES"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-017:journey/1",
+            "fixtureRef": "FIXTURE-SURFACE-STATES",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-SURFACE-STATES"
+            }
+          },
+          "expectedBusinessResult": "overlay lock、错误焦点与具体阻断原因；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SURFACE-STATES\"}"
+        },
+        {
+          "caseId": "CI-L2-017-02",
+          "fixtureRef": "FIXTURE-SURFACE-STATES",
+          "parameterization": "journey-variant-2",
+          "parameter": {
+            "journeyVariant": 2,
+            "fixtureRef": "FIXTURE-SURFACE-STATES"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-017:journey/2",
+            "fixtureRef": "FIXTURE-SURFACE-STATES",
+            "parameter": {
+              "journeyVariant": 2,
+              "fixtureRef": "FIXTURE-SURFACE-STATES"
+            }
+          },
+          "expectedBusinessResult": "overlay lock、错误焦点与具体阻断原因；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SURFACE-STATES\"}"
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-018",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SCENARIO-CI-L2-018"
+      ],
+      "businessRequirement": "Out 项不渲染",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "CI-L2-018-01",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-018",
+          "parameterization": "canonical",
+          "parameter": {
+            "journeyVariant": 1,
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-018"
+          },
+          "expected": {
+            "assertionKey": "CI-L2-018:journey/1",
+            "fixtureRef": "FIXTURE-SCENARIO-CI-L2-018",
+            "parameter": {
+              "journeyVariant": 1,
+              "fixtureRef": "FIXTURE-SCENARIO-CI-L2-018"
+            }
+          },
+          "expectedBusinessResult": "Out 项不渲染；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-018\"}"
+        }
+      ]
+    }
+  ]
+}

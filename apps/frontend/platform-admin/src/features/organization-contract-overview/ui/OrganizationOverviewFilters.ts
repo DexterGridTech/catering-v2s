@@ -1,4 +1,5 @@
-import {formatNameCode} from '@catering-v2s/admin-ui-foundation';
+import {NameCodeText} from '@catering-v2s/admin-ui-foundation';
+import {createElement} from 'react';
 import type {OrganizationOverviewCategory, OrganizationOverviewSortDirection, OrganizationOverviewSortKey, OrganizationOverviewSource, OrganizationOverviewStatus, OrganizationOverviewType} from '../../../app/api/generated/platform-edge';
 
 export type OrganizationTab = {key: string; label: string; category: OrganizationOverviewCategory; type?: OrganizationOverviewType};
@@ -39,5 +40,5 @@ export function organizationOverviewQuery(tab: OrganizationTab, current: Organiz
 }
 
 export function ownerFilterOptions(options: OrganizationFilterOption[] | undefined, kind: OrganizationFilterOption['kind']) {
-  return (options ?? []).filter((option) => option.kind === kind).map((option) => ({value: option.id, label: formatNameCode(option.name, option.code)}));
+  return (options ?? []).filter((option) => option.kind === kind).map((option) => ({value: option.id, label: createElement(NameCodeText, {name: option.name, code: option.code})}));
 }

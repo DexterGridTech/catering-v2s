@@ -16,7 +16,7 @@ describe('operations data-scope focused IA contract', () => {
     expect(source).toContain('icon={collapsed ? <ApartmentOutlined/> : undefined}');
     expect(source).toContain('管理范围');
     expect(source).not.toContain('点击选择');
-    expect(source).toContain('Tooltip title={`管理范围：${selected ? label(selected) : noDataNodePrompt}`}');
+    expect(source).toContain('Tooltip title={<span>管理范围：{selected ? label(selected) : noDataNodePrompt}</span>}');
   });
 
   it('derives the region-project-store cascade only from owner candidates and commits only after explicit confirmation', () => {

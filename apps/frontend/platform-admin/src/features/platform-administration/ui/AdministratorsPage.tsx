@@ -83,6 +83,7 @@ export function AdministratorsPage() {
   return <Card title={<Typography.Paragraph aria-label={administratorPageTitle} type="secondary" style={{margin: 0}}>通过管理员详情核对资料后，再进入独立的编辑、凭据或状态确认面；密码不会在后续读取中显示。</Typography.Paragraph>} extra={<Button type="primary" onClick={() => setCreateOpen(true)} {...testId('platform-admin-create')}>新建管理员</Button>}>
     {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 16}} {...testId('platform-admin-list-error')}/>}
     <div {...testId('platform-admin-table')}><ProTable<Admin>
+      size="small"
       rowKey="id" loading={listState.loading} locale={listState.locale} dataSource={result?.items} options={false}
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-admin-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setPage(1); setFilters({}); }} {...testId('platform-admin-filter-reset')}>重置</Button>]}}
       onSubmit={(value) => { setPage(1); setFilters({userName: value.userName?.trim() || undefined, loginName: value.loginName?.trim() || undefined, status: value.status}); }}

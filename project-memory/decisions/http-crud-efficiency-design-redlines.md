@@ -16,7 +16,9 @@ sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/evidence/platform/rm1/p6/rm1p6-extens
 
 These redlines generalize confirmed RM1 findings. They apply before future API, owner, read-model,
 edge or admin feature design. They do not turn a Seed sample into implementation authority, create a
-global SQL-count gate, or replace detailed business/IA/owner source reread.
+universal SQL-count ceiling, or replace detailed business/IA/owner source reread. Every backend
+operation still declares its normal-path database access shape as a design contract; that declaration
+is operation-specific, not a global performance threshold.
 
 - `HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM`: define the authoritative generated route
   denominator and disclose attempted, correlated, passed, expected-rejected and unexecuted coverage
@@ -40,6 +42,20 @@ global SQL-count gate, or replace detailed business/IA/owner source reread.
   mutation, plus a shared registry resolver; a route mismatch discovered at runtime is evidence that
   the consumer escaped the generated path, not a reason to add another manual route string.
 - Source: `doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md@## Dexter-authorized generated edge route consumer closure`.
+- `PER_OPERATION_DESIGN_CONTRACT`: every backend operation in an implementation-facing design must
+  bind four finite facts before implementation: ordered logic steps, an ordered condition-to-typed-
+  problem mapping whose problem-code set exactly equals the operation contract, the edge/coordinator/
+  owner call chain and transaction boundary, and the expected request-local
+  `databaseOperationCount` for one named normal fixture with its read/write breakdown and assumptions.
+  The declared count includes trusted context/security and correctness-preserving receipt, CAS,
+  audit and readback work observed by the request-scoped tracker. It is a design limitation used to
+  expose accidental N+1, missing correctness work or an invented call path; it is not a universal
+  ceiling, a latency/throughput claim, or permission to delete correctness cost. Implementation exit
+  compares the measured normal fixture with the declaration exactly; any difference requires a named
+  operation/design/measured/reason disposition and reopening the design when semantics changed.
+  Applicability is backend implementation-facing design and its API evidence. Frontend-only work,
+  synthetic non-request data, controlled performance conclusions and production runtime alert limits
+  are explicit counterexamples.
 - `SET_BASED_COLLECTION_READS`: a collection/list/page must not make a per-item database call, owner
   API call or HTTP request for a fact that can be loaded once for the collection. Use a bounded
   `IN`/set-based query, owner-owned batch task read, or task read model. Single-object detail lookups
@@ -63,6 +79,11 @@ global SQL-count gate, or replace detailed business/IA/owner source reread.
   workload with warm-up, fixed samples/concurrency, outcome rate, p50/p95/p99 where applicable,
   pool/lock and DB resource observation, and `EXPLAIN (ANALYZE, BUFFERS)` for an index/query change.
   Do not log SQL/bind values or security-sensitive raw request data.
+
+`PER_OPERATION_DESIGN_CONTRACT` reconciles rather than replaces the two rules above: every operation
+always declares its normal path; only a task read above the separate default budget owes the expanded
+cardinality/query-chain explanation; and latency, throughput or index conclusions still require the
+controlled measurement demanded by `MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT`.
 - `DIAGNOSTIC_SECRET_FLOW_EXPLICIT`: a diagnostic workload inventory contains symbolic handles and
   non-sensitive request shape only. Credential/OTP/token/cookie/Authorization/identity values are
   generated per run or injected directly into an in-memory client, excluded from every persisted and
@@ -85,6 +106,9 @@ global SQL-count gate, or replace detailed business/IA/owner source reread.
 6. For every diagnostic secret, where is it created, how does it reach only the in-memory client, and
    which output surfaces have a red leakage proof?
 7. Which execution class is this run, and which stronger result is it explicitly unable to claim?
+8. For each backend operation, are logic steps, ordered failure conditions, owner call chain and one
+   named normal-fixture DB count present; do the condition keys exactly cover `problemCodes`, and does
+   measured P2 evidence either equal the declaration or carry a named design-drift disposition?
 
 ## Provenance and boundary
 

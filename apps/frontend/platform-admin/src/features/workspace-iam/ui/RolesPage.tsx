@@ -82,6 +82,7 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
   return <Card title={<Typography.Paragraph aria-label={rolesPageTitle} type="secondary" style={{margin: 0}}>为不同任职机构类型配置可使用的功能菜单和可执行的操作；保存与状态变更均由集团空间 owner 最终校验。</Typography.Paragraph>} extra={<Button type="primary" onClick={() => setCreateOpen(true)} {...testId('workspace-role-create')}>新建业务角色</Button>}>
     {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} {...testId('workspace-role-list-error')}/>}
     <div {...testId('workspace-role-table')}><ProTable<WorkspaceRole>
+      size="small"
       rowKey="id" loading={listState.loading} locale={listState.locale} dataSource={result?.items} options={false}
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('workspace-role-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId('workspace-role-filter-reset')}>重置</Button>]}}
       onSubmit={(value) => { setPage(1); setFilters({name: value.name?.trim() || undefined, organizationType: value.organizationType, status: value.status}); }}

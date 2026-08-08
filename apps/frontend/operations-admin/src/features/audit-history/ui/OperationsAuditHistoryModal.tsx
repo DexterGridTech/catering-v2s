@@ -1,12 +1,12 @@
 import {Alert, Button, Descriptions, Empty, List, Modal, Pagination, Space, Spin, Table, Typography} from 'antd';
 import {testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import type {AuditChange, AuditHistoryItem, AuditHistoryPage} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 
 type AuditEntityType = Parameters<typeof operationsAdminRtkRequest.getOperationsEntityAuditHistory>[1]['query']['entityType'];
-export type OperationsAuditTarget = {entityType: AuditEntityType; entityId: string; displayName?: string};
+export type OperationsAuditTarget = {entityType: AuditEntityType; entityId: string; displayName?: ReactNode};
 
 const actionLabels: Record<string, string> = {
   COMMERCIAL_GROUP_INITIALIZED: '已初始化商业集团',
@@ -58,7 +58,8 @@ export function OperationsAuditHistoryModal({open, target, groupWorkspaceKey, on
   const visibleData = query.data ?? lastSuccessful?.data;
   const selected = visibleData?.items.find((item) => item.id === selectedId) ?? visibleData?.items[0];
 
-  return <Modal title={target?.displayName ? `操作历史 · ${target.displayName}` : '操作历史'} open={open} onCancel={onClose} width={980} centered styles={{body: {height: 640, overflowY: 'auto'}}} destroyOnHidden footer={<Button onClick={onClose}>关闭</Button>} {...testId('operations-audit-history-modal')}>
+  const modalTitle = target?.displayName ? <span>操作历史 · {target.displayName}</span> : '操作历史';
+  return <Modal title={modalTitle} open={open} onCancel={onClose} width={980} centered styles={{body: {height: 640, overflowY: 'auto'}}} destroyOnHidden footer={<Button onClick={onClose}>关闭</Button>} {...testId('operations-audit-history-modal')}>
     {query.isLoading && !visibleData ? <Spin {...testId('operations-audit-history-loading')}/> : !visibleData ? problem && !boundaryFailure ? <Alert type="error" showIcon title="无法读取操作历史" description={<Space><Typography.Text>请稍后重试。</Typography.Text><Button type="link" onClick={() => void query.refetch()} {...testId('operations-audit-history-retry')}>重试</Button></Space>} {...testId('operations-audit-history-initial-error')}/> : null : visibleData.items.length === 0 ? <Empty description="暂无操作历史" {...testId('operations-audit-history-empty')}/> : <div style={{display: 'grid', gridTemplateColumns: '330px minmax(0, 1fr)', gap: 20}}>
       <section aria-label="操作历史时间列表" {...testId('operations-audit-history-list')}>
         {problem && !boundaryFailure && <Alert type="error" showIcon title="无法读取操作历史" description={<Space><Typography.Text>请稍后重试。已保留上一页记录。</Typography.Text><Button type="link" onClick={() => void query.refetch()} {...testId('operations-audit-history-retry')}>重试</Button></Space>} style={{marginBottom: 16}}/>}

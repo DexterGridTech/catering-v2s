@@ -1,0 +1,449 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-read-models",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "sourceBindings": {
+    "designCoverage": {
+      "path": "contracts/policy/catalog-inventory-design-byte-coverage.json",
+      "sha256": "cbf2acd2201c17e7a3ec8f0d15851f34f6e23af587af5b2cb25a7a1945c1ec1b"
+    }
+  },
+  "models": [
+    {
+      "name": "CatalogWorkbenchContext",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogNavigationView",
+      "required": [
+        "tree",
+        "smartViews",
+        "shapeCounts",
+        "uncategorizedCount",
+        "generation"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogItemPage",
+      "required": [
+        "items",
+        "total",
+        "cursor",
+        "generation",
+        "queryGeneration"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogItemDetail",
+      "required": [
+        "item",
+        "tabs",
+        "references",
+        "inventoryBom",
+        "productionTags",
+        "orderOptions",
+        "compositeGroups",
+        "governance",
+        "actionAvailability",
+        "deniedFields",
+        "fieldOwnership",
+        "queryIdentity"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogDictionaryView",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "ProductionTagPage",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "LocalCopyCandidatePage",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "LocalCopyPreflight",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "LocalCopyReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "TemporaryPromotionPreflight",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogItemCommandReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "BrandCopyCandidatePage",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "BrandCatalogCopyPreflight",
+      "required": [
+        "sourceScope",
+        "targetScope",
+        "selectedItems",
+        "selectedCount",
+        "selectedLimit",
+        "closureItems",
+        "closureEdges",
+        "closureCount",
+        "closureLimit",
+        "objectVersions",
+        "mappingPreview",
+        "compatibilityResults",
+        "referenceRewritePreview",
+        "preflightDigest",
+        "blockingCount",
+        "confirmationRequiredCount"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "BrandCatalogCopyReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "InventoryTargetPage",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "InventoryTargetCurrentView",
+      "required": [
+        "target",
+        "balance",
+        "configuration",
+        "version",
+        "stockState",
+        "stale",
+        "unknown",
+        "threshold",
+        "gap",
+        "changeSummary",
+        "recentChanges",
+        "references",
+        "ledger",
+        "diagnosticsAvailability"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "InventoryChangeSummaryView",
+      "required": [
+        "period",
+        "increase",
+        "decrease",
+        "netChange",
+        "entryCount"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "InventoryBusinessHistoryPage",
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "InventoryConsumptionReferencePage",
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "InventoryLedgerPage",
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "InventoryDiagnosticsView",
+      "required": [
+        "permission",
+        "queries",
+        "timings",
+        "warnings"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "InventoryWriteReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "StagedCatalogAsset",
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogAssetReleaseReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogShapeManifestView",
+      "required": [
+        "revision",
+        "manifestDigest",
+        "shapeKeys",
+        "capabilityValues",
+        "modeRules",
+        "shapeRules",
+        "fieldRules",
+        "tabRules",
+        "linkageRules",
+        "typeEffects",
+        "saveSections",
+        "detailSections"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    }
+  ],
+  "sixInventoryDetailZones": [
+    "current",
+    "changeSummary",
+    "businessHistory",
+    "consumptionReferences",
+    "ledger",
+    "advancedDiagnostics"
+  ]
+}

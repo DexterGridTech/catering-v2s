@@ -1,19 +1,20 @@
 import {ApartmentOutlined} from '@ant-design/icons';
 import {Alert, Button, Popover, Select, Space, Tooltip, Typography} from 'antd';
-import {testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useState} from 'react';
+import {NameCodeText, testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {useSelector} from 'react-redux';
 import {operationsClient} from '../../../app/api/OperationsTransport';
 import type {WorkspaceScopeNode, WorkspaceSessionEntry} from '../../../app/api/generated/operations-edge';
 import type {OperationsRootState} from '../../../app/state/OperationsStore';
 
 type RequiredDataNodeType = 'NONE' | 'REGION' | 'PROJECT' | 'HEAD_COMPANY' | 'STORE';
-type Option = {value: string; label: string};
+type Option = {value: string; label: ReactNode};
 type DataScopePage = {requiredDataNodeType: RequiredDataNodeType; noDataNodePrompt: string | null; noCandidatePrompt: string | null; cascadeLevelLabels: readonly string[]};
 type Props = {entry: WorkspaceSessionEntry; page?: DataScopePage; collapsed?: boolean; disabled?: boolean; onChanged: (entry: WorkspaceSessionEntry) => void};
 
 const scopeProblem = '暂时无法更新管理范围，请重试';
-const label = (node: WorkspaceScopeNode) => `${node.dataNodeName}(${node.dataNodeCode})`;
+const label = (node: WorkspaceScopeNode) => <NameCodeText name={node.dataNodeName} code={node.dataNodeCode}/>;
+const plainLabel = (node: WorkspaceScopeNode) => [node.dataNodeName, node.dataNodeCode].filter(Boolean).join(' ');
 const unique = (values: WorkspaceScopeNode[]): WorkspaceScopeNode[] => [...new Map(values.map((value) => [value.dataNodeRef, value])).values()];
 const selectedFor = (context: WorkspaceSessionEntry['scopeContext'], type: RequiredDataNodeType) => type === 'REGION' ? context?.region : type === 'PROJECT' ? context?.project : type === 'STORE' ? context?.store : type === 'HEAD_COMPANY' ? context?.headCompany : null;
 const scopeName = (type: RequiredDataNodeType) => type === 'REGION' ? '大区' : type === 'PROJECT' ? '项目' : type === 'STORE' ? '门店' : '总公司';
@@ -134,13 +135,13 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
     </Space>
     {!candidates.length && <Alert type="info" showIcon title={noCandidatePrompt}/>} 
   </Space>;
-  const trigger = <Button className="operations-scope-trigger" type="text" aria-label={collapsed ? `管理范围：${selected ? label(selected) : noDataNodePrompt}` : undefined} icon={collapsed ? <ApartmentOutlined/> : undefined} disabled={!entry.selected || disabled || locked || submitting} {...testId('operations-data-scope-trigger')}>
+  const trigger = <Button className="operations-scope-trigger" type="text" aria-label={collapsed ? `管理范围：${selected ? plainLabel(selected) : noDataNodePrompt}` : undefined} icon={collapsed ? <ApartmentOutlined/> : undefined} disabled={!entry.selected || disabled || locked || submitting} {...testId('operations-data-scope-trigger')}>
       {collapsed ? null : <Space orientation="vertical" size={4} align="start" style={{width: '100%'}}>
         <Space size={8}><ApartmentOutlined/><Typography.Text strong>管理范围</Typography.Text></Space>
         {triggerLines.map(([name, node]) => <Typography.Text key={name} className="operations-scope-trigger-line"><Typography.Text type="secondary">{name}：</Typography.Text>{node ? label(node as WorkspaceScopeNode) : '未选择'}</Typography.Text>)}
       </Space>}
     </Button>;
   return <Popover open={open} onOpenChange={(nextOpen) => { if (!nextOpen) resetDraft(); setOpen(nextOpen); }} placement="rightBottom" trigger="click" content={content}>
-    {collapsed ? <Tooltip title={`管理范围：${selected ? label(selected) : noDataNodePrompt}`}><span>{trigger}</span></Tooltip> : trigger}
+    {collapsed ? <Tooltip title={<span>管理范围：{selected ? label(selected) : noDataNodePrompt}</span>}><span>{trigger}</span></Tooltip> : trigger}
   </Popover>;
 }

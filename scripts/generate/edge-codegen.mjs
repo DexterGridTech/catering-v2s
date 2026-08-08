@@ -226,22 +226,22 @@ function loadAdminCatalog(base = root) {
   const actionKeys = actions.map((node) => node.key);
   const manifestPages = Object.keys(manifest.pageDesignKeySurfaceCrosswalk.byPageDesignKey);
   const manifestActions = manifest.policy.actionCapabilityCatalog.activeKeys;
-  if (!sameSet(pageKeys, manifestPages) || pageKeys.length !== 25) fail("R5_ADMIN_CATALOG_PAGE_SET_DRIFT");
-  if (!sameSet(actionKeys, manifestActions) || actionKeys.length !== 34) fail("R5_ADMIN_CATALOG_ACTION_SET_DRIFT");
+  if (!sameSet(pageKeys, manifestPages)) fail("R5_ADMIN_CATALOG_PAGE_SET_DRIFT");
+  if (!sameSet(actionKeys, manifestActions) || actionKeys.length !== manifestActions.length) fail("R5_ADMIN_CATALOG_ACTION_SET_DRIFT");
   if (new Set(pageKeys).size !== pageKeys.length || new Set(actionKeys).size !== actionKeys.length) fail("R5_ADMIN_CATALOG_DUPLICATE_KEY");
   if (shellCopy.length !== 4 || shellCopy.some((node) => node.consumerFace !== "platform-admin")) fail("R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT");
-  if (navigationGroups.length !== 4 || actionGroups.length !== 4) fail("R5_ADMIN_CATALOG_GROUP_SET_DRIFT");
+  if (actionGroups.length !== 5 || navigationGroups.length < 4) fail("R5_ADMIN_CATALOG_GROUP_SET_DRIFT");
   const navigationByKey = new Map(navigationGroups.map((node) => [node.key, node]));
   const actionGroupByKey = new Map(actionGroups.map((node) => [node.key, node]));
-  const navigationIconKeys = new Set(["WORKBENCH", "ACCESS", "ORGANIZATION", "STORE_OPERATIONS"]);
-  if (navigationByKey.size !== 4 || actionGroupByKey.size !== 4
+  const navigationIconKeys = new Set(["WORKBENCH", "ACCESS", "ORGANIZATION", "STORE_OPERATIONS", "CATALOG_SERVICES"]);
+  if (navigationByKey.size !== navigationGroups.length || actionGroupByKey.size !== 5
     || navigationGroups.some((node) => node.consumerFace !== "operations-admin" || !Number.isInteger(node.navigation?.order) || !navigationIconKeys.has(node.navigation?.iconKey))
     || actionGroups.some((node) => !Number.isInteger(node.actionGroup?.order))) fail("R5_ADMIN_CATALOG_GROUP_INVALID");
   const platformNodes = pages.filter((node) => node.consumerFace === "platform-admin");
   const operationsNodes = pages.filter((node) => node.consumerFace === "operations-admin");
   const roleHomes = operationsNodes.filter((node) => node.page?.kind === "ROLE_HOME");
   const businessPages = operationsNodes.filter((node) => node.page?.kind === "BUSINESS");
-  if (platformNodes.length !== 8 || roleHomes.length !== 5 || businessPages.length !== 12 || operationsNodes.length !== 17) fail("R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT");
+  if (platformNodes.length !== 8 || roleHomes.length !== 5 || businessPages.length !== operationsNodes.length - roleHomes.length || operationsNodes.length < 17) fail("R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT");
   if (new Set(roleHomes.map((node) => node.page.roleHomeForNodeType)).size !== 5) fail("R5_ADMIN_CATALOG_ROLE_HOME_INVALID");
   const experienceOf = (node) => {
     const experience = node.experience;
@@ -270,8 +270,12 @@ function loadAdminCatalog(base = root) {
     const action = node.action;
     const group = actionGroupByKey.get(action?.groupKey);
     const page = operationsPages.find((candidate) => candidate.pageDesignKey === action?.targetPageKey);
+    const actionRoleTargetPages = node.key === "EDIT_CATALOG_LIBRARY"
+      ? operationsPages.filter((candidate) => ["PG-CATALOG-STORE-ITEMS", "PG-CATALOG-BRAND-ITEMS"].includes(candidate.pageDesignKey))
+      : [page];
+    const actionRoleTargetSet = new Set(actionRoleTargetPages.flatMap((candidate) => candidate?.supportedRoleNodeTypes ?? []));
     if (node.consumerFace !== "operations-admin" || !group || !page || page.kind !== "BUSINESS" || !Array.isArray(action?.grantableRoleNodeTypes) || action.grantableRoleNodeTypes.length === 0
-      || action.grantableRoleNodeTypes.some((role) => !page.supportedRoleNodeTypes.includes(role)) || typeof action.scopeApplicability !== "string") fail("R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT", node.key);
+      || actionRoleTargetPages.length === 0 || action.grantableRoleNodeTypes.some((role) => !actionRoleTargetSet.has(role)) || typeof action.scopeApplicability !== "string") fail("R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT", node.key);
     if (action.userManagement && (!["INVITE", "ROLE_REVOKE"].includes(action.userManagement.purpose) || typeof action.userManagement.targetOrganizationType !== "string")) fail("R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_DRIFT", node.key);
     return {actionKey:node.key, actionLabel:node.display.label, actionDescription:node.display.label, actionGroupKey:group.key, actionGroupLabel:group.display.label, actionGroupOrder:group.actionGroup.order, pageBindings:[{pageDesignKey:page.pageDesignKey, selectedIdentityTypes:action.grantableRoleNodeTypes, scopeApplicability:action.scopeApplicability}], grantableRoleNodeTypes:action.grantableRoleNodeTypes, userManagement:action.userManagement};
   });

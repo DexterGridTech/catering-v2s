@@ -1,5 +1,5 @@
 import {Button, Descriptions, Drawer, Space, Table, Tag, Typography} from 'antd';
-import {adminDrawerSurfaceProps, formatCodeNamePath, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, NameCodePathText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceAccount} from '../../../app/api/generated/platform-edge';
 
 export type WorkspaceAccountAction =
@@ -56,7 +56,7 @@ export function WorkspaceAccountDetailDrawer({open, loading, account, onClose, o
         pagination={false}
         dataSource={account.assignments}
         columns={[
-          {title: '任职机构', dataIndex: 'organizationPath', render: (_, assignment) => formatCodeNamePath(assignment.organizationPath)},
+          {title: '任职机构', dataIndex: 'organizationPath', render: (_, assignment) => <NameCodePathText value={assignment.organizationPath}/>},
           {title: '业务角色', dataIndex: 'roleName'},
           {title: '状态', render: (_, assignment) => <Tag>{assignmentStatusLabel(assignment.status)}</Tag>},
           {title: '撤销任职', key: 'revoke', render: (_, assignment) => assignment.status === 'ACTIVE' ? <Button type="link" danger size="small" onClick={() => onOpenAction({kind: 'REVOKE_ASSIGNMENT', assignment})} {...testId(`workspace-account-revoke-assignment-${assignment.id}`)}>撤销任职</Button> : null},

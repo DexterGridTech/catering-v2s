@@ -1,6 +1,6 @@
 import {Alert, Button} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {contextScopedQueryArgs, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {contextScopedQueryArgs, NameCodeText, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {OrganizationStore, OrganizationStoreSortDirection, OrganizationStoreSortKey, OrganizationStoreStatus} from '../../../app/api/generated/operations-edge';
@@ -44,8 +44,8 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
   const columns = useMemo<ProColumns<OrganizationStore>[]>(() => [
     {key: 'name', title: '门店名称', dataIndex: 'name', sorter: true, fieldProps: {...testId('operations-store-filter-name'), allowClear: true, placeholder: '门店名称'}, render: (_, row) => <Button type="link" onClick={() => void openDetail(row)} {...testId(`operations-store-open-detail-${row.id}`)}>{row.name}</Button>},
     {key: 'code', title: '编码', dataIndex: 'code', sorter: true, fieldProps: {...testId('operations-store-filter-code'), allowClear: true, placeholder: '门店编码'}},
-    {title: '品牌', search: false, render: (_, row) => formatNameCode(row.brand.name, row.brand.code)}, {title: '经营租户', search: false, render: (_, row) => formatNameCode(row.tenant.name, row.tenant.code)},
-    {title: '总公司', search: false, render: (_, row) => row.headCompany ? formatNameCode(row.headCompany.name, row.headCompany.code) : '未设置'},
+    {title: '品牌', search: false, render: (_, row) => <NameCodeText name={row.brand.name} code={row.brand.code}/>}, {title: '经营租户', search: false, render: (_, row) => <NameCodeText name={row.tenant.name} code={row.tenant.code}/>},
+    {title: '总公司', search: false, render: (_, row) => row.headCompany ? <NameCodeText name={row.headCompany.name} code={row.headCompany.code}/> : '未设置'},
     {key: 'notes', title: '备注', dataIndex: 'notes', search: false, render: (_, row) => row.notes ?? '—'},
     {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: {ENABLED: {text: '启用', status: 'Success'}, DISABLED: {text: '停用', status: 'Default'}}, fieldProps: {...testId('operations-store-filter-status'), allowClear: true, placeholder: '状态'}},
   ], [openDetail]);
@@ -55,7 +55,7 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
   const selected = detail.target;
   return <section {...testId('operations-store-page')}>
     {problem && <Alert type="error" showIcon title="门店管理未完成" description={problem} style={{marginBottom: 16}}/>}
-    <ProTable<OrganizationStore> aria-label={storePageTitle} rowKey="id" search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-store-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setCurrent(1); }} {...testId('operations-store-filter-reset')}>重置</Button>]}} onSubmit={(value) => { setFilters({name: value.name?.trim() || undefined, code: value.code?.trim() || undefined, status: value.status}); setCurrent(1); }} options={false} loading={list.isLoading && !list.data} dataSource={list.data?.items ?? []} columns={columns}
+    <ProTable<OrganizationStore> size="small" aria-label={storePageTitle} rowKey="id" search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-store-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setCurrent(1); }} {...testId('operations-store-filter-reset')}>重置</Button>]}} onSubmit={(value) => { setFilters({name: value.name?.trim() || undefined, code: value.code?.trim() || undefined, status: value.status}); setCurrent(1); }} options={false} loading={list.isLoading && !list.data} dataSource={list.data?.items ?? []} columns={columns}
       toolBarRender={() => actionCapabilityKeys.includes(ACTION_CAPABILITIES.ORG_STORE_CREATE) ? [<Button key="create" type="primary" onClick={() => setCreateOpen(true)} {...testId('operations-store-create-open')}>新建门店</Button>] : []}
       pagination={{current, pageSize, total: list.data?.metadata.total ?? 0, showSizeChanger: true}}
       onChange={(pagination, _, sorter, extra) => {

@@ -1,0 +1,4052 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-fixture-catalog",
+  "catalogId": "CATALOG_INVENTORY_P1_FIXTURES",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "sourceBindings": {
+    "requirements": {
+      "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
+      "sha256": "21cfaa7ce6dced47d932db2ee9ea2d58bcbbe5b0ad2585dde7fa2829d4c9067a"
+    },
+    "ia": {
+      "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
+      "sha256": "08be6b7b232e5bc220d5e2e79841e6a4dee0a7df965dbc71e49ceb3942101354"
+    },
+    "copyPolicy": {
+      "path": "contracts/policy/catalog-inventory-copy-policy.json"
+    },
+    "mediaCatalog": {
+      "path": "contracts/policy/catalog-inventory-media-assets.json"
+    }
+  },
+  "seedDatasets": [
+    {
+      "fixtureId": "SEED-LATTE",
+      "purpose": "三 SKU、每 SKU 独立 BOM，验证 SKU 结构和库存/BOM读模型。",
+      "entities": {
+        "catalogItems": [
+          {
+            "code": "LATTE-001",
+            "shapeKey": "SKU_VARIANT_SALE_COUNTED",
+            "name": "拿铁",
+            "mediaAssetKey": "coffee"
+          }
+        ],
+        "skus": [
+          {
+            "code": "LATTE-SKU-S",
+            "attributeValues": {
+              "SIZE": "SMALL"
+            },
+            "status": "ENABLED",
+            "mediaAssetKey": "coffee"
+          },
+          {
+            "code": "LATTE-SKU-M",
+            "attributeValues": {
+              "SIZE": "MEDIUM"
+            },
+            "status": "DISABLED",
+            "mediaAssetKey": "coffee"
+          },
+          {
+            "code": "LATTE-SKU-L",
+            "attributeValues": {
+              "SIZE": "LARGE"
+            },
+            "status": "ARCHIVED",
+            "mediaAssetKey": "coffee"
+          }
+        ],
+        "bomLines": [
+          {
+            "skuCode": "LATTE-SKU-S",
+            "componentCode": "BEAN-001",
+            "quantity": 14,
+            "unit": "GRAM"
+          },
+          {
+            "skuCode": "LATTE-SKU-M",
+            "componentCode": "BEAN-001",
+            "quantity": 18,
+            "unit": "GRAM"
+          },
+          {
+            "skuCode": "LATTE-SKU-L",
+            "componentCode": "BEAN-001",
+            "quantity": 24,
+            "unit": "GRAM"
+          }
+        ],
+        "relations": [
+          {
+            "from": "LATTE-001",
+            "to": "BEAN-001",
+            "refKind": "BOM",
+            "refCode": "BEAN-001"
+          }
+        ],
+        "constructedAt": "seed-definition",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "stockFacts": {
+          "headCompanyBalance": 0,
+          "headCompanyLedgerEntries": 0,
+          "storeBalanceAndLedger": "present-for-materials"
+        },
+        "mediaAssets": [
+          {
+            "mediaAssetKey": "coffee",
+            "fileName": "coffee.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "a73bb6828d7299fa6973ca25adb63b8c143f56fd6377b43d7289625ac2b7f476",
+            "sourceName": "A cup of Americano.JPG",
+            "sourceLicense": "CC BY-SA 3.0",
+            "sourceProvider": "Wikimedia Commons"
+          }
+        ]
+      },
+      "class": "SEED",
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "scenarioIds": [
+        "CI-API-026",
+        "CI-L2-006"
+      ],
+      "setupChannel": "P2_HTTP_OWNER_APIS",
+      "readbackSelectors": [
+        "fixtureId",
+        "ownerScopes",
+        "entities"
+      ],
+      "cleanupPolicy": "P2_RUN_SCOPED_REVERT",
+      "mediaAssetKeys": [
+        "coffee"
+      ]
+    },
+    {
+      "fixtureId": "SEED-DINNER-SET",
+      "purpose": "套餐跨商品引用并引用具体 SKU。",
+      "entities": {
+        "catalogItems": [
+          {
+            "code": "DINNER-SET-001",
+            "shapeKey": "COMPOSITE",
+            "name": "双人晚餐套餐",
+            "mediaAssetKey": "dinnerCombo"
+          }
+        ],
+        "relations": [
+          {
+            "from": "DINNER-SET-001",
+            "to": "LATTE-001",
+            "refKind": "SKU",
+            "refCode": "LATTE-SKU-M"
+          }
+        ],
+        "constructedAt": "seed-definition",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "stockFacts": {
+          "headCompanyBalance": 0,
+          "headCompanyLedgerEntries": 0,
+          "storeBalanceAndLedger": "present-for-materials"
+        },
+        "mediaAssets": [
+          {
+            "mediaAssetKey": "dinnerCombo",
+            "fileName": "western-dinner-combo.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "6057f13721eadb7126309668bdd706f1b595df29d805e3b27056d45d162c99e7",
+            "sourceName": "Steak Dinner 1 (Unsplash).jpg",
+            "sourceLicense": "CC0",
+            "sourceProvider": "Wikimedia Commons"
+          }
+        ]
+      },
+      "class": "SEED",
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "scenarioIds": [
+        "CI-API-026",
+        "CI-L2-006"
+      ],
+      "setupChannel": "P2_HTTP_OWNER_APIS",
+      "readbackSelectors": [
+        "fixtureId",
+        "ownerScopes",
+        "entities"
+      ],
+      "cleanupPolicy": "P2_RUN_SCOPED_REVERT",
+      "mediaAssetKeys": [
+        "dinnerCombo"
+      ]
+    },
+    {
+      "fixtureId": "SEED-CAESAR",
+      "purpose": "三个选项组与选项值级 BOM。",
+      "entities": {
+        "catalogItems": [
+          {
+            "code": "CAESAR-001",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "name": "凯撒沙拉",
+            "mediaAssetKey": "caesarSalad"
+          }
+        ],
+        "optionGroups": [
+          {
+            "code": "CAESAR-DRESSING"
+          },
+          {
+            "code": "CAESAR-SIZE"
+          },
+          {
+            "code": "CAESAR-TOPPING"
+          }
+        ],
+        "optionValues": [
+          {
+            "code": "DRESSING-CLASSIC",
+            "groupCode": "CAESAR-DRESSING"
+          },
+          {
+            "code": "SIZE-LARGE",
+            "groupCode": "CAESAR-SIZE"
+          },
+          {
+            "code": "TOPPING-BACON",
+            "groupCode": "CAESAR-TOPPING"
+          }
+        ],
+        "bomLines": [
+          {
+            "ownerCode": "CAESAR-001",
+            "ownerKind": "ITEM",
+            "componentCode": "LETTUCE-001",
+            "quantity": 120,
+            "unit": "GRAM"
+          },
+          {
+            "ownerCode": "DRESSING-CLASSIC",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "DRESSING-001",
+            "quantity": 30,
+            "unit": "GRAM"
+          },
+          {
+            "ownerCode": "SIZE-LARGE",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "CHICKEN-001",
+            "quantity": 80,
+            "unit": "GRAM"
+          },
+          {
+            "ownerCode": "TOPPING-BACON",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "BACON-001",
+            "quantity": 20,
+            "unit": "GRAM"
+          }
+        ],
+        "relations": [
+          {
+            "from": "CAESAR-001",
+            "to": "LETTUCE-001",
+            "refKind": "BOM",
+            "refCode": "LETTUCE-001"
+          },
+          {
+            "from": "DRESSING-CLASSIC",
+            "to": "DRESSING-001",
+            "refKind": "BOM",
+            "refCode": "DRESSING-001"
+          },
+          {
+            "from": "SIZE-LARGE",
+            "to": "CHICKEN-001",
+            "refKind": "BOM",
+            "refCode": "CHICKEN-001"
+          },
+          {
+            "from": "TOPPING-BACON",
+            "to": "BACON-001",
+            "refKind": "BOM",
+            "refCode": "BACON-001"
+          }
+        ],
+        "constructedAt": "seed-definition",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "stockFacts": {
+          "headCompanyBalance": 0,
+          "headCompanyLedgerEntries": 0,
+          "storeBalanceAndLedger": "present-for-materials"
+        },
+        "mediaAssets": [
+          {
+            "mediaAssetKey": "caesarSalad",
+            "fileName": "caesar-salad.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "7afb8efccaf0863ec88426555bd4dc27538fb993cad007a2b1b6ce3e6d1cbbe3",
+            "sourceName": "Pulled Pork Sandwich, and Caesar Salad.jpg",
+            "sourceLicense": "CC BY-SA 3.0",
+            "sourceProvider": "Wikimedia Commons"
+          }
+        ]
+      },
+      "class": "SEED",
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "scenarioIds": [
+        "CI-API-026",
+        "CI-L2-006"
+      ],
+      "setupChannel": "P2_HTTP_OWNER_APIS",
+      "readbackSelectors": [
+        "fixtureId",
+        "ownerScopes",
+        "entities"
+      ],
+      "cleanupPolicy": "P2_RUN_SCOPED_REVERT",
+      "mediaAssetKeys": [
+        "caesarSalad"
+      ]
+    },
+    {
+      "fixtureId": "SEED-MATERIALS",
+      "purpose": "物料、库存对象、消耗单位与盘点单位。",
+      "entities": {
+        "catalogItems": [
+          {
+            "code": "BEAN-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "咖啡豆",
+            "mediaAssetKey": "coffee"
+          },
+          {
+            "code": "BOX-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "PACKAGING",
+            "name": "外带盒",
+            "mediaAssetKey": "takeawayBox"
+          },
+          {
+            "code": "LETTUCE-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "沙拉基底",
+            "mediaAssetKey": "mixedLettuce"
+          },
+          {
+            "code": "BACON-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "培根",
+            "mediaAssetKey": "steakRaw"
+          },
+          {
+            "code": "EGG-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "鸡蛋",
+            "mediaAssetKey": "salmonRaw"
+          },
+          {
+            "code": "CHICKEN-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "鸡胸肉",
+            "mediaAssetKey": "chickenBreast"
+          },
+          {
+            "code": "CUTLERY-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "PACKAGING",
+            "name": "餐具",
+            "mediaAssetKey": "takeawayBox"
+          },
+          {
+            "code": "DRESSING-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "凯撒沙拉酱"
+          }
+        ],
+        "stockTargets": [
+          {
+            "productCode": "BEAN-001",
+            "consumptionUnit": "GRAM",
+            "countingUnit": "KILOGRAM"
+          },
+          {
+            "productCode": "BOX-001",
+            "consumptionUnit": "EACH",
+            "countingUnit": "BOX"
+          },
+          {
+            "productCode": "LETTUCE-001",
+            "consumptionUnit": "GRAM",
+            "countingUnit": "KILOGRAM"
+          },
+          {
+            "productCode": "BACON-001",
+            "consumptionUnit": "GRAM",
+            "countingUnit": "KILOGRAM"
+          },
+          {
+            "productCode": "EGG-001",
+            "consumptionUnit": "EACH",
+            "countingUnit": "BOX"
+          },
+          {
+            "productCode": "CHICKEN-001",
+            "consumptionUnit": "GRAM",
+            "countingUnit": "KILOGRAM"
+          },
+          {
+            "productCode": "CUTLERY-001",
+            "consumptionUnit": "EACH",
+            "countingUnit": "BOX"
+          },
+          {
+            "productCode": "DRESSING-001",
+            "consumptionUnit": "GRAM",
+            "countingUnit": "KILOGRAM"
+          }
+        ],
+        "constructedAt": "seed-definition",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "stockFacts": {
+          "headCompanyBalance": 0,
+          "headCompanyLedgerEntries": 0,
+          "storeBalanceAndLedger": "present-for-materials"
+        },
+        "mediaAssets": [
+          {
+            "mediaAssetKey": "coffee",
+            "fileName": "coffee.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "a73bb6828d7299fa6973ca25adb63b8c143f56fd6377b43d7289625ac2b7f476",
+            "sourceName": "A cup of Americano.JPG",
+            "sourceLicense": "CC BY-SA 3.0",
+            "sourceProvider": "Wikimedia Commons"
+          },
+          {
+            "mediaAssetKey": "takeawayBox",
+            "fileName": "takeaway-box.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "d6221ab6839a14edae727c29e4ddec2d78a67e635b8261abc7c812f16e1f86e3",
+            "sourceName": "Thanin market banana flowers and leaves.jpg",
+            "sourceLicense": "CC BY-SA 3.0",
+            "sourceProvider": "Wikimedia Commons"
+          },
+          {
+            "mediaAssetKey": "mixedLettuce",
+            "fileName": "mixed-lettuce.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "3c650ab9113c6f79a28a5573f4b263528d2e156c9de190177a0644a6796420b8",
+            "sourceName": "IN LETTUCE FIELDS ALONG THE COLORADO RIVER, MEXICAN FARM WORKER CARRIES BOXES TO FIELD PICKERS - NARA - 549084.jpg",
+            "sourceLicense": "Public domain",
+            "sourceProvider": "Wikimedia Commons"
+          },
+          {
+            "mediaAssetKey": "steakRaw",
+            "fileName": "steak-raw.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "777181c05cd1188e32c1a5878f04f792090546b611022c9bc0500370c49d57f2",
+            "sourceName": "Raw beef steaks.jpg",
+            "sourceLicense": "CC BY-SA 4.0",
+            "sourceProvider": "Wikimedia Commons"
+          },
+          {
+            "mediaAssetKey": "salmonRaw",
+            "fileName": "salmon-raw.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "625ed872398c6b3e91e5986ff1d36f72f016c80b09fd42cb5170c3f12adade10",
+            "sourceName": "Loimulohi.jpg",
+            "sourceLicense": "CC BY-SA 3.0",
+            "sourceProvider": "Wikimedia Commons"
+          },
+          {
+            "mediaAssetKey": "chickenBreast",
+            "fileName": "chicken-breast.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "b20fade376436095f950cc7af0a9e6336523b9c6ca343a87e6797a7b606c27bd",
+            "sourceName": "Kycklingfilé.jpg",
+            "sourceLicense": "Public domain",
+            "sourceProvider": "Wikimedia Commons"
+          }
+        ]
+      },
+      "class": "SEED",
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "scenarioIds": [
+        "CI-API-010",
+        "CI-API-011",
+        "CI-API-026",
+        "CI-L2-006",
+        "CI-L2-012",
+        "CI-L2-013"
+      ],
+      "setupChannel": "P2_HTTP_OWNER_APIS",
+      "readbackSelectors": [
+        "fixtureId",
+        "ownerScopes",
+        "entities"
+      ],
+      "cleanupPolicy": "P2_RUN_SCOPED_REVERT",
+      "mediaAssetKeys": [
+        "coffee",
+        "takeawayBox",
+        "mixedLettuce",
+        "steakRaw",
+        "salmonRaw",
+        "chickenBreast"
+      ]
+    },
+    {
+      "fixtureId": "SEED-WEIGHED",
+      "purpose": "称重销售商品占位，确保 measureMode 不被库存模式替代。",
+      "entities": {
+        "catalogItems": [
+          {
+            "code": "PORK-WEIGHT-001",
+            "shapeKey": "STANDARD_SALE_WEIGHED",
+            "name": "称重卤肉",
+            "mediaAssetKey": "steakRaw"
+          }
+        ],
+        "constructedAt": "seed-definition",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "stockFacts": {
+          "headCompanyBalance": 0,
+          "headCompanyLedgerEntries": 0,
+          "storeBalanceAndLedger": "present-for-materials"
+        },
+        "mediaAssets": [
+          {
+            "mediaAssetKey": "steakRaw",
+            "fileName": "steak-raw.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "777181c05cd1188e32c1a5878f04f792090546b611022c9bc0500370c49d57f2",
+            "sourceName": "Raw beef steaks.jpg",
+            "sourceLicense": "CC BY-SA 4.0",
+            "sourceProvider": "Wikimedia Commons"
+          }
+        ]
+      },
+      "class": "SEED",
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "scenarioIds": [
+        "CI-API-026",
+        "CI-L2-006",
+        "CI-L2-007"
+      ],
+      "setupChannel": "P2_HTTP_OWNER_APIS",
+      "readbackSelectors": [
+        "fixtureId",
+        "ownerScopes",
+        "entities"
+      ],
+      "cleanupPolicy": "P2_RUN_SCOPED_REVERT",
+      "mediaAssetKeys": [
+        "steakRaw"
+      ]
+    }
+  ],
+  "testDatasets": [
+    {
+      "fixtureId": "FIXTURE-MISSING-HEAD-COMPANY",
+      "class": "TEST",
+      "purpose": "无 headCompanyRef 门店，不渲染品牌复制入口",
+      "scenarioIds": [
+        "CI-API-023",
+        "CI-L2-005"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-NO-HC",
+          "brandRef": "BR-A",
+          "headCompanyRef": null
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-MISSING-HEAD-COMPANY",
+          "scenarioId": "FIXTURE-MISSING-HEAD-COMPANY"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-MISSING-HEAD-COMPANY"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "scenarioState": "FIXTURE-MISSING-HEAD-COMPANY",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-NO-HC",
+            "brandRef": "BR-A",
+            "headCompanyRef": null
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-MISSING-HEAD-COMPANY",
+            "scenarioId": "FIXTURE-MISSING-HEAD-COMPANY"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-UNIT-GRAM-EACH",
+      "class": "TEST",
+      "purpose": "同编码物料消耗单位不一致，双向均阻断",
+      "scenarioIds": [
+        "CI-API-019",
+        "CI-L2-015"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "StockTarget",
+          "code": "BEAN-UNIT-CONFLICT",
+          "consumptionUnit": "GRAM"
+        },
+        {
+          "type": "StockTarget",
+          "code": "BEAN-UNIT-CONFLICT",
+          "consumptionUnit": "EACH"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-UNIT-GRAM-EACH"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "problemCode": "CONSUMPTION_UNIT_INCOMPATIBLE"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "StockTarget",
+            "code": "BEAN-UNIT-CONFLICT",
+            "consumptionUnit": "GRAM"
+          },
+          {
+            "type": "StockTarget",
+            "code": "BEAN-UNIT-CONFLICT",
+            "consumptionUnit": "EACH"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SELECTED-LIMIT",
+      "class": "TEST",
+      "purpose": "读取 copy policy 当前 selected limit，边界与超限",
+      "scenarioIds": [
+        "CI-API-016"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-SELECTED-LIMIT",
+          "scenarioId": "FIXTURE-SELECTED-LIMIT"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SELECTED-LIMIT"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "limitRef": "contracts/policy/catalog-inventory-copy-policy.json#/limits/selectedItemCount",
+        "boundary": "current-limit",
+        "overflow": "current-limit-plus-one",
+        "scenarioState": "FIXTURE-SELECTED-LIMIT",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-SELECTED-LIMIT",
+            "scenarioId": "FIXTURE-SELECTED-LIMIT"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CLOSURE-LIMIT",
+      "class": "TEST",
+      "purpose": "读取 copy policy 当前 closure limit，边界与超限且不截断",
+      "scenarioIds": [
+        "CI-API-017"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-CLOSURE-LIMIT",
+          "scenarioId": "FIXTURE-CLOSURE-LIMIT"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CLOSURE-LIMIT"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "limitRef": "contracts/policy/catalog-inventory-copy-policy.json#/limits/closureItemCount",
+        "boundary": "current-limit",
+        "overflow": "current-limit-plus-one",
+        "truncation": false,
+        "scenarioState": "FIXTURE-CLOSURE-LIMIT",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-CLOSURE-LIMIT",
+            "scenarioId": "FIXTURE-CLOSURE-LIMIT"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-STALE-SOURCE",
+      "class": "TEST",
+      "purpose": "预检后来源版本漂移",
+      "scenarioIds": [
+        "CI-API-021",
+        "CI-L2-015"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-STALE-SOURCE",
+          "scenarioId": "FIXTURE-STALE-SOURCE"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-STALE-SOURCE"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "sequence": [
+          "preflight",
+          "mutate-source",
+          "execute"
+        ],
+        "problemCode": "STALE_COPY_PREFLIGHT",
+        "writes": 0,
+        "scenarioState": "FIXTURE-STALE-SOURCE",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-STALE-SOURCE",
+            "scenarioId": "FIXTURE-STALE-SOURCE"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-STALE-TARGET",
+      "class": "TEST",
+      "purpose": "预检后目标版本漂移",
+      "scenarioIds": [
+        "CI-API-021",
+        "CI-L2-015"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-STALE-TARGET",
+          "scenarioId": "FIXTURE-STALE-TARGET"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-STALE-TARGET"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "sequence": [
+          "preflight",
+          "mutate-target",
+          "execute"
+        ],
+        "problemCode": "STALE_COPY_PREFLIGHT",
+        "writes": 0,
+        "scenarioState": "FIXTURE-STALE-TARGET",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-STALE-TARGET",
+            "scenarioId": "FIXTURE-STALE-TARGET"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-ARCHIVED-ONLY-SKU",
+      "class": "TEST",
+      "purpose": "只剩归档 SKU，派生 NO_SKU",
+      "scenarioIds": [
+        "CI-API-013",
+        "CI-L2-007"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ProductSku",
+          "code": "SKU-ARCHIVED",
+          "status": "ARCHIVED"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-ARCHIVED-ONLY-SKU"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "hasSku": false
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ProductSku",
+            "code": "SKU-ARCHIVED",
+            "status": "ARCHIVED"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-DISABLED-SKU",
+      "class": "TEST",
+      "purpose": "只有停用 SKU，仍派生 HAS_SKU",
+      "scenarioIds": [
+        "CI-API-013",
+        "CI-L2-007"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ProductSku",
+          "code": "SKU-DISABLED",
+          "status": "DISABLED"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-DISABLED-SKU"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "hasSku": true
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ProductSku",
+            "code": "SKU-DISABLED",
+            "status": "DISABLED"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SHAPE-ADMISSION",
+      "class": "TEST",
+      "purpose": "SERVICE/BENEFIT_SHELL 不因 NO_SKU 获得库存/BOM三态",
+      "scenarioIds": [
+        "CI-API-014",
+        "CI-L2-007"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogItem",
+          "code": "SERVICE-001",
+          "shapeKey": "SERVICE"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "BENEFIT-001",
+          "shapeKey": "BENEFIT_SHELL"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SHAPE-ADMISSION"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "serviceModes": [
+          "NONE"
+        ],
+        "benefitVisibleButDisabled": true
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogItem",
+            "code": "SERVICE-001",
+            "shapeKey": "SERVICE"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "BENEFIT-001",
+            "shapeKey": "BENEFIT_SHELL"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-PRODUCIBLE-RETAINED",
+      "class": "TEST",
+      "purpose": "PRODUCIBLE 在契约全集但无形态派生",
+      "scenarioIds": [
+        "CI-API-001",
+        "CI-L2-007"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-PRODUCIBLE-RETAINED",
+          "scenarioId": "FIXTURE-PRODUCIBLE-RETAINED"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-PRODUCIBLE-RETAINED"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "capabilityValuesIncludes": "PRODUCIBLE",
+        "derivedByShapes": [],
+        "scenarioState": "FIXTURE-PRODUCIBLE-RETAINED",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-PRODUCIBLE-RETAINED",
+            "scenarioId": "FIXTURE-PRODUCIBLE-RETAINED"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SKU-STRUCTURE-CONFLICT",
+      "class": "TEST",
+      "purpose": "同 SKU 编码但属性组合不同，商品结构阻断",
+      "scenarioIds": [
+        "CI-API-018",
+        "CI-L2-015"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ProductSku",
+          "code": "SKU-001",
+          "attributes": {
+            "SIZE": "SMALL"
+          }
+        },
+        {
+          "type": "ProductSku",
+          "code": "SKU-001",
+          "attributes": {
+            "SIZE": "LARGE"
+          }
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SKU-STRUCTURE-CONFLICT"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "problemCode": "STRUCTURE_INCOMPATIBLE"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ProductSku",
+            "code": "SKU-001",
+            "attributes": {
+              "SIZE": "SMALL"
+            }
+          },
+          {
+            "type": "ProductSku",
+            "code": "SKU-001",
+            "attributes": {
+              "SIZE": "LARGE"
+            }
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-DAG-CYCLE",
+      "class": "TEST",
+      "purpose": "闭包循环引用与多层 DAG",
+      "scenarioIds": [
+        "CI-API-015"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [],
+      "edges": [
+        {
+          "from": "A",
+          "to": "B"
+        },
+        {
+          "from": "B",
+          "to": "C"
+        },
+        {
+          "from": "C",
+          "to": "A"
+        }
+      ],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-DAG-CYCLE"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "problemCode": "STRUCTURE_INCOMPATIBLE",
+        "traversal": "visited-fixed-point"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [],
+        "edges": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "A"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-REFERENCE-MAPPING-MISSING",
+      "class": "TEST",
+      "purpose": "删除一个映射导致整体阻断",
+      "scenarioIds": [
+        "CI-API-020"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [],
+      "edges": [
+        {
+          "from": "ITEM-A",
+          "to": "SKU-A"
+        },
+        {
+          "from": "SKU-A",
+          "to": "MATERIAL-A"
+        }
+      ],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-REFERENCE-MAPPING-MISSING"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "problemCode": "REFERENCE_MAPPING_UNRESOLVED"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [],
+        "edges": [
+          {
+            "from": "ITEM-A",
+            "to": "SKU-A"
+          },
+          {
+            "from": "SKU-A",
+            "to": "MATERIAL-A"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-VOID-INBOUND-REFERENCE",
+      "class": "TEST",
+      "purpose": "入站引用存在时作废阻断",
+      "scenarioIds": [
+        "CI-API-006",
+        "CI-L2-010"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [],
+      "edges": [
+        {
+          "from": "CONSUMER-A",
+          "to": "TARGET-A"
+        }
+      ],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-VOID-INBOUND-REFERENCE"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "problemCode": "REFERENCE_BLOCKS_VOID"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [],
+        "edges": [
+          {
+            "from": "CONSUMER-A",
+            "to": "TARGET-A"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-VOID-DEPENDENT-FACT",
+      "class": "TEST",
+      "purpose": "owner 自有依赖事实存在时作废阻断",
+      "scenarioIds": [
+        "CI-API-006",
+        "CI-L2-010"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-VOID-DEPENDENT-FACT",
+          "scenarioId": "FIXTURE-VOID-DEPENDENT-FACT"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-VOID-DEPENDENT-FACT"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "dependentFacts": [
+          "StockTarget",
+          "ProductBom"
+        ],
+        "problemCode": "DEPENDENT_FACTS_BLOCK_VOID",
+        "caseParameterKey": "objectType",
+        "scenarioState": "FIXTURE-VOID-DEPENDENT-FACT"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-VOID-DEPENDENT-FACT",
+            "scenarioId": "FIXTURE-VOID-DEPENDENT-FACT"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-INVENTORY-NEGATIVE",
+      "class": "TEST",
+      "purpose": "盘点/人工调整造成负库存时 typed failure",
+      "scenarioIds": [
+        "CI-API-012",
+        "CI-L2-014"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "StockTarget",
+          "code": "TARGET-NEG",
+          "allowNegative": false,
+          "balance": 0
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-INVENTORY-NEGATIVE"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "problemCode": "NEGATIVE_STOCK_NOT_ALLOWED"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "StockTarget",
+            "code": "TARGET-NEG",
+            "allowNegative": false,
+            "balance": 0
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-ADVANCED-DIAGNOSTICS",
+      "class": "TEST",
+      "purpose": "无诊断权限时整区与 HTTP 请求均不存在",
+      "scenarioIds": [
+        "CI-API-011",
+        "CI-L2-013"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-ADVANCED-DIAGNOSTICS",
+          "scenarioId": "FIXTURE-ADVANCED-DIAGNOSTICS"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-ADVANCED-DIAGNOSTICS"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "permission": false,
+        "diagnosticsHttpRequest": false,
+        "diagnosticsDom": false,
+        "caseParameterKey": "detailZone",
+        "scenarioState": "FIXTURE-ADVANCED-DIAGNOSTICS"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-ADVANCED-DIAGNOSTICS",
+            "scenarioId": "FIXTURE-ADVANCED-DIAGNOSTICS"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-ASSET-PROCESSING",
+      "class": "TEST",
+      "purpose": "资产处理失败与引用保护",
+      "scenarioIds": [
+        "CI-API-009",
+        "CI-L2-011"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "StagedAsset",
+          "code": "ASSET-FAILED",
+          "ref": "ASSET-FAILED",
+          "status": "PROCESSING"
+        },
+        {
+          "type": "StagedAsset",
+          "code": "ASSET-REFERENCED",
+          "ref": "ASSET-REFERENCED",
+          "status": "READY",
+          "references": 1
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-ASSET-PROCESSING"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "problemCodes": [
+          "ASSET_PROCESSING_FAILED",
+          "ASSET_REFERENCE_PROTECTED"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "StagedAsset",
+            "code": "ASSET-FAILED",
+            "ref": "ASSET-FAILED",
+            "status": "PROCESSING"
+          },
+          {
+            "type": "StagedAsset",
+            "code": "ASSET-REFERENCED",
+            "ref": "ASSET-REFERENCED",
+            "status": "READY",
+            "references": 1
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-AUTO-SYNC",
+      "class": "TEST",
+      "purpose": "来源字段 ownership/deniedFields",
+      "scenarioIds": [
+        "CI-API-007",
+        "CI-L2-009"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogItem",
+          "code": "AUTO-001",
+          "source": "AUTO_SYNC",
+          "deniedFields": [
+            "name",
+            "code"
+          ]
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-AUTO-SYNC"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "ownership": "source-owned"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogItem",
+            "code": "AUTO-001",
+            "source": "AUTO_SYNC",
+            "deniedFields": [
+              "name",
+              "code"
+            ]
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-TEMPORARY-ITEM",
+      "class": "TEST",
+      "purpose": "外部订单临时商品治理转正预检",
+      "scenarioIds": [
+        "CI-API-007",
+        "CI-L2-009"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogItem",
+          "code": "TEMP-001",
+          "source": "EXTERNAL_ORDER_TEMPORARY",
+          "status": "GOVERNANCE_TODO",
+          "externalIdentity": {
+            "sourceOrderRef": "EXT-ORDER-001",
+            "sourceRecordRef": "EXT-RECORD-001",
+            "sourceItemRef": "EXT-SKU-88",
+            "snapshot": {
+              "name": "外部订单临时拿铁",
+              "specification": "中杯 / 热",
+              "price": 2800
+            }
+          }
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-TEMPORARY-ITEM"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "requiresPromotionPreflight": true
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogItem",
+            "code": "TEMP-001",
+            "source": "EXTERNAL_ORDER_TEMPORARY",
+            "status": "GOVERNANCE_TODO",
+            "externalIdentity": {
+              "sourceOrderRef": "EXT-ORDER-001",
+              "sourceRecordRef": "EXT-RECORD-001",
+              "sourceItemRef": "EXT-SKU-88",
+              "snapshot": {
+                "name": "外部订单临时拿铁",
+                "specification": "中杯 / 热",
+                "price": 2800
+              }
+            }
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-LOCAL-COPY",
+      "class": "TEST",
+      "purpose": "当前门店内五步复制配置",
+      "scenarioIds": [
+        "CI-API-014",
+        "CI-L2-010"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-LOCAL-COPY",
+          "scenarioId": "FIXTURE-LOCAL-COPY"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-LOCAL-COPY"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "wizardSteps": [
+          "source-scope",
+          "source-item",
+          "copy-scope",
+          "bom-mapping",
+          "preview"
+        ],
+        "scenarioState": "FIXTURE-LOCAL-COPY",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-LOCAL-COPY",
+            "scenarioId": "FIXTURE-LOCAL-COPY"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-BRAND-COPY",
+      "class": "TEST",
+      "purpose": "总公司到门店完整闭包复制",
+      "scenarioIds": [
+        "CI-API-020",
+        "CI-L2-015"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-BRAND-COPY",
+          "scenarioId": "FIXTURE-BRAND-COPY"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-BRAND-COPY"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "closure": "complete",
+        "refs": "all-outbound-rewritten",
+        "ownerInvariant": true,
+        "scenarioState": "FIXTURE-BRAND-COPY",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-BRAND-COPY",
+            "scenarioId": "FIXTURE-BRAND-COPY"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-COUNT-INCREASE-ADJUST",
+      "class": "TEST",
+      "purpose": "库存三类变化动作读回前/变化/后",
+      "scenarioIds": [
+        "CI-API-012",
+        "CI-L2-014"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-COUNT-INCREASE-ADJUST",
+          "scenarioId": "FIXTURE-COUNT-INCREASE-ADJUST"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-COUNT-INCREASE-ADJUST"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "readbackFields": [
+          "before",
+          "change",
+          "after",
+          "ledgerEntry"
+        ],
+        "caseParameterKey": "command",
+        "scenarioState": "FIXTURE-COUNT-INCREASE-ADJUST"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-COUNT-INCREASE-ADJUST",
+            "scenarioId": "FIXTURE-COUNT-INCREASE-ADJUST"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CONFIG-ONLY",
+      "class": "TEST",
+      "purpose": "库存快捷配置不产生余额与流水",
+      "scenarioIds": [
+        "CI-API-012",
+        "CI-L2-014"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-CONFIG-ONLY",
+          "scenarioId": "FIXTURE-CONFIG-ONLY"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CONFIG-ONLY"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "balanceDelta": 0,
+        "ledgerDelta": 0,
+        "caseParameterKey": "command",
+        "scenarioState": "FIXTURE-CONFIG-ONLY"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-CONFIG-ONLY",
+            "scenarioId": "FIXTURE-CONFIG-ONLY"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-NO-COPY-SOURCE",
+      "class": "TEST",
+      "purpose": "复制来源唯一性与组织归属",
+      "scenarioIds": [
+        "CI-API-023",
+        "CI-API-024"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-NO-COPY-SOURCE",
+          "scenarioId": "FIXTURE-NO-COPY-SOURCE"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-NO-COPY-SOURCE"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "sourceResolution": "unique-bound-head-company",
+        "scenarioState": "FIXTURE-NO-COPY-SOURCE",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-NO-COPY-SOURCE",
+            "scenarioId": "FIXTURE-NO-COPY-SOURCE"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-OWNER-SCOPE",
+      "class": "TEST",
+      "purpose": "总公司+品牌、门店+品牌，项目级标签阻断",
+      "scenarioIds": [
+        "CI-API-024",
+        "CI-API-025"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-OWNER-SCOPE",
+          "scenarioId": "FIXTURE-OWNER-SCOPE"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-OWNER-SCOPE"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "allowed": [
+          "headCompany+brand",
+          "store+brand"
+        ],
+        "forbidden": [
+          "project"
+        ],
+        "scenarioState": "FIXTURE-OWNER-SCOPE",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-OWNER-SCOPE",
+            "scenarioId": "FIXTURE-OWNER-SCOPE"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SEED-READBACK",
+      "class": "TEST",
+      "purpose": "五个真实复杂商品图按契约读回",
+      "scenarioIds": [
+        "CI-API-026",
+        "CI-L2-006"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-SEED-READBACK",
+          "scenarioId": "FIXTURE-SEED-READBACK"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SEED-READBACK"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "seedIds": [
+          "SEED-LATTE",
+          "SEED-DINNER-SET",
+          "SEED-CAESAR",
+          "SEED-MATERIALS",
+          "SEED-WEIGHED"
+        ],
+        "scenarioState": "FIXTURE-SEED-READBACK",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-SEED-READBACK",
+            "scenarioId": "FIXTURE-SEED-READBACK"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SHAPE-MATRIX",
+      "class": "TEST",
+      "purpose": "七形态逐一派生与页签准入",
+      "scenarioIds": [
+        "CI-API-002",
+        "CI-L2-007"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogItem",
+          "code": "SHAPE-STANDARD_SALE_COUNTED",
+          "shapeKey": "STANDARD_SALE_COUNTED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "SHAPE-SKU_VARIANT_SALE_COUNTED",
+          "shapeKey": "SKU_VARIANT_SALE_COUNTED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "SHAPE-STANDARD_SALE_WEIGHED",
+          "shapeKey": "STANDARD_SALE_WEIGHED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "SHAPE-MATERIAL",
+          "shapeKey": "MATERIAL"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "SHAPE-COMPOSITE",
+          "shapeKey": "COMPOSITE"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "SHAPE-SERVICE",
+          "shapeKey": "SERVICE"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "SHAPE-BENEFIT_SHELL",
+          "shapeKey": "BENEFIT_SHELL"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SHAPE-MATRIX"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "shapeKeys": [
+          "STANDARD_SALE_COUNTED",
+          "SKU_VARIANT_SALE_COUNTED",
+          "STANDARD_SALE_WEIGHED",
+          "MATERIAL",
+          "COMPOSITE",
+          "SERVICE",
+          "BENEFIT_SHELL"
+        ],
+        "caseParameterKey": "shapeKey"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogItem",
+            "code": "SHAPE-STANDARD_SALE_COUNTED",
+            "shapeKey": "STANDARD_SALE_COUNTED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "SHAPE-SKU_VARIANT_SALE_COUNTED",
+            "shapeKey": "SKU_VARIANT_SALE_COUNTED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "SHAPE-STANDARD_SALE_WEIGHED",
+            "shapeKey": "STANDARD_SALE_WEIGHED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "SHAPE-MATERIAL",
+            "shapeKey": "MATERIAL"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "SHAPE-COMPOSITE",
+            "shapeKey": "COMPOSITE"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "SHAPE-SERVICE",
+            "shapeKey": "SERVICE"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "SHAPE-BENEFIT_SHELL",
+            "shapeKey": "BENEFIT_SHELL"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-VOID-OBJECT-TYPES",
+      "class": "TEST",
+      "purpose": "八类有编码对象逐类作废与引用保护",
+      "scenarioIds": [
+        "CI-API-006",
+        "CI-L2-010"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogItem",
+          "code": "VOID-CatalogItem"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "VOID-CatalogCategory"
+        },
+        {
+          "type": "CatalogDictionaryEntry",
+          "code": "VOID-CatalogDictionaryEntry"
+        },
+        {
+          "type": "ProductionTag",
+          "code": "VOID-ProductionTag"
+        },
+        {
+          "type": "CatalogItemSku",
+          "code": "VOID-CatalogItemSku"
+        },
+        {
+          "type": "CatalogAsset",
+          "code": "VOID-CatalogAsset"
+        },
+        {
+          "type": "StockTarget",
+          "code": "VOID-StockTarget"
+        },
+        {
+          "type": "ProductBom",
+          "code": "VOID-ProductBom"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-VOID-OBJECT-TYPES"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "objectTypes": [
+          "CatalogItem",
+          "CatalogCategory",
+          "CatalogDictionaryEntry",
+          "ProductionTag",
+          "CatalogItemSku",
+          "CatalogAsset",
+          "StockTarget",
+          "ProductBom"
+        ],
+        "caseParameterKey": "objectType"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogItem",
+            "code": "VOID-CatalogItem"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "VOID-CatalogCategory"
+          },
+          {
+            "type": "CatalogDictionaryEntry",
+            "code": "VOID-CatalogDictionaryEntry"
+          },
+          {
+            "type": "ProductionTag",
+            "code": "VOID-ProductionTag"
+          },
+          {
+            "type": "CatalogItemSku",
+            "code": "VOID-CatalogItemSku"
+          },
+          {
+            "type": "CatalogAsset",
+            "code": "VOID-CatalogAsset"
+          },
+          {
+            "type": "StockTarget",
+            "code": "VOID-StockTarget"
+          },
+          {
+            "type": "ProductBom",
+            "code": "VOID-ProductBom"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-COMPATIBILITY-MATRIX",
+      "class": "TEST",
+      "purpose": "九类兼容矩阵逐位正反例",
+      "scenarioIds": [
+        "CI-API-018",
+        "CI-L2-015"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogItem",
+          "code": "COMPAT-CatalogItem"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "COMPAT-CatalogCategory"
+        },
+        {
+          "type": "CatalogTag",
+          "code": "COMPAT-CatalogTag"
+        },
+        {
+          "type": "SalesUnit",
+          "code": "COMPAT-SalesUnit"
+        },
+        {
+          "type": "SkuAttributeValue",
+          "code": "COMPAT-SkuAttributeValue"
+        },
+        {
+          "type": "ProductionTag",
+          "code": "COMPAT-ProductionTag"
+        },
+        {
+          "type": "StockTarget",
+          "code": "COMPAT-StockTarget"
+        },
+        {
+          "type": "ProductBom",
+          "code": "COMPAT-ProductBom"
+        },
+        {
+          "type": "ProductSku",
+          "code": "COMPAT-ProductSku"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-COMPATIBILITY-MATRIX"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "matrixRows": 9,
+        "outcomes": [
+          "CONFIRM_REUSE",
+          "STRUCTURAL_BLOCK",
+          "NOT_APPLICABLE_NO_STRUCTURAL_BITS"
+        ],
+        "caseParameterKey": "matrixRow"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogItem",
+            "code": "COMPAT-CatalogItem"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "COMPAT-CatalogCategory"
+          },
+          {
+            "type": "CatalogTag",
+            "code": "COMPAT-CatalogTag"
+          },
+          {
+            "type": "SalesUnit",
+            "code": "COMPAT-SalesUnit"
+          },
+          {
+            "type": "SkuAttributeValue",
+            "code": "COMPAT-SkuAttributeValue"
+          },
+          {
+            "type": "ProductionTag",
+            "code": "COMPAT-ProductionTag"
+          },
+          {
+            "type": "StockTarget",
+            "code": "COMPAT-StockTarget"
+          },
+          {
+            "type": "ProductBom",
+            "code": "COMPAT-ProductBom"
+          },
+          {
+            "type": "ProductSku",
+            "code": "COMPAT-ProductSku"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-WORKBENCH-QUERY",
+      "class": "TEST",
+      "purpose": "树节点、域内 keyword、cursor 与 generation",
+      "scenarioIds": [
+        "CI-API-003",
+        "CI-L2-002",
+        "CI-L2-016"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogTree",
+          "code": "TREE-EAST"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "ITEM-RIVER"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-WORKBENCH-QUERY"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "query": {
+          "dataNodeRef": "TREE-EAST",
+          "keyword": "咖啡",
+          "cursor": "CURSOR-1",
+          "generation": "GEN-1"
+        },
+        "caseParameterKey": "queryVariant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogTree",
+            "code": "TREE-EAST"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "ITEM-RIVER"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SMART-VIEWS",
+      "class": "TEST",
+      "purpose": "六智能视图与需处理派生状态",
+      "scenarioIds": [
+        "CI-API-004",
+        "CI-L2-003",
+        "CI-L2-012"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "SmartView",
+          "code": "GOVERNANCE_PENDING"
+        },
+        {
+          "type": "SmartView",
+          "code": "EXTERNAL_ORDER_TEMP"
+        },
+        {
+          "type": "SmartView",
+          "code": "INACTIVE"
+        },
+        {
+          "type": "SmartView",
+          "code": "ARCHIVED"
+        },
+        {
+          "type": "SmartView",
+          "code": "RECENTLY_UPDATED"
+        },
+        {
+          "type": "SmartView",
+          "code": "AUTO_SYNC"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SMART-VIEWS"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "viewKeys": [
+          "GOVERNANCE_PENDING",
+          "EXTERNAL_ORDER_TEMP",
+          "INACTIVE",
+          "ARCHIVED",
+          "RECENTLY_UPDATED",
+          "AUTO_SYNC"
+        ],
+        "needsAttentionExcludedFromStockState": true,
+        "caseParameterKey": "viewKey"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "SmartView",
+            "code": "GOVERNANCE_PENDING"
+          },
+          {
+            "type": "SmartView",
+            "code": "EXTERNAL_ORDER_TEMP"
+          },
+          {
+            "type": "SmartView",
+            "code": "INACTIVE"
+          },
+          {
+            "type": "SmartView",
+            "code": "ARCHIVED"
+          },
+          {
+            "type": "SmartView",
+            "code": "RECENTLY_UPDATED"
+          },
+          {
+            "type": "SmartView",
+            "code": "AUTO_SYNC"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SURFACE-STATES",
+      "class": "TEST",
+      "purpose": "九 surface loading/error/empty/recovery",
+      "scenarioIds": [
+        "CI-API-005",
+        "CI-L2-016",
+        "CI-L2-017"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-SURFACE-STATES",
+          "scenarioId": "FIXTURE-SURFACE-STATES"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SURFACE-STATES"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "surfaceKeys": [
+          "loading",
+          "error",
+          "empty",
+          "ready",
+          "recovery"
+        ],
+        "caseParameterKey": "surfaceState",
+        "scenarioState": "FIXTURE-SURFACE-STATES"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-SURFACE-STATES",
+            "scenarioId": "FIXTURE-SURFACE-STATES"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-LIFECYCLE-CAS-IDEMPOTENCY",
+      "class": "TEST",
+      "purpose": "生命周期、CAS、幂等 replay 与 mismatch",
+      "scenarioIds": [
+        "CI-API-008",
+        "CI-L2-010"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogItem",
+          "code": "LIFECYCLE-001",
+          "status": "ENABLED",
+          "version": 1
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-LIFECYCLE-CAS-IDEMPOTENCY"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "transitions": [
+          "DRAFT->ENABLED",
+          "ENABLED->DISABLED"
+        ],
+        "versionConflict": true,
+        "idempotencyReplay": true,
+        "caseParameterKey": "lifecycleCase"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogItem",
+            "code": "LIFECYCLE-001",
+            "status": "ENABLED",
+            "version": 1
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-REPLAY-ROLLBACK",
+      "class": "TEST",
+      "purpose": "幂等 replay 与 owner failure 全回滚",
+      "scenarioIds": [
+        "CI-API-022",
+        "CI-L2-015"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogItem",
+          "code": "ROLLBACK-001"
+        },
+        {
+          "type": "StockTarget",
+          "code": "ROLLBACK-TARGET"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-REPLAY-ROLLBACK"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "replaySameResult": true,
+        "ownerFailureRollback": true,
+        "caseParameterKey": "failurePoint"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogItem",
+            "code": "ROLLBACK-001"
+          },
+          {
+            "type": "StockTarget",
+            "code": "ROLLBACK-TARGET"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SCENARIO-CI-L2-001",
+      "class": "TEST",
+      "purpose": "该 L2 场景的最小业务状态与可观察结果",
+      "scenarioIds": [
+        "CI-L2-001"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-SCENARIO-CI-L2-001",
+          "scenarioId": "CI-L2-001"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SCENARIO-CI-L2-001"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "scenarioState": "CI-L2-001",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-SCENARIO-CI-L2-001",
+            "scenarioId": "CI-L2-001"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SCENARIO-CI-L2-004",
+      "class": "TEST",
+      "purpose": "该 L2 场景的最小业务状态与可观察结果",
+      "scenarioIds": [
+        "CI-L2-004"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-SCENARIO-CI-L2-004",
+          "scenarioId": "CI-L2-004"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SCENARIO-CI-L2-004"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "scenarioState": "CI-L2-004",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-SCENARIO-CI-L2-004",
+            "scenarioId": "CI-L2-004"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SCENARIO-CI-L2-008",
+      "class": "TEST",
+      "purpose": "该 L2 场景的最小业务状态与可观察结果",
+      "scenarioIds": [
+        "CI-L2-008"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-SCENARIO-CI-L2-008",
+          "scenarioId": "CI-L2-008"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SCENARIO-CI-L2-008"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "scenarioState": "CI-L2-008",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-SCENARIO-CI-L2-008",
+            "scenarioId": "CI-L2-008"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-SCENARIO-CI-L2-018",
+      "class": "TEST",
+      "purpose": "该 L2 场景的最小业务状态与可观察结果",
+      "scenarioIds": [
+        "CI-L2-018"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-SCENARIO-CI-L2-018",
+          "scenarioId": "CI-L2-018"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-SCENARIO-CI-L2-018"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "scenarioState": "CI-L2-018",
+        "caseParameterKey": "variant"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-SCENARIO-CI-L2-018",
+            "scenarioId": "CI-L2-018"
+          }
+        ],
+        "edges": []
+      }
+    }
+  ],
+  "scenarioCatalog": {
+    "api": "contracts/policy/catalog-inventory-api-scenarios.json",
+    "l2": "contracts/policy/catalog-inventory-l2-scenarios.json"
+  },
+  "denominators": {
+    "seed": 5,
+    "test": 39,
+    "apiDefinitions": 26,
+    "apiCases": 100,
+    "l2Definitions": 18,
+    "l2Cases": 43
+  },
+  "consumerBindings": {
+    "P2_API": {
+      "catalogPath": "contracts/policy/catalog-inventory-fixture-catalog.json",
+      "fixtureClass": "TEST"
+    },
+    "P3_L2": {
+      "catalogPath": "contracts/policy/catalog-inventory-fixture-catalog.json",
+      "fixtureClass": "TEST"
+    }
+  },
+  "forbiddenStructures": [
+    "SalesStockView",
+    "InventoryAuthorityConfig",
+    "CatalogAttributeDefinition",
+    "independentStockTargetCreate",
+    "projectScopedProductionTag"
+  ],
+  "seedExecutionPlan": {
+    "transport": "HTTP",
+    "noDirectDatabaseWrites": true,
+    "assetUpload": {
+      "operationId": "stageOperationsCatalogAsset",
+      "transport": "HTTP_MULTIPART",
+      "requestField": "content",
+      "sourceDirectory": "contracts/policy/catalog-inventory-p1-media",
+      "persists": "assetRef_only",
+      "contentMustBeRealBytes": true
+    },
+    "catalogCreate": {
+      "operationId": "createOperationsCatalogItem",
+      "transport": "HTTP_JSON",
+      "requestComponent": "CatalogItemCreateRequest",
+      "usesReturnedAssetRefs": true
+    },
+    "catalogSave": {
+      "operationId": "saveOperationsCatalogItem",
+      "transport": "HTTP_JSON",
+      "requestComponent": "CatalogItemSaveRequest",
+      "sequence": "after-create-before-readback",
+      "usesReturnedAssetRefs": true
+    },
+    "fullCatalogParity": {
+      "sourceDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items",
+      "expectedCatalogItemCount": 73,
+      "expectedMediaAssetCount": 34,
+      "requiredIn": "P2",
+      "reductionIsNotFinalSeedPolicy": true
+    },
+    "readback": [
+      {
+        "operationId": "getOperationsCatalogItem",
+        "purpose": "created item and mediaRefs"
+      },
+      {
+        "operationId": "getOperationsCatalogNavigation",
+        "purpose": "tree and counts"
+      },
+      {
+        "operationId": "getOperationsInventoryTargets",
+        "purpose": "inventory targets"
+      }
+    ],
+    "cleanup": {
+      "strategy": "MANAGED_RESET_RUN_SCOPED_REVERT",
+      "mediaPurgeRequired": true,
+      "mediaNamespace": "run-scoped",
+      "readback": "asset namespace absence",
+      "businessAndCleanupSeparate": true
+    },
+    "failureRule": "If asset upload or create readback fails, stop and retain first failure evidence; do not fall back to SQL."
+  },
+  "separation": {
+    "seedIsLegalInitialState": true,
+    "testIsConstructedBoundaryState": true,
+    "sharedBy": [
+      "P2_API",
+      "P3_L2"
+    ],
+    "seedExecutionNotAuthorized": true
+  },
+  "fixtureDigest": "f00dfd10ccb4320c5772060f24c05ae1ac8c230e6a423d247bbd77f7ab8c70d2"
+}

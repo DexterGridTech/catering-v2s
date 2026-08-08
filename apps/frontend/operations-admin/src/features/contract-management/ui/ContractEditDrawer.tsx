@@ -1,5 +1,5 @@
 import {Alert, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsRtk} from '../../../app/api/OperationsTransport';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type JsonValue, type StoreContract} from '../../../app/api/generated/operations-edge';
@@ -40,8 +40,8 @@ export function ContractEditDrawer({contract, queryContext, onClose, onUpdated, 
     {problem && <Alert type="error" showIcon title="合同编辑未完成" description={problem} style={{marginBottom: 16}} {...testId('operations-contract-edit-problem')}/>}
     {candidates.error && <Alert type="error" showIcon title="合同候选读取失败" description="请关闭后重新打开，或稍后重试；候选未确认前不能保存合同。" {...testId('operations-contract-edit-candidate-error')}/>}
     <Form form={form} layout="vertical" disabled={lifecycle.submitting || !ready} onFinish={(value) => void submit(value)} onValuesChange={() => { lifecycle.setDirty(true); lifecycle.markBusinessIntentChanged(); }}>
-      <Form.Item label="门店"><Typography.Text {...testId('operations-contract-edit-store')}>{contract ? formatNameCode(contract.store.name, contract.store.code) : '—'}</Typography.Text></Form.Item>
-      <Form.Item label="经营租户"><Typography.Text {...testId('operations-contract-edit-tenant')}>{contract ? formatNameCode(contract.tenant.name, contract.tenant.code) : '—'}</Typography.Text></Form.Item>
+      <Form.Item label="门店"><Typography.Text {...testId('operations-contract-edit-store')}>{contract ? <NameCodeText name={contract.store.name} code={contract.store.code}/> : '—'}</Typography.Text></Form.Item>
+      <Form.Item label="经营租户"><Typography.Text {...testId('operations-contract-edit-tenant')}>{contract ? <NameCodeText name={contract.tenant.name} code={contract.tenant.code}/> : '—'}</Typography.Text></Form.Item>
       <Form.Item label="合同编号"><Typography.Text {...testId('operations-contract-edit-number')}>{contract?.contractNo ?? '—'}</Typography.Text></Form.Item>
       <Form.Item name="phaseName" label="项目分期" rules={[{required: true, whitespace: true, message: '请输入项目分期'}]}><Select options={(candidates.data?.phases ?? []).map((phaseName) => ({value: phaseName, label: phaseName}))} {...testId('operations-contract-edit-phase')}/></Form.Item>
       <Form.Item name="effectiveFrom" label="生效日期" rules={[{required: true, message: '请选择生效日期'}]}><Input type="date" {...testId('operations-contract-edit-effective-from')}/></Form.Item>

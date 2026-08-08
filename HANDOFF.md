@@ -16,3 +16,22 @@
 | DIAGNOSTIC_COST_SAMPLING | S2 诊断成本采样/限流未按部署流量裁定 | 当前无生产流量，静态事件保持常开 | 高流量下日志成本不可控 | PRODUCTION_TRAFFIC_ENABLED | 采样策略、成本基线、关键失败不丢失与恢复证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"D1"}] |
 
 激活 token 只允许上表 exact 值。`WHEN_NEEDED`、`SCALE_GROWS`、`TEAM_GT_N`、复合 `AND/OR` 或任意自由文本都不具备可验收性，不能通过校验。
+
+## P3 已确认的 frontend-architecture baseline 欠账（不属于 catalog/inventory P4）
+
+P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库存新增的两个
+`UNREGISTERED_TABLE` 已清零；剩余七条 `REQUIRED_EXPRESSION` 全部来自既有页面，
+不是本域新引入的表格或控件。为避免后续 P4 将全仓 baseline 误归因于本域，登记如下：
+
+| page | missing required expression | boundary |
+|---|---|---|
+| `platform-contract-overview` | `formatNameCode(row.storeRef.name, row.storeRef.code)` | existing platform-admin baseline |
+| `platform-contract-overview` | `formatNameCode(row.tenantRef.name, row.tenantRef.code)` | existing platform-admin baseline |
+| `operations-stores` | `formatNameCode(row.brand.name, row.brand.code)` | existing operations-admin baseline |
+| `operations-stores` | `formatNameCode(row.tenant.name, row.tenant.code)` | existing operations-admin baseline |
+| `operations-contracts` | `formatNameCode(row.store.name, row.store.code)` | existing operations-admin baseline |
+| `operations-contracts` | `formatNameCode(row.tenant.name, row.tenant.code)` | existing operations-admin baseline |
+| `operations-head-company-brand-selector` | `code: queryText` | existing operations-admin baseline |
+
+本登记只保留归因与激活事实，不把 baseline 变成当前 P3/P4 的完成条件，也不授权
+修改这些旧页面。若未来要清理，必须另开 owning page 的静态修复与独立证据。

@@ -1,6 +1,6 @@
 import {ProTable} from '@ant-design/pro-components';
 import {Alert, Avatar, Button, Card, Tag, Typography} from 'antd';
-import {adminListState, formatNameCode, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminListState, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useRef, useState} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformClient, platformProblemOf, platformRtk, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
@@ -107,6 +107,7 @@ export function WorkspaceManagementPage() {
   return <Card title={<Typography.Paragraph aria-label={workspacePageTitle} type="secondary" style={{margin: 0}}>查找集团空间后先核对详情；编辑、启停和商业集团初始化仅从详情进入。</Typography.Paragraph>} extra={<Button type="primary" onClick={() => setCreateOpen(true)} {...testId('platform-workspace-create')}>新建集团空间</Button>}>
     {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 16}} {...testId('platform-workspace-list-error')}/>}
     <div {...testId('platform-workspace-table')}><ProTable<Workspace>
+      size="small"
       rowKey="groupWorkspaceKey" loading={listState.loading} locale={listState.locale} dataSource={result?.items} options={false}
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-workspace-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId('platform-workspace-filter-reset')}>重置</Button>]}}
       onSubmit={(value) => submitFilters({name: value.name?.trim() || undefined, groupWorkspaceKey: value.groupWorkspaceKey?.trim() || undefined, operationsTitle: value.operationsTitle?.trim() || undefined, status: value.status})}

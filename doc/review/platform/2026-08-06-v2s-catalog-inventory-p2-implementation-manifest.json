@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-implementation-delivery-manifest",
+  "packageId": "CATALOG-INVENTORY-P2-BACKEND-API-20260806",
+  "unitId": "CI-P2-BACKEND-API",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "CATALOG-INVENTORY-P2-IMPLEMENTATION-20260806",
+  "reviewRoundLimit": 2,
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "businessStatus": "NOT_APPLICABLE_WITH_REASON",
+  "cleanupStatus": "NOT_APPLICABLE_WITH_REASON",
+  "sourceDenominators": {
+    "requirements": [
+      "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
+      "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
+      "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json"
+    ],
+    "contracts": [
+      "contracts/catalog/catalog-item-editor-manifest.json",
+      "contracts/catalog/catalog-inventory-edge-contract.json",
+      "contracts/catalog/catalog-inventory-read-models.json",
+      "contracts/openapi/catalog-inventory.openapi.yaml",
+      "contracts/policy/catalog-inventory-copy-policy.json",
+      "contracts/policy/catalog-inventory-media-assets.json",
+      "contracts/policy/catalog-inventory-assertion-matrix.json"
+    ],
+    "sharedFixturesAndScenarios": [
+      "contracts/policy/catalog-inventory-fixture-catalog.schema.json",
+      "contracts/policy/catalog-inventory-fixture-catalog.json",
+      "contracts/policy/catalog-inventory-api-scenarios.json",
+      "contracts/policy/catalog-inventory-l2-scenarios.json"
+    ],
+    "generated": [
+      "contracts/catalog/CatalogInventoryShapeManifest.java",
+      "contracts/catalog/CatalogInventoryEdgeWire.java"
+    ],
+    "memoryAndStandards": [
+      "project-memory/decisions/deterministic-context-only.md",
+      "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "project-memory/decisions/incremental-compliance-hook.md",
+      "contracts/policy/standards-coverage-matrix.json"
+    ]
+  },
+  "changedSurfaces": {
+    "ownerModules": [
+      "apps/backend/catering-business-server/modules/catalog",
+      "apps/backend/catering-business-server/modules/inventory",
+      "apps/backend/catering-business-server/modules/fulfillment-production"
+    ],
+    "applicationAndEdge": [
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/cataloginventory",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory",
+      "apps/backend/catering-business-server/src/main/resources/application.yaml"
+    ],
+    "organizationJudgment": [
+      "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/CatalogScopeLookup.java",
+      "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java"
+    ],
+    "databaseLayout": [
+      "apps/backend/catering-business-server/src/main/resources/db/migration/V20260806_120000_000__catalog_inventory_backend.sql"
+    ],
+    "staticGatesAndFocusedTests": [
+      "scripts/check/catalog-inventory-p2",
+      "tools/catalog-inventory-p2",
+      "apps/backend/catering-business-server/modules/catalog/src/test",
+      "apps/backend/catering-business-server/modules/inventory/src/test",
+      "apps/backend/catering-business-server/modules/fulfillment-production/src/test",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/cataloginventory",
+      "apps/backend/catering-business-server/src/test/java/edge/problem"
+    ],
+    "policyAndVocabulary": [
+      "contracts/policy/catalog-inventory-copy-policy.json",
+      "contracts/policy/catalog-inventory-media-assets.json",
+      "apps/backend/catering-business-server/modules/catalog/src/main/resources/catalog-inventory-copy-policy.json"
+    ]
+  },
+  "implementationInputs": {
+    "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+    "designSha256": "a31a558b19bf41f6eed48093bc86895e01d1c400adae0c4185e633c00742f00b",
+    "round1ReviewPath": "doc/review/platform/2026-08-06-v2s-catalog-inventory-p2-independent-review-codex.md",
+    "round1ReviewSha256": "2aeaf4e0a2ae60dd5099734c24452615cdc6568b2302a8703f725e4a903f3306",
+    "round1IntakePath": "doc/review/platform/2026-08-06-v2s-catalog-inventory-p2-independent-review-intake-codex.md"
+  },
+  "forbiddenSurfaces": [
+    "contracts/openapi",
+    "contracts/catalog",
+    "all contract policy files other than the explicitly listed P2 copy/media policies",
+    "seed/reset execution",
+    "DEV/UAT/HTTP/L2 execution",
+    "runtime deployment",
+    "Git"
+  ],
+  "authorizationBoundary": "P2 owner/backend/API implementation and the two existing P2 policy declarations needed for dictionary vocabulary and media upload limits. P1 OpenAPI/catalog/generated artifacts remain immutable inputs. No contract regeneration, seed/reset, DEV/UAT/L2 execution, runtime deployment or Git operation."
+}

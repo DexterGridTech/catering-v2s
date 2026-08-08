@@ -25,9 +25,9 @@ describe('permanent platform invitation centre focused contract', () => {
     expect(source).toContain('platformClient.createWorkspaceInvitation');
     expect(source).toContain('platformClient.cancelWorkspaceInvitation');
     expect(source).toContain('platformClient.reissueWorkspaceInvitation');
-    expect(source).toContain('formatCodeNamePath(candidate.path)');
-    expect(source).toContain('formatCodeNamePath(row.targetOrganizationPath)');
-    expect(source).toContain('formatCodeNamePath(invitation.targetOrganizationPath)');
+    expect(source).toContain('NameCodePathText value={candidate.path}');
+    expect(source).toContain('NameCodePathText value={row.targetOrganizationPath}');
+    expect(source).toContain('NameCodePathText value={invitation.targetOrganizationPath}');
     expect(source).toContain('const latest = await platformClient.getWorkspaceInvitation');
     expect(source).toContain('expectedVersion: latest.revision');
     expect(source).toContain("label: '发起人', children: invitation.issuerDisplayName");

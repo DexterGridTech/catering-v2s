@@ -16,7 +16,7 @@ public final class RequestCompletionDiagnosticInterceptor implements HandlerInte
     private final SecurityDiagnosticRecorder recorder;
 
     public RequestCompletionDiagnosticInterceptor(ObjectMapper mapper, SecurityDiagnosticRecorder recorder) {
-        this.definitions = EdgeRouteFaceRegistry.load(mapper);
+        this.definitions = EdgeRouteFaceRegistry.loadExtended(mapper);
         this.recorder = recorder;
     }
 

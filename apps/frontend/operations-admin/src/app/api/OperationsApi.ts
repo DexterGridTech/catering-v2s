@@ -2,8 +2,10 @@ import {createApi} from '@reduxjs/toolkit/query/react';
 import type {FetchArgs} from '@reduxjs/toolkit/query';
 import {createBeaconLogSink, createObservedBaseQuery, createRefreshSignal, createSafeLogger, serializeJsonOrMultipartBody} from '@catering-v2s/admin-ui-foundation';
 import {createOperationsAdminRtkEndpoints} from './generated/operations-edge.rtk';
+import {createCatalogInventoryRtkEndpoints} from './generated/catalog-inventory-edge.rtk';
 import {createPublicRtkEndpoints} from './generated/public-edge.rtk';
 import type {FaceOperationContracts as OperationsFaceOperationContracts, FaceOperationRequest as OperationsFaceOperationRequest} from './generated/operations-edge';
+import type {FaceOperationContracts as CatalogInventoryFaceOperationContracts, FaceOperationRequest as CatalogInventoryFaceOperationRequest} from './generated/catalog-inventory-edge';
 import type {FaceOperationContracts as PublicFaceOperationContracts, FaceOperationRequest as PublicFaceOperationRequest} from './generated/public-edge';
 
 const logger = createSafeLogger({service: 'operations-admin', enabled: import.meta.env.DEV, sink: createBeaconLogSink(import.meta.env.VITE_FRONTEND_LOG_SINK_URL)});
@@ -11,7 +13,7 @@ const activeControllers = new Set<AbortController>();
 let unauthorizedRecovery: (() => void | Promise<void>) | undefined;
 export const operationsRefreshSignal = createRefreshSignal();
 
-export function recordOperationsRenderError(error: Error) {
+export function recordOperationsRenderError(_error: Error) {
   logger.error({event: 'frontend.render.failed', phase: 'render', outcome: 'ERROR', errorCode: 'UI_RENDER_ERROR'});
 }
 
@@ -46,6 +48,7 @@ function toWireRequest<RequiresSession extends boolean>(request: {path: string; 
 }
 
 const toOperationsWireRequest = <I extends keyof OperationsFaceOperationContracts>(request: OperationsFaceOperationRequest<I>) => toWireRequest(request);
+const toCatalogInventoryWireRequest = <I extends keyof CatalogInventoryFaceOperationContracts>(request: CatalogInventoryFaceOperationRequest<I>) => toWireRequest(request);
 const toPublicWireRequest = <I extends keyof PublicFaceOperationContracts>(request: PublicFaceOperationRequest<I>) => toWireRequest(request);
 
 /** Operations and public generated slices share one app-owned, cookie-only RTK substrate. */
@@ -64,6 +67,7 @@ export const operationsApi = createApi({
   tagTypes: ['wire'],
   endpoints: (build) => ({
     ...createOperationsAdminRtkEndpoints(build, toOperationsWireRequest),
+    ...createCatalogInventoryRtkEndpoints(build, toCatalogInventoryWireRequest),
     ...createPublicRtkEndpoints(build, toPublicWireRequest),
   }),
 });

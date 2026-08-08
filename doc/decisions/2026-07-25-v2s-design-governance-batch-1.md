@@ -95,6 +95,34 @@ OpenAPI 已声明的 query 也不能单独构成“来源已具备”的证据�
 这是人工详设准入与审查分母，不把自然语言做成伪语义 checker。实际目标路径确定后，才可按三问原则建立
 可机械验证的 import、路径或其它结构性控制及真实 red mutation。
 
+#### 3.1.1 后台 operation 设计合同
+
+凡 implementation-facing 详设声明 backend HTTP operation，必须为完整 operation exact-set 的每一行冻结：
+
+1. 有序逻辑步骤，说明校验、载入、owner 判断、写入和 readback 的正常顺序；
+2. 有序“条件 → typed problem”映射，映射的 problem code 集合与 operation 的 `problemCodes[]`
+   exact-equal；多条件同时成立时以显式 precedence 决定用户可见错误；
+3. edge → security/trusted context → application coordinator → initiating/coordinated owner 的调用链、
+   owner 用途和事务边界；call chain 中 coordinated owner 集合必须与 assertion matrix exact-equal；
+4. 一个具名 canonical normal fixture 下的 request-local `databaseOperationCount` 设计值、逐 owner
+   read/write breakdown 与假设。该值包含 request tracker 实际观察到的 session/security、幂等回执、
+   CAS、审计及必要 readback，是逐 operation 设计限定，不是通用 SQL 上限或性能结论。
+
+机器门只验证字段存在、顺序连续、集合相等、owner exact-set、非负整数及 breakdown 求和；逻辑是否正确、
+异常优先级是否符合用户任务、调用链是否合理、DB 次数是否 set-based 且保留正确性成本，仍由 fresh 独立
+审查与 Claude 判断。P2 exit 使用 `RequestCompletionEvent.databaseOperationCount` 对具名 fixture 实测；
+设计值与实测值必须相等，差异必须具名记录 operation、设计值、实测值、原因与是否重开设计，不能用
+“未超过预算”或“更少也更好”掩盖 N+1 或遗漏 audit/readback。
+
+#### 3.1.2 assertion 到 scenario 的语义可追踪性
+
+需求/IA 到 scenario 的 exact-set 只能证明零漏项，不能证明映射有判别力。每条 assertion 必须写明可观察的
+具体业务行为（前提、动作、结果）并指向实际承载它的 scenario；禁止只复述编号、接口名，或把大量无关
+IA-ID 挂到同一个通用成功场景。该要求不做自然语言 checker。独立设计 review 与 Claude review 应抽查
+绑定数最高的场景、每个 delivery unit 的代表 assertion，以及复制、权限、库存写等高风险行为；逐项对读
+owning requirement/IA、fixture 输入和预期结果。不能指出 scenario 实际证明哪条行为时，即使 exact-set
+机器门全绿也应形成 finding。
+
 ### 3.2 UI 实施与 L2 前的交互符合性准入
 
 #### 3.2.1 首次 UI 源码写入前的 IA baseline 硬门
@@ -129,6 +157,10 @@ granularity checker 只验证 UI-bearing unit 的交互工件 `path` 存在、`a
 独立子 agent 留痕字段与输入清单文件存在性；不读取清单内容或裁决审查语义。它不读取自然语言来
 裁决“前提链对不对”、“线框好不好”或“Journey 是否合理”。这些仍由独立子 agent、Claude
 独立语义审查和 Dexter 产品裁决处理。
+
+对 schema v2 的 implementation-facing manifest，granularity checker 还读取 hash-bound
+`backendOperationDesignContract`，机械验证 §3.1.1 的存在性与 exact-set；历史 schema v1 manifest 不倒灌
+新义务。它不读取自然语言 action/condition 来判断业务含义，也不把 DB 次数变成通用 ceiling。
 
 第二轮 hard stop 后的 author remediation 绑定由
 `doc/decisions/2026-07-26-v2s-post-remediation-review-binding-governance.md` 修订：旧 review

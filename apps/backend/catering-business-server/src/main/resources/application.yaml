@@ -3,6 +3,10 @@ spring:
     url: ${CATERING_BUSINESS_DB_URL:jdbc:postgresql://127.0.0.1:25432/catering_v2s}
     username: ${CATERING_BUSINESS_DB_USERNAME:}
     password: ${CATERING_BUSINESS_DB_PASSWORD:}
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   flyway:
     locations: classpath:db/migration
     default-schema: public

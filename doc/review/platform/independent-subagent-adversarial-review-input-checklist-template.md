@@ -19,6 +19,9 @@ verdict before reading author self-review or dispositions.”
 | Corpus search | `<search terms>` | `<matched G-xx or NO_CORPUS_ENTRY_MATCHED>` | `READ` |
 | Reviewed object | `<path>` | `<sha256>` | `READ_FULL` |
 | Upstream frozen inputs | `<Journey/interaction/manifest paths>` | `<path@sha256 each>` | `READ_ALL` |
+| Approved implementation-facing design semantic denominator | `<design path + exact headings; design-to-artifact coverage matrix path>` | `<path@sha256 each>` | `READ_FULL_AND_DERIVE_EXPECTED_SET` |
+| Design-to-byte coverage experiment | `<expected nested field paths/types, closed-set additions, and generated targets>` | `<command/output hash + missing/extra/type diff>` | `RUN_BEFORE_AUTHOR_MATERIAL` |
+| Closed design-finding regression ledger | `<design review finding/author intake path + every closed finding ID>` | `<path@sha256 each>` | `READ_AND_RECHECK_CURRENT_BYTES` |
 | All decisions | `doc/decisions/` full-directory title list + relevant paths | `<listing hash + path@sha256>` | `TITLES_REVIEWED` |
 | Standards matrix | `contracts/policy/standards-coverage-matrix.json` | `<sha256>` | `READ_CHECKLIST` |
 | Verification governance | `doc/decisions/2026-07-24-v2s-verification-governance.md` | `<sha256>` | `READ` |
@@ -29,3 +32,8 @@ verdict before reading author self-review or dispositions.”
 wrote my findings and verdict before reading the author self-review or author finding disposition.`
 `I also treated every missing or substituted per-change prewrite/post-proof reread as a finding; a
 general preparation pass, static result, or later L2 did not substitute for pointwise source review.`
+`For contract/read-model implementation I derived the expected nested field/type set from the approved
+design before reading author material; I did not treat a generator, fixture, schema skeleton, or
+author-supplied field map as the oracle. I performed a design-to-byte diff, including deletion of one
+required field, one previously closed design finding, and one time/amount type convention as red
+mutations. Structural type/compile/reachability PASS never counted as semantic payload completeness.`

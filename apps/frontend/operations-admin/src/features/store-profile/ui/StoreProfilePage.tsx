@@ -1,5 +1,5 @@
 import {Alert, Button, Card, Descriptions, Spin, Table, Tabs} from 'antd';
-import {contextScopedQueryArgs, formatNameCode, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
+import {contextScopedQueryArgs, NameCodeText, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {ExtensionDefinition, JsonValue, OrganizationStore, StoreContract, StoreContractViewState} from '../../../app/api/generated/operations-edge';
@@ -68,10 +68,10 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
     <Descriptions title="我的门店" bordered column={1} size="small" items={[
       {key: 'name', label: '名称', children: store.name},
       {key: 'code', label: '编码', children: store.code},
-      {key: 'project', label: '项目', children: formatNameCode(store.project.name, store.project.code)},
-      {key: 'brand', label: '品牌', children: formatNameCode(store.brand.name, store.brand.code)},
-      {key: 'tenant', label: '经营租户', children: formatNameCode(store.tenant.name, store.tenant.code)},
-      {key: 'headCompany', label: '总公司', children: store.headCompany ? formatNameCode(store.headCompany.name, store.headCompany.code) : '—'},
+      {key: 'project', label: '项目', children: <NameCodeText name={store.project.name} code={store.project.code}/>},
+      {key: 'brand', label: '品牌', children: <NameCodeText name={store.brand.name} code={store.brand.code}/>},
+      {key: 'tenant', label: '经营租户', children: <NameCodeText name={store.tenant.name} code={store.tenant.code}/>},
+      {key: 'headCompany', label: '总公司', children: store.headCompany ? <NameCodeText name={store.headCompany.name} code={store.headCompany.code}/> : '—'},
       {key: 'status', label: '门店状态', children: store.status === 'ENABLED' ? '启用' : '停用'},
       ...extensionItems(definition.data, store.extensionValues),
     ]} {...testId('operations-store-profile-fields')}/>
@@ -105,7 +105,7 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
             columns={[
               {title: '合同编号', dataIndex: 'contractNo', render: (value, contract) => <Button type="link" onClick={() => detail.open(contract)} {...testId('operations-store-profile-contract-detail-open')}>{value}</Button>},
               {title: '项目分期', dataIndex: 'phaseName'},
-              {title: '经营租户', render: (_, contract) => formatNameCode(contract.tenant.name, contract.tenant.code)},
+              {title: '经营租户', render: (_, contract) => <NameCodeText name={contract.tenant.name} code={contract.tenant.code}/>},
               {title: '起止日期', render: (_, contract) => `${contract.effectiveFrom} 至 ${contract.effectiveTo ?? '长期'}`},
               {title: '状态', dataIndex: 'status', render: (value) => value === 'VALID' ? '有效' : '已作废'},
             ]}

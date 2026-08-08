@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-p4-final-acceptance",
+  "status": "PASS",
+  "createdAt": "2026-08-08T03:59:30+09:00",
+  "authority": "P4_MANAGED_RUNTIME_FINAL",
+  "sourceBindings": {
+    "requirements": {
+      "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
+      "sha256": "21cfaa7ce6dced47d932db2ee9ea2d58bcbbe5b0ad2585dde7fa2829d4c9067a"
+    },
+    "ia": {
+      "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
+      "sha256": "08be6b7b232e5bc220d5e2e79841e6a4dee0a7df965dbc71e49ceb3942101354"
+    },
+    "implementationDesign": {
+      "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+      "sha256": "fe8c0d55a6947a4c61005be2061215779f661c9b09665d280c3dc6ff329ea244"
+    },
+    "seedExecutor": {
+      "path": "scripts/dev/catalog-inventory-seed-executor.mjs",
+      "sha256": "05980d6b6d47bbce1e16fd94ea1adc1348def6560baa02055f2f10471f0be994"
+    },
+    "l2Runner": {
+      "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
+      "sha256": "9524ebfbc8c8b49181c2585fd563b35de918aa44d338b8196571b96f937d5c1b"
+    },
+    "independenceChecker": {
+      "path": "scripts/check/catalog-inventory-test-independence.mjs",
+      "sha256": "05ea64b5d2233399e020b6ef75d052efd2875a8f46446d3e6257ebb752347861"
+    },
+    "l2Spec": {
+      "path": "apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts",
+      "sha256": "515b1071a4a889a65c5d1d8d93b500016c37b7b6e1d43d85a2955ff76a33206b"
+    }
+  },
+  "staticGates": {
+    "p4PreL2ControlReconciliation": "PASS",
+    "p4PreL2RedMutationSelfTest": "PASS",
+    "executorSelfTest": "PASS",
+    "testIndependence": "PASS",
+    "standardsCoverageR5": "PASS",
+    "loggingBoundaries": "PASS",
+    "operationsAdminTypecheck": "PASS",
+    "httpShellRoutes": {
+      "/operations/aurora/catalog/store-items": 200,
+      "/operations/aurora/inventory/status": 200,
+      "/operations/aurora/catalog/brand-items": 200
+    },
+    "iaControls": 89,
+    "apiScenarioCount": 26,
+    "apiCaseCount": 100,
+    "l2ScenarioCount": 18,
+    "l2CaseCount": 43,
+    "l2LocatorBindings": 43
+  },
+  "backendUnit": {
+    "status": "PASS",
+    "seedRuntimeInput": false,
+    "apiHttpCasesNotRunHere": true,
+    "localOwnerModuleTests": "PASS",
+    "remoteApplicationTests": "PASS",
+    "evidence": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1786110744015-60959-f538d843/results/catalog-inventory-backend-unit-tests.json"
+  },
+  "apiOnly": {
+    "runId": "rm1p6-joint-local-l2-1786110744015-60959-f538d843",
+    "status": "PASS",
+    "businessStatus": "PASS",
+    "cleanupStatus": "PASS",
+    "scenarioCount": 26,
+    "caseCount": 100,
+    "passed": 100,
+    "failed": 0,
+    "seedRuntimeDependency": false,
+    "l2RuntimeDependency": false,
+    "httpOnly": true,
+    "noDirectDatabaseWrites": true,
+    "firstFailure": null,
+    "report": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1786110744015-60959-f538d843/results/catalog-inventory-api/catalog-inventory-api-runtime-report.json",
+    "terminalReport": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1786110744015-60959-f538d843/evidence/terminal-report.json"
+  },
+  "l2Only": {
+    "runId": "rm1p6-joint-local-l2-1786125146298-78393-092a363f",
+    "status": "PASS",
+    "businessStatus": "PASS",
+    "cleanupStatus": "PASS",
+    "caseCount": 43,
+    "passed": 43,
+    "failed": 0,
+    "apiRuntimeDependency": false,
+    "seedRuntimeDependency": false,
+    "progressLog": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1786125146298-78393-092a363f/evidence/catalog-inventory-l2-progress.log",
+    "progressEvidence": {
+      "startLines": 43,
+      "passLines": 43,
+      "failLines": 0,
+      "final": "completed=43/43 current=CI-L2-018-01 status=PASS"
+    },
+    "fixture": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1786125146298-78393-092a363f/results/catalog-inventory-l2-test-fixture.json",
+    "terminalReport": ".runtime/r5/joint-local-l2/rm1p6-joint-local-l2-1786125146298-78393-092a363f/evidence/terminal-report.json"
+  },
+  "devExperience": {
+    "reset": {
+      "runId": "r5-reset-7f69d8d4-f8f4-4ee3-8308-c30b567ef1c4",
+      "status": "PASS",
+      "manifest": ".runtime/r5/reset/r5-reset-7f69d8d4-f8f4-4ee3-8308-c30b567ef1c4/run-manifest.json"
+    },
+    "managedRun": {
+      "runId": "rm1-seed-1b0d9c48-722e-499d-b515-ce693c636709",
+      "manifest": ".runtime/r5/run-manifest.json",
+      "freshDatabase": true,
+      "processes": ["remote-dev-tunnels", "business-server", "platform-admin", "operations-admin"]
+    },
+    "r5FullSeed": {
+      "status": "PASS",
+      "cleanup": "PASS_NO_PERSISTENT_SEED_PROCESS",
+      "phaseCount": 162,
+      "ownerReadback": {
+        "accounts": 6,
+        "invitations": 17,
+        "contracts": 5,
+        "extensionDefinitions": 8,
+        "extensionValueEntities": 25
+      },
+      "manifest": ".runtime/r5/seed/rm1-seed-1b0d9c48-722e-499d-b515-ce693c636709/run-manifest.json"
+    },
+    "catalogInventorySeed": {
+      "status": "PASS",
+      "cleanup": "PASS_PRESERVED_DEV_STATE",
+      "firstFailure": null,
+      "sourceCatalogItems": 73,
+      "createdCatalogItems": 72,
+      "excludedCatalogItems": 1,
+      "mediaAssets": 34,
+      "httpCalls": 459,
+      "httpStatuses": {"200": 459},
+      "phaseCount": 468,
+      "manifest": ".runtime/r5/catalog-inventory/seed/catalog-seed-3dcd3347-02be-4259-ad9e-daf76bb6582f/run-manifest.json",
+      "report": ".runtime/r5/catalog-inventory/seed/catalog-seed-3dcd3347-02be-4259-ad9e-daf76bb6582f/seed-report.json",
+      "events": ".runtime/r5/catalog-inventory/seed/catalog-seed-3dcd3347-02be-4259-ad9e-daf76bb6582f/events.jsonl",
+      "cleanupPolicy": "DEV facts remain for experience; r5-reset owns destructive database/media cleanup"
+    },
+    "experienceRoutes": {
+      "operationsAdmin": "http://localhost:5175/operations/aurora/catalog/store-items",
+      "inventory": "http://localhost:5175/operations/aurora/inventory/status",
+      "brandCatalog": "http://localhost:5175/operations/aurora/catalog/brand-items",
+      "platformAdmin": "http://localhost:5174/"
+    }
+  },
+  "implementationFixesClosedInThisRun": [
+    "Head-company catalog login inherits the unique brand from the store owner context and sends explicit X-Workspace-Brand-Ref.",
+    "BOM target resolution performs an owner detail readback when the initial target index misses a targetRef.",
+    "Canonical option-value BOM writes include optionValueCode in the stage/idempotency key; a red mutation self-test rejects the old collision.",
+    "Final DEV seed records explicit PASS_PRESERVED_DEV_STATE instead of leaving cleanup PENDING; r5-reset remains the destructive cleanup owner.",
+    "L2 runner guards API fixture execution for catalogStage=L2 and emits one START plus one terminal status for every case; independence gate and red mutation pass.",
+    "Inventory upserts use expression conflict targets matching the NULL-normalizing unique indexes; backend/API runs are green."
+  ],
+  "boundaries": {
+    "apiAndL2DoNotUseDevSeed": true,
+    "apiAndL2DoNotReadEachOthersRuntimeReports": true,
+    "noUatOrProductionClaim": true,
+    "persistentDevDataIntended": true,
+    "cleanupStatusIsSeparateFromBusinessStatus": true
+  }
+}

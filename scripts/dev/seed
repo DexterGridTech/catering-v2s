@@ -2,8 +2,23 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
-if [[ "${1:-}" != "--profile" || "${2:-}" != "r5-full" ]]; then
-  echo "R5_SEED=REFUSED; REASON=PROFILE_R5_FULL_REQUIRED" >&2
+if [[ "${1:-}" != "--profile" || -z "${2:-}" ]]; then
+  echo "SEED=REFUSED; REASON=EXPLICIT_PROFILE_REQUIRED" >&2
+  exit 2
+fi
+profile="$2"
+if [[ "$profile" == "catalog-inventory" ]]; then
+  if [[ "${3:-}" == "--dry-run" ]]; then
+    exec node "$root_dir/scripts/dev/catalog-inventory-seed-plan.mjs"
+  fi
+  if [[ "${CATALOG_INVENTORY_SEED_CONFIRMATION:-}" != "EXPLICIT_CATALOG_INVENTORY_SEED" ]]; then
+    echo "CATALOG_INVENTORY_SEED=REFUSED; REASON=EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED" >&2
+    exit 2
+  fi
+  exec node "$root_dir/scripts/dev/catalog-inventory-seed-executor.mjs"
+fi
+if [[ "$profile" != "r5-full" ]]; then
+  echo "SEED=REFUSED; REASON=UNKNOWN_PROFILE" >&2
   exit 2
 fi
 if [[ "${3:-}" == "--dry-run" ]]; then

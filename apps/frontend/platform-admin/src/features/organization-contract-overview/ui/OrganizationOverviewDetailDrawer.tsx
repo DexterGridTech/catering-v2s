@@ -1,5 +1,5 @@
 import {Alert, Descriptions, Drawer} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import type {OrganizationOverviewItem} from '../../../app/api/generated/platform-edge';
 
 export function OrganizationOverviewDetailDrawer({open, loading, problem, item, onClose}: {open: boolean; loading: boolean; problem?: {title: string; detail: string}; item?: OrganizationOverviewItem; onClose: () => void}) {
@@ -13,10 +13,10 @@ export function OrganizationOverviewDetailDrawer({open, loading, problem, item, 
       : [];
   const storeRelationItems = item?.type === 'STORE'
     ? [
-      {key: 'project', label: '项目', children: item.project ? formatNameCode(item.project.name, item.project.code) : '—'},
-      {key: 'brand', label: '品牌', children: item.brand ? formatNameCode(item.brand.name, item.brand.code) : '—'},
-      {key: 'tenant', label: '经营租户', children: item.tenant ? formatNameCode(item.tenant.name, item.tenant.code) : '—'},
-      {key: 'headCompany', label: '总公司', children: item.headCompany ? formatNameCode(item.headCompany.name, item.headCompany.code) : '未设置'},
+      {key: 'project', label: '项目', children: item.project ? <NameCodeText name={item.project.name} code={item.project.code}/> : '—'},
+      {key: 'brand', label: '品牌', children: item.brand ? <NameCodeText name={item.brand.name} code={item.brand.code}/> : '—'},
+      {key: 'tenant', label: '经营租户', children: item.tenant ? <NameCodeText name={item.tenant.name} code={item.tenant.code}/> : '—'},
+      {key: 'headCompany', label: '总公司', children: item.headCompany ? <NameCodeText name={item.headCompany.name} code={item.headCompany.code}/> : '未设置'},
     ]
     : [];
   return <Drawer title={`${item?.type === 'BRAND' ? '品牌' : item?.type === 'TENANT' ? '经营租户' : item?.type === 'HEAD_COMPANY' ? '总公司' : item?.type === 'STORE' ? '门店' : '组织'}详情`} open={open} loading={loading} onClose={onClose} size={560} destroyOnHidden {...adminDrawerSurfaceProps} {...testId('platform-organization-detail-drawer')}>

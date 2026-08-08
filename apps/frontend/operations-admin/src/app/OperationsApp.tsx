@@ -46,6 +46,9 @@ const menuIconByKey = {
   [operationsPageDesignKeys.PgIamHeadCompanyUsers]: <TeamOutlined/>,
   [operationsPageDesignKeys.PgIamStoreUsers]: <TeamOutlined/>,
   [operationsPageDesignKeys.PgStoreProfile]: <ShopOutlined/>,
+  [operationsPageDesignKeys.PgCatalogStoreItems]: <TagsOutlined/>,
+  [operationsPageDesignKeys.PgInventoryStoreStatus]: <ShopOutlined/>,
+  [operationsPageDesignKeys.PgCatalogBrandItems]: <TagsOutlined/>,
 } satisfies Partial<Record<OperationsPageDesignKey, ReactNode>>;
 
 const navigationIconByKey = {
@@ -53,6 +56,7 @@ const navigationIconByKey = {
   ACCESS: <TeamOutlined/>,
   ORGANIZATION: <ApartmentOutlined/>,
   STORE_OPERATIONS: <ShopOutlined/>,
+  CATALOG_SERVICES: <TagsOutlined/>,
 } as const;
 
 const dirtyDraftPrompt = '请先保存或放弃当前修改';
@@ -216,6 +220,7 @@ function Shell({
         mode="inline"
         inlineCollapsed={siderCollapsed}
         style={{flex: 1}}
+        defaultOpenKeys={selectedCatalogPage ? [selectedCatalogPage.menuGroupKey] : []}
         selectedKeys={selected ? [selected] : []}
         onClick={({key}) => {
           if (locked) return;

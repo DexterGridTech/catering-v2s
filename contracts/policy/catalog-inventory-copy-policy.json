@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-copy-policy",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "limits": {
+    "selectedItemCount": 20,
+    "closureItemCount": 500
+  },
+  "limitResponseShape": {
+    "actual": "integer",
+    "limit": "integer"
+  },
+  "dictionaryKinds": [
+    "TAG",
+    "SALES_UNIT",
+    "SKU_ATTRIBUTE",
+    "SKU_ATTRIBUTE_VALUE"
+  ],
+  "sourceOfTruth": "contracts/policy/catalog-inventory-copy-policy.json",
+  "consumers": [
+    "catalog-owner-validation",
+    "preflight-fixture-generator",
+    "operations-admin-copy-message"
+  ],
+  "adjustmentRule": "Change only this policy; all consumers read limits and cases assert current limit plus one."
+}

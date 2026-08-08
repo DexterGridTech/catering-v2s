@@ -30,9 +30,9 @@ describe('workspace invitation focused IA contract', () => {
     expect(createDrawer).toMatch(/subjectType: 'ROLE'/);
     expect(candidateHook).toMatch(/groupWorkspaceKey: queryContext\.groupWorkspaceKey/);
     expect(candidateHook).toMatch(/expectedContextVersion: queryContext\.expectedContextVersion/);
-    expect(createDrawer).toMatch(/formatCodeNamePath\(candidate\.path\)/);
-    expect(panel).toMatch(/formatCodeNamePath\(value\.targetOrganizationPath\)/);
-    expect(detailDrawer).toMatch(/formatCodeNamePath\(invitation\.targetOrganizationPath\)/);
+    expect(createDrawer).toMatch(/NameCodePathText value=\{candidate\.path\}/);
+    expect(panel).toMatch(/NameCodePathText value=\{value\.targetOrganizationPath\}/);
+    expect(detailDrawer).toMatch(/NameCodePathText value=\{invitation\.targetOrganizationPath\}/);
     expect(detailDrawer).toContain('adminDetailDescriptionsProps');
   });
 

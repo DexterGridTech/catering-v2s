@@ -13,7 +13,7 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 ## Routed memory
 - [decisions.deterministic-context-only](../project-memory/decisions/deterministic-context-only.md) `4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20`
 - [decisions.independent-subagent-adversarial-review](../project-memory/decisions/independent-subagent-adversarial-review.md) `891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf`
-- [decisions.http-crud-efficiency-design-redlines](../project-memory/decisions/http-crud-efficiency-design-redlines.md) `ccc7fce9a7498b1ec528f2a2dad200a50f3ec187824456fd1a5df5de7c82a742`
+- [decisions.http-crud-efficiency-design-redlines](../project-memory/decisions/http-crud-efficiency-design-redlines.md) `80efcb002dde542c9cbcc08f19b0cec62f20e66c54d6d581650809ef8f33c876`
 - [decisions.distributed-topology-is-not-current](../project-memory/decisions/distributed-topology-is-not-current.md) `c578afa258d1a7cb610aa87f8a80f5693f0477cfebd0795c8a5c863633c7664e`
 - [operations.claude-review-handoff-standard](../project-memory/operations/claude-review-handoff-standard.md) `35ee335e19c74ac3bdcd1e93281d60e2f36c5a4a9bf23ccf0759a43f9ab1137f`
 - [operations.verification-governance](../project-memory/operations/verification-governance.md) `e424bf923f1368381b26ef0e22a379a5cdd7bc8b7de887cc2c4e78250f2e0f18`

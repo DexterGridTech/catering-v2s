@@ -1,5 +1,5 @@
 import {Alert, Button, Descriptions, Drawer, Image, Space, Tag} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import type {GroupWorkspaceDetail} from '../../../app/api/generated/platform-edge';
 
 export function WorkspaceDetailDrawer({open, loading, problem, workspace, onClose, onAfterOpenChange, onEdit, onStatus, onInitialize, onAudit}: {open: boolean; loading: boolean; problem?: {title: string; detail: string}; workspace?: GroupWorkspaceDetail; onClose: () => void; onAfterOpenChange: (open: boolean) => void; onEdit: () => void; onStatus: () => void; onInitialize: () => void; onAudit: () => void}) {
@@ -14,7 +14,7 @@ export function WorkspaceDetailDrawer({open, loading, problem, workspace, onClos
       {key: 'logo', label: 'Logo', children: workspace.logoUrl ? <Image width={96} src={workspace.logoUrl} alt={`${workspace.name} Logo`}/> : '未配置'},
       {key: 'notes', label: '备注', children: workspace.notes ?? '—'},
       {key: 'status', label: '状态', children: <Tag color={workspace.status === 'ENABLED' ? 'success' : 'default'}>{workspace.status === 'ENABLED' ? '已启用' : '已停用'}</Tag>},
-      {key: 'group', label: '商业集团', children: workspace.commercialGroup?.root ? formatNameCode(workspace.commercialGroup.root.groupName, workspace.commercialGroup.root.groupCode) : '尚未初始化'},
+      {key: 'group', label: '商业集团', children: workspace.commercialGroup?.root ? <NameCodeText name={workspace.commercialGroup.root.groupName} code={workspace.commercialGroup.root.groupCode}/> : '尚未初始化'},
       {key: 'created', label: '创建时间', children: new Date(workspace.createdAt).toLocaleString('zh-CN')},
       {key: 'updated', label: '更新时间', children: new Date(workspace.updatedAt).toLocaleString('zh-CN')},
     ]}/>} 

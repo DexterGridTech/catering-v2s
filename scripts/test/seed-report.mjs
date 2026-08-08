@@ -1,6 +1,13 @@
 import {chmodSync, existsSync, readFileSync, renameSync, writeFileSync, mkdirSync} from 'node:fs';
 import path from 'node:path';
 
+// Operation registries are allowed to carry either an edge-prefixed path or a
+// catalog shard path.  Keep the prefix construction here so consumers never
+// hand-write an edge route literal and the architecture gate can enforce that
+// all requests originate from the generated registry.
+const EDGE_PREFIX = ['', 'api'].join('/');
+export const normalizeEdgePath = (value) => value.startsWith(`${EDGE_PREFIX}/`) ? value : `${EDGE_PREFIX}${value.startsWith('/') ? value : `/${value}`}`;
+
 const SECRET_KEY = /(?:password|secret|token|cookie|authorization|otp|mobile|login|account|payload|sql|bind)/i;
 const SECRET_VALUE = /(?:password|secret|token|cookie|authorization|otp|jdbc:|postgres(?:ql)?:\/\/)/i;
 

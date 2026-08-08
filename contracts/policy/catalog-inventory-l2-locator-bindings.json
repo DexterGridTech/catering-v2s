@@ -1,0 +1,1072 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-l2-locator-bindings",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "locatorBinding": "P3_BOUND_TO_IMPLEMENTATION_SURFACES",
+  "caseCount": 43,
+  "bindings": [
+    {
+      "caseId": "CI-L2-001-01",
+      "scenarioId": "CI-L2-001",
+      "locator": "operations-shell-menu",
+      "assertionKey": "CI-L2-001:journey/1",
+      "position": "operations shell navigation; page menu entry",
+      "wireframe": "IA §4.1/§5.1/§5.2：三页二级导航",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+      "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}",
+      "activation": "CI-L2-001",
+      "controlIds": [
+        "IA-NAV-001",
+        "IA-NAV-002",
+        "IA-NAV-003"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-001-02",
+      "scenarioId": "CI-L2-001",
+      "locator": "operations-shell-menu",
+      "assertionKey": "CI-L2-001:journey/2",
+      "position": "operations shell navigation; page menu entry",
+      "wireframe": "IA §4.1/§5.1/§5.2：三页二级导航",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+      "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}",
+      "activation": "CI-L2-001",
+      "controlIds": [
+        "IA-NAV-001",
+        "IA-NAV-002",
+        "IA-NAV-003"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-001-03",
+      "scenarioId": "CI-L2-001",
+      "locator": "operations-shell-menu",
+      "assertionKey": "CI-L2-001:journey/3",
+      "position": "operations shell navigation; page menu entry",
+      "wireframe": "IA §4.1/§5.1/§5.2：三页二级导航",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+      "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}",
+      "activation": "CI-L2-001",
+      "controlIds": [
+        "IA-NAV-001",
+        "IA-NAV-002",
+        "IA-NAV-003"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-001-04",
+      "scenarioId": "CI-L2-001",
+      "locator": "operations-shell-menu",
+      "assertionKey": "CI-L2-001:journey/4",
+      "position": "operations shell navigation; page menu entry",
+      "wireframe": "IA §4.1/§5.1/§5.2：三页二级导航",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+      "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":4,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}",
+      "activation": "CI-L2-001",
+      "controlIds": [
+        "IA-NAV-001",
+        "IA-NAV-002",
+        "IA-NAV-003"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-001-05",
+      "scenarioId": "CI-L2-001",
+      "locator": "operations-shell-menu",
+      "assertionKey": "CI-L2-001:journey/5",
+      "position": "operations shell navigation; page menu entry",
+      "wireframe": "IA §4.1/§5.1/§5.2：三页二级导航",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+      "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":5,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}",
+      "activation": "CI-L2-001",
+      "controlIds": [
+        "IA-NAV-001",
+        "IA-NAV-002",
+        "IA-NAV-003"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-001-06",
+      "scenarioId": "CI-L2-001",
+      "locator": "operations-shell-menu",
+      "assertionKey": "CI-L2-001:journey/6",
+      "position": "operations shell navigation; page menu entry",
+      "wireframe": "IA §4.1/§5.1/§5.2：三页二级导航",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+      "expectedBusinessResult": "三页导航与角色/数据节点组合；case={\"journeyVariant\":6,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-001\"}",
+      "activation": "CI-L2-001",
+      "controlIds": [
+        "IA-NAV-001",
+        "IA-NAV-002",
+        "IA-NAV-003"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx",
+        "apps/frontend/operations-admin/src/app/OperationsApp.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-002-01",
+      "scenarioId": "CI-L2-002",
+      "locator": "catalog-inventory-local-search",
+      "assertionKey": "CI-L2-002:journey/1",
+      "position": "catalog result-domain toolbar; below global toolbar and above table",
+      "wireframe": "IA §5.1/§5.2：当前结果域搜索",
+      "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
+      "expectedBusinessResult": "先选树节点再域内搜索并隔离旧响应；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-WORKBENCH-QUERY\"}",
+      "activation": "CI-L2-002",
+      "controlIds": [
+        "IA-CAT-LIST-001",
+        "IA-CAT-LIST-002",
+        "IA-CAT-LIST-012"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-003-01",
+      "scenarioId": "CI-L2-003",
+      "locator": "catalog-inventory-brand-switch",
+      "assertionKey": "CI-L2-003:journey/1",
+      "position": "brand page global toolbar; immediately after view switch",
+      "wireframe": "IA §5.1/§5.2：树表/仅表格右侧品牌切换器",
+      "fixtureRef": "FIXTURE-SMART-VIEWS",
+      "expectedBusinessResult": "视图切换最左、品牌切换紧邻且结果域正确；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SMART-VIEWS\"}",
+      "activation": "CI-L2-003",
+      "controlIds": [
+        "IA-CAT-LIST-001",
+        "IA-CAT-LIST-003",
+        "IA-CAT-LIST-004"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-004-01",
+      "scenarioId": "CI-L2-004",
+      "locator": "catalog-inventory-item-table",
+      "assertionKey": "CI-L2-004:journey/1",
+      "position": "catalog workbench table; item identity and composite cells",
+      "wireframe": "IA §5.1/§5.2：商品表格与复合单元格",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-004",
+      "expectedBusinessResult": "名称与弱化编码、复合单元格、compact table；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-004\"}",
+      "activation": "CI-L2-004",
+      "controlIds": [
+        "IA-CAT-LIST-005",
+        "IA-CAT-LIST-009"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-005-01",
+      "scenarioId": "CI-L2-005",
+      "locator": "catalog-inventory-copy-open",
+      "assertionKey": "CI-L2-005:journey/1",
+      "position": "store catalog global action row; conditional brand-copy entry",
+      "wireframe": "IA §5.1/§7.1：从品牌复制入口",
+      "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+      "expectedBusinessResult": "来源事实与写 capability 双条件控制复制入口；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-MISSING-HEAD-COMPANY\"}",
+      "activation": "CI-L2-005",
+      "controlIds": [
+        "IA-CAT-LIST-009",
+        "IA-COPY-001",
+        "IA-STATE-007"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-005-02",
+      "scenarioId": "CI-L2-005",
+      "locator": "catalog-inventory-copy-open",
+      "assertionKey": "CI-L2-005:journey/2",
+      "position": "store catalog global action row; conditional brand-copy entry",
+      "wireframe": "IA §5.1/§7.1：从品牌复制入口",
+      "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+      "expectedBusinessResult": "来源事实与写 capability 双条件控制复制入口；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-MISSING-HEAD-COMPANY\"}",
+      "activation": "CI-L2-005",
+      "controlIds": [
+        "IA-CAT-LIST-009",
+        "IA-COPY-001",
+        "IA-STATE-007"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-005-03",
+      "scenarioId": "CI-L2-005",
+      "locator": "catalog-inventory-copy-open",
+      "assertionKey": "CI-L2-005:journey/3",
+      "position": "store catalog global action row; conditional brand-copy entry",
+      "wireframe": "IA §5.1/§7.1：从品牌复制入口",
+      "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+      "expectedBusinessResult": "来源事实与写 capability 双条件控制复制入口；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-MISSING-HEAD-COMPANY\"}",
+      "activation": "CI-L2-005",
+      "controlIds": [
+        "IA-CAT-LIST-009",
+        "IA-COPY-001",
+        "IA-STATE-007"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-005-04",
+      "scenarioId": "CI-L2-005",
+      "locator": "catalog-inventory-copy-open",
+      "assertionKey": "CI-L2-005:journey/4",
+      "position": "store catalog global action row; conditional brand-copy entry",
+      "wireframe": "IA §5.1/§7.1：从品牌复制入口",
+      "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+      "expectedBusinessResult": "来源事实与写 capability 双条件控制复制入口；case={\"journeyVariant\":4,\"fixtureRef\":\"FIXTURE-MISSING-HEAD-COMPANY\"}",
+      "activation": "CI-L2-005",
+      "controlIds": [
+        "IA-CAT-LIST-009",
+        "IA-COPY-001",
+        "IA-STATE-007"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-006-01",
+      "scenarioId": "CI-L2-006",
+      "locator": "catalog-inventory-item-drawer",
+      "assertionKey": "CI-L2-006:journey/1",
+      "position": "right 1024px detail/edit Drawer",
+      "wireframe": "IA §6.1/§6.4：同 Drawer 查看/编辑与 dirty 关闭",
+      "fixtureRef": "SEED-LATTE",
+      "expectedBusinessResult": "同 Drawer 查看编辑、dirty 关闭、失败保留与焦点；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-LATTE\"}",
+      "activation": "CI-L2-006",
+      "controlIds": [
+        "IA-CAT-DETAIL-001",
+        "IA-CAT-DETAIL-002",
+        "IA-CAT-DETAIL-003",
+        "IA-STATE-001",
+        "IA-STATE-002",
+        "IA-STATE-003",
+        "IA-STATE-005",
+        "IA-STATE-006"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-006-02",
+      "scenarioId": "CI-L2-006",
+      "locator": "catalog-inventory-item-drawer",
+      "assertionKey": "CI-L2-006:journey/2",
+      "position": "right 1024px detail/edit Drawer",
+      "wireframe": "IA §6.1/§6.4：同 Drawer 查看/编辑与 dirty 关闭",
+      "fixtureRef": "SEED-DINNER-SET",
+      "expectedBusinessResult": "同 Drawer 查看编辑、dirty 关闭、失败保留与焦点；case={\"journeyVariant\":2,\"fixtureRef\":\"SEED-DINNER-SET\"}",
+      "activation": "CI-L2-006",
+      "controlIds": [
+        "IA-CAT-DETAIL-001",
+        "IA-CAT-DETAIL-002",
+        "IA-CAT-DETAIL-003",
+        "IA-STATE-001",
+        "IA-STATE-002",
+        "IA-STATE-003",
+        "IA-STATE-005",
+        "IA-STATE-006"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-007-01",
+      "scenarioId": "CI-L2-007",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-007:journey/1",
+      "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
+      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "fixtureRef": "SEED-WEIGHED",
+      "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-WEIGHED\"}",
+      "activation": "CI-L2-007",
+      "controlIds": [
+        "IA-CAT-TAB-001",
+        "IA-CAT-TAB-002",
+        "IA-CAT-TAB-003",
+        "IA-CAT-TAB-005",
+        "IA-CAT-TAB-006",
+        "IA-CAT-TAB-007",
+        "IA-CAT-TAB-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-007-02",
+      "scenarioId": "CI-L2-007",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-007:journey/2",
+      "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
+      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
+      "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-ARCHIVED-ONLY-SKU\"}",
+      "activation": "CI-L2-007",
+      "controlIds": [
+        "IA-CAT-TAB-001",
+        "IA-CAT-TAB-002",
+        "IA-CAT-TAB-003",
+        "IA-CAT-TAB-005",
+        "IA-CAT-TAB-006",
+        "IA-CAT-TAB-007",
+        "IA-CAT-TAB-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-007-03",
+      "scenarioId": "CI-L2-007",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-007:journey/3",
+      "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
+      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "fixtureRef": "FIXTURE-DISABLED-SKU",
+      "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-DISABLED-SKU\"}",
+      "activation": "CI-L2-007",
+      "controlIds": [
+        "IA-CAT-TAB-001",
+        "IA-CAT-TAB-002",
+        "IA-CAT-TAB-003",
+        "IA-CAT-TAB-005",
+        "IA-CAT-TAB-006",
+        "IA-CAT-TAB-007",
+        "IA-CAT-TAB-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-007-04",
+      "scenarioId": "CI-L2-007",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-007:journey/4",
+      "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
+      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "fixtureRef": "FIXTURE-SHAPE-ADMISSION",
+      "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":4,\"fixtureRef\":\"FIXTURE-SHAPE-ADMISSION\"}",
+      "activation": "CI-L2-007",
+      "controlIds": [
+        "IA-CAT-TAB-001",
+        "IA-CAT-TAB-002",
+        "IA-CAT-TAB-003",
+        "IA-CAT-TAB-005",
+        "IA-CAT-TAB-006",
+        "IA-CAT-TAB-007",
+        "IA-CAT-TAB-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-007-05",
+      "scenarioId": "CI-L2-007",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-007:journey/5",
+      "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
+      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "fixtureRef": "FIXTURE-PRODUCIBLE-RETAINED",
+      "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":5,\"fixtureRef\":\"FIXTURE-PRODUCIBLE-RETAINED\"}",
+      "activation": "CI-L2-007",
+      "controlIds": [
+        "IA-CAT-TAB-001",
+        "IA-CAT-TAB-002",
+        "IA-CAT-TAB-003",
+        "IA-CAT-TAB-005",
+        "IA-CAT-TAB-006",
+        "IA-CAT-TAB-007",
+        "IA-CAT-TAB-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-007-06",
+      "scenarioId": "CI-L2-007",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-007:journey/6",
+      "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
+      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "fixtureRef": "FIXTURE-SHAPE-MATRIX",
+      "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":6,\"fixtureRef\":\"FIXTURE-SHAPE-MATRIX\"}",
+      "activation": "CI-L2-007",
+      "controlIds": [
+        "IA-CAT-TAB-001",
+        "IA-CAT-TAB-002",
+        "IA-CAT-TAB-003",
+        "IA-CAT-TAB-005",
+        "IA-CAT-TAB-006",
+        "IA-CAT-TAB-007",
+        "IA-CAT-TAB-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-007-07",
+      "scenarioId": "CI-L2-007",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-007:journey/7",
+      "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
+      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "fixtureRef": "SEED-WEIGHED",
+      "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":7,\"fixtureRef\":\"SEED-WEIGHED\"}",
+      "activation": "CI-L2-007",
+      "controlIds": [
+        "IA-CAT-TAB-001",
+        "IA-CAT-TAB-002",
+        "IA-CAT-TAB-003",
+        "IA-CAT-TAB-005",
+        "IA-CAT-TAB-006",
+        "IA-CAT-TAB-007",
+        "IA-CAT-TAB-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-008-01",
+      "scenarioId": "CI-L2-008",
+      "locator": "catalog-dictionary-tabs",
+      "assertionKey": "CI-L2-008:journey/1",
+      "position": "商品字典 launcher Drawer; dictionary/production-tag tabs",
+      "wireframe": "IA §5.4/§6.2：字典与生产标签 owner 分离",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008",
+      "expectedBusinessResult": "catalog 与 production-tag quickManage 分 owner 并回填；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-008\"}",
+      "activation": "CI-L2-008",
+      "controlIds": [
+        "IA-CAT-DICT-001",
+        "IA-CAT-DICT-002",
+        "IA-CAT-DICT-003",
+        "IA-CAT-DICT-004",
+        "IA-CAT-DICT-005"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-008-02",
+      "scenarioId": "CI-L2-008",
+      "locator": "catalog-dictionary-tabs",
+      "assertionKey": "CI-L2-008:journey/2",
+      "position": "商品字典 launcher Drawer; dictionary/production-tag tabs",
+      "wireframe": "IA §5.4/§6.2：字典与生产标签 owner 分离",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008",
+      "expectedBusinessResult": "catalog 与 production-tag quickManage 分 owner 并回填；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-008\"}",
+      "activation": "CI-L2-008",
+      "controlIds": [
+        "IA-CAT-DICT-001",
+        "IA-CAT-DICT-002",
+        "IA-CAT-DICT-003",
+        "IA-CAT-DICT-004",
+        "IA-CAT-DICT-005"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-009-01",
+      "scenarioId": "CI-L2-009",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-009:journey/1",
+      "position": "detail Drawer governance/source tab",
+      "wireframe": "IA §5.5/§6.5：自动同步锁定与临时商品治理",
+      "fixtureRef": "FIXTURE-AUTO-SYNC",
+      "expectedBusinessResult": "自动同步锁定与临时商品治理转正；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-AUTO-SYNC\"}",
+      "activation": "CI-L2-009",
+      "controlIds": [
+        "IA-CAT-SOURCE-AUTO-001",
+        "IA-CAT-SOURCE-TEMP-001",
+        "IA-CAT-SOURCE-TEMP-002"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-009-02",
+      "scenarioId": "CI-L2-009",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-009:journey/2",
+      "position": "detail Drawer governance/source tab",
+      "wireframe": "IA §5.5/§6.5：自动同步锁定与临时商品治理",
+      "fixtureRef": "FIXTURE-TEMPORARY-ITEM",
+      "expectedBusinessResult": "自动同步锁定与临时商品治理转正；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-TEMPORARY-ITEM\"}",
+      "activation": "CI-L2-009",
+      "controlIds": [
+        "IA-CAT-SOURCE-AUTO-001",
+        "IA-CAT-SOURCE-TEMP-001",
+        "IA-CAT-SOURCE-TEMP-002"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-010-01",
+      "scenarioId": "CI-L2-010",
+      "locator": "catalog-item-edit",
+      "assertionKey": "CI-L2-010:journey/1",
+      "position": "detail Drawer title action area",
+      "wireframe": "IA §6.5/§6.6：生命周期与两种复制流程隔离",
+      "fixtureRef": "FIXTURE-VOID-INBOUND-REFERENCE",
+      "expectedBusinessResult": "生命周期矩阵与两种复制流程隔离；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-VOID-INBOUND-REFERENCE\"}",
+      "activation": "CI-L2-010",
+      "controlIds": [
+        "IA-CAT-LIFECYCLE-001",
+        "IA-CAT-LIFECYCLE-002",
+        "IA-CAT-LIFECYCLE-003",
+        "IA-CAT-COPY-LOCAL-001",
+        "IA-CAT-COPY-LOCAL-002",
+        "IA-CAT-COPY-LOCAL-003",
+        "IA-CAT-COPY-LOCAL-004"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-010-02",
+      "scenarioId": "CI-L2-010",
+      "locator": "catalog-item-edit",
+      "assertionKey": "CI-L2-010:journey/2",
+      "position": "detail Drawer title action area",
+      "wireframe": "IA §6.5/§6.6：生命周期与两种复制流程隔离",
+      "fixtureRef": "FIXTURE-VOID-DEPENDENT-FACT",
+      "expectedBusinessResult": "生命周期矩阵与两种复制流程隔离；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-VOID-DEPENDENT-FACT\"}",
+      "activation": "CI-L2-010",
+      "controlIds": [
+        "IA-CAT-LIFECYCLE-001",
+        "IA-CAT-LIFECYCLE-002",
+        "IA-CAT-LIFECYCLE-003",
+        "IA-CAT-COPY-LOCAL-001",
+        "IA-CAT-COPY-LOCAL-002",
+        "IA-CAT-COPY-LOCAL-003",
+        "IA-CAT-COPY-LOCAL-004"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-011-01",
+      "scenarioId": "CI-L2-011",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-011:journey/1",
+      "position": "detail Drawer media and governance tabs",
+      "wireframe": "IA §6.3/§6.4：多图资产与引用保护",
+      "fixtureRef": "FIXTURE-ASSET-PROCESSING",
+      "expectedBusinessResult": "多图排序/主图/失败重试/引用保护；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-ASSET-PROCESSING\"}",
+      "activation": "CI-L2-011",
+      "controlIds": [
+        "IA-CAT-MEDIA-001",
+        "IA-CAT-MEDIA-002",
+        "IA-CAT-MEDIA-003",
+        "IA-CAT-DETAIL-004"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-011-02",
+      "scenarioId": "CI-L2-011",
+      "locator": "catalog-item-tabs",
+      "assertionKey": "CI-L2-011:journey/2",
+      "position": "detail Drawer media and governance tabs",
+      "wireframe": "IA §6.3/§6.4：多图资产与引用保护",
+      "fixtureRef": "FIXTURE-ASSET-PROCESSING",
+      "expectedBusinessResult": "多图排序/主图/失败重试/引用保护；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-ASSET-PROCESSING\"}",
+      "activation": "CI-L2-011",
+      "controlIds": [
+        "IA-CAT-MEDIA-001",
+        "IA-CAT-MEDIA-002",
+        "IA-CAT-MEDIA-003",
+        "IA-CAT-DETAIL-004"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-012-01",
+      "scenarioId": "CI-L2-012",
+      "locator": "inventory-stock-view",
+      "assertionKey": "CI-L2-012:journey/1",
+      "position": "inventory page status view bar; above compact table",
+      "wireframe": "IA §7.2：状态分类、需处理派生视图与库存变化",
+      "fixtureRef": "SEED-MATERIALS",
+      "expectedBusinessResult": "库存状态、需处理与三周期变化；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-MATERIALS\"}",
+      "activation": "CI-L2-012",
+      "controlIds": [
+        "IA-INV-001",
+        "IA-INV-002",
+        "IA-INV-003"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-012-02",
+      "scenarioId": "CI-L2-012",
+      "locator": "inventory-stock-view",
+      "assertionKey": "CI-L2-012:journey/2",
+      "position": "inventory page status view bar; above compact table",
+      "wireframe": "IA §7.2：状态分类、需处理派生视图与库存变化",
+      "fixtureRef": "FIXTURE-SMART-VIEWS",
+      "expectedBusinessResult": "库存状态、需处理与三周期变化；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SMART-VIEWS\"}",
+      "activation": "CI-L2-012",
+      "controlIds": [
+        "IA-INV-001",
+        "IA-INV-002",
+        "IA-INV-003"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-013-01",
+      "scenarioId": "CI-L2-013",
+      "locator": "inventory-target-drawer",
+      "assertionKey": "CI-L2-013:journey/1",
+      "position": "right 1024px inventory detail Drawer",
+      "wireframe": "IA §7.1/§7.2：六区详情与诊断权限",
+      "fixtureRef": "SEED-MATERIALS",
+      "expectedBusinessResult": "六区按需加载、诊断权限整区与请求不渲染；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-MATERIALS\"}",
+      "activation": "CI-L2-013",
+      "controlIds": [
+        "IA-INV-001",
+        "IA-INV-002",
+        "IA-INV-003",
+        "IA-INV-005",
+        "IA-STATE-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-013-02",
+      "scenarioId": "CI-L2-013",
+      "locator": "inventory-target-drawer",
+      "assertionKey": "CI-L2-013:journey/2",
+      "position": "right 1024px inventory detail Drawer",
+      "wireframe": "IA §7.1/§7.2：六区详情与诊断权限",
+      "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS",
+      "expectedBusinessResult": "六区按需加载、诊断权限整区与请求不渲染；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-ADVANCED-DIAGNOSTICS\"}",
+      "activation": "CI-L2-013",
+      "controlIds": [
+        "IA-INV-001",
+        "IA-INV-002",
+        "IA-INV-003",
+        "IA-INV-005",
+        "IA-STATE-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-014-01",
+      "scenarioId": "CI-L2-014",
+      "locator": "inventory-action-modal",
+      "assertionKey": "CI-L2-014:journey/1",
+      "position": "inventory detail action surface",
+      "wireframe": "IA §7.4：四种动作、预览与统一结果面",
+      "fixtureRef": "FIXTURE-INVENTORY-NEGATIVE",
+      "expectedBusinessResult": "四库存动作输入/预览/失败保留/统一结果面；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-INVENTORY-NEGATIVE\"}",
+      "activation": "CI-L2-014",
+      "controlIds": [
+        "IA-INV-ACTION-COUNT-001",
+        "IA-INV-ACTION-INCREASE-001",
+        "IA-INV-ACTION-ADJUST-001",
+        "IA-INV-ACTION-CONFIG-001",
+        "IA-INV-ACTION-RESULT-001"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-014-02",
+      "scenarioId": "CI-L2-014",
+      "locator": "inventory-action-modal",
+      "assertionKey": "CI-L2-014:journey/2",
+      "position": "inventory detail action surface",
+      "wireframe": "IA §7.4：四种动作、预览与统一结果面",
+      "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST",
+      "expectedBusinessResult": "四库存动作输入/预览/失败保留/统一结果面；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-COUNT-INCREASE-ADJUST\"}",
+      "activation": "CI-L2-014",
+      "controlIds": [
+        "IA-INV-ACTION-COUNT-001",
+        "IA-INV-ACTION-INCREASE-001",
+        "IA-INV-ACTION-ADJUST-001",
+        "IA-INV-ACTION-CONFIG-001",
+        "IA-INV-ACTION-RESULT-001"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-015-01",
+      "scenarioId": "CI-L2-015",
+      "locator": "catalog-inventory-copy-preflight",
+      "assertionKey": "CI-L2-015:journey/1",
+      "position": "brand-copy Drawer step 2 preflight surface",
+      "wireframe": "IA §8.1/§8.2：闭包、映射、兼容、引用重写预检",
+      "fixtureRef": "FIXTURE-UNIT-GRAM-EACH",
+      "expectedBusinessResult": "预检五页签、阻断与 stale 回到预检；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-UNIT-GRAM-EACH\"}",
+      "activation": "CI-L2-015",
+      "controlIds": [
+        "IA-COPY-001",
+        "IA-COPY-002",
+        "IA-COPY-003",
+        "IA-COPY-004",
+        "IA-COPY-005",
+        "IA-COPY-006",
+        "IA-COPY-007",
+        "IA-COPY-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-015-02",
+      "scenarioId": "CI-L2-015",
+      "locator": "catalog-inventory-copy-preflight",
+      "assertionKey": "CI-L2-015:journey/2",
+      "position": "brand-copy Drawer step 2 preflight surface",
+      "wireframe": "IA §8.1/§8.2：闭包、映射、兼容、引用重写预检",
+      "fixtureRef": "FIXTURE-STALE-SOURCE",
+      "expectedBusinessResult": "预检五页签、阻断与 stale 回到预检；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-STALE-SOURCE\"}",
+      "activation": "CI-L2-015",
+      "controlIds": [
+        "IA-COPY-001",
+        "IA-COPY-002",
+        "IA-COPY-003",
+        "IA-COPY-004",
+        "IA-COPY-005",
+        "IA-COPY-006",
+        "IA-COPY-007",
+        "IA-COPY-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-016-01",
+      "scenarioId": "CI-L2-016",
+      "locator": "catalog-inventory-item-table",
+      "assertionKey": "CI-L2-016:journey/1",
+      "position": "catalog workbench table and result-domain state",
+      "wireframe": "IA §5.1：generation、分页、筛选和错误恢复",
+      "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
+      "expectedBusinessResult": "query generation、分页筛选、错误恢复状态保持；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-WORKBENCH-QUERY\"}",
+      "activation": "CI-L2-016",
+      "controlIds": [
+        "IA-CAT-LIST-001",
+        "IA-CAT-LIST-004",
+        "IA-CAT-LIST-005",
+        "IA-CAT-LIST-009"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-016-02",
+      "scenarioId": "CI-L2-016",
+      "locator": "catalog-inventory-item-table",
+      "assertionKey": "CI-L2-016:journey/2",
+      "position": "catalog workbench table and result-domain state",
+      "wireframe": "IA §5.1：generation、分页、筛选和错误恢复",
+      "fixtureRef": "FIXTURE-SURFACE-STATES",
+      "expectedBusinessResult": "query generation、分页筛选、错误恢复状态保持；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SURFACE-STATES\"}",
+      "activation": "CI-L2-016",
+      "controlIds": [
+        "IA-CAT-LIST-001",
+        "IA-CAT-LIST-004",
+        "IA-CAT-LIST-005",
+        "IA-CAT-LIST-009"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-017-01",
+      "scenarioId": "CI-L2-017",
+      "locator": "catalog-item-problem",
+      "assertionKey": "CI-L2-017:journey/1",
+      "position": "detail Drawer error surface; inventory equivalent is inventory-zone-current-problem",
+      "wireframe": "IA §6.5/§7.3：错误焦点与具体阻断原因",
+      "fixtureRef": "FIXTURE-SURFACE-STATES",
+      "expectedBusinessResult": "overlay lock、错误焦点与具体阻断原因；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SURFACE-STATES\"}",
+      "activation": "CI-L2-017",
+      "controlIds": [
+        "IA-STATE-003",
+        "IA-STATE-005",
+        "IA-STATE-006",
+        "IA-STATE-010",
+        "IA-CAT-LIFECYCLE-002"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-017-02",
+      "scenarioId": "CI-L2-017",
+      "locator": "catalog-item-problem",
+      "assertionKey": "CI-L2-017:journey/2",
+      "position": "detail Drawer error surface; inventory equivalent is inventory-zone-current-problem",
+      "wireframe": "IA §6.5/§7.3：错误焦点与具体阻断原因",
+      "fixtureRef": "FIXTURE-SURFACE-STATES",
+      "expectedBusinessResult": "overlay lock、错误焦点与具体阻断原因；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SURFACE-STATES\"}",
+      "activation": "CI-L2-017",
+      "controlIds": [
+        "IA-STATE-003",
+        "IA-STATE-005",
+        "IA-STATE-006",
+        "IA-STATE-010",
+        "IA-CAT-LIFECYCLE-002"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+      ]
+    },
+    {
+      "caseId": "CI-L2-018-01",
+      "scenarioId": "CI-L2-018",
+      "locator": "catalog-inventory-item-table",
+      "assertionKey": "CI-L2-018:journey/1",
+      "position": "catalog workbench table; Out columns/actions absent",
+      "wireframe": "IA §5.1：本期不渲染菜单/导出等 Out 项",
+      "fixtureRef": "FIXTURE-SCENARIO-CI-L2-018",
+      "expectedBusinessResult": "Out 项不渲染；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-018\"}",
+      "activation": "CI-L2-018",
+      "controlIds": [
+        "IA-CAT-LIST-006",
+        "IA-CAT-LIST-008"
+      ],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ],
+      "controlSourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+      ]
+    }
+  ],
+  "bindingSemantics": {
+    "locator": "稳定 data-testid，由前端实际渲染；不是 case 名或合成占位符",
+    "position": "控件在页面/Drawer/结果域中的稳定布局位置",
+    "wireframe": "对应 IA 章节与线框语义；运行时验收必须同时核对位置与行为"
+  }
+}

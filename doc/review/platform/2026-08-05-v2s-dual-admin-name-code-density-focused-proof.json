@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "dual-admin-name-code-density-focused-proof",
+  "packageId": "DUAL-ADMIN-NAME-CODE-DENSITY-20260805",
+  "reviewCycleId": "DUAL-ADMIN-NAME-CODE-DENSITY-20260805",
+  "reviewTarget": "IMPLEMENTATION",
+  "scope": {
+    "productionBaseline": {
+      "files": 31,
+      "formatterProducerSites": 75,
+      "handBuiltProducerSites": 2,
+      "platformFormatterSites": 28,
+      "operationsFormatterSites": 47
+    },
+    "currentMachineGate": {
+      "legacyFormatterCalls": 0,
+      "handBuiltNameCode": 0,
+      "componentProducerSites": 77,
+      "componentFiles": 31
+    },
+    "surfaces": ["Tree", "ProTable/Table", "Descriptions", "Drawer", "Tag", "Select", "Modal", "audit title", "data-scope context bar"]
+  },
+  "implementation": {
+    "foundation": {
+      "components": ["NameCodeText", "NameCodePathText"],
+      "codeStyle": "var(--ant-font-size-sm)",
+      "codeColor": "var(--ant-color-text-tertiary)",
+      "plainFormattersRetained": true,
+      "exportedFrom": "libraries/frontend/admin-ui-foundation/src/index.ts"
+    },
+    "consumerRule": "production app visual name/code combinations use shared components; plain strings remain only for non-visual accessibility, deduplication, request, or metadata contexts",
+    "ownerContractRuntimeChanges": false
+  },
+  "checks": [
+    {"id": "NAME_CODE_DENSITY_SELF_TEST", "status": "PASS", "command": "node scripts/check/name-code-density.mjs --self-test", "evidence": ["RED_LEGACY_FORMATTER=PASS", "RED_HAND_BUILT_NAME_CODE=PASS"]},
+    {"id": "NAME_CODE_DENSITY_SCAN", "status": "PASS", "command": "node scripts/check/name-code-density.mjs", "evidence": ["LEGACY_FORMATTER_CALLS=0", "HAND_BUILT_NAME_CODE=0", "COMPONENT_PRODUCER_FILES=31", "COMPONENT_PRODUCER_SITES=77"]},
+    {"id": "FOUNDATION_TYPECHECK", "status": "PASS", "command": "yarn typecheck", "cwd": "libraries/frontend/admin-ui-foundation"},
+    {"id": "PLATFORM_TYPECHECK", "status": "PASS", "command": "yarn typecheck", "cwd": "apps/frontend/platform-admin"},
+    {"id": "OPERATIONS_TYPECHECK", "status": "PASS", "command": "yarn typecheck", "cwd": "apps/frontend/operations-admin"},
+    {"id": "FOUNDATION_TEST", "status": "PASS", "tests": 18, "files": 3},
+    {"id": "PLATFORM_VITEST", "status": "PASS", "tests": 51, "files": 42, "command": "vitest run src --exclude '**/*.mjs' --exclude '**/*.spec.ts'"},
+    {"id": "OPERATIONS_VITEST", "status": "PASS", "tests": 76, "files": 28, "command": "vitest run src --exclude '**/*.mjs' --exclude '**/*.spec.ts'"},
+    {"id": "STANDARDS_COVERAGE", "status": "PASS", "phase": "R5 / RM1-P6-3", "rules": 150}
+  ],
+  "knownBaseline": {
+    "platformArchitectureCommand": "yarn test",
+    "status": "BASELINE_FAIL_UNRELATED",
+    "failures": [
+      "commercial-group-boundary.test.mjs: extension replacement spread assertion",
+      "platform-read-boundary.test.mjs: gridTemplateColumns assertion"
+    ],
+    "changedSurfaceFocusedVitest": "PASS"
+  },
+  "runtime": {"status": "NOT_RUN", "reason": "package has no runtime/DEV/UAT authority"},
+  "business": {"status": "NOT_APPLICABLE_WITH_REASON", "reason": "display-only shared presentation and consumer replacement"},
+  "cleanup": {"status": "NOT_APPLICABLE_WITH_REASON", "reason": "no managed runtime was started"},
+  "sourceHashes": {
+    "libraries/frontend/admin-ui-foundation/src/presentation/nameCode.ts": "4913b9604c6c4810c339000c2ed16c764fe130be7792fab07b639d97f99f79dd",
+    "libraries/frontend/admin-ui-foundation/src/index.ts": "9083452a13df699a7f9ec99b2ebf3c12c4b0736df5db03736ec5b6c5610eaf1e",
+    "scripts/check/name-code-density.mjs": "a02b61c14466a98ed3c726bd3a0f4cbfecf537c3815aaf860c29ab16c0032c11"
+  }
+}

@@ -1,0 +1,5087 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-operation-design-contract",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+  "normalPathMeaning": "Exact normal-fixture design declaration, not a universal DB budget, performance claim or runtime ceiling.",
+  "copyLimitPolicy": {
+    "sourcePath": "contracts/policy/catalog-inventory-copy-policy.json",
+    "selectedItemLimit": 20,
+    "closureObjectLimit": 500,
+    "contractShapeOnly": "COPY_*_TOO_LARGE and {actual,limit}",
+    "consumerRule": "Owner validation and fixture generation load this policy; UI uses server readback; no consumer embeds 20 or 500."
+  },
+  "operations": [
+    {
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "organization",
+        "workspace-iam"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the approved scoped read model set-wise and return owner facts."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "APPLICATION_COORDINATOR",
+          "target": "catalog-inventory coordinator",
+          "purpose": "bounded task-read orchestration"
+        },
+        {
+          "order": 4,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 5,
+          "kind": "COORDINATED_OWNER",
+          "target": "organization.api",
+          "owner": "organization",
+          "purpose": "declared batch judgment or owner command"
+        },
+        {
+          "order": 6,
+          "kind": "COORDINATED_OWNER",
+          "target": "workspace-iam.api",
+          "owner": "workspace-iam",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 2,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-003"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          },
+        {
+          "owner": "organization",
+          "readCount": 0,
+          "writeCount": 0
+        },
+        {
+          "owner": "workspace-iam",
+          "readCount": 0,
+          "writeCount": 0
+        }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsCatalogNavigation",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the approved scoped read model set-wise and return owner facts."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-002"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsCatalogItems",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Run one scoped cursor query and one bounded cross-owner enrichment query; never query per returned row."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-003"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsCatalogItem",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory",
+        "fulfillment-production"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load exactly the approved detail section with bounded task reads and return its typed read model."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "APPLICATION_COORDINATOR",
+          "target": "catalog-inventory coordinator",
+          "purpose": "bounded task-read orchestration"
+        },
+        {
+          "order": 4,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 5,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        },
+        {
+          "order": 6,
+          "kind": "COORDINATED_OWNER",
+          "target": "fulfillment-production.api",
+          "owner": "fulfillment-production",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 4,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-005"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "fulfillment-production",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "createOperationsCatalogItem",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "asset"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "DUPLICATE_CODE",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "ASSET_NOT_READY"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "asset.api",
+          "owner": "asset",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Immutable code already exists in the owner and brand scope."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "ASSET_NOT_READY",
+          "conditions": [
+            "Referenced staged asset is missing, not ready or has no bind grant."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 6,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-002"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 1
+          },
+          {
+            "owner": "asset",
+            "readCount": 2,
+            "writeCount": 1
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "saveOperationsCatalogItem",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory",
+        "asset"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE",
+        "ASSET_NOT_READY"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load catalog and inventory versions plus asset grants; apply catalog and inventory owner writes atomically; audit and return both owner readbacks."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "APPLICATION_COORDINATOR",
+          "target": "catalog-inventory coordinator",
+          "purpose": "one REQUIRED transaction"
+        },
+        {
+          "order": 4,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 5,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        },
+        {
+          "order": 6,
+          "kind": "COORDINATED_OWNER",
+          "target": "asset.api",
+          "owner": "asset",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "ASSET_NOT_READY",
+          "conditions": [
+            "Referenced staged asset is missing, not ready or has no bind grant."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 17,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the named canonical graph; graph-size variation follows the same breakdown formula."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-008"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 3,
+            "writeCount": 2
+          },
+          {
+            "owner": "inventory",
+            "readCount": 3,
+            "writeCount": 2
+          },
+          {
+            "owner": "asset",
+            "readCount": 3,
+            "writeCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "transitionOperationsCatalogItemStatus",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
+        "DEPENDENT_FACTS_BLOCK_VOID"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "VOIDED transition requested while inbound references remain."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "DEPENDENT_FACTS_BLOCK_VOID",
+          "conditions": [
+            "VOIDED transition requested while owner dependent facts remain."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 8,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 1
+          },
+          {
+            "owner": "inventory",
+            "readCount": 2,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "createOperationsCatalogCategory",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "DUPLICATE_CODE",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Immutable code already exists in the owner and brand scope."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 5,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "updateOperationsCatalogCategory",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 5,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "moveOperationsCatalogCategory",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE",
+        "HIERARCHY_CYCLE"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed move input, trusted context, page/capability and owner scope; require distinct target and proposed parent."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load target, current parent, proposed parent and the proposed parent's ancestor closure set-wise; reject VOIDED/version drift or a closure containing the target; then CAS-update parent/order and append audit."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete idempotency only after the acyclic hierarchy write and audit succeed; return the moved node with its new parent/order and version."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "HIERARCHY_CYCLE",
+          "conditions": [
+            "Requested category parent/order creates a cycle."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 6,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 3,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
+        "DEPENDENT_FACTS_BLOCK_VOID"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "VOIDED transition requested while inbound references remain."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "DEPENDENT_FACTS_BLOCK_VOID",
+          "conditions": [
+            "VOIDED transition requested while owner dependent facts remain."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 7,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 3,
+            "writeCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsCatalogDictionary",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the approved scoped read model set-wise and return owner facts."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "createOperationsCatalogDictionaryEntry",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "DUPLICATE_CODE",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Immutable code already exists in the owner and brand scope."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 5,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "updateOperationsCatalogDictionaryEntry",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 5,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "reorderOperationsCatalogDictionaryEntry",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 6,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 3,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "transitionOperationsCatalogDictionaryEntryStatus",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
+        "DEPENDENT_FACTS_BLOCK_VOID"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "VOIDED transition requested while inbound references remain."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "DEPENDENT_FACTS_BLOCK_VOID",
+          "conditions": [
+            "VOIDED transition requested while owner dependent facts remain."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 7,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-006"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 3,
+            "writeCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsProductionTags",
+      "initiatingOwner": "fulfillment-production",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the approved scoped read model set-wise and return owner facts."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "fulfillment-production.api",
+          "owner": "fulfillment-production",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-025"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "fulfillment-production",
+            "readCount": 2,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "createOperationsProductionTag",
+      "initiatingOwner": "fulfillment-production",
+      "coordinatedOwners": [
+        "organization"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "DUPLICATE_CODE",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "fulfillment-production.api",
+          "owner": "fulfillment-production",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "organization.api",
+          "owner": "organization",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Immutable code already exists in the owner and brand scope."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 6,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-025"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "fulfillment-production",
+            "readCount": 1,
+            "writeCount": 1
+          },
+          {
+            "owner": "organization",
+            "readCount": 2,
+            "writeCount": 1
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "updateOperationsProductionTag",
+      "initiatingOwner": "fulfillment-production",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "fulfillment-production.api",
+          "owner": "fulfillment-production",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 5,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-025"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "fulfillment-production",
+            "readCount": 2,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "transitionOperationsProductionTagStatus",
+      "initiatingOwner": "fulfillment-production",
+      "coordinatedOwners": [
+        "catalog"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
+        "DEPENDENT_FACTS_BLOCK_VOID"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "fulfillment-production.api",
+          "owner": "fulfillment-production",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "VOIDED transition requested while inbound references remain."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "DEPENDENT_FACTS_BLOCK_VOID",
+          "conditions": [
+            "VOIDED transition requested while owner dependent facts remain."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 7,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-025"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "fulfillment-production",
+            "readCount": 2,
+            "writeCount": 1
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 1
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsLocalCatalogCopyCandidates",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the approved scoped read model set-wise and return owner facts."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-005"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "preflightOperationsLocalCatalogCopy",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load complete source/target slices set-wise; compute all blockers, mappings, version vector and digest without writing."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "APPLICATION_COORDINATOR",
+          "target": "catalog-inventory coordinator",
+          "purpose": "bounded task-read orchestration"
+        },
+        {
+          "order": 4,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 5,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-014"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "executeOperationsLocalCatalogCopy",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "STALE_COPY_PREFLIGHT",
+        "CONSUMPTION_UNIT_INCOMPATIBLE",
+        "STRUCTURE_INCOMPATIBLE",
+        "REFERENCE_MAPPING_UNRESOLVED"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Reload every version slice; reject stale preflight before writes; recompute ordered blockers; write owners in declared dependency order inside one REQUIRED transaction."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "APPLICATION_COORDINATOR",
+          "target": "catalog-inventory coordinator",
+          "purpose": "one REQUIRED transaction"
+        },
+        {
+          "order": 4,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 5,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "STALE_COPY_PREFLIGHT",
+          "conditions": [
+            "Source or target version/digest differs from accepted preflight."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "CONSUMPTION_UNIT_INCOMPATIBLE",
+          "conditions": [
+            "Recomputed copy graph has incompatible consumption unit."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "STRUCTURE_INCOMPATIBLE",
+          "conditions": [
+            "Recomputed copy graph has non-unit structural incompatibility."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "REFERENCE_MAPPING_UNRESOLVED",
+          "conditions": [
+            "Required outbound reference has no target mapping."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 15,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the named canonical graph; graph-size variation follows the same breakdown formula."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-020"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 4,
+            "writeCount": 3
+          },
+          {
+            "owner": "inventory",
+            "readCount": 4,
+            "writeCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "preflightOperationsTemporaryCatalogItemPromotion",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate the proposed formalCode, shapeKey, name, expectedSourceVersion and optional materialRole/attributes against the closed contract, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the TEMPORARY item once, check the source version, shape availability, required fields and permanent formal-code availability, then compute changes and a digest without mutating."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the current item, proposed formal item, blocked reasons, required fields, code availability, changes and preflight digest as one typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-007"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "executeOperationsTemporaryCatalogItemPromotion",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "STALE_COPY_PREFLIGHT",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate the typed formal item payload, preflight digest, expected source/owner versions, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the TEMPORARY item, reject stale source/version or digest, reject occupied historical formal codes and missing shape-required data, then update in place or insert the formal item and archive the temporary item in one owner transaction."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete idempotency/audit only after the catalog mutation succeeds and return the formal item readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "The proposed formalCode is already used by another live or historical catalog item in the same owner scope."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "STALE_COPY_PREFLIGHT",
+          "conditions": [
+            "The temporary source version or preflightDigest no longer matches the owner snapshot submitted for execution."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "The owner row changes between the source read and the conditional update/insert completion."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 5,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-007"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsBrandCatalogCopyCandidates",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "organization"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the approved scoped read model set-wise and return owner facts."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "organization.api",
+          "owner": "organization",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-023"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "organization",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "preflightOperationsBrandCatalogCopy",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "organization",
+        "inventory",
+        "fulfillment-production"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "COPY_SELECTED_ITEMS_TOO_LARGE",
+        "COPY_CLOSURE_TOO_LARGE"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load complete source/target slices set-wise; compute all blockers, mappings, version vector and digest without writing."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "APPLICATION_COORDINATOR",
+          "target": "catalog-inventory coordinator",
+          "purpose": "bounded task-read orchestration"
+        },
+        {
+          "order": 4,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 5,
+          "kind": "COORDINATED_OWNER",
+          "target": "organization.api",
+          "owner": "organization",
+          "purpose": "declared batch judgment or owner command"
+        },
+        {
+          "order": 6,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        },
+        {
+          "order": 7,
+          "kind": "COORDINATED_OWNER",
+          "target": "fulfillment-production.api",
+          "owner": "fulfillment-production",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "COPY_SELECTED_ITEMS_TOO_LARGE",
+          "conditions": [
+            "Selected item count exceeds current copy policy."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "COPY_CLOSURE_TOO_LARGE",
+          "conditions": [
+            "Expanded closure count exceeds current copy policy."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 5,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-015"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "organization",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "fulfillment-production",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "executeOperationsBrandCatalogCopy",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "organization",
+        "inventory",
+        "fulfillment-production"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "COPY_SELECTED_ITEMS_TOO_LARGE",
+        "COPY_CLOSURE_TOO_LARGE",
+        "STALE_COPY_PREFLIGHT",
+        "CONSUMPTION_UNIT_INCOMPATIBLE",
+        "STRUCTURE_INCOMPATIBLE",
+        "REFERENCE_MAPPING_UNRESOLVED",
+        "OWNER_REFERENCE_LEAK",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Reload every version slice; reject stale preflight before writes; recompute ordered blockers; write owners in declared dependency order inside one REQUIRED transaction."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "APPLICATION_COORDINATOR",
+          "target": "catalog-inventory coordinator",
+          "purpose": "one REQUIRED transaction"
+        },
+        {
+          "order": 4,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 5,
+          "kind": "COORDINATED_OWNER",
+          "target": "organization.api",
+          "owner": "organization",
+          "purpose": "declared batch judgment or owner command"
+        },
+        {
+          "order": 6,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared batch judgment or owner command"
+        },
+        {
+          "order": 7,
+          "kind": "COORDINATED_OWNER",
+          "target": "fulfillment-production.api",
+          "owner": "fulfillment-production",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "COPY_SELECTED_ITEMS_TOO_LARGE",
+          "conditions": [
+            "Selected item count exceeds current copy policy."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "STALE_COPY_PREFLIGHT",
+          "conditions": [
+            "Source or target version/digest differs from accepted preflight."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "COPY_CLOSURE_TOO_LARGE",
+          "conditions": [
+            "Expanded closure count exceeds current copy policy."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "CONSUMPTION_UNIT_INCOMPATIBLE",
+          "conditions": [
+            "Recomputed copy graph has incompatible consumption unit."
+          ]
+        },
+        {
+          "precedence": 10,
+          "problemCode": "STRUCTURE_INCOMPATIBLE",
+          "conditions": [
+            "Recomputed copy graph has non-unit structural incompatibility."
+          ]
+        },
+        {
+          "precedence": 11,
+          "problemCode": "REFERENCE_MAPPING_UNRESOLVED",
+          "conditions": [
+            "Required outbound reference has no target mapping."
+          ]
+        },
+        {
+          "precedence": 12,
+          "problemCode": "OWNER_REFERENCE_LEAK",
+          "conditions": [
+            "Rewritten target graph retains a source owner reference."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 22,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the named canonical graph; graph-size variation follows the same breakdown formula."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-021"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 3,
+            "writeCount": 2
+          },
+          {
+            "owner": "organization",
+            "readCount": 3,
+            "writeCount": 2
+          },
+          {
+            "owner": "inventory",
+            "readCount": 3,
+            "writeCount": 2
+          },
+          {
+            "owner": "fulfillment-production",
+            "readCount": 3,
+            "writeCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsInventoryTargets",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [
+        "catalog"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Run one scoped cursor query and one bounded cross-owner enrichment query; never query per returned row."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-010"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsInventoryTarget",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [
+        "catalog"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load exactly the approved detail section with bounded task reads and return its typed read model."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-011"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsInventoryTargetChangeSummary",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load exactly the approved detail section with bounded task reads and return its typed read model."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 2,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-011"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsInventoryTargetBusinessHistory",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load exactly the approved detail section with bounded task reads and return its typed read model."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 2,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-011"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsInventoryTargetConsumptionReferences",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [
+        "catalog"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load exactly the approved detail section with bounded task reads and return its typed read model."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 3,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-011"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsInventoryTargetLedger",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load exactly the approved detail section with bounded task reads and return its typed read model."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 2,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-011"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsInventoryTargetDiagnostics",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load exactly the approved detail section with bounded task reads and return its typed read model."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 2,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-011"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 1,
+            "writeCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "countOperationsInventoryTarget",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate an absolute counted quantity, counting-unit conversion input, trusted context, write capability and store owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load target, configured units, balance and version; normalize the count to the consumption unit; append an absolute-count ledger fact before CAS-replacing the balance, then append audit."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete idempotency after ledger, replaced balance and audit succeed; return before, derived delta, absolute after and new version."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 8,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-012"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 4,
+            "writeCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "increaseOperationsInventoryTarget",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate a strictly positive increase quantity, optional counting-unit conversion input, trusted context, write capability and store owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load target, configured units, balance and version; normalize the positive delta to the consumption unit; append an inventory-increase ledger fact before CAS-adding the delta to balance, then append audit."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete idempotency after ledger, incremented balance and audit succeed; return before, positive delta, after and new version without creating a receiving document."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 7,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-012"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 3,
+            "writeCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "adjustOperationsInventoryTarget",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "NEGATIVE_STOCK_NOT_ALLOWED",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate a non-zero signed adjustment and required reason, trusted context, write capability and store owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load target, balance, allow-negative policy and version; compute the directed after value and reject forbidden negative stock; append an adjustment ledger fact before CAS-applying the signed delta, then append audit."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete idempotency after ledger, adjusted balance and audit succeed; return before, signed delta, after, reason and new version."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "NEGATIVE_STOCK_NOT_ALLOWED",
+          "conditions": [
+            "Adjustment would create forbidden negative stock."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 8,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-012"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 4,
+            "writeCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "updateOperationsInventoryTargetConfiguration",
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate threshold, allow-negative and optional counting-unit/conversion configuration, trusted context, write capability and store owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load target and version; validate positive finite conversion and disable self-conversion when counting and consumption units match; CAS-update configuration and audit without writing balance or stock ledger."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete idempotency after configuration and audit succeed; return configuration, unchanged balance identity and new version."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "A non-preflight expected version differs from the current owner version."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Target is terminal VOIDED."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 6,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-012"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "inventory",
+            "readCount": 3,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "stageOperationsCatalogAsset",
+      "initiatingOwner": "asset",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "ASSET_PROCESSING_FAILED",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Persist staged metadata, perform non-DB object processing, finalize metadata/audit and return staged asset."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "asset.api",
+          "owner": "asset",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "ASSET_PROCESSING_FAILED",
+          "conditions": [
+            "Object-storage processing or metadata finalization failed."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 6,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-009"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "asset",
+            "readCount": 3,
+            "writeCount": 2
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "releaseOperationsCatalogStagedAsset",
+      "initiatingOwner": "asset",
+      "coordinatedOwners": [
+        "catalog"
+      ],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "ASSET_REFERENCE_PROTECTED",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load asset and batched reference judgment, release only when unreferenced, audit and return disposition."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "asset.api",
+          "owner": "asset",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "declared batch judgment or owner command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Scoped target or unique source does not exist after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "ASSET_REFERENCE_PROTECTED",
+          "conditions": [
+            "Asset still has catalog references."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Idempotency key exists with a different canonical request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Idempotency receipt is indeterminate."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 6,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-009"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "asset",
+            "readCount": 1,
+            "writeCount": 1
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 1
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsCatalogShapeManifest",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context, page/capability and owner scope."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Load the approved scoped read model set-wise and return owner facts."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Assemble the readback without per-item database or owner calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed enum, cursor, header or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or requested owner scope is outside the session."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 1,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
+          "Count binds the smallest legal normal fixture."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-001"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 0,
+            "writeCount": 0
+          }
+        ]
+      }
+    }
+  ]
+}

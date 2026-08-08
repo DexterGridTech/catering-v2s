@@ -1,6 +1,6 @@
 import {Alert, Button, DatePicker, Space, Tag} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {contextScopedQueryArgs, formatCodeNamePath, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
+import {contextScopedQueryArgs, NameCodePathText, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
 import type {Dayjs} from 'dayjs';
 import {useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
@@ -109,7 +109,7 @@ export function WorkspaceInvitationPanel({
   const problem = activeInvitations.error ? queryIssue(activeInvitations.error, '邀请列表读取失败，请稍后重试') : undefined;
   const organizationCandidateResult = useWorkspaceInvitationCandidates({targetType, queryContext, subjectType: 'ORGANIZATION', candidateUsage: 'LIST_FILTER', queryText: organizationCandidateQuery});
   const roleCandidateResult = useWorkspaceInvitationCandidates({targetType, queryContext, subjectType: 'ROLE', candidateUsage: 'LIST_FILTER', queryText: roleCandidateQuery});
-  const organizationOptions = (organizationCandidateResult.data?.organizations ?? []).filter((candidate) => candidate.serviceNodeType === targetType).map((candidate) => ({value: candidate.organizationRef, label: formatCodeNamePath(candidate.path)}));
+  const organizationOptions = (organizationCandidateResult.data?.organizations ?? []).filter((candidate) => candidate.serviceNodeType === targetType).map((candidate) => ({value: candidate.organizationRef, label: <NameCodePathText value={candidate.path}/>}));
   const roleOptions = (roleCandidateResult.data?.roles ?? []).map((role) => ({value: role.id, label: role.name}));
   const selected = detail.target;
   const columns = useMemo<ProColumns<WorkspaceInvitation>[]>(() => [
@@ -117,7 +117,7 @@ export function WorkspaceInvitationPanel({
     {title: '邀请手机号', dataIndex: 'mobile', hideInTable: true, fieldProps: {...testId('operations-workspace-invitation-query-mobile'), allowClear: true, placeholder: '请输入邀请手机号'}},
     {title: '任职机构', dataIndex: 'organizationRef', hideInTable: true, valueType: 'select', fieldProps: {showSearch: true, filterOption: false, onSearch: setOrganizationCandidateQuery, options: organizationOptions, loading: organizationCandidateResult.isFetching, allowClear: true, placeholder: '搜索机构名称或编码', ...testId('operations-workspace-invitation-query-organization')}},
     {title: '业务角色', dataIndex: 'roleId', hideInTable: true, valueType: 'select', fieldProps: {showSearch: true, filterOption: false, onSearch: setRoleCandidateQuery, options: roleOptions, loading: roleCandidateResult.isFetching, allowClear: true, placeholder: '搜索业务角色', ...testId('operations-workspace-invitation-query-role')}},
-    {title: '任职机构', dataIndex: 'targetOrganizationPath', ellipsis: true, search: false, render: (_, value) => formatCodeNamePath(value.targetOrganizationPath)},
+    {title: '任职机构', dataIndex: 'targetOrganizationPath', ellipsis: true, search: false, render: (_, value) => <NameCodePathText value={value.targetOrganizationPath}/>},
     {title: '业务角色', dataIndex: 'roleNames', search: false, render: (_, value) => <Space size={[4, 4]} wrap>{value.roleNames.map((role) => <Tag key={role}>{role}</Tag>)}</Space>},
     {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: Object.fromEntries(Object.entries(statusLabel).map(([value, text]) => [value, {text}])), fieldProps: {...testId('operations-workspace-invitation-query-status'), allowClear: true}, render: (_, value) => <Tag color={value.status === 'ACTIVE' ? 'blue' : value.status === 'COMPLETED' ? 'green' : 'default'}>{statusLabel[value.status]}</Tag>},
     {title: '有效期', dataIndex: 'expiresRange', hideInTable: true, valueType: 'dateRange', renderFormItem: () => <DatePicker.RangePicker {...testId('operations-workspace-invitation-query-expires-range')}/>},
@@ -128,6 +128,7 @@ export function WorkspaceInvitationPanel({
   return <>
     {problem && <Alert type="error" showIcon title="邀请管理失败" description={problem} style={{marginBottom: 16}}/>}
     <ProTable<WorkspaceInvitation>
+      size="small"
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-workspace-invitation-query-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setPage(1); setFilters({}); }} {...testId('operations-workspace-invitation-query-reset')}>重置</Button>]}}
       onSubmit={(values) => { setPage(1); setFilters(toAppliedFilters(values)); }}
       options={false}

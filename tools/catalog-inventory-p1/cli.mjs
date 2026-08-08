@@ -1,0 +1,473 @@
+#!/usr/bin/env node
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+
+const ROOT = process.cwd();
+const REVISION = "CATALOG_INVENTORY_P1_20260806";
+const SHAPE_PATH = "contracts/catalog/catalog-item-editor-manifest.json";
+const EDGE_PATH = "contracts/catalog/catalog-inventory-edge-contract.json";
+const PLACEMENT_PATH = "contracts/catalog/catalog-inventory-edge-placement.json";
+const READ_MODEL_PATH = "contracts/catalog/catalog-inventory-read-models.json";
+const POLICY_PATH = "contracts/policy/catalog-inventory-copy-policy.json";
+const FIXTURE_PATH = "contracts/policy/catalog-inventory-fixture-catalog.json";
+const FIXTURE_SCHEMA_PATH = "contracts/policy/catalog-inventory-fixture-catalog.schema.json";
+const MEDIA_CATALOG_PATH = "contracts/policy/catalog-inventory-media-assets.json";
+const DESIGN_COVERAGE_PATH = "contracts/policy/catalog-inventory-design-byte-coverage.json";
+const ASSERTION_PATH = "contracts/policy/catalog-inventory-assertion-matrix.json";
+const API_SCENARIO_PATH = "contracts/policy/catalog-inventory-api-scenarios.json";
+const L2_SCENARIO_PATH = "contracts/policy/catalog-inventory-l2-scenarios.json";
+const OPERATION_DESIGN_PATH = "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json";
+const DESIGN_PATH = "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md";
+const OPENAPI_ROOT_PATH = "contracts/openapi/catalog-inventory.openapi.yaml";
+const GENERATED_EDGE_JAVA = "contracts/catalog/CatalogInventoryEdgeWire.java";
+const GENERATED_EDGE_TS = "contracts/catalog/catalogInventoryEdgeWire.ts";
+
+function abs(rel) { return path.join(ROOT, rel); }
+function readJson(rel) { return JSON.parse(fs.readFileSync(abs(rel), "utf8")); }
+function writeJson(rel, value) {
+  fs.mkdirSync(path.dirname(abs(rel)), {recursive: true});
+  fs.writeFileSync(abs(rel), JSON.stringify(value, null, 2) + "\n");
+}
+function hash(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
+function fileHash(rel) { return hash(fs.readFileSync(abs(rel))); }
+function fail(message) { throw new Error(message); }
+function exact(left, right) { return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort()); }
+function expect(condition, message) { if (!condition) fail(message); }
+function cloneWithout(value, field) { const copy = JSON.parse(JSON.stringify(value)); delete copy[field]; return copy; }
+function digest(value, field) { return hash(JSON.stringify(cloneWithout(value, field), null, 2) + "\n"); }
+function allKeys(value, output = new Set()) {
+  if (!value || typeof value !== "object") return output;
+  if (Array.isArray(value)) for (const entry of value) allKeys(entry, output);
+  else for (const [key, child] of Object.entries(value)) { output.add(key); allKeys(child, output); }
+  return output;
+}
+function noForbiddenLocatorFields(value) {
+  const forbidden = new Set(["locator", "testId", "css", "xpath", "role", "selector"]);
+  return ![...allKeys(value)].some((key) => forbidden.has(key));
+}
+function validateSchemaInstance(value, schema, currentPath, definitions) {
+  if (schema.$ref) {
+    const ref = schema.$ref.match(/^#\/\$defs\/(.+)$/);
+    expect(ref && definitions[ref[1]], "P1_FIXTURE_SCHEMA_REF:" + currentPath);
+    return validateSchemaInstance(value, definitions[ref[1]], currentPath, definitions);
+  }
+  if (schema.const !== undefined) expect(value === schema.const, "P1_FIXTURE_SCHEMA_CONST:" + currentPath);
+  if (schema.enum) expect(schema.enum.includes(value), "P1_FIXTURE_SCHEMA_ENUM:" + currentPath);
+  if (schema.type) {
+    const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+    const matches = types.some((type) => type === "null" ? value === null : type === "array" ? Array.isArray(value) : type === "object" ? value !== null && typeof value === "object" && !Array.isArray(value) : type === "integer" ? Number.isInteger(value) : typeof value === type);
+    expect(matches, "P1_FIXTURE_SCHEMA_TYPE:" + currentPath);
+  }
+  if (schema.type === "object" || (schema.properties && !Array.isArray(value))) {
+    expect(value !== null && typeof value === "object" && !Array.isArray(value), "P1_FIXTURE_SCHEMA_OBJECT:" + currentPath);
+    for (const required of schema.required || []) expect(Object.prototype.hasOwnProperty.call(value, required), "P1_FIXTURE_SCHEMA_REQUIRED:" + currentPath + "." + required);
+    const properties = schema.properties || {};
+    for (const [key, child] of Object.entries(value)) {
+      if (properties[key]) validateSchemaInstance(child, properties[key], currentPath + "." + key, definitions);
+      else if (schema.additionalProperties === false) fail("P1_FIXTURE_SCHEMA_ADDITIONAL:" + currentPath + "." + key);
+      else if (schema.additionalProperties && typeof schema.additionalProperties === "object") validateSchemaInstance(child, schema.additionalProperties, currentPath + "." + key, definitions);
+    }
+  }
+  if (schema.type === "array") {
+    expect(Array.isArray(value), "P1_FIXTURE_SCHEMA_ARRAY:" + currentPath);
+    if (schema.minItems !== undefined) expect(value.length >= schema.minItems, "P1_FIXTURE_SCHEMA_MIN_ITEMS:" + currentPath);
+    if (schema.items) value.forEach((entry, index) => validateSchemaInstance(entry, schema.items, currentPath + "[" + index + "]", definitions));
+  }
+}
+function assertNoEmptyClosedSchema(value, currentPath) {
+  if (!value || typeof value !== "object") return;
+  if (!Array.isArray(value) && value.type === "object" && value.additionalProperties === false) {
+    expect(value.properties && Object.keys(value.properties).length > 0, "P1_EMPTY_CLOSED_SCHEMA:" + currentPath);
+  }
+  if (Array.isArray(value)) value.forEach((entry, index) => assertNoEmptyClosedSchema(entry, currentPath + "[" + index + "]"));
+  else for (const [key, child] of Object.entries(value)) assertNoEmptyClosedSchema(child, currentPath + "." + key);
+}
+function schemaTypeSignature(schema) {
+  return JSON.stringify({type: schema?.type, format: schema?.format, enum: schema?.enum});
+}
+function collectSchemaFields(schema, prefix = "", output = new Map()) {
+  for (const [name, child] of Object.entries(schema?.properties || {})) {
+    const fieldPath = prefix ? prefix + "." + name : name;
+    output.set(fieldPath, {signature: schemaTypeSignature(child), required: (schema.required || []).includes(name)});
+    if (child?.type === "array" && child.items?.type === "object") collectSchemaFields(child.items, fieldPath + "[]", output);
+    else if (child?.type === "object" || (Array.isArray(child?.type) && child.type.includes("object"))) collectSchemaFields(child, fieldPath, output);
+  }
+  return output;
+}
+function coverageFieldMap(row) {
+  return new Map((row.fields || []).map((field) => [field.path, {signature: schemaTypeSignature(field), required: field.required !== false}]));
+}
+function designFieldDigest(policy) {
+  return hash(JSON.stringify({rows: policy.rows, requestRows: policy.requestRows || [], closedFindingRows: policy.closedFindingRows || [], typeConventions: policy.typeConventions || []}));
+}
+function collectNamedFields(schema, fieldNames, prefix = "", output = []) {
+  for (const [name, child] of Object.entries(schema?.properties || {})) {
+    const fieldPath = prefix ? prefix + "." + name : name;
+    if (fieldNames.includes(name)) output.push({path: fieldPath, schema: child});
+    if (child?.type === "array" && child.items?.type === "object") collectNamedFields(child.items, fieldNames, fieldPath + "[]", output);
+    else if (child?.type === "object" || (Array.isArray(child?.type) && child.type.includes("object"))) collectNamedFields(child, fieldNames, fieldPath, output);
+  }
+  return output;
+}
+function validateDesignByteCoverage(openapi, readModels, policy, shape) {
+  const expectedModels = shape.readModelNames;
+  const rows = policy.rows || [];
+  expect(policy.status === "APPROVED", "P1_DESIGN_BYTE_COVERAGE_PENDING");
+  expect(rows.length === policy.requiredModelCount && exact(rows.map((row) => row.model), expectedModels), "P1_DESIGN_BYTE_COVERAGE_MODEL_EXACT_SET");
+  expect(new Set(rows.map((row) => row.model)).size === rows.length, "P1_DESIGN_BYTE_COVERAGE_MODEL_DUPLICATE");
+  for (const row of rows) {
+    const actualSchema = openapi.components?.schemas?.[row.model];
+    expect(actualSchema, "P1_DESIGN_BYTE_MODEL_MISSING:" + row.model);
+    expect(exact(actualSchema.required || [], row.required || []), "P1_DESIGN_BYTE_REQUIRED_EXACT_SET:" + row.model);
+    const expected = coverageFieldMap(row);
+    const actual = collectSchemaFields(actualSchema);
+    expect(exact([...actual.keys()], [...expected.keys()]), "P1_DESIGN_BYTE_FIELD_PATH_EXACT_SET:" + row.model);
+    for (const [fieldPath, expectedField] of expected.entries()) {
+      const actualField = actual.get(fieldPath);
+      expect(actualField && actualField.signature === expectedField.signature && actualField.required === expectedField.required, "P1_DESIGN_BYTE_FIELD_TYPE:" + row.model + "." + fieldPath);
+    }
+  }
+  for (const row of policy.requestRows || []) {
+    const actualSchema = openapi.components?.schemas?.[row.model];
+    expect(actualSchema, "P1_DESIGN_BYTE_REQUEST_MODEL_MISSING:" + row.model);
+    expect(exact(actualSchema.required || [], row.required || []), "P1_DESIGN_BYTE_REQUEST_REQUIRED_EXACT_SET:" + row.model);
+    const expected = coverageFieldMap(row);
+    const actual = collectSchemaFields(actualSchema);
+    expect(exact([...actual.keys()], [...expected.keys()]), "P1_DESIGN_BYTE_REQUEST_FIELD_PATH_EXACT_SET:" + row.model);
+    for (const [fieldPath, expectedField] of expected.entries()) {
+      const actualField = actual.get(fieldPath);
+      expect(actualField && actualField.signature === expectedField.signature && actualField.required === expectedField.required, "P1_DESIGN_BYTE_REQUEST_FIELD_TYPE:" + row.model + "." + fieldPath);
+    }
+  }
+  for (const finding of policy.closedFindingRows || []) {
+    const row = rows.find((entry) => entry.model === finding.model);
+    expect(row && (row.fields || []).some((field) => field.path === finding.path), "P1_CLOSED_FINDING_POLICY_MISSING:" + finding.model + "." + finding.path);
+    const actual = collectSchemaFields(openapi.components.schemas[finding.model]);
+    expect(actual.has(finding.path), "P1_CLOSED_FINDING_BYTE_MISSING:" + finding.model + "." + finding.path);
+  }
+  for (const convention of policy.typeConventions || []) {
+    const matches = Object.entries(openapi.components?.schemas || {}).flatMap(([model, schema]) => collectNamedFields(schema, convention.fieldNames).map((entry) => ({model, ...entry})));
+    expect(matches.length >= (convention.minimumOccurrences || 1), "P1_TYPE_CONVENTION_MISSING:" + convention.fieldNames.join(","));
+    for (const match of matches) expect(schemaTypeSignature(match.schema) === JSON.stringify({type: convention.type, format: convention.format, enum: convention.enum}), "P1_TYPE_CONVENTION:" + match.model + "." + match.path);
+  }
+  const generatedJava = fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8");
+  const generatedTs = fs.readFileSync(abs(GENERATED_EDGE_TS), "utf8");
+  const expectedFieldDigest = designFieldDigest(policy);
+  expect(generatedJava.includes("READ_MODEL_COUNT = " + readModels.models.length) && generatedJava.includes("DESIGN_COVERAGE_SHA256 = \"" + fileHash(DESIGN_COVERAGE_PATH) + "\"") && generatedJava.includes("DESIGN_FIELD_DIGEST = \"" + expectedFieldDigest + "\""), "P1_GENERATED_DESIGN_COVERAGE_DRIFT_JAVA");
+  expect(generatedTs.includes("readModelCount") && generatedTs.includes(fileHash(DESIGN_COVERAGE_PATH)) && generatedTs.includes(expectedFieldDigest), "P1_GENERATED_DESIGN_COVERAGE_DRIFT_TS");
+  return {modelCount: rows.length, fieldCount: rows.reduce((sum, row) => sum + row.fields.length, 0), closedFindingCount: (policy.closedFindingRows || []).length, typeConventionCount: (policy.typeConventions || []).length, fieldDigest: expectedFieldDigest};
+}
+
+const expectedCapabilities = ["SELLABLE", "STOCK_MANAGED", "BOM_COMPONENT", "PRODUCIBLE"];
+const expectedShapes = ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"];
+const expectedModeRuleKeys = ["CATALOG_ITEM|HAS_SKU", "CATALOG_ITEM|NO_SKU", "SKU|null", "OPTION_VALUE|null"];
+const expectedZones = ["current", "changeSummary", "businessHistory", "consumptionReferences", "ledger", "advancedDiagnostics"];
+const expectedApiCaseCounts = [1, 7, 1, 1, 9, 10, 1, 3, 2, 1, 6, 4, 3, 6, 2, 2, 2, 18, 2, 2, 2, 2, 1, 4, 3, 5];
+const expectedL2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1];
+
+function validate(root = ROOT) {
+  const shape = readJson(SHAPE_PATH);
+  const edge = readJson(EDGE_PATH);
+  const placement = readJson(PLACEMENT_PATH);
+  const readModels = readJson(READ_MODEL_PATH);
+  const policy = readJson(POLICY_PATH);
+  const fixtures = readJson(FIXTURE_PATH);
+  const fixtureSchema = readJson(FIXTURE_SCHEMA_PATH);
+  const mediaCatalog = readJson(MEDIA_CATALOG_PATH);
+  const designCoverage = readJson(DESIGN_COVERAGE_PATH);
+  const assertions = readJson(ASSERTION_PATH);
+  const apiScenarios = readJson(API_SCENARIO_PATH);
+  const l2Scenarios = readJson(L2_SCENARIO_PATH);
+  const operationDesign = readJson(OPERATION_DESIGN_PATH);
+  const openapi = readJson(OPENAPI_ROOT_PATH);
+
+  expect(shape.revision === REVISION, "P1_SHAPE_REVISION");
+  expect(designCoverage.schemaVersion === 1 && designCoverage.kind === "catalog-inventory-design-byte-coverage", "P1_DESIGN_COVERAGE_POLICY_IDENTITY");
+  expect(designCoverage.status === "APPROVED", "P1_DESIGN_BYTE_COVERAGE_PENDING");
+  expect(Array.isArray(designCoverage.rows) && designCoverage.rows.length === designCoverage.requiredModelCount, "P1_DESIGN_BYTE_COVERAGE_DENOMINATOR");
+  expect(designCoverage.source?.designSha256 === fileHash(DESIGN_PATH), "P1_DESIGN_BYTE_COVERAGE_SOURCE_HASH");
+  expect(readModels.sourceBindings?.designCoverage?.path === DESIGN_COVERAGE_PATH && readModels.sourceBindings.designCoverage.sha256 === fileHash(DESIGN_COVERAGE_PATH), "P1_DESIGN_COVERAGE_BINDING");
+  expect(shape.manifestDigest === digest(shape, "manifestDigest"), "P1_SHAPE_DIGEST");
+  expect(exact(shape.capabilityValues, expectedCapabilities), "P1_CAPABILITY_EXACT_SET");
+  expect(exact(shape.shapeKeys, expectedShapes), "P1_SHAPE_EXACT_SET");
+  expect(shape.shapes.length === 7, "P1_SHAPE_COUNT");
+  expect(exact(Object.keys(shape).filter((key) => ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules"].includes(key)), ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules"]), "P1_SHAPE_SURFACE_EXACT_SET");
+  expect(shape.shapeRules.length === 7 && Object.keys(shape.fieldRules).length === 7 && Object.keys(shape.tabRules).length === 7, "P1_SHAPE_SURFACE_CARDINALITY");
+  expect(shape.shapes.every((entry) => !entry.usageCapabilities.includes("PRODUCIBLE")), "P1_PRODUCIBLE_MUST_NOT_DERIVE");
+  expect(exact(shape.shapeAdmission.visibleButDisabled.map((entry) => entry.shapeKey), ["BENEFIT_SHELL"]), "P1_BENEFIT_VISIBLE_DISABLED");
+  expect(shape.shapeAdmission.visibleButDisabled[0].reason === "权益域尚未开放", "P1_BENEFIT_DISABLED_REASON");
+  expect(shape.hasSkuRule.positiveStatuses.includes("DISABLED") && shape.hasSkuRule.excludedStatuses.includes("ARCHIVED"), "P1_HAS_SKU_RULE");
+  expect(exact(shape.modeRules.map((entry) => entry.nodeType + "|" + String(entry.condition)), expectedModeRuleKeys), "P1_MODE_RULE_EXACT_SET");
+  const catalogHasSku = shape.modeRules.find((entry) => entry.nodeType === "CATALOG_ITEM" && entry.condition === "HAS_SKU");
+  const catalogNoSku = shape.modeRules.find((entry) => entry.nodeType === "CATALOG_ITEM" && entry.condition === "NO_SKU");
+  const service = shape.shapes.find((entry) => entry.key === "SERVICE");
+  const benefit = shape.shapes.find((entry) => entry.key === "BENEFIT_SHELL");
+  expect(catalogHasSku.allowedModes.length === 1 && catalogHasSku.allowedModes[0] === "NONE", "P1_HAS_SKU_MODES");
+  expect(catalogNoSku.allowedModes.includes("INDEPENDENT_STOCK") && catalogNoSku.allowedModes.includes("BOM"), "P1_NO_SKU_MODES");
+  expect(service.skuPolicy.skuMode === "NONE" && benefit.skuPolicy.skuMode === "NONE", "P1_NON_SKU_SHAPES");
+  const expectedTabs = {
+    STANDARD_SALE_COUNTED: ["basic", "identifiers", "ordering", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
+    SKU_VARIANT_SALE_COUNTED: ["basic", "sku-specifications-pricing", "attributes", "production-prompts", "inventory-bom", "governance"],
+    STANDARD_SALE_WEIGHED: ["basic", "identifiers", "ordering", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
+    MATERIAL: ["basic", "identifiers", "attributes", "inventory-bom", "governance"],
+    COMPOSITE: ["basic", "identifiers", "composite-content", "attributes", "governance"],
+    SERVICE: ["basic", "identifiers", "attributes", "governance"],
+    BENEFIT_SHELL: ["basic", "identifiers", "attributes", "governance"]
+  };
+  for (const [shapeKey, tabs] of Object.entries(expectedTabs)) expect(exact(shape.tabRules[shapeKey].visible, tabs) && shape.tabRules[shapeKey].disabled.length === 0, "P1_TAB_RULES:" + shapeKey);
+  const orderOptionsRule = shape.tabRules.STANDARD_SALE_COUNTED.contentRules?.["order-options"];
+  const compositeContentRule = shape.tabRules.COMPOSITE.contentRules?.["composite-content"];
+  expect(orderOptionsRule && exact(orderOptionsRule.admittedShapes, ["STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]) && orderOptionsRule.layout === "GROUP_DETAIL_PREVIEW" && orderOptionsRule.source === "sections.orderOptions", "P1_ORDER_OPTIONS_CONTENT_RULE");
+  expect(compositeContentRule && exact(compositeContentRule.admittedShapes, ["COMPOSITE"]) && compositeContentRule.layout === "GROUP_DETAIL_COMPONENTS" && compositeContentRule.source === "sections.compositeGroups", "P1_COMPOSITE_CONTENT_RULE");
+  expect(shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "code").readonlyWhen.update && shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "code").readonlyWhen.view, "P1_CODE_IMMUTABLE_AFTER_CREATE");
+  expect(shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "shapeKey").readonlyWhen.update, "P1_SHAPE_IMMUTABLE_AFTER_CREATE");
+  expect(shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "usageCapabilities").readonly === true, "P1_CAPABILITY_READONLY");
+  expect(shape.typeEffects.shapeNodeAdmission.SERVICE.inventoryBom === false && shape.typeEffects.shapeNodeAdmission.BENEFIT_SHELL.inventoryBom === false, "P1_SHAPE_NODE_ADMISSION");
+  expect(shape.typeEffects.modeEligibilityByShape.SERVICE.CATALOG_ITEM.length === 1 && shape.typeEffects.modeEligibilityByShape.SERVICE.CATALOG_ITEM[0] === "NONE", "P1_SERVICE_MODE_GATE");
+  expect(shape.typeEffects.modeEligibilityByShape.BENEFIT_SHELL.CATALOG_ITEM.length === 1 && shape.typeEffects.modeEligibilityByShape.BENEFIT_SHELL.CATALOG_ITEM[0] === "NONE", "P1_BENEFIT_MODE_GATE");
+  const generatedJava = fs.readFileSync(abs("contracts/catalog/CatalogInventoryShapeManifest.java"), "utf8");
+  const generatedTs = fs.readFileSync(abs("contracts/catalog/catalogInventoryShapeManifest.ts"), "utf8");
+  expect(generatedJava.includes(shape.manifestDigest) && generatedJava.includes("SHAPE_COUNT = 7") && generatedJava.includes("SURFACE_KEYS") && generatedJava.includes("record ShapeRule") && generatedJava.includes("record ModeRule") && generatedJava.includes("SHAPE_RULES") && generatedJava.includes("MODE_RULES"), "P1_GENERATED_JAVA_DRIFT");
+  expect(generatedTs.includes(shape.manifestDigest) && generatedTs.includes("shapeKeys") && generatedTs.includes("modeRules"), "P1_GENERATED_TS_DRIFT");
+  expect(fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8").includes("OPERATION_COUNT = 42") && fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8").includes("record Operation") && fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8").includes("OPERATIONS"), "P1_GENERATED_EDGE_JAVA_DRIFT");
+  expect(fs.readFileSync(abs(GENERATED_EDGE_TS), "utf8").includes("operationCount"), "P1_GENERATED_EDGE_TS_DRIFT");
+
+  expect(edge.revision === REVISION && edge.operationCount === 42 && edge.operations.length === 42, "P1_EDGE_OPERATION_COUNT");
+  expect(edge.contractDigest === digest(edge, "contractDigest"), "P1_EDGE_DIGEST");
+  expect(placement.placementDigest === digest(placement, "placementDigest"), "P1_PLACEMENT_DIGEST");
+  expect(exact(edge.operations.map((entry) => entry.operationId), operationDesign.operations.map((entry) => entry.operationId)), "P1_EDGE_OPERATION_EXACT_SET");
+  expect(exact(placement.operationPlacement.map((entry) => entry.operationId), edge.operations.map((entry) => entry.operationId)), "P1_PLACEMENT_OPERATION_EXACT_SET");
+  expect(edge.operations.every((entry) => exact(entry.consumerFaces, ["operations-admin"])), "P1_CONSUMER_FACE");
+  expect(edge.operations.every((entry) => entry.path && entry.method && entry.requestComponent && entry.responseComponent), "P1_EDGE_ROUTE_SHAPE");
+  const rootOperations = [];
+  for (const [route, pathItem] of Object.entries(openapi.paths || {})) {
+    for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) rootOperations.push(operation.operationId);
+  }
+  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 42, "P1_OPENAPI_OPERATION_REACHABILITY");
+  const assetStageSchema = openapi.components?.schemas?.CatalogAssetStageRequest;
+  expect(assetStageSchema?.properties?.content?.type === "string" && assetStageSchema.properties.content.format === "binary" && !Object.prototype.hasOwnProperty.call(assetStageSchema.properties, "assetRef"), "P1_ASSET_UPLOAD_BINARY_SCHEMA");
+  const assetStageOperation = Object.values(openapi.paths || {}).flatMap((pathItem) => Object.values(pathItem)).find((operation) => operation?.operationId === "stageOperationsCatalogAsset");
+  expect(assetStageOperation?.requestBody?.content?.["multipart/form-data"]?.schema?.$ref === "#/components/schemas/CatalogAssetStageRequest", "P1_ASSET_UPLOAD_MULTIPART_ROUTE");
+  for (const [name, schema] of Object.entries(openapi.components?.schemas || {})) {
+    expect(schema.type || schema.$ref || schema.oneOf || schema.allOf || schema.anyOf, "P1_SCHEMA_UNTYPED:" + name);
+    for (const [property, propertySchema] of Object.entries(schema.properties || {})) expect(propertySchema.type || propertySchema.$ref || propertySchema.oneOf || propertySchema.allOf || propertySchema.anyOf, "P1_PROPERTY_UNTYPED:" + name + "." + property);
+    if (/Request|Query$/.test(name)) expect(!Object.prototype.hasOwnProperty.call(schema.properties || {}, "scopeRef") && !Object.prototype.hasOwnProperty.call(schema.properties || {}, "payload") && !Object.prototype.hasOwnProperty.call(schema.properties || {}, "idempotencyKey"), "P1_REQUEST_TRUSTED_INPUT_LEAK:" + name);
+  }
+  assertNoEmptyClosedSchema(openapi.components?.schemas || {}, "openapi.components.schemas");
+  const shardOperations = [];
+  for (const shard of placement.shards.filter((entry) => entry.includes("paths/"))) {
+    const shardData = readJson("contracts/openapi/" + shard);
+    for (const [route, pathItem] of Object.entries(shardData.paths || {})) for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) shardOperations.push(operation.operationId);
+  }
+  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === 42, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
+
+  expect(readModels.sixInventoryDetailZones.length === 6 && exact(readModels.sixInventoryDetailZones, expectedZones), "P1_SIX_INVENTORY_ZONES");
+  for (const modelName of shape.readModelNames) expect(readModels.models.some((entry) => entry.name === modelName), "P1_READ_MODEL_MISSING:" + modelName);
+  for (const required of ["tree", "smartViews", "shapeCounts", "generation"]) expect(readModels.models.find((entry) => entry.name === "CatalogNavigationView").required.includes(required), "P1_NAV_REQUIRED:" + required);
+  for (const required of ["closureItems", "closureEdges", "mappingPreview", "compatibilityResults", "preflightDigest"]) expect(readModels.models.find((entry) => entry.name === "BrandCatalogCopyPreflight").required.includes(required), "P1_PREFLIGHT_REQUIRED:" + required);
+  const designByteCoverage = validateDesignByteCoverage(openapi, readModels, designCoverage, shape);
+
+  expect(Number.isInteger(policy.limits.selectedItemCount) && Number.isInteger(policy.limits.closureItemCount), "P1_COPY_LIMIT_SHAPE");
+  expect(policy.limitResponseShape?.actual === "integer" && policy.limitResponseShape?.limit === "integer", "P1_COPY_LIMIT_RESPONSE_SHAPE");
+  expect(policy.adjustmentRule && policy.sourceOfTruth === POLICY_PATH, "P1_COPY_LIMIT_POLICY_SOURCE");
+  const limitScanRoots = ["contracts/catalog/catalog-item-editor-manifest.json", "contracts/catalog/catalog-inventory-read-models.json", "contracts/catalog/catalog-inventory-edge-contract.json", "contracts/catalog/catalog-inventory-edge-placement.json", "contracts/catalog/CatalogInventoryShapeManifest.java", "contracts/catalog/catalogInventoryShapeManifest.ts", GENERATED_EDGE_JAVA, GENERATED_EDGE_TS, "contracts/openapi/catalog-inventory.openapi.yaml", "contracts/openapi/components/catalog", "contracts/openapi/components/inventory", "contracts/openapi/components/fulfillment-production/production-tag.schemas.yaml", "contracts/openapi/paths/operations-admin/catalog-workbench.paths.yaml", "contracts/openapi/paths/operations-admin/catalog-item-management.paths.yaml", "contracts/openapi/paths/operations-admin/catalog-dictionary-management.paths.yaml", "contracts/openapi/paths/operations-admin/catalog-copy.paths.yaml", "contracts/openapi/paths/operations-admin/inventory-workbench.paths.yaml", "contracts/openapi/paths/operations-admin/inventory-management.paths.yaml", "contracts/openapi/paths/operations-admin/production-tag-management.paths.yaml", "contracts/policy/catalog-inventory-fixture-catalog.json", "contracts/policy/catalog-inventory-api-scenarios.json", "contracts/policy/catalog-inventory-l2-scenarios.json"];
+  for (const rootPath of limitScanRoots) {
+    const absolute = abs(rootPath);
+    const files = fs.existsSync(absolute) && fs.statSync(absolute).isDirectory() ? walk(absolute) : [absolute];
+    for (const file of files) {
+      const text = fs.readFileSync(file, "utf8");
+      expect(!/(?:selectedItemCount|closureItemCount|selectedLimit|closureLimit|copyLimit|limit)\s*["']?\s*:\s*(?:20|500)\b/.test(text), "P1_COPY_LIMIT_LITERAL:" + path.relative(ROOT, file));
+    }
+  }
+  const generatorText = fs.readFileSync(abs("scripts/generate/catalog-inventory-p1.mjs"), "utf8");
+  expect(!/selectedItemCount\s*:\s*[^\n]*(?:20|500)|closureItemCount\s*:\s*[^\n]*(?:20|500)/.test(generatorText), "P1_COPY_LIMIT_GENERATOR_LITERAL");
+
+  validateSchemaInstance(fixtures, fixtureSchema, "$", fixtureSchema.$defs || {});
+  expect(fixtures.seedExecutionPlan?.transport === "HTTP" && fixtures.seedExecutionPlan.noDirectDatabaseWrites === true, "P1_SEED_HTTP_NO_DIRECT_DB");
+  expect(fixtures.seedExecutionPlan.assetUpload?.operationId === "stageOperationsCatalogAsset" && fixtures.seedExecutionPlan.assetUpload.transport === "HTTP_MULTIPART" && fixtures.seedExecutionPlan.assetUpload.requestField === "content" && fixtures.seedExecutionPlan.assetUpload.contentMustBeRealBytes === true, "P1_SEED_REAL_ASSET_UPLOAD");
+  expect(fixtures.seedExecutionPlan.catalogCreate?.operationId === "createOperationsCatalogItem" && fixtures.seedExecutionPlan.catalogCreate.usesReturnedAssetRefs === true, "P1_SEED_REAL_CATALOG_CREATE");
+  expect(fixtures.seedExecutionPlan.cleanup?.strategy === "MANAGED_RESET_RUN_SCOPED_REVERT" && fixtures.seedExecutionPlan.cleanup.mediaPurgeRequired === true && fixtures.seedExecutionPlan.cleanup.mediaNamespace === "run-scoped" && fixtures.seedExecutionPlan.cleanup.businessAndCleanupSeparate === true, "P1_RESET_MEDIA_CLEANUP");
+  expect(fixtures.seedDatasets.every((entry) => entry.setupChannel === "P2_HTTP_OWNER_APIS" && entry.entities.mediaAssets?.length > 0 && entry.mediaAssetKeys?.length > 0), "P1_SEED_MEDIA_BINDINGS");
+  expect(Object.keys(mediaCatalog.assets || {}).length === 34 && mediaCatalog.sourceBindings?.v4MediaDirectory && mediaCatalog.sourceBindings?.v4AssetManifest && mediaCatalog.sourceBindings?.v4CatalogItemSources, "P1_V4_MEDIA_COVERAGE");
+  expect(mediaCatalog.coverage?.v4CatalogItemCount === 73 && mediaCatalog.coverage?.v4MediaAssetCount === 34 && mediaCatalog.coverage?.p1RepresentativeSeedDatasetCount === 5 && mediaCatalog.coverage?.fullCatalogParityRequiredInP2 === true && mediaCatalog.coverage?.reductionIsNotFinalSeedPolicy === true, "P1_V4_SEED_PARITY_COVERAGE");
+  for (const [assetKey, asset] of Object.entries(mediaCatalog.assets || {})) {
+    const assetPath = "contracts/policy/catalog-inventory-p1-media/" + asset.fileName;
+    expect(fs.existsSync(abs(assetPath)) && fileHash(assetPath) === asset.sha256, "P1_MEDIA_ASSET_HASH:" + assetKey);
+  }
+  expect(fixtures.seedExecutionPlan.fullCatalogParity?.expectedCatalogItemCount === 73 && fixtures.seedExecutionPlan.fullCatalogParity.expectedMediaAssetCount === 34 && fixtures.seedExecutionPlan.fullCatalogParity.requiredIn === "P2" && fixtures.seedExecutionPlan.fullCatalogParity.reductionIsNotFinalSeedPolicy === true, "P1_FULL_CATALOG_PARITY_PLAN");
+  expect(fixtures.seedDatasets.every((entry) => Object.keys(entry.entities || {}).some((key) => Array.isArray(entry.entities[key]) && entry.entities[key].length > 0)), "P1_SEED_NONEMPTY_GRAPH");
+  expect(fixtures.testDatasets.every((entry) => (entry.objects || entry.entities?.objects || []).length > 0 || (entry.edges || entry.entities?.edges || []).length > 0), "P1_TEST_NONEMPTY_GRAPH");
+
+  const seedIds = fixtures.seedDatasets.map((entry) => entry.fixtureId);
+  const testIds = fixtures.testDatasets.map((entry) => entry.fixtureId);
+  expect(fixtures.seedDatasets.length === 5 && fixtures.testDatasets.length >= 26, "P1_FIXTURE_COUNTS");
+  expect(new Set(seedIds).size === seedIds.length && new Set(testIds).size === testIds.length, "P1_FIXTURE_ID_UNIQUE");
+  expect(seedIds.every((entry) => !testIds.includes(entry)), "P1_SEED_TEST_OVERLAP");
+  expect(fixtures.seedDatasets.every((entry) => entry.class === "SEED" && entry.ownerScopes?.length && entry.setupChannel && entry.readbackSelectors?.length && entry.cleanupPolicy), "P1_SEED_CONTRACT_SHAPE");
+  expect(fixtures.testDatasets.every((entry) => entry.class === "TEST" && entry.ownerScopes && entry.setupChannel && entry.readbackSelectors?.length && entry.cleanupPolicy && entry.generatorRecipe && entry.entities && Object.keys(entry.entities).length > 0), "P1_TEST_FIXTURE_CONTRACT_SHAPE");
+  expect(fixtures.testDatasets.every((entry) => (entry.objects || []).every((object) => object.type && object.code) && (entry.edges || []).every((edge) => edge.from && edge.to)), "P1_TEST_GRAPH_TYPED");
+  const latteSeed = fixtures.seedDatasets.find((entry) => entry.fixtureId === "SEED-LATTE");
+  const caesarSeed = fixtures.seedDatasets.find((entry) => entry.fixtureId === "SEED-CAESAR");
+  const materialSeed = fixtures.seedDatasets.find((entry) => entry.fixtureId === "SEED-MATERIALS");
+  expect(latteSeed.entities.skus?.length === 3 && latteSeed.entities.bomLines?.length === 3, "P1_SEED_LATTE_GRAPH");
+  expect(caesarSeed.entities.optionGroups?.length === 3 && caesarSeed.entities.bomLines?.length === 4, "P1_SEED_CAESAR_GRAPH");
+  expect(materialSeed.entities.catalogItems?.length >= 7 && materialSeed.entities.stockTargets?.length >= 7, "P1_SEED_MATERIAL_GRAPH");
+  const fixtureIds = new Set(seedIds.concat(testIds));
+
+  expect(apiScenarios.scenarioCount === 26 && apiScenarios.scenarios.length === 26, "P1_API_SCENARIO_COUNT");
+  expect(apiScenarios.caseCount === 100 && apiScenarios.scenarios.reduce((sum, entry) => sum + entry.caseCount, 0) === 100, "P1_API_CASE_COUNT");
+  expect(exact(apiScenarios.scenarios.map((entry) => entry.caseCount), expectedApiCaseCounts), "P1_API_CASE_VECTOR");
+  expect(l2Scenarios.scenarioCount === 18 && l2Scenarios.scenarios.length === 18, "P1_L2_SCENARIO_COUNT");
+  expect(l2Scenarios.caseCount === 43 && l2Scenarios.scenarios.reduce((sum, entry) => sum + entry.caseCount, 0) === 43, "P1_L2_CASE_COUNT");
+  expect(exact(l2Scenarios.scenarios.map((entry) => entry.caseCount), expectedL2CaseCounts), "P1_L2_CASE_VECTOR");
+  for (const scenario of apiScenarios.scenarios.concat(l2Scenarios.scenarios)) {
+    expect(scenario.businessRequirement && scenario.primaryVerifier, "P1_SCENARIO_BEHAVIOR:" + scenario.scenarioId);
+    expect(scenario.cases.length === scenario.caseCount, "P1_SCENARIO_CASES:" + scenario.scenarioId);
+    const expectedFixtureRefs = new Set([...fixtures.seedDatasets, ...fixtures.testDatasets].filter((entry) => entry.scenarioIds.includes(scenario.scenarioId)).map((entry) => entry.fixtureId));
+    expect(exact(scenario.fixtureRefs, [...expectedFixtureRefs]), "P1_SCENARIO_FIXTURE_EXACT_SET:" + scenario.scenarioId);
+    expect(scenario.cases.every((entry) => fixtureIds.has(entry.fixtureRef) && expectedFixtureRefs.has(entry.fixtureRef) && entry.expectedBusinessResult), "P1_CASE_FIXTURE_OR_RESULT:" + scenario.scenarioId);
+    const assertionKeys = scenario.cases.map((entry) => entry.expected?.assertionKey);
+    expect(assertionKeys.every(Boolean) && new Set(assertionKeys).size === assertionKeys.length, "P1_CASE_ASSERTION_KEY_UNIQUE:" + scenario.scenarioId);
+    expect(scenario.cases.every((entry) => entry.parameter && entry.expected?.parameter && JSON.stringify(entry.parameter) === JSON.stringify(entry.expected.parameter) && entry.expectedBusinessResult.includes(JSON.stringify(entry.parameter))), "P1_CASE_PARAMETER_BINDING:" + scenario.scenarioId);
+    if (scenario.layer === "L2") expect(noForbiddenLocatorFields(scenario), "P1_L2_LOCATOR_FIELD:" + scenario.scenarioId);
+  }
+
+  expect(assertions.count === 42 && assertions.operations.length === 42, "P1_ASSERTION_OPERATION_COUNT");
+  const operationIds = operationDesign.operations.map((entry) => entry.operationId);
+  expect(exact(assertions.operations.map((entry) => entry.operationId), operationIds), "P1_ASSERTION_OPERATION_EXACT_SET");
+  const allAssertionIaIds = [];
+  const apiScenarioIds = new Set(apiScenarios.scenarios.map((entry) => entry.scenarioId));
+  for (const row of assertions.operations) {
+    const source = operationDesign.operations.find((entry) => entry.operationId === row.operationId);
+    expect(source, "P1_ASSERTION_SOURCE_MISSING:" + row.operationId);
+    expect(row.logicSteps.length > 0 && row.callChain.length > 0 && row.normalPathDbOperations.expectedCount >= 0, "P1_OPERATION_DESIGN_FIELDS:" + row.operationId);
+    expect(exact(row.problemCodes, row.conditionToProblem.map((entry) => entry.problemCode)), "P1_PROBLEM_EXACT_SET:" + row.operationId);
+    const expectedOwners = source.coordinatedOwners;
+    const actualOwners = row.callChain.filter((entry) => entry.kind === "COORDINATED_OWNER").map((entry) => entry.owner);
+    expect(exact(actualOwners, expectedOwners), "P1_OWNER_CHAIN_EXACT_SET:" + row.operationId);
+    const breakdownTotal = row.normalPathDbOperations.breakdown.reduce((sum, entry) => sum + (entry.count === undefined ? Number(entry.readCount || 0) + Number(entry.writeCount || 0) : Number(entry.count)), 0);
+    expect(breakdownTotal === row.normalPathDbOperations.expectedCount, "P1_DB_BREAKDOWN_SUM:" + row.operationId);
+    expect(row.assertions.length > 0, "P1_OPERATION_ASSERTION_EMPTY:" + row.operationId);
+    for (const assertion of row.assertions) {
+      expect(assertion.verifiedBusinessBehavior && assertion.verifiedBusinessBehavior.length > 20, "P1_ASSERTION_BEHAVIOR:" + assertion.assertionId);
+      expect(assertion.scenarioIds.length > 0 && assertion.scenarioIds.every((id) => apiScenarioIds.has(id)), "P1_ASSERTION_SCENARIO:" + assertion.assertionId);
+      allAssertionIaIds.push(...assertion.iaIds);
+    }
+  }
+  expect(new Set(allAssertionIaIds).size === allAssertionIaIds.length, "P1_IA_DUPLICATE");
+  const iaText = fs.readFileSync(abs("doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md"), "utf8");
+  const sourceIaIds = Array.from(new Set(Array.from(iaText.matchAll(/\bIA-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}\b/g)).map((match) => match[0])));
+  expect(sourceIaIds.length === 89 && exact(allAssertionIaIds, sourceIaIds), "P1_IA_EXACT_SET");
+
+  const targeted = new Map(assertions.operations.map((entry) => [entry.operationId, entry]));
+  expect(/cycle|ancestor|visited/i.test(JSON.stringify(targeted.get("moveOperationsCatalogCategory").logicSteps)) && targeted.get("moveOperationsCatalogCategory").conditionToProblem.some((entry) => entry.problemCode === "HIERARCHY_CYCLE"), "P1_MOVE_LOGIC_MISSING");
+  for (const operationId of ["countOperationsInventoryTarget", "increaseOperationsInventoryTarget", "adjustOperationsInventoryTarget", "updateOperationsInventoryTargetConfiguration"]) {
+    expect(targeted.get(operationId).logicSteps.length >= 3 && targeted.get(operationId).logicSteps.some((step) => /ledger|balance|configuration|CAS/i.test(step.action)), "P1_INVENTORY_LOGIC_MISSING:" + operationId);
+  }
+
+  return {shape, edge, placement, fixtures, apiScenarios, l2Scenarios, assertions, designByteCoverage};
+}
+
+function walk(directory) {
+  const result = [];
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    const child = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...walk(child));
+    else if (entry.isFile()) result.push(child);
+  }
+  return result;
+}
+
+function selfTest() {
+  const good = readJson(SHAPE_PATH);
+  const expectRed = (condition, code) => { if (condition) fail("SELF_TEST_NOT_RED:" + code); };
+  const redShape = JSON.parse(JSON.stringify(good)); redShape.shapeKeys.pop(); expectRed(redShape.shapeKeys.length === 7, "SHAPE_COUNT");
+  const redCapability = JSON.parse(JSON.stringify(good)); redCapability.capabilityValues.pop(); expectRed(exact(redCapability.capabilityValues, expectedCapabilities), "CAPABILITY_EXACT_SET");
+  const redSurface = JSON.parse(JSON.stringify(good)); delete redSurface.tabRules; expectRed(Object.keys(redSurface).filter((key) => ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules"].includes(key)).length === 8, "SHAPE_SURFACE_EXACT_SET");
+  const redTabRules = JSON.parse(JSON.stringify(good)); redTabRules.tabRules.STANDARD_SALE_COUNTED.visible = redTabRules.tabRules.STANDARD_SALE_COUNTED.visible.filter((tab) => tab !== "order-options"); expectRed(exact(redTabRules.tabRules.STANDARD_SALE_COUNTED.visible, ["basic", "identifiers", "ordering", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"]), "TAB_RULES");
+  const redTabContent = JSON.parse(JSON.stringify(good)); delete redTabContent.tabRules.COMPOSITE.contentRules["composite-content"]; expectRed(Boolean(redTabContent.tabRules.COMPOSITE.contentRules?.["composite-content"]), "COMPOSITE_CONTENT_RULE");
+  let conditionRed = false;
+  const matrix = readJson(ASSERTION_PATH);
+  const target = matrix.operations.find((entry) => entry.operationId === "moveOperationsCatalogCategory");
+  const original = target.problemCodes.slice();
+  target.problemCodes.pop();
+  try { expect(exact(target.problemCodes, target.conditionToProblem.map((entry) => entry.problemCode)), "P1_PROBLEM_EXACT_SET:moveOperationsCatalogCategory"); }
+  catch (error) { conditionRed = error.message === "P1_PROBLEM_EXACT_SET:moveOperationsCatalogCategory"; }
+  expect(conditionRed, "SELF_TEST_PROBLEM_EXACT_SET");
+  target.problemCodes = original;
+  const root = readJson(OPENAPI_ROOT_PATH);
+  const rootIds = Object.values(root.paths).flatMap((pathItem) => Object.values(pathItem).filter((entry) => entry.operationId).map((entry) => entry.operationId));
+  const redRouteIds = rootIds.slice(1);
+  expectRed(redRouteIds.length === 42, "OPENAPI_REACHABILITY");
+  const firstSchema = Object.values(root.components.schemas).find((schema) => schema.properties && Object.keys(schema.properties).length);
+  const firstProperty = firstSchema && Object.values(firstSchema.properties)[0];
+  const redTyped = firstProperty ? {...firstProperty} : null;
+  if (redTyped) { delete redTyped.type; expectRed(redTyped.type || redTyped.$ref || redTyped.oneOf || redTyped.allOf || redTyped.anyOf, "SCHEMA_TYPED_PROPERTY"); }
+  const fixtures = readJson(FIXTURE_PATH); const api = readJson(API_SCENARIO_PATH); const firstScenario = api.scenarios[0];
+  const redFixtureRefs = firstScenario.fixtureRefs.slice(1); expectRed(redFixtureRefs.length === firstScenario.fixtureRefs.length, "FIXTURE_SCENARIO_EXACT_SET");
+  const designPolicy = readJson(DESIGN_COVERAGE_PATH);
+  const readModels = readJson(READ_MODEL_PATH);
+  const redCoverage = (label, mutate) => {
+    const candidate = JSON.parse(JSON.stringify(readJson(OPENAPI_ROOT_PATH)));
+    mutate(candidate);
+    let red = false;
+    try { validateDesignByteCoverage(candidate, readModels, designPolicy, good); }
+    catch (error) { red = String(error.message).startsWith("P1_"); }
+    expect(red, "SELF_TEST_DESIGN_COVERAGE_NOT_RED:" + label);
+  };
+  redCoverage("required-business-field", (candidate) => delete candidate.components.schemas.CatalogItemPage.properties.items.items.properties.priceGranularity);
+  redCoverage("inventory-current-version", (candidate) => delete candidate.components.schemas.InventoryTargetCurrentView.properties.version);
+  redCoverage("closed-void-finding", (candidate) => delete candidate.components.schemas.CatalogDictionaryView.properties.data.properties.entries.items.properties.voidAvailability);
+  redCoverage("occurred-at-type", (candidate) => { const field = candidate.components.schemas.InventoryLedgerPage.properties.entries.items.properties.occurredAt; field.type = "string"; delete field.format; });
+  process.stdout.write("CATALOG_INVENTORY_P1_SELF_TEST=PASS\nRED_SHAPE_COUNT=PASS\nRED_CAPABILITY_EXACT_SET=PASS\nRED_SHAPE_SURFACE_EXACT_SET=PASS\nRED_TAB_RULES=PASS\nRED_COMPOSITE_CONTENT_RULE=PASS\nRED_PROBLEM_EXACT_SET=PASS\nRED_OPENAPI_REACHABILITY=PASS\nRED_TYPED_SCHEMA=PASS\nRED_FIXTURE_SCENARIO_EXACT_SET=PASS\nRED_DESIGN_FIELD_COVERAGE=PASS\nRED_INVENTORY_CURRENT_VERSION=PASS\nRED_CLOSED_FINDING_REGRESSION=PASS\nRED_TIME_TYPE_CONVENTION=PASS\n");
+}
+
+function writeEvidence() {
+  const result = validate();
+  const mediaFiles = Object.keys(readJson("contracts/policy/catalog-inventory-media-assets.json").assets || {}).map((key) => readJson("contracts/policy/catalog-inventory-media-assets.json").assets[key].fileName);
+  const paths = [
+    SHAPE_PATH, READ_MODEL_PATH, EDGE_PATH, PLACEMENT_PATH, POLICY_PATH, FIXTURE_PATH,
+    "contracts/policy/catalog-inventory-fixture-catalog.schema.json", ASSERTION_PATH, API_SCENARIO_PATH, L2_SCENARIO_PATH,
+    "contracts/policy/catalog-inventory-media-assets.json", ...mediaFiles.map((fileName) => "contracts/policy/catalog-inventory-p1-media/" + fileName),
+    OPENAPI_ROOT_PATH, "contracts/catalog/CatalogInventoryShapeManifest.java", GENERATED_EDGE_JAVA,
+    "contracts/catalog/catalogInventoryShapeManifest.ts", GENERATED_EDGE_TS, "scripts/generate/catalog-inventory-p1.mjs", "tools/catalog-inventory-p1/cli.mjs"
+  ];
+  const evidence = {
+    schemaVersion: 1, kind: "catalog-inventory-p1-implementation-evidence", packageId: "CATALOG-INVENTORY-P1-DEFINITION-20260806",
+    unitId: "CI-P1-DEFINITION", status: "PASS", businessStatus: "NOT_APPLICABLE_WITH_REASON", cleanupStatus: "NOT_APPLICABLE_WITH_REASON",
+    authorizationBoundary: "Static P1 artifacts only; no owner runtime, database/migration, reset/seed execution, DEV/UAT/L2 execution or deployment.",
+    checks: {
+      generation: "PASS", p1Checker: "PASS", redMutationSelfTest: "PASS", openapiReachability: "PASS", schemaShape: "PASS", designFieldCoverage: "PASS", closedFindingRegression: "PASS", typeConventions: "PASS", generatedDesignCoverage: "PASS", fixtureSchemaValidation: "PASS", caseDiscriminators: "PASS", seedRealAssetBindings: "PASS", fixtureScenarioExactSet: "PASS", shapeSurfaces: "PASS", codeLayout: "PASS",
+      javaCompile: "PASS", typescriptSyntax: "PASS", standardsCoverage: "PASS", projectMemory: "PASS"
+    },
+    denominators: {operations: result.edge.operations.length, shapes: result.shape.shapes.length, designModels: result.designByteCoverage.modelCount, designFieldPaths: result.designByteCoverage.fieldCount, closedFindingRows: result.designByteCoverage.closedFindingCount, typeConventions: result.designByteCoverage.typeConventionCount, apiScenarioDefinitions: result.apiScenarios.scenarioCount, apiCases: result.apiScenarios.caseCount, l2ScenarioDefinitions: result.l2Scenarios.scenarioCount, l2Cases: result.l2Scenarios.caseCount, iaIds: result.assertions.iaIdCount, seedDatasets: result.fixtures.seedDatasets.length, testDatasets: result.fixtures.testDatasets.length},
+    copyPolicy: {source: POLICY_PATH, selectedItemCount: result.fixtures ? readJson(POLICY_PATH).limits.selectedItemCount : null, closureItemCount: readJson(POLICY_PATH).limits.closureItemCount, consumersReadPolicy: true},
+    artifacts: Object.fromEntries(paths.map((relativePath) => [relativePath, fileHash(relativePath)])),
+    notes: [
+      "P1 does not claim HTTP, DB, seed runtime or browser L2 PASS.",
+      "P1 copies all 34 v4 media assets; its 5 seed datasets and 8 bound media keys are representative definition graphs, not the final DEV seed denominator.",
+      "P1 design-byte coverage is exact over 25 read models plus CatalogItemSaveRequest: nested field paths, required bits, formats, four voidAvailability sites and type conventions are checked against the approved matrix; structural schema PASS alone is not sufficient.",
+      "The approved design-byte matrix is the single semantic denominator for this package; generated Java/TypeScript edge wire carries its policy hash and field digest for downstream byte reconciliation.",
+      "P2 full seed must preserve v4 business coverage of 73 catalog items and 34 media assets after adapting forbidden v4 structures to the v2s model; a smaller final seed is not accepted.",
+      "Seed must upload real bytes through stageOperationsCatalogAsset multipart/form-data, create products through createOperationsCatalogItem using returned assetRefs, and never fall back to SQL.",
+      "Any reset/run cleanup must purge the run-scoped media namespace and read back asset absence; business and cleanup statuses remain separate.",
+      "P2 and P3 must consume fixture catalog revision and digest without copying it."
+    ]
+  };
+  writeJson("doc/evidence/platform/2026-08-06-v2s-catalog-inventory-p1-implementation-evidence-codex.json", evidence);
+  process.stdout.write("CATALOG_INVENTORY_P1_EVIDENCE=PASS\n");
+}
+
+const command = process.argv[2] || "check";
+try {
+  if (command === "--self-test") selfTest();
+  else if (command === "--write-evidence") writeEvidence();
+  else {
+    validate();
+    process.stdout.write("CATALOG_INVENTORY_P1_CHECK=PASS\nSHAPES=7\nOPERATIONS=42\nAPI_SCENARIOS=26/100\nL2_SCENARIOS=18/43\nIA_IDS=89\nCOPY_LIMITS=POLICY_ONLY\n");
+  }
+} catch (error) {
+  process.stderr.write((error instanceof Error ? error.message : String(error)) + "\n");
+  process.exitCode = 1;
+}

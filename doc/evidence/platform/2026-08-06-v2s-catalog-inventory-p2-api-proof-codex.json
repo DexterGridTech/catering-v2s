@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-p2-api-proof",
+  "packageId": "CATALOG-INVENTORY-P2-BACKEND-API-20260806",
+  "unitId": "CI-P2-BACKEND-API",
+  "status": "DEFERRED_RUNTIME_PROOF",
+  "runtimeAuthority": false,
+  "fixtureSource": {
+    "path": "contracts/policy/catalog-inventory-fixture-catalog.json",
+    "sha256": "4833d1444ec328754c83d0b4e7e2c443fc8058bee85c481ec72d573f73a9b57b"
+  },
+  "scenarioSource": {
+    "path": "contracts/policy/catalog-inventory-api-scenarios.json",
+    "sha256": "ba7062f1322b2a4ac103e5a20b4de1eb6467504964c0abefaea6328f295d5fc0",
+    "scenarioDefinitions": 26,
+    "caseCount": 100
+  },
+  "execution": {
+    "businessStatus": "NOT_APPLICABLE_WITH_REASON",
+    "cleanupStatus": "NOT_APPLICABLE_WITH_REASON",
+    "reason": "P2 package has no DEV/UAT/HTTP runtime authority; P3 and a separately authorized managed runtime package must execute the shared fixture/case set.",
+    "caseLevelResults": "NOT_CREATED_BECAUSE_NO_RUNTIME_EXECUTION_AUTHORITY",
+    "dbCountReconciliation": "DEFERRED; use RequestCompletionEvent.databaseOperationCount against 42 operation design declarations"
+  },
+  "staticPreparation": {
+    "operationDesignRows": 42,
+    "routeRegistryRows": 42,
+    "operationRouteExactSet": "PASS",
+    "problemConditionExactSetRows": 42,
+    "normalPathDbDeclarations": 42,
+    "sharedFixtureNotCopied": true,
+    "copyLimitsLoadedDynamically": true,
+    "copyLimitFixtureAssertionsValueIndependent": true
+  },
+  "requiredNextRuntimeProof": [
+    "Apply the canonical fixture catalog without copying it into a second package.",
+    "Execute the 100 API cases through managed local DEV plus authorized tunnel, with run-scoped logs and request correlation.",
+    "Record each case business result separately from cleanup; preserve first failure and last known good logs.",
+    "Compare observed databaseOperationCount with each operation's normalPathDbOperations.expectedCount; explain every delta by operationId.",
+    "Re-run media cleanup and assert run-scoped asset namespace absence before declaring cleanup PASS."
+  ]
+}

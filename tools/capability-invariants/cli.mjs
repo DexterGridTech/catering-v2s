@@ -220,6 +220,11 @@ function walkOpenApi(root, relative = OPENAPI_ROOT) {
     .sort();
 }
 
+function isCatalogInventoryDefinitionOnly(document) {
+  return document?.["x-v2s-status"] === "P1_DEFINITION_ONLY"
+    || document?.kind === "catalog-inventory-openapi-path-shard";
+}
+
 function walkFiles(root, relative) {
   const absolute = path.join(root, relative);
   if (!fs.existsSync(absolute)) fail(`P3_A_STATIC_PROOF_ROOT_MISSING:${relative}`);
@@ -404,6 +409,12 @@ export function mutatingOperationInventory(root = process.cwd()) {
   const rows = [];
   for (const sourcePath of walkOpenApi(root)) {
     const document = json(root, sourcePath, "OPENAPI_DOCUMENT_INVALID");
+    // Catalog P1 definition documents and their path shards are not the IAM
+    // capability inventory's canonical edge surface. They are consumed by the
+    // catalog-specific contract/codegen gates; scanning them here both double
+    // counts projections and invents capability requirements absent from the
+    // IAM governance manifest.
+    if (isCatalogInventoryDefinitionOnly(document)) continue;
     for (const [route, methods] of Object.entries(document.paths || {})) {
       for (const [method, operation] of Object.entries(methods || {})) {
         if (!WRITE_METHODS.has(String(method).toUpperCase()) || !operation || typeof operation !== "object") continue;
@@ -1124,6 +1135,23 @@ function selfTest() {
     const publicOperation = {operationId: "acceptPublicInvitation", path: "/api/public/invitations/{token}", consumerFace: "public", ownerModule: "workspace-iam"};
     writeFixture(root, publicOperation);
     validateCapabilityInvariants(root);
+
+    const projectionPath = path.join(root, "contracts/openapi/generated-catalog-path-shard.yaml");
+    const canonicalDocument = json(root, "contracts/openapi/fixture.yaml", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
+    fs.writeFileSync(projectionPath, JSON.stringify({kind: "catalog-inventory-openapi-path-shard", paths: canonicalDocument.paths}));
+    const projectedInventory = mutatingOperationInventory(root);
+    if (projectedInventory.length !== 1) fail("CAPABILITY_SELF_TEST_GENERATED_PROJECTION_NOT_SKIPPED");
+    const unmarkedProjection = JSON.parse(fs.readFileSync(projectionPath, "utf8"));
+    delete unmarkedProjection.kind;
+    fs.writeFileSync(projectionPath, JSON.stringify(unmarkedProjection));
+    try {
+      mutatingOperationInventory(root);
+      fail("CAPABILITY_SELF_TEST_GENERATED_PROJECTION_RED_MUTATION_NOT_REJECTED");
+    } catch (error) {
+      if (!String(error.message).startsWith("CAPABILITY_OPERATION_IDENTITY_DUPLICATE:")) throw error;
+      process.stdout.write("RED_GENERATED_OPENAPI_PROJECTION=PASS\n");
+    }
+    fs.rmSync(projectionPath, {force: true});
 
     const anonymousAdminOperation = {operationId: "platformPasswordLogin", path: "/api/platform/auth/password-login", consumerFace: "platform-admin", ownerModule: "platform-iam", security: []};
     writeFixture(root, anonymousAdminOperation);

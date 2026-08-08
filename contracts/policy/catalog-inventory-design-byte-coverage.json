@@ -1,0 +1,4564 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-design-byte-coverage",
+  "status": "APPROVED",
+  "source": {
+    "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+    "designHeading": "### 3.4 读模型一次定全",
+    "designSha256": "fe8c0d55a6947a4c61005be2061215779f661c9b09665d280c3dc6ff329ea244"
+  },
+  "requiredModelCount": 25,
+  "rows": [
+    {
+      "model": "CatalogWorkbenchContext",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.scopeName",
+          "type": "string"
+        },
+        {
+          "path": "data.scopeCode",
+          "type": "string"
+        },
+        {
+          "path": "data.headCompanyRef",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.copySourceAvailable",
+          "type": "boolean"
+        },
+        {
+          "path": "data.actionAvailability",
+          "type": "object"
+        },
+        {
+          "path": "data.actionAvailability.canCreate",
+          "type": "boolean"
+        },
+        {
+          "path": "data.actionAvailability.canEdit",
+          "type": "boolean"
+        },
+        {
+          "path": "data.actionAvailability.canCopy",
+          "type": "boolean"
+        },
+        {
+          "path": "data.actionAvailability.reasons",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "data.contextVersion",
+          "type": "integer"
+        },
+        {
+          "path": "data.authorizationRevision",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "model": "CatalogNavigationView",
+      "required": [
+        "tree",
+        "smartViews",
+        "shapeCounts",
+        "uncategorizedCount",
+        "generation"
+      ],
+      "fields": [
+        {
+          "path": "tree",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "tree[].nodeRef",
+          "type": "string"
+        },
+        {
+          "path": "tree[].label",
+          "type": "string"
+        },
+        {
+          "path": "tree[].code",
+          "type": "string"
+        },
+        {
+          "path": "tree[].parentCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "tree[].status",
+          "type": "string"
+        },
+        {
+          "path": "tree[].count",
+          "type": "integer"
+        },
+        {
+          "path": "tree[].countSemantics",
+          "type": "string",
+          "enum": [
+            "SELF_ONLY",
+            "SELF_AND_DESCENDANTS"
+          ]
+        },
+        {
+          "path": "tree[].voidAvailability",
+          "type": "object"
+        },
+        {
+          "path": "tree[].voidAvailability.canVoid",
+          "type": "boolean"
+        },
+        {
+          "path": "tree[].voidAvailability.blockingReferences",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "tree[].voidAvailability.blockingReferences[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "tree[].voidAvailability.blockingReferences[].referenceRef",
+          "type": "string"
+        },
+        {
+          "path": "tree[].voidAvailability.dependentFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "tree[].voidAvailability.dependentFacts[].factKind",
+          "type": "string"
+        },
+        {
+          "path": "tree[].voidAvailability.dependentFacts[].factRef",
+          "type": "string"
+        },
+        {
+          "path": "smartViews",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "smartViews[].viewKey",
+          "type": "string"
+        },
+        {
+          "path": "smartViews[].label",
+          "type": "string"
+        },
+        {
+          "path": "smartViews[].count",
+          "type": "integer"
+        },
+        {
+          "path": "shapeCounts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "shapeCounts[].shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "shapeCounts[].count",
+          "type": "integer"
+        },
+        {
+          "path": "uncategorizedCount",
+          "type": "integer"
+        },
+        {
+          "path": "generation",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "model": "CatalogItemPage",
+      "required": [
+        "items",
+        "total",
+        "cursor",
+        "generation",
+        "queryGeneration"
+      ],
+      "fields": [
+        {
+          "path": "items",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].primaryImageAssetRef",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].code",
+          "type": "string"
+        },
+        {
+          "path": "items[].name",
+          "type": "string"
+        },
+        {
+          "path": "items[].shortName",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].categoryRefs",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "items[].productionTagRefs",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "items[].shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "items[].status",
+          "type": "string"
+        },
+        {
+          "path": "items[].governanceStatus",
+          "type": "string"
+        },
+        {
+          "path": "items[].source",
+          "type": "string"
+        },
+        {
+          "path": "items[].skuEnabledCount",
+          "type": "integer"
+        },
+        {
+          "path": "items[].skuNonArchivedCount",
+          "type": "integer"
+        },
+        {
+          "path": "items[].skuTotalCount",
+          "type": "integer"
+        },
+        {
+          "path": "items[].skuDimensionSummary",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "items[].standardSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "items[].listedSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "items[].standardPriceDelta",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "items[].standardExtraPrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "items[].priceGranularity",
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "SKU"
+          ]
+        },
+        {
+          "path": "items[].missingPriceCount",
+          "type": "integer"
+        },
+        {
+          "path": "items[].stockTargetCount",
+          "type": "integer"
+        },
+        {
+          "path": "items[].bomCount",
+          "type": "integer"
+        },
+        {
+          "path": "items[].riskFlags",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "items[].version",
+          "type": "integer"
+        },
+        {
+          "path": "items[].updatedAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "total",
+          "type": "integer"
+        },
+        {
+          "path": "cursor",
+          "type": "string"
+        },
+        {
+          "path": "generation",
+          "type": "string"
+        },
+        {
+          "path": "queryGeneration",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "model": "CatalogItemDetail",
+      "required": [
+        "item",
+        "tabs",
+        "references",
+        "inventoryBom",
+        "productionTags",
+        "orderOptions",
+        "compositeGroups",
+        "governance",
+        "actionAvailability",
+        "deniedFields",
+        "fieldOwnership",
+        "queryIdentity"
+      ],
+      "fields": [
+        {
+          "path": "item.skuVariantDimensions",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.skuVariantDimensions[].attributeRef",
+          "type": "string"
+        },
+        {
+          "path": "item.skuVariantDimensions[].attributeCode",
+          "type": "string"
+        },
+        {
+          "path": "item.skuVariantDimensions[].attributeName",
+          "type": "string"
+        },
+        {
+          "path": "item.skuVariantDimensions[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.skuVariantDimensions[].values[].valueRef",
+          "type": "string"
+        },
+        {
+          "path": "item.skuVariantDimensions[].values[].valueCode",
+          "type": "string"
+        },
+        {
+          "path": "item.skuVariantDimensions[].values[].valueLabel",
+          "type": "string"
+        },
+        {
+          "path": "item.skuVariantDimensions[].values[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "item.skuVariantDimensions[].values[].status",
+          "type": "string"
+        },
+        {
+          "path": "item.skus",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.skus[].productSkuRef",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].skuCode",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].skuName",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs[].attributeRef",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs[].attributeCode",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs[].attributeName",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs[].attributeValueRef",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs[].valueCode",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs[].valueLabel",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "item.skus[].attributeValueRefs[].status",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].skuBarcode",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].standardSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "item.skus[].isDefault",
+          "type": "boolean"
+        },
+        {
+          "path": "item.skus[].status",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].version",
+          "type": "integer"
+        },
+        {
+          "path": "item.skus[].mediaRefs",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "item.categoryRefs",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "item.productionTagRefs",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "item",
+          "type": "object"
+        },
+        {
+          "path": "item.code",
+          "type": "string"
+        },
+        {
+          "path": "item.name",
+          "type": "string"
+        },
+        {
+          "path": "item.shortName",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "item.shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "item.itemKind",
+          "type": "string"
+        },
+        {
+          "path": "item.measureMode",
+          "type": "string"
+        },
+        {
+          "path": "item.usageCapabilities",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "item.images",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "item.identifiers",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.identifiers[].kind",
+          "type": "string"
+        },
+        {
+          "path": "item.identifiers[].code",
+          "type": "string"
+        },
+        {
+          "path": "item.identifiers[].value",
+          "type": "string"
+        },
+        {
+          "path": "item.skuSummary",
+          "type": "object"
+        },
+        {
+          "path": "item.skuSummary.enabledCount",
+          "type": "integer"
+        },
+        {
+          "path": "item.skuSummary.nonArchivedCount",
+          "type": "integer"
+        },
+        {
+          "path": "item.skuSummary.totalCount",
+          "type": "integer"
+        },
+        {
+          "path": "item.skuSummary.dimensions",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "item.ordering",
+          "type": "object"
+        },
+        {
+          "path": "item.ordering.priceGranularity",
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "SKU"
+          ]
+        },
+        {
+          "path": "item.ordering.standardSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "item.ordering.listedSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "item.ordering.missingPriceCount",
+          "type": "integer"
+        },
+        {
+          "path": "item.ordering.priceGranularity",
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "SKU"
+          ]
+        },
+        {
+          "path": "item.attributes",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "item.orderOptions",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.orderOptions[].groupCode",
+          "type": "string"
+        },
+        {
+          "path": "item.orderOptions[].groupName",
+          "type": "string"
+        },
+        {
+          "path": "item.orderOptions[].selectionMode",
+          "type": "string"
+        },
+        {
+          "path": "item.orderOptions[].required",
+          "type": "boolean"
+        },
+        {
+          "path": "item.orderOptions[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.orderOptions[].values[].code",
+          "type": "string"
+        },
+        {
+          "path": "item.orderOptions[].values[].name",
+          "type": "string"
+        },
+        {
+          "path": "item.orderOptions[].values[].default",
+          "type": "boolean"
+        },
+        {
+          "path": "item.orderOptions[].values[].extraPrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "item.orderOptions[].values[].productionEffects",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "item.compositeGroups",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.compositeGroups[].groupCode",
+          "type": "string"
+        },
+        {
+          "path": "item.compositeGroups[].groupName",
+          "type": "string"
+        },
+        {
+          "path": "item.compositeGroups[].selectionRule",
+          "type": "string"
+        },
+        {
+          "path": "item.compositeGroups[].components",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.compositeGroups[].components[].itemCode",
+          "type": "string"
+        },
+        {
+          "path": "item.compositeGroups[].components[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "item.compositeGroups[].components[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "item.compositeGroups[].components[].unit",
+          "type": "string"
+        },
+        {
+          "path": "item.compositeGroups[].components[].default",
+          "type": "boolean"
+        },
+        {
+          "path": "item.compositeGroups[].components[].extraPrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "item.compositeGroups[].components[].status",
+          "type": "string"
+        },
+        {
+          "path": "item.inventoryBom",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.inventoryBom[].nodeType",
+          "type": "string"
+        },
+        {
+          "path": "item.inventoryBom[].mode",
+          "type": "string"
+        },
+        {
+          "path": "item.inventoryBom[].targetRef",
+          "type": "string"
+        },
+        {
+          "path": "item.inventoryBom[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "item.inventoryBom[].unit",
+          "type": "string"
+        },
+        {
+          "path": "item.productionProfiles",
+          "type": "object"
+        },
+        {
+          "path": "item.productionProfiles.item",
+          "type": "object"
+        },
+        {
+          "path": "item.productionProfiles.sku",
+          "type": "object"
+        },
+        {
+          "path": "item.productionProfiles.optionValue",
+          "type": "object"
+        },
+        {
+          "path": "item.lifecycle",
+          "type": "object"
+        },
+        {
+          "path": "item.lifecycle.status",
+          "type": "string"
+        },
+        {
+          "path": "item.lifecycle.version",
+          "type": "integer"
+        },
+        {
+          "path": "item.lifecycle.source",
+          "type": "string"
+        },
+        {
+          "path": "item.source",
+          "type": "string"
+        },
+        {
+          "path": "item.externalIdentity",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "item.externalIdentity.sourceOrderRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "item.externalIdentity.sourceRecordRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "item.externalIdentity.sourceItemRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "item.externalIdentity.snapshot",
+          "type": "object",
+          "required": false
+        },
+        {
+          "path": "item.externalIdentity.snapshot.name",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "item.externalIdentity.snapshot.specification",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "item.externalIdentity.snapshot.price",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents",
+          "required": false
+        },
+        {
+          "path": "item.version",
+          "type": "integer"
+        },
+        {
+          "path": "item.updatedAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "item.productionProfiles.item",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "item.productionProfiles.sku",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "item.productionProfiles.optionValue",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "tabs",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "tabs[].tabKey",
+          "type": "string"
+        },
+        {
+          "path": "tabs[].visible",
+          "type": "boolean"
+        },
+        {
+          "path": "tabs[].disabled",
+          "type": "boolean"
+        },
+        {
+          "path": "tabs[].reason",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "references",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "references[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "references[].code",
+          "type": "string"
+        },
+        {
+          "path": "references[].direction",
+          "type": "string"
+        },
+        {
+          "path": "inventoryBom",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "inventoryBom[].nodeType",
+          "type": "string"
+        },
+        {
+          "path": "inventoryBom[].mode",
+          "type": "string"
+        },
+        {
+          "path": "inventoryBom[].targetRef",
+          "type": "string"
+        },
+        {
+          "path": "inventoryBom[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "inventoryBom[].unit",
+          "type": "string"
+        },
+        {
+          "path": "orderOptions",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "orderOptions[].groupCode",
+          "type": "string"
+        },
+        {
+          "path": "orderOptions[].groupName",
+          "type": "string"
+        },
+        {
+          "path": "orderOptions[].selectionMode",
+          "type": "string"
+        },
+        {
+          "path": "orderOptions[].required",
+          "type": "boolean"
+        },
+        {
+          "path": "orderOptions[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "orderOptions[].values[].code",
+          "type": "string"
+        },
+        {
+          "path": "orderOptions[].values[].name",
+          "type": "string"
+        },
+        {
+          "path": "orderOptions[].values[].default",
+          "type": "boolean"
+        },
+        {
+          "path": "orderOptions[].values[].extraPrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "orderOptions[].values[].productionEffects",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "compositeGroups",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "compositeGroups[].groupCode",
+          "type": "string"
+        },
+        {
+          "path": "compositeGroups[].groupName",
+          "type": "string"
+        },
+        {
+          "path": "compositeGroups[].selectionRule",
+          "type": "string"
+        },
+        {
+          "path": "compositeGroups[].components",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "compositeGroups[].components[].itemCode",
+          "type": "string"
+        },
+        {
+          "path": "compositeGroups[].components[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "compositeGroups[].components[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "compositeGroups[].components[].unit",
+          "type": "string"
+        },
+        {
+          "path": "compositeGroups[].components[].default",
+          "type": "boolean"
+        },
+        {
+          "path": "compositeGroups[].components[].extraPrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "compositeGroups[].components[].status",
+          "type": "string"
+        },
+        {
+          "path": "productionTags",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "productionTags[].code",
+          "type": "string"
+        },
+        {
+          "path": "productionTags[].name",
+          "type": "string"
+        },
+        {
+          "path": "productionTags[].owner",
+          "type": "string"
+        },
+        {
+          "path": "governance",
+          "type": "object"
+        },
+        {
+          "path": "governance.status",
+          "type": "string"
+        },
+        {
+          "path": "governance.deniedFields",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "governance.externalIdentity",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "governance.externalIdentity.sourceOrderRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "governance.externalIdentity.sourceRecordRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "governance.externalIdentity.sourceItemRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "governance.externalIdentity.snapshot",
+          "type": "object",
+          "required": false
+        },
+        {
+          "path": "governance.externalIdentity.snapshot.name",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "governance.externalIdentity.snapshot.specification",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "governance.externalIdentity.snapshot.price",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents",
+          "required": false
+        },
+        {
+          "path": "actionAvailability",
+          "type": "object"
+        },
+        {
+          "path": "actionAvailability.canEdit",
+          "type": "boolean"
+        },
+        {
+          "path": "actionAvailability.canEnable",
+          "type": "boolean"
+        },
+        {
+          "path": "actionAvailability.canDisable",
+          "type": "boolean"
+        },
+        {
+          "path": "actionAvailability.canArchive",
+          "type": "boolean"
+        },
+        {
+          "path": "actionAvailability.voidAvailability",
+          "type": "object"
+        },
+        {
+          "path": "actionAvailability.voidAvailability.canVoid",
+          "type": "boolean"
+        },
+        {
+          "path": "actionAvailability.voidAvailability.blockingReferences",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "actionAvailability.voidAvailability.blockingReferences[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "actionAvailability.voidAvailability.blockingReferences[].referenceRef",
+          "type": "string"
+        },
+        {
+          "path": "actionAvailability.voidAvailability.dependentFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "actionAvailability.voidAvailability.dependentFacts[].factKind",
+          "type": "string"
+        },
+        {
+          "path": "actionAvailability.voidAvailability.dependentFacts[].factRef",
+          "type": "string"
+        },
+        {
+          "path": "deniedFields",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "fieldOwnership",
+          "type": "object"
+        },
+        {
+          "path": "fieldOwnership.catalog",
+          "type": "string"
+        },
+        {
+          "path": "fieldOwnership.inventory",
+          "type": "string"
+        },
+        {
+          "path": "fieldOwnership.asset",
+          "type": "string"
+        },
+        {
+          "path": "queryIdentity",
+          "type": "object"
+        },
+        {
+          "path": "queryIdentity.dataNodeRef",
+          "type": "string"
+        },
+        {
+          "path": "queryIdentity.generation",
+          "type": "string"
+        },
+        {
+          "path": "item.inventoryBom[].version",
+          "type": "integer"
+        },
+        {
+          "path": "item.inventoryBom[].itemCode",
+          "type": "string"
+        },
+        {
+          "path": "item.inventoryBom[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "item.inventoryBom[].optionValueCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryBom[].version",
+          "type": "integer"
+        },
+        {
+          "path": "inventoryBom[].itemCode",
+          "type": "string"
+        },
+        {
+          "path": "inventoryBom[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryBom[].optionValueCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "CatalogDictionaryView",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.dictionaryKind",
+          "type": "string"
+        },
+        {
+          "path": "data.entries",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.entries[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].name",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].status",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].version",
+          "type": "integer"
+        },
+        {
+          "path": "data.entries[].updatedAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "data.entries[].voidAvailability",
+          "type": "object"
+        },
+        {
+          "path": "data.entries[].voidAvailability.canVoid",
+          "type": "boolean"
+        },
+        {
+          "path": "data.entries[].voidAvailability.blockingReferences",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.entries[].voidAvailability.blockingReferences[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].voidAvailability.blockingReferences[].referenceRef",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].voidAvailability.dependentFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.entries[].voidAvailability.dependentFacts[].factKind",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].voidAvailability.dependentFacts[].factRef",
+          "type": "string"
+        },
+        {
+          "path": "data.cursor",
+          "type": "string"
+        },
+        {
+          "path": "data.total",
+          "type": "integer"
+        },
+        {
+          "path": "data.generation",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "model": "ProductionTagPage",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.entries",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.entries[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].name",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].tagKind",
+          "type": "string",
+          "enum": ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"]
+        },
+        {
+          "path": "data.entries[].status",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].linkedProductCount",
+          "type": "integer"
+        },
+        {
+          "path": "data.entries[].version",
+          "type": "integer"
+        },
+        {
+          "path": "data.entries[].updatedAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "data.entries[].voidAvailability",
+          "type": "object"
+        },
+        {
+          "path": "data.entries[].voidAvailability.canVoid",
+          "type": "boolean"
+        },
+        {
+          "path": "data.entries[].voidAvailability.blockingReferences",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.entries[].voidAvailability.blockingReferences[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].voidAvailability.blockingReferences[].referenceRef",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].voidAvailability.dependentFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.entries[].voidAvailability.dependentFacts[].factKind",
+          "type": "string"
+        },
+        {
+          "path": "data.entries[].voidAvailability.dependentFacts[].factRef",
+          "type": "string"
+        },
+        {
+          "path": "data.cursor",
+          "type": "string"
+        },
+        {
+          "path": "data.total",
+          "type": "integer"
+        },
+        {
+          "path": "data.generation",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "model": "LocalCopyCandidatePage",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.sourceScope",
+          "type": "object"
+        },
+        {
+          "path": "data.sourceScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.sourceScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.sourceScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope",
+          "type": "object"
+        },
+        {
+          "path": "data.targetScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.items",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.items[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].name",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].status",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].compatibilityHint",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].version",
+          "type": "integer"
+        },
+        {
+          "path": "data.cursor",
+          "type": "string"
+        },
+        {
+          "path": "data.total",
+          "type": "integer"
+        },
+        {
+          "path": "data.generation",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "model": "LocalCopyPreflight",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.sourceScope",
+          "type": "object"
+        },
+        {
+          "path": "data.sourceScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.sourceScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.sourceScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope",
+          "type": "object"
+        },
+        {
+          "path": "data.targetScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.selectedItems",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.selectedItems[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.selectedItems[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.selectedItems[].name",
+          "type": "string"
+        },
+        {
+          "path": "data.closureItems",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.closureItems[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.closureItems[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.closureItems[].name",
+          "type": "string"
+        },
+        {
+          "path": "data.closureItems[].action",
+          "type": "string"
+        },
+        {
+          "path": "data.closureEdges",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.closureEdges[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "data.closureEdges[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "data.closureEdges[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "data.objectVersions",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.objectVersions[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.objectVersions[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.objectVersions[].sourceVersion",
+          "type": "integer"
+        },
+        {
+          "path": "data.objectVersions[].targetVersion",
+          "type": "integer"
+        },
+        {
+          "path": "data.mappingPreview",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.mappingPreview[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "data.mappingPreview[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "data.mappingPreview[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "data.mappingPreview[].status",
+          "type": "string"
+        },
+        {
+          "path": "data.compatibilityResults",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.compatibilityResults[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.compatibilityResults[].result",
+          "type": "string"
+        },
+        {
+          "path": "data.compatibilityResults[].reason",
+          "type": "string"
+        },
+        {
+          "path": "data.referenceRewritePreview",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.referenceRewritePreview[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "data.referenceRewritePreview[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "data.referenceRewritePreview[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "data.preflightDigest",
+          "type": "string"
+        },
+        {
+          "path": "data.selectedCount",
+          "type": "integer"
+        },
+        {
+          "path": "data.selectedLimit",
+          "type": "integer"
+        },
+        {
+          "path": "data.closureCount",
+          "type": "integer"
+        },
+        {
+          "path": "data.closureLimit",
+          "type": "integer"
+        },
+        {
+          "path": "data.blockingCount",
+          "type": "integer"
+        },
+        {
+          "path": "data.confirmationRequiredCount",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "LocalCopyReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.preflightDigest",
+          "type": "string"
+        },
+        {
+          "path": "data.created",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.created[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.created[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.reused",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.reused[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.reused[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.skipped",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.skipped[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.skipped[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.mappings",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.mappings[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "data.mappings[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "data.mappings[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "data.targetVersions",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.targetVersions[].targetRef",
+          "type": "string"
+        },
+        {
+          "path": "data.targetVersions[].version",
+          "type": "integer"
+        },
+        {
+          "path": "data.ownerReadbacks",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.ownerReadbacks[].owner",
+          "type": "string"
+        },
+        {
+          "path": "data.ownerReadbacks[].status",
+          "type": "string"
+        },
+        {
+          "path": "data.ownerReadbacks[].version",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "TemporaryPromotionPreflight",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.item",
+          "type": "object"
+        },
+        {
+          "path": "data.item.code",
+          "type": "string"
+        },
+        {
+          "path": "data.item.name",
+          "type": "string"
+        },
+        {
+          "path": "data.item.shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "data.proposed",
+          "type": "object"
+        },
+        {
+          "path": "data.proposed.code",
+          "type": "string"
+        },
+        {
+          "path": "data.proposed.name",
+          "type": "string"
+        },
+        {
+          "path": "data.proposed.shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "data.proposed.materialRole",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.source",
+          "type": "string"
+        },
+        {
+          "path": "data.sourceVersion",
+          "type": "integer"
+        },
+        {
+          "path": "data.formalCodeAvailable",
+          "type": "boolean"
+        },
+        {
+          "path": "data.requiredFields",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "data.blockedReasons",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "data.changes",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.changes[].field",
+          "type": "string"
+        },
+        {
+          "path": "data.changes[].before",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.changes[].after",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.preflightDigest",
+          "type": "string"
+        },
+        {
+          "path": "data.canPromote",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "model": "CatalogItemCommandReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "result",
+          "type": "object"
+        },
+        {
+          "path": "result.operation",
+          "type": "string"
+        },
+        {
+          "path": "result.resourceRef",
+          "type": "string"
+        },
+        {
+          "path": "result.status",
+          "type": "string"
+        },
+        {
+          "path": "result.version",
+          "type": "integer"
+        },
+        {
+          "path": "result.ownerReadbacks",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "result.ownerReadbacks[].owner",
+          "type": "string"
+        },
+        {
+          "path": "result.ownerReadbacks[].status",
+          "type": "string"
+        },
+        {
+          "path": "result.ownerReadbacks[].version",
+          "type": "integer"
+        },
+        {
+          "path": "result.actionAvailability",
+          "type": "object"
+        },
+        {
+          "path": "result.actionAvailability.canEdit",
+          "type": "boolean"
+        },
+        {
+          "path": "result.actionAvailability.canEnable",
+          "type": "boolean"
+        },
+        {
+          "path": "result.actionAvailability.canDisable",
+          "type": "boolean"
+        },
+        {
+          "path": "version",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "BrandCopyCandidatePage",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.sourceScope",
+          "type": "object"
+        },
+        {
+          "path": "data.sourceScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.sourceScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.sourceScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope",
+          "type": "object"
+        },
+        {
+          "path": "data.targetScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "data.targetScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "data.copySourceAvailable",
+          "type": "boolean"
+        },
+        {
+          "path": "data.items",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.items[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].name",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].status",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].version",
+          "type": "integer"
+        },
+        {
+          "path": "data.cursor",
+          "type": "string"
+        },
+        {
+          "path": "data.total",
+          "type": "integer"
+        },
+        {
+          "path": "data.generation",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "model": "BrandCatalogCopyPreflight",
+      "required": [
+        "sourceScope",
+        "targetScope",
+        "selectedItems",
+        "selectedCount",
+        "selectedLimit",
+        "closureItems",
+        "closureEdges",
+        "closureCount",
+        "closureLimit",
+        "objectVersions",
+        "mappingPreview",
+        "compatibilityResults",
+        "referenceRewritePreview",
+        "preflightDigest",
+        "blockingCount",
+        "confirmationRequiredCount"
+      ],
+      "fields": [
+        {
+          "path": "sourceScope",
+          "type": "object"
+        },
+        {
+          "path": "sourceScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "sourceScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "sourceScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "targetScope",
+          "type": "object"
+        },
+        {
+          "path": "targetScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "targetScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "targetScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "selectedItems",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "selectedItems[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "selectedItems[].code",
+          "type": "string"
+        },
+        {
+          "path": "selectedItems[].name",
+          "type": "string"
+        },
+        {
+          "path": "selectedCount",
+          "type": "integer"
+        },
+        {
+          "path": "selectedLimit",
+          "type": "integer"
+        },
+        {
+          "path": "closureItems",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "closureItems[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "closureItems[].code",
+          "type": "string"
+        },
+        {
+          "path": "closureItems[].name",
+          "type": "string"
+        },
+        {
+          "path": "closureItems[].action",
+          "type": "string"
+        },
+        {
+          "path": "closureEdges",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "closureEdges[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "closureEdges[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "closureEdges[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "closureCount",
+          "type": "integer"
+        },
+        {
+          "path": "closureLimit",
+          "type": "integer"
+        },
+        {
+          "path": "objectVersions",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "objectVersions[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "objectVersions[].code",
+          "type": "string"
+        },
+        {
+          "path": "objectVersions[].sourceVersion",
+          "type": "integer"
+        },
+        {
+          "path": "objectVersions[].targetVersion",
+          "type": "integer"
+        },
+        {
+          "path": "mappingPreview",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "mappingPreview[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "mappingPreview[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "mappingPreview[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "mappingPreview[].status",
+          "type": "string"
+        },
+        {
+          "path": "compatibilityResults",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "compatibilityResults[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "compatibilityResults[].result",
+          "type": "string"
+        },
+        {
+          "path": "compatibilityResults[].reason",
+          "type": "string"
+        },
+        {
+          "path": "referenceRewritePreview",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "referenceRewritePreview[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "referenceRewritePreview[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "referenceRewritePreview[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "preflightDigest",
+          "type": "string"
+        },
+        {
+          "path": "blockingCount",
+          "type": "integer"
+        },
+        {
+          "path": "confirmationRequiredCount",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "BrandCatalogCopyReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.preflightDigest",
+          "type": "string"
+        },
+        {
+          "path": "data.created",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.created[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.created[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.reused",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.reused[].objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.reused[].code",
+          "type": "string"
+        },
+        {
+          "path": "data.mappings",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.mappings[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "data.mappings[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "data.mappings[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "data.targetVersions",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.targetVersions[].targetRef",
+          "type": "string"
+        },
+        {
+          "path": "data.targetVersions[].version",
+          "type": "integer"
+        },
+        {
+          "path": "data.ownerReadbacks",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.ownerReadbacks[].owner",
+          "type": "string"
+        },
+        {
+          "path": "data.ownerReadbacks[].status",
+          "type": "string"
+        },
+        {
+          "path": "data.ownerReadbacks[].version",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "InventoryTargetPage",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "data",
+          "type": "object"
+        },
+        {
+          "path": "data.items",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.items[].targetRef",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].targetType",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].productCode",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].productName",
+          "type": ["string", "null"]
+        },
+        {
+          "path": "data.items[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.items[].skuName",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.items[].categoryName",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.items[].materialRole",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.items[].consumptionUnit",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].countingUnit",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.items[].conversionSummary",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.items[].balance",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "data.items[].stockState",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].stale",
+          "type": "boolean"
+        },
+        {
+          "path": "data.items[].unknown",
+          "type": "boolean"
+        },
+        {
+          "path": "data.items[].threshold",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "data.items[].gap",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "data.items[].changeToday",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "data.items[].change7d",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "data.items[].change30d",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "data.items[].lastChangeSource",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "data.items[].lastChangeAt",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "epoch-millis"
+        },
+        {
+          "path": "data.items[].authorityType",
+          "type": "string",
+          "enum": [
+            "INTERNAL"
+          ]
+        },
+        {
+          "path": "data.cursor",
+          "type": "string"
+        },
+        {
+          "path": "data.total",
+          "type": "integer"
+        },
+        {
+          "path": "data.generation",
+          "type": "string"
+        },
+        {
+          "path": "data.counts",
+          "type": "object"
+        },
+        {
+          "path": "data.counts.ALL",
+          "type": "integer"
+        },
+        {
+          "path": "data.counts.NEEDS_ATTENTION",
+          "type": "integer"
+        },
+        {
+          "path": "data.counts.LOW",
+          "type": "integer"
+        },
+        {
+          "path": "data.counts.OUT",
+          "type": "integer"
+        },
+        {
+          "path": "data.counts.NEGATIVE",
+          "type": "integer"
+        },
+        {
+          "path": "data.counts.UNKNOWN",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "InventoryTargetCurrentView",
+      "required": [
+        "target",
+        "balance",
+        "configuration",
+        "version",
+        "stockState",
+        "stale",
+        "unknown",
+        "threshold",
+        "gap",
+        "changeSummary",
+        "recentChanges",
+        "references",
+        "ledger",
+        "diagnosticsAvailability"
+      ],
+      "fields": [
+        {
+          "path": "version",
+          "type": "integer"
+        },
+        {
+          "path": "target",
+          "type": "object"
+        },
+        {
+          "path": "target.targetRef",
+          "type": "string"
+        },
+        {
+          "path": "target.targetType",
+          "type": "string"
+        },
+        {
+          "path": "target.productCode",
+          "type": "string"
+        },
+        {
+          "path": "target.productName",
+          "type": ["string", "null"]
+        },
+        {
+          "path": "target.productShape",
+          "type": "string"
+        },
+        {
+          "path": "target.skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "target.skuName",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "target.consumptionUnit",
+          "type": "string"
+        },
+        {
+          "path": "target.countingUnit",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "target.conversionSummary",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "target.authorityType",
+          "type": "string",
+          "enum": [
+            "INTERNAL"
+          ]
+        },
+        {
+          "path": "balance",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "configuration",
+          "type": "object"
+        },
+        {
+          "path": "configuration.allowNegative",
+          "type": "boolean"
+        },
+        {
+          "path": "configuration.lowStockThreshold",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "stockState",
+          "type": "string"
+        },
+        {
+          "path": "stale",
+          "type": "boolean"
+        },
+        {
+          "path": "unknown",
+          "type": "boolean"
+        },
+        {
+          "path": "threshold",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "gap",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary",
+          "type": "object"
+        },
+        {
+          "path": "changeSummary.today",
+          "type": "object"
+        },
+        {
+          "path": "changeSummary.today.increase",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.today.decrease",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.today.netChange",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.today.entryCount",
+          "type": "integer"
+        },
+        {
+          "path": "changeSummary.sevenDays",
+          "type": "object"
+        },
+        {
+          "path": "changeSummary.sevenDays.increase",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.sevenDays.decrease",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.sevenDays.netChange",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.sevenDays.entryCount",
+          "type": "integer"
+        },
+        {
+          "path": "changeSummary.thirtyDays",
+          "type": "object"
+        },
+        {
+          "path": "changeSummary.thirtyDays.increase",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.thirtyDays.decrease",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.thirtyDays.netChange",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "changeSummary.thirtyDays.entryCount",
+          "type": "integer"
+        },
+        {
+          "path": "recentChanges",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "recentChanges[].occurredAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "recentChanges[].changeType",
+          "type": "string"
+        },
+        {
+          "path": "recentChanges[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "recentChanges[].source",
+          "type": "string"
+        },
+        {
+          "path": "references",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "references[].sourceCode",
+          "type": "string"
+        },
+        {
+          "path": "references[].sourceKind",
+          "type": "string"
+        },
+        {
+          "path": "references[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "references[].unit",
+          "type": "string"
+        },
+        {
+          "path": "references[].timing",
+          "type": "string"
+        },
+        {
+          "path": "references[].status",
+          "type": "string"
+        },
+        {
+          "path": "ledger",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "ledger[].entryRef",
+          "type": "string"
+        },
+        {
+          "path": "ledger[].source",
+          "type": "string"
+        },
+        {
+          "path": "ledger[].reasonCode",
+          "type": "string"
+        },
+        {
+          "path": "ledger[].beforeQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "ledger[].changeQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "ledger[].afterQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "ledger[].occurredAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "diagnosticsAvailability",
+          "type": "object"
+        },
+        {
+          "path": "diagnosticsAvailability.canRead",
+          "type": "boolean"
+        },
+        {
+          "path": "diagnosticsAvailability.reason",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "configuration.countingUnit",
+          "type": "string"
+        },
+        {
+          "path": "configuration.conversionFactor",
+          "type": "string",
+          "format": "decimal"
+        }
+      ]
+    },
+    {
+      "model": "InventoryChangeSummaryView",
+      "required": [
+        "period",
+        "increase",
+        "decrease",
+        "netChange",
+        "entryCount"
+      ],
+      "fields": [
+        {
+          "path": "period",
+          "type": "string"
+        },
+        {
+          "path": "increase",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "decrease",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "netChange",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "entryCount",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "InventoryBusinessHistoryPage",
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "fields": [
+        {
+          "path": "entries",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "entries[].entryRef",
+          "type": "string"
+        },
+        {
+          "path": "entries[].action",
+          "type": "string"
+        },
+        {
+          "path": "entries[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "entries[].beforeQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "entries[].afterQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "entries[].occurredAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "entries[].source",
+          "type": "string"
+        },
+        {
+          "path": "entries[].reasonCode",
+          "type": "string"
+        },
+        {
+          "path": "cursor",
+          "type": "string"
+        },
+        {
+          "path": "total",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "InventoryConsumptionReferencePage",
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "fields": [
+        {
+          "path": "entries",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "entries[].sourceCode",
+          "type": "string"
+        },
+        {
+          "path": "entries[].sourceKind",
+          "type": "string"
+        },
+        {
+          "path": "entries[].sourceName",
+          "type": "string"
+        },
+        {
+          "path": "entries[].ownerScope",
+          "type": "object"
+        },
+        {
+          "path": "entries[].ownerScope.ownerType",
+          "type": "string"
+        },
+        {
+          "path": "entries[].ownerScope.ownerRef",
+          "type": "string"
+        },
+        {
+          "path": "entries[].ownerScope.brandRef",
+          "type": "string"
+        },
+        {
+          "path": "entries[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "entries[].unit",
+          "type": "string"
+        },
+        {
+          "path": "entries[].timing",
+          "type": "string"
+        },
+        {
+          "path": "entries[].status",
+          "type": "string"
+        },
+        {
+          "path": "cursor",
+          "type": "string"
+        },
+        {
+          "path": "total",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "InventoryLedgerPage",
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "fields": [
+        {
+          "path": "entries",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "entries[].entryRef",
+          "type": "string"
+        },
+        {
+          "path": "entries[].source",
+          "type": "string"
+        },
+        {
+          "path": "entries[].reasonCode",
+          "type": "string"
+        },
+        {
+          "path": "entries[].beforeQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "entries[].changeQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "entries[].afterQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "entries[].occurredAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "cursor",
+          "type": "string"
+        },
+        {
+          "path": "total",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "InventoryDiagnosticsView",
+      "required": [
+        "permission",
+        "queries",
+        "timings",
+        "warnings"
+      ],
+      "fields": [
+        {
+          "path": "permission",
+          "type": "object"
+        },
+        {
+          "path": "permission.granted",
+          "type": "boolean"
+        },
+        {
+          "path": "permission.reason",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "queries",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "queries[].queryName",
+          "type": "string"
+        },
+        {
+          "path": "queries[].databaseOperationCount",
+          "type": "integer"
+        },
+        {
+          "path": "queries[].durationMillis",
+          "type": "integer"
+        },
+        {
+          "path": "timings",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "timings[].queryName",
+          "type": "string"
+        },
+        {
+          "path": "timings[].durationMillis",
+          "type": "integer"
+        },
+        {
+          "path": "warnings",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "warnings[].code",
+          "type": "string"
+        },
+        {
+          "path": "warnings[].message",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "model": "InventoryWriteReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "result",
+          "type": "object"
+        },
+        {
+          "path": "result.targetRef",
+          "type": "string"
+        },
+        {
+          "path": "result.before",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "result.change",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "result.after",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "result.ledgerEntryRef",
+          "type": "string"
+        },
+        {
+          "path": "result.stockState",
+          "type": "string"
+        },
+        {
+          "path": "result.version",
+          "type": "integer"
+        },
+        {
+          "path": "version",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "StagedCatalogAsset",
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "result",
+          "type": "object"
+        },
+        {
+          "path": "result.assetRef",
+          "type": "string"
+        },
+        {
+          "path": "result.status",
+          "type": "string"
+        },
+        {
+          "path": "result.mediaType",
+          "type": "string"
+        },
+        {
+          "path": "result.contentDigest",
+          "type": "string"
+        },
+        {
+          "path": "result.readyAt",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "epoch-millis"
+        },
+        {
+          "path": "result.version",
+          "type": "integer"
+        },
+        {
+          "path": "version",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "CatalogAssetReleaseReadback",
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "requestId",
+          "type": "string"
+        },
+        {
+          "path": "result",
+          "type": "object"
+        },
+        {
+          "path": "result.assetRef",
+          "type": "string"
+        },
+        {
+          "path": "result.disposition",
+          "type": "string"
+        },
+        {
+          "path": "result.releasedAt",
+          "type": "integer",
+          "format": "epoch-millis"
+        },
+        {
+          "path": "result.version",
+          "type": "integer"
+        },
+        {
+          "path": "version",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "model": "CatalogShapeManifestView",
+      "required": [
+        "revision",
+        "manifestDigest",
+        "shapeKeys",
+        "capabilityValues",
+        "modeRules",
+        "shapeRules",
+        "fieldRules",
+        "tabRules",
+        "linkageRules",
+        "typeEffects",
+        "saveSections",
+        "detailSections"
+      ],
+      "fields": [
+        {
+          "path": "revision",
+          "type": "string"
+        },
+        {
+          "path": "manifestDigest",
+          "type": "string"
+        },
+        {
+          "path": "shapeKeys",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "capabilityValues",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "modeRules",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "modeRules[].nodeType",
+          "type": "string"
+        },
+        {
+          "path": "modeRules[].condition",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "modeRules[].allowedModes",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "shapeRules",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "shapeRules[].shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "shapeRules[].itemKind",
+          "type": "string"
+        },
+        {
+          "path": "shapeRules[].measureMode",
+          "type": "string"
+        },
+        {
+          "path": "shapeRules[].skuMode",
+          "type": "string"
+        },
+        {
+          "path": "shapeRules[].priceGranularity",
+          "type": "string"
+        },
+        {
+          "path": "shapeRules[].usageCapabilities",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "fieldRules",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "tabRules",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "linkageRules",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "typeEffects",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "saveSections",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "detailSections",
+          "type": "object",
+          "additionalProperties": true
+        }
+      ]
+    }
+  ],
+  "requestRows": [
+    {
+      "model": "CatalogItemPageQuery",
+      "required": [],
+      "fields": [
+        {
+          "path": "dataNodeRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "keyword",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "smartViewKey",
+          "type": "string",
+          "enum": [
+            "ALL",
+            "ENABLED",
+            "DISABLED",
+            "AUTO_SYNC",
+            "TEMPORARY",
+            "NEEDS_ATTENTION"
+          ],
+          "required": false
+        },
+        {
+          "path": "shapeKey",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "categoryRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "uncategorized",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "path": "includeSubCategories",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "path": "status",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "governanceStatus",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "source",
+          "type": "string",
+          "enum": [
+            "SELF_MANAGED",
+            "COPIED",
+            "AUTO_SYNC",
+            "TEMPORARY"
+          ],
+          "required": false
+        },
+        {
+          "path": "cursor",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "pageSize",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "path": "queryGeneration",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "model": "InventoryTargetPageQuery",
+      "required": [],
+      "fields": [
+        {
+          "path": "dataNodeRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "keyword",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "categoryRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "stockView",
+          "type": "string",
+          "enum": [
+            "ALL",
+            "NEEDS_ATTENTION",
+            "LOW",
+            "OUT",
+            "NEGATIVE",
+            "UNKNOWN"
+          ],
+          "required": false
+        },
+        {
+          "path": "cursor",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "pageSize",
+          "type": "integer",
+          "required": false
+        }
+      ]
+    },
+    {
+      "model": "InventoryCountRequest",
+      "required": [
+        "targetRef",
+        "expectedVersion",
+        "countedQuantity",
+        "unit",
+        "zeroConfirmation"
+      ],
+      "fields": [
+        {
+          "path": "targetRef",
+          "type": "string"
+        },
+        {
+          "path": "expectedVersion",
+          "type": "integer"
+        },
+        {
+          "path": "countedQuantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "unit",
+          "type": "string"
+        },
+        {
+          "path": "note",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "zeroConfirmation",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "model": "InventoryIncreaseRequest",
+      "required": [
+        "targetRef",
+        "expectedVersion",
+        "quantity",
+        "unit"
+      ],
+      "fields": [
+        {
+          "path": "targetRef",
+          "type": "string"
+        },
+        {
+          "path": "expectedVersion",
+          "type": "integer"
+        },
+        {
+          "path": "quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "unit",
+          "type": "string"
+        },
+        {
+          "path": "note",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "model": "InventoryAdjustmentRequest",
+      "required": [
+        "targetRef",
+        "expectedVersion",
+        "direction",
+        "quantity",
+        "unit",
+        "reasonCode"
+      ],
+      "fields": [
+        {
+          "path": "targetRef",
+          "type": "string"
+        },
+        {
+          "path": "expectedVersion",
+          "type": "integer"
+        },
+        {
+          "path": "direction",
+          "type": "string",
+          "enum": [
+            "INCREASE",
+            "DECREASE"
+          ]
+        },
+        {
+          "path": "quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "unit",
+          "type": "string"
+        },
+        {
+          "path": "reasonCode",
+          "type": "string",
+          "enum": [
+            "RECOUNT",
+            "RECEIPT",
+            "WASTE",
+            "TRANSFER",
+            "CORRECTION",
+            "OTHER"
+          ]
+        },
+        {
+          "path": "note",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "model": "InventoryTargetConfigurationRequest",
+      "required": [
+        "targetRef",
+        "expectedVersion",
+        "configuration"
+      ],
+      "fields": [
+        {
+          "path": "targetRef",
+          "type": "string"
+        },
+        {
+          "path": "expectedVersion",
+          "type": "integer"
+        },
+        {
+          "path": "configuration",
+          "type": "object"
+        },
+        {
+          "path": "configuration.allowNegative",
+          "type": "boolean"
+        },
+        {
+          "path": "configuration.lowStockThreshold",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "configuration.countingUnit",
+          "type": "string"
+        },
+        {
+          "path": "configuration.conversionFactor",
+          "type": "string",
+          "format": "decimal"
+        }
+      ]
+    },
+    {
+      "model": "CatalogItemSaveRequest",
+      "required": [
+        "itemCode",
+        "sections"
+      ],
+      "fields": [
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions",
+          "type": "array",
+          "itemType": "object",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].attributeRef",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].attributeCode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].attributeName",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].values[].valueRef",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].values[].valueCode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].values[].valueLabel",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].values[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "sections.catalogDraft.skuVariantDimensions[].values[].status",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus",
+          "type": "array",
+          "itemType": "object",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.skus[].productSkuRef",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].skuCode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].skuName",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs[].attributeRef",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs[].attributeCode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs[].attributeName",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs[].attributeValueRef",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs[].valueCode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs[].valueLabel",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].attributeValueRefs[].status",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].skuBarcode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].standardSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].isDefault",
+          "type": "boolean"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].status",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].version",
+          "type": "integer"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].mediaRefs",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "sections.catalogDraft.shortName",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.identifiers",
+          "type": "array",
+          "itemType": "object",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.identifiers[].kind",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.identifiers[].code",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.identifiers[].value",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.ordering",
+          "type": "object",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.ordering.priceGranularity",
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "SKU"
+          ]
+        },
+        {
+          "path": "sections.catalogDraft.ordering.standardSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "sections.catalogDraft.ordering.listedSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "sections.catalogDraft.ordering.missingPriceCount",
+          "type": "integer"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions",
+          "type": "array",
+          "itemType": "object",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].groupCode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].groupName",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].selectionMode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].required",
+          "type": "boolean"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].values[].code",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].values[].name",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].values[].default",
+          "type": "boolean"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].values[].extraPrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "sections.catalogDraft.orderOptions[].values[].productionEffects",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups",
+          "type": "array",
+          "itemType": "object",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].groupCode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].groupName",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].selectionRule",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components[].itemCode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components[].unit",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components[].default",
+          "type": "boolean"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components[].extraPrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components[].status",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.productionProfiles",
+          "type": "object",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.productionProfiles.item",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "sections.catalogDraft.productionProfiles.sku",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "sections.catalogDraft.productionProfiles.optionValue",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom",
+          "type": "array",
+          "itemType": "object",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].nodeType",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].mode",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].targetRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].unit",
+          "type": "string"
+        },
+        {
+          "path": "dataNodeRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "itemCode",
+          "type": "string"
+        },
+        {
+          "path": "sections",
+          "type": "object"
+        },
+        {
+          "path": "sections.catalogDraft",
+          "type": "object"
+        },
+        {
+          "path": "sections.catalogDraft.name",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.attributes",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "path": "sections.catalogDraft.images",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "sections.catalogDraft.productionTagRefs",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "sections.catalogDraft.categoryRefs",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "sections.inventoryConfiguration",
+          "type": "object"
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].nodeType",
+          "type": "string"
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].mode",
+          "type": "string"
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].targetRef",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "sections.expectedCatalogVersion",
+          "type": "integer"
+        },
+        {
+          "path": "sections.expectedInventoryVersions",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "sections.expectedInventoryVersions[].targetRef",
+          "type": "string"
+        },
+        {
+          "path": "sections.expectedInventoryVersions[].version",
+          "type": "integer"
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].itemCode",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].optionValueCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "sections.catalogDraft.inventoryBom[].version",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].itemCode",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].consumptionUnit",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].configuration",
+          "type": "object",
+          "required": false
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].configuration.allowNegative",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].configuration.lowStockThreshold",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal",
+          "required": false
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].configuration.countingUnit",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "sections.inventoryConfiguration.nodes[].configuration.conversionFactor",
+          "type": "string",
+          "format": "decimal",
+          "required": false
+        }
+      ]
+    },
+    {
+      "model": "TemporaryPromotionPreflightRequest",
+      "required": [
+        "itemCode",
+        "formalCode",
+        "shapeKey",
+        "name",
+        "expectedSourceVersion"
+      ],
+      "fields": [
+        {"path": "itemCode", "type": "string"},
+        {"path": "formalCode", "type": "string"},
+        {"path": "shapeKey", "type": "string", "enum": ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"]},
+        {"path": "name", "type": "string"},
+        {"path": "shortName", "type": ["string", "null"], "required": false},
+        {"path": "materialRole", "type": ["string", "null"], "required": false},
+        {"path": "attributes", "type": "object", "additionalProperties": true, "required": false},
+        {"path": "expectedSourceVersion", "type": "integer"}
+      ]
+    },
+    {
+      "model": "TemporaryPromotionExecuteRequest",
+      "required": [
+        "itemCode",
+        "formalCode",
+        "shapeKey",
+        "name",
+        "expectedSourceVersion",
+        "expectedVersion",
+        "preflightDigest"
+      ],
+      "fields": [
+        {"path": "itemCode", "type": "string"},
+        {"path": "formalCode", "type": "string"},
+        {"path": "shapeKey", "type": "string", "enum": ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"]},
+        {"path": "name", "type": "string"},
+        {"path": "shortName", "type": ["string", "null"], "required": false},
+        {"path": "materialRole", "type": ["string", "null"], "required": false},
+        {"path": "attributes", "type": "object", "additionalProperties": true, "required": false},
+        {"path": "expectedSourceVersion", "type": "integer"},
+        {"path": "expectedVersion", "type": "integer"},
+        {"path": "preflightDigest", "type": "string"}
+      ]
+    }
+  ],
+  "closedFindingRows": [
+    {
+      "model": "CatalogItemDetail",
+      "path": "actionAvailability.voidAvailability"
+    },
+    {
+      "model": "CatalogNavigationView",
+      "path": "tree[].voidAvailability"
+    },
+    {
+      "model": "CatalogDictionaryView",
+      "path": "data.entries[].voidAvailability"
+    },
+    {
+      "model": "ProductionTagPage",
+      "path": "data.entries[].voidAvailability"
+    }
+  ],
+  "typeConventions": [
+    {
+      "fieldNames": [
+        "occurredAt",
+        "updatedAt",
+        "releasedAt"
+      ],
+      "type": "integer",
+      "format": "epoch-millis",
+      "minimumOccurrences": 1
+    },
+    {
+      "fieldNames": [
+        "readyAt",
+        "lastChangeAt"
+      ],
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "epoch-millis",
+      "minimumOccurrences": 1
+    },
+    {
+      "fieldNames": [
+        "standardSalePrice",
+        "listedSalePrice",
+        "standardPriceDelta",
+        "standardExtraPrice"
+      ],
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "cents",
+      "minimumOccurrences": 1
+    },
+    {
+      "fieldNames": [
+        "quantity",
+        "countedQuantity",
+        "beforeQuantity",
+        "changeQuantity",
+        "afterQuantity",
+        "balance",
+        "increase",
+        "decrease",
+        "netChange"
+      ],
+      "type": "string",
+      "format": "decimal",
+      "minimumOccurrences": 1
+    },
+    {
+      "fieldNames": [
+        "threshold",
+        "gap"
+      ],
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "decimal",
+      "minimumOccurrences": 1
+    }
+  ],
+  "generatedTargets": [
+    "contracts/openapi/catalog-inventory.openapi.yaml",
+    "contracts/catalog/CatalogInventoryEdgeWire.java",
+    "contracts/catalog/catalogInventoryEdgeWire.ts"
+  ],
+  "completionRule": "The approved rows are the semantic design-to-byte denominator. OpenAPI and generated wire must match every path/type/format/required bit exactly; missing matrix, closed finding or type convention is fail-closed."
+}

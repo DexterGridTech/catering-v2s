@@ -1,0 +1,85 @@
+import {Alert, Button, Segmented, Space, Typography} from 'antd';
+import {ProTable, type ProColumns} from '@ant-design/pro-components';
+import {NameCodeText, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
+import {useCallback, useMemo, useRef, useState} from 'react';
+import {operationsRtk} from '../../../app/api/OperationsTransport';
+import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
+import type {OperationsPageProps} from '../../../app/routing/model';
+import {InventoryDetailDrawer} from './InventoryDetailDrawer';
+import {EDIT_CATALOG_LIBRARY, envelopeData, hasCapability, READ_INVENTORY_ADVANCED_DIAGNOSTICS, type InventoryCounts, type InventoryPage, type InventoryTargetSummary, type StockView} from './inventoryManagementModel';
+
+const stockLabels: Record<StockView, string> = {ALL: '全部', NEEDS_ATTENTION: '需处理', LOW: '低库存', OUT: '无库存', NEGATIVE: '负库存', UNKNOWN: '未知'};
+const stateLabels: Record<string, string> = {IN_STOCK: '在库', OK: '在库', LOW: '低库存', OUT: '无库存', NEGATIVE: '负库存', UNKNOWN: '未知'};
+
+export function InventoryManagementPage({queryContext, actionCapabilityKeys}: OperationsPageProps) {
+  const [keyword, setKeyword] = useState<string>();
+  const [categoryRef, setCategoryRef] = useState<string>();
+  const [pageSize, setPageSize] = useState(20);
+  const [cursorStack, setCursorStack] = useState<string[]>(['']);
+  const [view, setView] = useState<StockView>('ALL');
+  const detail = useDetailDrawer<string>();
+  const detailTriggerRef = useRef<HTMLElement | null>(null);
+  const cursor = cursorStack[cursorStack.length - 1];
+  const scopeReady = Boolean(queryContext.scopeRef);
+  const request = useMemo(() => catalogInventoryRtkRequest.getOperationsInventoryTargets({}, {query: {
+    ...(queryContext.scopeRef ? {dataNodeRef: queryContext.scopeRef} : {}),
+    ...(keyword ? {keyword} : {}),
+    ...(categoryRef ? {categoryRef} : {}),
+    stockView: view,
+    ...(cursor ? {cursor} : {}),
+    pageSize,
+  }}), [categoryRef, cursor, keyword, pageSize, queryContext.scopeRef, view]);
+  const list = operationsRtk.useGetOperationsInventoryTargetsQuery(request, {skip: !scopeReady});
+  const page = envelopeData<InventoryPage>(list.data);
+  const rows = page?.items ?? [];
+  const counts = useMemo<InventoryCounts>(() => {
+    const serverCounts = page?.counts ?? {};
+    return (Object.keys(stockLabels) as StockView[]).reduce<InventoryCounts>((result, key) => ({...result, [key]: serverCounts[key] ?? 0}), {ALL: 0, NEEDS_ATTENTION: 0, LOW: 0, OUT: 0, NEGATIVE: 0, UNKNOWN: 0});
+  }, [page?.counts]);
+  const canEdit = hasCapability(actionCapabilityKeys as readonly string[], EDIT_CATALOG_LIBRARY);
+  const canReadDiagnostics = hasCapability(actionCapabilityKeys as readonly string[], READ_INVENTORY_ADVANCED_DIAGNOSTICS);
+  const openDetail = useCallback((targetRef: string) => detail.open(targetRef), [detail]);
+  const closeDetail = useCallback(() => {
+    detail.close();
+    // The table row remains mounted while the detail Drawer closes. Restore
+    // keyboard context after Ant Design finishes the close transition.
+    window.requestAnimationFrame(() => detailTriggerRef.current?.focus());
+  }, [detail]);
+  const columns = useMemo<ProColumns<InventoryTargetSummary>[]>(() => [
+    {key: 'keyword', title: '关键词', hideInTable: true, fieldProps: {...testId('inventory-filter-keyword'), allowClear: true, placeholder: '库存对象名称/编码'}},
+    {key: 'categoryRef', title: '商品分类编码', hideInTable: true, fieldProps: {...testId('inventory-filter-category'), allowClear: true, placeholder: '商品分类编码（可选）'}},
+    {title: '库存对象', search: false, fixed: 'left', width: 220, render: (_, row) => <Space direction="vertical" size={0}>
+      <Button type="link" style={{padding: 0, height: 'auto'}} onClick={(event) => { detailTriggerRef.current = event.currentTarget; openDetail(row.targetRef); }} {...testId(`inventory-target-open-${row.targetRef}`)}><NameCodeText name={row.productName} code={row.productCode}/></Button>
+      <Typography.Text type="secondary" style={{fontSize: 12}}>{[row.targetType, row.categoryName, row.materialRole].filter(Boolean).join('｜') || '未分类'}</Typography.Text>
+      {row.skuName && <Typography.Text type="secondary" style={{fontSize: 12}}>SKU：{row.skuName}（{row.skuCode}）</Typography.Text>}
+    </Space>},
+    {title: '当前库存 / 盘点换算', search: false, width: 180, render: (_, row) => <Space direction="vertical" size={0}><span>{row.balance} {row.consumptionUnit}</span><Typography.Text type="secondary" style={{fontSize: 12}}>{row.conversionSummary ?? (row.countingUnit ? `盘点单位：${row.countingUnit}` : '未配置盘点单位')}</Typography.Text></Space>},
+    {title: '状态 / 陈旧', search: false, width: 120, render: (_, row) => <Space direction="vertical" size={0}><span>{stateLabels[row.stockState] ?? row.stockState}</span>{row.stale && <Typography.Text type="warning" style={{fontSize: 12}}>数据陈旧</Typography.Text>}{row.unknown && <Typography.Text type="danger" style={{fontSize: 12}}>数据未知</Typography.Text>}</Space>},
+    {title: '阈值 / 差额', search: false, width: 120, render: (_, row) => <span>{row.threshold ?? '—'} / {row.gap ?? '—'}</span>},
+    {title: '今日 / 7天 / 30天', search: false, width: 180, render: (_, row) => <Space direction="vertical" size={0}><span>{row.changeToday} / {row.change7d} / {row.change30d}</span><Typography.Text type="secondary" style={{fontSize: 12}}>库存变化</Typography.Text></Space>},
+    {title: '最近变化', search: false, width: 180, render: (_, row) => row.lastChangeAt ? <Space direction="vertical" size={0}><span>{new Date(row.lastChangeAt).toLocaleString()}</span><Typography.Text type="secondary" style={{fontSize: 12}}>{row.lastChangeSource ?? '—'}</Typography.Text></Space> : '—'},
+    {title: '来源', search: false, width: 110, render: () => '内部轻库存'},
+  ], [openDetail]);
+
+  const problem = list.error ? '库存数据暂时无法获取，已保留当前筛选，请重试。' : undefined;
+  return <section {...testId('inventory-store-status-page')}>
+    {problem && <Alert type="error" showIcon title="门店库存管理未完成" description={problem} action={<Button onClick={() => void list.refetch()}>重试</Button>} style={{marginBottom: 16}} {...testId('inventory-list-problem')}/>} 
+    <Space direction="vertical" size={12} style={{display: 'flex'}}>
+      <Segmented<StockView> value={view} onChange={(next) => { setView(next); setCursorStack(['']); }} options={(Object.keys(stockLabels) as StockView[]).map((key) => ({value: key, label: `${stockLabels[key]} ${counts[key]}`}))} {...testId('inventory-stock-view')}/>
+      <ProTable<InventoryTargetSummary> size="small" aria-label="门店库存管理" rowKey="targetRef" options={{density: false, fullScreen: false, reload: () => list.refetch()}} scroll={{x: 1250}} sticky dataSource={rows} columns={columns} loading={list.isLoading && !list.data}
+        search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('inventory-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setKeyword(undefined); setCategoryRef(undefined); setCursorStack(['']); }} {...testId('inventory-filter-reset')}>重置</Button>]}}
+        onSubmit={(values) => { setKeyword(typeof values.keyword === 'string' ? values.keyword.trim() || undefined : undefined); setCategoryRef(typeof values.categoryRef === 'string' ? values.categoryRef.trim() || undefined : undefined); setCursorStack(['']); }}
+        pagination={{current: cursorStack.length, pageSize, total: page?.total ?? 0, showSizeChanger: true}}
+        onChange={(pagination, _filters, _sorter, extra) => {
+          if (extra.action !== 'paginate') return;
+          const nextPageSize = pagination.pageSize ?? pageSize;
+          if (nextPageSize !== pageSize) { setPageSize(nextPageSize); setCursorStack(['']); return; }
+          const nextPage = pagination.current ?? cursorStack.length;
+          if (nextPage < cursorStack.length) setCursorStack((current) => current.slice(0, -1));
+          else if (nextPage > cursorStack.length && page?.cursor) setCursorStack((current) => [...current, page.cursor]);
+        }}
+        locale={{emptyText: scopeReady ? '暂无库存对象' : '请选择门店'}} {...testId('inventory-target-table')}/>
+    </Space>
+    <InventoryDetailDrawer targetRef={detail.isOpen ? detail.target : undefined} canEdit={canEdit} canReadDiagnostics={canReadDiagnostics} onClose={closeDetail} onListChanged={() => void list.refetch()}/>
+  </section>;
+}

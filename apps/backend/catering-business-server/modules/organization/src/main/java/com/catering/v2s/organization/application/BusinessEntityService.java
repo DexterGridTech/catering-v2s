@@ -18,6 +18,7 @@ import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
 import com.catering.v2s.organization.api.StoreAssignmentLookup;
+import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.StoreContractLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
@@ -38,7 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class BusinessEntityService implements StoreAssignmentLookup, OrganizationEntityLookup, StoreContractLookup {
+public class BusinessEntityService implements StoreAssignmentLookup, OrganizationEntityLookup, StoreContractLookup, CatalogScopeLookup {
     private static final String BUSINESS_ENTITY_PROJECTION = "entities.id, entities.workspace_uuid, entities.group_workspace_key, entities.code, entities.name, entities.legal_name, entities.credit_code, entities.alias, entities.remark, entities.notes, entities.status, entities.version, entities.extension_rule_revision, entities.created_at_epoch_millis, entities.updated_at_epoch_millis, entities.extension_values, entities.entity_type";
     private static final Set<String> ENTITY_TYPES = Set.of("BRAND", "TENANT", BusinessEntityTypes.HEAD_COMPANY);
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -340,6 +341,57 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     @Override @Transactional(readOnly = true)
     public boolean isEnterableStore(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         return jdbc.query("SELECT status FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, storeId); statement.setObject(2, workspaceUuid); statement.setString(3, groupWorkspaceKey); }, result -> result.next() && "ENABLED".equals(result.getString(1)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String requireCatalogBrand(UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, UUID dataNodeId, String requestedBrandRef) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || dataNodeId == null) throw new OrganizationValidationException();
+        if (ServiceNodeTypes.STORE.equals(dataNodeType)) {
+            UUID persisted = jdbc.query("SELECT brand_id FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'", s -> { s.setObject(1, dataNodeId); s.setObject(2, workspaceUuid); s.setString(3, groupWorkspaceKey); }, r -> {
+                if (!r.next()) throw new OrganizationNotFoundException();
+                return r.getObject(1, UUID.class);
+            });
+            if (requestedBrandRef != null && !requestedBrandRef.isBlank() && !persisted.toString().equals(requestedBrandRef)) throw new OrganizationValidationException();
+            return persisted.toString();
+        }
+        if (ServiceNodeTypes.HEAD_COMPANY.equals(dataNodeType)) {
+            if (requestedBrandRef == null || requestedBrandRef.isBlank()) throw new OrganizationValidationException();
+            UUID brand;
+            try { brand = UUID.fromString(requestedBrandRef); } catch (IllegalArgumentException ex) { throw new OrganizationValidationException(); }
+            Boolean allowed = jdbc.query("SELECT EXISTS (SELECT 1 FROM organization.head_company_brand_authorization a JOIN organization.head_company h ON h.id=a.head_company_id WHERE h.id=? AND h.workspace_uuid=? AND h.group_workspace_key=? AND h.status='ENABLED' AND a.brand_id=?)", s -> { s.setObject(1, dataNodeId); s.setObject(2, workspaceUuid); s.setString(3, groupWorkspaceKey); s.setObject(4, brand); }, r -> r.next() && r.getBoolean(1));
+            if (!Boolean.TRUE.equals(allowed)) throw new OrganizationValidationException();
+            return brand.toString();
+        }
+        throw new OrganizationValidationException();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void requireCatalogCopySource(UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, UUID targetDataNodeId, UUID sourceDataNodeId, String brandRef) {
+        UUID approved = resolveCatalogCopySource(workspaceUuid, groupWorkspaceKey, targetDataNodeType, targetDataNodeId, brandRef);
+        if (sourceDataNodeId == null || !approved.equals(sourceDataNodeId)) throw new OrganizationValidationException();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UUID resolveCatalogCopySource(UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, UUID targetDataNodeId, String brandRef) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || targetDataNodeId == null || brandRef == null || brandRef.isBlank()) throw new OrganizationValidationException();
+        if (!ServiceNodeTypes.STORE.equals(targetDataNodeType)) throw new OrganizationValidationException();
+        UUID targetBrand = jdbc.query("SELECT brand_id, head_company_id FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'", s -> {
+            s.setObject(1, targetDataNodeId); s.setObject(2, workspaceUuid); s.setString(3, groupWorkspaceKey);
+        }, r -> { if (!r.next()) throw new OrganizationNotFoundException(); return r.getObject(1, UUID.class); });
+        if (targetBrand == null || !targetBrand.toString().equals(brandRef)) throw new OrganizationValidationException();
+        UUID brand;
+        try { brand = UUID.fromString(brandRef); } catch (IllegalArgumentException ex) { throw new OrganizationValidationException(); }
+        UUID source = jdbc.query("SELECT head_company_id FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'", s -> {
+            s.setObject(1, targetDataNodeId); s.setObject(2, workspaceUuid); s.setString(3, groupWorkspaceKey);
+        }, r -> { if (!r.next() || r.getObject(1, UUID.class) == null) throw new OrganizationValidationException(); return r.getObject(1, UUID.class); });
+        Boolean sourceAllowed = jdbc.query("SELECT EXISTS (SELECT 1 FROM organization.head_company h JOIN organization.head_company_brand_authorization a ON a.head_company_id=h.id JOIN organization.brand b ON b.id=a.brand_id WHERE h.id=? AND h.workspace_uuid=? AND h.group_workspace_key=? AND h.status='ENABLED' AND b.id=? AND b.status='ENABLED')", s -> {
+            s.setObject(1, source); s.setObject(2, workspaceUuid); s.setString(3, groupWorkspaceKey); s.setObject(4, brand);
+        }, r -> r.next() && r.getBoolean(1));
+        if (!Boolean.TRUE.equals(sourceAllowed)) throw new OrganizationValidationException();
+        return source;
     }
 
     @Override @Transactional(readOnly = true)

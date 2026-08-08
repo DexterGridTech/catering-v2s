@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.imageio.ImageIO;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,10 +66,12 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
             Replay replay = jdbc.query("SELECT receipt.request_hash, asset.asset_ref, asset.status, asset.content_type, asset.size_bytes, asset.sha256 FROM platform_asset.asset_command_receipt receipt JOIN platform_asset.staged_asset asset ON asset.asset_ref=receipt.asset_ref WHERE receipt.idempotency_key=? FOR UPDATE", statement -> statement.setString(1, idempotencyKey), result -> result.next() ? new Replay(result.getString(1), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getLong(5), result.getString(6)) : null);
             if (replay != null) {
                 deleteQuietly(materialized.path());
-                if (!requestHash.equals(replay.requestHash()) || !"STAGED".equals(replay.status())) throw new AssetIdempotencyConflictException();
-                String renewed = secret(); long replayNow = time.currentEpochMillis(); long replayExpires = replayNow + 15 * 60 * 1000L;
-                jdbc.update("UPDATE platform_asset.asset_bind_grant SET consumed_at_epoch_millis=? WHERE asset_ref=? AND consumed_at_epoch_millis IS NULL", replayNow, replay.assetRef());
-                jdbc.update("INSERT INTO platform_asset.asset_bind_grant (asset_ref, grant_hash, expires_at_epoch_millis) VALUES (?, ?, ?)", replay.assetRef(), sha256(renewed.getBytes(StandardCharsets.UTF_8)), replayExpires);
+                // The catalog may claim the staged ref before a client retries the same
+                // multipart command. ACTIVE is still the same successful stage result;
+                // only a released asset makes the replay indeterminate.
+                if (!requestHash.equals(replay.requestHash()) || "RELEASED".equals(replay.status())) throw new AssetIdempotencyConflictException();
+                String renewed = secret(); long replayExpires = time.currentEpochMillis() + 15 * 60 * 1000L;
+                issueBindGrant(replay.assetRef(), renewed, replayExpires);
                 return new StageReadback(replay.assetRef(), renewed, replayExpires, replay.contentType(), replay.sizeBytes(), replay.sha256());
             }
         }
@@ -83,13 +86,36 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
             // Object I/O deliberately happens outside a database transaction. Content-addressed
             // objects are shared, so an existing object is never overwritten or later deleted by
             // this attempt's relational rollback/constraint failure.
+            ExistingAsset existing = findByStorageKey(objectKey);
+            if (existing != null && !compatible(existing, usage, contentType, materialized.sizeBytes(), digest)) {
+                throw new AssetStorageUnavailableException(new IllegalStateException("content-addressed asset metadata conflict"));
+            }
             if (!objects.exists(objectKey)) {
                 objects.put(objectKey, contentType, materialized.sizeBytes(), upload);
                 uploadedByThisAttempt = true;
             }
-            jdbc.update("INSERT INTO platform_asset.staged_asset (asset_ref, usage, storage_key, bucket_name, object_key, content_type, size_bytes, sha256, status, created_at_epoch_millis, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'STAGED', ?, 1)", assetRef, usage, objectKey, objects.bucketName(), objectKey, contentType, materialized.sizeBytes(), digest, now);
-            jdbc.update("INSERT INTO platform_asset.asset_bind_grant (asset_ref, grant_hash, expires_at_epoch_millis) VALUES (?, ?, ?)", assetRef, sha256(grant.getBytes(StandardCharsets.UTF_8)), expires);
-            if (idempotencyKey != null) jdbc.update("INSERT INTO platform_asset.asset_command_receipt (idempotency_key, asset_ref, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, CAST(? AS JSONB), ?)", idempotencyKey, assetRef, requestHash, "{\"assetRef\":\"" + assetRef + "\",\"contentType\":\"" + contentType + "\",\"sizeBytes\":" + materialized.sizeBytes() + ",\"sha256\":\"" + digest + "\"}", now);
+            if (existing != null) {
+                // The object key is content-addressed and the asset row is globally unique by
+                // design. Re-uploading identical catalog bytes must reuse the existing ref;
+                // creating another row would turn a normal seed/API overlap into a 500.
+                issueBindGrant(existing.assetRef(), grant, expires);
+                recordStageReceipt(idempotencyKey, existing.assetRef(), requestHash, contentType, materialized.sizeBytes(), digest, now);
+                return new StageReadback(existing.assetRef(), grant, expires, contentType, materialized.sizeBytes(), digest);
+            }
+            try {
+                jdbc.update("INSERT INTO platform_asset.staged_asset (asset_ref, usage, storage_key, bucket_name, object_key, content_type, size_bytes, sha256, status, created_at_epoch_millis, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'STAGED', ?, 1)", assetRef, usage, objectKey, objects.bucketName(), objectKey, contentType, materialized.sizeBytes(), digest, now);
+            } catch (DuplicateKeyException race) {
+                // Another request may have won the content-addressed insert between the read
+                // above and this write. Re-read the authoritative row and apply the same reuse
+                // path instead of leaking a database duplicate-key failure to HTTP.
+                ExistingAsset winner = findByStorageKey(objectKey);
+                if (winner == null || !compatible(winner, usage, contentType, materialized.sizeBytes(), digest)) throw race;
+                issueBindGrant(winner.assetRef(), grant, expires);
+                recordStageReceipt(idempotencyKey, winner.assetRef(), requestHash, contentType, materialized.sizeBytes(), digest, now);
+                return new StageReadback(winner.assetRef(), grant, expires, contentType, materialized.sizeBytes(), digest);
+            }
+            issueBindGrant(assetRef, grant, expires);
+            recordStageReceipt(idempotencyKey, assetRef, requestHash, contentType, materialized.sizeBytes(), digest, now);
         } catch (RuntimeException failure) {
             deleteOnlyUnreferencedUpload(objectKey, uploadedByThisAttempt);
             throw failure;
@@ -113,6 +139,25 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
         if (changed != 1) throw new AssetClaimRejectedException();
     }
 
+    /**
+     * Activates a catalog image after the catalog owner has persisted its assetRef.
+     * Catalog references are the business usage proof; they must not be forced through
+     * the workspace-logo bind grant path.  Repeating the call for an already active
+     * catalog image is deliberately idempotent so a save retry cannot create a second
+     * lifecycle transition.
+     */
+    @Transactional
+    public AssetReadback claimCatalogStaged(UUID assetRef) {
+        if (assetRef == null) throw new AssetClaimRejectedException();
+        AssetReadback current = require(assetRef);
+        if ("ACTIVE".equals(current.status()) && "CATALOG_ITEM_IMAGE".equals(current.usage())) return current;
+        long now = time.currentEpochMillis();
+        int changed = jdbc.update("UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='CATALOG_ITEM_IMAGE', claimed_by_id=?, activated_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='STAGED'", assetRef, now, assetRef);
+        if (changed != 1) throw new AssetClaimRejectedException();
+        jdbc.update("UPDATE platform_asset.asset_bind_grant SET consumed_at_epoch_millis=? WHERE asset_ref=? AND consumed_at_epoch_millis IS NULL", now, assetRef);
+        return require(assetRef);
+    }
+
     @Override @Transactional
     public void release(UUID assetRef, UUID workspaceUuid) {
         jdbc.update("UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND claimed_by_id=? AND status='ACTIVE'", time.currentEpochMillis(), assetRef, workspaceUuid);
@@ -127,6 +172,30 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
         int released = jdbc.update("UPDATE platform_asset.staged_asset a SET status='RELEASED', released_at_epoch_millis=?, version=version+1 WHERE a.asset_ref=? AND a.status='STAGED' AND EXISTS (SELECT 1 FROM platform_asset.asset_bind_grant g WHERE g.asset_ref=a.asset_ref AND g.consumed_at_epoch_millis IS NULL AND g.expires_at_epoch_millis>=? AND g.grant_hash=?)", now, assetRef, now, proof);
         if (released != 1) throw new AssetClaimRejectedException();
         jdbc.update("UPDATE platform_asset.asset_bind_grant SET consumed_at_epoch_millis=? WHERE asset_ref=? AND consumed_at_epoch_millis IS NULL AND grant_hash=?", now, assetRef, proof);
+    }
+
+    /** Catalog owner release path; the caller is already inside the catalog command boundary. */
+    @Transactional
+    public AssetReadback releaseCatalogStaged(UUID assetRef, long expectedVersion) {
+        if (assetRef == null) throw new AssetClaimRejectedException();
+        int changed = jdbc.update("UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status IN ('STAGED','ACTIVE') AND version=?", time.currentEpochMillis(), assetRef, expectedVersion);
+        if (changed != 1) throw new AssetClaimRejectedException();
+        return require(assetRef);
+    }
+
+    /** Idempotent catalog release path.  The receipt is owned by the asset owner. */
+    @Transactional
+    public AssetReadback releaseCatalogStaged(UUID assetRef, long expectedVersion, String idempotencyKey) {
+        if (assetRef == null || idempotencyKey == null || idempotencyKey.isBlank()) throw new AssetClaimRejectedException();
+        String requestHash = sha256((assetRef + "|" + expectedVersion + "|CATALOG_ITEM_IMAGE_RELEASE").getBytes(StandardCharsets.UTF_8));
+        Replay replay = jdbc.query("SELECT receipt.request_hash, receipt.asset_ref, asset.status, asset.content_type, asset.size_bytes, asset.sha256 FROM platform_asset.asset_command_receipt receipt JOIN platform_asset.staged_asset asset ON asset.asset_ref=receipt.asset_ref WHERE receipt.idempotency_key=? FOR UPDATE", s -> s.setString(1, idempotencyKey), r -> r.next() ? new Replay(r.getString(1), r.getObject(2, UUID.class), r.getString(3), r.getString(4), r.getLong(5), r.getString(6)) : null);
+        if (replay != null) {
+            if (!requestHash.equals(replay.requestHash()) || !assetRef.equals(replay.assetRef())) throw new AssetIdempotencyConflictException();
+            return require(assetRef);
+        }
+        AssetReadback released = releaseCatalogStaged(assetRef, expectedVersion);
+        jdbc.update("INSERT INTO platform_asset.asset_command_receipt (idempotency_key, asset_ref, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, CAST(? AS JSONB), ?)", idempotencyKey, assetRef, requestHash, "{\"assetRef\":\"" + assetRef + "\",\"disposition\":\"RELEASED\",\"version\":" + released.version() + "}", time.currentEpochMillis());
+        return released;
     }
 
     @Transactional(readOnly = true)
@@ -172,7 +241,8 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
     private static boolean validUsageContentType(String usage, String contentType) {
         // R5 currently approves a logo usage only. Video support stays in the object adapter/public origin,
         // but it may not be smuggled into the logo command before a video owner usage is approved.
-        return "GROUP_WORKSPACE_LOGO".equals(usage) && ("image/png".equals(contentType) || "image/jpeg".equals(contentType) || "image/webp".equals(contentType));
+        boolean approvedUsage = "GROUP_WORKSPACE_LOGO".equals(usage) || "CATALOG_ITEM_IMAGE".equals(usage);
+        return approvedUsage && ("image/png".equals(contentType) || "image/jpeg".equals(contentType) || "image/webp".equals(contentType));
     }
     private static boolean validContentType(String value) { return "image/png".equals(value) || "image/jpeg".equals(value) || "image/webp".equals(value) || "video/mp4".equals(value); }
     private static String suffix(String contentType) { return switch (contentType) { case "image/png" -> ".png"; case "image/jpeg" -> ".jpg"; case "image/webp" -> ".webp"; case "video/mp4" -> ".mp4"; default -> throw new AssetInputInvalidException(); }; }
@@ -229,6 +299,37 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
             try { objects.delete(objectKey); } catch (RuntimeException ignored) { }
         }
     }
+
+    private ExistingAsset findByStorageKey(String objectKey) {
+        return jdbc.query(
+            "SELECT asset_ref, usage, status, content_type, size_bytes, sha256 FROM platform_asset.staged_asset WHERE storage_key=?",
+            statement -> statement.setString(1, objectKey),
+            result -> result.next()
+                ? new ExistingAsset(result.getObject("asset_ref", UUID.class), result.getString("usage"), result.getString("status"), result.getString("content_type"), result.getLong("size_bytes"), result.getString("sha256"))
+                : null
+        );
+    }
+
+    private static boolean compatible(ExistingAsset existing, String usage, String contentType, long sizeBytes, String sha256) {
+        // Catalog images are referenceable by multiple business records and do not use the
+        // one-time workspace-logo bind proof. Logo staging remains one asset/one live grant;
+        // reusing it here would invalidate a concurrent caller's plaintext grant.
+        return "CATALOG_ITEM_IMAGE".equals(usage)
+            && usage.equals(existing.usage())
+            && contentType.equals(existing.contentType())
+            && sizeBytes == existing.sizeBytes()
+            && sha256.equals(existing.sha256())
+            && !"RELEASED".equals(existing.status());
+    }
+
+    private void issueBindGrant(UUID assetRef, String grant, long expiresAt) {
+        jdbc.update("INSERT INTO platform_asset.asset_bind_grant (asset_ref, grant_hash, expires_at_epoch_millis, consumed_at_epoch_millis) VALUES (?, ?, ?, NULL) ON CONFLICT (asset_ref) DO UPDATE SET grant_hash=EXCLUDED.grant_hash, expires_at_epoch_millis=EXCLUDED.expires_at_epoch_millis, consumed_at_epoch_millis=NULL", assetRef, sha256(grant.getBytes(StandardCharsets.UTF_8)), expiresAt);
+    }
+
+    private void recordStageReceipt(String idempotencyKey, UUID assetRef, String requestHash, String contentType, long sizeBytes, String digest, long now) {
+        if (idempotencyKey == null) return;
+        jdbc.update("INSERT INTO platform_asset.asset_command_receipt (idempotency_key, asset_ref, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, CAST(? AS JSONB), ?)", idempotencyKey, assetRef, requestHash, "{\"assetRef\":\"" + assetRef + "\",\"contentType\":\"" + contentType + "\",\"sizeBytes\":" + sizeBytes + ",\"sha256\":\"" + digest + "\"}", now);
+    }
     private static void deleteQuietly(Path file) { try { Files.deleteIfExists(file); } catch (IOException ignored) { } }
     private String secret() { byte[] bytes = new byte[32]; random.nextBytes(bytes); return HexFormat.of().formatHex(bytes); }
     private static String sha256(byte[] bytes) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); } catch (Exception failure) { throw new IllegalStateException(failure); } }
@@ -237,6 +338,7 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
     public record PublicAssetReference(String publicUrl, String contentType, String sha256) { }
     private record ActiveAsset(String objectKey, String contentType, String sha256) { }
     private record MaterializedContent(Path path, long sizeBytes, String sha256) { }
+    private record ExistingAsset(UUID assetRef, String usage, String status, String contentType, long sizeBytes, String sha256) { }
     private record Replay(String requestHash, UUID assetRef, String status, String contentType, long sizeBytes, String sha256) { }
     public static final class AssetInputInvalidException extends RuntimeException { }
     public static final class AssetIdempotencyConflictException extends RuntimeException { }

@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-design-adversarial-review",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewCycleId": "CATALOG-INVENTORY-THREE-STAGE-DESIGN-20260806",
+  "reviewTarget": "DESIGN",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "manifestSha256": "88386b4d6b3ec188bc14357fc3572f37e4fb0d16234029bc6436ff4b9d216942",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "contract-operation-denominator",
+      "authorization-source",
+      "void-recreate-read-model",
+      "copy-compatibility",
+      "fixture-scenario-denominator",
+      "stage-source-ownership",
+      "owner-transaction",
+      "authorization-boundary"
+    ]
+  },
+  "expectedBehavior": [
+    "Every one of the 42 operations has an operation-specific owner or coordinator boundary, page or capability authorization source, request and response components, exact applicable typed problem-code set, and primary scenario bindings.",
+    "C-17 exposes owner-computed void availability and concrete blockers in the read model before the user acts, then executes a terminal immutable VOIDED transition without releasing the old code.",
+    "ProductSku semantic compatibility is checked inside the approved Product class by a canonical SKU-to-attribute-value fingerprint without changing the C-19 identity tuple or the nine top-level classes.",
+    "The canonical scenario denominator is 26 API definitions and 100 API cases plus 18 L2 definitions and 43 L2 cases in every owning byte.",
+    "The CRUD presentation policy has exactly one mutable stage owner: P1; P3 consumes and verifies it read-only.",
+    "P2 closes copy closure, reference rewriting, compatibility, TOCTOU, idempotency and rollback while P3 proves only the approved browser interaction.",
+    "The review remains design-only and grants no implementation, contract, policy, generated, database, seed, environment or deployment authority."
+  ],
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-independent-review-input.md",
+    "sha256": "a8669a039b21b147eda0d1ae3550728feb4a181b336486a5bd9c26f2b82c1789"
+  },
+  "blindReviewDeclaration": "The reviewer verified all declared path hashes, read the requirements, current IA and Dexter rulings, architecture and review rules, current registry/policy/module/generator/foundation structure, and Round 1 findings; then independently inspected design 98a300a0889b91bd82c48f5e72cdc864c38a59e86d82b5439fcbf4bd107b6e0c and manifest 88386b4d6b3ec188bc14357fc3572f37e4fb0d16234029bc6436ff4b9d216942 before reading the author intake. Findings were not accepted or closed from author claims.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "roundOneFindingClosure": [
+    {
+      "findingId": "CI-3STAGE-DESIGN-M-001",
+      "status": "STILL_OPEN",
+      "evidence": "The revision adds all 42 rows and materially closes owner/coordinator and request/response binding, but authorization remains generic PR/EW/DR rather than a page/capability source and E-R/E-W/E-C/E-A are broad supersets rather than operation-specific applicable typed problem codes."
+    },
+    {
+      "findingId": "CI-3STAGE-DESIGN-M-002",
+      "status": "CLOSED",
+      "evidence": "IA section 8.5 and design sections 3.6.2 and 3.7 add a sorted skuCode-to-attribute-value fingerprint as a Product structural subcheck; CI-API-018 uses the same-SKU-code/different-combination counterexample and keeps nine top-level compatibility classes."
+    },
+    {
+      "findingId": "CI-3STAGE-DESIGN-M-003",
+      "status": "STILL_OPEN",
+      "evidence": "The revision closes VOIDED state, eight applicable coded types, StockTarget N/A, transition/save command reuse, permanent code reservation and positive/blocked cases. It still does not freeze pre-action voidAvailability in category, dictionary and production-tag read models, even though the IA requires canVoid plus blockers before rendering the action."
+    },
+    {
+      "findingId": "CI-3STAGE-DESIGN-S-001",
+      "status": "CLOSED",
+      "evidence": "The API vector [1,7,1,1,9,10,1,3,2,1,6,4,3,6,2,2,2,18,2,2,2,2,1,4,3,5] recomputes to 26/100; the L2 vector recomputes to 18/43; the manifest scenarioDenominator and ordered chain use the same totals and no 26/89 or 26/91 string remains."
+    },
+    {
+      "findingId": "CI-3STAGE-DESIGN-S-002",
+      "status": "STILL_OPEN",
+      "evidence": "Design section 5.1 and the manifest correctly make P1 the only policy writer and P3 read-only, but section 2.1 still assigns P3 '第一项落 policy 与 admin catalog', leaving a contradictory implementation instruction in the IU-by-stage source."
+    }
+  ],
+  "falsificationResults": [
+    {
+      "item": 1,
+      "verdict": "PARTIAL",
+      "evidence": "Write commands, all workbench/detail reads, six independent inventory sections and complete brand-copy preflight are present. C-17 read-before-action availability is not fully defined for category/dictionary/production-tag surfaces."
+    },
+    {
+      "item": 2,
+      "verdict": "PARTIAL",
+      "evidence": "There are 42 unique operations, all operations-admin-only; owners/coordinators and request/response components are now explicit and the two asset operations are proportionate to multi-image staging. Generic PR/EW/DR and broad E-* supersets do not satisfy operation-specific authorization and exact typed failure binding."
+    },
+    {
+      "item": 3,
+      "verdict": "FAIL",
+      "evidence": "The IU-by-stage table still says P3 first lands the policy, while section 5.1 and the manifest say P3 verifies it read-only. The same mutable source therefore still has contradictory stage instructions."
+    },
+    {
+      "item": 4,
+      "verdict": "PASS",
+      "evidence": "One schema-bound catalog separates seedDatasets from testDatasets, parameterizes limits from contract values, creates stale cases through owner commands, and requires both API and L2 consumers to report the same path, SHA and revision."
+    },
+    {
+      "item": 5,
+      "verdict": "PASS",
+      "evidence": "The API and L2 vectors recompute exactly to 26/100 and 18/43. Algorithm/owner/transaction assertions are API-primary while DOM, lifecycle, focus and state preservation are L2-primary; locator fields are forbidden until P3."
+    },
+    {
+      "item": 6,
+      "verdict": "PASS",
+      "evidence": "Category, catalog tag and SKU sales attribute correctly remain NOT_APPLICABLE_NO_STRUCTURAL_BITS. Product's new canonical SKU structure fingerprint blocks the real same-code/different-specification collision without inventing a tenth class."
+    },
+    {
+      "item": 7,
+      "verdict": "PARTIAL",
+      "evidence": "C-16 visible-disabled and C-19 no StockTarget code are consistent through IA, design, database constraints and tests. C-17 command/write semantics are substantially closed, but category/dictionary/production-tag read shapes do not explicitly carry pre-action canVoid/blockers as required by IA-CONTRACT-011."
+    },
+    {
+      "item": 8,
+      "verdict": "PASS",
+      "evidence": "P2 owns closure expansion, limits, nine-class compatibility including the SKU fingerprint, outbound reference rewrite, digest/version recheck, rollback and idempotency. P3 explicitly references P2 for algorithm proof and tests only interaction."
+    },
+    {
+      "item": 9,
+      "verdict": "PASS",
+      "evidence": "Catalog, inventory and fulfillment-production retain fact ownership; the coordinator has no schema/repository; owner public APIs join one REQUIRED transaction; task reads are bounded and no MQ/outbox or cross-schema DML is introduced."
+    },
+    {
+      "item": 10,
+      "verdict": "PARTIAL",
+      "evidence": "P1 definition-only, P2 API-business and P3 local-browser L2 exits remain honest and business/cleanup are separated. The contradictory P3 policy instruction prevents a single exact stage owner."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CI-3STAGE-DESIGN-R2-M-001",
+      "severity": "M",
+      "status": "OPEN_SELF_DECIDED_ROUND_LIMIT",
+      "unitIds": [
+        "CATALOG-INVENTORY-DEFINITION-U01",
+        "CATALOG-INVENTORY-BACKEND-U02",
+        "CATALOG-INVENTORY-FRONTEND-U03"
+      ],
+      "title": "The 42-row matrix still uses authorization aliases and error supersets instead of operation-specific contract truth",
+      "evidence": "Design section 3.3.1 defines PR/EW/DR and four cumulative sets. Every ordinary read receives E-R including version; every write receives E-W including reference-blocks-void, dependent-facts-block-void and voided-record-immutable; copy operations receive all E-C values even where a local copy has no selected-item closure; asset operations inherit E-W through E-A. Thus create category, reorder dictionary, inventory count and stage asset all advertise void-only failures, while PR does not say whether the page source is PG-CATALOG-STORE-ITEMS, PG-CATALOG-BRAND-ITEMS or PG-INVENTORY-STORE-STATUS. The planned JSON fields name authorization/errors but the design does not freeze their per-operation exact values beyond these aliases.",
+      "risk": "P1 can generate an OpenAPI surface that is count-correct yet exposes false recovery actions or omits the actual page source. P2 and P3 can then implement different authorization/error behavior while both claim compliance with the same matrix.",
+      "disposition": "Round 1 M-001 remains open at the Round 2 hard stop. Author must SELF_DECIDE from this evidence; no third Codex adversarial round is allowed.",
+      "counterexample": "createOperationsCatalogCategory is assigned E-W, so its generated client may offer REFERENCE_BLOCKS_VOID recovery even though no record exists to void; getOperationsInventoryTargets is assigned generic PR without declaring the inventory page source.",
+      "reason": "A cumulative superset is useful for documentation shorthand but cannot serve as the promised exact operation denominator.",
+      "minimalRepair": "Keep one assertion matrix, but store explicit pageKeys/capabilityKey and exact problemCodes[] on every operation row. Generate any E-R/E-W convenience grouping from those rows, never the reverse. This changes no operation count or architecture."
+    },
+    {
+      "id": "CI-3STAGE-DESIGN-R2-M-002",
+      "severity": "M",
+      "status": "OPEN_SELF_DECIDED_ROUND_LIMIT",
+      "unitIds": [
+        "CATALOG-INVENTORY-DEFINITION-U01",
+        "CATALOG-INVENTORY-BACKEND-U02",
+        "CATALOG-INVENTORY-FRONTEND-U03"
+      ],
+      "title": "C-17 command semantics are executable but its pre-action owner judgment is absent from three read surfaces",
+      "evidence": "IA-CONTRACT-011 requires the owner to return canVoid, blockingReferences and dependentFacts so the action can be disabled with a concrete reason. Design section 3.3.2 adds those values only to transition readback. CatalogItemDetail has generic owner action availability, but CatalogNavigationView lists category name/code/status/count only, CatalogDictionaryView is not specified to carry void availability, and ProductionTagPage is not specified to carry it. CI-L2-010 requires a blocked reason before action, yet P1 has not frozen the source fields for three object families.",
+      "risk": "Implementers must invent an extra judgment call, eagerly expose the action and fail only after click, or compute reference state in the browser. All three violate either the 42-operation denominator, the approved IA, or owner truth.",
+      "disposition": "Round 1 M-003 remains open at the Round 2 hard stop. Author must SELF_DECIDE from this evidence; no third Codex adversarial round is allowed.",
+      "counterexample": "A referenced SalesUnit is returned by getOperationsCatalogDictionary without a frozen canVoid/blocker field. The browser cannot satisfy IA-STATE-007 and IA-CONTRACT-011 without an unplanned API or a speculative enabled action.",
+      "reason": "The approved correction path includes both the terminal write and the user's safe decision point; a post-command readback cannot supply a pre-command disabled reason.",
+      "minimalRepair": "Add one typed voidAvailability object to existing item, category, dictionary-entry and production-tag read models, sourced by each owner in the existing GET operations. Do not add another endpoint or duplicate reference logic."
+    },
+    {
+      "id": "CI-3STAGE-DESIGN-R2-S-001",
+      "severity": "S",
+      "status": "OPEN_SELF_DECIDED_ROUND_LIMIT",
+      "unitIds": [
+        "CATALOG-INVENTORY-DEFINITION-U01",
+        "CATALOG-INVENTORY-FRONTEND-U03"
+      ],
+      "title": "The IU-by-stage matrix still assigns the CRUD policy to P3 despite the repaired single-owner rule",
+      "evidence": "Design section 2.1 says P3's IU-01 duty is '第一项落 policy 与 admin catalog'. Section 5.1 says P1 is the single writer and P3 can only verify the frozen entry read-only; manifest U03 repeats the read-only rule and omits the policy from P3 changeSurfaces. These instructions are mutually inconsistent.",
+      "risk": "An implementation agent following the stage matrix can mutate a P1-frozen source during P3, invalidating P2/P3 source hashes and package-exit ownership while still following an explicit design instruction.",
+      "disposition": "Round 1 S-002 remains open at the Round 2 hard stop. Author must SELF_DECIDE from this evidence; no third Codex adversarial round is allowed.",
+      "counterexample": "P1 closes the policy entry; P3 follows section 2.1 and edits that policy before registering the admin catalog, while section 5.1 and the manifest continue to claim read-only consumption.",
+      "reason": "A mutable contract source can have only one stage owner, and the highest-level responsibility matrix must not contradict the detailed section.",
+      "minimalRepair": "Change the single P3 matrix cell to '只读核验 P1 policy entry；落 admin catalog；验证三页角色/数据节点'. No other stage or source changes are needed."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "CATALOG-INVENTORY-DEFINITION-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "CI-3STAGE-DESIGN-R2-M-001",
+        "CI-3STAGE-DESIGN-R2-M-002",
+        "CI-3STAGE-DESIGN-R2-S-001"
+      ]
+    },
+    {
+      "id": "CATALOG-INVENTORY-BACKEND-U02",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "CI-3STAGE-DESIGN-R2-M-001",
+        "CI-3STAGE-DESIGN-R2-M-002"
+      ]
+    },
+    {
+      "id": "CATALOG-INVENTORY-FRONTEND-U03",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "CI-3STAGE-DESIGN-R2-M-001",
+        "CI-3STAGE-DESIGN-R2-M-002",
+        "CI-3STAGE-DESIGN-R2-S-001"
+      ]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The three-stage split, owner topology, canonical fixture catalog, read-model-first contract, copy placement and API/L2 responsibility remain well matched to the business problem. ProductSku compatibility and the 26/100 denominator repairs are sound.",
+    "simplerAlternativeAssessment": "The smallest viable repair is not another endpoint, another owner catalog or a fourth stage. Keep the one planned assertion matrix but make pageKeys/capabilityKey and problemCodes[] exact per operation; add voidAvailability to the existing read DTOs; correct one P3 policy cell. This is cheaper and safer than separate owner matrices, a dedicated void-preflight API, or collapsing P1 and P3.",
+    "costFit": "The design is proportionate overall. The three remaining edits are small, but deferring them would force authorization, recovery and stage ownership decisions into implementation where repair is more expensive.",
+    "verdict": "REASONABLE_ARCHITECTURE_WITH_BLOCKING_DETERMINISM_GAPS"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "DESIGN Round 2 hard-stop verdict is NO_GO: M=2, S=1, N=0. Round 1 M-002 and S-001 are closed; M-001, M-003 and S-002 remain partially repaired but still implementation-ambiguous. No third Codex adversarial round is permitted; the author must perform SELF_DECIDED disposition from this report.",
+    "severityCounts": {
+      "M": 2,
+      "S": 1,
+      "N": 0
+    },
+    "authorizationBoundary": "Design review only. This review authorizes no implementation, contract or policy mutation, generated output, schema or migration, seed or reset, DEV/UAT/L2 or other environment action, runtime deployment, or repository-control action. REVIEW_ROUND_LIMIT=2 is exhausted and no third Codex adversarial round is allowed."
+  }
+}

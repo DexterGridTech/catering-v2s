@@ -1,0 +1,34 @@
+{
+  "profile": "catalog-inventory",
+  "version": 1,
+  "fixtureContract": "contracts/policy/catalog-inventory-fixture-catalog.json",
+  "fixtureSchema": "contracts/policy/catalog-inventory-fixture-catalog.schema.json",
+  "mediaCatalog": "contracts/policy/catalog-inventory-media-assets.json",
+  "mediaDirectory": "contracts/policy/catalog-inventory-p1-media",
+  "v4CatalogSourceDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items",
+  "parity": {"catalogItems": 73, "mediaAssets": 34, "source": "v4-formal-uat-complex-scenario"},
+  "ownerScopes": {
+    "headCompany": {"dataNodeRefEnv": "CATALOG_INVENTORY_HEAD_COMPANY_REF", "brandRefEnv": "CATALOG_INVENTORY_BRAND_REF"},
+    "store": {"dataNodeRefEnv": "CATALOG_INVENTORY_STORE_REF", "brandRefEnv": "CATALOG_INVENTORY_BRAND_REF"}
+  },
+  "runtime": {
+    "environment": "non-production",
+    "topology": "LOCAL_APPLICATIONS_REMOTE_NON_PRODUCTION_MIDDLEWARE",
+    "confirmationEnv": "CATALOG_INVENTORY_SEED_CONFIRMATION",
+    "confirmationValue": "EXPLICIT_CATALOG_INVENTORY_SEED",
+    "managedDevProfileEnv": "V2S_DEV_PROFILE",
+    "mediaNamespacePrefix": "catalog-inventory"
+  },
+  "operations": [
+    "stageOperationsCatalogAsset",
+    "createOperationsCatalogItem",
+    "saveOperationsCatalogItem",
+    "getOperationsCatalogItem",
+    "getOperationsCatalogNavigation",
+    "getOperationsCatalogItems",
+    "getOperationsInventoryTargets"
+  ],
+  "readback": ["getOperationsCatalogItem", "getOperationsCatalogNavigation", "getOperationsInventoryTargets"],
+  "cleanup": {"kind": "catalog-inventory-seed", "mediaNamespaceReadbackRequired": true, "businessAndCleanupSeparate": true},
+  "forbidden": ["direct-database-writes", "sql-fallback", "duplicate-code-as-replay-success", "implicit-r5-profile-reuse"]
+}

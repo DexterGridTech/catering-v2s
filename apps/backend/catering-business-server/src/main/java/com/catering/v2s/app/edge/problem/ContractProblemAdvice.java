@@ -11,6 +11,9 @@ import com.catering.v2s.organization.application.OrganizationHierarchyCommandRec
 import com.catering.v2s.organization.application.OrganizationCommandService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
+import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptService;
@@ -36,11 +39,28 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /** Contract-level fallback for R5 owner adapters. Controller-local R3 compatibility handlers retain precedence. */
 @Order
 @RestControllerAdvice
 public final class ContractProblemAdvice {
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<Problem> multipartTooLarge(MaxUploadSizeExceededException exception, HttpServletRequest request) {
+        return problem(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "上传文件超过商品图片大小限制", request);
+    }
+
+    @ExceptionHandler({CatalogOwnerApi.Problem.class, InventoryOwnerApi.Problem.class, ProductionTagOwnerApi.Problem.class})
+    ResponseEntity<Problem> catalogInventory(RuntimeException exception, HttpServletRequest request) {
+        String code = exception instanceof CatalogOwnerApi.Problem catalog ? catalog.code()
+            : exception instanceof InventoryOwnerApi.Problem inventory ? inventory.code()
+            : ((ProductionTagOwnerApi.Problem) exception).code();
+        int status = exception instanceof CatalogOwnerApi.Problem catalog ? catalog.status()
+            : exception instanceof InventoryOwnerApi.Problem inventory ? inventory.status()
+            : ((ProductionTagOwnerApi.Problem) exception).status();
+        return problem(HttpStatus.valueOf(status), code, "商品、生产标签或库存操作不满足 owner 约束", request);
+    }
+
     @ExceptionHandler({
         ContractCommandService.ContractNotFoundException.class,
         ExtensionDefinitionService.DefinitionNotFoundException.class,

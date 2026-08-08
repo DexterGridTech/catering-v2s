@@ -84,6 +84,7 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
   return <>
     {activeQuery.error && <Alert type="error" showIcon title="经营实体加载失败" style={{marginBottom: 16}}/>}
     <ProTable<BusinessEntity>
+      size="small"
       rowKey="id"
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId(`operations-business-entity-filter-submit-${config.kind.toLowerCase()}`)}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId(`operations-business-entity-filter-reset-${config.kind.toLowerCase()}`)}>重置</Button>]}}
       onSubmit={(value) => { setFilters({name: value.name?.trim() || undefined, code: value.code?.trim() || undefined, legalName: value.legalName?.trim() || undefined, unifiedSocialCreditCode: value.unifiedSocialCreditCode?.trim() || undefined, status: value.status}); setPage(1); }}

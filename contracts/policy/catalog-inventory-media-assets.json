@@ -1,0 +1,326 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-media-asset-catalog",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "sourceBindings": {
+    "v4MediaDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/media",
+    "v4AssetManifest": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/media/assets.json",
+    "v4CatalogItemSources": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items"
+  },
+  "coverage": {
+    "v4CatalogItemCount": 73,
+    "v4MediaAssetCount": 34,
+    "p1RepresentativeSeedDatasetCount": 5,
+    "p1RepresentativeSeedBoundMediaKeyCount": 8,
+    "fullCatalogParityRequiredInP2": true,
+    "reductionIsNotFinalSeedPolicy": true
+  },
+  "uploadLimits": {
+    "maxFileSizeBytes": 5242880,
+    "maxRequestSizeBytes": 6291456,
+    "source": "platform.asset MAX_IMAGE_BYTES plus multipart envelope"
+  },
+  "assetDirectory": "contracts/policy/catalog-inventory-p1-media",
+  "assets": {
+    "caesarSalad": {
+      "fileName": "caesar-salad.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "7afb8efccaf0863ec88426555bd4dc27538fb993cad007a2b1b6ce3e6d1cbbe3",
+      "sourceName": "Pulled Pork Sandwich, and Caesar Salad.jpg",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "tomatoPasta": {
+      "fileName": "tomato-pasta.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "de25a219b1b2ec8b8e8156cce6306673efee436567176795e6c0b9df09c6c6fd",
+      "sourceName": "Spaghetti al Pomodoro.JPG",
+      "sourceLicense": "CC BY 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "mushroomSoup": {
+      "fileName": "mushroom-soup.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "768369872abbd757eccb222862227a0269f1d4da3063148dd86689105b490643",
+      "sourceName": "873Home cooking of ginisang upo with Campbells Cream of Mushroom Soup 04.jpg",
+      "sourceLicense": "CC0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "salmonFillet": {
+      "fileName": "salmon-fillet.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "c9e90209efe3e79aa8a9cf9858674506f69926ab8efb3ac86306cf3223e90a50",
+      "sourceName": "2022-01-29 20 53 20 Blackened Cajun Salmon (6 oz. blackened and grilled salmon fillet with garlic mashed potatoes and steamed broccoli) at the Applebee's in Fair Lakes, Fairfax County, Virginia.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "sirloinSteak": {
+      "fileName": "sirloin-steak.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "8d0ebc932bcaef71db8305a43107b2b0109a02f0e06dbe18dc9be80b24bfd916",
+      "sourceName": "Longhorn sirloin steak and fries (STEEEEEEEEEEEEEEEEEEEAK).jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "margheritaPizza": {
+      "fileName": "margherita-pizza.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "773b8bd1995bb35aa323995288217675c0a8f839c655fdf852b460d8b9be0bd0",
+      "sourceName": "Pizza Margherita ().JPG",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "tiramisu": {
+      "fileName": "tiramisu.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "79b14ca5f7ae247cd02acbea6dc56f61b4943e8c09da379cac6d12537ac9f675",
+      "sourceName": "Tiramisu - Bistro Don Giovanni - Sarah Stierch 2018 02.jpg",
+      "sourceLicense": "CC BY 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "lemonade": {
+      "fileName": "lemonade.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "de3bbd2c9c51ddcddfbffefd757b6e5590ee1cd9cad93bc1b5bdeb45d89ea1c2",
+      "sourceName": "Lemonade and mini pogacas.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "coffee": {
+      "fileName": "coffee.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "a73bb6828d7299fa6973ca25adb63b8c143f56fd6377b43d7289625ac2b7f476",
+      "sourceName": "A cup of Americano.JPG",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "steakRaw": {
+      "fileName": "steak-raw.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "777181c05cd1188e32c1a5878f04f792090546b611022c9bc0500370c49d57f2",
+      "sourceName": "Raw beef steaks.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "salmonRaw": {
+      "fileName": "salmon-raw.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "625ed872398c6b3e91e5986ff1d36f72f016c80b09fd42cb5170c3f12adade10",
+      "sourceName": "Loimulohi.jpg",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "spaghetti": {
+      "fileName": "spaghetti.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "f864825310f3c8fb5f97b72badc673c0477ebae15ecbdd9f1b30ba3f3c17afc4",
+      "sourceName": "Spaghetti measure macro.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "takeawayBox": {
+      "fileName": "takeaway-box.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "d6221ab6839a14edae727c29e4ddec2d78a67e635b8261abc7c812f16e1f86e3",
+      "sourceName": "Thanin market banana flowers and leaves.jpg",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "blackPepperSauce": {
+      "fileName": "black-pepper-sauce.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "e909245f9891798bf3c72fd24c032d8ce4f9a44578b7409bbb7631132ce929ac",
+      "sourceName": "Soba with sweet peppers, black olives, walnut pesto, peanuts, soy sauce, and black pepper - Massachusetts.jpg",
+      "sourceLicense": "CC0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "chickenBreast": {
+      "fileName": "chicken-breast.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "b20fade376436095f950cc7af0a9e6336523b9c6ca343a87e6797a7b606c27bd",
+      "sourceName": "Kycklingfilé.jpg",
+      "sourceLicense": "Public domain",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "mixedLettuce": {
+      "fileName": "mixed-lettuce.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "3c650ab9113c6f79a28a5573f4b263528d2e156c9de190177a0644a6796420b8",
+      "sourceName": "IN LETTUCE FIELDS ALONG THE COLORADO RIVER, MEXICAN FARM WORKER CARRIES BOXES TO FIELD PICKERS - NARA - 549084.jpg",
+      "sourceLicense": "Public domain",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "tomato": {
+      "fileName": "tomato.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "929e0af4cdd808d468325102226c619ad66e87696a0b63cc7e4bf455a2274831",
+      "sourceName": "Tomatoes plain and sliced.jpg",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "mushroom": {
+      "fileName": "mushroom.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "be19724d7451c947a55edefec48e05c9a80f15d9b42f017a3fe9e6c2d9f946e9",
+      "sourceName": "Dried mushrooms.jpg",
+      "sourceLicense": "CC BY-SA 2.5",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "mozzarella": {
+      "fileName": "mozzarella.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "19ec72949692ae5bc336d62fc0ba6e1d75050cebf2994b652286901e36e2abb8",
+      "sourceName": "Mozzarella di bufala3.jpg",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "potato": {
+      "fileName": "potato.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "b55ed28b466f7799e91f049d804238f1a5366b7fb3d0d8ba9b6de6ae0b4d29a3",
+      "sourceName": "Sweet potatoes 2.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "lunchCombo": {
+      "fileName": "western-lunch-combo.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "30d0eb9341da92b410698491f656f3f1eb7ae858d9fd91623a052f9cbc3274fd",
+      "sourceName": "Lunch dish (pumpkin sauce, potatoes and chicken steak).jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "dinnerCombo": {
+      "fileName": "western-dinner-combo.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "6057f13721eadb7126309668bdd706f1b595df29d805e3b27056d45d162c99e7",
+      "sourceName": "Steak Dinner 1 (Unsplash).jpg",
+      "sourceLicense": "CC0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "kidsCombo": {
+      "fileName": "kids-combo.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "20e2f1842ccfceb0bd1f51e9be714a56abd49b8f9c4da456fdd9cff520202bc0",
+      "sourceName": "Okosama Lunch at Fruitpark Fujiya Hotel.jpg",
+      "sourceLicense": "CC BY-SA 2.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "packagingService": {
+      "fileName": "packaging-service.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "681ea09ae1256cbb39277572f20dbe5c58ade1fb85facd456e4020498d7a3733",
+      "sourceName": "Uber Eats Bag at Namba.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "memberVoucher": {
+      "fileName": "member-voucher.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "97a4444b92c56ec22bf950fdd2622648f4fd763ecbb4cfc8824984513f40d9fe",
+      "sourceName": "Cherokee Trading Post and Restaurant (NBY 437407).jpg",
+      "sourceLicense": "Public domain",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "burger": {
+      "fileName": "beef-burger.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "c3a3ede8e81c49746acfcefb478f46e8e7524dba952f38ddc356b36127dc3633",
+      "sourceName": "9815K-Beef burger K-Chicken burger Taste of Korea 01.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "chickenMain": {
+      "fileName": "grilled-chicken.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "80bfc4dac5438f730cfde797a1ea64cce9abbda866fb3b200161202f0513cd87",
+      "sourceName": "McD-Classic-Grilled-Chicken-Sand.jpg",
+      "sourceLicense": "CC0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "seafoodRisotto": {
+      "fileName": "seafood-risotto.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "abae26314f638e4af88a5333212c8b357916c78f93232439601a3a84c11b651d",
+      "sourceName": "Lobster risotto.JPG",
+      "sourceLicense": "Public domain",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "cheesecake": {
+      "fileName": "cheesecake.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "001e1d404d14f47396e18da4c1fbe0b6b28bc72ac37389a155474bc4bf570693",
+      "sourceName": "Cold cheesecake 02.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "frenchFries": {
+      "fileName": "french-fries.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "6eb0dd2b7587aefd75f886c5ba6c3f673bed90bf5ac48fc756b9f2726ad666d0",
+      "sourceName": "French fries hesburger.jpg",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "garlicBread": {
+      "fileName": "garlic-bread.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "49a246eafac3c56db86e349c8fe3260e2ea51f46d8e23c50a9078263fd113e39",
+      "sourceName": "Garlic bread at Louis Cairo's - Sarah Stierch.jpg",
+      "sourceLicense": "CC BY 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "clamChowder": {
+      "fileName": "clam-chowder.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "16eb9291b49b93510269025a81acba7e839b2e8f485f1f49e424fe882a7740d0",
+      "sourceName": "Clam chowder in a Boudin sourdough bowl at Pier 39 (TK).JPG",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "burrata": {
+      "fileName": "burrata.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "b669f552e9c0da964d2eff9cc3e532051fd86ccbc551469767cfc84f780dfdb1",
+      "sourceName": "Burrata Cheese Salad.jpg",
+      "sourceLicense": "CC BY-SA 3.0",
+      "sourceProvider": "Wikimedia Commons"
+    },
+    "roastVegetables": {
+      "fileName": "roast-vegetables.jpg",
+      "contentType": "image/jpeg",
+      "sha256": "248f987bff47e94c38f9f9f386f6bba7abb22a87033e8445396e0b9c614235f6",
+      "sourceName": "Roasted Peking Duck with Vegetables Meal.jpg",
+      "sourceLicense": "CC BY-SA 4.0",
+      "sourceProvider": "Wikimedia Commons"
+    }
+  },
+  "seedBindings": {
+    "SEED-LATTE": {
+      "catalogItem": "coffee",
+      "skus": [
+        "coffee"
+      ]
+    },
+    "SEED-DINNER-SET": {
+      "catalogItem": "dinnerCombo"
+    },
+    "SEED-CAESAR": {
+      "catalogItem": "caesarSalad"
+    },
+    "SEED-MATERIALS": {
+      "catalogItems": {
+        "BEAN-001": "coffee",
+        "BOX-001": "takeawayBox",
+        "LETTUCE-001": "mixedLettuce",
+        "BACON-001": "steakRaw",
+        "EGG-001": "salmonRaw",
+        "CHICKEN-001": "chickenBreast",
+        "CUTLERY-001": "takeawayBox"
+      }
+    },
+    "SEED-WEIGHED": {
+      "catalogItem": "steakRaw"
+    }
+  }
+}

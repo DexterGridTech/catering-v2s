@@ -7,7 +7,7 @@
  */
 import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import {chmodSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
-import {spawnSync} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {resolveTrustedRemoteHost} from '../dev/r5-remote-host-trust.mjs';
 import {snapshotProcessTree, evaluateCleanupReadback} from '../dev/managed-process-tree.mjs';
@@ -19,6 +19,10 @@ const evidenceDir = path.join(runtime, 'evidence');
 const manifestPath = path.join(runtime, 'run-manifest.json');
 const resultPath = path.join(evidenceDir, 'terminal-report.json');
 const namespace = `v2s-dev-${runId.slice(-24)}`.replaceAll('_', '-');
+const catalogStage = process.argv.includes('--catalog-api-only') ? 'API'
+  : process.argv.includes('--catalog-l2-only') ? 'L2'
+    : 'BOTH';
+const catalogOnly = catalogStage !== 'BOTH';
 const exactSpecs = [
   'apps/frontend/platform-admin/src/tests/l2/authentication.spec.ts',
   'apps/frontend/platform-admin/src/tests/l2/workspace-management.spec.ts',
@@ -39,11 +43,25 @@ const exactSpecs = [
   'apps/frontend/operations-admin/src/tests/l2/contract-management.spec.ts',
   'apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts',
   'apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts',
+  'apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts',
 ];
+const effectiveSpecs = catalogOnly
+  ? ['apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts']
+  : exactSpecs;
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const shellQuote = (value) => `'${String(value).replaceAll("'", "'\\''")}'`;
 const compact = (value, limit = 240) => String(value ?? 'UNKNOWN').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').slice(0, limit);
 const run = (binary, args, options = {}) => spawnSync(binary, args, {cwd: root, encoding: 'utf8', ...options});
+const firstFreePort = (preferred) => {
+  const requested = Number(preferred);
+  for (let port = requested; port < requested + 32; port += 1) {
+    const probe = run('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN']);
+    if (probe.status !== 0 || !probe.stdout.trim()) return String(port);
+  }
+  throw new Error(`LOCAL_PORT_RANGE_EXHAUSTED:${preferred}`);
+};
+const localPostgresPort = firstFreePort(process.env.V2S_DEV_LOCAL_POSTGRES_PORT ?? '25432');
+const localAssetPort = firstFreePort(process.env.V2S_DEV_LOCAL_ASSET_PORT ?? '29000');
 const commandOutput = (result) => [
   result.stdout ? `[stdout]\n${result.stdout}` : '',
   result.stderr ? `[stderr]\n${result.stderr}` : '',
@@ -54,12 +72,18 @@ const redactCommandOutput = (output, environment = {}) => Object.entries(environ
   const raw = String(value ?? '');
   return isDiagnosticSecret(key) && raw ? redacted.replaceAll(raw, `[REDACTED:${key}]`) : redacted;
 }, String(output ?? ''));
-const writeCommandDiagnostic = (name, output, environment) => {
+const writeCommandDiagnostic = (name, output, environment, result = {}) => {
   const target = path.join(evidenceDir, 'commands', `${name.toLowerCase()}.log`);
   const redactedOutput = redactCommandOutput(output, environment);
   mkdirSync(path.dirname(target), {recursive: true});
-  writeFileSync(target, redactedOutput, {mode: 0o600}); chmodSync(target, 0o600);
-  return {diagnosticPath: path.relative(root, target), output: redactedOutput, outputSha256: sha256(redactedOutput), outputBytes: Buffer.byteLength(redactedOutput)};
+  const metadata = [
+    result.status === undefined ? '' : `status=${result.status ?? 'NULL'}`,
+    result.signal ? `signal=${result.signal}` : '',
+    result.error?.message ? `spawnError=${result.error.message}` : '',
+  ].filter(Boolean).join(' ');
+  const diagnostic = `${metadata}${metadata && redactedOutput ? '\n' : ''}${redactedOutput}`;
+  writeFileSync(target, diagnostic, {mode: 0o600}); chmodSync(target, 0o600);
+  return {diagnosticPath: path.relative(root, target), output: diagnostic, outputSha256: sha256(diagnostic), outputBytes: Buffer.byteLength(diagnostic)};
 };
 const phases = [];
 let started = false;
@@ -102,9 +126,43 @@ const markFailure = (error) => {
 const command = (name, binary, args, options = {}) => {
   const began = Date.now();
   const result = run(binary, args, options);
-  const diagnostic = writeCommandDiagnostic(name, commandOutput(result), options.env);
+  const diagnostic = writeCommandDiagnostic(name, commandOutput(result), options.env, result);
   phase(name, result.status === 0 ? 'PASS' : 'FAIL', {elapsedMs: Date.now() - began, diagnosticPath: diagnostic.diagnosticPath, outputSha256: diagnostic.outputSha256, outputBytes: diagnostic.outputBytes});
   if (result.status !== 0) fail(`${name}:${compact(diagnostic.output)}`, name);
+  return result;
+};
+// Browser L2 is the one long-running child where a post-exit summary is not
+// sufficient: the operator must see each case start/result and the first
+// failure while the run is still alive. Keep the same redacted diagnostic and
+// phase semantics as command(), but forward child output as it arrives.
+const streamingCommand = async (name, binary, args, options = {}) => {
+  const began = Date.now();
+  const {failureDetails, ...spawnOptions} = options;
+  let child;
+  let spawnError;
+  try {
+    child = spawn(binary, args, {cwd: root, ...spawnOptions, stdio: ['ignore', 'pipe', 'pipe']});
+  } catch (error) {
+    spawnError = error;
+  }
+  let stdout = '';
+  let stderr = '';
+  if (child) {
+    child.stdout.on('data', (chunk) => {
+      stdout += String(chunk);
+      process.stdout.write('[' + name + '] ' + redactCommandOutput(String(chunk), spawnOptions.env) + '\n');
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += String(chunk);
+      process.stdout.write('[' + name + ':stderr] ' + redactCommandOutput(String(chunk), spawnOptions.env) + '\n');
+    });
+  }
+  const result = child
+    ? await new Promise((resolve) => child.once('close', (status, signal) => resolve({status, signal, stdout, stderr})))
+    : {status: null, signal: null, stdout, stderr, error: spawnError};
+  const diagnostic = writeCommandDiagnostic(name, commandOutput(result), spawnOptions.env, result);
+  phase(name, result.status === 0 ? 'PASS' : 'FAIL', {elapsedMs: Date.now() - began, diagnosticPath: diagnostic.diagnosticPath, outputSha256: diagnostic.outputSha256, outputBytes: diagnostic.outputBytes});
+  if (result.status !== 0) fail(name + ':' + compact(diagnostic.output), name);
   return result;
 };
 const localProcess = (value) => {
@@ -124,7 +182,13 @@ const logMetadata = (file) => {
 };
 const readCredentials = () => Object.fromEntries(readFileSync(path.join(runtime, 'credentials.env'), 'utf8').trim().split('\n').filter(Boolean).map((line) => line.split('=', 2)));
 const readPrivateEnvironment = () => Object.fromEntries(readFileSync(path.join(runtime, 'results', 'private.env'), 'utf8').trim().split('\n').filter(Boolean).map((line) => line.split('=', 2)));
-const localBaseEnvironment = () => ({...process.env, V2S_RUNTIME_DIR: runtime, V2S_DEV_NAMESPACE: namespace, V2S_DEV_PROFILE: 'r5-full', V2S_RUNTIME_ENVIRONMENT: 'non-production', V2S_R5_REQUIRE_FRESH_DATABASE: 'true', V2S_R5_L2_OTP_DEBUG_EXPOSURE: 'true'});
+const localBaseEnvironment = () => {
+  // The parent owns the fault seam for catalog-only runs. The child receives
+  // R5_JOINT_INCLUDE_CATALOG_INVENTORY later, so deriving this only from the
+  // parent environment silently disabled typed-failure cases in API-only.
+  const catalogFaultsEnabled = catalogOnly || process.argv.includes('--catalog-inventory');
+  return {...process.env, V2S_RUNTIME_DIR: runtime, V2S_DEV_NAMESPACE: namespace, V2S_DEV_PROFILE: 'r5-full', V2S_RUNTIME_ENVIRONMENT: 'non-production', V2S_R5_REQUIRE_FRESH_DATABASE: 'true', V2S_R5_L2_OTP_DEBUG_EXPOSURE: 'true', V2S_CATALOG_TEST_FAULTS: catalogFaultsEnabled ? 'true' : (process.env.V2S_CATALOG_TEST_FAULTS || 'false'), V2S_DEV_LOCAL_POSTGRES_PORT: localPostgresPort, V2S_DEV_LOCAL_ASSET_PORT: localAssetPort, V2S_DEV_DATABASE_URL: `jdbc:postgresql://127.0.0.1:${localPostgresPort}/${namespace.replace(/^v2s-dev-/, 'catering_v2s_dev_').replaceAll('-', '_')}`};
+};
 const initializeUniqueCredentials = () => {
   const role = `r5l2_${randomBytes(16).toString('hex')}`;
   const value = {
@@ -229,11 +293,38 @@ const snapshotLocalEvidence = () => {
   writeFileSync(path.join(evidenceDir, 'pre-cleanup-local-evidence.json'), `${JSON.stringify(snapshot, null, 2)}\n`, {mode: 0o600});
   phase('LOCAL_EVIDENCE_SNAPSHOT', 'PASS', {processCount: localProcessIdentities.length});
 };
+const captureEdgeBoundaryProbe = () => {
+  const listener = run('lsof', ['-nP', '-iTCP:8080', '-sTCP:LISTEN']);
+  const processes = run('ps', ['-axo', 'pid=', 'ppid=', 'pgid=', 'command=']);
+  const appProcesses = processes.stdout.split('\n').filter((line) => /CateringV2sApplication|gradle.*bootRun|catering-business-server/.test(line));
+  const listenerPids = listener.stdout.split('\n').map((line) => line.trim()).filter((line) => /^\d+$/.test(line));
+  const listenerPidSet = new Set(listenerPids.map(Number));
+  const listenerProcesses = processes.stdout.split('\n').filter((line) => {
+    const pid = Number(line.trim().split(/\s+/, 1)[0]);
+    return listenerPidSet.has(pid);
+  });
+  const health = run('curl', ['-sS', '-o', '/dev/null', '-w', '%{http_code}', '--max-time', '3', '-X', 'OPTIONS', 'http://127.0.0.1:8080/api/platform/auth/password-login']);
+  const probe = {
+    schemaVersion: 1,
+    kind: 'rm1p6-edge-boundary-probe',
+    runId,
+    listenerStatus: listener.status,
+    listenerOutput: compact(listener.stdout || listener.stderr, 4000),
+    listenerPids,
+    appProcesses: [...new Set([...appProcesses, ...listenerProcesses])],
+    healthStatus: health.status,
+    healthHttpStatus: compact(health.stdout || health.stderr, 64),
+  };
+  mkdirSync(evidenceDir, {recursive: true});
+  writeFileSync(path.join(evidenceDir, 'edge-boundary-probe.json'), `${JSON.stringify(probe, null, 2)}\n`, {mode: 0o600});
+  const probePass = probe.listenerStatus === 0 && probe.healthStatus === 0 && /^\d{3}$/.test(probe.healthHttpStatus);
+  phase('EDGE_BOUNDARY_PROBE', probePass ? 'PASS' : 'FAIL', {listenerStatus: probe.listenerStatus, healthStatus: probe.healthStatus, healthHttpStatus: probe.healthHttpStatus});
+};
 const writeTerminalReport = (extra = {}) => {
   const report = {
     schemaVersion: 1, kind: 'rm1p6-joint-local-execution-remote-middleware-l2-report', runId, sourceSha256: sha256(readFileSync(path.join(root, 'yarn.lock'))),
     localExecution: {checkout: root, processes: localProcessIdentities, logInspection: localLogInspection},
-    exactSpecs, phases, fixture: existsSync(path.join(runtime, 'results', 'fixture.json')) ? {status: 'CREATED', sha256: sha256(readFileSync(path.join(runtime, 'results', 'fixture.json')))} : {status: 'NOT_CREATED'},
+    exactSpecs: effectiveSpecs, catalogStage, phases, fixture: existsSync(path.join(runtime, 'results', 'fixture.json')) ? {status: 'CREATED', sha256: sha256(readFileSync(path.join(runtime, 'results', 'fixture.json')))} : {status: 'NOT_CREATED'},
     business: {status: business}, cleanup: {status: cleanup}, firstFailure, lastKnownGood, brokenBoundary, ...extra,
   };
   mkdirSync(evidenceDir, {recursive: true}); writeFileSync(resultPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});
@@ -241,7 +332,7 @@ const writeTerminalReport = (extra = {}) => {
 
 async function main() {
   if (process.argv[2] === '--self-test') {
-    if (exactSpecs.length !== 19 || new Set(exactSpecs).size !== 19 || exactSpecs.some((entry) => !entry.includes('/tests/l2/'))) fail('EXACT_SPEC_DENOMINATOR_INVALID', 'SELF_TEST');
+    if (exactSpecs.length !== 20 || new Set(exactSpecs).size !== 20 || exactSpecs.some((entry) => !entry.includes('/tests/l2/'))) fail('EXACT_SPEC_DENOMINATOR_INVALID', 'SELF_TEST');
     assertLocalExecutionSurface({runtimeDirectory: localBaseEnvironment().V2S_RUNTIME_DIR, localHosts: ['127.0.0.1', '127.0.0.1', '127.0.0.1'], urls: localUrls});
     try { assertLocalExecutionSurface({runtimeDirectory: localBaseEnvironment().V2S_RUNTIME_DIR, localHosts: ['127.0.0.1', 'catering-remote-dev', '127.0.0.1'], urls: localUrls}); fail('REMOTE_EXECUTION_SURFACE_RED_NOT_DETECTED', 'SELF_TEST'); }
     catch (error) { if (!(error instanceof RunnerFailure) || error.message !== 'REMOTE_EXECUTION_SURFACE_FORBIDDEN') throw error; }
@@ -251,12 +342,18 @@ async function main() {
     const redacted = redactCommandOutput(`fixture failed with ${syntheticSecret}`, {R5_L2_OPERATIONS_LOGIN_PASSWORD: syntheticSecret});
     if (redacted.includes(syntheticSecret)) fail('COMMAND_DIAGNOSTIC_SECRET_RED_NOT_DETECTED', 'SELF_TEST');
     if (!redacted.includes('[REDACTED:R5_L2_OPERATIONS_LOGIN_PASSWORD]')) fail('COMMAND_DIAGNOSTIC_REDACTION_MISSING', 'SELF_TEST');
-    process.stdout.write('RM1P6_JOINT_LOCAL_L2_SELF_TEST=PASS\nRED_REMOTE_EXECUTION_SURFACE=PASS\nRED_LOCAL_UI_PORT=PASS\nRED_COMMAND_DIAGNOSTIC_SECRET=PASS\nEXACT_19_SPEC_DENOMINATOR=PASS\n'); return;
+    process.stdout.write('RM1P6_JOINT_LOCAL_L2_SELF_TEST=PASS\nRED_REMOTE_EXECUTION_SURFACE=PASS\nRED_LOCAL_UI_PORT=PASS\nRED_COMMAND_DIAGNOSTIC_SECRET=PASS\nEXACT_20_SPEC_DENOMINATOR=PASS\n'); return;
   }
   try {
     assertLocalExecutionSurface({runtimeDirectory: runtime, localHosts: ['127.0.0.1', '127.0.0.1', '127.0.0.1'], urls: localUrls});
-    for (const spec of exactSpecs) if (!existsSync(path.join(root, spec)) || statSync(path.join(root, spec)).size === 0) fail(`MISSING_OR_EMPTY_SPEC:${spec}`, 'SPEC_DENOMINATOR');
+    for (const spec of effectiveSpecs) if (!existsSync(path.join(root, spec)) || statSync(path.join(root, spec)).size === 0) fail(`MISSING_OR_EMPTY_SPEC:${spec}`, 'SPEC_DENOMINATOR');
     const uniqueCredentials = initializeUniqueCredentials();
+    if (catalogStage === 'API' || process.argv.includes('--catalog-inventory')) {
+      // API acceptance starts with backend unit/contract tests.  L2-only is
+      // intentionally runnable without this stage; the combined mode keeps
+      // the required API-unit -> API-HTTP -> L2 ordering.
+      command('CATALOG_INVENTORY_BACKEND_UNIT_TESTS', process.execPath, [path.join(root, 'scripts/test/catalog-inventory-backend-unit.mjs')], {env: localBaseEnvironment()});
+    }
     plannedRemoteNamespace = planRemoteNamespace();
     phase('LOCAL_UNIQUE_NAMESPACE_CREDENTIALS', 'PASS', {role: uniqueCredentials.role, database: plannedRemoteNamespace.database, credentialsPath: uniqueCredentials.credentialsPath});
     command('LOCAL_MANAGED_START', process.execPath, [path.join(root, 'scripts/dev/r5-dev-runner.mjs'), 'start'], {env: localBaseEnvironment()});
@@ -266,12 +363,34 @@ async function main() {
     localProcessIdentities = devManifest.processes.map(localProcess);
     phase('LOCAL_PROCESS_IDENTITIES', 'PASS', {processes: localProcessIdentities.map(({name, pid, pgid, commandSha256}) => ({name, pid, pgid, commandSha256}))});
     await readiness();
-    command('OWNER_COMMAND_FIXTURE', process.execPath, [path.join(root, 'scripts/test/r5-joint-remote-l2-fixture.mjs')], {env: localBaseEnvironment()});
-    const privateEnvironment = readPrivateEnvironment();
-    command('PLATFORM_PLAYWRIGHT', 'yarn', ['--cwd', 'apps/frontend/platform-admin', 'playwright', 'test', '--workers=1', ...exactSpecs.filter((spec) => spec.includes('platform-admin'))], {env: {...localBaseEnvironment(), ...privateEnvironment, R5_L2_PLATFORM_BASE_URL: localUrls.platform}});
-    command('OPERATIONS_PLAYWRIGHT', 'yarn', ['--cwd', 'apps/frontend/operations-admin', 'playwright', 'test', '--workers=1', ...exactSpecs.filter((spec) => spec.includes('operations-admin'))], {env: {...localBaseEnvironment(), ...privateEnvironment, R5_L2_OPERATIONS_BASE_URL: localUrls.operations}});
-    business = 'PASS'; phase('PLAYWRIGHT', 'PASS');
-  } catch (error) { business = 'FAIL'; markFailure(error); }
+    if (catalogOnly || process.argv.includes('--catalog-inventory')) {
+      command('CATALOG_INVENTORY_TEST_INDEPENDENCE', process.execPath, [path.join(root, 'scripts/check/catalog-inventory-test-independence.mjs'), '--self-test'], {env: localBaseEnvironment()});
+    }
+      command('OWNER_COMMAND_FIXTURE', process.execPath, [path.join(root, 'scripts/test/r5-joint-remote-l2-fixture.mjs')], {env: {...localBaseEnvironment(), R5_JOINT_INCLUDE_CATALOG_INVENTORY: catalogOnly || process.argv.includes('--catalog-inventory') ? 'true' : 'false', R5_JOINT_CATALOG_STAGE: catalogStage}});
+    if (catalogStage === 'API') {
+      // API-only is a backend interface gate.  The child owns its HTTP fixture
+      // and exits before any browser fixture or Playwright process is started.
+      business = 'PASS'; phase('CATALOG_API_ONLY', 'PASS', {seedRuntimeDependency: false, l2RuntimeDependency: false});
+    } else {
+      const privateEnvironment = readPrivateEnvironment();
+      if (catalogStage === 'L2') {
+        // L2-only consumes only the private environment and sidecar produced
+        // by its own owner fixture.  It never consumes the API report or seed.
+        await streamingCommand('OPERATIONS_PLAYWRIGHT', 'yarn', ['--cwd', 'apps/frontend/operations-admin', 'playwright', 'test', '--workers=1', '--max-failures=1', 'src/tests/l2/catalog-inventory.spec.ts'], {env: {...localBaseEnvironment(), ...privateEnvironment, R5_L2_OPERATIONS_BASE_URL: localUrls.operations}});
+        business = 'PASS'; phase('CATALOG_L2_ONLY', 'PASS', {seedRuntimeDependency: false, apiRuntimeDependency: false});
+      } else {
+        command('PLATFORM_PLAYWRIGHT', 'yarn', ['--cwd', 'apps/frontend/platform-admin', 'playwright', 'test', '--workers=1', ...exactSpecs.filter((spec) => spec.includes('platform-admin'))], {env: {...localBaseEnvironment(), ...privateEnvironment, R5_L2_PLATFORM_BASE_URL: localUrls.platform}});
+        command('OPERATIONS_PLAYWRIGHT', 'yarn', ['--cwd', 'apps/frontend/operations-admin', 'playwright', 'test', '--workers=1', ...exactSpecs.filter((spec) => spec.includes('operations-admin'))], {env: {...localBaseEnvironment(), ...privateEnvironment, R5_L2_OPERATIONS_BASE_URL: localUrls.operations}});
+        business = 'PASS'; phase('PLAYWRIGHT', 'PASS');
+      }
+    }
+  } catch (error) {
+    business = 'FAIL';
+    markFailure(error);
+    if (brokenBoundary === 'OWNER_COMMAND_FIXTURE') {
+      try { captureEdgeBoundaryProbe(); } catch (probeError) { phase('EDGE_BOUNDARY_PROBE', 'FAIL', {reason: compact(probeError)}); }
+    }
+  }
   finally {
     const cleanupFailures = [];
     const attempt = async (name, action) => {

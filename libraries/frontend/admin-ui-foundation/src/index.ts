@@ -10,7 +10,7 @@ export {createRefreshSignal, useRefreshVersion} from './behavior/refreshSignal';
 export {testId} from './automation/testId';
 export {OverlayLockProvider, useDirtyFormLock, useOverlayLock, useShellInteractionLock} from './overlay/overlayLock';
 export {useDetailDrawer} from './list/useDetailDrawer';
-export {adminDetailDescriptionsProps, adminDrawerSurfaceProps} from './overlay/drawerSurface';
+export {adminDetailDescriptionsProps, adminDrawerSurfaceProps, adminWideDetailDescriptionsProps, adminWideDrawerSurfaceProps} from './overlay/drawerSurface';
 export {contextScopedQueryArgs} from './list/contextScopedQueryArgs';
 export type {ContextScopedQueryContext} from './list/contextScopedQueryArgs';
 export {adminListState} from './list/adminListState';
@@ -19,5 +19,5 @@ export {createBeaconLogSink, createObservedBaseQuery, createSafeLogger} from './
 export {platformHttpProtocol} from './http/platformHttpProtocol';
 export type {PlatformHttpProtocolKey} from './http/platformHttpProtocol';
 export {serializeJsonOrMultipartBody} from './http/wireRequestBody';
-export {formatCodeNamePath, formatNameCode} from './presentation/nameCode';
+export {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from './presentation/nameCode';
 export {adminHierarchyCollator} from './presentation/hierarchyCollator';

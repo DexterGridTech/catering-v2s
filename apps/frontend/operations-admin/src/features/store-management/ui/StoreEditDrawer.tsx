@@ -1,5 +1,5 @@
 import {Alert, Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsRtk} from '../../../app/api/OperationsTransport';
@@ -88,12 +88,12 @@ export function StoreEditDrawer({store, queryContext, onClose, onUpdated}: {stor
   </Space>}>
     {problem && <Alert type="error" showIcon title="门店编辑未完成" description={problem} style={{marginBottom: 16}} {...testId('operations-store-edit-problem')}/>}
     <Form form={form} layout="vertical" disabled={lifecycle.submitting || !ready} onFinish={(value) => void submit(value)} onValuesChange={() => { lifecycle.setDirty(true); lifecycle.markBusinessIntentChanged(); }}>
-      <Form.Item label="所属项目"><Typography.Text {...testId('operations-store-edit-project')}>{store ? formatNameCode(store.project.name, store.project.code) : '—'}</Typography.Text></Form.Item>
-      <Form.Item label="品牌"><Typography.Text {...testId('operations-store-edit-brand')}>{store ? formatNameCode(store.brand.name, store.brand.code) : '—'}</Typography.Text></Form.Item>
-      <Form.Item label="经营租户"><Typography.Text {...testId('operations-store-edit-tenant')}>{store ? formatNameCode(store.tenant.name, store.tenant.code) : '—'}</Typography.Text></Form.Item>
+      <Form.Item label="所属项目"><Typography.Text {...testId('operations-store-edit-project')}>{store ? <NameCodeText name={store.project.name} code={store.project.code}/> : '—'}</Typography.Text></Form.Item>
+      <Form.Item label="品牌"><Typography.Text {...testId('operations-store-edit-brand')}>{store ? <NameCodeText name={store.brand.name} code={store.brand.code}/> : '—'}</Typography.Text></Form.Item>
+      <Form.Item label="经营租户"><Typography.Text {...testId('operations-store-edit-tenant')}>{store ? <NameCodeText name={store.tenant.name} code={store.tenant.code}/> : '—'}</Typography.Text></Form.Item>
       <Form.Item label="门店编码"><Typography.Text {...testId('operations-store-edit-code')}>{store?.code ?? '—'}</Typography.Text></Form.Item>
       <Form.Item name="name" label="门店名称" rules={[{required: true, whitespace: true, message: '请输入门店名称'}]}><Input maxLength={120} {...testId('operations-store-edit-name')}/></Form.Item>
-      <Form.Item name="headCompanyId" label="总公司"><Select showSearch filterOption={false} onSearch={setHeadCompanySearch} onPopupScroll={candidates.onPopupScroll} allowClear aria-label="总公司" loading={candidates.isFetching} options={candidates.items.map((item) => ({value: item.id, label: formatNameCode(item.name, item.code)}))} {...testId('operations-store-edit-head-company')}/></Form.Item>
+      <Form.Item name="headCompanyId" label="总公司"><Select showSearch filterOption={false} onSearch={setHeadCompanySearch} onPopupScroll={candidates.onPopupScroll} allowClear aria-label="总公司" loading={candidates.isFetching} options={candidates.items.map((item) => ({value: item.id, label: <NameCodeText name={item.name} code={item.code}/>}))} {...testId('operations-store-edit-head-company')}/></Form.Item>
       <Form.Item name="notes" label="备注"><Input.TextArea rows={3} maxLength={2000} {...testId('operations-store-edit-notes')}/></Form.Item>
       {extensionFields(definition.data)}
     </Form>

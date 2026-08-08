@@ -1,6 +1,6 @@
 import {ProTable, type ProColumns, type ProFormInstance} from '@ant-design/pro-components';
 import {Alert, Button, Space, Tabs, Tag, Typography} from 'antd';
-import {adminListState, formatCodeNamePath, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminListState, NameCodePathText, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useMemo, useRef, useState} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
@@ -127,7 +127,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
   const listState = adminListState({loading: isLoading && !result && !error, failed: Boolean(error), emptyText: '暂无账号', testIdPrefix: 'workspace-account-list'});
   const candidateOptions = ((organizationCandidates.data as WorkspaceInvitationCandidatePage | undefined)?.organizations ?? [])
     .filter((candidate) => candidate.serviceNodeType === organizationType)
-    .map((candidate) => ({value: candidate.organizationRef, label: formatCodeNamePath(candidate.path)}));
+    .map((candidate) => ({value: candidate.organizationRef, label: <NameCodePathText value={candidate.path}/>}));
   const roleOptions = ((roleCandidates.data as WorkspaceInvitationCandidatePage | undefined)?.roles ?? []).map((role) => ({value: role.id, label: role.name}));
   const columns = useMemo<ProColumns<WorkspaceAccount>[]>(() => [
     {title: '姓名', key: 'displayName', dataIndex: 'displayName', sorter: true, render: (_, row) => <Button type="link" onClick={() => void loadDetail(row.id)} {...testId(`workspace-account-detail-${row.id}`)}>{row.displayName}</Button>},
@@ -137,7 +137,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
     {title: '任职机构类型', dataIndex: 'serviceNodeType', hideInTable: true, valueType: 'select', valueEnum: Object.fromEntries(accountTargetTypes.map((value) => [value, {text: nodeLabels[value]}])), fieldProps: {allowClear: true, ...testId('workspace-account-query-organization-type'), onChange: (value: ServiceNodeType | undefined) => { setOrganizationType(value); setOrganizationQuery(''); setRoleCandidateQuery(''); formRef.current?.setFieldValue('organizationRef', undefined); formRef.current?.setFieldValue('roleId', undefined); }}},
     {title: '任职机构', dataIndex: 'organizationRef', hideInTable: true, valueType: 'select', fieldProps: {showSearch: {filterOption: false, onSearch: setOrganizationQuery}, disabled: !organizationType, options: candidateOptions, loading: organizationCandidates.isFetching, allowClear: true, placeholder: organizationType ? '搜索机构名称或编码' : '请先选择任职机构类型', ...testId('workspace-account-query-organization')}},
     {title: '业务角色', dataIndex: 'roleId', hideInTable: true, valueType: 'select', fieldProps: {showSearch: {filterOption: false, onSearch: setRoleCandidateQuery}, disabled: !organizationType, options: roleOptions, loading: roleCandidates.isFetching, allowClear: true, placeholder: organizationType ? '搜索业务角色' : '请先选择任职机构类型', ...testId('workspace-account-query-role')}},
-    {title: '任职机构 / 业务角色', key: 'assignments', search: false, render: (_, row) => <Space direction="vertical" size={2}>{row.assignments.map((assignment) => <Space key={assignment.id} size={8} wrap><span><Tag>{nodeLabels[assignment.serviceNodeType]}</Tag>{formatCodeNamePath(assignment.organizationPath)}</span><Typography.Text type="secondary">{assignment.roleName}</Typography.Text></Space>)}</Space>},
+    {title: '任职机构 / 业务角色', key: 'assignments', search: false, render: (_, row) => <Space direction="vertical" size={2}>{row.assignments.map((assignment) => <Space key={assignment.id} size={8} wrap><span><Tag>{nodeLabels[assignment.serviceNodeType]}</Tag>{<NameCodePathText value={assignment.organizationPath}/>}</span><Typography.Text type="secondary">{assignment.roleName}</Typography.Text></Space>)}</Space>},
     {title: '最后登录时间', dataIndex: 'lastLoginAt', valueType: 'dateTime', sorter: true, search: false},
     {title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
   ], [candidateOptions, loadDetail, organizationCandidates.isFetching, organizationType, roleCandidates.isFetching, roleOptions]);
@@ -146,6 +146,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
     <Typography.Paragraph type="secondary" style={{margin: '0 0 16px'}}>从姓名进入账号详情，再确认状态、凭据或任职动作；所有结果以最新 owner 读回为准。</Typography.Paragraph>
     {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} {...testId('workspace-account-list-error')}/>}
     <div {...testId('workspace-account-table')}><ProTable<WorkspaceAccount>
+      size="small"
       formRef={formRef}
       rowKey="id"
       loading={listState.loading}

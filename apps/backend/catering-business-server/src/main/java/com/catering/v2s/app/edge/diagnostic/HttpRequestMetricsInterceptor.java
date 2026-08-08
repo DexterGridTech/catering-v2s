@@ -115,25 +115,12 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
     }
 
     private static Map<String, Definition> loadDefinitions(ObjectMapper mapper) {
-        try (InputStream stream = HttpRequestMetricsInterceptor.class.getClassLoader().getResourceAsStream("generated/edge-route-face-registry.json")) {
-            if (stream == null) throw new IllegalStateException("generated edge route registry missing");
-            JsonNode root = mapper.readTree(stream);
-            Map<String, Definition> result = new HashMap<>();
-            for (JsonNode entry : root.path("operations")) {
-                String operationId = entry.path("operationId").asText();
-                String method = entry.path("method").asText().toUpperCase(java.util.Locale.ROOT);
-                String path = entry.path("path").asText();
-                String owner = entry.path("owner").asText();
-                JsonNode consumerFaces = entry.path("consumerFaces");
-                if (operationId.isBlank() || path.isBlank() || owner.isBlank() || !consumerFaces.isArray() || consumerFaces.size() != 1 || consumerFaces.get(0).asText().isBlank()) throw new IllegalStateException("invalid generated edge route registry");
-                String key = method + " " + path;
-                if (result.containsKey(key)) throw new IllegalStateException("duplicate generated edge route registry entry");
-                result.put(key, new Definition(operationId, method, path, owner, consumerFaces.get(0).asText()));
-            }
-            return Map.copyOf(result);
-        } catch (IOException error) {
-            throw new IllegalStateException("generated edge route registry unreadable", error);
+        Map<String, Definition> result = new HashMap<>();
+        for (var entry : EdgeRouteFaceRegistry.loadExtended(mapper).entrySet()) {
+            EdgeRouteFaceRegistry.Definition value = entry.getValue();
+            result.put(entry.getKey(), new Definition(value.operationId(), value.method(), value.path(), value.owner(), value.consumerFace()));
         }
+        return Map.copyOf(result);
     }
 
     private static String runIdFor(String profile) { Mode mode = Mode.forProfile(profile); return mode == null ? null : env(mode.variablePrefix() + "_RUN_ID"); }

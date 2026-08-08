@@ -42,3 +42,10 @@ test('joint L2 fixture reports every administrator-reset bootstrap stage', () =>
   assert.match(fixture, /createManagedInvitation\('createCredentialResetWorkspaceInvitation'/);
   assert.match(fixture, /'createCredentialResetWorkspaceInvitation'/);
 });
+
+test('catalog API fixture provisions a project principal for project-scope rejection', () => {
+  const fixture = readFileSync(fixturePath, 'utf8');
+  assert.match(fixture, /createCatalogProjectRole/);
+  assert.match(fixture, /targetType: 'PROJECT'/);
+  assert.match(fixture, /CATALOG_INVENTORY_PROJECT_LOGIN: catalogProjectLoginName/);
+});

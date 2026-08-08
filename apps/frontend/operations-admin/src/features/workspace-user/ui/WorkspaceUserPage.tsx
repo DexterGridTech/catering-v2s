@@ -232,6 +232,7 @@ export function WorkspaceUserPage({
   const userContent = <>
     {problem && <Alert type="error" showIcon title="用户管理失败" description={problem} style={{marginBottom: 16}}/>}
     <ProTable<WorkspaceUser>
+      size="small"
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('operations-workspace-user-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); setFilters({}); setPage(1); }} {...testId('operations-workspace-user-filter-reset')}>重置</Button>]}}
       onSubmit={(values) => submitFilters({
         userName: typeof values.displayName === 'string' ? values.displayName : undefined,

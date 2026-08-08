@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-edge-placement",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "root": "contracts/openapi/catalog-inventory.openapi.yaml",
+  "shards": [
+    "components/catalog/catalog-common.schemas.yaml",
+    "components/catalog/catalog-workbench.schemas.yaml",
+    "components/catalog/catalog-item.schemas.yaml",
+    "components/catalog/catalog-dictionary.schemas.yaml",
+    "components/catalog/catalog-copy.schemas.yaml",
+    "components/inventory/inventory-common.schemas.yaml",
+    "components/inventory/inventory-workbench.schemas.yaml",
+    "components/inventory/inventory-command.schemas.yaml",
+    "components/fulfillment-production/production-tag.schemas.yaml",
+    "paths/operations-admin/catalog-workbench.paths.yaml",
+    "paths/operations-admin/catalog-item-management.paths.yaml",
+    "paths/operations-admin/catalog-dictionary-management.paths.yaml",
+    "paths/operations-admin/catalog-copy.paths.yaml",
+    "paths/operations-admin/inventory-workbench.paths.yaml",
+    "paths/operations-admin/inventory-management.paths.yaml",
+    "paths/operations-admin/production-tag-management.paths.yaml"
+  ],
+  "operationPlacement": [
+    {
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsCatalogNavigation",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsCatalogItems",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsCatalogItem",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
+    },
+    {
+      "operationId": "createOperationsCatalogItem",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-item-management.paths.yaml"
+    },
+    {
+      "operationId": "saveOperationsCatalogItem",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-item-management.paths.yaml"
+    },
+    {
+      "operationId": "transitionOperationsCatalogItemStatus",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-item-management.paths.yaml"
+    },
+    {
+      "operationId": "createOperationsCatalogCategory",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "updateOperationsCatalogCategory",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "moveOperationsCatalogCategory",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsCatalogDictionary",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "createOperationsCatalogDictionaryEntry",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "updateOperationsCatalogDictionaryEntry",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "reorderOperationsCatalogDictionaryEntry",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "transitionOperationsCatalogDictionaryEntryStatus",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsProductionTags",
+      "face": "operations-admin",
+      "ownerModule": "fulfillment-production",
+      "shard": "paths/operations-admin/production-tag-management.paths.yaml"
+    },
+    {
+      "operationId": "createOperationsProductionTag",
+      "face": "operations-admin",
+      "ownerModule": "fulfillment-production",
+      "shard": "paths/operations-admin/production-tag-management.paths.yaml"
+    },
+    {
+      "operationId": "updateOperationsProductionTag",
+      "face": "operations-admin",
+      "ownerModule": "fulfillment-production",
+      "shard": "paths/operations-admin/production-tag-management.paths.yaml"
+    },
+    {
+      "operationId": "transitionOperationsProductionTagStatus",
+      "face": "operations-admin",
+      "ownerModule": "fulfillment-production",
+      "shard": "paths/operations-admin/production-tag-management.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsLocalCatalogCopyCandidates",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-copy.paths.yaml"
+    },
+    {
+      "operationId": "preflightOperationsLocalCatalogCopy",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-copy.paths.yaml"
+    },
+    {
+      "operationId": "executeOperationsLocalCatalogCopy",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-copy.paths.yaml"
+    },
+    {
+      "operationId": "preflightOperationsTemporaryCatalogItemPromotion",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-copy.paths.yaml"
+    },
+    {
+      "operationId": "executeOperationsTemporaryCatalogItemPromotion",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-copy.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsBrandCatalogCopyCandidates",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-copy.paths.yaml"
+    },
+    {
+      "operationId": "preflightOperationsBrandCatalogCopy",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-copy.paths.yaml"
+    },
+    {
+      "operationId": "executeOperationsBrandCatalogCopy",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-copy.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsInventoryTargets",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsInventoryTarget",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetChangeSummary",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetBusinessHistory",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetConsumptionReferences",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetLedger",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetDiagnostics",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-workbench.paths.yaml"
+    },
+    {
+      "operationId": "countOperationsInventoryTarget",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-management.paths.yaml"
+    },
+    {
+      "operationId": "increaseOperationsInventoryTarget",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-management.paths.yaml"
+    },
+    {
+      "operationId": "adjustOperationsInventoryTarget",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-management.paths.yaml"
+    },
+    {
+      "operationId": "updateOperationsInventoryTargetConfiguration",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/inventory-management.paths.yaml"
+    },
+    {
+      "operationId": "stageOperationsCatalogAsset",
+      "face": "operations-admin",
+      "ownerModule": "asset",
+      "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
+    },
+    {
+      "operationId": "releaseOperationsCatalogStagedAsset",
+      "face": "operations-admin",
+      "ownerModule": "asset",
+      "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
+    },
+    {
+      "operationId": "getOperationsCatalogShapeManifest",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
+    }
+  ],
+  "placementDigest": "38270d5ab5485afe177bbbb866d0e75614634f1f959842202bc6095213a6e388"
+}

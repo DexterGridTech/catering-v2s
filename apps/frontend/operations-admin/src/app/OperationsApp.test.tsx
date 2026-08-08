@@ -34,6 +34,7 @@ describe('operations shell focused IA contract', () => {
     expect(source).toContain('className="operations-sider-collapsed-button"');
     expect(source).toContain("testId('operations-shell-toggle-sider')");
     expect(source).toContain('theme="light"\n        mode="inline"\n        inlineCollapsed={siderCollapsed}');
+    expect(source).toContain('defaultOpenKeys={selectedCatalogPage ? [selectedCatalogPage.menuGroupKey] : []}');
     expect(source).not.toContain('theme="dark"');
     expect(source).not.toContain('breakpoint="lg"');
     expect(source).toContain('<DataScopeSelector\n          entry={entry}');

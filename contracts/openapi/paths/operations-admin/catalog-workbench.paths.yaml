@@ -1,0 +1,531 @@
+{
+  "kind": "catalog-inventory-openapi-path-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "operationIds": [
+    "getOperationsCatalogWorkbenchContext",
+    "getOperationsCatalogNavigation",
+    "getOperationsCatalogItems",
+    "getOperationsCatalogItem",
+    "getOperationsLocalCatalogCopyCandidates",
+    "getOperationsBrandCatalogCopyCandidates",
+    "getOperationsCatalogShapeManifest"
+  ],
+  "paths": {
+    "/operations/catalog-inventory/workbench/context": {
+      "get": {
+        "operationId": "getOperationsCatalogWorkbenchContext",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "organization",
+          "workspace-iam"
+        ],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogWorkbenchContext"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "selected data node"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/navigation": {
+      "get": {
+        "operationId": "getOperationsCatalogNavigation",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogNavigationView"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "selected data node"
+            }
+          },
+          {
+            "name": "viewKey",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "smart view"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/items": {
+      "get": {
+        "operationId": "getOperationsCatalogItems",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory"
+        ],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "smartViewKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field",
+              "enum": [
+                "ALL",
+                "ENABLED",
+                "DISABLED",
+                "AUTO_SYNC",
+                "TEMPORARY",
+                "NEEDS_ATTENTION"
+              ]
+            }
+          },
+          {
+            "name": "shapeKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "categoryRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "uncategorized",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "includeSubCategories",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "governanceStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field",
+              "enum": [
+                "SELF_MANAGED",
+                "COPIED",
+                "AUTO_SYNC",
+                "TEMPORARY"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "queryGeneration",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/items/{itemCode}": {
+      "get": {
+        "operationId": "getOperationsCatalogItem",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory",
+          "fulfillment-production"
+        ],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemDetail"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "itemCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "selected data node"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/copy/local/candidates": {
+      "get": {
+        "operationId": "getOperationsLocalCatalogCopyCandidates",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory"
+        ],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalCopyCandidatePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "selected data node"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "domain-local keyword"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "cursor"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/copy/brand/candidates": {
+      "get": {
+        "operationId": "getOperationsBrandCatalogCopyCandidates",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "organization"
+        ],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandCopyCandidatePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "selected store node"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "domain-local keyword"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "cursor"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/shape-manifest": {
+      "get": {
+        "operationId": "getOperationsCatalogShapeManifest",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogShapeManifestView"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "requested manifest revision"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

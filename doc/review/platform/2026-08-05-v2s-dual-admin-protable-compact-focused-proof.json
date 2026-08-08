@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "dual-admin-protable-compact-focused-proof",
+  "packageId": "DUAL-ADMIN-PROTABLE-COMPACT-20260805",
+  "status": "PASS",
+  "denominator": {
+    "platformAdminInstances": 8,
+    "operationsAdminInstances": 5,
+    "totalInstances": 13,
+    "sourceFiles": 12,
+    "exclusions": ["test/spec files", "imports without rendered ProTable", "ordinary Table", "Tree", "Descriptions", "EditableProTable"]
+  },
+  "commands": [
+    {"command": "node scripts/check/protable-compact.mjs --self-test", "result": "PROTABLE_COMPACT_SELF_TEST=PASS; RED_MISSING_SIZE=PASS"},
+    {"command": "node scripts/check/protable-compact.mjs", "result": "PROTABLE_COMPACT=PASS; PROTABLE_INSTANCES=13; PROTABLE_FILES=12; PLATFORM_ADMIN=8; OPERATIONS_ADMIN=5"},
+    {"command": "yarn typecheck (apps/frontend/platform-admin)", "result": "PASS; exit 0"},
+    {"command": "yarn typecheck (apps/frontend/operations-admin)", "result": "PASS; exit 0"},
+    {"command": "yarn test (apps/frontend/operations-admin)", "result": "PASS; 16 architecture tests, 28 Vitest files, 76 tests"},
+    {"command": "yarn test (apps/frontend/platform-admin)", "result": "BASELINE_FAIL; 7 pass, 2 pre-existing architecture assertions; same failures reproduce after removing all compact attributes in scratchpad"}
+  ],
+  "visualProof": {"status": "NOT_APPLICABLE_WITH_REASON", "reason": "本包是静态密度标准实施；未宣称浏览器/L2 视觉 PASS。"},
+  "businessStatus": "NOT_APPLICABLE_WITH_REASON",
+  "businessReason": "静态密度标准不改变业务数据、owner 或交互路径；不宣称浏览器业务 PASS。",
+  "cleanupStatus": "NOT_APPLICABLE_WITH_REASON",
+  "cleanupReason": "未启动受管运行时或外部资源。"
+}

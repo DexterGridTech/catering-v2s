@@ -12,10 +12,24 @@ export const adminDrawerSurfaceProps = {
   },
 } satisfies Pick<DrawerProps, 'resizable' | 'styles'>;
 
+/** Approved wide surface for catalog/inventory detail and edit workflows. */
+export const adminWideDrawerSurfaceProps = {
+  ...adminDrawerSurfaceProps,
+  width: 1024,
+} satisfies Pick<DrawerProps, 'width' | 'resizable' | 'styles'>;
+
 /** Shared compact single-column fact table for persistent admin detail Drawers. */
 export const adminDetailDescriptionsProps = {
   bordered: true,
   size: 'small',
   column: 1,
+  styles: {label: {width: 164}},
+} satisfies Pick<DescriptionsProps, 'bordered' | 'size' | 'column' | 'styles'>;
+
+/** Two-column variant for dense catalog/inventory read models in the wide Drawer. */
+export const adminWideDetailDescriptionsProps = {
+  bordered: true,
+  size: 'small',
+  column: 2,
   styles: {label: {width: 164}},
 } satisfies Pick<DescriptionsProps, 'bordered' | 'size' | 'column' | 'styles'>;

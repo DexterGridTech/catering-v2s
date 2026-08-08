@@ -1,5 +1,5 @@
 import {Alert, Button, Card, Descriptions, Empty, Input, Space, Tag, Tree} from 'antd';
-import {adminHierarchyCollator, formatNameCode, testId, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {adminHierarchyCollator, NameCodeText, testId, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
@@ -15,7 +15,7 @@ import {issue, nodeTypeLabel, organizationRegionCreateLabel, organizationStatusL
 import {organizationExtensionDetailItems, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 function treeNodeTitle(row: HierarchyRow) {
-  return <span><Tag color="cyan">{nodeTypeLabel(row.nodeType)}</Tag><span>{formatNameCode(row.name, row.code)}</span>{row.status === 'DISABLED' && <Tag color="default">已停用</Tag>}</span>;
+  return <span><Tag color="cyan">{nodeTypeLabel(row.nodeType)}</Tag><span>{<NameCodeText name={row.name} code={row.code}/>}</span>{row.status === 'DISABLED' && <Tag color="default">已停用</Tag>}</span>;
 }
 
 const hierarchyNameCollator = adminHierarchyCollator;

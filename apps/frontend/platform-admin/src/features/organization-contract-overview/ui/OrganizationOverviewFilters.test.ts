@@ -23,7 +23,10 @@ describe('organization overview owner-backed filters', () => {
   });
 
   it('uses only owner-returned candidates and never infers ids from loaded rows', () => {
-    expect(ownerFilterOptions([{kind: 'PROJECT', id: 'project-1', code: 'P1', name: '项目一'}, {kind: 'BRAND', id: 'brand-1', code: 'B1', name: '品牌一'}, {kind: 'HEAD_COMPANY', id: 'head-company-1', code: 'HC1', name: '总公司一'}], 'HEAD_COMPANY')).toEqual([{value: 'head-company-1', label: '总公司一(HC1)'}]);
+    const options = ownerFilterOptions([{kind: 'PROJECT', id: 'project-1', code: 'P1', name: '项目一'}, {kind: 'BRAND', id: 'brand-1', code: 'B1', name: '品牌一'}, {kind: 'HEAD_COMPANY', id: 'head-company-1', code: 'HC1', name: '总公司一'}], 'HEAD_COMPANY');
+    expect(options).toHaveLength(1);
+    expect(options[0].value).toBe('head-company-1');
+    expect(options[0].label).toMatchObject({props: {name: '总公司一', code: 'HC1'}});
   });
 
   it('keeps each organization tab query state independent', () => {

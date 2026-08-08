@@ -1,0 +1,276 @@
+{
+  "kind": "catalog-inventory-openapi-path-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "operationIds": [
+    "countOperationsInventoryTarget",
+    "increaseOperationsInventoryTarget",
+    "adjustOperationsInventoryTarget",
+    "updateOperationsInventoryTargetConfiguration"
+  ],
+  "paths": {
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/count": {
+      "post": {
+        "operationId": "countOperationsInventoryTarget",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryWriteReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryCountRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/increase": {
+      "post": {
+        "operationId": "increaseOperationsInventoryTarget",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryWriteReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryIncreaseRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/adjust": {
+      "post": {
+        "operationId": "adjustOperationsInventoryTarget",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryWriteReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryAdjustmentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/configuration": {
+      "patch": {
+        "operationId": "updateOperationsInventoryTargetConfiguration",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTargetCurrentView"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryTargetConfigurationRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

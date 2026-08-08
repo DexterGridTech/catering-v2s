@@ -1,5 +1,5 @@
-import {Alert, Descriptions, Drawer, Skeleton} from 'antd';
-import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {Alert, Descriptions, Drawer, Skeleton, Space} from 'antd';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, NameCodeText, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -48,11 +48,11 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
       {definition.error && <Alert type="warning" showIcon title="扩展字段读取失败" description="当前仅显示已确认的基础资料。" {...testId('operations-store-profile-contract-detail-extension-error')} />}
       <Descriptions {...adminDetailDescriptionsProps} items={[
         {key: 'contractNo', label: '合同编号', children: selected.contractNo},
-        {key: 'store', label: '门店', children: formatNameCode(selected.store.name, selected.store.code)},
-        {key: 'project', label: '项目', children: formatNameCode(selected.project.name, selected.project.code)},
+        {key: 'store', label: '门店', children: <NameCodeText name={selected.store.name} code={selected.store.code}/>},
+        {key: 'project', label: '项目', children: <NameCodeText name={selected.project.name} code={selected.project.code}/>},
         {key: 'phaseName', label: '项目分期', children: selected.phaseName},
-        {key: 'tenant', label: '经营租户', children: formatNameCode(selected.tenant.name, selected.tenant.code)},
-        {key: 'items', label: '货号', children: selected.items.map((item) => formatNameCode(item.name, item.code)).join('；') || '—'},
+        {key: 'tenant', label: '经营租户', children: <NameCodeText name={selected.tenant.name} code={selected.tenant.code}/>},
+        {key: 'items', label: '货号', children: selected.items.length ? <Space direction="vertical" size={2}>{selected.items.map((item) => <NameCodeText key={`${item.code}-${item.name}`} name={item.name} code={item.code}/>)}</Space> : '—'},
         {key: 'effective', label: '起止日期', children: `${selected.effectiveFrom} 至 ${selected.effectiveTo ?? '长期'}`},
         {key: 'status', label: '状态', children: selected.status === 'VALID' ? '有效' : '已作废'},
         {key: 'note', label: '备注', children: selected.note ?? '—'},

@@ -1,6 +1,6 @@
 import {ProTable} from '@ant-design/pro-components';
 import {Alert, Button, Card, Descriptions, Empty, Input, Select, Spin, Tabs, Tag, Tree} from 'antd';
-import {adminHierarchyCollator, adminListState, contextScopedQueryArgs, formatNameCode, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminHierarchyCollator, adminListState, contextScopedQueryArgs, NameCodeText, testId, useAsyncGenerationGuard, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState, type ReactNode} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
@@ -32,7 +32,7 @@ const hierarchyTypeLabels = {GROUP: '集团', REGION: '大区', PROJECT: '项目
 const hierarchyNameCollator = adminHierarchyCollator;
 
 function hierarchyNodeTitle(type: keyof typeof hierarchyTypeLabels, name: string, code: string, status: OrganizationOverviewStatus): ReactNode {
-  return <span><Tag color="cyan">{hierarchyTypeLabels[type]}</Tag><span>{formatNameCode(name, code)}</span>{status === 'DISABLED' && <Tag color="default">已停用</Tag>}</span>;
+  return <span><Tag color="cyan">{hierarchyTypeLabels[type]}</Tag><span>{<NameCodeText name={name} code={code}/>}</span>{status === 'DISABLED' && <Tag color="default">已停用</Tag>}</span>;
 }
 
 function treeNodes(nodes: OrganizationHierarchyTreeNode[]): OrganizationTreeData[] {
@@ -186,7 +186,7 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
         ...displayedHierarchyDetail.extensionFields,
       ] : [{key: 'empty', label: '提示', children: '请选择左侧组织查看详情。'}]}/></Card>
     </div>}
-    {kind === 'organization' && tab.category !== 'HIERARCHY' && <div {...testId('platform-organization-table')}><ProTable<OrganizationOverviewItem> key={tab.key} rowKey="id" loading={organizationListState.loading} locale={organizationListState.locale} dataSource={organizationPage?.items ?? []} options={false}
+    {kind === 'organization' && tab.category !== 'HIERARCHY' && <div {...testId('platform-organization-table')}><ProTable<OrganizationOverviewItem> size="small" key={tab.key} rowKey="id" loading={organizationListState.loading} locale={organizationListState.locale} dataSource={organizationPage?.items ?? []} options={false}
        search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-organization-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); searchConfig.form?.setFieldsValue({name: undefined, code: undefined, legalName: undefined, unifiedSocialCreditCode: undefined, status: undefined, source: undefined, projectId: undefined, brandId: undefined, tenantId: undefined, headCompanyId: undefined}); resetOrganizationFilters(); }} {...testId('platform-organization-filter-reset')}>重置</Button>]}}
        form={{initialValues: organizationTabState.filters}}
        onSubmit={(value) => submitOrganizationFilters({name: value.name?.trim() || undefined, code: value.code?.trim() || undefined, legalName: value.legalName?.trim() || undefined, unifiedSocialCreditCode: value.unifiedSocialCreditCode?.trim() || undefined, status: value.status, source: value.source, projectId: value.projectId, brandId: value.brandId, tenantId: value.tenantId, headCompanyId: value.headCompanyId})}
@@ -207,16 +207,16 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
           {title: '品牌', dataIndex: 'brandId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-brand'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'BRAND'), placeholder: '全部'}},
           {title: '经营租户', dataIndex: 'tenantId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-tenant'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'TENANT'), placeholder: '全部'}},
           {title: '总公司', dataIndex: 'headCompanyId', valueType: 'select' as const, hideInTable: true, fieldProps: {...testId('platform-organization-filter-head-company'), allowClear: true, showSearch: {optionFilterProp: 'label'}, options: ownerFilterOptions(organizationPage?.filterOptions, 'HEAD_COMPANY'), placeholder: '全部'}},
-          {title: '项目', dataIndex: 'project', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.project ? formatNameCode(row.project.name, row.project.code) : '—'},
-          {title: '品牌', dataIndex: 'brand', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.brand ? formatNameCode(row.brand.name, row.brand.code) : '—'},
-          {title: '经营租户', dataIndex: 'tenant', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.tenant ? formatNameCode(row.tenant.name, row.tenant.code) : '—'},
-          {title: '总公司', dataIndex: 'headCompany', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.headCompany ? formatNameCode(row.headCompany.name, row.headCompany.code) : '未设置'},
+          {title: '项目', dataIndex: 'project', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.project ? <NameCodeText name={row.project.name} code={row.project.code}/> : '—'},
+          {title: '品牌', dataIndex: 'brand', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.brand ? <NameCodeText name={row.brand.name} code={row.brand.code}/> : '—'},
+          {title: '经营租户', dataIndex: 'tenant', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.tenant ? <NameCodeText name={row.tenant.name} code={row.tenant.code}/> : '—'},
+          {title: '总公司', dataIndex: 'headCompany', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.headCompany ? <NameCodeText name={row.headCompany.name} code={row.headCompany.code}/> : '未设置'},
         ] : []),
         {title: '备注', dataIndex: 'notes', search: false, render: (_: unknown, row: OrganizationOverviewItem) => row.notes || '—'},
         {key: 'updatedAt', title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
       ]}
     /></div>}
-    {kind === 'contracts' && <div {...testId('platform-contract-table')}><ProTable<ContractOverviewItem> rowKey={(row) => row.contractRef.id} loading={contractListState.loading} locale={contractListState.locale} dataSource={contractPage?.items ?? []} options={false}
+    {kind === 'contracts' && <div {...testId('platform-contract-table')}><ProTable<ContractOverviewItem> size="small" rowKey={(row) => row.contractRef.id} loading={contractListState.loading} locale={contractListState.locale} dataSource={contractPage?.items ?? []} options={false}
        search={{labelWidth: 'auto', optionRender: (searchConfig) => [<Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-contract-filter-submit')}>查询</Button>, <Button key="reset" onClick={() => { searchConfig.form?.resetFields(); searchConfig.form?.setFieldsValue({contractNo: undefined, storeId: undefined, phaseName: undefined, tenantId: undefined, itemCode: undefined, status: undefined}); setContractStoreSearch(''); setContractTenantSearch(''); resetContractFilters(); }} {...testId('platform-contract-filter-reset')}>重置</Button>]}}
        form={{initialValues: contractFilters}}
       onSubmit={(value) => submitContractFilters({contractNo: value.contractNo?.trim() || undefined, storeId: value.storeId, phaseName: value.phaseName?.trim() || undefined, tenantId: value.tenantId, itemCode: value.itemCode?.trim() || undefined, status: value.status})}
@@ -224,14 +224,14 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
       onChange={(pagination, _, sorter, extra) => { if (extra.action === 'paginate') { setPage(pagination.current ?? page); setPageSize(pagination.pageSize ?? pageSize); return; } if (extra.action !== 'sort') return; const current = Array.isArray(sorter) ? sorter[0] : sorter; if (!current?.order) { setContractSort('UPDATED_AT'); setContractDirection('DESC'); return; } const nextSort = current.columnKey === 'contractNo' ? 'CONTRACT_NO' : current.columnKey === 'effectiveFrom' ? 'EFFECTIVE_FROM' : 'UPDATED_AT'; setContractSort(nextSort); setContractDirection(current.order === 'ascend' ? 'ASC' : 'DESC'); setPage(1); }}
       columns={[
         {key: 'contractNo', title: '合同编号', dataIndex: 'contractNo', sorter: true, fieldProps: {...testId('platform-contract-filter-number'), allowClear: true}, render: (_, row) => <Button type="link" onClick={() => openContractDetail(row.contractRef.id)} {...testId(`platform-contract-detail-${row.contractRef.id}`)}>{row.contractRef.code}</Button>},
-        {title: '门店', dataIndex: 'storeId', hideInTable: true, valueType: 'select', fieldProps: {allowClear: true, showSearch: {filterOption: false, onSearch: setContractStoreSearch}, onPopupScroll: contractStoreCandidates.onPopupScroll, loading: contractStoreCandidates.isFetching, options: contractStoreCandidates.items.map((item) => ({value: item.id, label: formatNameCode(item.name, item.code)})), placeholder: '搜索门店名称或编码', ...testId('platform-contract-filter-store')}},
+        {title: '门店', dataIndex: 'storeId', hideInTable: true, valueType: 'select', fieldProps: {allowClear: true, showSearch: {filterOption: false, onSearch: setContractStoreSearch}, onPopupScroll: contractStoreCandidates.onPopupScroll, loading: contractStoreCandidates.isFetching, options: contractStoreCandidates.items.map((item) => ({value: item.id, label: <NameCodeText name={item.name} code={item.code}/>})), placeholder: '搜索门店名称或编码', ...testId('platform-contract-filter-store')}},
         {title: '分期', dataIndex: 'phaseName', hideInTable: true, fieldProps: {...testId('platform-contract-filter-phase'), allowClear: true, placeholder: '输入项目分期'}},
-        {title: '经营租户', dataIndex: 'tenantId', hideInTable: true, valueType: 'select', fieldProps: {allowClear: true, showSearch: {filterOption: false, onSearch: setContractTenantSearch}, onPopupScroll: contractTenantCandidates.onPopupScroll, loading: contractTenantCandidates.isFetching, options: contractTenantCandidates.items.map((item) => ({value: item.id, label: formatNameCode(item.name, item.code)})), placeholder: '搜索经营租户名称或编码', ...testId('platform-contract-filter-tenant')}},
+        {title: '经营租户', dataIndex: 'tenantId', hideInTable: true, valueType: 'select', fieldProps: {allowClear: true, showSearch: {filterOption: false, onSearch: setContractTenantSearch}, onPopupScroll: contractTenantCandidates.onPopupScroll, loading: contractTenantCandidates.isFetching, options: contractTenantCandidates.items.map((item) => ({value: item.id, label: <NameCodeText name={item.name} code={item.code}/>})), placeholder: '搜索经营租户名称或编码', ...testId('platform-contract-filter-tenant')}},
         {title: '货号', dataIndex: 'itemCode', hideInTable: true, fieldProps: {...testId('platform-contract-filter-item-code'), allowClear: true, placeholder: '输入货号'}},
-        {title: '项目', dataIndex: 'projectRef', search: false, render: (_, row) => formatNameCode(row.projectRef.name, row.projectRef.code)},
-        {title: '门店', dataIndex: 'storeRef', search: false, render: (_, row) => formatNameCode(row.storeRef.name, row.storeRef.code)},
+        {title: '项目', dataIndex: 'projectRef', search: false, render: (_, row) => <NameCodeText name={row.projectRef.name} code={row.projectRef.code}/>},
+        {title: '门店', dataIndex: 'storeRef', search: false, render: (_, row) => <NameCodeText name={row.storeRef.name} code={row.storeRef.code}/>},
         {title: '分期', dataIndex: 'phaseName', search: false},
-        {title: '经营租户', dataIndex: 'tenantRef', search: false, render: (_, row) => formatNameCode(row.tenantRef.name, row.tenantRef.code)},
+        {title: '经营租户', dataIndex: 'tenantRef', search: false, render: (_, row) => <NameCodeText name={row.tenantRef.name} code={row.tenantRef.code}/>},
         {title: '起止日期', key: 'effectiveFrom', search: false, sorter: true, render: (_, row) => `${row.effectiveFrom} 至 ${row.effectiveTo ?? '长期'}`},
         {title: '货号', dataIndex: 'itemSummary', search: false, render: (_, row) => row.itemSummary || row.items.map((item) => item.code).join('、') || '—'},
         {title: '货号数量', dataIndex: 'items', search: false, render: (_, row) => String(row.items?.length ?? 0)},

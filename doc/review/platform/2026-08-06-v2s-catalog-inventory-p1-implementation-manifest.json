@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "v2s-implementation-delivery-manifest",
+  "packageId": "CATALOG-INVENTORY-P1-DEFINITION-20260806",
+  "unitId": "CI-P1-DEFINITION",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "CATALOG-INVENTORY-P1-IMPLEMENTATION-20260806",
+  "reviewRoundLimit": 2,
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "businessStatus": "NOT_APPLICABLE_WITH_REASON",
+  "cleanupStatus": "NOT_APPLICABLE_WITH_REASON",
+  "sourceDenominators": {
+    "requirements": [
+      "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
+      "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
+      "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json"
+    ],
+    "contracts": [
+      "contracts/catalog/catalog-item-editor-manifest.json",
+      "contracts/catalog/catalog-inventory-read-models.json",
+      "contracts/catalog/catalog-inventory-edge-contract.json",
+      "contracts/catalog/catalog-inventory-edge-placement.json",
+      "contracts/openapi/catalog-inventory.openapi.yaml",
+      "contracts/policy/catalog-inventory-design-byte-coverage.json"
+    ],
+    "seedAndFixtures": [
+      "contracts/policy/catalog-inventory-fixture-catalog.schema.json",
+      "contracts/policy/catalog-inventory-fixture-catalog.json",
+      "contracts/policy/catalog-inventory-media-assets.json",
+      "contracts/policy/catalog-inventory-p1-media"
+    ],
+    "apiScenarios": [
+      "contracts/policy/catalog-inventory-api-scenarios.json"
+    ],
+    "l2Scenarios": [
+      "contracts/policy/catalog-inventory-l2-scenarios.json"
+    ],
+    "assertionMatrix": [
+      "contracts/policy/catalog-inventory-assertion-matrix.json"
+    ],
+    "generated": [
+      "contracts/catalog/CatalogInventoryShapeManifest.java",
+      "contracts/catalog/catalogInventoryShapeManifest.ts",
+      "contracts/catalog/CatalogInventoryEdgeWire.java",
+      "contracts/catalog/catalogInventoryEdgeWire.ts"
+    ]
+  },
+  "forbiddenSurfaces": [
+    "apps/backend/catering-business-server/modules/catalog",
+    "apps/backend/catering-business-server/modules/inventory",
+    "db/migration",
+    "seed execution",
+    "DEV/UAT/L2 execution",
+    "runtime deployment",
+    "Git"
+  ],
+  "authorizationBoundary": "P1 definition implementation only: contract/read-model/seed-fixture/scenario/generated artifacts; no owner runtime, schema, migration, reset/seed execution, browser execution or deployment.",
+  "implementationInputs": {
+    "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+    "designSha256": "fe8c0d55a6947a4c61005be2061215779f661c9b09665d280c3dc6ff329ea244",
+    "designReviewIntakePath": "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-final-review-intake-codex.md",
+    "designReviewIntakeSha256": "acda8e8e40109222b14c5fd4b01a2e1fab9a8e07743f73a6badf23e2ea37a4b6"
+  }
+}

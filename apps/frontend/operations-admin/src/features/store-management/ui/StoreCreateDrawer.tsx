@@ -1,5 +1,5 @@
 import {Alert, Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsRtk} from '../../../app/api/OperationsTransport';
@@ -86,7 +86,7 @@ export function StoreCreateDrawer({open, queryContext, onClose, onCreated}: {ope
     lifecycle.reset();
   }, [form, lifecycle, open]);
 
-  const options = (values: Array<{id: string; name: string; code: string}>) => values.map((value) => ({value: value.id, label: formatNameCode(value.name, value.code)}));
+  const options = (values: Array<{id: string; name: string; code: string}>) => values.map((value) => ({value: value.id, label: <NameCodeText name={value.name} code={value.code}/>}));
   const definitionReady = Boolean(definition.data) && !definition.isFetching;
   const activeCandidateRequests = [brands, tenants, headCompanies].filter((candidate) => candidate.data || candidate.isFetching || candidate.error);
   const candidatesReady = activeCandidateRequests.every((candidate) => Boolean(candidate.data) && !candidate.isFetching);

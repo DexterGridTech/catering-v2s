@@ -25,6 +25,7 @@ class RequestCompletionDiagnosticInterceptorTest {
     @Test
     void generatedRouteFaceRegistryRetainsCompleteRouteDenominator() {
         assertEquals(154, EdgeRouteFaceRegistry.load(new ObjectMapper()).size());
+        assertNotNull(EdgeRouteFaceRegistry.loadExtended(new ObjectMapper()).get("GET /api/operations/catalog-inventory/items/{itemCode}"));
     }
 
     @Test

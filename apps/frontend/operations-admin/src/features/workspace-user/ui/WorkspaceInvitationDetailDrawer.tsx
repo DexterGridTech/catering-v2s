@@ -1,5 +1,5 @@
 import {Button, Descriptions, Drawer, Space, Typography} from 'antd';
-import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, formatCodeNamePath, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, NameCodePathText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useState} from 'react';
 import type {WorkspaceInvitation} from '../../../app/api/generated/operations-edge';
 import {OperationsAuditHistoryModal} from '../../audit-history';
@@ -49,7 +49,7 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
   >
     {invitation && <Descriptions {...adminDetailDescriptionsProps} items={[
       {key: 'mobile', label: '邀请手机号', children: invitation.maskedMobile},
-      {key: 'organization', label: '任职机构', children: formatCodeNamePath(invitation.targetOrganizationPath)},
+      {key: 'organization', label: '任职机构', children: <NameCodePathText value={invitation.targetOrganizationPath}/>},
       {key: 'roles', label: '业务角色', children: invitation.roleNames.join('、')},
       {key: 'status', label: '状态', children: statusLabel[invitation.status]},
       {key: 'expiresAt', label: '有效期', children: time(invitation.expiresAt)},
@@ -58,5 +58,5 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
         <Button onClick={() => void copy(invitation.invitationPageUrl)} {...testId('operations-workspace-invitation-copy-link')}>复制</Button>
       </Space>},
     ]}/>}
-  </Drawer><OperationsAuditHistoryModal open={auditOpen} target={invitation ? {entityType: 'WORKSPACE_INVITATION', entityId: invitation.id, displayName: formatCodeNamePath(invitation.targetOrganizationPath)} : undefined} groupWorkspaceKey={invitation?.groupWorkspaceKey ?? ''} onClose={() => setAuditOpen(false)}/></>;
+  </Drawer><OperationsAuditHistoryModal open={auditOpen} target={invitation ? {entityType: 'WORKSPACE_INVITATION', entityId: invitation.id, displayName: <NameCodePathText value={invitation.targetOrganizationPath}/>} : undefined} groupWorkspaceKey={invitation?.groupWorkspaceKey ?? ''} onClose={() => setAuditOpen(false)}/></>;
 }

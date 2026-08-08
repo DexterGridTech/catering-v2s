@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 /** Owner-command fixture for U11.  It runs against the local managed edge and
  * produces a redacted public JSON plus a chmod-600 local env file; neither file contains an OTP, cookie, grant
- * or invitation token. */
+ * or invitation token.  Catalog API/L2-only stages use this file only as an
+ * owner/workspace bootstrap and deliberately skip the historical r5-full seed
+ * report finalization. */
 import crypto from 'node:crypto';
 import {appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
+import {Agent, fetch as undiciFetch} from 'undici';
 import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById, writeSeedReportPair} from './seed-report.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
@@ -17,8 +20,11 @@ const fixturePhasePath = path.join(runtime, 'evidence', 'fixture-phases.jsonl');
 const fixturePath = path.join(resultDir, 'fixture.json');
 const privateEnvPath = path.join(resultDir, 'private.env');
 const seedReportPath = path.join(resultDir, 'seed-report.json');
+const catalogStage = process.env.R5_JOINT_CATALOG_STAGE ?? 'BOTH';
+const catalogOnly = catalogStage !== 'BOTH';
 let firstFailure = null;
 let reportWritten = false;
+let requestDispatcher = null;
 const calls = [];
 const nonApiStages = [];
 const expectedNonApiStageIds = [
@@ -31,6 +37,7 @@ const fail = (reason) => {
   process.stderr.write(`RM1P6_JOINT_L2_FIXTURE=REFUSED; REASON=${firstFailure}\n`);
   process.exit(2);
 };
+if (!['BOTH', 'API', 'L2'].includes(catalogStage)) fail('CATALOG_STAGE_INVALID');
 if (!runtime || !existsSync(manifestPath)) fail('MANAGED_RUN_MANIFEST_REQUIRED');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 if (manifest.freshDatabase !== true || manifest.otpDebugExposure !== true || !manifest.credentialsFile) fail('FRESH_DATABASE_AND_SCOPED_OTP_REQUIRED');
@@ -54,6 +61,10 @@ const readSeedEvents = () => existsSync(eventsPath)
     try { return [JSON.parse(line)]; } catch { return []; }
   }) : [];
 const finalizeSeedReport = (exitCode = 0) => {
+  // Catalog API/L2 stages are deliberately independent from the historical
+  // r5-full seed report.  They still reuse the generated operation-registry
+  // helper, but do not create or consume a seed report in their own runtime.
+  if (catalogOnly) return;
   if (reportWritten) return;
   reportWritten = true;
   const finishedAt = new Date().toISOString();
@@ -83,9 +94,10 @@ const finalizeSeedReport = (exitCode = 0) => {
   }
 };
 process.on('exit', (code) => finalizeSeedReport(code));
-process.on('SIGTERM', () => { if (!firstFailure) firstFailure = 'SIGTERM'; finalizeSeedReport(2); process.exitCode = 2; });
-process.on('uncaughtException', (error) => { if (!firstFailure) firstFailure = String(error?.message ?? 'UNCAUGHT_EXCEPTION').replaceAll(/[^A-Z0-9_:. -]/g, '').slice(0, 256); finalizeSeedReport(2); process.exitCode = 2; });
-process.on('unhandledRejection', (error) => { if (!firstFailure) firstFailure = String(error?.message ?? 'UNHANDLED_REJECTION').replaceAll(/[^A-Z0-9_:. -]/g, '').slice(0, 256); finalizeSeedReport(2); process.exitCode = 2; });
+process.on('SIGTERM', () => { log('fixture-process', 'FAIL', {signal: 'SIGTERM'}); if (!firstFailure) firstFailure = 'SIGTERM'; finalizeSeedReport(2); process.exitCode = 2; });
+const safeFailureReason = (value) => String(value ?? 'UNKNOWN').replaceAll(/[^A-Za-z0-9_:. /()\-]/g, '').slice(0, 256);
+process.on('uncaughtException', (error) => { const reason = safeFailureReason(error?.message ?? 'UNCAUGHT_EXCEPTION'); log('fixture-process', 'FAIL', {failureType: 'UNCAUGHT_EXCEPTION', reason}); if (!firstFailure) firstFailure = reason; process.stderr.write(`RM1P6_JOINT_L2_FIXTURE=UNCAUGHT_EXCEPTION; REASON=${reason}\n`); finalizeSeedReport(2); process.exitCode = 2; });
+process.on('unhandledRejection', (error) => { const reason = safeFailureReason(error?.message ?? 'UNHANDLED_REJECTION'); log('fixture-process', 'FAIL', {failureType: 'UNHANDLED_REJECTION', reason}); if (!firstFailure) firstFailure = reason; process.stderr.write(`RM1P6_JOINT_L2_FIXTURE=UNHANDLED_REJECTION; REASON=${reason}\n`); finalizeSeedReport(2); process.exitCode = 2; });
 const safeDiagnostic = (value) => String(value ?? '')
   .replaceAll(/(?:password|secret|token|authorization|cookie)=[^\s]+/gi, '$1=[REDACTED]')
   .replaceAll(/jdbc:postgresql:\/\/[^\s]+/gi, 'jdbc:postgresql://[REDACTED]')
@@ -94,12 +106,31 @@ const boundedDiagnostic = (value) => {
   const safe = safeDiagnostic(value);
   return safe.length <= 4_000 ? safe : `${safe.slice(0, 2_000)}\n... [TRUNCATED] ...\n${safe.slice(-2_000)}`;
 };
-const command = (binary, args, {failureDetails, ...options} = {}) => {
-  const result = spawnSync(binary, args, {cwd: root, encoding: 'utf8', ...options});
+const command = (binary, args, {failureDetails, label = path.basename(binary), ...options} = {}) => {
+  log(`command:${label}`, 'START', {argCount: args.length});
+  let result;
+  try {
+    result = spawnSync(binary, args, {cwd: root, encoding: 'utf8', ...options});
+  } catch (error) {
+    const reason = safeFailureReason(error?.message ?? 'SPAWN_SYNC_FAILED');
+    const nonStringEnvKeys = Object.entries(options.env ?? {}).filter(([, value]) => typeof value !== 'string').map(([name]) => name).sort();
+    log(`command:${label}`, 'FAIL', {status: null, signal: null, spawnError: error?.code ?? null, reason, nonStringEnvKeys});
+    throw error;
+  }
+  log(`command:${label}`, result.status === 0 ? 'PASS' : 'FAIL', {
+    status: result.status ?? null,
+    signal: result.signal ?? null,
+    spawnError: result.error?.code ?? null,
+    stdoutBytes: Buffer.byteLength(result.stdout ?? ''),
+    stderrBytes: Buffer.byteLength(result.stderr ?? ''),
+  });
   if (result.status !== 0) {
     mkdirSync(path.dirname(diagnosticPath), {recursive: true, mode: 0o700});
     const details = typeof failureDetails === 'function' ? failureDetails() : '';
-    appendFileSync(diagnosticPath, `${new Date().toISOString()} command=${binary} args=${args.join(' ')} exit=${result.status}\n${details}${boundedDiagnostic(result.stderr || result.stdout || 'FAILED')}\n`, {mode: 0o600});
+    const spawnFailure = result.error?.message ? `spawnError=${result.error.message}\n` : '';
+    const signal = result.signal ? `signal=${result.signal}\n` : '';
+    const output = boundedDiagnostic(result.stderr || result.stdout || 'FAILED');
+    appendFileSync(diagnosticPath, `${new Date().toISOString()} command=${binary} args=${args.join(' ')} exit=${result.status ?? 'NULL'}\n${signal}${spawnFailure}${details}${output}\n`, {mode: 0o600});
     fail(`${binary}:EXIT_${result.status}; DIAGNOSTIC=fixture-command-diagnostics.log`);
   }
   return result;
@@ -126,12 +157,23 @@ async function request(phase, operationId, {pathParameters = {}, queryParameters
   const started = performance.now();
   let response;
   try {
-    response = await fetch(new URL(pathname, base), {method: operation.method, headers, body: payload, signal: AbortSignal.timeout(10_000)});
-  } catch {
+    // Node's global fetch uses its bundled undici, while the explicit Agent
+    // above comes from the workspace dependency.  Keep the dispatcher and
+    // fetch implementation from the same undici package at this boundary;
+    // mixing them raises UND_ERR_INVALID_ARG before any HTTP request starts.
+    const requestFetch = requestDispatcher ? undiciFetch : fetch;
+    response = await requestFetch(new URL(pathname, base), {method: operation.method, headers, body: payload, signal: AbortSignal.timeout(10_000), ...(requestDispatcher ? {dispatcher: requestDispatcher} : {})});
+  } catch (error) {
     const durationMs = Math.max(0, performance.now() - started);
     calls.push({stageId: phase, owner: operation.owner, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs, status: 0, outcome: 'FAILED', correlationId, requestId: null});
+    const errorType = safeFailureReason(error?.name ?? 'NETWORK_ERROR');
+    const errorCode = safeFailureReason(error?.code ?? error?.cause?.code ?? 'UNSPECIFIED');
+    const errorMessage = safeFailureReason(error?.message ?? 'NETWORK_FAILURE');
+    const errorCauseType = safeFailureReason(error?.cause?.name ?? 'UNSPECIFIED');
+    const errorCauseCode = safeFailureReason(error?.cause?.code ?? 'UNSPECIFIED');
+    const errorCauseMessage = safeFailureReason(error?.cause?.message ?? 'UNSPECIFIED');
     firstFailure ??= `${phase}_NETWORK_FAILURE`;
-    log(phase, 'FAIL', {operationId: operation.operationId, httpStatus: 0, correlationId, requestId: null});
+    log(phase, 'FAIL', {operationId: operation.operationId, httpStatus: 0, correlationId, requestId: null, errorType, errorCode, errorMessage, errorCauseType, errorCauseCode, errorCauseMessage});
     fail(firstFailure);
   }
   const durationMs = Math.max(0, performance.now() - started);
@@ -173,11 +215,11 @@ function createManagedInvitation(phase, {mobile, targetType, targetRef, roleId})
     CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: required(credentials.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, 'MANAGED_BOOTSTRAP_WORKSPACE_HMAC'),
     CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true',
     V2S_SEED_OTP_FIXED_VALUE: required(credentials.V2S_SEED_OTP_FIXED_VALUE, 'MANAGED_BOOTSTRAP_FIXED_OTP'),
-    CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: 'http://127.0.0.1:29000',
+    CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${process.env.V2S_DEV_LOCAL_ASSET_PORT || '29000'}`,
     CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: required(credentials.CATERING_ASSET_S3_ACCESS_KEY, 'MANAGED_BOOTSTRAP_ASSET_ACCESS'),
     CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: required(credentials.CATERING_ASSET_S3_SECRET_KEY, 'MANAGED_BOOTSTRAP_ASSET_SECRET'),
     CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets',
-    CATERING_ASSET_PUBLIC_BASE_URL: 'http://127.0.0.1:29000',
+    CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${process.env.V2S_DEV_LOCAL_ASSET_PORT || '29000'}`,
     CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${required(process.env.V2S_DEV_NAMESPACE, 'MANAGED_BOOTSTRAP_NAMESPACE')}/`,
   };
   try {
@@ -202,13 +244,16 @@ function createManagedInvitation(phase, {mobile, targetType, targetRef, roleId})
   }
 }
 function writeFixture(values, privateValues, ownerReadbackKeys) {
+  const catalogMode = process.env.R5_JOINT_INCLUDE_CATALOG_INVENTORY === 'true';
   const expectedBrowserInputKeys = [
     'R5_L2_BRAND_NAME', 'R5_L2_BUSINESS_ENTITY_ROUTE', 'R5_L2_CREDENTIAL_RESET_ACCOUNT_LOGIN_NAME', 'R5_L2_CREDENTIAL_RESET_ACCOUNT_MOBILE', 'R5_L2_CREDENTIAL_RESET_ACCOUNT_NAME', 'R5_L2_CONTRACT_ALTERNATE_LABEL', 'R5_L2_CONTRACT_ALTERNATE_PHASE_NAME', 'R5_L2_CONTRACT_ALTERNATE_PROJECT_LABEL', 'R5_L2_CONTRACT_ALTERNATE_STORE_LABEL', 'R5_L2_CONTRACT_ALTERNATE_TENANT_LABEL', 'R5_L2_CONTRACT_CURRENT_ITEM_CODE', 'R5_L2_CONTRACT_CURRENT_LABEL', 'R5_L2_CONTRACT_EMPTY_QUERY', 'R5_L2_CONTRACT_HISTORY_LABEL', 'R5_L2_CONTRACT_INVALID_LABEL', 'R5_L2_CONTRACT_NO', 'R5_L2_CONTRACT_PENDING_LABEL', 'R5_L2_CONTRACT_ROUTE', 'R5_L2_HEAD_COMPANY_NAME', 'R5_L2_OPERATIONS_LOGIN_NAME', 'R5_L2_OPERATIONS_LOGIN_PASSWORD', 'R5_L2_OPERATIONS_LOGIN_ROUTE', 'R5_L2_OPERATIONS_RECOVERY_LOGIN_NAME', 'R5_L2_OPERATIONS_RECOVERY_MOBILE', 'R5_L2_OPERATIONS_RECOVERY_PASSWORD', 'R5_L2_OPERATIONS_ROLE_LABEL', 'R5_L2_ORGANIZATION_REGION_NAME', 'R5_L2_PLATFORM_ACCOUNT_LOGIN_NAME', 'R5_L2_PLATFORM_ACCOUNT_NAME', 'R5_L2_PLATFORM_ADMIN_NAME', 'R5_L2_PLATFORM_CONTRACT_NO', 'R5_L2_PLATFORM_EXTENSION_ENTITY_NAME', 'R5_L2_PLATFORM_GROUP_LABEL', 'R5_L2_PLATFORM_LOGIN_NAME', 'R5_L2_PLATFORM_LOGIN_PASSWORD', 'R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_NAME', 'R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_SOURCE', 'R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL', 'R5_L2_PLATFORM_ROLE_NAME', 'R5_L2_PLATFORM_WORKSPACE_LABEL', 'R5_L2_PLATFORM_WORKSPACE_NAME', 'R5_L2_PUBLIC_INVITATION_LOGIN_NAME', 'R5_L2_PUBLIC_INVITATION_MOBILE', 'R5_L2_PUBLIC_INVITATION_PASSWORD', 'R5_L2_PUBLIC_INVITATION_ROUTE', 'R5_L2_PUBLIC_INVITATION_USER_NAME', 'R5_L2_STORE_NAME', 'R5_L2_STORE_PROFILE_LOGIN_NAME', 'R5_L2_STORE_PROFILE_LOGIN_PASSWORD', 'R5_L2_STORE_PROFILE_ROLE_LABEL', 'R5_L2_STORE_PROFILE_ROUTE', 'R5_L2_STORE_ROUTE', 'R5_L2_TENANT_CODE', 'R5_L2_TENANT_LEGAL_NAME', 'R5_L2_TENANT_NAME', 'R5_L2_TENANT_UNIFIED_CODE', 'R5_L2_USER_DISPLAY_NAME', 'R5_L2_USER_ROUTE',
     'R5_L2_DISABLED_HEAD_COMPANY_NAME',
     'R5_L2_DISABLED_PROJECT_NAME',
     'R5_L2_OPERATIONS_SCOPE_PROJECT_NAME',
-    'R5_L2_OPERATIONS_SCOPE_STORE_NAME',
+    'R5_L2_OPERATIONS_SCOPE_STORE_NAME', 'R5_L2_MISSING_HEAD_COMPANY_STORE_NAME',
   ].sort();
+  if (catalogMode) expectedBrowserInputKeys.push('R5_L2_GROUP_LOGIN_NAME', 'R5_L2_CATALOG_STORE_LOGIN_NAME', 'R5_L2_CATALOG_HEAD_COMPANY_LOGIN_NAME', 'R5_L2_CATALOG_PROJECT_LOGIN_NAME', 'R5_L2_CATALOG_REGION_LOGIN_NAME', 'R5_L2_CATALOG_READONLY_GROUP_LOGIN_NAME');
+  expectedBrowserInputKeys.sort();
   const actualInputKeys = Object.keys(privateValues).sort();
   const missingInputKeys = expectedBrowserInputKeys.filter((name) => !actualInputKeys.includes(name));
   const extraInputKeys = actualInputKeys.filter((name) => !expectedBrowserInputKeys.includes(name));
@@ -228,6 +273,29 @@ function writeFixture(values, privateValues, ownerReadbackKeys) {
     phases: phases.map(({phase, status}) => ({phase, status})),
   };
   writeFileSync(fixturePath, `${JSON.stringify(fixture, null, 2)}\n`, {mode: 0o600});
+  writeFileSync(privateEnvPath, `${Object.entries(privateValues).map(([name, value]) => `${name}=${String(value).replaceAll('\n', '')}`).join('\n')}\n`, {mode: 0o600});
+}
+
+function writeCatalogOnlyPrivateEnvironment() {
+  const privateValues = {
+    R5_L2_OPERATIONS_WORKSPACE_KEY: workspaceKey,
+    R5_L2_OPERATIONS_LOGIN_ROUTE: route(workspaceKey, 'login'),
+    R5_L2_OPERATIONS_LOGIN_NAME: required(operatorLoginName, 'CATALOG_ONLY_OPERATIONS_LOGIN_NAME'),
+    R5_L2_OPERATIONS_LOGIN_PASSWORD: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD,
+    R5_L2_STORE_ROUTE: route(workspaceKey, 'organization/stores'),
+    R5_L2_HEAD_COMPANY_NAME: required(headCompany.json?.name, 'CATALOG_ONLY_HEAD_COMPANY_NAME'),
+    R5_L2_ORGANIZATION_REGION_NAME: required(region.json?.name, 'CATALOG_ONLY_REGION_NAME'),
+    R5_L2_OPERATIONS_SCOPE_PROJECT_NAME: required(project.json?.name, 'CATALOG_ONLY_PROJECT_NAME'),
+    R5_L2_OPERATIONS_SCOPE_STORE_NAME: required(store.json?.name, 'CATALOG_ONLY_STORE_NAME'),
+    R5_L2_MISSING_HEAD_COMPANY_STORE_NAME: required(headlessStore.json?.name, 'CATALOG_ONLY_HEADLESS_STORE_NAME'),
+    R5_L2_GROUP_LOGIN_NAME: required(operatorLoginName, 'CATALOG_ONLY_GROUP_LOGIN_NAME'),
+    R5_L2_CATALOG_STORE_LOGIN_NAME: required(catalogStoreLoginName, 'CATALOG_ONLY_STORE_LOGIN_NAME'),
+    R5_L2_CATALOG_HEAD_COMPANY_LOGIN_NAME: required(catalogHeadLoginName, 'CATALOG_ONLY_HEAD_COMPANY_LOGIN_NAME'),
+    R5_L2_CATALOG_PROJECT_LOGIN_NAME: required(catalogProjectLoginName, 'CATALOG_ONLY_PROJECT_LOGIN_NAME'),
+    R5_L2_CATALOG_REGION_LOGIN_NAME: required(catalogRegionLoginName, 'CATALOG_ONLY_REGION_LOGIN_NAME'),
+    R5_L2_CATALOG_READONLY_GROUP_LOGIN_NAME: required(catalogReadOnlyGroupLoginName, 'CATALOG_ONLY_READONLY_GROUP_LOGIN_NAME'),
+  };
+  mkdirSync(resultDir, {recursive: true, mode: 0o700});
   writeFileSync(privateEnvPath, `${Object.entries(privateValues).map(([name, value]) => `${name}=${String(value).replaceAll('\n', '')}`).join('\n')}\n`, {mode: 0o600});
 }
 
@@ -251,8 +319,8 @@ const extensionBefore = await request('getExtensionDefinition', 'getExtensionDef
 const extension = await request('replaceExtensionDefinition', 'replaceExtensionDefinition', {pathParameters: {...workspacePathParameters, entityType: 'BRAND'}}, {cookie: platformCookie, body: {expectedVersion: required(extensionBefore.json?.revision, 'EXTENSION_REVISION'), definitions: [{key: 'brandLevel', label: '品牌等级', type: 'TEXT', required: false, options: []}]}});
 const extensionCatalog = await request('getExtensionEntityCatalog', 'getExtensionEntityCatalog', {pathParameters: workspacePathParameters}, {cookie: platformCookie});
 const brandExtensionEntity = required(extensionCatalog.json?.items?.find((value) => value.entityType === 'BRAND'), 'BRAND_EXTENSION_ENTITY');
-const capabilities = ['BC-ORG-REGION-CREATE','BC-ORG-REGION-EDIT','BC-ORG-REGION-STATUS','BC-ORG-PROJECT-CREATE','BC-ORG-PROJECT-EDIT','BC-ORG-PROJECT-STATUS','BC-ORG-BRAND-CREATE','BC-ORG-BRAND-EDIT','BC-ORG-BRAND-STATUS','BC-ORG-TENANT-CREATE','BC-ORG-TENANT-EDIT','BC-ORG-TENANT-STATUS','BC-ORG-HEAD-COMPANY-CREATE','BC-ORG-HEAD-COMPANY-EDIT','BC-ORG-HEAD-COMPANY-STATUS','BC-ORG-HEAD-COMPANY-BRAND','BC-ORG-STORE-CREATE','BC-ORG-STORE-EDIT','BC-ORG-STORE-STATUS','BC-CONTRACT-CREATE','BC-CONTRACT-EDIT','BC-CONTRACT-INVALIDATE','BC-IAM-GROUP-INVITE','BC-IAM-GROUP-ROLE-REVOKE','BC-IAM-REGION-INVITE','BC-IAM-REGION-ROLE-REVOKE','BC-IAM-PROJECT-INVITE','BC-IAM-PROJECT-ROLE-REVOKE','BC-IAM-HEAD-COMPANY-INVITE','BC-IAM-HEAD-COMPANY-ROLE-REVOKE','BC-IAM-STORE-INVITE','BC-IAM-STORE-ROLE-REVOKE'];
-const pages = ['PG-ORG-STRUCTURE','PG-ORG-BRAND','PG-ORG-TENANT','PG-ORG-HEAD-COMPANY','PG-ORG-STORE-MANAGE','PG-CONTRACT-STORE-MANAGE','PG-IAM-GROUP-USERS','PG-IAM-REGION-USERS','PG-IAM-PROJECT-USERS','PG-IAM-HEAD-COMPANY-USERS','PG-IAM-STORE-USERS'];
+const capabilities = ['BC-ORG-REGION-CREATE','BC-ORG-REGION-EDIT','BC-ORG-REGION-STATUS','BC-ORG-PROJECT-CREATE','BC-ORG-PROJECT-EDIT','BC-ORG-PROJECT-STATUS','BC-ORG-BRAND-CREATE','BC-ORG-BRAND-EDIT','BC-ORG-BRAND-STATUS','BC-ORG-TENANT-CREATE','BC-ORG-TENANT-EDIT','BC-ORG-TENANT-STATUS','BC-ORG-HEAD-COMPANY-CREATE','BC-ORG-HEAD-COMPANY-EDIT','BC-ORG-HEAD-COMPANY-STATUS','BC-ORG-HEAD-COMPANY-BRAND','BC-ORG-STORE-CREATE','BC-ORG-STORE-EDIT','BC-ORG-STORE-STATUS','BC-CONTRACT-CREATE','BC-CONTRACT-EDIT','BC-CONTRACT-INVALIDATE','BC-IAM-GROUP-INVITE','BC-IAM-GROUP-ROLE-REVOKE','BC-IAM-REGION-INVITE','BC-IAM-REGION-ROLE-REVOKE','BC-IAM-PROJECT-INVITE','BC-IAM-PROJECT-ROLE-REVOKE','BC-IAM-HEAD-COMPANY-INVITE','BC-IAM-HEAD-COMPANY-ROLE-REVOKE','BC-IAM-STORE-INVITE','BC-IAM-STORE-ROLE-REVOKE','EDIT_CATALOG_LIBRARY'];
+const pages = ['PG-ORG-STRUCTURE','PG-ORG-BRAND','PG-ORG-TENANT','PG-ORG-HEAD-COMPANY','PG-ORG-STORE-MANAGE','PG-CONTRACT-STORE-MANAGE','PG-IAM-GROUP-USERS','PG-IAM-REGION-USERS','PG-IAM-PROJECT-USERS','PG-IAM-HEAD-COMPANY-USERS','PG-IAM-STORE-USERS','PG-CATALOG-STORE-ITEMS','PG-INVENTORY-STORE-STATUS','PG-CATALOG-BRAND-ITEMS'];
 const role = await request('createWorkspaceRole', 'createWorkspaceRole', {pathParameters: workspacePathParameters}, {cookie: platformCookie, expected: [201], body: {name: 'L2集团运营管理员', serviceNodeType: 'GROUP', capabilityKeys: capabilities, pageAccessKeys: pages}});
 const inviteMobile = '13800000001';
 const operatorToken = createManagedInvitation('createWorkspaceInvitation', {mobile: inviteMobile, targetType: 'GROUP', targetRef: required(group.json?.id, 'COMMERCIAL_GROUP_ID'), roleId: required(role.json?.id, 'ROLE_ID')});
@@ -290,7 +358,7 @@ const credentialResetVerified = await request('verifyCredentialResetWorkspaceInv
 await request('saveCredentialResetWorkspaceInvitationCredentials', 'savePublicInvitationCredentials', {pathParameters: invitationPathParameters(credentialResetToken)}, {body: {verificationGrant: required(credentialResetVerified.json?.verificationGrant, 'CREDENTIAL_RESET_GRANT'), userName: credentialResetUserName, loginName: credentialResetLoginName, password: credentialResetPassword}});
 await request('completeCredentialResetWorkspaceInvitation', 'completePublicInvitation', {pathParameters: invitationPathParameters(credentialResetToken)});
 const operationsLogin = await request('operationsWorkspacePasswordLogin', 'operationsWorkspacePasswordLogin', {pathParameters: workspacePathParameters}, {body: {loginName: operatorLoginName, password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
-const operationsCookie = required(operationsLogin.cookie, 'OPERATIONS_SESSION_COOKIE');
+let operationsCookie = required(operationsLogin.cookie, 'OPERATIONS_SESSION_COOKIE');
 let session = await request('getOperationsWorkspaceSessionEntry', 'getOperationsWorkspaceSessionEntry', {pathParameters: workspacePathParameters}, {cookie: operationsCookie});
 let contextVersion = required(session.json?.contextVersion, 'CONTEXT_VERSION');
 const region = await request('createOperationsOrganizationRegion', 'createOperationsOrganizationRegion', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, expected: [201], body: {code: 'EAST', name: '东区'}});
@@ -315,6 +383,156 @@ const alternateStore = await request('createOperationsOrganizationAlternateStore
 session = await request('selectOperationsAlternateProjectDataNode', 'selectOperationsWorkspaceSessionDataNode', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, body: {dataNodeRef: required(alternateProject.json?.id, 'ALTERNATE_PROJECT_ID'), dataNodeType: 'PROJECT', requiredContextVersion: contextVersion}});
 contextVersion = required(session.json?.contextVersion, 'ALTERNATE_PROJECT_CONTEXT_VERSION');
 const alternateProjectStore = await request('createOperationsOrganizationAlternateProjectStore', 'createOperationsOrganizationStore', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, expected: [201], body: {brandId: required(brand.json?.id, 'BRAND_ID'), tenantId: required(alternateTenant.json?.id, 'ALTERNATE_TENANT_ID'), headCompanyId: required(headCompany.json?.id, 'HEAD_COMPANY_ID'), code: 'S-PINE', name: '松林茶里店'}});
+// Store creation is scoped by the currently selected project.  Return to the
+// canonical RIVER context before creating the headless-store fixture so the
+// browser can resolve it from the same project selector used by CI-L2-005.
+session = await request('selectOperationsRiverProjectForMissingHeadCompanyStore', 'selectOperationsWorkspaceSessionDataNode', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, body: {dataNodeRef: required(project.json?.id, 'RIVER_PROJECT_ID'), dataNodeType: 'PROJECT', requiredContextVersion: contextVersion}});
+contextVersion = required(session.json?.contextVersion, 'RIVER_PROJECT_CONTEXT_VERSION_FOR_MISSING_HEAD_COMPANY_STORE');
+const headlessStore = await request('createOperationsOrganizationMissingHeadCompanyStore', 'createOperationsOrganizationStore', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, expected: [201], body: {brandId: required(brand.json?.id, 'BRAND_ID'), tenantId: required(tenant.json?.id, 'TENANT_ID'), code: 'S-NO-HC', name: '无总公司茶里店'}});
+const headlessStorePage = await request('readbackOperationsOrganizationMissingHeadCompanyStore', 'getOperationsOrganizationStores', {pathParameters: workspacePathParameters, queryParameters: {expectedContextVersion: contextVersion, code: 'S-NO-HC', page: 1, pageSize: 20}}, {cookie: operationsCookie});
+const headlessStoreReadback = required(headlessStorePage.json?.items?.find((value) => value.id === headlessStore.json?.id), 'MISSING_HEAD_COMPANY_STORE_READBACK');
+if (headlessStoreReadback.project?.id !== project.json?.id || headlessStoreReadback.project?.code !== project.json?.code) fail('MISSING_HEAD_COMPANY_STORE_PROJECT_CONTEXT_MISMATCH');
+if (headlessStoreReadback.brand?.id !== brand.json?.id || headlessStoreReadback.tenant?.id !== tenant.json?.id) fail('MISSING_HEAD_COMPANY_STORE_OWNER_FACT_MISMATCH');
+if (headlessStoreReadback.headCompany !== null && headlessStoreReadback.headCompany !== undefined) fail('MISSING_HEAD_COMPANY_STORE_HEAD_COMPANY_FACT_PRESENT');
+// Catalog/inventory seed needs principals whose service-node scope is the
+// actual target node.  The GROUP operator can create the organization, but
+// it does not receive STORE or HEAD_COMPANY candidates in its session.  Build
+// these two scoped accounts through the same owner invitation flow before
+// starting the catalog seed; no fixture-only database shortcut is allowed.
+let catalogStoreLoginName;
+let catalogHeadLoginName;
+let catalogProjectLoginName;
+let catalogRegionLoginName;
+let catalogReadOnlyGroupLoginName;
+if (process.env.R5_JOINT_INCLUDE_CATALOG_INVENTORY === 'true') {
+const catalogStoreRole = await request('createCatalogStoreRole', 'createWorkspaceRole', {pathParameters: workspacePathParameters}, {cookie: platformCookie, expected: [201], body: {name: 'L2门店商品库存管理员', serviceNodeType: 'STORE', capabilityKeys: ['EDIT_CATALOG_LIBRARY'], pageAccessKeys: ['PG-CATALOG-STORE-ITEMS', 'PG-INVENTORY-STORE-STATUS']}});
+const catalogStoreMobile = '13800000009';
+catalogStoreLoginName = 'p6-l2-catalog-store';
+const catalogStoreToken = createManagedInvitation('createCatalogStoreInvitation', {mobile: catalogStoreMobile, targetType: 'STORE', targetRef: required(store.json?.id, 'CATALOG_STORE_ACCOUNT_REF'), roleId: required(catalogStoreRole.json?.id, 'CATALOG_STORE_ROLE_ID')});
+await request('acceptCatalogStoreInvitation', 'acceptPublicInvitation', {pathParameters: invitationPathParameters(catalogStoreToken)});
+const catalogStoreOtp = await request('sendCatalogStoreInvitationOtp', 'sendPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogStoreToken)}, {body: {mobile: catalogStoreMobile}});
+const catalogStoreVerified = await request('verifyCatalogStoreInvitationOtp', 'verifyPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogStoreToken)}, {body: {mobile: catalogStoreMobile, code: required(catalogStoreOtp.json?.debugVerificationCode, 'CATALOG_STORE_OTP')}});
+await request('saveCatalogStoreInvitationCredentials', 'savePublicInvitationCredentials', {pathParameters: invitationPathParameters(catalogStoreToken)}, {body: {verificationGrant: required(catalogStoreVerified.json?.verificationGrant, 'CATALOG_STORE_GRANT'), userName: 'L2门店商品库存用户', loginName: catalogStoreLoginName, password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+await request('completeCatalogStoreInvitation', 'completePublicInvitation', {pathParameters: invitationPathParameters(catalogStoreToken)});
+const catalogHeadRole = await request('createCatalogHeadCompanyRole', 'createWorkspaceRole', {pathParameters: workspacePathParameters}, {cookie: platformCookie, expected: [201], body: {name: 'L2品牌商品管理员', serviceNodeType: 'HEAD_COMPANY', capabilityKeys: ['EDIT_CATALOG_LIBRARY'], pageAccessKeys: ['PG-CATALOG-BRAND-ITEMS']}});
+const catalogHeadMobile = '13800000010';
+catalogHeadLoginName = 'p6-l2-catalog-head-company';
+const catalogHeadToken = createManagedInvitation('createCatalogHeadCompanyInvitation', {mobile: catalogHeadMobile, targetType: 'HEAD_COMPANY', targetRef: required(headCompany.json?.id, 'CATALOG_HEAD_ACCOUNT_REF'), roleId: required(catalogHeadRole.json?.id, 'CATALOG_HEAD_ROLE_ID')});
+await request('acceptCatalogHeadCompanyInvitation', 'acceptPublicInvitation', {pathParameters: invitationPathParameters(catalogHeadToken)});
+const catalogHeadOtp = await request('sendCatalogHeadCompanyInvitationOtp', 'sendPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogHeadToken)}, {body: {mobile: catalogHeadMobile}});
+const catalogHeadVerified = await request('verifyCatalogHeadCompanyInvitationOtp', 'verifyPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogHeadToken)}, {body: {mobile: catalogHeadMobile, code: required(catalogHeadOtp.json?.debugVerificationCode, 'CATALOG_HEAD_OTP')}});
+await request('saveCatalogHeadCompanyInvitationCredentials', 'savePublicInvitationCredentials', {pathParameters: invitationPathParameters(catalogHeadToken)}, {body: {verificationGrant: required(catalogHeadVerified.json?.verificationGrant, 'CATALOG_HEAD_GRANT'), userName: 'L2品牌商品用户', loginName: catalogHeadLoginName, password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+await request('completeCatalogHeadCompanyInvitation', 'completePublicInvitation', {pathParameters: invitationPathParameters(catalogHeadToken)});
+const catalogProjectRole = await request('createCatalogProjectRole', 'createWorkspaceRole', {pathParameters: workspacePathParameters}, {cookie: platformCookie, expected: [201], body: {name: 'L2项目商品库存管理员', serviceNodeType: 'PROJECT', capabilityKeys: ['EDIT_CATALOG_LIBRARY'], pageAccessKeys: ['PG-CATALOG-STORE-ITEMS', 'PG-INVENTORY-STORE-STATUS']}});
+const catalogProjectMobile = '13800000011';
+catalogProjectLoginName = 'p6-l2-catalog-project';
+const catalogProjectToken = createManagedInvitation('createCatalogProjectInvitation', {mobile: catalogProjectMobile, targetType: 'PROJECT', targetRef: required(project.json?.id, 'CATALOG_PROJECT_ACCOUNT_REF'), roleId: required(catalogProjectRole.json?.id, 'CATALOG_PROJECT_ROLE_ID')});
+await request('acceptCatalogProjectInvitation', 'acceptPublicInvitation', {pathParameters: invitationPathParameters(catalogProjectToken)});
+const catalogProjectOtp = await request('sendCatalogProjectInvitationOtp', 'sendPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogProjectToken)}, {body: {mobile: catalogProjectMobile}});
+const catalogProjectVerified = await request('verifyCatalogProjectInvitationOtp', 'verifyPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogProjectToken)}, {body: {mobile: catalogProjectMobile, code: required(catalogProjectOtp.json?.debugVerificationCode, 'CATALOG_PROJECT_OTP')}});
+await request('saveCatalogProjectInvitationCredentials', 'savePublicInvitationCredentials', {pathParameters: invitationPathParameters(catalogProjectToken)}, {body: {verificationGrant: required(catalogProjectVerified.json?.verificationGrant, 'CATALOG_PROJECT_GRANT'), userName: 'L2项目商品用户', loginName: catalogProjectLoginName, password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+await request('completeCatalogProjectInvitation', 'completePublicInvitation', {pathParameters: invitationPathParameters(catalogProjectToken)});
+const catalogRegionRole = await request('createCatalogRegionRole', 'createWorkspaceRole', {pathParameters: workspacePathParameters}, {cookie: platformCookie, expected: [201], body: {name: 'L2大区商品库存管理员', serviceNodeType: 'REGION', capabilityKeys: ['EDIT_CATALOG_LIBRARY'], pageAccessKeys: ['PG-CATALOG-STORE-ITEMS', 'PG-INVENTORY-STORE-STATUS']}});
+const catalogRegionMobile = '13800000012';
+catalogRegionLoginName = 'p6-l2-catalog-region';
+const catalogRegionToken = createManagedInvitation('createCatalogRegionInvitation', {mobile: catalogRegionMobile, targetType: 'REGION', targetRef: required(region.json?.id, 'CATALOG_REGION_ACCOUNT_REF'), roleId: required(catalogRegionRole.json?.id, 'CATALOG_REGION_ROLE_ID')});
+await request('acceptCatalogRegionInvitation', 'acceptPublicInvitation', {pathParameters: invitationPathParameters(catalogRegionToken)});
+const catalogRegionOtp = await request('sendCatalogRegionInvitationOtp', 'sendPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogRegionToken)}, {body: {mobile: catalogRegionMobile}});
+const catalogRegionVerified = await request('verifyCatalogRegionInvitationOtp', 'verifyPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogRegionToken)}, {body: {mobile: catalogRegionMobile, code: required(catalogRegionOtp.json?.debugVerificationCode, 'CATALOG_REGION_OTP')}});
+await request('saveCatalogRegionInvitationCredentials', 'savePublicInvitationCredentials', {pathParameters: invitationPathParameters(catalogRegionToken)}, {body: {verificationGrant: required(catalogRegionVerified.json?.verificationGrant, 'CATALOG_REGION_GRANT'), userName: 'L2大区商品库存用户', loginName: catalogRegionLoginName, password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+await request('completeCatalogRegionInvitation', 'completePublicInvitation', {pathParameters: invitationPathParameters(catalogRegionToken)});
+const catalogReadOnlyGroupRole = await request('createCatalogReadOnlyGroupRole', 'createWorkspaceRole', {pathParameters: workspacePathParameters}, {cookie: platformCookie, expected: [201], body: {name: 'L2商品库只读验证用户', serviceNodeType: 'GROUP', capabilityKeys: [], pageAccessKeys: ['PG-CATALOG-STORE-ITEMS', 'PG-INVENTORY-STORE-STATUS', 'PG-CATALOG-BRAND-ITEMS']}});
+const catalogReadOnlyGroupMobile = '13800000013';
+catalogReadOnlyGroupLoginName = 'p6-l2-catalog-readonly-group';
+const catalogReadOnlyGroupToken = createManagedInvitation('createCatalogReadOnlyGroupInvitation', {mobile: catalogReadOnlyGroupMobile, targetType: 'GROUP', targetRef: required(group.json?.id, 'CATALOG_READONLY_GROUP_ACCOUNT_REF'), roleId: required(catalogReadOnlyGroupRole.json?.id, 'CATALOG_READONLY_GROUP_ROLE_ID')});
+await request('acceptCatalogReadOnlyGroupInvitation', 'acceptPublicInvitation', {pathParameters: invitationPathParameters(catalogReadOnlyGroupToken)});
+const catalogReadOnlyGroupOtp = await request('sendCatalogReadOnlyGroupInvitationOtp', 'sendPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogReadOnlyGroupToken)}, {body: {mobile: catalogReadOnlyGroupMobile}});
+const catalogReadOnlyGroupVerified = await request('verifyCatalogReadOnlyGroupInvitationOtp', 'verifyPublicInvitationOtp', {pathParameters: invitationPathParameters(catalogReadOnlyGroupToken)}, {body: {mobile: catalogReadOnlyGroupMobile, code: required(catalogReadOnlyGroupOtp.json?.debugVerificationCode, 'CATALOG_READONLY_GROUP_OTP')}});
+await request('saveCatalogReadOnlyGroupInvitationCredentials', 'savePublicInvitationCredentials', {pathParameters: invitationPathParameters(catalogReadOnlyGroupToken)}, {body: {verificationGrant: required(catalogReadOnlyGroupVerified.json?.verificationGrant, 'CATALOG_READONLY_GROUP_GRANT'), userName: 'L2商品库只读验证用户', loginName: catalogReadOnlyGroupLoginName, password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+await request('completeCatalogReadOnlyGroupInvitation', 'completePublicInvitation', {pathParameters: invitationPathParameters(catalogReadOnlyGroupToken)});
+  // The IA/source/locator/wireframe reconciliation is the admission control
+  // for this package.  It must fail before any catalog seed or API/L2 fixture
+  // mutates the isolated database; otherwise a bad control map can make a
+  // later runtime failure look like a business defect.
+  command(process.execPath, [path.join(root, 'tools/catalog-inventory-p4/cli.mjs')], {
+    label: 'P4_CONTROL_RECONCILIATION_BEFORE_API_L2',
+  });
+  // API is the first business gate in combined/API mode.  L2-only must not
+  // pay for or depend on the API runner: it constructs its own owner facts
+  // and sidecar below.  Both modes remain independent from DEV seed state.
+  if (catalogStage !== 'L2') {
+    command(process.execPath, [path.join(root, 'scripts/test/catalog-inventory-api.mjs')], {
+      label: 'CATALOG_INVENTORY_API',
+      env: {
+        ...process.env,
+        V2S_RUNTIME_DIR: runtime,
+        CATALOG_INVENTORY_GROUP_WORKSPACE_KEY: workspaceKey,
+        CATALOG_INVENTORY_OPERATIONS_LOGIN: catalogStoreLoginName,
+        CATALOG_INVENTORY_HEAD_COMPANY_LOGIN: catalogHeadLoginName,
+        CATALOG_INVENTORY_PROJECT_LOGIN: catalogProjectLoginName,
+        CATALOG_INVENTORY_REGION_LOGIN: catalogRegionLoginName,
+        CATALOG_INVENTORY_READONLY_GROUP_LOGIN: catalogReadOnlyGroupLoginName,
+        CATALOG_INVENTORY_GROUP_LOGIN: operatorLoginName,
+        CATALOG_INVENTORY_OPERATIONS_PASSWORD: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD,
+        CATALOG_INVENTORY_STORE_REF: required(store.json?.id, 'CATALOG_API_STORE_REF'),
+        CATALOG_INVENTORY_HEAD_COMPANY_REF: required(headCompany.json?.id, 'CATALOG_API_HEAD_COMPANY_REF'),
+        CATALOG_INVENTORY_PROJECT_REF: required(project.json?.id, 'CATALOG_API_PROJECT_REF'),
+        CATALOG_INVENTORY_BRAND_REF: required(brand.json?.id, 'CATALOG_API_BRAND_REF'),
+        CATALOG_INVENTORY_EDGE_BASE_URL: base,
+      },
+    });
+  }
+  if (catalogStage === 'API') process.exit(0);
+  // Only after the backend interface gate passes do we construct the
+  // browser-owned facts.  L2 is a visibility test and has its own run-scoped
+  // owner HTTP fixture; it never reads the API report or DEV seed.
+  command(process.execPath, [path.join(root, 'scripts/test/catalog-inventory-l2-test-fixture.mjs')], {
+    label: 'CATALOG_INVENTORY_L2_TEST_FIXTURE',
+    env: {
+      ...process.env,
+      V2S_RUNTIME_DIR: runtime,
+      CATALOG_INVENTORY_GROUP_WORKSPACE_KEY: workspaceKey,
+      CATALOG_INVENTORY_OPERATIONS_LOGIN: catalogStoreLoginName,
+      CATALOG_INVENTORY_HEAD_COMPANY_LOGIN: catalogHeadLoginName,
+      CATALOG_INVENTORY_PROJECT_LOGIN: catalogProjectLoginName,
+      CATALOG_INVENTORY_REGION_LOGIN: catalogRegionLoginName,
+      CATALOG_INVENTORY_READONLY_GROUP_LOGIN: catalogReadOnlyGroupLoginName,
+      CATALOG_INVENTORY_GROUP_LOGIN: operatorLoginName,
+        CATALOG_INVENTORY_OPERATIONS_PASSWORD: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD,
+        CATALOG_INVENTORY_STORE_REF: required(store.json?.id, 'CATALOG_TEST_STORE_REF'),
+        CATALOG_INVENTORY_HEAD_COMPANY_REF: required(headCompany.json?.id, 'CATALOG_TEST_HEAD_COMPANY_REF'),
+        CATALOG_INVENTORY_BRAND_REF: required(brand.json?.id, 'CATALOG_TEST_BRAND_REF'),
+      CATALOG_INVENTORY_EDGE_BASE_URL: base,
+    },
+  });
+  if (catalogStage === 'L2') {
+    writeCatalogOnlyPrivateEnvironment();
+    process.exit(0);
+  }
+}
+// Catalog API acceptance may take several minutes while constructing the
+// closure-limit fixture.  Do not carry the long-lived GROUP operations cookie
+// into the legacy contract fixture: re-authenticate through the public owner
+// path and read back a fresh context before continuing.  This is a session
+// freshness boundary, not a retry of the failed request.
+if (process.env.R5_JOINT_INCLUDE_CATALOG_INVENTORY === 'true') {
+  // The catalog API command runs through spawnSync and can block this parent
+  // event loop for minutes.  The first fetch after that boundary must not
+  // reuse a stale keep-alive socket from before the child process started.
+  // Use a dedicated undici dispatcher for the boundary crossing, then close
+  // it after the fresh session readback; this is connection hygiene, not a
+  // retry or an unbounded wait.
+  requestDispatcher = new Agent({connect: {timeout: 10_000}, keepAliveTimeout: 1, keepAliveMaxTimeout: 1});
+  try {
+    const refreshedOperationsLogin = await request('refreshOperationsWorkspacePasswordLoginForContractFixture', 'operationsWorkspacePasswordLogin', {pathParameters: workspacePathParameters}, {body: {loginName: operatorLoginName, password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+    operationsCookie = required(refreshedOperationsLogin.cookie, 'REFRESHED_OPERATIONS_SESSION_COOKIE');
+    session = await request('refreshOperationsWorkspaceSessionEntryForContractFixture', 'getOperationsWorkspaceSessionEntry', {pathParameters: workspacePathParameters}, {cookie: operationsCookie});
+    contextVersion = required(session.json?.contextVersion, 'REFRESHED_CONTEXT_VERSION');
+  } finally {
+    await requestDispatcher.close();
+    requestDispatcher = null;
+  }
+}
 session = await request('selectOperationsProjectDataNodeForContractFixture', 'selectOperationsWorkspaceSessionDataNode', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, body: {dataNodeRef: required(project.json?.id, 'PROJECT_ID'), dataNodeType: 'PROJECT', requiredContextVersion: contextVersion}});
 contextVersion = required(session.json?.contextVersion, 'CONTRACT_PROJECT_CONTEXT_VERSION');
 await request('disableOperationsOrganizationProject', 'transitionOperationsOrganizationNodeStatus', {pathParameters: {...workspacePathParameters, nodeId: required(disabledProject.json?.id, 'DISABLED_PROJECT_ID')}}, {cookie: operationsCookie, body: {targetStatus: 'DISABLED', expectedVersion: required(disabledProject.json?.revision, 'DISABLED_PROJECT_REVISION')}});
@@ -438,6 +656,7 @@ const values = {
   R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL: `${required(tenant.json?.name, 'PLATFORM_TENANT_NAME')}(${required(tenant.json?.code, 'PLATFORM_TENANT_CODE')})`,
   R5_L2_OPERATIONS_SCOPE_PROJECT_NAME: required(project.json?.name, 'OPERATIONS_SCOPE_PROJECT_NAME'),
   R5_L2_OPERATIONS_SCOPE_STORE_NAME: required(store.json?.name, 'OPERATIONS_SCOPE_STORE_NAME'),
+  R5_L2_MISSING_HEAD_COMPANY_STORE_NAME: required(headlessStore.json?.name, 'MISSING_HEAD_COMPANY_STORE_NAME'),
 };
 const privateValues = {
   ...Object.fromEntries(Object.entries(values).filter(([name]) => name !== 'R5_L2_OPERATIONS_WORKSPACE_KEY')),
@@ -463,10 +682,19 @@ const privateValues = {
   R5_L2_PLATFORM_ACCOUNT_LOGIN_NAME: required(account.loginName, 'PLATFORM_ACCOUNT_LOGIN_NAME'),
   R5_L2_PLATFORM_ACCOUNT_NAME: required(account.displayName, 'PLATFORM_ACCOUNT_NAME'),
 };
+if (process.env.R5_JOINT_INCLUDE_CATALOG_INVENTORY === 'true') Object.assign(privateValues, {
+  R5_L2_GROUP_LOGIN_NAME: operatorLoginName,
+  R5_L2_CATALOG_STORE_LOGIN_NAME: required(catalogStoreLoginName, 'CATALOG_STORE_LOGIN_NAME'),
+  R5_L2_CATALOG_HEAD_COMPANY_LOGIN_NAME: required(catalogHeadLoginName, 'CATALOG_HEAD_COMPANY_LOGIN_NAME'),
+  R5_L2_CATALOG_PROJECT_LOGIN_NAME: required(catalogProjectLoginName, 'CATALOG_PROJECT_LOGIN_NAME'),
+  R5_L2_CATALOG_REGION_LOGIN_NAME: required(catalogRegionLoginName, 'CATALOG_REGION_LOGIN_NAME'),
+  R5_L2_CATALOG_READONLY_GROUP_LOGIN_NAME: required(catalogReadOnlyGroupLoginName, 'CATALOG_READONLY_GROUP_LOGIN_NAME'),
+});
 const ownerReadbackKeys = [
   'R5_L2_OPERATIONS_ROLE_LABEL', 'R5_L2_ORGANIZATION_REGION_NAME', 'R5_L2_HEAD_COMPANY_NAME', 'R5_L2_BRAND_NAME', 'R5_L2_STORE_NAME', 'R5_L2_CONTRACT_NO', 'R5_L2_CONTRACT_ALTERNATE_LABEL', 'R5_L2_CONTRACT_ALTERNATE_PROJECT_LABEL', 'R5_L2_CONTRACT_ALTERNATE_STORE_LABEL', 'R5_L2_CONTRACT_ALTERNATE_TENANT_LABEL', 'R5_L2_USER_DISPLAY_NAME', 'R5_L2_CONTRACT_CURRENT_LABEL', 'R5_L2_CONTRACT_PENDING_LABEL', 'R5_L2_CONTRACT_HISTORY_LABEL', 'R5_L2_CONTRACT_INVALID_LABEL', 'R5_L2_STORE_PROFILE_ROLE_LABEL', 'R5_L2_PLATFORM_WORKSPACE_NAME', 'R5_L2_PLATFORM_ROLE_NAME', 'R5_L2_PLATFORM_CONTRACT_NO', 'R5_L2_PLATFORM_EXTENSION_ENTITY_NAME', 'R5_L2_PLATFORM_ORGANIZATION_NAME', 'R5_L2_PLATFORM_ORGANIZATION_PROJECT_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_BRAND_LABEL', 'R5_L2_PLATFORM_ORGANIZATION_TENANT_LABEL', 'R5_L2_PLATFORM_ADMIN_NAME', 'R5_L2_PLATFORM_ACCOUNT_LOGIN_NAME', 'R5_L2_PLATFORM_ACCOUNT_NAME',
   'R5_L2_OPERATIONS_SCOPE_PROJECT_NAME',
   'R5_L2_OPERATIONS_SCOPE_STORE_NAME',
+  'R5_L2_MISSING_HEAD_COMPANY_STORE_NAME',
 ];
 writeFixture(values, privateValues, ownerReadbackKeys);
 process.stdout.write(`RM1P6_JOINT_L2_FIXTURE=PASS; FIXTURE=${fixturePath}; PUBLIC_KEYS=${Object.keys(values).length}; PRIVATE_KEYS=${Object.keys(privateValues).length}\n`);

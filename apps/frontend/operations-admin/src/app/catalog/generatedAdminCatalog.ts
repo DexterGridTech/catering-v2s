@@ -482,6 +482,101 @@ export const adminCatalog = {
         "STORE"
       ],
       "userManagementTargetOrganizationType": null
+    },
+    {
+      "pageDesignKey": "PG-CATALOG-STORE-ITEMS",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 510,
+      "menuGroupKey": "NAV-CATALOG-SERVICES",
+      "menuGroupIconKey": "CATALOG_SERVICES",
+      "menuGroupLabel": "商品与服务",
+      "menuLabel": "门店商品管理",
+      "pageTitle": "门店商品管理",
+      "contentTabLabel": "门店商品管理",
+      "pageDescription": "按所选门店维护商品字典、商品资料与库存配置。",
+      "dataNodeCascaderLabel": "可视数据节点",
+      "noDataNodePrompt": "请选择可视数据节点",
+      "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+      "cascadeLevelLabels": [
+        "大区",
+        "项目",
+        "门店"
+      ],
+      "forbiddenAlternatives": [
+        "门店商品库",
+        "门店商品节点"
+      ],
+      "requiredDataNodeType": "STORE",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ],
+      "userManagementTargetOrganizationType": null
+    },
+    {
+      "pageDesignKey": "PG-INVENTORY-STORE-STATUS",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 520,
+      "menuGroupKey": "NAV-CATALOG-SERVICES",
+      "menuGroupIconKey": "CATALOG_SERVICES",
+      "menuGroupLabel": "商品与服务",
+      "menuLabel": "门店库存管理",
+      "pageTitle": "门店库存管理",
+      "contentTabLabel": "门店库存管理",
+      "pageDescription": "查看门店库存现状、变化与库存对象诊断。",
+      "dataNodeCascaderLabel": "可视数据节点",
+      "noDataNodePrompt": "请选择可视数据节点",
+      "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+      "cascadeLevelLabels": [
+        "大区",
+        "项目",
+        "门店"
+      ],
+      "forbiddenAlternatives": [
+        "商品库存管理",
+        "库存台账页面"
+      ],
+      "requiredDataNodeType": "STORE",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ],
+      "userManagementTargetOrganizationType": null
+    },
+    {
+      "pageDesignKey": "PG-CATALOG-BRAND-ITEMS",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 530,
+      "menuGroupKey": "NAV-CATALOG-SERVICES",
+      "menuGroupIconKey": "CATALOG_SERVICES",
+      "menuGroupLabel": "商品与服务",
+      "menuLabel": "品牌商品管理",
+      "pageTitle": "品牌商品管理",
+      "contentTabLabel": "品牌商品管理",
+      "pageDescription": "按总公司与品牌维护品牌商品字典并复制到门店。",
+      "dataNodeCascaderLabel": "可视总公司节点",
+      "noDataNodePrompt": "请选择可视总公司节点",
+      "noCandidatePrompt": "当前角色没有可选择的总公司节点",
+      "cascadeLevelLabels": [
+        "总公司"
+      ],
+      "forbiddenAlternatives": [
+        "总公司商品管理",
+        "品牌节点商品"
+      ],
+      "requiredDataNodeType": "HEAD_COMPANY",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "HEAD_COMPANY"
+      ],
+      "userManagementTargetOrganizationType": null
     }
   ],
   "actionGroups": [
@@ -504,6 +599,11 @@ export const adminCatalog = {
       "actionGroupKey": "STORE_CONTRACT_MANAGEMENT",
       "actionGroupLabel": "门店合同管理",
       "actionGroupOrder": 400
+    },
+    {
+      "actionGroupKey": "CATALOG_MANAGEMENT",
+      "actionGroupLabel": "商品与服务",
+      "actionGroupOrder": 500
     }
   ],
   "actions": [
@@ -1300,6 +1400,60 @@ export const adminCatalog = {
         "REGION",
         "PROJECT"
       ]
+    },
+    {
+      "actionKey": "EDIT_CATALOG_LIBRARY",
+      "actionLabel": "编辑商品库",
+      "actionDescription": "编辑商品库",
+      "actionGroupKey": "CATALOG_MANAGEMENT",
+      "actionGroupLabel": "商品与服务",
+      "actionGroupOrder": 500,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-CATALOG-STORE-ITEMS",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "REGION",
+            "PROJECT",
+            "HEAD_COMPANY",
+            "STORE"
+          ],
+          "scopeApplicability": "SELECTED_CATALOG_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "HEAD_COMPANY",
+        "STORE"
+      ]
+    },
+    {
+      "actionKey": "READ_INVENTORY_ADVANCED_DIAGNOSTICS",
+      "actionLabel": "查看库存高级诊断",
+      "actionDescription": "查看库存高级诊断",
+      "actionGroupKey": "CATALOG_MANAGEMENT",
+      "actionGroupLabel": "商品与服务",
+      "actionGroupOrder": 500,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-INVENTORY-STORE-STATUS",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "REGION",
+            "PROJECT",
+            "STORE"
+          ],
+          "scopeApplicability": "SELECTED_STORE_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ]
     }
   ],
   "userManagementActionBindings": [
@@ -1409,7 +1563,10 @@ export const operationsPageDesignKeys = {
   "PgIamProjectUsers": "PG-IAM-PROJECT-USERS",
   "PgIamHeadCompanyUsers": "PG-IAM-HEAD-COMPANY-USERS",
   "PgIamStoreUsers": "PG-IAM-STORE-USERS",
-  "PgStoreProfile": "PG-STORE-PROFILE"
+  "PgStoreProfile": "PG-STORE-PROFILE",
+  "PgCatalogStoreItems": "PG-CATALOG-STORE-ITEMS",
+  "PgInventoryStoreStatus": "PG-INVENTORY-STORE-STATUS",
+  "PgCatalogBrandItems": "PG-CATALOG-BRAND-ITEMS"
 } as const;
 export type AdminCatalog = typeof adminCatalog;
 export type OperationsPageDesignKey = typeof operationsPageDesignKeys[keyof typeof operationsPageDesignKeys];
@@ -1447,7 +1604,9 @@ export const ACTION_CAPABILITIES = {
   "IAM_STORE_INVITE": "BC-IAM-STORE-INVITE",
   "CONTRACT_CREATE": "BC-CONTRACT-CREATE",
   "CONTRACT_EDIT": "BC-CONTRACT-EDIT",
-  "CONTRACT_INVALIDATE": "BC-CONTRACT-INVALIDATE"
+  "CONTRACT_INVALIDATE": "BC-CONTRACT-INVALIDATE",
+  "EDIT_CATALOG_LIBRARY": "EDIT_CATALOG_LIBRARY",
+  "READ_INVENTORY_ADVANCED_DIAGNOSTICS": "READ_INVENTORY_ADVANCED_DIAGNOSTICS"
 } as const;
 export type AdminActionCapabilityKey = typeof ACTION_CAPABILITIES[keyof typeof ACTION_CAPABILITIES];
 export const USER_MANAGEMENT_PAGE_DESIGN_KEYS = [

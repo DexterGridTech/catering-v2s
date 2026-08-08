@@ -684,7 +684,7 @@
         "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
       ],
-      "sha256": "ccc7fce9a7498b1ec528f2a2dad200a50f3ec187824456fd1a5df5de7c82a742"
+      "sha256": "80efcb002dde542c9cbcc08f19b0cec62f20e66c54d6d581650809ef8f33c876"
     },
     {
       "id": "decisions.distributed-topology-is-not-current",

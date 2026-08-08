@@ -12,6 +12,12 @@ const findingSeverity = new Set(["M", "S", "N"]);
 const reviewVerdicts = new Set(["GO", "NO_GO"]);
 const unitVerdicts = new Set(["GO", "GO_WITH_N", "NO_GO"]);
 const evidenceFields = ["l1", "l2", "l3", "business", "cleanup"];
+const operationDesignRedFixtures = [
+  "OPERATION_LOGIC_STEPS_MISSING",
+  "OPERATION_CALL_CHAIN_OWNER_SET_DRIFT",
+  "OPERATION_PROBLEM_MAPPING_DRIFT",
+  "OPERATION_DB_COUNT_DRIFT",
+];
 const flowIdentifier = /(?:^|[\\/._-])(?:(?:r|u|j|jg|pkg)\d+[a-z0-9_-]*|g-\d+[a-z0-9_-]*)(?=$|[\\/._-])/i;
 
 function fail(reason) {
@@ -42,6 +48,37 @@ function requireStringArray(value, reason, minimum = 1) {
     fail(reason);
   }
   return value;
+}
+
+function requireUniqueStringArray(value, reason, minimum = 1) {
+  const entries = requireStringArray(value, reason, minimum);
+  if (new Set(entries).size !== entries.length) {
+    fail(reason);
+  }
+  return entries;
+}
+
+function sameStringSet(left, right) {
+  return (
+    left.length === right.length &&
+    left.every((entry) => right.includes(entry))
+  );
+}
+
+function requireConsecutiveOrder(entries, field, reason) {
+  if (
+    !Array.isArray(entries) ||
+    entries.length === 0 ||
+    entries.some(
+      (entry, index) =>
+        !entry ||
+        typeof entry !== "object" ||
+        entry[field] !== index + 1,
+    )
+  ) {
+    fail(reason);
+  }
+  return entries;
 }
 
 function resolveRepositoryPath(root, relativePath, reason) {
@@ -145,6 +182,196 @@ function validateArtifactBinding(root, binding, label) {
   return readBoundFile(root, binding, label);
 }
 
+function validateBackendOperationDesignContract(root, binding) {
+  const bound = readBoundFile(
+    root,
+    binding,
+    "BACKEND_OPERATION_DESIGN_CONTRACT",
+  );
+  let contract;
+  try {
+    contract = JSON.parse(bound.text);
+  } catch {
+    fail("BACKEND_OPERATION_DESIGN_CONTRACT_INVALID_JSON");
+  }
+  if (
+    contract?.schemaVersion !== 1 ||
+    contract.kind !== "backend-operation-design-contract" ||
+    !Array.isArray(contract.operations) ||
+    contract.operations.length === 0
+  ) {
+    fail("BACKEND_OPERATION_DESIGN_CONTRACT_IDENTITY_INVALID");
+  }
+
+  const operationIds = new Set();
+  for (const operation of contract.operations) {
+    const operationId = requireString(
+      operation?.operationId,
+      "BACKEND_OPERATION_ID_MISSING",
+    );
+    if (operationIds.has(operationId)) {
+      fail(`BACKEND_OPERATION_ID_DUPLICATE:${operationId}`);
+    }
+    operationIds.add(operationId);
+
+    const initiatingOwner = requireString(
+      operation.initiatingOwner,
+      `OPERATION_INITIATING_OWNER_MISSING:${operationId}`,
+    );
+    const coordinatedOwners = requireUniqueStringArray(
+      operation.coordinatedOwners,
+      `OPERATION_COORDINATED_OWNERS_INVALID:${operationId}`,
+      0,
+    );
+    const problemCodes = requireUniqueStringArray(
+      operation.problemCodes,
+      `OPERATION_PROBLEM_CODES_INVALID:${operationId}`,
+    );
+
+    const logicSteps = requireConsecutiveOrder(
+      operation.logicSteps,
+      "order",
+      `OPERATION_LOGIC_STEPS_MISSING:${operationId}`,
+    );
+    const logicStepIds = new Set();
+    for (const step of logicSteps) {
+      const stepId = requireString(
+        step.stepId,
+        `OPERATION_LOGIC_STEPS_MISSING:${operationId}`,
+      );
+      requireString(
+        step.action,
+        `OPERATION_LOGIC_STEPS_MISSING:${operationId}`,
+      );
+      if (logicStepIds.has(stepId)) {
+        fail(`OPERATION_LOGIC_STEP_ID_DUPLICATE:${operationId}:${stepId}`);
+      }
+      logicStepIds.add(stepId);
+    }
+
+    const callChain = requireConsecutiveOrder(
+      operation.callChain,
+      "order",
+      `OPERATION_CALL_CHAIN_INVALID:${operationId}`,
+    );
+    const allowedCallKinds = new Set([
+      "EDGE",
+      "SECURITY_CONTEXT",
+      "APPLICATION_COORDINATOR",
+      "INITIATING_OWNER",
+      "COORDINATED_OWNER",
+    ]);
+    const initiatingOwnerCalls = [];
+    const coordinatedOwnerCalls = [];
+    for (const call of callChain) {
+      requireString(
+        call.target,
+        `OPERATION_CALL_CHAIN_INVALID:${operationId}`,
+      );
+      if (!allowedCallKinds.has(call.kind)) {
+        fail(`OPERATION_CALL_CHAIN_KIND_INVALID:${operationId}`);
+      }
+      if (call.kind === "INITIATING_OWNER") {
+        initiatingOwnerCalls.push(
+          requireString(
+            call.owner,
+            `OPERATION_CALL_CHAIN_INITIATING_OWNER_MISMATCH:${operationId}`,
+          ),
+        );
+      } else if (call.kind === "COORDINATED_OWNER") {
+        coordinatedOwnerCalls.push(
+          requireString(
+            call.owner,
+            `OPERATION_CALL_CHAIN_COORDINATED_OWNER_SET_MISMATCH:${operationId}`,
+          ),
+        );
+      } else if (call.owner !== undefined) {
+        fail(`OPERATION_CALL_CHAIN_NON_OWNER_HAS_OWNER:${operationId}`);
+      }
+    }
+    if (
+      initiatingOwnerCalls.length !== 1 ||
+      initiatingOwnerCalls[0] !== initiatingOwner
+    ) {
+      fail(`OPERATION_CALL_CHAIN_INITIATING_OWNER_MISMATCH:${operationId}`);
+    }
+    const coordinatedOwnerSet = [...new Set(coordinatedOwnerCalls)];
+    if (!sameStringSet(coordinatedOwnerSet, coordinatedOwners)) {
+      fail(`OPERATION_CALL_CHAIN_COORDINATED_OWNER_SET_MISMATCH:${operationId}`);
+    }
+
+    const conditionToProblem = requireConsecutiveOrder(
+      operation.conditionToProblem,
+      "precedence",
+      `OPERATION_PROBLEM_CONDITION_SET_MISMATCH:${operationId}`,
+    );
+    const mappedProblemCodes = [];
+    for (const mapping of conditionToProblem) {
+      mappedProblemCodes.push(
+        requireString(
+          mapping.problemCode,
+          `OPERATION_PROBLEM_CONDITION_SET_MISMATCH:${operationId}`,
+        ),
+      );
+      requireStringArray(
+        mapping.conditions,
+        `OPERATION_PROBLEM_CONDITION_SET_MISMATCH:${operationId}`,
+      );
+    }
+    if (
+      new Set(mappedProblemCodes).size !== mappedProblemCodes.length ||
+      !sameStringSet(mappedProblemCodes, problemCodes)
+    ) {
+      fail(`OPERATION_PROBLEM_CONDITION_SET_MISMATCH:${operationId}`);
+    }
+
+    const database = operation.normalPathDbOperations;
+    if (
+      !database ||
+      typeof database !== "object" ||
+      !Number.isInteger(database.expectedCount) ||
+      database.expectedCount < 0 ||
+      database.countUnit !== "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT"
+    ) {
+      fail(`OPERATION_NORMAL_PATH_DB_OPERATIONS_INVALID:${operationId}`);
+    }
+    requireStringArray(
+      database.assumptions,
+      `OPERATION_NORMAL_PATH_DB_OPERATIONS_INVALID:${operationId}`,
+    );
+    requireUniqueStringArray(
+      database.verificationScenarioIds,
+      `OPERATION_NORMAL_PATH_DB_OPERATIONS_INVALID:${operationId}`,
+    );
+    if (!Array.isArray(database.breakdown)) {
+      fail(`OPERATION_NORMAL_PATH_DB_OPERATIONS_INVALID:${operationId}`);
+    }
+    const breakdownOwners = new Set();
+    let breakdownCount = 0;
+    for (const entry of database.breakdown) {
+      const owner = requireString(
+        entry?.owner,
+        `OPERATION_NORMAL_PATH_DB_OPERATIONS_INVALID:${operationId}`,
+      );
+      if (
+        breakdownOwners.has(owner) ||
+        !Number.isInteger(entry.readCount) ||
+        entry.readCount < 0 ||
+        !Number.isInteger(entry.writeCount) ||
+        entry.writeCount < 0
+      ) {
+        fail(`OPERATION_NORMAL_PATH_DB_OPERATIONS_INVALID:${operationId}`);
+      }
+      breakdownOwners.add(owner);
+      breakdownCount += entry.readCount + entry.writeCount;
+    }
+    if (breakdownCount !== database.expectedCount) {
+      fail(`OPERATION_NORMAL_PATH_DB_OPERATION_COUNT_MISMATCH:${operationId}`);
+    }
+  }
+  return operationIds.size;
+}
+
 function validateExistingUniqueAnchor(root, reference, label) {
   if (!reference || typeof reference !== "object") {
     fail(`${label}_MISSING`);
@@ -182,7 +409,10 @@ function validateAdversarialReviewPolicy(manifest) {
 function validateManifest(root, manifestPath) {
   const manifestFile = readJson(root, manifestPath, "MANIFEST");
   const manifest = manifestFile.value;
+  const manifestSchemaVersion = manifest.schemaVersion ?? 1;
   if (
+    !Number.isInteger(manifestSchemaVersion) ||
+    manifestSchemaVersion < 1 ||
     manifest.kind !== "implementation-facing-design-granularity-manifest" ||
     manifest.status !== "PROPOSED_REVIEW_ONLY" ||
     !isNonEmptyString(manifest.programId) ||
@@ -217,6 +447,14 @@ function validateManifest(root, manifestPath) {
   ) {
     fail("IMPLEMENTATION_DESIGN_CHECKER_BINDING_INCOMPLETE");
   }
+  if (
+    manifestSchemaVersion >= 2 &&
+    operationDesignRedFixtures.some(
+      (fixtureId) => !checker.redFixtures.includes(fixtureId),
+    )
+  ) {
+    fail("OPERATION_DESIGN_RED_FIXTURES_MISSING");
+  }
   validateArtifactBinding(
     root,
     checker.script,
@@ -227,6 +465,13 @@ function validateManifest(root, manifestPath) {
     checker.tool,
     "IMPLEMENTATION_DESIGN_CHECKER_TOOL",
   );
+  const backendOperationCount =
+    manifestSchemaVersion >= 2
+      ? validateBackendOperationDesignContract(
+          root,
+          manifest.backendOperationDesignContract,
+        )
+      : 0;
   const independentSubagentReviewRequired = validateAdversarialReviewPolicy(
     manifest,
   );
@@ -441,6 +686,7 @@ function validateManifest(root, manifestPath) {
     manifest,
     manifestBytes: manifestFile.bytes,
     unitIds,
+    backendOperationCount,
     independentSubagentReviewRequired,
   };
 }
@@ -695,6 +941,7 @@ function validate({ root, manifestPath, reviewPath }) {
   const review = reviewResult.review;
   return {
     units: manifestResult.unitIds.size,
+    operations: manifestResult.backendOperationCount,
     findings: review.findings.length,
     verdict: review.verdict,
     reviewRound: review.reviewRound,
@@ -752,6 +999,8 @@ function makeSelfTestFixture(root) {
   const sourcePath = "doc/decisions/source.md";
   const interactionPath = "doc/review/interaction.md";
   const reviewerInputChecklistPath = "doc/review/reviewer-input-checklist.md";
+  const backendOperationDesignContractPath =
+    "doc/review/backend-operation-design-contract.json";
   const designText = [
     "---",
     "implementationAuthority: false",
@@ -772,6 +1021,65 @@ function makeSelfTestFixture(root) {
   const reviewerInputChecklistText = "# Independent reviewer input checklist\n";
   const memoryPath = "project-memory/kernel/self-test.md";
   const memoryText = "# Self-test project memory\n";
+  const backendOperationDesignContract = {
+    schemaVersion: 1,
+    kind: "backend-operation-design-contract",
+    operations: [
+      {
+        operationId: "getSelfTestResource",
+        initiatingOwner: "catalog",
+        coordinatedOwners: ["inventory"],
+        problemCodes: ["VALIDATION_ERROR", "NOT_FOUND"],
+        logicSteps: [
+          { order: 1, stepId: "validate", action: "validate the typed query" },
+          { order: 2, stepId: "read", action: "read the resource and availability" },
+        ],
+        callChain: [
+          { order: 1, kind: "EDGE", target: "generated web adapter" },
+          {
+            order: 2,
+            kind: "INITIATING_OWNER",
+            target: "catalog task query",
+            owner: "catalog",
+          },
+          {
+            order: 3,
+            kind: "COORDINATED_OWNER",
+            target: "inventory task read",
+            owner: "inventory",
+            purpose: "availability facts",
+          },
+        ],
+        conditionToProblem: [
+          {
+            precedence: 1,
+            problemCode: "VALIDATION_ERROR",
+            conditions: ["query shape is invalid"],
+          },
+          {
+            precedence: 2,
+            problemCode: "NOT_FOUND",
+            conditions: ["resource is absent in the trusted scope"],
+          },
+        ],
+        normalPathDbOperations: {
+          expectedCount: 2,
+          countUnit: "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+          assumptions: ["one existing resource in a selected workspace"],
+          verificationScenarioIds: ["SELF-API-001"],
+          breakdown: [
+            { owner: "workspace-iam", readCount: 1, writeCount: 0 },
+            { owner: "catalog", readCount: 1, writeCount: 0 },
+          ],
+        },
+      },
+    ],
+  };
+  const backendOperationDesignContractText = `${JSON.stringify(
+    backendOperationDesignContract,
+    null,
+    2,
+  )}\n`;
   const memoryIndex = {
     schemaVersion: 1,
     kind: "project-memory-index",
@@ -805,6 +1113,7 @@ function makeSelfTestFixture(root) {
     [interactionPath, interactionText],
     [reviewerInputChecklistPath, reviewerInputChecklistText],
     [memoryPath, memoryText],
+    [backendOperationDesignContractPath, backendOperationDesignContractText],
   ]) {
     const absolutePath = path.join(root, relativePath);
     fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
@@ -822,6 +1131,7 @@ function makeSelfTestFixture(root) {
   });
 
   const manifest = {
+    schemaVersion: 2,
     kind: "implementation-facing-design-granularity-manifest",
     status: "PROPOSED_REVIEW_ONLY",
     programId: "SELF_TEST",
@@ -837,6 +1147,10 @@ function makeSelfTestFixture(root) {
       sha256: sha256(authorizationText),
       scope: "design-only",
     },
+    backendOperationDesignContract: {
+      path: backendOperationDesignContractPath,
+      sha256: sha256(backendOperationDesignContractText),
+    },
     implementationDesignGranularityChecker: {
       status: "ACTIVE",
       script: {
@@ -849,6 +1163,7 @@ function makeSelfTestFixture(root) {
       },
       selfTest: true,
       redFixtures: [
+        ...operationDesignRedFixtures,
         "DESIGN_HASH_DRIFT",
         "MISSING_BUSINESS_EVIDENCE",
         "SEVERITY_COUNT_MISMATCH",
@@ -985,7 +1300,14 @@ function makeSelfTestFixture(root) {
   };
   const reviewPath = "review.json";
   writeJson(path.join(root, reviewPath), review);
-  return { manifestPath, reviewPath, manifest, review };
+  return {
+    manifestPath,
+    reviewPath,
+    manifest,
+    review,
+    backendOperationDesignContractPath,
+    backendOperationDesignContract,
+  };
 }
 
 function expectFailure(action, expectedReason) {
@@ -1007,6 +1329,72 @@ function selfTest() {
   try {
     const fixture = makeSelfTestFixture(root);
     validate({ root, ...fixture });
+
+    const schemaV1Manifest = structuredClone(fixture.manifest);
+    schemaV1Manifest.schemaVersion = 1;
+    delete schemaV1Manifest.backendOperationDesignContract;
+    writeJson(path.join(root, fixture.manifestPath), schemaV1Manifest);
+    const schemaV1Review = structuredClone(fixture.review);
+    schemaV1Review.manifestSha256 = sha256(
+      fs.readFileSync(path.join(root, fixture.manifestPath)),
+    );
+    writeJson(path.join(root, fixture.reviewPath), schemaV1Review);
+    validate({ root, ...fixture });
+
+    const expectOperationContractFailure = (
+      mutate,
+      expectedReason,
+    ) => {
+      const contract = structuredClone(fixture.backendOperationDesignContract);
+      mutate(contract);
+      const contractText = `${JSON.stringify(contract, null, 2)}\n`;
+      fs.writeFileSync(
+        path.join(root, fixture.backendOperationDesignContractPath),
+        contractText,
+      );
+      const manifest = structuredClone(fixture.manifest);
+      manifest.backendOperationDesignContract.sha256 = sha256(contractText);
+      writeJson(path.join(root, fixture.manifestPath), manifest);
+      expectFailure(
+        () => validate({ root, ...fixture }),
+        expectedReason,
+      );
+    };
+
+    expectOperationContractFailure(
+      (contract) => {
+        contract.operations[0].logicSteps = [];
+      },
+      "OPERATION_LOGIC_STEPS_MISSING:getSelfTestResource",
+    );
+    expectOperationContractFailure(
+      (contract) => {
+        contract.operations[0].callChain =
+          contract.operations[0].callChain.filter(
+            (entry) => entry.kind !== "COORDINATED_OWNER",
+          );
+      },
+      "OPERATION_CALL_CHAIN_COORDINATED_OWNER_SET_MISMATCH:getSelfTestResource",
+    );
+    expectOperationContractFailure(
+      (contract) => {
+        contract.operations[0].conditionToProblem.pop();
+      },
+      "OPERATION_PROBLEM_CONDITION_SET_MISMATCH:getSelfTestResource",
+    );
+    expectOperationContractFailure(
+      (contract) => {
+        contract.operations[0].normalPathDbOperations.expectedCount = 3;
+      },
+      "OPERATION_NORMAL_PATH_DB_OPERATION_COUNT_MISMATCH:getSelfTestResource",
+    );
+
+    fs.writeFileSync(
+      path.join(root, fixture.backendOperationDesignContractPath),
+      `${JSON.stringify(fixture.backendOperationDesignContract, null, 2)}\n`,
+    );
+    writeJson(path.join(root, fixture.manifestPath), fixture.manifest);
+    writeJson(path.join(root, fixture.reviewPath), fixture.review);
 
 
     const missingMultiPageInteractionArtifacts = structuredClone(fixture.manifest);
@@ -1295,6 +1683,11 @@ function selfTest() {
   process.stdout.write(
     [
       "IMPLEMENTATION_DESIGN_GRANULARITY_SELF_TEST=PASS",
+      "RED_FIXTURE_OPERATION_LOGIC_STEPS_MISSING=PASS",
+      "RED_FIXTURE_OPERATION_CALL_CHAIN_OWNER_SET_DRIFT=PASS",
+      "RED_FIXTURE_OPERATION_PROBLEM_MAPPING_DRIFT=PASS",
+      "RED_FIXTURE_OPERATION_DB_COUNT_DRIFT=PASS",
+      "SCHEMA_V1_BACKWARD_COMPATIBILITY=PASS",
       "RED_FIXTURE_DESIGN_HASH_DRIFT=PASS",
       "RED_FIXTURE_MISSING_BUSINESS_EVIDENCE=PASS",
       "RED_FIXTURE_MISSING_UI_INTERACTION_ARTIFACT=PASS",
@@ -1363,6 +1756,7 @@ function main(argv) {
       [
         "IMPLEMENTATION_DESIGN_GRANULARITY=PASS",
         `UNITS=${result.units}`,
+        `OPERATIONS=${result.operations}`,
         `FINDINGS=${result.findings}`,
         `VERDICT=${result.verdict}`,
         `REVIEW_ROUND=${result.reviewRound}`,

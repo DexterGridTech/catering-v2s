@@ -1,0 +1,2 @@
+#!/usr/bin/env node
+import "../../tools/catalog-inventory-p4/cli.mjs";

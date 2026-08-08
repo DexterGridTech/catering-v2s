@@ -19,7 +19,7 @@ describe('operations data-scope context bar', () => {
   });
 
   it('uses the complete selected hierarchy as the current project or store value without repeating ancestor labels', () => {
-    expect(source).toContain("const selectedPath = lines.map(([, node]) => nodeLabel(node!)).join(' / ')");
+    expect(source).toContain('NameCodeText name={node!.dataNodeName} code={node!.dataNodeCode}');
     expect(source).not.toContain('（{ancestors}）');
   });
 });

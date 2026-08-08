@@ -1,20 +1,35 @@
 import {describe, expect, it} from 'vitest';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {createElement} from 'react';
 import {platformHttpProtocol} from './http/platformHttpProtocol';
 import {contextScopedQueryArgs} from './list/contextScopedQueryArgs';
 import {updateDirtyRegistrations, updateOpenRegistrations} from './overlay/overlayLock';
-import {adminDetailDescriptionsProps, adminDrawerSurfaceProps} from './overlay/drawerSurface';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, adminWideDetailDescriptionsProps, adminWideDrawerSurfaceProps} from './overlay/drawerSurface';
 import {createAsyncGenerationGuard} from './behavior/asyncGeneration';
 import {AdminErrorBoundary} from './behavior/AdminErrorBoundary';
 import {createRefreshSignal} from './behavior/refreshSignal';
 import {serializeJsonOrMultipartBody} from './http/wireRequestBody';
 import {adminListState} from './list/adminListState';
-import {formatCodeNamePath, formatNameCode} from './presentation/nameCode';
+import {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from './presentation/nameCode';
 
 describe('admin UI foundation contract and lifecycle primitives', () => {
   it('renders a business name and code in the shared 名称(编码) form without inventing missing values', () => {
     expect(formatNameCode('极光商业集团', 'AURORA-GROUP')).toBe('极光商业集团(AURORA-GROUP)');
     expect(formatNameCode('极光商业集团', undefined)).toBe('极光商业集团');
     expect(formatNameCode(undefined, 'AURORA-GROUP')).toBe('AURORA-GROUP');
+  });
+
+  it('renders the code as a smaller tertiary visual while preserving owner path segments', () => {
+    const display = renderToStaticMarkup(createElement(NameCodeText, {name: '河畔项目', code: 'RIVER'}));
+    expect(display).toContain('河畔项目');
+    expect(display).toContain('(RIVER)');
+    expect(display).toContain('font-size:var(--ant-font-size-sm)');
+    expect(display).toContain('color:var(--ant-color-text-tertiary)');
+    const path = renderToStaticMarkup(createElement(NameCodePathText, {value: 'EAST 东区 / RIVER 河畔项目'}));
+    expect(path).toContain('东区');
+    expect(path).toContain('(EAST)');
+    expect(path).toContain('河畔项目');
+    expect(path).toContain('(RIVER)');
   });
   it('renders owner task paths segment by segment without rewriting malformed transport values', () => {
     expect(formatCodeNamePath('EAST 东区 / RIVER 河畔项目 / S-OP 河畔茶里店')).toBe('东区(EAST) / 河畔项目(RIVER) / 河畔茶里店(S-OP)');
@@ -63,6 +78,11 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
       column: 1,
       styles: {label: {width: 164}},
     });
+  });
+
+  it('freezes the wide two-column catalog/inventory detail surface', () => {
+    expect(adminWideDrawerSurfaceProps.width).toBe(1024);
+    expect(adminWideDetailDescriptionsProps).toMatchObject({bordered: true, size: 'small', column: 2, styles: {label: {width: 164}}});
   });
 
   it('rejects a late async response after a newer request generation begins', () => {

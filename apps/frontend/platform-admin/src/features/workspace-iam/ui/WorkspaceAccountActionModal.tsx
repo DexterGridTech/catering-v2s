@@ -1,5 +1,6 @@
 import {Modal} from 'antd';
-import {formatCodeNamePath, testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {NameCodePathText, testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import type {ReactNode} from 'react';
 import type {WorkspaceAccount} from '../../../app/api/generated/platform-edge';
 import type {WorkspaceAccountAction} from './WorkspaceAccountDetailDrawer';
 
@@ -12,7 +13,7 @@ type Props = {
   onConfirm: (idempotencyKey: string) => Promise<void>;
 };
 
-function copy(action: WorkspaceAccountAction, account: WorkspaceAccount) {
+function copy(action: WorkspaceAccountAction, account: WorkspaceAccount): {title: ReactNode; confirm: string} {
   if (action.kind === 'STATUS') return {
     title: `确认${action.targetStatus === 'ENABLED' ? '启用' : '停用'}“${account.displayName}”？`,
     confirm: '确认',
@@ -22,7 +23,7 @@ function copy(action: WorkspaceAccountAction, account: WorkspaceAccount) {
     confirm: '确认',
   };
   return {
-    title: `确认撤销“${account.displayName}”在“${formatCodeNamePath(action.assignment.organizationPath)}”的任职？`,
+    title: <span>确认撤销“{account.displayName}”在“<NameCodePathText value={action.assignment.organizationPath}/>”的任职？</span>,
     confirm: '确认',
   };
 }

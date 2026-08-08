@@ -1,7 +1,7 @@
 import {ProTable, type ProColumns, type ProFormInstance} from '@ant-design/pro-components';
 import {Alert, App, Button, Card, Descriptions, Drawer, Form, Input, Popconfirm, Select, Skeleton, Space, Tag, Typography} from 'antd';
-import {adminDrawerSurfaceProps, formatCodeNamePath, testId, useAsyncGenerationGuard, useDetailDrawer, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {adminDrawerSurfaceProps, NameCodePathText, testId, useAsyncGenerationGuard, useDetailDrawer, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformClient, platformProblemOf, platformRtk} from '../../../app/api/PlatformTransport';
 import type {PlatformWorkspaceInvitation, PlatformWorkspaceInvitationPage, ServiceNodeType, SortDirection, WorkspaceInvitationCandidatePage, WorkspaceInvitationSortKey, WorkspaceInvitationStatus} from '../../../app/api/generated/platform-edge';
@@ -9,7 +9,7 @@ import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-h
 
 type InvitationFilters = {mobile?: string; targetOrganizationType?: ServiceNodeType; targetOrganizationRef?: string; roleId?: string; status?: WorkspaceInvitationStatus};
 type InvitationForm = {mobile: string; targetType: ServiceNodeType; targetOrganizationRef?: string; roleIds?: string[]};
-type CandidateOption = {value: string; label: string};
+type CandidateOption = {value: string; label: ReactNode};
 
 const targetTypes: ServiceNodeType[] = ['GROUP', 'REGION', 'PROJECT', 'HEAD_COMPANY', 'STORE'];
 const targetLabels: Record<ServiceNodeType, string> = {GROUP: '集团', REGION: '大区', PROJECT: '项目', HEAD_COMPANY: '总公司', STORE: '门店'};
@@ -17,7 +17,7 @@ const statusLabels: Record<WorkspaceInvitationStatus, string> = {ACTIVE: '有效
 
 const time = (value: number | null | undefined) => value ? new Date(value).toLocaleString('zh-CN') : '—';
 const text = (value?: string) => value?.trim() || undefined;
-const candidateOptions = (values: WorkspaceInvitationCandidatePage | undefined, type: ServiceNodeType): CandidateOption[] => (values?.organizations ?? []).filter((candidate) => candidate.serviceNodeType === type).map((candidate) => ({value: candidate.organizationRef, label: formatCodeNamePath(candidate.path)}));
+const candidateOptions = (values: WorkspaceInvitationCandidatePage | undefined, type: ServiceNodeType): CandidateOption[] => (values?.organizations ?? []).filter((candidate) => candidate.serviceNodeType === type).map((candidate) => ({value: candidate.organizationRef, label: <NameCodePathText value={candidate.path}/>}));
 
 function operationsInvitationUrl(invitationPageUrl: string | null | undefined) {
   if (!invitationPageUrl) return undefined;
@@ -72,7 +72,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
     {title: '任职机构类型', dataIndex: 'targetOrganizationType', hideInTable: true, valueType: 'select', valueEnum: Object.fromEntries(targetTypes.map((value) => [value, {text: targetLabels[value]}])), fieldProps: {allowClear: true, ...testId('platform-invitation-query-organization-type'), onChange: (value: ServiceNodeType | undefined) => { setFilterTargetType(value); setFilterOrganizationQuery(''); setFilterRoleQuery(''); filterFormRef.current?.setFieldValue('targetOrganizationRef', undefined); filterFormRef.current?.setFieldValue('roleId', undefined); }}},
     {title: '任职机构', dataIndex: 'targetOrganizationRef', hideInTable: true, valueType: 'select', fieldProps: {showSearch: {filterOption: false, onSearch: setFilterOrganizationQuery}, disabled: !filterTargetType, options: filterOrganizationOptions, loading: filterOrganizationCandidates.isFetching, placeholder: filterTargetType ? '搜索机构名称或编码' : '请先选择任职机构类型', allowClear: true, ...testId('platform-invitation-query-organization')}},
     {title: '业务角色', dataIndex: 'roleId', hideInTable: true, valueType: 'select', fieldProps: {showSearch: {filterOption: false, onSearch: setFilterRoleQuery}, disabled: !filterTargetType, options: filterRoleOptions, loading: filterRoleCandidates.isFetching, placeholder: filterTargetType ? '搜索业务角色' : '请先选择任职机构类型', allowClear: true, ...testId('platform-invitation-query-role')}},
-    {title: '任职机构', dataIndex: 'targetOrganizationPath', search: false, render: (_, row) => formatCodeNamePath(row.targetOrganizationPath)},
+    {title: '任职机构', dataIndex: 'targetOrganizationPath', search: false, render: (_, row) => <NameCodePathText value={row.targetOrganizationPath}/>},
     {title: '业务角色', dataIndex: 'roleNames', search: false, render: (_, row) => <Space wrap size={[4, 4]}>{row.roleNames.map((role) => <Tag key={role}>{role}</Tag>)}</Space>},
     {title: '邀请链接', key: 'invitationPageUrl', search: false, render: (_, row) => {
       const href = operationsInvitationUrl(row.invitationPageUrl);
@@ -85,6 +85,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
   return <Card title={<Typography.Paragraph type="secondary" style={{margin: 0}}>管理当前集团空间任意组织节点的邀请；发出、取消和重发均以最新 owner 读回为准。</Typography.Paragraph>} extra={<Button type="primary" onClick={() => setCreateOpen(true)} {...testId('platform-invitation-create-open')}>发出邀请</Button>}>
     {problem && <Alert type="error" showIcon title={problem.title} description={problem.detail} style={{marginBottom: 16}} {...testId('platform-invitation-list-error')}/>} 
     <ProTable<PlatformWorkspaceInvitation>
+      size="small"
       formRef={filterFormRef} rowKey="id" options={false} loading={invitations.isLoading && !result} dataSource={result?.items ?? []} columns={columns}
       search={{labelWidth: 'auto', optionRender: (searchConfig) => [
         <Button key="submit" type="primary" onClick={() => searchConfig.form?.submit()} {...testId('platform-invitation-query-submit')}>查询</Button>,
@@ -137,7 +138,7 @@ function PlatformInvitationDetailDrawer({open, invitation, loading, problem, gro
       {key: 'mobile', label: '邀请手机号', children: invitation.mobile},
       {key: 'issuer', label: '发起人', children: invitation.issuerDisplayName},
       {key: 'targetType', label: '任职机构类型', children: targetLabels[invitation.targetOrganizationType]},
-      {key: 'target', label: '任职机构', children: formatCodeNamePath(invitation.targetOrganizationPath)},
+      {key: 'target', label: '任职机构', children: <NameCodePathText value={invitation.targetOrganizationPath}/>},
       {key: 'roles', label: '业务角色', children: invitation.roleNames.join('、')},
       {key: 'status', label: '状态', children: statusLabels[invitation.status]},
       {key: 'expires', label: '有效期', children: time(invitation.expiresAt)},

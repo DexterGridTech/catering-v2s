@@ -1,0 +1,462 @@
+{
+  "kind": "catalog-inventory-openapi-path-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "operationIds": [
+    "getOperationsInventoryTargets",
+    "getOperationsInventoryTarget",
+    "getOperationsInventoryTargetChangeSummary",
+    "getOperationsInventoryTargetBusinessHistory",
+    "getOperationsInventoryTargetConsumptionReferences",
+    "getOperationsInventoryTargetLedger",
+    "getOperationsInventoryTargetDiagnostics"
+  ],
+  "paths": {
+    "/operations/catalog-inventory/inventory-targets": {
+      "get": {
+        "operationId": "getOperationsInventoryTargets",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [
+          "catalog"
+        ],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTargetPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "categoryRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "stockView",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field",
+              "enum": [
+                "ALL",
+                "NEEDS_ATTENTION",
+                "LOW",
+                "OUT",
+                "NEGATIVE",
+                "UNKNOWN"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "design-bound field"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}": {
+      "get": {
+        "operationId": "getOperationsInventoryTarget",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [
+          "catalog"
+        ],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTargetCurrentView"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/changes": {
+      "get": {
+        "operationId": "getOperationsInventoryTargetChangeSummary",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryChangeSummaryView"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "change period"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/business-history": {
+      "get": {
+        "operationId": "getOperationsInventoryTargetBusinessHistory",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryBusinessHistoryPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "cursor"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "page size"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/consumption-references": {
+      "get": {
+        "operationId": "getOperationsInventoryTargetConsumptionReferences",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [
+          "catalog"
+        ],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryConsumptionReferencePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "cursor"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "page size"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/ledger": {
+      "get": {
+        "operationId": "getOperationsInventoryTargetLedger",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryLedgerPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "cursor"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "page size"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/inventory-targets/{targetRef}/diagnostics": {
+      "get": {
+        "operationId": "getOperationsInventoryTargetDiagnostics",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "READ_INVENTORY_ADVANCED_DIAGNOSTICS"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryDiagnosticsView"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "targetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import {Alert, Button, Result, Select, Space, Typography} from 'antd';
-import {formatNameCode, testId, useAsyncGenerationGuard, useOverlayLock, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
+import {NameCodeText, testId, useAsyncGenerationGuard, useOverlayLock, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
 import {Fragment, createContext, useContext, useEffect, useRef, useState, type ReactNode} from 'react';
 import {platformClient, platformProblemOf, platformRefreshSignal, type PlatformApiProblem} from '../api/PlatformTransport';
 import type {GroupWorkspacePage} from '../api/generated/platform-edge';
@@ -72,7 +72,7 @@ export function WorkspaceScopeSelector() {
         onSelect={(value) => { setSelectedGroupWorkspaceKey(value); setSearch(''); }}
         showSearch={{filterOption: false, onSearch: (value) => setSearch(value)}}
         notFoundContent={result && result.items.length === 0 ? '暂无可选择的集团空间' : undefined}
-        options={(result?.items ?? []).map((row) => ({value: row.groupWorkspaceKey, label: formatNameCode(row.name, row.groupWorkspaceKey)}))}
+        options={(result?.items ?? []).map((row) => ({value: row.groupWorkspaceKey, label: <NameCodeText name={row.name} code={row.groupWorkspaceKey}/>}))}
         {...testId('platform-workspace-selector')}
       />
     </Space>

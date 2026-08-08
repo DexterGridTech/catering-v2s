@@ -25,6 +25,9 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String PG_IAM_HEAD_COMPANY_USERS = "PG-IAM-HEAD-COMPANY-USERS";
         public static final String PG_IAM_STORE_USERS = "PG-IAM-STORE-USERS";
         public static final String PG_STORE_PROFILE = "PG-STORE-PROFILE";
+        public static final String PG_CATALOG_STORE_ITEMS = "PG-CATALOG-STORE-ITEMS";
+        public static final String PG_INVENTORY_STORE_STATUS = "PG-INVENTORY-STORE-STATUS";
+        public static final String PG_CATALOG_BRAND_ITEMS = "PG-CATALOG-BRAND-ITEMS";
     }
     public static final class CapabilityKeys {
         private CapabilityKeys() { }
@@ -62,6 +65,8 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String BC_CONTRACT_CREATE = "BC-CONTRACT-CREATE";
         public static final String BC_CONTRACT_EDIT = "BC-CONTRACT-EDIT";
         public static final String BC_CONTRACT_INVALIDATE = "BC-CONTRACT-INVALIDATE";
+        public static final String EDIT_CATALOG_LIBRARY = "EDIT_CATALOG_LIBRARY";
+        public static final String READ_INVENTORY_ADVANCED_DIAGNOSTICS = "READ_INVENTORY_ADVANCED_DIAGNOSTICS";
     }
     public static List<CapabilityCatalogEntry> capabilityCatalog() { return List.of(
             capability("BC-ORG-GROUP-EDIT", "编辑集团资料", "ORGANIZATION_MANAGEMENT", "组织管理", 100, List.of("GROUP"), "PG-ORG-STRUCTURE", "GROUP_VISIBLE"),
@@ -97,7 +102,9 @@ public final class WorkspaceAuthorizationCatalog {
             capability("BC-IAM-STORE-INVITE", "管理门店用户邀请", "USER_MANAGEMENT", "用户管理", 300, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-IAM-STORE-USERS", "SELECTED_STORE_SCOPE"),
             capability("BC-CONTRACT-CREATE", "新建门店合同", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
             capability("BC-CONTRACT-EDIT", "编辑门店合同", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
-            capability("BC-CONTRACT-INVALIDATE", "设置门店合同失效", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE")); }
+            capability("BC-CONTRACT-INVALIDATE", "设置门店合同失效", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
+            capability("EDIT_CATALOG_LIBRARY", "编辑商品库", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"), "PG-CATALOG-STORE-ITEMS", "SELECTED_CATALOG_SCOPE"),
+            capability("READ_INVENTORY_ADVANCED_DIAGNOSTICS", "查看库存高级诊断", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-INVENTORY-STORE-STATUS", "SELECTED_STORE_SCOPE")); }
     public static List<PageAccessCatalogEntry> pageCatalog() { return List.of(
             page("HOME-GROUP", "集团首页", "工作台", 10, "NONE", List.of("GROUP"), null, false),
             page("HOME-REGION", "大区首页", "工作台", 20, "NONE", List.of("REGION"), null, false),
@@ -115,7 +122,10 @@ public final class WorkspaceAuthorizationCatalog {
             page("PG-IAM-PROJECT-USERS", "项目用户管理", "用户与权限", 220, "PROJECT", List.of("GROUP", "REGION", "PROJECT"), "PROJECT", true),
             page("PG-IAM-HEAD-COMPANY-USERS", "总公司用户管理", "用户与权限", 230, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), "HEAD_COMPANY", true),
             page("PG-IAM-STORE-USERS", "门店用户管理", "用户与权限", 240, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), "STORE", true),
-            page("PG-STORE-PROFILE", "门店资料", "门店经营", 300, "STORE", List.of("STORE"), null, true)); }
+            page("PG-STORE-PROFILE", "门店资料", "门店经营", 300, "STORE", List.of("STORE"), null, true),
+            page("PG-CATALOG-STORE-ITEMS", "门店商品管理", "商品与服务", 510, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
+            page("PG-INVENTORY-STORE-STATUS", "门店库存管理", "商品与服务", 520, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
+            page("PG-CATALOG-BRAND-ITEMS", "品牌商品管理", "商品与服务", 530, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), null, true)); }
     public static List<UserManagementActionBinding> userManagementActionBindings() { return List.of(
             new UserManagementActionBinding("PG-IAM-GROUP-USERS", "GROUP", UserManagementAction.ROLE_REVOKE, "BC-IAM-GROUP-ROLE-REVOKE"),
             new UserManagementActionBinding("PG-IAM-REGION-USERS", "REGION", UserManagementAction.ROLE_REVOKE, "BC-IAM-REGION-ROLE-REVOKE"),

@@ -42,6 +42,9 @@ describe('operations required scope surface', () => {
       'PG-IAM-HEAD-COMPANY-USERS:HEAD_COMPANY',
       'PG-IAM-STORE-USERS:STORE',
       'PG-STORE-PROFILE:STORE',
+      'PG-CATALOG-STORE-ITEMS:STORE',
+      'PG-INVENTORY-STORE-STATUS:STORE',
+      'PG-CATALOG-BRAND-ITEMS:HEAD_COMPANY',
     ]);
     expect(renderToStaticMarkup(<OperationsRequiredScopeSurface requiredDataNodeType="NONE" scopeContext={null}><button data-testid="none-child">无范围页面</button></OperationsRequiredScopeSurface>)).toContain('none-child');
   });

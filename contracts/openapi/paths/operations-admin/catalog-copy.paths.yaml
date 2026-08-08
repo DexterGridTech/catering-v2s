@@ -1,0 +1,256 @@
+{
+  "kind": "catalog-inventory-openapi-path-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "operationIds": [
+    "preflightOperationsLocalCatalogCopy",
+    "executeOperationsLocalCatalogCopy",
+    "preflightOperationsBrandCatalogCopy",
+    "executeOperationsBrandCatalogCopy"
+  ],
+  "paths": {
+    "/operations/catalog-inventory/copy/local/preflight": {
+      "post": {
+        "operationId": "preflightOperationsLocalCatalogCopy",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalCopyPreflight"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalCopyPreflightRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/copy/local/execute": {
+      "post": {
+        "operationId": "executeOperationsLocalCatalogCopy",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalCopyReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalCopyExecuteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/copy/brand/preflight": {
+      "post": {
+        "operationId": "preflightOperationsBrandCatalogCopy",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "organization",
+          "inventory",
+          "fulfillment-production"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandCatalogCopyPreflight"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrandCopyPreflightRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/copy/brand/execute": {
+      "post": {
+        "operationId": "executeOperationsBrandCatalogCopy",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "organization",
+          "inventory",
+          "fulfillment-production"
+        ],
+        "x-capability-keys": [
+          "EDIT_CATALOG_LIBRARY"
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandCatalogCopyReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrandCopyExecuteRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

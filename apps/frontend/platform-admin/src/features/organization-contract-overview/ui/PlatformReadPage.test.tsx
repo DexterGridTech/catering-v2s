@@ -37,7 +37,7 @@ describe('platform overview content tabs', () => it('uses the catalog shell refr
   expect(source).toContain('hierarchyNodeTitle(node.type, node.name, node.code, node.status)');
   expect(source).toContain("<Tag color=\"default\">已停用</Tag>");
   expect(source).not.toContain("{key: 'organization', label: '所属机构', children: hierarchyDetail.path");
-  expect(source).toContain('formatNameCode(name, code)');
+  expect(source).toContain('NameCodeText name={name} code={code}');
   expect(source).toContain('<Tag color="cyan">');
   expect(source).toContain('children: treeNodes(hierarchyRootMatchesSearch ? hierarchyQuery?.data?.regions ?? [] : filteredHierarchyRegions)');
   expect(source).toContain('findHierarchyNode');
@@ -85,9 +85,9 @@ describe('platform overview content tabs', () => it('uses the catalog shell refr
   expect(source).toContain("dataIndex: 'headCompany'");
   expect(source).toContain("title: '别名'");
   expect(source).toContain("title: '备注'");
-  expect(source).toContain("row.project ? formatNameCode(row.project.name, row.project.code) : '—'");
-  expect(source).toContain("row.brand ? formatNameCode(row.brand.name, row.brand.code) : '—'");
-  expect(source).toContain("row.tenant ? formatNameCode(row.tenant.name, row.tenant.code) : '—'");
-  expect(source).toContain("row.headCompany ? formatNameCode(row.headCompany.name, row.headCompany.code) : '未设置'");
+  expect(source).toContain("row.project ? <NameCodeText name={row.project.name} code={row.project.code}/> : '—'");
+  expect(source).toContain("row.brand ? <NameCodeText name={row.brand.name} code={row.brand.code}/> : '—'");
+  expect(source).toContain("row.tenant ? <NameCodeText name={row.tenant.name} code={row.tenant.code}/> : '—'");
+  expect(source).toContain("row.headCompany ? <NameCodeText name={row.headCompany.name} code={row.headCompany.code}/> : '未设置'");
   expect(source).not.toMatch(/title:\s*['"]操作['"]/);
 }));

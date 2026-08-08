@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-package-exit",
+  "packageId": "DUAL-ADMIN-PROTABLE-COMPACT-20260805",
+  "reviewCycleId": "DUAL-ADMIN-PROTABLE-COMPACT-20260805",
+  "reviewTarget": "IMPLEMENTATION",
+  "status": "IMPLEMENTATION_GO_AFTER_ROUND2_EVIDENCE_REMEDIATION",
+  "staticProofPath": "doc/review/platform/2026-08-05-v2s-dual-admin-protable-compact-focused-proof.json",
+  "staticProofStatus": "PASS",
+  "sourceDenominator": {
+    "productionProTableInstances": 13,
+    "platformAdmin": 8,
+    "operationsAdmin": 5,
+    "sourceFiles": 12,
+    "contract": {"status": "NOT_APPLICABLE_WITH_REASON", "reason": "不改 OpenAPI 或 generated wire。"},
+    "owner": {"status": "NOT_APPLICABLE_WITH_REASON", "reason": "不改后端 owner。"},
+    "edge": {"status": "NOT_APPLICABLE_WITH_REASON", "reason": "不改 HTTP edge。"},
+    "frontend": {"status": "PASS", "instances": 13, "sourceFiles": 12},
+    "runtime": {"status": "NOT_APPLICABLE_WITH_REASON", "reason": "不启动或修改 DEV/UAT/runtime。"},
+    "evidence": {"status": "PASS", "paths": ["doc/decisions/2026-08-05-v2s-dual-admin-protable-compact-standard.md", "doc/plans/platform/2026-08-05-v2s-dual-admin-protable-compact-implementation-design.md", "scripts/check/protable-compact.mjs", "doc/review/platform/2026-08-05-v2s-dual-admin-protable-compact-focused-proof.json", "doc/review/platform/2026-08-05-v2s-dual-admin-protable-compact-independent-review-input.md", "doc/review/platform/2026-08-05-v2s-dual-admin-protable-compact-independent-review-round1.md", "doc/review/platform/2026-08-05-v2s-dual-admin-protable-compact-independent-review-round2.md"]}
+  },
+  "hookSetEquality": "PASS",
+  "predecessor": {
+    "packageId": "WHOLE-ENGINEERING-SECOND-PACKAGE-20260805",
+    "exitPath": "doc/evidence/platform/2026-08-05-v2s-whole-engineering-second-package-exit.json",
+    "exitSha256": "00e219fe79975fa10dff4b3357bdceb0000a245a04c1f33fa1f350f936da104f"
+  },
+  "businessStatus": "NOT_APPLICABLE_WITH_REASON",
+  "businessReason": "布局密度标准，不改变业务行为。",
+  "cleanupStatus": "NOT_APPLICABLE_WITH_REASON",
+  "cleanupReason": "未启动运行时资源。",
+  "review": {
+    "independentImplementation": {
+      "path": "doc/review/platform/2026-08-05-v2s-dual-admin-protable-compact-independent-review-round2.md",
+      "sha256": "d2d69f81a7c5edebc1471a99819f02fc442e1cf805cd722cdd1aaaa1d747fda6",
+      "verdict": "NO_GO_PRE_REMEDIATION",
+      "m": 0,
+      "s": 1,
+      "n": 1,
+      "reviewerKind": "INDEPENDENT_SUBAGENT",
+      "reviewRound": 2,
+      "reviewRoundLimit": 2,
+      "roundFinalDecision": "SELF_DECIDED",
+      "blindReview": "PASS",
+      "dispositions": {
+        "S-01": "CONFIRMED_AND_FIXED_AFTER_FINAL_ROUND: current input now binds active-package/focused-proof/exit bytes, and this exit binds the Round 2 final artifact. No production source changed."
+      }
+    },
+    "authorFinalDisposition": {
+      "verdict": "GO",
+      "m": 0,
+      "s": 0,
+      "n": 0,
+      "mode": "SELF_DECIDED_AFTER_FINAL_ROUND_EVIDENCE_REMEDIATION",
+      "currentBytesNotReviewedByAdversarialReviewer": true,
+      "reason": "Round 2 的唯一 S-01 是 evidence/hash binding；按 hard-stop 规则仅修复证据绑定，不重开第三轮，不改变生产源码或分母。"
+    }
+  },
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false
+}

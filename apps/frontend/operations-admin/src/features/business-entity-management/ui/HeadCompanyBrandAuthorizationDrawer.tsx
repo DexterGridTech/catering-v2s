@@ -1,6 +1,6 @@
 import {Alert, Button, Drawer, Select, Space, Tag} from 'antd';
-import {adminDrawerSurfaceProps, formatNameCode, testId, useAsyncGenerationGuard, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useState} from 'react';
+import {adminDrawerSurfaceProps, NameCodeText, testId, useAsyncGenerationGuard, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type HeadCompany} from '../../../app/api/generated/operations-edge';
 import {ACTION_CAPABILITIES, adminCatalog} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
@@ -24,7 +24,7 @@ type Props = {
 };
 
 export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, onClose, onUpdated}: Props) {
-  const [candidateOptions, setCandidateOptions] = useState<Array<{value: string; label: string}>>([]);
+  const [candidateOptions, setCandidateOptions] = useState<Array<{value: string; label: ReactNode}>>([]);
   const [candidateProblem, setCandidateProblem] = useState<string>();
   const [selectedBrandId, setSelectedBrandId] = useState<string>();
   const [commandProblem, setCommandProblem] = useState<string>();
@@ -54,7 +54,7 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     lifecycle.reset();
     void adapter.searchEnabledBrands(searchContext, undefined).then((page) => {
       if (!candidatesGeneration.isCurrent(request)) return;
-      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: formatNameCode(brand.name, brand.code)})));
+      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: <NameCodeText name={brand.name} code={brand.code}/>})));
       setCandidateProblem(undefined);
     }).catch(() => {
       if (candidatesGeneration.isCurrent(request)) setCandidateProblem('候选品牌加载失败。');
@@ -66,7 +66,7 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     setCandidateProblem(undefined);
     void adapter.searchEnabledBrands(searchContext, value).then((page) => {
       if (!candidatesGeneration.isCurrent(request)) return;
-      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: formatNameCode(brand.name, brand.code)})));
+      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: <NameCodeText name={brand.name} code={brand.code}/>})));
     }).catch(() => {
       if (candidatesGeneration.isCurrent(request)) setCandidateProblem('候选品牌加载失败。');
     });
@@ -132,7 +132,7 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     </Space.Compact>
     {headCompany?.authorizedBrands.length ? <Space orientation="vertical" style={{width: '100%'}}>
       {headCompany.authorizedBrands.map((brand) => <Space key={brand.id} style={{justifyContent: 'space-between', width: '100%'}}>
-        <Tag>{formatNameCode(brand.name, brand.code)}</Tag>
+        <Tag>{<NameCodeText name={brand.name} code={brand.code}/>}</Tag>
         <Button
           danger
           disabled={lifecycle.submitting}

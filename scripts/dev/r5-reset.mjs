@@ -40,6 +40,7 @@ export function verifyRemoteResetTranscript(stdout) {
     "R5_REMOTE_RESET_TERMINATE=PASS",
     "R5_REMOTE_RESET_DROP=PASS",
     "R5_REMOTE_RESET_READBACK_ABSENT=PASS",
+    "R5_REMOTE_RESET_ASSET_CLEANUP=PASS",
   ];
   let cursor = -1;
   for (const marker of markers) {
@@ -50,7 +51,7 @@ export function verifyRemoteResetTranscript(stdout) {
   }
 }
 
-export function runRemoteReset({host, targetDatabase, executor = spawnSync}) {
+export function runRemoteReset({host, targetDatabase, namespace = `v2s-dev-${targetDatabase.replace(/^catering_v2s_dev_/, "").replaceAll("_", "-")}`, executor = spawnSync}) {
   const script = [
     "set -euo pipefail",
     `database='${targetDatabase}'`,
@@ -60,6 +61,15 @@ export function runRemoteReset({host, targetDatabase, executor = spawnSync}) {
     "printf '%s\\n' R5_REMOTE_RESET_DROP=PASS",
     "if docker exec catering-postgres psql -U catering -d postgres -Atqc \"SELECT 1 FROM pg_database WHERE datname = '$database'\" | grep -qx 1; then printf '%s\\n' R5_REMOTE_RESET_READBACK_ABSENT=FAIL; exit 42; fi",
     "printf '%s\\n' R5_REMOTE_RESET_READBACK_ABSENT=PASS",
+    `namespace=${JSON.stringify(namespace)}`,
+    "if ! docker inspect catering-v2s-r5-minio >/dev/null 2>&1; then printf '%s\\n' R5_REMOTE_RESET_ASSET_CLEANUP=FAIL; exit 43; fi",
+    "access=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' catering-v2s-r5-minio | sed -n 's/^MINIO_ROOT_USER=//p')",
+    "secret=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' catering-v2s-r5-minio | sed -n 's/^MINIO_ROOT_PASSWORD=//p')",
+    "prefix=\"catering-v2s/dev/$namespace/\"",
+    "docker run --rm --network host -e \"MC_HOST_r5=http://$access:$secret@127.0.0.1:19000\" minio/mc rm --recursive --force \"r5/catering-v2s-r5-assets/$prefix\" >/dev/null 2>&1 || true",
+    "asset_present=$(docker run --rm --network host -e \"MC_HOST_r5=http://$access:$secret@127.0.0.1:19000\" minio/mc ls --recursive \"r5/catering-v2s-r5-assets/$prefix\" 2>/dev/null || true)",
+    "if [ -n \"$asset_present\" ]; then printf '%s\\n' R5_REMOTE_RESET_ASSET_CLEANUP=FAIL; exit 44; fi",
+    "printf '%s\\n' R5_REMOTE_RESET_ASSET_CLEANUP=PASS",
   ].join("\n");
   const result = executor("ssh", ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8", host, "bash", "-s"], {cwd: root, encoding: "utf8", input: script});
   if (result?.error || result?.status !== 0) fail("REMOTE_EXECUTION_FAILED");
@@ -163,7 +173,7 @@ function main() {
   const run = createRun(topology);
   try {
     if (verifyManagedDevOwnership(run)) stopOwnedManagedDev(run);
-    runRemoteReset(topology);
+    runRemoteReset({...topology, namespace: topology.namespace});
     run.state.lastKnownGood = "REMOTE_DATABASE_ABSENT_READBACK";
     run.state.business = "PASS_DATABASE_ABSENT_READBACK";
     run.state.cleanup = "PASS_NO_PERSISTENT_RESET_PROCESS";

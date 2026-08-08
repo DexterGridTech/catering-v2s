@@ -1,0 +1,385 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-edge-route-registry",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "operations": [
+    {
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/workbench/context",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsCatalogNavigation",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/navigation",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsCatalogItems",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/items",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsCatalogItem",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/items/{itemCode}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogItem",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/items",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "saveOperationsCatalogItem",
+      "method": "PATCH",
+      "path": "/operations/catalog-inventory/items/{itemCode}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogItemStatus",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/items/{itemCode}/status",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogCategory",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/categories",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogCategory",
+      "method": "PATCH",
+      "path": "/operations/catalog-inventory/categories/{categoryCode}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "moveOperationsCatalogCategory",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/categories/{categoryCode}/move",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/categories/{categoryCode}/status",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsCatalogDictionary",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogDictionaryEntry",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogDictionaryEntry",
+      "method": "PATCH",
+      "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "reorderOperationsCatalogDictionaryEntry",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/reorder",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogDictionaryEntryStatus",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}/status",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsProductionTags",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/production-tags",
+      "owner": "fulfillment-production",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "createOperationsProductionTag",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/production-tags",
+      "owner": "fulfillment-production",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "updateOperationsProductionTag",
+      "method": "PATCH",
+      "path": "/operations/catalog-inventory/production-tags/{tagCode}",
+      "owner": "fulfillment-production",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "transitionOperationsProductionTagStatus",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/production-tags/{tagCode}/status",
+      "owner": "fulfillment-production",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsLocalCatalogCopyCandidates",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/copy/local/candidates",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "preflightOperationsLocalCatalogCopy",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/copy/local/preflight",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "executeOperationsLocalCatalogCopy",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/copy/local/execute",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "preflightOperationsTemporaryCatalogItemPromotion",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/preflight",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "executeOperationsTemporaryCatalogItemPromotion",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/execute",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsBrandCatalogCopyCandidates",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/copy/brand/candidates",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "preflightOperationsBrandCatalogCopy",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/copy/brand/preflight",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "executeOperationsBrandCatalogCopy",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/copy/brand/execute",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryTargets",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-targets",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryTarget",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryTargetChangeSummary",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/changes",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryTargetBusinessHistory",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/business-history",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryTargetConsumptionReferences",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/consumption-references",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryTargetLedger",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/ledger",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryTargetDiagnostics",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/diagnostics",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "countOperationsInventoryTarget",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/count",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "increaseOperationsInventoryTarget",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/increase",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "adjustOperationsInventoryTarget",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/adjust",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "updateOperationsInventoryTargetConfiguration",
+      "method": "PATCH",
+      "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/configuration",
+      "owner": "inventory",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "stageOperationsCatalogAsset",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/assets/stage",
+      "owner": "asset",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "releaseOperationsCatalogStagedAsset",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/assets/{assetRef}/release",
+      "owner": "asset",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsCatalogShapeManifest",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/shape-manifest",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    }
+  ]
+}

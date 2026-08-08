@@ -1,5 +1,5 @@
 import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
-import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, formatNameCode, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, NameCodeText, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {ExtensionDefinition, JsonValue, OrganizationStore} from '../../../app/api/generated/operations-edge';
@@ -65,10 +65,10 @@ export function StoreDetailDrawer({store, queryContext, canEdit, canTransition, 
     {ready && selected && <Descriptions {...adminDetailDescriptionsProps} items={[
       {key: 'name', label: '门店名称', children: selected.name},
       {key: 'code', label: '门店编码', children: selected.code},
-      {key: 'project', label: '所属项目', children: formatNameCode(selected.project.name, selected.project.code)},
-      {key: 'brand', label: '品牌', children: formatNameCode(selected.brand.name, selected.brand.code)},
-      {key: 'tenant', label: '经营租户', children: formatNameCode(selected.tenant.name, selected.tenant.code)},
-      {key: 'headCompany', label: '总公司', children: selected.headCompany ? formatNameCode(selected.headCompany.name, selected.headCompany.code) : '未设置'},
+      {key: 'project', label: '所属项目', children: <NameCodeText name={selected.project.name} code={selected.project.code}/>},
+      {key: 'brand', label: '品牌', children: <NameCodeText name={selected.brand.name} code={selected.brand.code}/>},
+      {key: 'tenant', label: '经营租户', children: <NameCodeText name={selected.tenant.name} code={selected.tenant.code}/>},
+      {key: 'headCompany', label: '总公司', children: selected.headCompany ? <NameCodeText name={selected.headCompany.name} code={selected.headCompany.code}/> : '未设置'},
       {key: 'status', label: '状态', children: selected.status === 'ENABLED' ? '启用' : '停用'},
       {key: 'notes', label: '备注', children: selected.notes ?? '—'},
       ...extensionItems(definition.data, selected.extensionValues),

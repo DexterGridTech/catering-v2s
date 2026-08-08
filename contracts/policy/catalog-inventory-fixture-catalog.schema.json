@@ -1,0 +1,1230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://v2s.local/contracts/policy/catalog-inventory-fixture-catalog.schema.json",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "catalogId",
+    "revision",
+    "sourceBindings",
+    "seedDatasets",
+    "testDatasets",
+    "scenarioCatalog",
+    "denominators",
+    "consumerBindings",
+    "forbiddenStructures",
+    "seedExecutionPlan",
+    "separation",
+    "fixtureDigest"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "catalog-inventory-fixture-catalog"
+    },
+    "catalogId": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "string"
+    },
+    "fixtureDigest": {
+      "type": "string"
+    },
+    "sourceBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirements",
+        "ia",
+        "copyPolicy",
+        "mediaCatalog"
+      ],
+      "properties": {
+        "requirements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "source path"
+            },
+            "sha256": {
+              "type": "string",
+              "description": "source hash"
+            }
+          }
+        },
+        "ia": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "source path"
+            },
+            "sha256": {
+              "type": "string",
+              "description": "source hash"
+            }
+          }
+        },
+        "copyPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "policy path"
+            }
+          }
+        },
+        "mediaCatalog": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "media catalog path"
+            }
+          }
+        }
+      }
+    },
+    "scenarioCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "api",
+        "l2"
+      ],
+      "properties": {
+        "api": {
+          "type": "string",
+          "description": "API scenario catalog path"
+        },
+        "l2": {
+          "type": "string",
+          "description": "L2 scenario catalog path"
+        }
+      }
+    },
+    "denominators": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seed",
+        "test",
+        "apiDefinitions",
+        "apiCases",
+        "l2Definitions",
+        "l2Cases"
+      ],
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "description": "seed count"
+        },
+        "test": {
+          "type": "integer",
+          "description": "test count"
+        },
+        "apiDefinitions": {
+          "type": "integer",
+          "description": "API definitions"
+        },
+        "apiCases": {
+          "type": "integer",
+          "description": "API cases"
+        },
+        "l2Definitions": {
+          "type": "integer",
+          "description": "L2 definitions"
+        },
+        "l2Cases": {
+          "type": "integer",
+          "description": "L2 cases"
+        }
+      }
+    },
+    "seedDatasets": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "$ref": "#/$defs/dataset"
+      }
+    },
+    "testDatasets": {
+      "type": "array",
+      "minItems": 26,
+      "items": {
+        "$ref": "#/$defs/dataset"
+      }
+    },
+    "consumerBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "P2_API",
+        "P3_L2"
+      ],
+      "properties": {
+        "P2_API": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "catalogPath",
+            "fixtureClass"
+          ],
+          "properties": {
+            "catalogPath": {
+              "type": "string",
+              "description": "catalog path"
+            },
+            "fixtureClass": {
+              "type": "string",
+              "enum": [
+                "TEST"
+              ]
+            }
+          }
+        },
+        "P3_L2": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "catalogPath",
+            "fixtureClass"
+          ],
+          "properties": {
+            "catalogPath": {
+              "type": "string",
+              "description": "catalog path"
+            },
+            "fixtureClass": {
+              "type": "string",
+              "enum": [
+                "TEST"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "forbiddenStructures": {
+      "type": "array",
+      "description": "forbidden structures",
+      "items": {
+        "type": "string"
+      }
+    },
+    "seedExecutionPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transport",
+        "noDirectDatabaseWrites",
+        "assetUpload",
+        "catalogCreate",
+        "catalogSave",
+        "fullCatalogParity",
+        "cleanup",
+        "readback",
+        "failureRule"
+      ],
+      "properties": {
+        "transport": {
+          "type": "string",
+          "description": "seed transport"
+        },
+        "noDirectDatabaseWrites": {
+          "type": "boolean",
+          "description": "no direct database writes"
+        },
+        "assetUpload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "transport",
+            "requestField",
+            "sourceDirectory",
+            "persists",
+            "contentMustBeRealBytes"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "description": "asset upload operation"
+            },
+            "transport": {
+              "type": "string",
+              "description": "asset transport"
+            },
+            "requestField": {
+              "type": "string",
+              "description": "binary request field"
+            },
+            "sourceDirectory": {
+              "type": "string",
+              "description": "asset source directory"
+            },
+            "persists": {
+              "type": "string",
+              "description": "asset persistence"
+            },
+            "contentMustBeRealBytes": {
+              "type": "boolean",
+              "description": "real bytes required"
+            }
+          }
+        },
+        "catalogCreate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "transport",
+            "requestComponent",
+            "usesReturnedAssetRefs"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "description": "catalog create operation"
+            },
+            "transport": {
+              "type": "string",
+              "description": "catalog transport"
+            },
+            "requestComponent": {
+              "type": "string",
+              "description": "create request component"
+            },
+            "usesReturnedAssetRefs": {
+              "type": "boolean",
+              "description": "returned refs used"
+            }
+          }
+        },
+        "catalogSave": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "transport",
+            "requestComponent",
+            "sequence",
+            "usesReturnedAssetRefs"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "description": "catalog save operation"
+            },
+            "transport": {
+              "type": "string",
+              "description": "catalog transport"
+            },
+            "requestComponent": {
+              "type": "string",
+              "description": "save request component"
+            },
+            "sequence": {
+              "type": "string"
+            },
+            "usesReturnedAssetRefs": {
+              "type": "boolean",
+              "description": "returned refs used"
+            }
+          }
+        },
+        "fullCatalogParity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceDirectory",
+            "expectedCatalogItemCount",
+            "expectedMediaAssetCount",
+            "requiredIn",
+            "reductionIsNotFinalSeedPolicy"
+          ],
+          "properties": {
+            "sourceDirectory": {
+              "type": "string",
+              "description": "v4 catalog source directory"
+            },
+            "expectedCatalogItemCount": {
+              "type": "integer",
+              "description": "expected v4 catalog item count"
+            },
+            "expectedMediaAssetCount": {
+              "type": "integer",
+              "description": "expected v4 media asset count"
+            },
+            "requiredIn": {
+              "type": "string",
+              "description": "required phase"
+            },
+            "reductionIsNotFinalSeedPolicy": {
+              "type": "boolean",
+              "description": "no final reduction"
+            }
+          }
+        },
+        "cleanup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy",
+            "mediaPurgeRequired",
+            "mediaNamespace",
+            "readback",
+            "businessAndCleanupSeparate"
+          ],
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "description": "cleanup strategy"
+            },
+            "mediaPurgeRequired": {
+              "type": "boolean",
+              "description": "media purge required"
+            },
+            "mediaNamespace": {
+              "type": "string",
+              "description": "media namespace"
+            },
+            "readback": {
+              "type": "string",
+              "description": "cleanup readback"
+            },
+            "businessAndCleanupSeparate": {
+              "type": "boolean",
+              "description": "separate statuses"
+            }
+          }
+        },
+        "readback": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "operationId",
+              "purpose"
+            ],
+            "properties": {
+              "operationId": {
+                "type": "string",
+                "description": "readback operation"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "readback purpose"
+              }
+            }
+          }
+        },
+        "failureRule": {
+          "type": "string",
+          "description": "seed failure rule"
+        }
+      }
+    },
+    "separation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seedIsLegalInitialState",
+        "testIsConstructedBoundaryState",
+        "sharedBy",
+        "seedExecutionNotAuthorized"
+      ],
+      "properties": {
+        "seedIsLegalInitialState": {
+          "type": "boolean",
+          "description": "seed state meaning"
+        },
+        "testIsConstructedBoundaryState": {
+          "type": "boolean",
+          "description": "test state meaning"
+        },
+        "sharedBy": {
+          "type": "array",
+          "description": "shared consumers",
+          "items": {
+            "type": "string"
+          }
+        },
+        "seedExecutionNotAuthorized": {
+          "type": "boolean",
+          "description": "seed execution boundary"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "mediaAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mediaAssetKey",
+        "fileName",
+        "contentType",
+        "sha256"
+      ],
+      "properties": {
+        "mediaAssetKey": {
+          "type": "string",
+          "description": "media asset key"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "asset file name"
+        },
+        "contentType": {
+          "type": "string",
+          "description": "asset content type"
+        },
+        "sha256": {
+          "type": "string",
+          "description": "asset digest"
+        },
+        "sourceName": {
+          "type": "string",
+          "description": "source name"
+        },
+        "sourceLicense": {
+          "type": "string",
+          "description": "source license"
+        },
+        "sourceProvider": {
+          "type": "string",
+          "description": "source provider"
+        }
+      }
+    },
+    "ownerScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeKind",
+        "brandRef"
+      ],
+      "properties": {
+        "scopeKind": {
+          "type": "string",
+          "description": "scope kind"
+        },
+        "headCompanyRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "storeRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "projectRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "brandRef": {
+          "type": "string"
+        },
+        "balanceAndLedgerExpected": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
+      }
+    },
+    "object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "object type"
+        },
+        "code": {
+          "type": "string",
+          "description": "object code"
+        },
+        "scenarioId": {
+          "type": "string",
+          "description": "scenario identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "object name"
+        },
+        "mediaAssetKey": {
+          "type": "string",
+          "description": "media asset key"
+        },
+        "status": {
+          "type": "string",
+          "description": "object status"
+        },
+        "version": {
+          "type": "integer",
+          "description": "object version"
+        },
+        "shapeKey": {
+          "type": "string",
+          "description": "shape"
+        },
+        "materialRole": {
+          "type": "string",
+          "description": "material role"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "attributeValues": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "groupCode": {
+          "type": "string",
+          "description": "option group"
+        },
+        "skuCode": {
+          "type": "string",
+          "description": "SKU code"
+        },
+        "ownerCode": {
+          "type": "string",
+          "description": "owner code"
+        },
+        "ownerKind": {
+          "type": "string",
+          "description": "owner kind"
+        },
+        "componentCode": {
+          "type": "string",
+          "description": "component code"
+        },
+        "targetRef": {
+          "type": "string",
+          "description": "target reference"
+        },
+        "ref": {
+          "type": "string",
+          "description": "asset reference"
+        },
+        "refCode": {
+          "type": "string",
+          "description": "referenced code"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "quantity"
+        },
+        "unit": {
+          "type": "string",
+          "description": "unit"
+        },
+        "productCode": {
+          "type": "string",
+          "description": "product code"
+        },
+        "consumptionUnit": {
+          "type": "string",
+          "description": "consumption unit"
+        },
+        "countingUnit": {
+          "type": "string",
+          "description": "counting unit"
+        },
+        "allowNegative": {
+          "type": "boolean",
+          "description": "negative inventory flag"
+        },
+        "balance": {
+          "type": "integer",
+          "description": "balance"
+        },
+        "references": {
+          "type": "integer",
+          "description": "reference count"
+        },
+        "source": {
+          "type": "string",
+          "description": "source"
+        },
+        "externalIdentity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "sourceOrderRef": {
+              "type": "string",
+              "description": "external order reference"
+            },
+            "sourceRecordRef": {
+              "type": "string",
+              "description": "external record reference"
+            },
+            "sourceItemRef": {
+              "type": "string",
+              "description": "external item reference"
+            },
+            "snapshot": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "snapshot name"
+                },
+                "specification": {
+                  "type": "string",
+                  "description": "snapshot specification"
+                },
+                "price": {
+                  "type": "integer",
+                  "format": "cents",
+                  "description": "snapshot price"
+                }
+              }
+            }
+          }
+        },
+        "deniedFields": {
+          "type": "array",
+          "description": "denied fields",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "source object"
+        },
+        "to": {
+          "type": "string",
+          "description": "target object"
+        },
+        "refKind": {
+          "type": "string",
+          "description": "reference kind"
+        },
+        "refCode": {
+          "type": "string",
+          "description": "referenced code"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "edge quantity"
+        },
+        "unit": {
+          "type": "string",
+          "description": "edge unit"
+        }
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "required": [
+        "fixtureId",
+        "class",
+        "purpose",
+        "ownerScopes",
+        "scenarioIds",
+        "setupChannel",
+        "readbackSelectors",
+        "cleanupPolicy",
+        "entities"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fixtureId": {
+          "type": "string",
+          "description": "fixture identifier"
+        },
+        "class": {
+          "type": "string",
+          "enum": [
+            "SEED",
+            "TEST"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "description": "fixture purpose"
+        },
+        "ownerScopes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ownerScope"
+          }
+        },
+        "scenarioIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "setupChannel": {
+          "type": "string",
+          "description": "setup channel"
+        },
+        "readbackSelectors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "mediaAssetKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generatorRecipe": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "fixtureId"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "description": "recipe kind"
+            },
+            "fixtureId": {
+              "type": "string",
+              "description": "recipe fixture"
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "problemCode": {
+              "type": "string",
+              "description": "expected problem"
+            },
+            "problemCodes": {
+              "type": "array",
+              "description": "expected problems",
+              "items": {
+                "type": "string"
+              }
+            },
+            "hasSku": {
+              "type": "boolean",
+              "description": "HAS_SKU result"
+            },
+            "balanceDelta": {
+              "type": "integer",
+              "description": "balance delta"
+            },
+            "ledgerDelta": {
+              "type": "integer",
+              "description": "ledger delta"
+            },
+            "permission": {
+              "type": "boolean",
+              "description": "permission"
+            },
+            "diagnosticsHttpRequest": {
+              "type": "boolean",
+              "description": "diagnostics request"
+            },
+            "diagnosticsDom": {
+              "type": "boolean",
+              "description": "diagnostics DOM"
+            },
+            "limitRef": {
+              "type": "string",
+              "description": "policy limit ref"
+            },
+            "boundary": {
+              "type": "string",
+              "description": "boundary parameterization"
+            },
+            "overflow": {
+              "type": "string",
+              "description": "overflow parameterization"
+            },
+            "truncation": {
+              "type": "boolean",
+              "description": "truncation flag"
+            },
+            "sequence": {
+              "type": "array",
+              "description": "operation sequence",
+              "items": {
+                "type": "string"
+              }
+            },
+            "writes": {
+              "type": "integer",
+              "description": "write count"
+            },
+            "traversal": {
+              "type": "string",
+              "description": "traversal rule"
+            },
+            "wizardSteps": {
+              "type": "array",
+              "description": "wizard steps",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ownerInvariant": {
+              "type": "boolean",
+              "description": "owner invariant"
+            },
+            "closure": {
+              "type": "string",
+              "description": "closure result"
+            },
+            "refs": {
+              "type": "string",
+              "description": "reference result"
+            },
+            "ownership": {
+              "type": "string",
+              "description": "ownership result"
+            },
+            "requiresPromotionPreflight": {
+              "type": "boolean",
+              "description": "promotion preflight"
+            },
+            "readbackFields": {
+              "type": "array",
+              "description": "readback fields",
+              "items": {
+                "type": "string"
+              }
+            },
+            "sourceResolution": {
+              "type": "string",
+              "description": "source resolution"
+            },
+            "allowed": {
+              "type": "array",
+              "description": "allowed scopes",
+              "items": {
+                "type": "string"
+              }
+            },
+            "forbidden": {
+              "type": "array",
+              "description": "forbidden scopes",
+              "items": {
+                "type": "string"
+              }
+            },
+            "seedIds": {
+              "type": "array",
+              "description": "seed identifiers",
+              "items": {
+                "type": "string"
+              }
+            },
+            "serviceModes": {
+              "type": "array",
+              "description": "service modes",
+              "items": {
+                "type": "string"
+              }
+            },
+            "benefitVisibleButDisabled": {
+              "type": "boolean",
+              "description": "benefit visibility"
+            },
+            "capabilityValuesIncludes": {
+              "type": "string",
+              "description": "retained capability"
+            },
+            "derivedByShapes": {
+              "type": "array",
+              "description": "derived shapes",
+              "items": {
+                "type": "string"
+              }
+            },
+            "dependentFacts": {
+              "type": "array",
+              "description": "dependent facts",
+              "items": {
+                "type": "string"
+              }
+            },
+            "shapeKeys": {
+              "type": "array",
+              "description": "shape keys",
+              "items": {
+                "type": "string"
+              }
+            },
+            "objectTypes": {
+              "type": "array",
+              "description": "object types",
+              "items": {
+                "type": "string"
+              }
+            },
+            "matrixRows": {
+              "type": "integer",
+              "description": "compatibility matrix rows"
+            },
+            "outcomes": {
+              "type": "array",
+              "description": "compatibility outcomes",
+              "items": {
+                "type": "string"
+              }
+            },
+            "caseParameterKey": {
+              "type": "string",
+              "description": "case discriminator"
+            },
+            "scenarioState": {
+              "type": "string",
+              "description": "scenario state"
+            },
+            "query": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [],
+              "properties": {
+                "dataNodeRef": {
+                  "type": "string",
+                  "description": "data node"
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "keyword"
+                },
+                "cursor": {
+                  "type": "string",
+                  "description": "cursor"
+                },
+                "generation": {
+                  "type": "string",
+                  "description": "generation"
+                }
+              }
+            },
+            "viewKeys": {
+              "type": "array",
+              "description": "smart view keys",
+              "items": {
+                "type": "string"
+              }
+            },
+            "needsAttentionExcludedFromStockState": {
+              "type": "boolean",
+              "description": "needs attention rule"
+            },
+            "surfaceKeys": {
+              "type": "array",
+              "description": "surface keys",
+              "items": {
+                "type": "string"
+              }
+            },
+            "transitions": {
+              "type": "array",
+              "description": "lifecycle transitions",
+              "items": {
+                "type": "string"
+              }
+            },
+            "versionConflict": {
+              "type": "boolean",
+              "description": "version conflict"
+            },
+            "idempotencyReplay": {
+              "type": "boolean",
+              "description": "idempotency replay"
+            },
+            "replaySameResult": {
+              "type": "boolean",
+              "description": "replay result"
+            },
+            "ownerFailureRollback": {
+              "type": "boolean",
+              "description": "owner rollback"
+            }
+          }
+        },
+        "cleanupPolicy": {
+          "type": "string",
+          "description": "cleanup policy"
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/object"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        },
+        "entities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "constructedAt",
+            "source"
+          ],
+          "properties": {
+            "constructedAt": {
+              "type": "string",
+              "description": "construction marker"
+            },
+            "source": {
+              "type": "string",
+              "description": "fixture source"
+            },
+            "ownerGraph": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ownerScope"
+              }
+            },
+            "mediaAssets": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/mediaAsset"
+              }
+            },
+            "objects": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/object"
+              }
+            },
+            "edges": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/edge"
+              }
+            },
+            "catalogItems": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/object"
+              }
+            },
+            "skus": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/object"
+              }
+            },
+            "bomLines": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/object"
+              }
+            },
+            "optionGroups": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/object"
+              }
+            },
+            "optionValues": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/object"
+              }
+            },
+            "relations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/edge"
+              }
+            },
+            "stockTargets": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/object"
+              }
+            },
+            "stockFacts": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [],
+              "properties": {
+                "headCompanyBalance": {
+                  "type": "integer",
+                  "description": "head company balance"
+                },
+                "headCompanyLedgerEntries": {
+                  "type": "integer",
+                  "description": "head company ledger count"
+                },
+                "storeBalanceAndLedger": {
+                  "type": "string",
+                  "description": "store balance state"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

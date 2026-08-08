@@ -1,6 +1,6 @@
 import {Alert, Button, Drawer, Form, Input, Select, Space} from 'antd';
-import {adminDrawerSurfaceProps, formatCodeNamePath, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useState} from 'react';
+import {adminDrawerSurfaceProps, NameCodePathText, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {WorkspaceInvitation, WorkspaceInvitationCandidatePage} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageProps} from '../../../app/routing/model';
@@ -8,7 +8,7 @@ import {useWorkspaceInvitationCandidates} from '../application/useWorkspaceInvit
 
 type TargetType = 'GROUP' | 'REGION' | 'PROJECT' | 'HEAD_COMPANY' | 'STORE';
 type InvitationForm = {mobile: string; targetOrganizationRef?: string; roleIds?: string[]};
-type CandidateOption = {value: string; label: string};
+type CandidateOption = {value: string; label: ReactNode};
 
 type Props = {
   open: boolean;
@@ -75,7 +75,7 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
     if (!open) return;
     const nextOptions = (organizationPageResult?.organizations ?? [])
       .filter((candidate) => candidate.serviceNodeType === targetType)
-      .map((candidate) => ({value: candidate.organizationRef, label: formatCodeNamePath(candidate.path)}));
+      .map((candidate) => ({value: candidate.organizationRef, label: <NameCodePathText value={candidate.path}/>}));
     setOrganizationOptions((current) => organizationPage === 1 ? nextOptions : appendUnique(current, nextOptions));
   }, [open, organizationPage, organizationPageResult?.organizations, targetType]);
 

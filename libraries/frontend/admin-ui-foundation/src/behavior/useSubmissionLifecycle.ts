@@ -1,4 +1,4 @@
-import {useCallback, useRef} from 'react';
+import {useCallback, useMemo, useRef} from 'react';
 
 /**
  * Keeps one idempotency key for one non-Drawer business submission. A caller
@@ -13,5 +13,9 @@ export function useSubmissionLifecycle() {
   }, []);
   const markBusinessIntentChanged = useCallback(() => { key.current = undefined; }, []);
   const reset = useCallback(() => { key.current = undefined; }, []);
-  return {getIdempotencyKey, markBusinessIntentChanged, reset};
+  // Consumers commonly place the lifecycle object in an effect dependency list
+  // (for example, a Drawer form reset on open). Keep the object identity stable
+  // so ordinary form changes do not look like a new lifecycle and erase the
+  // user's in-progress values.
+  return useMemo(() => ({getIdempotencyKey, markBusinessIntentChanged, reset}), [getIdempotencyKey, markBusinessIntentChanged, reset]);
 }

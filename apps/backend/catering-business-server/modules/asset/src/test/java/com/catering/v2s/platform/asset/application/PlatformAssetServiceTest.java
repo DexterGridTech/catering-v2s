@@ -81,6 +81,32 @@ class PlatformAssetServiceTest {
         assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.releaseStaged(staged.assetRef(), staged.bindGrant()));
     }
 
+    @Test void catalogReferenceOwnsImageLifecycleAndReleaseIsIdempotentByVersion() {
+        byte[] png = png(0xff2f855a);
+        var staged = assets.stageContent("CATALOG_ITEM_IMAGE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-claim-0001");
+        assertEquals("STAGED", assets.require(staged.assetRef()).status());
+        var active = assets.claimCatalogStaged(staged.assetRef());
+        assertEquals("ACTIVE", active.status());
+        assertEquals("CATALOG_ITEM_IMAGE", active.usage());
+        var released = assets.releaseCatalogStaged(staged.assetRef(), active.version(), "catalog-image-release-0001");
+        assertEquals("RELEASED", released.status());
+        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.claimCatalogStaged(staged.assetRef()));
+    }
+
+    @Test void contentAddressedCatalogStageReusesAnExistingAssetReference() {
+        byte[] png = png(0xff9f1234);
+        var first = assets.stageContent("CATALOG_ITEM_IMAGE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0001");
+        assets.claimCatalogStaged(first.assetRef());
+
+        var replay = assets.stageContent("CATALOG_ITEM_IMAGE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0001");
+
+        var second = assets.stageContent("CATALOG_ITEM_IMAGE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0002");
+
+        assertEquals(first.assetRef(), replay.assetRef());
+        assertEquals(first.assetRef(), second.assetRef());
+        assertEquals("ACTIVE", assets.require(second.assetRef()).status());
+    }
+
     @AfterAll static void cleanup() { if (flyway != null) flyway.clean(); }
 
     private static byte[] png(int argb) {

@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-p3-implementation-manifest",
+  "status": "P3_STATIC_POST_REMEDIATION_AWAITING_CLAUDE_RECHECK",
+  "packageId": "CATALOG-INVENTORY-P3-FRONTEND-L2-20260806",
+  "unitId": "CI-P3-FRONTEND-L2",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "CATALOG-INVENTORY-P3-IMPLEMENTATION-REMEDIATION-20260807",
+  "reviewRoundLimit": 2,
+  "postRound2Repairs": ["R2-M01", "R2-M02", "R2-M03"],
+  "currentByteRemediation": {
+    "sourceReview": "doc/review/platform/2026-08-07-v2s-catalog-inventory-p3-post-remediation-recheck-round3-claude.md",
+    "disposition": "doc/review/platform/2026-08-07-v2s-catalog-inventory-p3-post-remediation-recheck-round3-disposition-codex.md",
+    "recheckRequired": true,
+    "findings": ["N-01"],
+    "currentByteStatusCounts": {
+      "IMPLEMENTED_STATIC": 37,
+      "PARTIAL_STATIC": 42,
+      "BLOCKED_UPSTREAM_CONTRACT": 0,
+      "NOT_IMPLEMENTED": 7,
+      "OUT_OF_SCOPE_STATIC": 3
+    }
+  },
+  "authorization": {
+    "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+    "sha256": "fe8c0d55a6947a4c61005be2061215779f661c9b09665d280c3dc6ff329ea244",
+    "scope": "Dexter-authorized P3 static remediation across operations-admin, generated consumers, and directly implicated catalog/inventory/production-tag owners, including the approved TemporaryPromotion upstream contract repair; no runtime/API/seed/reset authority"
+  },
+  "sourceDenominators": {
+    "iaIds": 89,
+    "l2Definitions": 18,
+    "l2Cases": 43,
+    "fixtureSha256": "63b925b22617705f79215c54f28790c28548bb5f6a4ade8b3e8a988cd6254f6c",
+    "l2ScenarioPath": "contracts/policy/catalog-inventory-l2-scenarios.json",
+    "iaReconciliationPath": "doc/evidence/platform/2026-08-06-v2s-catalog-inventory-p3-ia-control-reconciliation-codex.json",
+    "pageKeys": ["PG-CATALOG-STORE-ITEMS", "PG-INVENTORY-STORE-STATUS", "PG-CATALOG-BRAND-ITEMS"]
+  },
+  "requiredGeneratedArtifacts": [
+    "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+    "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.rtk.ts",
+    "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts"
+  ],
+  "changeSurfaces": [
+    {"path":"contracts/catalog/admin-catalog.json","disposition":"update"},
+    {"path":"contracts/policy/frontend-asset-carryover-manifest.json","disposition":"update"},
+    {"path":"apps/frontend/operations-admin/src/features/catalog-management","disposition":"create"},
+    {"path":"apps/frontend/operations-admin/src/features/inventory-management","disposition":"create"},
+    {"path":"apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx","disposition":"update"},
+    {"path":"apps/frontend/operations-admin/src/app/OperationsApp.tsx","disposition":"update"},
+    {"path":"apps/frontend/operations-admin/src/app/api/OperationsApi.ts","disposition":"update"},
+    {"path":"apps/frontend/operations-admin/src/app/api/OperationsTransport.ts","disposition":"update"},
+    {"path":"apps/frontend/operations-admin/src/app/components/OperationsRequiredScopeSurface.test.tsx","disposition":"update"},
+    {"path":"apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts","disposition":"update"},
+    {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java","disposition":"update"},
+    {"path":"apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts","disposition":"create"},
+    {"path":"apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.rtk.ts","disposition":"create"},
+    {"path":"libraries/frontend/admin-ui-foundation/src/overlay/drawerSurface.ts","disposition":"update"},
+    {"path":"contracts/policy/catalog-inventory-l2-locator-bindings.json","disposition":"create"},
+    {"path":"scripts/generate/catalog-inventory-p3-frontend.mjs","disposition":"create"},
+    {"path":"scripts/generate/catalog-admin-p3.mjs","disposition":"create"},
+    {"path":"scripts/generate/edge-codegen.mjs","disposition":"update"},
+    {"path":"scripts/test/catalog-inventory-l2-fixture.mjs","disposition":"create"},
+    {"path":"scripts/test/catalog-inventory-l2.mjs","disposition":"create"},
+    {"path":"scripts/check/catalog-inventory-p3","disposition":"create"},
+    {"path":"tools/catalog-inventory-p3","disposition":"create"},
+    {"path":"tools/capability-invariants/cli.mjs","disposition":"update"},
+    {"path":"HANDOFF.md","disposition":"update"}
+  ],
+  "exitRequirements": {
+    "foundationReuse": "all lifecycle, drawer, overlay-lock, list-context, HTTP, logging and testId behavior uses foundation or has explicit gap evidence",
+    "locatorBinding": "each of 43 caseIds appears exactly once and only in P3",
+    "iaControlReconciliation": "all 89 IA-IDs appear exactly once; UI IDs carry a source-resolving locator, while contract IDs carry sourceFile plus locator=NOT_APPLICABLE and an explicit no-rendered-control position, with wireframe reference, expected assertion and implementation/runtime status",
+    "business": "managed L2 reports PASS for the catalog/inventory scenarios",
+    "cleanup": "managed local processes, tunnel, remote database namespace and assets report PASS independently",
+    "runtimeDisclosure": "never claim runtime PASS when a task is COMPILED/NOT_EXECUTED",
+    "staticReconciliationCounts": {"IMPLEMENTED_STATIC": 86, "PARTIAL_STATIC": 0, "BLOCKED_UPSTREAM_CONTRACT": 0, "NOT_IMPLEMENTED": 0, "OUT_OF_SCOPE_STATIC": 3},
+    "staticReconciliationCurrentByteCounts": {"IMPLEMENTED_STATIC": 37, "PARTIAL_STATIC": 42, "BLOCKED_UPSTREAM_CONTRACT": 0, "NOT_IMPLEMENTED": 7, "OUT_OF_SCOPE_STATIC": 3},
+    "upstreamScopeOverride": "Dexter explicitly authorized direct repair of P1/P2 owner or generated surfaces when required to close P3 business behavior; the TemporaryPromotion contract, owner and consumer were reopened and repaired because the frozen DTO could not represent the approved IA journey."
+  }
+}

@@ -77,8 +77,9 @@
         "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-STORE-ROLE-REVOKE",
         "BC-IAM-GROUP-INVITE", "BC-IAM-REGION-INVITE", "BC-IAM-PROJECT-INVITE", "BC-IAM-HEAD-COMPANY-INVITE", "BC-IAM-STORE-INVITE",
         "BC-CONTRACT-CREATE", "BC-CONTRACT-EDIT", "BC-CONTRACT-INVALIDATE"
+        ,"EDIT_CATALOG_LIBRARY", "READ_INVENTORY_ADVANCED_DIAGNOSTICS"
       ],
-      "count": 34,
+      "count": 36,
       "rule": "page access grants read entry; only these action keys grant mutations, and neither set implies the other"
     },
     "drawerLifecycleAdaptation": {
@@ -126,6 +127,9 @@
     "OPERATIONS-CONTRACTS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
     "OPERATIONS-USERS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
     "OPERATIONS-STORE-PROFILE": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "testId"]},
+    "OPERATIONS-CATALOG-STORE-ITEMS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-INVENTORY-STORE-STATUS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock", "testId"]},
+    "OPERATIONS-CATALOG-BRAND-ITEMS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
     "OPERATIONS-PASSWORD": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]},
     "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {"v2Consumed": [], "r5Required": ["contextScopedQueryArgs", "testId"]}
   },
@@ -172,6 +176,9 @@
     "OPERATIONS-CONTRACTS": {"required": ["合同", "货号名称"], "forbidden": ["仅货号", "停用门店不可签约", "分期编码"]},
     "OPERATIONS-USERS": {"required": ["邀请成员", "撤销任职"], "forbidden": ["直接新增任职", "直接编辑任职"]},
     "OPERATIONS-STORE-PROFILE": {"required": ["门店资料", "合同"], "forbidden": ["编辑门店", "编辑合同", "已停业"]},
+    "OPERATIONS-CATALOG-STORE-ITEMS": {"required": ["门店商品管理", "商品字典", "商品处理标签"], "forbidden": ["菜单与渠道", "批量导入"]},
+    "OPERATIONS-INVENTORY-STORE-STATUS": {"required": ["门店库存管理", "库存变化", "库存对象"], "forbidden": ["库存现状导出", "销售消耗趋势"]},
+    "OPERATIONS-CATALOG-BRAND-ITEMS": {"required": ["品牌商品管理", "品牌切换", "复制预检"], "forbidden": ["门店余额", "门店流水"]},
     "OPERATIONS-PASSWORD": {"required": ["修改密码", "当前密码"], "forbidden": ["修改他人密码", "显示明文"]},
     "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {"required": ["当前角色"], "forbidden": ["经营指标", "新建业务", "诊断"]}
   },
@@ -197,6 +204,9 @@
       "PG-IAM-HEAD-COMPANY-USERS": "OPERATIONS-USERS",
       "PG-IAM-STORE-USERS": "OPERATIONS-USERS",
       "PG-STORE-PROFILE": "OPERATIONS-STORE-PROFILE",
+      "PG-CATALOG-STORE-ITEMS": "OPERATIONS-CATALOG-STORE-ITEMS",
+      "PG-INVENTORY-STORE-STATUS": "OPERATIONS-INVENTORY-STORE-STATUS",
+      "PG-CATALOG-BRAND-ITEMS": "OPERATIONS-CATALOG-BRAND-ITEMS",
       "HOME-GROUP": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
       "HOME-REGION": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
       "HOME-PROJECT": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
@@ -218,6 +228,9 @@
       "OPERATIONS-CONTRACTS": ["PG-CONTRACT-STORE-MANAGE"],
       "OPERATIONS-USERS": ["PG-IAM-GROUP-USERS", "PG-IAM-REGION-USERS", "PG-IAM-PROJECT-USERS", "PG-IAM-HEAD-COMPANY-USERS", "PG-IAM-STORE-USERS"],
       "OPERATIONS-STORE-PROFILE": ["PG-STORE-PROFILE"],
+      "OPERATIONS-CATALOG-STORE-ITEMS": ["PG-CATALOG-STORE-ITEMS"],
+      "OPERATIONS-INVENTORY-STORE-STATUS": ["PG-INVENTORY-STORE-STATUS"],
+      "OPERATIONS-CATALOG-BRAND-ITEMS": ["PG-CATALOG-BRAND-ITEMS"],
       "OPERATIONS-FIVE-HOME-BOOTSTRAPS": ["HOME-GROUP", "HOME-REGION", "HOME-PROJECT", "HOME-HEAD-COMPANY", "HOME-STORE"]
     },
     "nonCatalogSurfaces": {

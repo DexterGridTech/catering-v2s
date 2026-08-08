@@ -271,7 +271,7 @@ public class WorkspaceAuthenticationService {
         return switch (candidate.dataNodeType()) {
             case ServiceNodeTypes.REGION -> new ScopeSelection(candidate.regionId(), null, null, base.headCompanyId());
             case ServiceNodeTypes.PROJECT -> new ScopeSelection(candidate.regionId(), candidate.projectId(), null, base.headCompanyId());
-            case ServiceNodeTypes.STORE -> new ScopeSelection(candidate.regionId(), candidate.projectId(), candidate.storeId(), base.headCompanyId());
+            case ServiceNodeTypes.STORE -> new ScopeSelection(candidate.regionId(), candidate.projectId(), candidate.storeId(), candidate.headCompanyId());
             case ServiceNodeTypes.HEAD_COMPANY -> new ScopeSelection(base.regionId(), base.projectId(), base.storeId(), candidate.headCompanyId());
             default -> throw new SessionInvalidException();
         };

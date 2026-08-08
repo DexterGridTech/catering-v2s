@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 class ContractProblemAdviceTypedOwnerMappingTest {
     private final ContractProblemAdvice advice = new ContractProblemAdvice();
@@ -47,6 +48,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertProblem(advice.headCompanyBrandAuthorizationInUse(new BusinessEntityService.HeadCompanyBrandAuthorizationInUseException(), request), HttpStatus.CONFLICT, "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE");
         assertProblem(advice.notFound(new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException(), request), HttpStatus.NOT_FOUND, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         assertProblem(advice.notFound(new OrganizationTaskPathService.TaskPathNotFoundException(), request), HttpStatus.NOT_FOUND, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
+        assertProblem(advice.multipartTooLarge(new MaxUploadSizeExceededException(5L * 1024 * 1024), request), HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR");
     }
 
     @Test
@@ -64,6 +66,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertTrue(declared.contains(BusinessEntityService.HeadCompanyBrandAuthorizationInUseException.class));
         assertTrue(declared.contains(ContractCommandReceiptService.ContractReceiptCorruptException.class));
         assertTrue(declared.contains(ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class));
+        assertTrue(declared.contains(MaxUploadSizeExceededException.class));
     }
 
     private static void assertProblem(ResponseEntity<ContractProblemAdvice.Problem> response, HttpStatus status, String code) {

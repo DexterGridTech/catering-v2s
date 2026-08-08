@@ -9,8 +9,15 @@ const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
 const manifestPath = path.join(runtime, 'run-manifest.json');
 const portLockPath = path.join(root, '.runtime/r5/managed-port-lock');
+const localPostgresPort = String(process.env.V2S_DEV_LOCAL_POSTGRES_PORT ?? '25432');
+const localAssetPort = String(process.env.V2S_DEV_LOCAL_ASSET_PORT ?? '29000');
+if (!/^\d{4,5}$/.test(localPostgresPort) || !/^\d{4,5}$/.test(localAssetPort)) throw new Error('R5_DEV_LOCAL_PORT_INVALID');
 const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 const startToken = (pid) => run('ps', ['-o', 'lstart=', '-p', String(pid)]).trim();
+const readStartToken = (pid) => {
+  const result = spawnSync('ps', ['-o', 'lstart=', '-p', String(pid)], {encoding: 'utf8'});
+  return result.status === 0 && result.stdout.trim() ? result.stdout.trim() : null;
+};
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const fail = (reason) => { throw new Error(`R5_DEV_RUNNER=REFUSED; REASON=${reason}`); };
 const run = (command, args, options = {}) => {
@@ -20,12 +27,41 @@ const run = (command, args, options = {}) => {
 };
 const processIdentity = (value) => ({pid: value.pid, pgid: value.pgid ?? value.pid, startToken: value.startToken});
 const cleanupStatusFromTree = (treeReadback) => evaluateCleanupReadback(treeReadback) ? 'PASS' : 'FAIL';
-async function stopOwnedProcess(value) {
+async function stopOwnedIdentity(value) {
   if (!Number.isInteger(value.pid) || typeof value.startToken !== 'string') fail(`PROCESS_IDENTITY_INVALID:${value.name}`);
-  if (pidAlive(value.pid) && startToken(value.pid) !== value.startToken) fail(`PROCESS_IDENTITY_MISMATCH:${value.name}`);
-  const result = await terminateOwnedProcessTree(processIdentity(value), {readTable: readProcessTable});
+  if (!pidAlive(value.pid)) {
+    const table = readProcessTable();
+    const remaining = table.filter((entry) => entry.pgid === (value.pgid ?? value.pid));
+    if (remaining.length > 0) fail(`R5_DEV_PROCESS_TREE_REMAINS:${value.name}`);
+    return [];
+  }
+  const currentStartToken = readStartToken(value.pid);
+  if (!currentStartToken) {
+    // The process can exit between pidAlive and ps.  Re-read ownership before
+    // classifying this as a failure; a gone leader with an empty owned group is
+    // a successful cleanup, while a surviving group remains a hard failure.
+    const table = readProcessTable();
+    const remaining = table.filter((entry) => entry.pgid === (value.pgid ?? value.pid));
+    if (!pidAlive(value.pid) && remaining.length === 0) return [];
+    fail(`PROCESS_IDENTITY_UNAVAILABLE:${value.name}`);
+  }
+  if (currentStartToken !== value.startToken) fail(`PROCESS_IDENTITY_MISMATCH:${value.name}`);
+  let result = await terminateOwnedProcessTree(processIdentity(value), {readTable: readProcessTable});
+  if (result.status !== 'PASS') {
+    const remainingAfterGraceful = readProcessTable().filter((entry) => entry.pgid === (value.pgid ?? value.pid));
+    if (remainingAfterGraceful.length === 0 && !pidAlive(value.pid)) return [];
+    // A managed Vite/Gradle child can outlive a graceful SIGTERM while still
+    // belonging to the exact, start-token-verified process group.  Escalate
+    // once, bounded and only for that owned group; never search by port or
+    // command name and never signal an identity that changed underneath us.
+    result = await terminateOwnedProcessTree(processIdentity(value), {readTable: readProcessTable, signal: 'SIGKILL', waitMs: 5_000});
+  }
   if (result.status !== 'PASS') fail(`R5_DEV_PROCESS_TREE_REMAINS:${value.name}`);
   return result.treeReadback;
+}
+async function stopOwnedProcess(value) {
+  if (value.runtimeIdentity) await stopOwnedIdentity({...value.runtimeIdentity, name: `${value.name}-runtime`});
+  return stopOwnedIdentity(value);
 }
 function environment(mode) {
   const stdout = run(process.execPath, [path.join(root, 'scripts/dev/r5-dev-environment.mjs'), mode, '--json']);
@@ -106,10 +142,10 @@ function provisionObjectStorage(env, secrets) {
 function openTunnel(env) {
   const log = path.join(runtime, 'remote-postgres-tunnel.log');
   const logFd = openSync(log, 'w');
-  const tunnel = spawn('ssh', ['-N', '-o', 'BatchMode=yes', '-o', 'ExitOnForwardFailure=yes', '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=3', '-L', '25432:127.0.0.1:5432', '-L', '29000:127.0.0.1:19000', env.environment.V2S_DEV_REMOTE_HOST], {cwd: root, detached: true, stdio: ['ignore', 'ignore', logFd]});
+  const tunnel = spawn('ssh', ['-N', '-o', 'BatchMode=yes', '-o', 'ExitOnForwardFailure=yes', '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=3', '-L', `${localPostgresPort}:127.0.0.1:5432`, '-L', `${localAssetPort}:127.0.0.1:19000`, env.environment.V2S_DEV_REMOTE_HOST], {cwd: root, detached: true, stdio: ['ignore', 'ignore', logFd]});
   if (!tunnel.pid) fail('REMOTE_TUNNEL_START_FAILED');
   tunnel.unref();
-  return {name: 'remote-dev-tunnels', pid: tunnel.pid, log, command: ['ssh', '-N', '-L', '25432:127.0.0.1:5432', '-L', '29000:127.0.0.1:19000', env.environment.V2S_DEV_REMOTE_HOST]};
+  return {name: 'remote-dev-tunnels', pid: tunnel.pid, log, command: ['ssh', '-N', '-L', `${localPostgresPort}:127.0.0.1:5432`, '-L', `${localAssetPort}:127.0.0.1:19000`, env.environment.V2S_DEV_REMOTE_HOST]};
 }
 
 async function waitForBusinessReady(processValue) {
@@ -123,6 +159,16 @@ async function waitForBusinessReady(processValue) {
     await delay(1_000);
   }
   fail('BUSINESS_SERVER_READINESS_TIMEOUT');
+}
+function readListeningProcessIdentity(port, expectedName) {
+  const listener = spawnSync('lsof', ['-nP', '-t', `-iTCP:${port}`, '-sTCP:LISTEN'], {encoding: 'utf8'});
+  if (listener.status !== 0) fail(`BUSINESS_RUNTIME_LISTENER_UNAVAILABLE:${port}`);
+  const pids = listener.stdout.split(/\s+/).filter(Boolean).map(Number).filter(Number.isInteger);
+  if (pids.length !== 1) fail(`BUSINESS_RUNTIME_LISTENER_AMBIGUOUS:${port}`);
+  const table = readProcessTable();
+  const processValue = table.find((entry) => entry.pid === pids[0]);
+  if (!processValue || !/CateringV2sApplication/.test(processValue.command)) fail(`BUSINESS_RUNTIME_PROCESS_UNVERIFIED:${expectedName}`);
+  return {name: expectedName, pid: processValue.pid, pgid: processValue.pgid, startToken: processValue.startToken, commandSha256: processValue.commandSha256};
 }
 
 async function start() {
@@ -149,7 +195,7 @@ async function start() {
   try {
   const tunnel = openTunnel(env);
   const commands = [
-    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: 'http://127.0.0.1:29000', CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: 'http://127.0.0.1:29000', CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
+    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
     {name: 'platform-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/platform-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_PLATFORM_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
     {name: 'operations-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/operations-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_OPERATIONS_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
   ];
@@ -165,12 +211,13 @@ async function start() {
   });
   const businessServer = processes.find((value) => value.name === 'business-server');
   const readiness = await waitForBusinessReady(businessServer);
+  businessServer.runtimeIdentity = readListeningProcessIdentity(8080, 'business-server-runtime');
   writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, portLock, processes, readiness}, null, 2) + '\n');
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
     for (const value of processes) {
       if (Number.isInteger(value.pid) && typeof value.startToken === 'string') {
-        try { await terminateOwnedProcessTree(processIdentity(value), {readTable: readProcessTable}); } catch { /* cleanup status is surfaced by the failed start */ }
+        try { await stopOwnedProcess(value); } catch { /* cleanup status is surfaced by the failed start */ }
       }
     }
     releasePortLock(portLock); throw error;
@@ -180,7 +227,12 @@ async function stop() {
   if (!existsSync(manifestPath)) { process.stdout.write('R5_DEV_STOP=NO_MANAGED_PROCESS\n'); return; }
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   if (manifest.kind !== 'r5-dev-run-manifest' || !Array.isArray(manifest.processes)) fail('MANIFEST_INVALID');
-  for (const value of manifest.processes) await stopOwnedProcess(value);
+  const failures = [];
+  for (const value of manifest.processes) {
+    try { await stopOwnedProcess(value); }
+    catch (error) { failures.push(error); }
+  }
+  if (failures.length > 0) fail(`R5_DEV_STOP_CLEANUP_FAILED:${failures.map((error) => error.message).join('|')}`);
   releasePortLock(manifest.portLock); rmSync(manifestPath); process.stdout.write('R5_DEV_STOP=PASS\n');
 }
 const mode = process.argv[2];

@@ -5,6 +5,7 @@ import {
   createOperationsAdminClient,
   type EdgeProblemCode as OperationsEdgeProblemCode,
 } from './generated/operations-edge';
+import {CATALOG_INVENTORY_PROBLEM_CODES, createCatalogInventoryClient, type CatalogInventoryProblemCode, type FaceExecutor as CatalogInventoryFaceExecutor, type FaceOperationContracts as CatalogInventoryFaceOperationContracts, type FaceOperationRequest as CatalogInventoryFaceOperationRequest} from './generated/catalog-inventory-edge';
 import {
   type FaceOperationContracts as PublicFaceOperationContracts,
   type FaceOperationRequest as PublicFaceOperationRequest,
@@ -20,7 +21,7 @@ export type ApiProblem = ProblemFeedback & {
   type: string;
   title: string;
   status: number;
-  errorCode: OperationsEdgeProblemCode | PublicEdgeProblemCode | 'NETWORK_ERROR';
+  errorCode: OperationsEdgeProblemCode | PublicEdgeProblemCode | CatalogInventoryProblemCode | 'NETWORK_ERROR';
   correlationId: string;
   /** Contract fields are retained for diagnostics, never rendered by UI. */
   contractTitle?: string;
@@ -53,8 +54,13 @@ const executePublic: PublicFaceExecutor = async <I extends keyof PublicFaceOpera
   request: PublicFaceOperationRequest<I>,
 ): Promise<PublicFaceOperationContracts[I]['response']> => dispatchWire(request.operationId, request);
 
+const executeCatalogInventory: CatalogInventoryFaceExecutor = async <I extends keyof CatalogInventoryFaceOperationContracts>(
+  request: CatalogInventoryFaceOperationRequest<I>,
+): Promise<CatalogInventoryFaceOperationContracts[I]['response']> => dispatchWire(request.operationId, request);
+
 export const operationsClient = createOperationsAdminClient(executeOperations);
 export const publicClient = createPublicClient(executePublic);
+export const catalogInventoryClient = createCatalogInventoryClient(executeCatalogInventory);
 
 /** Generated RTK hook failures retain the same user-facing problem normalization as client calls. */
 export function operationsProblemOf(error: unknown): ApiProblem {
@@ -83,8 +89,14 @@ function problem(error: unknown): ApiProblem {
     const value = data as {type?: unknown; title?: unknown; status?: unknown; detail?: unknown; errorCode?: unknown; correlationId?: unknown};
     const errorCode = isOperationsProblemCode(value.errorCode)
       ? value.errorCode
-      : 'PLATFORM_COMMON_RESULT_UNKNOWN';
-    const feedback = operationsProblemFeedback(errorCode);
+      : isCatalogInventoryProblemCode(value.errorCode)
+        ? value.errorCode
+        : 'PLATFORM_COMMON_RESULT_UNKNOWN';
+    const feedback = isOperationsProblemCode(errorCode)
+      ? operationsProblemFeedback(errorCode)
+      : isCatalogInventoryProblemCode(errorCode)
+        ? {title: '商品与库存操作失败', detail: typeof value.detail === 'string' && value.detail ? value.detail : '请检查当前商品与库存资料后重试。'}
+        : operationsProblemFeedback('PLATFORM_COMMON_RESULT_UNKNOWN');
     return {
       ...feedback,
       type: typeof value.type === 'string' ? value.type : 'about:blank',
@@ -96,4 +108,8 @@ function problem(error: unknown): ApiProblem {
     };
   }
   return {...operationsProblemFeedback('NETWORK_ERROR'), type: 'about:blank', status: 0, errorCode: 'NETWORK_ERROR', correlationId: ''};
+}
+
+function isCatalogInventoryProblemCode(value: unknown): value is CatalogInventoryProblemCode {
+  return typeof value === 'string' && (CATALOG_INVENTORY_PROBLEM_CODES as readonly string[]).includes(value);
 }

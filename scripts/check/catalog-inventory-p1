@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -euo pipefail
+exec node "$(cd "$(dirname "$0")/../.." && pwd)/tools/catalog-inventory-p1/cli.mjs" "$@"
