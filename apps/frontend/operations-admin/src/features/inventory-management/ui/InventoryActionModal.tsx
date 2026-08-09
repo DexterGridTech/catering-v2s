@@ -4,10 +4,11 @@ import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {InventoryAdjustmentRequest, InventoryCountRequest, InventoryIncreaseRequest, InventoryTargetConfigurationRequest, InventoryTargetCurrentView as GeneratedInventoryCurrentView} from '../../../app/api/generated/catalog-inventory-edge';
+import {requireOperationsScopeRef, type OperationsPageContext} from '../../../app/routing/model';
 import {envelopeResult, jsonBody, type InventoryCurrentView, type InventoryWriteResult} from './inventoryManagementModel';
 
 export type InventoryActionKind = 'COUNT' | 'INCREASE' | 'ADJUST' | 'CONFIGURE';
-type Props = {action?: InventoryActionKind; current?: InventoryCurrentView; expectedVersion?: number; onClose: () => void; onCompleted: () => void};
+type Props = {action?: InventoryActionKind; current?: InventoryCurrentView; expectedVersion?: number; queryContext: OperationsPageContext; onClose: () => void; onCompleted: () => void};
 type FormValues = {
   quantity?: number;
   unit?: string;
@@ -83,7 +84,7 @@ function resultFromConfiguration(current: InventoryCurrentView, response: {versi
   };
 }
 
-export function InventoryActionModal({action, current, expectedVersion, onClose, onCompleted}: Props) {
+export function InventoryActionModal({action, current, expectedVersion, queryContext, onClose, onCompleted}: Props) {
   const [form] = Form.useForm<FormValues>();
   const [problem, setProblem] = useState<string>();
   const [result, setResult] = useState<InventoryWriteResult>();
@@ -144,7 +145,7 @@ export function InventoryActionModal({action, current, expectedVersion, onClose,
       }
       lifecycle.markBusinessIntentChanged();
       const headers = {'Idempotency-Key': lifecycle.getIdempotencyKey()};
-      const common = {targetRef: current.target.targetRef, expectedVersion};
+      const common = {dataNodeRef: requireOperationsScopeRef(queryContext), targetRef: current.target.targetRef, expectedVersion};
       if (action === 'CONFIGURE') {
         const countingUnit = values.countingUnit ?? current.configuration.countingUnit ?? current.target.countingUnit ?? current.target.consumptionUnit;
         const existingFactor = current.configuration.conversionFactor ?? String(configuredConversionFactor(current, countingUnit));

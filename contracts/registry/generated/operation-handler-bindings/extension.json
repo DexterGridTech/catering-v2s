@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "generated-owner-operation-bindings",
+  "owner": "extension",
+  "operationCount": 3,
+  "readCount": 2,
+  "commandCount": 1,
+  "dispatchStrategy": "CLOSED_SWITCH",
+  "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
+  "dynamicDispatch": false,
+  "operations": [
+    {
+      "operationId": "getExtensionDefinition",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+      "normalizedPath": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+      "face": "platform-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.extension.application.GetExtensionDefinitionOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "ExtensionDefinition",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "getExtensionDefinition"
+    },
+    {
+      "operationId": "getExtensionEntityCatalog",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions",
+      "normalizedPath": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions",
+      "face": "platform-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.extension.application.GetExtensionEntityCatalogOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "ExtensionEntityCatalogPage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "getExtensionEntityCatalog"
+    },
+    {
+      "operationId": "replaceExtensionDefinition",
+      "method": "PUT",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+      "normalizedPath": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+      "face": "platform-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.extension.application.ReplaceExtensionDefinitionOperation",
+      "wireRequest": "ExtensionDefinitionUpdateRequest",
+      "wireResponse": "ExtensionDefinition",
+      "contextKind": "PLATFORM_COMMAND_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "replaceExtensionDefinition"
+    }
+  ],
+  "commandContextGroups": {
+    "PLATFORM_COMMAND_CONTEXT": [
+      "replaceExtensionDefinition"
+    ]
+  }
+}

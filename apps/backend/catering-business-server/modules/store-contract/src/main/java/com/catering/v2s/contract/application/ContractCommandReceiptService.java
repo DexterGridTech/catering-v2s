@@ -2,6 +2,7 @@ package com.catering.v2s.contract.application;
 
 import com.catering.v2s.contract.api.StoreContractReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -21,9 +22,11 @@ public final class ContractCommandReceiptService {
         String hash = hash(canonicalRequest); jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)))", key);
         Receipt prior = jdbc.query("SELECT request_hash, response_json::text FROM contract.contract_command_receipt WHERE idempotency_key=?", statement -> statement.setString(1, key), result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
         if (prior != null) { if (!hash.equals(prior.hash())) throw new ContractIdempotencyConflictException(); return read(prior.json()); }
-        StoreContractReadback result = command.get();
-        jdbc.update("INSERT INTO contract.contract_command_receipt (idempotency_key, contract_id, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?::jsonb, ?)", key, result.id(), hash, write(result), time.currentEpochMillis());
-        return result;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            StoreContractReadback result = command.get();
+            jdbc.update("INSERT INTO contract.contract_command_receipt (idempotency_key, contract_id, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?::jsonb, ?)", key, result.id(), hash, write(result), time.currentEpochMillis());
+            return result;
+        }
     }
     private static StoreContractReadback read(String value) { try { return JSON.readValue(value, StoreContractReadback.class); } catch (Exception exception) { throw new ContractReceiptCorruptException(exception); } }
     private static String write(StoreContractReadback value) { try { return JSON.writeValueAsString(value); } catch (Exception exception) { throw new IllegalStateException(exception); } }

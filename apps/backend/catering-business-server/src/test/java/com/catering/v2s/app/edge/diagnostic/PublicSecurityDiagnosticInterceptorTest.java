@@ -49,7 +49,7 @@ class PublicSecurityDiagnosticInterceptorTest {
         PublicSecurityDiagnosticInterceptor interceptor = new PublicSecurityDiagnosticInterceptor(registry, events::add);
         Map<Class<?>, Object> controllers = Map.of(
                 PlatformAuthenticationController.class, new PlatformAuthenticationController(null, null, new com.catering.v2s.app.edge.session.EdgeSessionCookieWriter()),
-                OperationsCatalogAuthenticationController.class, new OperationsCatalogAuthenticationController(null, null, new com.catering.v2s.app.edge.session.EdgeSessionCookieWriter(), null),
+                OperationsCatalogAuthenticationController.class, new OperationsCatalogAuthenticationController(null, null, null, new com.catering.v2s.app.edge.session.EdgeSessionCookieWriter(), null),
                 OperationsWorkspaceLoginEntryController.class, new OperationsWorkspaceLoginEntryController(null, null, null, null),
                 OperationsPasswordRecoveryController.class, new OperationsPasswordRecoveryController(null, null, null, new com.catering.v2s.app.edge.session.EdgeSessionCookieWriter()),
                 PublicInvitationController.class, new PublicInvitationController(null, null, null));

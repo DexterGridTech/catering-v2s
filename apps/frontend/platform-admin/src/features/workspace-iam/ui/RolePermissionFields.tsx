@@ -65,16 +65,16 @@ export function RolePermissionFields({catalog, serviceNodeType, fillDrawer = fal
   const pageData = useMemo(() => pageTreeData(catalog, serviceNodeType), [catalog, serviceNodeType]);
   const capabilityData = useMemo(() => capabilityTreeData(catalog, serviceNodeType), [catalog, serviceNodeType]);
   const fields = [
-    {name: 'pageAccessKeys', label: '可使用的功能菜单', treeData: pageData, marker: 'workspace-role-page-access'},
-    {name: 'capabilityKeys', label: '可执行的操作', treeData: capabilityData, marker: 'workspace-role-capability-access'},
+    {name: 'pageAccessKeys', label: '可使用的功能菜单', treeData: pageData, marker: 'workspace-role-page-access', required: true},
+    {name: 'capabilityKeys', label: '可执行的操作', treeData: capabilityData, marker: 'workspace-role-capability-access', required: false},
   ] as const;
   return <div className="workspace-role-permission-grid">
     {fields.map((field) => fillDrawer ? <section className="workspace-role-permission-field" aria-label={field.label} key={field.name}>
       <div className="workspace-role-permission-heading">{field.label}</div>
-      <Form.Item noStyle name={field.name} rules={[{required: true, message: `请选择${field.label}`}]}> 
+      <Form.Item noStyle name={field.name} rules={field.required ? [{required: true, message: `请选择${field.label}`}] : []}> 
         <PermissionTreeField treeData={field.treeData} marker={field.marker} disabled={!catalog || !serviceNodeType}/>
       </Form.Item>
-    </section> : <Form.Item className="workspace-role-permission-field" key={field.name} name={field.name} label={field.label} rules={[{required: true, message: `请选择${field.label}`}]}> 
+    </section> : <Form.Item className="workspace-role-permission-field" key={field.name} name={field.name} label={field.label} rules={field.required ? [{required: true, message: `请选择${field.label}`}] : []}> 
       <PermissionTreeField treeData={field.treeData} marker={field.marker} disabled={!catalog || !serviceNodeType}/>
     </Form.Item>)}
   </div>;

@@ -8,6 +8,7 @@ import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -88,6 +89,34 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         catch (DefinitionNotFoundException absent) { return unconfigured(groupWorkspaceKey, hostType); }
     }
 
+    /** Explicit GET-only operations owner boundary; host-type validation remains in this owner. */
+    @Transactional(readOnly = true)
+    public ExtensionDefinitionReadback operationsManagementDefinition(UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> managementDefinition(workspaceUuid, groupWorkspaceKey, hostType));
+    }
+
+    /** Platform task-read boundary for the complete management catalog. */
+    @Transactional(readOnly = true)
+    public List<ExtensionDefinitionReadback> platformManagementDefinitions(UUID workspaceUuid, String groupWorkspaceKey) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> listManagementDefinitions(workspaceUuid, groupWorkspaceKey));
+    }
+
+    /** Platform task-read boundary for one configured or intentionally unconfigured host type. */
+    @Transactional(readOnly = true)
+    public ExtensionDefinitionReadback platformManagementDefinition(UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> managementDefinition(workspaceUuid, groupWorkspaceKey, hostType));
+    }
+
+    /** Named extension-owner half of the platform contract-detail projection. */
+    @Transactional(readOnly = true)
+    public ExtensionDefinitionReadback platformContractManagementDefinition(UUID workspaceUuid, String groupWorkspaceKey) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> managementDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.CONTRACT));
+    }
+
     private static ExtensionDefinitionReadback unconfigured(String groupWorkspaceKey, String hostType) {
         return new ExtensionDefinitionReadback(groupWorkspaceKey, hostType, 0, 0, List.of());
     }
@@ -100,8 +129,9 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     public ExtensionDefinitionReadback replace(UUID workspaceUuid, String groupWorkspaceKey, String hostType, long expectedVersion, List<Field> fields, AuditActor actor) {
         validateHost(hostType);
         List<Field> normalized = normalize(fields);
-        Long existing = jdbc.query("SELECT revision FROM extension.extension_definition WHERE workspace_uuid=? AND group_workspace_key=? AND entity_type=?", statement -> { statement.setObject(1, workspaceUuid); statement.setString(2, groupWorkspaceKey); statement.setString(3, hostType); }, result -> result.next() ? result.getLong(1) : null);
-        List<ExtensionDefinitionReadback.Field> beforeFields = existing == null ? List.of() : requireDefinition(workspaceUuid, groupWorkspaceKey, hostType).fields();
+        ExtensionDefinitionPreState before = loadExtensionDefinitionPreState(workspaceUuid, groupWorkspaceKey, hostType);
+        Long existing = before == null ? null : before.revision();
+        List<ExtensionDefinitionReadback.Field> beforeFields = before == null ? List.of() : before.fields();
         long nextVersion;
         long now = time.currentEpochMillis();
         if (existing == null) {
@@ -110,12 +140,24 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             jdbc.update("INSERT INTO extension.extension_definition (workspace_uuid, group_workspace_key, entity_type, definitions, revision, updated_at_epoch_millis) VALUES (?, ?, ?, CAST(? AS JSONB), 1, ?)", workspaceUuid, groupWorkspaceKey, hostType, json(normalized), now);
         } else {
             if (existing != expectedVersion) throw new DefinitionVersionConflictException();
-            java.util.Map<String, String> existingTypes = requireDefinition(workspaceUuid, groupWorkspaceKey, hostType).fields().stream().collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, ExtensionDefinitionReadback.Field::fieldType));
+            java.util.Map<String, String> existingTypes = before.fields().stream().collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, ExtensionDefinitionReadback.Field::fieldType));
             if (normalized.stream().anyMatch(field -> existingTypes.containsKey(field.fieldKey()) && !existingTypes.get(field.fieldKey()).equals(field.fieldType()))) throw new DefinitionInvalidException();
             nextVersion = expectedVersion + 1;
             jdbc.update("UPDATE extension.extension_definition SET definitions=CAST(? AS JSONB), revision=?, updated_at_epoch_millis=? WHERE workspace_uuid=? AND group_workspace_key=? AND entity_type=?", json(normalized), nextVersion, now, workspaceUuid, groupWorkspaceKey, hostType);
         }
         audit(workspaceUuid, groupWorkspaceKey, hostType, existing, nextVersion, beforeFields, normalized, actor); return requireDefinition(workspaceUuid, groupWorkspaceKey, hostType);
+    }
+
+    /**
+     * One immutable pre-write owner fact. It contains exactly the revision and field definitions
+     * required for CAS, type preservation and audit; post-write readback remains deliberately fresh.
+     */
+    private ExtensionDefinitionPreState loadExtensionDefinitionPreState(UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
+        return jdbc.query(
+            "SELECT definitions::text, revision FROM extension.extension_definition WHERE workspace_uuid=? AND group_workspace_key=? AND entity_type=?",
+            statement -> { statement.setObject(1, workspaceUuid); statement.setString(2, groupWorkspaceKey); statement.setString(3, hostType); },
+            result -> result.next() ? new ExtensionDefinitionPreState(result.getLong(2), readFields(result.getString(1))) : null
+        );
     }
     @Transactional
     public ExtensionDefinitionReadback replace(UUID workspaceUuid, String groupWorkspaceKey, String hostType, long expectedVersion, List<Field> fields, AuditActor actor, String idempotencyKey) {
@@ -181,6 +223,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     }
     public record Field(String fieldKey, String label, String fieldType, boolean required, List<String> options, String status, Integer displayOrder, String displaySuffix) { }
     public record DraftField(String fieldKey, String label, String fieldType, boolean required, List<String> options, String status, Integer displayOrder, String displaySuffix) { }
+    private record ExtensionDefinitionPreState(long revision, List<ExtensionDefinitionReadback.Field> fields) { }
     private static String json(List<Field> fields) {
         ArrayNode values = JSON.createArrayNode();
         for (Field field : fields) {

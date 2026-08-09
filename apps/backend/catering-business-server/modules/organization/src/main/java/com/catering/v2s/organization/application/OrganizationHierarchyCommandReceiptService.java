@@ -2,6 +2,7 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -41,12 +42,14 @@ public final class OrganizationHierarchyCommandReceiptService {
             if (!requestHash.equals(existing.requestHash())) throw new OrganizationIdempotencyConflictException();
             return deserialize(existing.responseJson());
         }
-        OrganizationNodeReadback result = command.get();
-        jdbc.update(
-            "INSERT INTO organization.organization_command_receipt (workspace_uuid, idempotency_key, entity_id, request_hash, response_json, state, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?::jsonb, 'SUCCEEDED', ?)",
-            workspaceUuid, key, result.id(), requestHash, serialize(result), time.currentEpochMillis()
-        );
-        return result;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            OrganizationNodeReadback result = command.get();
+            jdbc.update(
+                "INSERT INTO organization.organization_command_receipt (workspace_uuid, idempotency_key, entity_id, request_hash, response_json, state, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?::jsonb, 'SUCCEEDED', ?)",
+                workspaceUuid, key, result.id(), requestHash, serialize(result), time.currentEpochMillis()
+            );
+            return result;
+        }
     }
 
     private static OrganizationNodeReadback deserialize(String value) {

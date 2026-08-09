@@ -1,6 +1,7 @@
 package com.catering.v2s.organization.api;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -23,9 +24,31 @@ public record OperationsOwnerScopeGrant(
     }
 
     public boolean matches(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
-        return this.workspaceUuid.equals(workspaceUuid)
-            && this.groupWorkspaceKey.equals(groupWorkspaceKey)
-            && this.targetType.equals(targetType)
-            && this.targetId.equals(targetId);
+        return Objects.equals(this.workspaceUuid, workspaceUuid)
+            && Objects.equals(this.groupWorkspaceKey, groupWorkspaceKey)
+            && Objects.equals(this.targetType, targetType)
+            && Objects.equals(this.targetId, targetId);
+    }
+
+    /**
+     * Command owners must bind the server-minted capability as well as the target scope.
+     * A scope-only match is not authority for a capability-governed write workflow.
+     */
+    public boolean matchesCapability(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId,
+                                     String expectedCapabilityKey) {
+        return matches(workspaceUuid, groupWorkspaceKey, targetType, targetId)
+            && Objects.equals(this.capabilityKey, expectedCapabilityKey);
+    }
+
+    /**
+     * Coordinated owner commands bind the originating operation requirement as
+     * well as the target scope and capability.  A grant minted for another
+     * catalog or inventory operation is not authority to enter that command.
+     */
+    public boolean matchesRequirementAndCapability(UUID workspaceUuid, String groupWorkspaceKey, String targetType,
+                                                   UUID targetId, String expectedRequirementId,
+                                                   String expectedCapabilityKey) {
+        return matchesCapability(workspaceUuid, groupWorkspaceKey, targetType, targetId, expectedCapabilityKey)
+            && Objects.equals(this.requirementId, expectedRequirementId);
     }
 }

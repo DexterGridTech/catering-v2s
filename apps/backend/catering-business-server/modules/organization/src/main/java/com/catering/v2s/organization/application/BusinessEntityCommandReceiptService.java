@@ -2,6 +2,7 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -31,23 +32,27 @@ public final class BusinessEntityCommandReceiptService {
     public BrandAuthorizationAcknowledgement executeAuthorizationAcknowledgement(UUID workspaceUuid, UUID headCompanyId, String idempotencyKey, String canonicalRequest, Runnable command) {
         Receipt existing = claim(workspaceUuid, idempotencyKey, canonicalRequest);
         if (existing != null) return BrandAuthorizationAcknowledgement.INSTANCE;
-        command.run();
-        jdbc.update(
-            "UPDATE organization.organization_command_receipt SET entity_id=?, response_json=CAST(? AS JSONB), state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND state='IN_PROGRESS'",
-            headCompanyId, "{\"status\":204}", workspaceUuid, idempotencyKey
-        );
-        return BrandAuthorizationAcknowledgement.INSTANCE;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            command.run();
+            jdbc.update(
+                "UPDATE organization.organization_command_receipt SET entity_id=?, response_json=CAST(? AS JSONB), state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND state='IN_PROGRESS'",
+                headCompanyId, "{\"status\":204}", workspaceUuid, idempotencyKey
+            );
+            return BrandAuthorizationAcknowledgement.INSTANCE;
+        }
     }
 
     private <T> T execute(UUID workspaceUuid, String idempotencyKey, String canonicalRequest, Supplier<T> command, java.util.function.Function<T, UUID> entityId, java.util.function.Function<T, String> serializer, java.util.function.Function<String, T> deserializer) {
         Receipt existing = claim(workspaceUuid, idempotencyKey, canonicalRequest);
         if (existing != null) return deserializer.apply(existing.responseJson());
-        T result = command.get();
-        jdbc.update(
-            "UPDATE organization.organization_command_receipt SET entity_id=?, response_json=?::jsonb, state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND state='IN_PROGRESS'",
-            entityId.apply(result), serializer.apply(result), workspaceUuid, requiredKey(idempotencyKey)
-        );
-        return result;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            T result = command.get();
+            jdbc.update(
+                "UPDATE organization.organization_command_receipt SET entity_id=?, response_json=?::jsonb, state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND state='IN_PROGRESS'",
+                entityId.apply(result), serializer.apply(result), workspaceUuid, requiredKey(idempotencyKey)
+            );
+            return result;
+        }
     }
 
     /**

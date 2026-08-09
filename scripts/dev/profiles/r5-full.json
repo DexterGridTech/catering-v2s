@@ -2,6 +2,6 @@
   "profile": "r5-full",
   "fixtureContract": "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json",
   "scenarioDenominator": 32,
-  "expectedCounts": {"platformAdmins":3,"groupWorkspaces":3,"activeAssets":2,"extensionDefinitions":8,"commercialGroups":2,"regions":2,"projects":3,"brands":3,"tenants":3,"headCompanies":3,"stores":5,"roles":5,"accounts":6,"assignments":7,"invitationStateFixtures":17,"contracts":5},
+  "expectedCounts": {"platformAdmins":3,"groupWorkspaces":3,"activeAssets":2,"extensionDefinitions":8,"commercialGroups":2,"regions":2,"projects":3,"brands":3,"tenants":3,"headCompanies":3,"stores":5,"roles":7,"accounts":6,"assignments":9,"invitationStateFixtures":19,"contracts":5},
   "forbidden": ["auto-seed", "implicit reset", "direct ordinary-fact SQL", "direct assignment SQL", "plaintext secret evidence"]
 }

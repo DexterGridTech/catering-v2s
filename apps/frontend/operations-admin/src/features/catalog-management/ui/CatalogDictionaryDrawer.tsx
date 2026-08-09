@@ -4,7 +4,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {CatalogDictionaryView, CatalogInventoryEnvelope, ProductionTagPage} from '../../../app/api/generated/catalog-inventory-edge';
-import type {OperationsPageProps} from '../../../app/routing/model';
+import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 
 export type ProductionTagKind = 'PRODUCTION' | 'PACKAGE' | 'LABEL' | 'HANDOFF' | 'REVIEW' | 'OTHER';
 export type ProductionTagCandidate = {code: string; name: string; tagKind?: ProductionTagKind; owner: 'fulfillment-production'};
@@ -85,9 +85,10 @@ export function CatalogDictionaryDrawer({open, initialKind = 'TAG', queryContext
       setProblem(undefined);
       const code = values.code.trim();
       const name = values.name.trim();
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
       if (isProduction) {
         const tagKind = values.tagKind ?? 'PRODUCTION';
-        const response = await createTag(catalogInventoryRtkRequest.createOperationsProductionTag({}, {headers: {...headers, 'Idempotency-Key': lifecycle.getIdempotencyKey()}, body: {dataNodeRef: queryContext.scopeRef ?? undefined, code, tagKind, name}})).unwrap();
+        const response = await createTag(catalogInventoryRtkRequest.createOperationsProductionTag({}, {headers: {...headers, 'Idempotency-Key': lifecycle.getIdempotencyKey()}, body: {dataNodeRef, code, tagKind, name}})).unwrap();
         const readback = (response as CatalogInventoryEnvelope).result as {code?: string; name?: string} | undefined;
         const candidate: ProductionTagCandidate = {code: readback?.code ?? code, name: readback?.name ?? name, tagKind, owner: 'fulfillment-production'};
         onCreated?.(candidate);
@@ -96,7 +97,7 @@ export function CatalogDictionaryDrawer({open, initialKind = 'TAG', queryContext
         lifecycle.reset();
         if (quickManage) onClose();
       } else {
-        await createEntry(catalogInventoryRtkRequest.createOperationsCatalogDictionaryEntry({dictionaryKind: kind}, {headers: {...headers, 'Idempotency-Key': lifecycle.getIdempotencyKey()}, body: {dictionaryKind: kind, code, name}})).unwrap();
+        await createEntry(catalogInventoryRtkRequest.createOperationsCatalogDictionaryEntry({dictionaryKind: kind}, {headers: {...headers, 'Idempotency-Key': lifecycle.getIdempotencyKey()}, body: {dataNodeRef, dictionaryKind: kind, code, name}})).unwrap();
         form.resetFields();
         lifecycle.reset();
         await dictionaryQuery.refetch();
@@ -115,10 +116,11 @@ export function CatalogDictionaryDrawer({open, initialKind = 'TAG', queryContext
     try {
       setProblem(undefined);
       const requestHeaders = {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()};
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
       if (isProduction) {
-        await updateTag(catalogInventoryRtkRequest.updateOperationsProductionTag({tagCode: row.code}, {headers: requestHeaders, body: {tagCode: row.code, expectedVersion: row.version, tagKind: row.tagKind ?? 'OTHER', name}})).unwrap();
+        await updateTag(catalogInventoryRtkRequest.updateOperationsProductionTag({tagCode: row.code}, {headers: requestHeaders, body: {dataNodeRef, tagCode: row.code, expectedVersion: row.version, tagKind: row.tagKind ?? 'OTHER', name}})).unwrap();
       } else {
-        await updateEntry(catalogInventoryRtkRequest.updateOperationsCatalogDictionaryEntry({dictionaryKind: kind, entryCode: row.code}, {headers: requestHeaders, body: {dictionaryKind: kind, entryCode: row.code, expectedVersion: row.version, name}})).unwrap();
+        await updateEntry(catalogInventoryRtkRequest.updateOperationsCatalogDictionaryEntry({dictionaryKind: kind, entryCode: row.code}, {headers: requestHeaders, body: {dataNodeRef, dictionaryKind: kind, entryCode: row.code, expectedVersion: row.version, name}})).unwrap();
       }
       setEditingCode(undefined); setEditingName(''); await refreshRows();
     } catch (error) { setProblem(operationsProblemOf(error).detail || '字典名称更新未完成，请重试。'); }
@@ -129,10 +131,11 @@ export function CatalogDictionaryDrawer({open, initialKind = 'TAG', queryContext
     try {
       setProblem(undefined);
       const requestHeaders = {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()};
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
       if (isProduction) {
-        await transitionTag(catalogInventoryRtkRequest.transitionOperationsProductionTagStatus({tagCode: row.code}, {headers: requestHeaders, body: {tagCode: row.code, expectedVersion: row.version, targetStatus}})).unwrap();
+        await transitionTag(catalogInventoryRtkRequest.transitionOperationsProductionTagStatus({tagCode: row.code}, {headers: requestHeaders, body: {dataNodeRef, tagCode: row.code, expectedVersion: row.version, targetStatus}})).unwrap();
       } else {
-        await transitionEntry(catalogInventoryRtkRequest.transitionOperationsCatalogDictionaryEntryStatus({dictionaryKind: kind, entryCode: row.code}, {headers: requestHeaders, body: {dictionaryKind: kind, entryCode: row.code, expectedVersion: row.version, targetStatus}})).unwrap();
+        await transitionEntry(catalogInventoryRtkRequest.transitionOperationsCatalogDictionaryEntryStatus({dictionaryKind: kind, entryCode: row.code}, {headers: requestHeaders, body: {dataNodeRef, dictionaryKind: kind, entryCode: row.code, expectedVersion: row.version, targetStatus}})).unwrap();
       }
       await refreshRows();
     } catch (error) { setProblem(operationsProblemOf(error).detail || '字典状态更新未完成，请重试。'); }
@@ -148,10 +151,11 @@ export function CatalogDictionaryDrawer({open, initialKind = 'TAG', queryContext
         try {
           setProblem(undefined);
           const requestHeaders = {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()};
+          const dataNodeRef = requireOperationsScopeRef(queryContext);
           if (isProduction) {
-            await transitionTag(catalogInventoryRtkRequest.transitionOperationsProductionTagStatus({tagCode: row.code}, {headers: requestHeaders, body: {tagCode: row.code, expectedVersion: row.version, targetStatus: 'VOIDED'}})).unwrap();
+            await transitionTag(catalogInventoryRtkRequest.transitionOperationsProductionTagStatus({tagCode: row.code}, {headers: requestHeaders, body: {dataNodeRef, tagCode: row.code, expectedVersion: row.version, targetStatus: 'VOIDED'}})).unwrap();
           } else {
-            await transitionEntry(catalogInventoryRtkRequest.transitionOperationsCatalogDictionaryEntryStatus({dictionaryKind: kind, entryCode: row.code}, {headers: requestHeaders, body: {dictionaryKind: kind, entryCode: row.code, expectedVersion: row.version, targetStatus: 'VOIDED'}})).unwrap();
+            await transitionEntry(catalogInventoryRtkRequest.transitionOperationsCatalogDictionaryEntryStatus({dictionaryKind: kind, entryCode: row.code}, {headers: requestHeaders, body: {dataNodeRef, dictionaryKind: kind, entryCode: row.code, expectedVersion: row.version, targetStatus: 'VOIDED'}})).unwrap();
           }
           setRebuildFrom(row);
           await refreshRows();
@@ -170,7 +174,8 @@ export function CatalogDictionaryDrawer({open, initialKind = 'TAG', queryContext
     [orderedCodes[index], orderedCodes[target]] = [orderedCodes[target], orderedCodes[index]];
     try {
       setProblem(undefined);
-      await reorderEntry(catalogInventoryRtkRequest.reorderOperationsCatalogDictionaryEntry({dictionaryKind: kind}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body: {dictionaryKind: kind, orderedCodes}})).unwrap();
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
+      await reorderEntry(catalogInventoryRtkRequest.reorderOperationsCatalogDictionaryEntry({dictionaryKind: kind}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body: {dataNodeRef, dictionaryKind: kind, orderedCodes}})).unwrap();
       await refreshRows();
     } catch (error) { setProblem(operationsProblemOf(error).detail || '字典顺序更新未完成，请重试。'); }
   };

@@ -26,6 +26,13 @@
           "workspace-iam"
         ],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -73,6 +80,13 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -131,6 +145,13 @@
           "inventory"
         ],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -204,7 +225,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             }
           },
           {
@@ -303,6 +325,13 @@
           "fulfillment-production"
         ],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -360,6 +389,12 @@
           "inventory"
         ],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -427,6 +462,12 @@
           "organization"
         ],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -492,6 +533,13 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -515,6 +563,15 @@
           }
         },
         "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "selected data node"
+            }
+          },
           {
             "name": "revision",
             "in": "query",

@@ -1,0 +1,12 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+if [[ "${1:-}" == "--self-test" ]]; then
+  node "$repo_root/scripts/generate/task-read-surface-policy.mjs" --self-test
+elif [[ "${1:-}" == "--snapshot" && -n "${2:-}" && $# -eq 2 ]]; then
+  node "$repo_root/scripts/generate/task-read-surface-policy.mjs" --check
+  node "$repo_root/scripts/test/backend-performance-final-acceptance.mjs" --check "$2"
+  printf 'BP_U05_READ_BUDGET_STATUS=MEASURED_FINAL_SNAPSHOT_ADMITTED\n'
+else
+  node "$repo_root/scripts/generate/task-read-surface-policy.mjs" --check "$@"
+fi

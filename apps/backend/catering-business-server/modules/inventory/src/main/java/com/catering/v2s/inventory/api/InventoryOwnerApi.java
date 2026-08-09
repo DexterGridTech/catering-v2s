@@ -1,7 +1,11 @@
 package com.catering.v2s.inventory.api;
 
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.platform.command.CatalogAuthorizationScope;
+import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.UUID;
 
 /** Public inventory owner boundary. Inventory facts are stored and changed only in inventory schema. */
 public interface InventoryOwnerApi {
@@ -16,20 +20,26 @@ public interface InventoryOwnerApi {
 
     JsonNode read(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType);
 
-    /** See {@link #read(String, String, String, ObjectNode, String, String)}. */
-    default JsonNode write(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey) {
-        return write(operationId, dataNodeRef, brandRef, request, requestId, idempotencyKey, null);
-    }
+    /** Typed task-read boundaries.  The legacy operation-id entrypoint remains deferred to BP-U06. */
+    JsonNode readTargets(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType);
+    JsonNode readTarget(String dataNodeRef, String brandRef, String targetRef, String requestId, String dataNodeType);
+    JsonNode readTargetChangeSummary(String targetRef, String period);
+    JsonNode readTargetBusinessHistory(String targetRef, ObjectNode request, String requestId);
+    JsonNode readTargetConsumptionReferences(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId);
+    JsonNode readTargetLedger(String targetRef, ObjectNode request, String requestId);
+    JsonNode readTargetDiagnostics(String targetRef, String requestId);
 
-    JsonNode write(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey, String dataNodeType);
+    /** Mutating owner boundary; the server-minted grant is rechecked before receipt replay. */
+    JsonNode write(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey, String dataNodeType,
+                   UUID workspaceUuid, String groupWorkspaceKey, OperationsOwnerScopeGrant ownerScopeGrant);
+
+    JsonNode write(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey);
 
     /** Coordinated copy command; inventory owns balance/ledger reset and BOM facts. */
-    JsonNode copy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId);
+    JsonNode copy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
+                  UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
 
-    /** Internal coordinated variant carrying the same idempotency key as the edge command. */
-    default JsonNode copy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey) {
-        return copy(sourceDataNodeRef, targetDataNodeRef, brandRef, request, requestId);
-    }
+    JsonNode copy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey);
 
     /**
      * Read-only owner judgement used by catalog copy preflight and the execute
@@ -37,7 +47,10 @@ public interface InventoryOwnerApi {
      * changed by the approved item closure; it does not write balance or
      * ledger facts.
      */
-    JsonNode preflightCopy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request);
+    JsonNode preflightCopy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request,
+                           UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
+
+    JsonNode preflightCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request);
 
     /**
      * Task-read used by the catalog detail surface.  It returns only the
@@ -45,7 +58,7 @@ public interface InventoryOwnerApi {
      * never exposes balance or ledger facts and therefore is valid for a
      * head-company catalog read as well as a store read.
      */
-    default JsonNode readCatalogInventoryDefinition(String dataNodeRef, String brandRef, String itemCode, String requestId) {
+    default JsonNode readCatalogInventoryDefinition(String dataNodeRef, String brandRef, String itemRef, String requestId) {
         throw new UnsupportedOperationException("inventory definition read is not implemented");
     }
 
@@ -54,7 +67,7 @@ public interface InventoryOwnerApi {
      * decides whether an item still has inventory-owned facts; the catalog
      * coordinator must not infer this from a task-read payload.
      */
-    default JsonNode catalogItemVoidDependencies(String dataNodeRef, String brandRef, String itemCode, String requestId) {
+    default JsonNode catalogItemVoidDependencies(String dataNodeRef, String brandRef, String itemRef, String requestId) {
         throw new UnsupportedOperationException("inventory void-dependency judgement is not implemented");
     }
 
@@ -69,14 +82,16 @@ public interface InventoryOwnerApi {
     }
 
     /** Controlled creation path from a catalog item's inventory/BOM tab. */
-    default JsonNode ensureCatalogInventoryTarget(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey) {
-        throw new UnsupportedOperationException("inventory target ensure is not implemented");
-    }
+    JsonNode ensureCatalogInventoryTarget(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
+                                          UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
+
+    JsonNode ensureCatalogInventoryTarget(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey);
 
     /** Owner command for ProductBom rows; component targets must already exist. */
-    default JsonNode saveCatalogProductBom(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey) {
-        throw new UnsupportedOperationException("product BOM save is not implemented");
-    }
+    JsonNode saveCatalogProductBom(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
+                                   UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
+
+    JsonNode saveCatalogProductBom(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey);
 
     final class Problem extends RuntimeException {
         private final String code;

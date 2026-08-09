@@ -57,6 +57,128 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
         };
     }
 
+    /**
+     * One typed, bounded organization projection for the platform invitation-target selector.
+     * The target family is an enum, never an edge-selected table or order expression.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public PlatformInvitationCandidatePage platformInvitationCandidates(
+        UUID workspaceUuid,
+        String key,
+        PlatformInvitationCandidateQuery query
+    ) {
+        if (workspaceUuid == null || key == null || key.isBlank() || query == null) {
+            throw new IllegalArgumentException("invitation candidate query is required");
+        }
+        List<CandidateRow> rows = invitationCandidateRows(workspaceUuid, key, query.targetType(), query.queryText(), query.page(), query.pageSize(), null);
+        long total = rows.isEmpty() ? 0L : rows.getFirst().total();
+        return new PlatformInvitationCandidatePage(
+            rows.stream().map(row -> new AssignmentCandidate(row.type().name(), row.id(), row.path())).toList(),
+            total,
+            query.page(),
+            query.pageSize()
+        );
+    }
+
+    /**
+     * Exact enabled-target projection for the ROLE candidate branch. It deliberately differs
+     * from persisted-path display: disabled target facts are absent instead of being rendered.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public EnabledInvitationTarget requireEnabledInvitationTarget(
+        UUID workspaceUuid,
+        String key,
+        InvitationTargetRef target
+    ) {
+        if (workspaceUuid == null || key == null || key.isBlank() || target == null) {
+            throw new IllegalArgumentException("enabled invitation target is required");
+        }
+        List<CandidateRow> rows = invitationCandidateRows(workspaceUuid, key, target.targetType(), null, 1, 1, target.targetId());
+        if (rows.size() != 1) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        CandidateRow row = rows.getFirst();
+        return new EnabledInvitationTarget(new InvitationTargetRef(row.type(), row.id()), row.path());
+    }
+
+    private List<CandidateRow> invitationCandidateRows(
+        UUID workspaceUuid,
+        String key,
+        InvitationTargetType targetType,
+        String queryText,
+        int page,
+        int pageSize,
+        UUID requiredTargetId
+    ) {
+        String pattern = queryText == null || queryText.isBlank()
+            ? null
+            : "%" + queryText.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        long offset = (long) (page - 1) * pageSize;
+        return switch (targetType) {
+            case GROUP -> jdbc.query(
+                "SELECT commercial_group_uuid, commercial_group_code || ' ' || commercial_group_name, count(*) OVER() FROM organization.commercial_group "
+                    + "WHERE group_workspace_key=? AND (?::uuid IS NULL OR commercial_group_uuid=?) "
+                    + "AND (?::text IS NULL OR commercial_group_code ILIKE ? ESCAPE '!' OR commercial_group_name ILIKE ? ESCAPE '!') "
+                    + "ORDER BY commercial_group_code LIMIT ? OFFSET ?",
+                (row, index) -> new CandidateRow(InvitationTargetType.GROUP, row.getObject(1, UUID.class), row.getString(2), row.getLong(3)),
+                key, requiredTargetId, requiredTargetId, pattern, pattern, pattern, pageSize, offset
+            );
+            case REGION, PROJECT -> jdbc.query(
+                hierarchyCandidateSql(),
+                (row, index) -> new CandidateRow(targetType, row.getObject(1, UUID.class), row.getString(2), row.getLong(3)),
+                workspaceUuid, key, targetType.name(), requiredTargetId, requiredTargetId, pattern, pattern, pattern,
+                workspaceUuid, key, pageSize, offset
+            );
+            case HEAD_COMPANY -> jdbc.query(
+                "SELECT id, code || ' ' || name, count(*) OVER() FROM organization.head_company "
+                    + "WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND (?::uuid IS NULL OR id=?) "
+                    + "AND (?::text IS NULL OR code ILIKE ? ESCAPE '!' OR name ILIKE ? ESCAPE '!') "
+                    + "ORDER BY code LIMIT ? OFFSET ?",
+                (row, index) -> new CandidateRow(InvitationTargetType.HEAD_COMPANY, row.getObject(1, UUID.class), row.getString(2), row.getLong(3)),
+                workspaceUuid, key, requiredTargetId, requiredTargetId, pattern, pattern, pattern, pageSize, offset
+            );
+            case STORE -> jdbc.query(
+                storeCandidateSql(),
+                (row, index) -> new CandidateRow(InvitationTargetType.STORE, row.getObject(1, UUID.class), row.getString(2), row.getLong(3)),
+                workspaceUuid, key, requiredTargetId, requiredTargetId, pattern, pattern, pattern,
+                workspaceUuid, key, workspaceUuid, key, pageSize, offset
+            );
+        };
+    }
+
+    private static String hierarchyCandidateSql() {
+        return "WITH RECURSIVE candidates AS ("
+            + "SELECT id, parent_id, code, name FROM organization.organization_node "
+            + "WHERE workspace_uuid=? AND group_workspace_key=? AND node_type=? AND status='ENABLED' "
+            + "AND (?::uuid IS NULL OR id=?) AND (?::text IS NULL OR code ILIKE ? ESCAPE '!' OR name ILIKE ? ESCAPE '!')"
+            + "), ancestry AS ("
+            + "SELECT candidates.id AS target_id, candidates.id, candidates.parent_id, candidates.code, candidates.name, 0 AS depth FROM candidates "
+            + "UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id, parent.code, parent.name, ancestry.depth + 1 "
+            + "FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id "
+            + "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?"
+            + "), paths AS ("
+            + "SELECT target_id, string_agg(name || ' ' || code, ' / ' ORDER BY depth DESC) AS display_path FROM ancestry GROUP BY target_id"
+            + ") SELECT candidates.id, paths.display_path, count(*) OVER() FROM candidates JOIN paths ON paths.target_id=candidates.id "
+            + "ORDER BY candidates.code LIMIT ? OFFSET ?";
+    }
+
+    private static String storeCandidateSql() {
+        return "WITH RECURSIVE candidates AS ("
+            + "SELECT store.id, store.project_id, store.code, store.name FROM organization.store store "
+            + "WHERE store.workspace_uuid=? AND store.group_workspace_key=? AND store.status='ENABLED' "
+            + "AND (?::uuid IS NULL OR store.id=?) AND (?::text IS NULL OR store.code ILIKE ? ESCAPE '!' OR store.name ILIKE ? ESCAPE '!')"
+            + "), ancestry AS ("
+            + "SELECT candidates.id AS target_id, project.id, project.parent_id, project.code, project.name, 0 AS depth FROM candidates "
+            + "JOIN organization.organization_node project ON project.id=candidates.project_id AND project.workspace_uuid=? AND project.group_workspace_key=? AND project.node_type='PROJECT' AND project.status='ENABLED' "
+            + "UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id, parent.code, parent.name, ancestry.depth + 1 "
+            + "FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id "
+            + "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?"
+            + "), paths AS ("
+            + "SELECT target_id, string_agg(name || ' ' || code, ' / ' ORDER BY depth DESC) AS project_path FROM ancestry GROUP BY target_id"
+            + ") SELECT candidates.id, paths.project_path || ' / ' || candidates.name || ' ' || candidates.code, count(*) OVER() "
+            + "FROM candidates JOIN paths ON paths.target_id=candidates.id ORDER BY candidates.code LIMIT ? OFFSET ?";
+    }
+
     private List<AssignmentCandidate> candidates(UUID workspaceUuid, String key, String type, List<UUID> ids) {
         if (ids.isEmpty()) return List.of();
         List<OrganizationTaskPathLookup.TaskPathRef> targets = ids.stream()
@@ -71,4 +193,6 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
         }
         return List.copyOf(result);
     }
+
+    private record CandidateRow(InvitationTargetType type, UUID id, String path, long total) { }
 }

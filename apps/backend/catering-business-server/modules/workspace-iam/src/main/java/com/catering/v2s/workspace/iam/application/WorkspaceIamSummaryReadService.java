@@ -17,6 +17,17 @@ public class WorkspaceIamSummaryReadService implements WorkspaceIamSummaryLookup
 
     @Override
     @Transactional(readOnly = true)
+    public AccountAndRoleSummary accountAndRoleSummary(UUID workspaceUuid) {
+        return jdbc.queryForObject(
+            "SELECT (SELECT count(*) FROM workspace_iam.workspace_account WHERE workspace_uuid=?) AS account_count, "
+                + "(SELECT count(*) FROM workspace_iam.workspace_role WHERE workspace_uuid=?) AS role_count",
+            (result, row) -> new AccountAndRoleSummary(result.getLong("account_count"), result.getLong("role_count")),
+            workspaceUuid, workspaceUuid
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public long accountCount(UUID workspaceUuid) {
         return jdbc.queryForObject("SELECT count(*) FROM workspace_iam.workspace_account WHERE workspace_uuid=?", Long.class, workspaceUuid);
     }

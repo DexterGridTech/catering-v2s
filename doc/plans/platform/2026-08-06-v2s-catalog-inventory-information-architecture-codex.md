@@ -17,6 +17,8 @@
 > `StockTarget`/`ProductBom` 定义，供同品牌门店复制；G-12 关于门店真实余额、不可变流水、
 > 扣减/恢复和库存状态的边界继续完整生效。该有限差异同时由本稿 `D-02` 追踪。
 
+> **2026-08-08 Dexter 裁决 supersede（有限）：** `IA-NAV-002`、`IA-STATE-007/008` 以及所有引用“统一编辑商品库”或“高级诊断读取权限”的条目，改按 `doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md` 解释。品牌商品页只由 `EDIT_HEAD_COMPANY_CATALOG` 控制写 UI，门店商品页只由 `EDIT_STORE_CATALOG` 控制，门店库存写只由 `EDIT_STORE_INVENTORY` 控制；高级诊断是已进入库存页且 owner scope 有效时的普通第六区读取，不因 capability 隐藏。历史 IA 文本保留用于追溯，不得再生成旧 key 或旧交互。
+
 ## 0. 设计结论
 
 本期在运营管理后台新增一级导航 **商品与服务**，依次提供：

@@ -56,17 +56,13 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
     @Transactional(readOnly = true)
     public WorkspaceAdministrationPage list(WorkspaceAdministrationPageRequest request) {
         String orderBy = orderBy(request.sortKey(), request.sortDirection());
-        Object[] filters = filters(request);
-        long total = jdbc.queryForObject(
-            "SELECT COUNT(*) FROM platform_workspace.group_workspace WHERE (CAST(? AS text) IS NULL OR name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR group_workspace_key = ?) AND (CAST(? AS text) IS NULL OR operations_title ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR status = ?)",
-            Long.class,
-            filters
-        );
-        List<WorkspaceAdministrationReadback> items = jdbc.query(
-            "SELECT workspace_uuid, group_workspace_key, name, operations_title, logo_asset_ref, notes, status, status_changed_at_epoch_millis, version, created_at_epoch_millis, updated_at_epoch_millis, EXISTS (SELECT 1 FROM organization.commercial_group cg WHERE cg.group_workspace_key = gw.group_workspace_key AND cg.group_workspace_id = gw.id) AS commercial_group_initialized FROM platform_workspace.group_workspace gw WHERE (CAST(? AS text) IS NULL OR name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR group_workspace_key = ?) AND (CAST(? AS text) IS NULL OR operations_title ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR status = ?) ORDER BY " + orderBy + " LIMIT ? OFFSET ?",
-            (result, row) -> mapList(result),
+        List<PageRow> rows = jdbc.query(
+            "SELECT workspace_uuid, group_workspace_key, name, operations_title, logo_asset_ref, notes, status, status_changed_at_epoch_millis, version, created_at_epoch_millis, updated_at_epoch_millis, count(*) OVER() AS total_count FROM platform_workspace.group_workspace WHERE (CAST(? AS text) IS NULL OR name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR group_workspace_key = ?) AND (CAST(? AS text) IS NULL OR operations_title ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR status = ?) ORDER BY " + orderBy + " LIMIT ? OFFSET ?",
+            (result, row) -> new PageRow(map(result), result.getLong("total_count")),
             request.name(), request.name(), request.groupWorkspaceKey(), request.groupWorkspaceKey(), request.operationsTitle(), request.operationsTitle(), request.status(), request.status(), request.pageSize(), request.offset()
         );
+        List<WorkspaceAdministrationReadback> items = rows.stream().map(PageRow::workspace).toList();
+        long total = rows.isEmpty() ? 0L : rows.getFirst().total();
         return new WorkspaceAdministrationPage(items, request.page(), request.pageSize(), total, request.sortKey(), request.sortDirection());
     }
 
@@ -174,9 +170,8 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
     private static String nullableJson(String value) { return value == null ? "null" : "\"" + json(value) + "\""; }
     private static String json(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
     private static WorkspaceAdministrationReadback map(java.sql.ResultSet result) throws java.sql.SQLException { return map(result, false); }
-    private static WorkspaceAdministrationReadback mapList(java.sql.ResultSet result) throws java.sql.SQLException { return map(result, result.getBoolean("commercial_group_initialized")); }
     private static WorkspaceAdministrationReadback map(java.sql.ResultSet result, boolean commercialGroupInitialized) throws java.sql.SQLException { return new WorkspaceAdministrationReadback(result.getObject("workspace_uuid", UUID.class), result.getString("group_workspace_key"), result.getString("name"), result.getString("operations_title"), result.getString("logo_asset_ref"), result.getString("notes"), result.getString("status"), result.getLong("status_changed_at_epoch_millis"), result.getLong("version"), result.getLong("created_at_epoch_millis"), result.getLong("updated_at_epoch_millis"), commercialGroupInitialized); }
-    private static Object[] filters(WorkspaceAdministrationPageRequest request) { return new Object[]{request.name(), request.name(), request.groupWorkspaceKey(), request.groupWorkspaceKey(), request.operationsTitle(), request.operationsTitle(), request.status(), request.status()}; }
+    private record PageRow(WorkspaceAdministrationReadback workspace, long total) { }
     private static String orderBy(String sortKey, String sortDirection) {
         String column = switch (sortKey) { case "NAME" -> "name_normalized"; case "WORKSPACE_KEY" -> "group_workspace_key"; case "UPDATED_AT" -> "updated_at_epoch_millis"; default -> throw new WorkspaceInputInvalidException(); };
         return column + " " + sortDirection + ", group_workspace_key ASC";

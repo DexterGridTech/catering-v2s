@@ -5,7 +5,7 @@ import type {ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {CatalogInventoryEnvelope, LocalCopyCandidatePage, LocalCopyPreflight, LocalCopyReadback} from '../../../app/api/generated/catalog-inventory-edge';
-import type {OperationsPageProps} from '../../../app/routing/model';
+import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {
   decodeLocalCopyCandidatePage,
   decodeLocalCopyPreflight,
@@ -44,7 +44,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
   const [selectedSections, setSelectedSections] = useState<LocalCopyScope[]>(DEFAULT_LOCAL_COPY_SCOPES);
   const [preflight, setPreflight] = useState<LocalCopyPreflightData>();
   const [readback, setReadback] = useState<LocalCopyReadbackData>();
-  const [mappingPreviewSnapshot, setMappingPreviewSnapshot] = useState<LocalCopyPreflightData['mappingPreview']>([]);
+  const [referenceMappingsSnapshot, setReferenceMappingsSnapshot] = useState<LocalCopyPreflightData['referenceMappings']>([]);
   const [preflightPending, setPreflightPending] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [stale, setStale] = useState(false);
@@ -81,7 +81,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
       setSelectedSections(DEFAULT_LOCAL_COPY_SCOPES);
       setPreflight(undefined);
       setReadback(undefined);
-      setMappingPreviewSnapshot([]);
+      setReferenceMappingsSnapshot([]);
       setPreflightPending(false);
       setConfirmed(false);
       setStale(false);
@@ -104,14 +104,15 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
     setPreflightPending(true);
     setStep('bom-mapping');
     try {
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
       const response = await preflightCopy(catalogInventoryRtkRequest.preflightOperationsLocalCatalogCopy({}, {
         headers: {...(headers ?? {}), 'Idempotency-Key': globalThis.crypto.randomUUID()},
-        body: {sourceItemCode: selectedSourceItemCode, targetItemCode, selectedSections},
+        body: {dataNodeRef, sourceItemCode: selectedSourceItemCode, targetItemCode, selectedSections},
       })).unwrap();
       const value = decodeLocalCopyPreflight(response as CatalogInventoryEnvelope<LocalCopyPreflight>);
       if (!value) throw new Error('COPY_PREFLIGHT_SHAPE_MISSING');
       setPreflight(value);
-      setMappingPreviewSnapshot(value.mappingPreview);
+      setReferenceMappingsSnapshot(value.referenceMappings);
       lifecycle.setDirty(true);
     } catch (error) {
       setProblem(error instanceof Error && error.message === 'COPY_PREFLIGHT_SHAPE_MISSING' ? '本库复制预检返回不完整，请重试。' : operationsProblemOf(error).detail);
@@ -133,9 +134,10 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
     try {
       setProblem(undefined);
       const versions = expectedVersions(preflight);
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
       const response = await executeCopy(catalogInventoryRtkRequest.executeOperationsLocalCatalogCopy({}, {
         headers: {...(headers ?? {}), 'Idempotency-Key': submission.getIdempotencyKey()},
-        body: {sourceItemCode: selectedSourceItemCode, targetItemCode, preflightDigest: preflight.preflightDigest, ...versions},
+        body: {dataNodeRef, sourceItemCode: selectedSourceItemCode, targetItemCode, preflightDigest: preflight.preflightDigest, ...versions},
       })).unwrap();
       const value = decodeLocalCopyReadback(response as CatalogInventoryEnvelope<LocalCopyReadback>);
       if (!value) throw new Error('COPY_READBACK_SHAPE_MISSING');
@@ -187,8 +189,8 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
       candidateLoading={candidateLoading}
       candidateError={candidatesQuery.isError}
       onRetry={() => void candidatesQuery.refetch()}
-      onKeywordChange={(value) => { setSourceKeyword(value); setSelectedSourceItemCode(undefined); setPreflight(undefined); setReadback(undefined); setMappingPreviewSnapshot([]); setStale(false); }}
-      onSelect={(code) => { setSelectedSourceItemCode(code); setPreflight(undefined); setReadback(undefined); setMappingPreviewSnapshot([]); setStale(false); lifecycle.setDirty(true); }}
+      onKeywordChange={(value) => { setSourceKeyword(value); setSelectedSourceItemCode(undefined); setPreflight(undefined); setReadback(undefined); setReferenceMappingsSnapshot([]); setStale(false); }}
+      onSelect={(code) => { setSelectedSourceItemCode(code); setPreflight(undefined); setReadback(undefined); setReferenceMappingsSnapshot([]); setStale(false); lifecycle.setDirty(true); }}
       onBack={() => setStep('source-scope')}
       onNext={() => setStep('copy-scope')}
     />}
@@ -196,7 +198,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
       selectedSections={selectedSections}
       selectedSource={selectedSource}
       targetItemCode={targetItemCode}
-      onChange={(values) => { setSelectedSections(values); setPreflight(undefined); setReadback(undefined); setMappingPreviewSnapshot([]); setStale(false); lifecycle.setDirty(true); }}
+      onChange={(values) => { setSelectedSections(values); setPreflight(undefined); setReadback(undefined); setReferenceMappingsSnapshot([]); setStale(false); lifecycle.setDirty(true); }}
       onBack={() => setStep('source-item')}
       onNext={() => void runPreflight()}
       loading={preflightPending}
@@ -204,7 +206,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
     {step === 'bom-mapping' && <BomMappingStep
       preflight={preflight}
       stale={stale}
-      mappingPreviewSnapshot={mappingPreviewSnapshot}
+      referenceMappingsSnapshot={referenceMappingsSnapshot}
       loading={preflightPending}
       onBack={() => { setStep('copy-scope'); setPreflight(undefined); setConfirmed(false); }}
       onNext={() => setStep('preview')}
@@ -306,10 +308,10 @@ function CopyScopeStep({selectedSections, selectedSource, targetItemCode, onChan
   </>;
 }
 
-function BomMappingStep({preflight, stale, mappingPreviewSnapshot, loading, onBack, onNext, onRetry}: {
+function BomMappingStep({preflight, stale, referenceMappingsSnapshot, loading, onBack, onNext, onRetry}: {
   preflight?: LocalCopyPreflightData;
   stale: boolean;
-  mappingPreviewSnapshot: LocalCopyPreflightData['mappingPreview'];
+  referenceMappingsSnapshot: LocalCopyPreflightData['referenceMappings'];
   loading: boolean;
   onBack: () => void;
   onNext: () => void;
@@ -319,14 +321,13 @@ function BomMappingStep({preflight, stale, mappingPreviewSnapshot, loading, onBa
   if (!preflight) return <>
     {stale && <Alert type="warning" showIcon title="预检已失效" description="服务端拒绝了旧 digest；来源商品、复制范围和上次映射结果已保留，请重新生成预检。" {...testId('catalog-local-copy-stale')}/>} 
     {!stale && <Alert type="info" title="尚未生成预检" description="返回复制范围后重新生成预检。"/>}
-    {mappingPreviewSnapshot.length > 0 && <LocalCopyArraySection title="上次预检的 BOM 映射（待刷新）" rows={mappingPreviewSnapshot} locator="catalog-local-copy-mapping-preview-stale" renderRow={renderMappingRow}/>} 
+    {referenceMappingsSnapshot.length > 0 && <LocalCopyArraySection title="上次预检的引用映射（待刷新）" rows={referenceMappingsSnapshot} locator="catalog-local-copy-reference-mappings-stale" renderRow={renderReferenceMappingRow}/>}
     <Space wrap style={{marginTop: 16}}><Button onClick={onBack}>返回复制范围</Button><Button type="primary" onClick={onRetry} {...testId('catalog-local-copy-preflight-retry')}>重新生成预检</Button></Space>
   </>;
   return <>
     <PreflightSummary preflight={preflight}/>
-    <LocalCopyArraySection title="BOM 映射" rows={preflight.mappingPreview} locator="catalog-local-copy-mapping-preview" renderRow={renderMappingRow}/>
+    <LocalCopyArraySection title="引用映射" rows={preflight.referenceMappings} locator="catalog-local-copy-reference-mappings" renderRow={renderReferenceMappingRow}/>
     <LocalCopyArraySection title="闭包对象" rows={preflight.closureItems} locator="catalog-local-copy-closure-items" renderRow={renderClosureRow}/>
-    <LocalCopyArraySection title="引用边" rows={preflight.closureEdges} locator="catalog-local-copy-closure-edges" renderRow={renderClosureEdgeRow}/>
     {preflight.blockingCount > 0 && <Alert type="error" showIcon title="存在阻断项" description="不可复制的结构必须先由 owner 解决；当前预检不能进入预览确认。" {...testId('catalog-local-copy-bom-blocked')}/>} 
     <Space wrap style={{marginTop: 16}}><Button onClick={onBack}>返回复制范围</Button><Button type="primary" disabled={preflight.blockingCount > 0} onClick={onNext} {...testId('catalog-local-copy-bom-mapping-next')}>下一步：预览确认</Button></Space>
   </>;
@@ -347,9 +348,8 @@ function PreviewStep({preflight, readback, confirmed, executeLoading, onConfirm,
     <PreflightSummary preflight={preflight}/>
     <Divider>预览明细</Divider>
     <LocalCopyArraySection title="将覆盖" rows={preflight.closureItems} locator="catalog-local-copy-closure-items" renderRow={renderClosureRow}/>
-    <LocalCopyArraySection title="BOM映射" rows={preflight.mappingPreview} locator="catalog-local-copy-mapping-preview" renderRow={renderMappingRow}/>
+    <LocalCopyArraySection title="引用映射" rows={preflight.referenceMappings} locator="catalog-local-copy-reference-mappings" renderRow={renderReferenceMappingRow}/>
     <LocalCopyArraySection title="已跳过 / 不可复制" rows={preflight.compatibilityResults} locator="catalog-local-copy-compatibility-results" renderRow={renderCompatibilityRow}/>
-    <LocalCopyArraySection title="引用重写" rows={preflight.referenceRewritePreview} locator="catalog-local-copy-reference-rewrite-preview" renderRow={renderReferenceRewriteRow}/>
     {!readback && <>
       <Checkbox checked={confirmed} onChange={(event) => onConfirm(event.target.checked)} disabled={preflight.blockingCount > 0} {...testId('catalog-local-copy-confirm')}>
         我已核对覆盖字段、BOM 映射、跳过项和不可复制项，并确认提交当前版本。
@@ -380,20 +380,17 @@ function renderClosureRow(row: LocalCopyPreflightData['closureItems'][number]) {
   return <Space size={8}><Tag>{row.objectType}</Tag><Typography.Text code>{row.code}</Typography.Text><Typography.Text>{row.name}</Typography.Text><Tag color={row.action === 'SKIP' ? 'gold' : 'blue'}>{row.action}</Tag></Space>;
 }
 
-function renderClosureEdgeRow(row: LocalCopyPreflightData['closureEdges'][number]) {
-  return <Space size={8}><Typography.Text code>{row.fromCode}</Typography.Text><Typography.Text type="secondary">→</Typography.Text><Typography.Text code>{row.toCode}</Typography.Text><Tag>{row.referenceKind}</Tag></Space>;
-}
-
-function renderMappingRow(row: LocalCopyPreflightData['mappingPreview'][number]) {
-  return <Space size={8}><Typography.Text code>{row.fromCode}</Typography.Text><Typography.Text type="secondary">→</Typography.Text><Typography.Text code>{row.toCode}</Typography.Text><Tag>{row.referenceKind}</Tag><Tag color={mappingColor(row.status)}>{row.status}</Tag></Space>;
+function renderReferenceMappingRow(row: LocalCopyPreflightData['referenceMappings'][number]) {
+  return <Space size={8} wrap>
+    <Tag>{row.objectType}</Tag>
+    <Typography.Text code>{row.targetCode}</Typography.Text>
+    {row.targetSkuCode && <Tag>SKU：{row.targetSkuCode}</Tag>}
+    {row.targetOptionValueCode && <Tag>选项：{row.targetOptionValueCode}</Tag>}
+  </Space>;
 }
 
 function renderCompatibilityRow(row: LocalCopyPreflightData['compatibilityResults'][number]) {
   return <Space size={8}><Tag>{row.objectType}</Tag><Tag color={mappingColor(row.result)}>{row.result}</Tag><Typography.Text>{row.reason || '—'}</Typography.Text></Space>;
-}
-
-function renderReferenceRewriteRow(row: LocalCopyPreflightData['referenceRewritePreview'][number]) {
-  return <Space size={8}><Typography.Text code>{row.fromCode}</Typography.Text><Typography.Text type="secondary">→</Typography.Text><Typography.Text code>{row.toCode}</Typography.Text><Tag>{row.referenceKind}</Tag></Space>;
 }
 
 function mappingColor(value: string) {
@@ -410,7 +407,7 @@ function LocalCopyReadbackPanel({readback, onComplete}: {readback: LocalCopyRead
       {key: 'created', label: '新建', children: <ReadbackRows rows={readback.created} locator="catalog-local-copy-created"/>},
       {key: 'reused', label: '复用', children: <ReadbackRows rows={readback.reused} locator="catalog-local-copy-reused"/>},
       {key: 'skipped', label: '跳过', children: <ReadbackRows rows={readback.skipped} locator="catalog-local-copy-skipped"/>},
-      {key: 'mappings', label: '映射', children: <ReadbackMappings rows={readback.mappings}/>} ,
+      {key: 'reference-mappings', label: '引用映射', children: <ReadbackMappings rows={readback.referenceMappings}/>} ,
       {key: 'targets', label: '目标版本', children: <ReadbackVersions rows={readback.targetVersions}/>} ,
       {key: 'owners', label: 'owner 回读', children: <ReadbackOwners rows={readback.ownerReadbacks}/>} ,
     ]}/>
@@ -421,12 +418,16 @@ function ReadbackRows({rows, locator}: {rows: Array<{objectType: string; code: s
   return <span {...testId(locator)}>{rows.length ? rows.map((row) => `${row.objectType}/${row.code}`).join('、') : '—'}</span>;
 }
 
-function ReadbackMappings({rows}: {rows: LocalCopyReadbackData['mappings']}) {
-  return <span {...testId('catalog-local-copy-readback-mappings')}>{rows.length ? rows.map((row) => `${row.fromCode} → ${row.toCode}（${row.referenceKind}）`).join('、') : '—'}</span>;
+function ReadbackMappings({rows}: {rows: LocalCopyReadbackData['referenceMappings']}) {
+  return <span {...testId('catalog-local-copy-readback-reference-mappings')}>{rows.length ? rows.map((row) => referenceMappingLabel(row)).join('、') : '—'}</span>;
 }
 
 function ReadbackVersions({rows}: {rows: LocalCopyReadbackData['targetVersions']}) {
-  return <span {...testId('catalog-local-copy-target-versions')}>{rows.length ? rows.map((row) => `${row.targetRef}: v${row.version}`).join('、') : '—'}</span>;
+  return <span {...testId('catalog-local-copy-target-versions')}>{rows.length ? rows.map((row) => `v${row.version}`).join('、') : '—'}</span>;
+}
+
+function referenceMappingLabel(row: LocalCopyPreflightData['referenceMappings'][number]) {
+  return [row.objectType, row.targetCode, row.targetSkuCode && `SKU：${row.targetSkuCode}`, row.targetOptionValueCode && `选项：${row.targetOptionValueCode}`].filter(Boolean).join(' / ');
 }
 
 function ReadbackOwners({rows}: {rows: LocalCopyReadbackData['ownerReadbacks']}) {

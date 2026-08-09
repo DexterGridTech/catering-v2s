@@ -15,6 +15,12 @@ describe('operations data-scope focused IA contract', () => {
     expect(source).toContain('collapsed = false');
     expect(source).toContain('icon={collapsed ? <ApartmentOutlined/> : undefined}');
     expect(source).toContain('管理范围');
+    expect(source).toContain('className="operations-scope-trigger-summary"');
+    expect(source).toContain('className="operations-scope-trigger-type"');
+    expect(source).toContain('className="operations-scope-trigger-value"');
+    expect(source).toContain('label(node as WorkspaceScopeNode, true)');
+    expect(source).toContain('`切换可查看范围；${scopeSummary}`');
+    expect(source).not.toContain('<Space size={8}><ApartmentOutlined/><Typography.Text strong>管理范围</Typography.Text></Space>');
     expect(source).not.toContain('点击选择');
     expect(source).toContain('Tooltip title={<span>管理范围：{selected ? label(selected) : noDataNodePrompt}</span>}');
   });

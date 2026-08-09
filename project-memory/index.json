@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "project-memory-index",
-  "denominatorSha256": "717c5380b128a1fd3cf570bae8d194b6a2483bb0f541503c0092dd7a4a24f487",
+  "denominatorSha256": "1fd19abd91ee57a7b7b0d8acfea8779c98315f1dd5b6094caaeb0d35a3f41ecc",
   "entries": [
     {
       "id": "kernel.workspace-roadmap",
@@ -1234,7 +1234,9 @@
           "governance",
           "runtime",
           "database",
-          "cleanup"
+          "cleanup",
+          "session",
+          "contract"
         ],
         "triggers": [
           "implementation",
@@ -1260,7 +1262,9 @@
         "IA_RECONCILIATION_SOURCE_BINDING_IS_NOT_SEMANTIC_REVIEW",
         "ANTD_BATCH_PATCH_MUST_PRESERVE_ONE_CONTROL_ONE_RENDER",
         "IA_RECONCILIATION_CATALOG_COPY_SCAN_MUST_INCLUDE_SHELL",
-        "PLATFORM_SUPER_ADMIN_MUST_NOT_ENTER_WORKSPACE_CAPABILITY_MODEL"
+        "PLATFORM_SUPER_ADMIN_MUST_NOT_ENTER_WORKSPACE_CAPABILITY_MODEL",
+        "CATALOG_INVENTORY_SCOPE_BOUND_WRITE_CAPABILITY",
+        "CROSS_LAYER_CONTRACT_CONSUMER_CLOSURE_BEFORE_DYNAMIC_RUN"
       ],
       "assertionSources": [
         {
@@ -1362,6 +1366,26 @@
           "assertionKey": "PLATFORM_SUPER_ADMIN_MUST_NOT_ENTER_WORKSPACE_CAPABILITY_MODEL",
           "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
           "anchor": "### PLATFORM_SUPER_ADMIN_MUST_NOT_ENTER_WORKSPACE_CAPABILITY_MODEL"
+        },
+        {
+          "assertionKey": "CATALOG_INVENTORY_SCOPE_BOUND_WRITE_CAPABILITY",
+          "path": "doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md",
+          "anchor": "## Decision"
+        },
+        {
+          "assertionKey": "CATALOG_INVENTORY_SCOPE_BOUND_WRITE_CAPABILITY",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### CATALOG_INVENTORY_SCOPE_BOUND_WRITE_CAPABILITY"
+        },
+        {
+          "assertionKey": "CROSS_LAYER_CONTRACT_CONSUMER_CLOSURE_BEFORE_DYNAMIC_RUN",
+          "path": "PLATFORM-BLUEPRINT.md",
+          "anchor": "### 跨层变更闭合红线"
+        },
+        {
+          "assertionKey": "CROSS_LAYER_CONTRACT_CONSUMER_CLOSURE_BEFORE_DYNAMIC_RUN",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### CROSS_LAYER_CONTRACT_CONSUMER_CLOSURE"
         }
       ],
       "sourceRefs": [
@@ -1369,13 +1393,14 @@
         "PLATFORM-BLUEPRINT.md",
         "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
         "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
+        "doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md",
         "doc/evidence/platform/rm1/p6/rm1p6-u02-ui-ia-implementation-baseline.json",
         "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
         "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
         "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
         "project-memory/operations/phase-retrospective-and-systemic-repair.md"
       ],
-      "sha256": "72c60ae9235079d5b9f3c17052394343723a7f51409b2bd28a3aca391df0fd21"
+      "sha256": "aa217082dd2dd9500ff3ce59258be46190c5941afe5cd813967c0773657e12ba"
     },
     {
       "id": "operations.business-corpus-parked-domain-intake",

@@ -1,21 +1,14 @@
 package com.catering.v2s.app.edge.operations.audit;
 
 import com.catering.v2s.audit.contract.AuditEntityTypes;
-import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
-
 import com.catering.v2s.app.edge.audit.AuditHistoryWireMapper;
+import com.catering.v2s.audit.read.OperationsAuditTaskReadService;
+import com.catering.v2s.audit.read.OperationsAuditTaskReadService.OperationsAuditQuery;
 import com.catering.v2s.app.edge.generated.wire.AuditHistoryPage;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
-import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
-import com.catering.v2s.contract.application.ContractAuditHistoryService;
-import com.catering.v2s.contract.application.ContractTaskReadService;
-import com.catering.v2s.organization.application.OrganizationAuditHistoryService;
-import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
-import com.catering.v2s.workspace.iam.application.WorkspaceAuditAuthorizationService;
-import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,108 +20,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/operations/audit-history")
 public final class OperationsAuditHistoryController {
     private final OperationsSessionResolver sessions;
-    private final WorkspaceIamAuditHistoryService workspaceIamAudit;
-    private final OrganizationAuditHistoryService organizationAudit;
-    private final ContractAuditHistoryService contractAudit;
-    private final WorkspaceAuditAuthorizationService authorization;
-    private final OrganizationOverviewTaskReadService organizationOverview;
-    private final ContractTaskReadService contractReads;
+    private final OperationsAuditTaskReadService reads;
 
     public OperationsAuditHistoryController(
         OperationsSessionResolver sessions,
-        WorkspaceIamAuditHistoryService workspaceIamAudit,
-        OrganizationAuditHistoryService organizationAudit,
-        ContractAuditHistoryService contractAudit,
-        WorkspaceAuditAuthorizationService authorization,
-        OrganizationOverviewTaskReadService organizationOverview,
-        ContractTaskReadService contractReads
+        OperationsAuditTaskReadService reads
     ) {
         this.sessions = sessions;
-        this.workspaceIamAudit = workspaceIamAudit;
-        this.organizationAudit = organizationAudit;
-        this.contractAudit = contractAudit;
-        this.authorization = authorization;
-        this.organizationOverview = organizationOverview;
-        this.contractReads = contractReads;
+        this.reads = reads;
     }
 
     @GetMapping
     AuditHistoryPage history(EdgeRequestContext request, @RequestParam String groupWorkspaceKey, @RequestParam String entityType, @RequestParam String entityId, @RequestParam(defaultValue = "1") long page, @RequestParam(defaultValue = "20") long pageSize) {
-        var session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        var scope = new AuditReadScope(session.workspaceUuid(), session.groupWorkspaceKey());
-        var target = new AuditTarget(entityType, entityId);
-        requireHostAuthorization(session, entityType, entityId);
-        var result = switch (entityType) {
-            case "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION" -> workspaceIamAudit.read(scope, target, page, pageSize);
-            case "COMMERCIAL_GROUP" -> organizationAudit.readCommercialGroup(scope, target, page, pageSize);
-            case "ORGANIZATION_NODE", "BRAND", "TENANT", AuditEntityTypes.HEAD_COMPANY, AuditEntityTypes.STORE -> organizationAudit.read(scope, target, page, pageSize);
-            case "STORE_CONTRACT" -> contractAudit.read(scope, target, page, pageSize);
+        var facts = sessions.requireWorkspaceReadFacts(request, groupWorkspaceKey);
+        validPage(page, pageSize);
+        AuditTarget target = new AuditTarget(entityType, uuid(entityId).toString());
+        var result = reads.read(facts, switch (entityType) {
+            case "WORKSPACE_ACCOUNT" -> new OperationsAuditQuery.WorkspaceAccount(target, page, pageSize);
+            case "WORKSPACE_INVITATION" -> new OperationsAuditQuery.WorkspaceInvitation(target, page, pageSize);
+            case "COMMERCIAL_GROUP" -> new OperationsAuditQuery.CommercialGroup(target, page, pageSize);
+            case "ORGANIZATION_NODE" -> new OperationsAuditQuery.OrganizationNode(target, page, pageSize);
+            case "BRAND" -> new OperationsAuditQuery.Brand(target, page, pageSize);
+            case "TENANT" -> new OperationsAuditQuery.Tenant(target, page, pageSize);
+            case AuditEntityTypes.HEAD_COMPANY -> new OperationsAuditQuery.HeadCompany(target, page, pageSize);
+            case AuditEntityTypes.STORE -> new OperationsAuditQuery.Store(target, page, pageSize);
+            case "STORE_CONTRACT" -> new OperationsAuditQuery.StoreContract(target, page, pageSize);
             default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
-        };
+        });
         return AuditHistoryWireMapper.page(result);
-    }
-
-    private void requireHostAuthorization(
-        com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session,
-        String entityType,
-        String entityId
-    ) {
-        UUID id = uuid(entityId);
-        switch (entityType) {
-            case "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION" ->
-                authorization.requireWorkspaceSubject(session, entityType, id);
-            case "COMMERCIAL_GROUP" -> authorization.requireGroupHost(session);
-            case "ORGANIZATION_NODE" -> {
-                var item = organizationOverview.detail(
-                    session.workspaceUuid(), session.groupWorkspaceKey(), "HIERARCHY", id
-                );
-                authorization.requireScopedHost(session, item.type(), item.id());
-            }
-            case "BRAND" -> requireGroupEntity(session, "BRAND", id);
-            case "TENANT" -> requireGroupEntity(session, "TENANT", id);
-            case AuditEntityTypes.HEAD_COMPANY -> requireScopedEntity(session, AuditEntityTypes.HEAD_COMPANY, id);
-            case AuditEntityTypes.STORE -> {
-                var item = organizationOverview.detail(
-                    session.workspaceUuid(), session.groupWorkspaceKey(), AuditEntityTypes.STORE, id
-                );
-                authorization.requireScopedHost(session, ServiceNodeTypes.PROJECT, item.project().id());
-            }
-            case "STORE_CONTRACT" -> {
-                var contract = contractReads.view(
-                    session.workspaceUuid(), session.groupWorkspaceKey(), id
-                );
-                authorization.requireScopedHost(session, ServiceNodeTypes.PROJECT, contract.project().id());
-            }
-            default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
-        }
-    }
-
-    private void requireGroupEntity(
-        com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session,
-        String entityType,
-        UUID id
-    ) {
-        var item = organizationOverview.detail(
-            session.workspaceUuid(), session.groupWorkspaceKey(), "BUSINESS_ENTITY", id
-        );
-        if (!entityType.equals(item.type())) {
-            throw new InvalidEdgeRequestException("audit target type does not match host entity");
-        }
-        authorization.requireGroupHost(session);
-    }
-
-    private void requireScopedEntity(
-        com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session,
-        String entityType,
-        UUID id
-    ) {
-        var item = organizationOverview.detail(
-            session.workspaceUuid(), session.groupWorkspaceKey(), "BUSINESS_ENTITY", id
-        );
-        if (!entityType.equals(item.type())) {
-            throw new InvalidEdgeRequestException("audit target type does not match host entity");
-        }
-        authorization.requireScopedHost(session, entityType, id);
     }
 
     private static UUID uuid(String value) {
@@ -136,6 +55,20 @@ public final class OperationsAuditHistoryController {
             return UUID.fromString(value);
         } catch (RuntimeException invalid) {
             throw new InvalidEdgeRequestException("audit target identifier is invalid");
+        }
+    }
+
+    private static void validPage(long page, long pageSize) {
+        if (page < 1 || pageSize < 1 || pageSize > 100) {
+            throw new InvalidEdgeRequestException("audit page is invalid");
+        }
+        try {
+            long offset = Math.multiplyExact(page - 1, pageSize);
+            if (offset >= Long.MAX_VALUE - pageSize) {
+                throw new ArithmeticException("audit page end is outside the supported range");
+            }
+        } catch (ArithmeticException overflow) {
+            throw new InvalidEdgeRequestException("audit page is invalid");
         }
     }
 }

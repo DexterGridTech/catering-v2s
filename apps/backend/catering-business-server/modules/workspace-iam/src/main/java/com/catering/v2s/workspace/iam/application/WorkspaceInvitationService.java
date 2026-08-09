@@ -13,6 +13,7 @@ import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.StoreAssignmentLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.seed.DevFixedOtpIssuer;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
@@ -218,17 +219,16 @@ public class WorkspaceInvitationService {
 
     private List<ManagementInvitationView> managementViews(List<WorkspaceInvitationReadback> invitations) {
         if (invitations.isEmpty()) return List.of();
-        Map<UUID, List<AssignmentIntent>> intentsByInvitation = intentsByInvitation(invitations);
-        return managementViews(invitations, intentsByInvitation);
+        InvitationAssignmentIntentFacts facts = loadInvitationAssignmentIntentFacts(invitations);
+        return managementViews(invitations, facts);
     }
 
-    private List<ManagementInvitationView> managementViews(List<WorkspaceInvitationReadback> invitations, Map<UUID, List<AssignmentIntent>> intentsByInvitation) {
+    private List<ManagementInvitationView> managementViews(List<WorkspaceInvitationReadback> invitations, InvitationAssignmentIntentFacts facts) {
         if (invitations.isEmpty()) return List.of();
-        Map<UUID, List<String>> roleNamesByInvitation = roleNamesByInvitation(invitations);
         Map<UUID, String> issuerNamesByInvitation = issuerNamesByInvitation(invitations);
         Invitation owner = owner(invitations.getFirst());
-        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths = paths(owner, invitations.stream().flatMap(invitation -> intentsByInvitation.getOrDefault(invitation.id(), List.of()).stream()).toList());
-        return invitations.stream().map(invitation -> managementView(invitation, intentsByInvitation.get(invitation.id()), roleNamesByInvitation.get(invitation.id()), issuerNamesByInvitation.get(invitation.id()), paths)).toList();
+        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths = paths(owner, invitations.stream().flatMap(invitation -> facts.intentsByInvitation().getOrDefault(invitation.id(), List.of()).stream()).toList());
+        return invitations.stream().map(invitation -> managementView(invitation, facts.intentsByInvitation().get(invitation.id()), facts.roleNamesByInvitation().get(invitation.id()), issuerNamesByInvitation.get(invitation.id()), paths)).toList();
     }
 
     private ManagementInvitationView managementView(WorkspaceInvitationReadback invitation, List<AssignmentIntent> intents, List<String> roleNames, String issuerDisplayName, Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths) {
@@ -278,7 +278,7 @@ public class WorkspaceInvitationService {
             WorkspaceInvitationReadback.class,
             () -> {
                 cancel(workspaceUuid, groupWorkspaceKey, invitationId, expectedVersion, actor);
-                return readback(workspaceUuid, groupWorkspaceKey, invitationId);
+                return OwnerOperationDiagnostics.readback(() -> readback(workspaceUuid, groupWorkspaceKey, invitationId));
             }
         );
     }
@@ -540,28 +540,31 @@ public class WorkspaceInvitationService {
         return accountId;
     }
 
-    private Map<UUID, List<AssignmentIntent>> intentsByInvitation(List<WorkspaceInvitationReadback> invitations) {
+    /**
+     * Immutable management-view facts for one invitation set.  Intent rows and role display
+     * names share one owner-local join rather than issuing sibling reads for the same ids.
+     */
+    private InvitationAssignmentIntentFacts loadInvitationAssignmentIntentFacts(List<WorkspaceInvitationReadback> invitations) {
         List<UUID> ids = invitations.stream().map(WorkspaceInvitationReadback::id).toList();
-        Map<UUID, List<AssignmentIntent>> result = new LinkedHashMap<>();
-        ids.forEach(id -> result.put(id, new ArrayList<>()));
+        Map<UUID, List<AssignmentIntent>> intents = new LinkedHashMap<>();
+        Map<UUID, List<String>> roleNames = new LinkedHashMap<>();
+        ids.forEach(id -> { intents.put(id, new ArrayList<>()); roleNames.put(id, new ArrayList<>()); });
         jdbc.query(
-            "SELECT invitation_id, role_id, service_node_type, service_node_id FROM workspace_iam.invitation_assignment_intent WHERE invitation_id IN (" + placeholders(ids.size()) + ") ORDER BY invitation_id, service_node_type, service_node_id",
+            "SELECT intent.invitation_id, intent.role_id, intent.service_node_type, intent.service_node_id, role.name FROM workspace_iam.invitation_assignment_intent intent JOIN workspace_iam.workspace_role role ON role.id=intent.role_id WHERE intent.invitation_id IN (" + placeholders(ids.size()) + ") ORDER BY intent.invitation_id, intent.service_node_type, intent.service_node_id, role.name",
             statement -> { for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index)); },
-            (org.springframework.jdbc.core.RowCallbackHandler) row -> result.get(row.getObject(1, UUID.class)).add(new AssignmentIntent(row.getObject(2, UUID.class), row.getString(3), row.getObject(4, UUID.class)))
+            (org.springframework.jdbc.core.RowCallbackHandler) row -> {
+                UUID invitationId = row.getObject(1, UUID.class);
+                intents.get(invitationId).add(new AssignmentIntent(row.getObject(2, UUID.class), row.getString(3), row.getObject(4, UUID.class)));
+                roleNames.get(invitationId).add(row.getString(5));
+            }
         );
-        return Map.copyOf(result);
+        return new InvitationAssignmentIntentFacts(copyLists(intents), copyLists(roleNames));
     }
 
-    private Map<UUID, List<String>> roleNamesByInvitation(List<WorkspaceInvitationReadback> invitations) {
-        List<UUID> ids = invitations.stream().map(WorkspaceInvitationReadback::id).toList();
-        Map<UUID, List<String>> result = new LinkedHashMap<>();
-        ids.forEach(id -> result.put(id, new ArrayList<>()));
-        jdbc.query(
-            "SELECT intent.invitation_id, role.name FROM workspace_iam.invitation_assignment_intent intent JOIN workspace_iam.workspace_role role ON role.id=intent.role_id WHERE intent.invitation_id IN (" + placeholders(ids.size()) + ") ORDER BY intent.invitation_id, role.name",
-            statement -> { for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index)); },
-            (org.springframework.jdbc.core.RowCallbackHandler) row -> result.get(row.getObject(1, UUID.class)).add(row.getString(2))
-        );
-        return Map.copyOf(result);
+    private static <T> Map<UUID, List<T>> copyLists(Map<UUID, List<T>> values) {
+        Map<UUID, List<T>> copy = new LinkedHashMap<>();
+        values.forEach((id, value) -> copy.put(id, List.copyOf(value)));
+        return Map.copyOf(copy);
     }
 
     private Map<UUID, String> issuerNamesByInvitation(List<WorkspaceInvitationReadback> invitations) {
@@ -716,6 +719,7 @@ public class WorkspaceInvitationService {
         }
     }
     private record Invitation(UUID id, UUID workspaceUuid, String groupWorkspaceKey, String mobile, String status, long expiresAtEpochMillis, long version) { }
+    private record InvitationAssignmentIntentFacts(Map<UUID, List<AssignmentIntent>> intentsByInvitation, Map<UUID, List<String>> roleNamesByInvitation) { }
     private record Progress(String loginName, String displayName, String passwordHash, UUID accountId) { }
     public static final class InvitationNotFoundException extends RuntimeException { }
     public static final class InvitationStateException extends RuntimeException { }

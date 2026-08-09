@@ -1,0 +1,1705 @@
+{
+  "schemaVersion": 1,
+  "kind": "task-read-surface-policy",
+  "status": "DESIGN_TIME_SEMANTIC_TRUTH_PENDING_IMPLEMENTATION",
+  "exactSet": {
+    "getOperations": 83,
+    "taskReads": 78,
+    "protocolReadExemptions": 5
+  },
+  "readBudgetComponentSchema": {
+    "closedVocabulary": [
+      "CONTEXT_WORKSPACE_IAM",
+      "CONTEXT_ORGANIZATION",
+      "CONTEXT_PLATFORM_IAM",
+      "CONTEXT_PLATFORM_WORKSPACE",
+      "PRIMARY_QUERY",
+      "OPTIONAL_COUNT",
+      "UNCLASSIFIED"
+    ],
+    "requestTotalRule": "component totals equal request databaseOperationCount",
+    "unclassifiedMustEqual": 0,
+    "capBasis": "LOGICAL_STATEMENT"
+  },
+  "policyInvariants": [
+    "rows are semantic authoring input; a generator may validate but must not infer row meaning",
+    "all task reads use request-scope measurement with declaredExtrasCap=0",
+    "WorkspaceReadAuthorizationFacts are minted from fresh query and never WorkspaceSessionRequestCache",
+    "C5 POST commands are not task-read rows and may not call TaskReadService",
+    "PLATFORM_AUDIT_BRANCHED preserves six existing enabled-workspace branches and leaves PLATFORM_ADMIN ungated"
+  ],
+  "sessionEntryAuthentication": {
+    "operationId": "getOperationsWorkspaceSessionEntry",
+    "fact": "SessionEntryAuthenticationFacts",
+    "controllerSourceInvocation": "reads.sessionEntry(",
+    "ownerSourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#sessionEntryAuthenticationFacts",
+    "requiredOutcomes": [
+      "SELECT_IDENTITY",
+      "PASSWORD_CHANGE_REQUIRED"
+    ],
+    "reason": "session entry is authenticated but may legitimately have no current assignment or require a password change; it must not use active-assignment WRA"
+  },
+  "rows": [
+    {
+      "operationId": "getCurrentPlatformSession",
+      "disposition": "PROTOCOL_READ_EXEMPT",
+      "reason": "platform credential/session protocol; no task query",
+      "completionDatabaseEvidence": "REQUIRED_NO_BUDGET"
+    },
+    {
+      "operationId": "getExtensionDefinition",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java#detail",
+      "normalFixture": "PERF-READ-V1:getExtensionDefinition:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#platformManagementDefinition"
+    },
+    {
+      "operationId": "getExtensionEntityCatalog",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java#list",
+      "normalFixture": "PERF-READ-V1:getExtensionEntityCatalog:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#platformManagementDefinitions"
+    },
+    {
+      "operationId": "getOperationsBrandCatalogCopyCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#brandCopyCandidates",
+      "normalFixture": "PERF-READ-V1:getOperationsBrandCatalogCopyCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readBrandCatalogCopyCandidates"
+    },
+    {
+      "operationId": "getOperationsCatalogDictionary",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#dictionary",
+      "normalFixture": "PERF-READ-V1:getOperationsCatalogDictionary:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readCatalogDictionary"
+    },
+    {
+      "operationId": "getOperationsCatalogItem",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#item",
+      "normalFixture": "PERF-READ-V1:getOperationsCatalogItem:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readCatalogItem"
+    },
+    {
+      "operationId": "getOperationsCatalogItems",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#items",
+      "normalFixture": "PERF-READ-V1:getOperationsCatalogItems:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readCatalogItems"
+    },
+    {
+      "operationId": "getOperationsCatalogNavigation",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#navigation",
+      "normalFixture": "PERF-READ-V1:getOperationsCatalogNavigation:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readCatalogNavigation"
+    },
+    {
+      "operationId": "getOperationsCatalogShapeManifest",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#shapeManifest",
+      "normalFixture": "PERF-READ-V1:getOperationsCatalogShapeManifest:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readCatalogShapeManifest"
+    },
+    {
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#workbenchContext",
+      "normalFixture": "PERF-READ-V1:getOperationsCatalogWorkbenchContext:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readCatalogWorkbenchContext"
+    },
+    {
+      "operationId": "getOperationsContract",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#detail",
+      "normalFixture": "PERF-READ-V1:getOperationsContract:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java#operationsTaskView"
+    },
+    {
+      "operationId": "getOperationsContractCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#candidates",
+      "normalFixture": "PERF-READ-V1:getOperationsContractCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java#operationsTaskCandidates"
+    },
+    {
+      "operationId": "getOperationsContractExtensionDefinition",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#extensionDefinition",
+      "normalFixture": "PERF-READ-V1:getOperationsContractExtensionDefinition:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#operationsManagementDefinition"
+    },
+    {
+      "operationId": "getOperationsContracts",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#list",
+      "normalFixture": "PERF-READ-V1:getOperationsContracts:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java#operationsTaskPage"
+    },
+    {
+      "operationId": "getOperationsEntityAuditHistory",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryController.java#history",
+      "normalFixture": "PERF-READ-V1:getOperationsEntityAuditHistory:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/audit-read/src/main/java/com/catering/v2s/audit/read/OperationsAuditTaskReadService.java#read",
+      "futureAuthorizationProjection": "AuditTargetAuthorizationProjection",
+      "operationsAuditSourceRequirement": {
+        "readerPath": "apps/backend/catering-business-server/modules/audit-read/src/main/java/com/catering/v2s/audit/read/OperationsAuditTaskReadService.java",
+        "readerMethod": "read",
+        "edgeCall": "reads.read(",
+        "forbiddenEdgeReads": [
+          {"pattern": "\\bauthorization\\s*\\."},
+          {"pattern": "\\borganizationOverview\\s*\\.\\s*detail\\s*\\("},
+          {"pattern": "\\bcontractReads\\s*\\.\\s*view\\s*\\("},
+          {"pattern": "\\bworkspaceIamAudit\\s*\\."},
+          {"pattern": "\\borganizationAudit\\s*\\."},
+          {"pattern": "\\bcontractAudit\\s*\\."}
+        ],
+        "status": "SOURCE_IMPLEMENTED_UNMEASURED"
+      }
+    },
+    {
+      "operationId": "getOperationsFixedStoreContracts",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileController.java#contracts",
+      "normalFixture": "PERF-READ-V1:getOperationsFixedStoreContracts:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java#operationsFixedStoreContractPage"
+    },
+    {
+      "operationId": "getOperationsInventoryTarget",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#inventoryTarget",
+      "normalFixture": "PERF-READ-V1:getOperationsInventoryTarget:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readInventoryTarget"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetBusinessHistory",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#inventoryTargetBusinessHistory",
+      "normalFixture": "PERF-READ-V1:getOperationsInventoryTargetBusinessHistory:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readInventoryTargetBusinessHistory"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetChangeSummary",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#inventoryTargetChanges",
+      "normalFixture": "PERF-READ-V1:getOperationsInventoryTargetChangeSummary:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readInventoryTargetChangeSummary"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetConsumptionReferences",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#inventoryTargetConsumptionReferences",
+      "normalFixture": "PERF-READ-V1:getOperationsInventoryTargetConsumptionReferences:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readInventoryTargetConsumptionReferences"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetDiagnostics",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#inventoryTargetDiagnostics",
+      "normalFixture": "PERF-READ-V1:getOperationsInventoryTargetDiagnostics:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readInventoryTargetDiagnostics"
+    },
+    {
+      "operationId": "getOperationsInventoryTargetLedger",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#inventoryTargetLedger",
+      "normalFixture": "PERF-READ-V1:getOperationsInventoryTargetLedger:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readInventoryTargetLedger"
+    },
+    {
+      "operationId": "getOperationsInventoryTargets",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#inventoryTargets",
+      "normalFixture": "PERF-READ-V1:getOperationsInventoryTargets:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readInventoryTargets"
+    },
+    {
+      "operationId": "getOperationsLocalCatalogCopyCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#localCopyCandidates",
+      "normalFixture": "PERF-READ-V1:getOperationsLocalCatalogCopyCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readLocalCatalogCopyCandidates"
+    },
+    {
+      "operationId": "getOperationsOrganizationBrand",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#brand",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationBrand:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#brand"
+    },
+    {
+      "operationId": "getOperationsOrganizationBrands",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#brands",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationBrands:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#brands"
+    },
+    {
+      "operationId": "getOperationsOrganizationBusinessEntityExtensionDefinition",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationExtensionController.java#businessEntityDefinition",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationBusinessEntityExtensionDefinition:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#operationsManagementDefinition"
+    },
+    {
+      "operationId": "getOperationsOrganizationCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationCandidateController.java#page",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java#operationsCandidatePage"
+    },
+    {
+      "operationId": "getOperationsOrganizationHeadCompanies",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#headCompanies",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationHeadCompanies:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#headCompanies"
+    },
+    {
+      "operationId": "getOperationsOrganizationHeadCompany",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#headCompany",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationHeadCompany:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#headCompany"
+    },
+    {
+      "operationId": "getOperationsOrganizationHierarchy",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#list",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationHierarchy:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#hierarchy"
+    },
+    {
+      "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationExtensionController.java#hierarchyDefinition",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationHierarchyExtensionDefinition:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#operationsManagementDefinition"
+    },
+    {
+      "operationId": "getOperationsOrganizationStore",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#detail",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationStore:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#store"
+    },
+    {
+      "operationId": "getOperationsOrganizationStoreCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#candidates",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationStoreCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java#operationsStoreCandidates"
+    },
+    {
+      "operationId": "getOperationsOrganizationStoreExtensionDefinition",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationExtensionController.java#storeDefinition",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationStoreExtensionDefinition:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#operationsManagementDefinition"
+    },
+    {
+      "operationId": "getOperationsOrganizationStores",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#list",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationStores:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#stores"
+    },
+    {
+      "operationId": "getOperationsOrganizationTenant",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#tenant",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationTenant:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#tenant"
+    },
+    {
+      "operationId": "getOperationsOrganizationTenants",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#tenants",
+      "normalFixture": "PERF-READ-V1:getOperationsOrganizationTenants:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#tenants"
+    },
+    {
+      "operationId": "getOperationsProductionTags",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#productionTags",
+      "normalFixture": "PERF-READ-V1:getOperationsProductionTags:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java#readProductionTags"
+    },
+    {
+      "operationId": "getOperationsStoreProfile",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileController.java#profile",
+      "normalFixture": "PERF-READ-V1:getOperationsStoreProfile:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java#store"
+    },
+    {
+      "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java#candidates",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceGroupInvitationCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitationCandidates"
+    },
+    {
+      "operationId": "getOperationsWorkspaceGroupInvitations",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#list",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceGroupInvitations:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitations"
+    },
+    {
+      "operationId": "getOperationsWorkspaceGroupUser",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#page",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceGroupUser:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userPage"
+    },
+    {
+      "operationId": "getOperationsWorkspaceGroupUserAccount",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#detail",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceGroupUserAccount:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userDetail"
+    },
+    {
+      "operationId": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java#candidates",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceHeadCompanyInvitationCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitationCandidates"
+    },
+    {
+      "operationId": "getOperationsWorkspaceHeadCompanyInvitations",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#list",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceHeadCompanyInvitations:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitations"
+    },
+    {
+      "operationId": "getOperationsWorkspaceHeadCompanyUser",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#page",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceHeadCompanyUser:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userPage"
+    },
+    {
+      "operationId": "getOperationsWorkspaceHeadCompanyUserAccount",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#detail",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceHeadCompanyUserAccount:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userDetail"
+    },
+    {
+      "operationId": "getOperationsWorkspaceLoginEntry",
+      "disposition": "PROTOCOL_READ_EXEMPT",
+      "reason": "pre-login workspace landing; no authenticated session; never mint workspace facts",
+      "completionDatabaseEvidence": "REQUIRED_NO_BUDGET"
+    },
+    {
+      "operationId": "getOperationsWorkspaceProjectInvitationCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java#candidates",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceProjectInvitationCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitationCandidates"
+    },
+    {
+      "operationId": "getOperationsWorkspaceProjectInvitations",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#list",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceProjectInvitations:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitations"
+    },
+    {
+      "operationId": "getOperationsWorkspaceProjectUser",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#page",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceProjectUser:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userPage"
+    },
+    {
+      "operationId": "getOperationsWorkspaceProjectUserAccount",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#detail",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceProjectUserAccount:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userDetail"
+    },
+    {
+      "operationId": "getOperationsWorkspaceRegionInvitationCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java#candidates",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceRegionInvitationCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitationCandidates"
+    },
+    {
+      "operationId": "getOperationsWorkspaceRegionInvitations",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#list",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceRegionInvitations:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitations"
+    },
+    {
+      "operationId": "getOperationsWorkspaceRegionUser",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#page",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceRegionUser:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userPage"
+    },
+    {
+      "operationId": "getOperationsWorkspaceRegionUserAccount",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#detail",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceRegionUserAccount:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userDetail"
+    },
+    {
+      "operationId": "getOperationsWorkspaceSessionEntry",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "SessionEntryAuthenticationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#entry",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceSessionEntry:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#sessionEntry"
+    },
+    {
+      "operationId": "getOperationsWorkspaceStoreInvitationCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationCandidateController.java#candidates",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceStoreInvitationCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitationCandidates"
+    },
+    {
+      "operationId": "getOperationsWorkspaceStoreInvitations",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#list",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceStoreInvitations:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#invitations"
+    },
+    {
+      "operationId": "getOperationsWorkspaceStoreUser",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#page",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceStoreUser:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userPage"
+    },
+    {
+      "operationId": "getOperationsWorkspaceStoreUserAccount",
+      "disposition": "TASK_READ",
+      "readContextKind": "OPERATIONS_SCOPED",
+      "requiredFactSet": [
+        "WorkspaceReadAuthorizationFacts",
+        "VisibleOrganizationFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#detail",
+      "normalFixture": "PERF-READ-V1:getOperationsWorkspaceStoreUserAccount:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java#userDetail"
+    },
+    {
+      "operationId": "getPlatformAdminDetail",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_GLOBAL",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#detail",
+      "normalFixture": "PERF-READ-V1:getPlatformAdminDetail:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#platformAdministratorDetail"
+    },
+    {
+      "operationId": "getPlatformAdminPage",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_GLOBAL",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 1,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#list",
+      "normalFixture": "PERF-READ-V1:getPlatformAdminPage:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal page fixture has at least two matching rows and valid total",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#platformAdministratorPage"
+    },
+    {
+      "operationId": "getPlatformContractOverviewDetail",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 2,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员查看合同详情及该合同 host 的 extension 字段标签",
+      "whyNotMergeable": "合同 view 与 extension definition 分属 store-contract 和 extension owner；合并会形成跨 schema join 或删减既有 response 字段",
+      "cardinalityBound": "恰好两个具名 owner-local projection，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java#detail",
+      "normalFixture": "PERF-READ-V1:getPlatformContractOverviewDetail:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java#platformOverviewTaskDetail",
+      "remainingOwnerProjectionException": "getPlatformContractOverviewDetail",
+      "remainingOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getPlatformContractOverviewPage",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java#page",
+      "normalFixture": "PERF-READ-V1:getPlatformContractOverviewPage:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java#platformOverviewTaskPage"
+    },
+    {
+      "operationId": "getPlatformEntityAuditHistory",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_AUDIT_BRANCHED",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts"
+      ],
+      "primaryQueryCap": 2,
+      "optionalCountCap": 0,
+      "optionalCountCapBasis": "BRANCH_CAPS",
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员按实体类型查看平台审计历史",
+      "whyNotMergeable": "GROUP_WORKSPACE 的平台工作区审计与组织初始化审计分属不同 owner；其它 branch 保持单 owner，不能以跨 owner SQL 或删除审计事实合并",
+      "cardinalityBound": "GROUP_WORKSPACE 恰好两个具名 projection；其余四个 branch 各恰好一个，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java#history",
+      "normalFixture": "PERF-READ-V1:getPlatformEntityAuditHistory:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "conditionalFact": {
+        "fact": "EnabledSelectedWorkspaceFact",
+        "requiredWhenEntityType": [
+          "GROUP_WORKSPACE",
+          "WORKSPACE_ROLE",
+          "WORKSPACE_ACCOUNT",
+          "WORKSPACE_INVITATION",
+          "EXTENSION_DEFINITION",
+          "STORE_CONTRACT"
+        ],
+        "absentWhenEntityType": [
+          "PLATFORM_ADMIN"
+        ],
+        "branchCaps": [
+          {
+            "entityTypes": [
+              "GROUP_WORKSPACE",
+              "WORKSPACE_ROLE",
+              "WORKSPACE_ACCOUNT",
+              "WORKSPACE_INVITATION",
+              "EXTENSION_DEFINITION",
+              "STORE_CONTRACT"
+            ],
+            "optionalCountCap": 0
+          },
+          {
+            "entityTypes": [
+              "PLATFORM_ADMIN"
+            ],
+            "optionalCountCap": 1
+          }
+        ]
+      },
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/audit-read/src/main/java/com/catering/v2s/audit/read/PlatformAuditHistoryTaskReadService.java#read",
+      "remainingOwnerProjectionException": "getPlatformEntityAuditHistory",
+      "remainingOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getPlatformGroupWorkspaceDetail",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_GLOBAL",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts"
+      ],
+      "primaryQueryCap": 4,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员查看商业组工作区详情、初始化、资产引用及账号角色汇总",
+      "whyNotMergeable": "详情输出分别由 platform-workspace、organization、asset 与 workspace-iam owner 持有；合并会跨 schema 或删减既有 HTTP 事实",
+      "cardinalityBound": "恰好四个具名 owner-local projection，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#detail",
+      "normalFixture": "PERF-READ-V1:getPlatformGroupWorkspaceDetail:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java#detail",
+      "remainingOwnerProjectionException": "getPlatformGroupWorkspaceDetail",
+      "remainingOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getPlatformOrganizationCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java#candidatePage",
+      "normalFixture": "PERF-READ-V1:getPlatformOrganizationCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java#platformContractCandidatePage"
+    },
+    {
+      "operationId": "getPlatformOrganizationHierarchyTree",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java#hierarchy",
+      "normalFixture": "PERF-READ-V1:getPlatformOrganizationHierarchyTree:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java#platformHierarchyTree"
+    },
+    {
+      "operationId": "getPlatformOrganizationOverviewDetail",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 2,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员查看组织管理详情及 host 的 extension 字段标签",
+      "whyNotMergeable": "组织 base detail 与 extension definition 分属 organization 和 extension owner；合并会形成跨 schema join 或删减未配置 host 的空字段语义",
+      "cardinalityBound": "恰好两个具名 owner-local projection，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java#detail",
+      "normalFixture": "PERF-READ-V1:getPlatformOrganizationOverviewDetail:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java#platformManagementBaseDetail",
+      "remainingOwnerProjectionException": "getPlatformOrganizationOverviewDetail",
+      "remainingOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getPlatformOrganizationOverviewPage",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java#page",
+      "normalFixture": "PERF-READ-V1:getPlatformOrganizationOverviewPage:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java#platformOverviewTaskPage"
+    },
+    {
+      "operationId": "getPublicAssetContent",
+      "disposition": "PROTOCOL_READ_EXEMPT",
+      "reason": "public immutable content retrieval; no authenticated read context",
+      "completionDatabaseEvidence": "REQUIRED_NO_BUDGET"
+    },
+    {
+      "operationId": "getPublicInvitationCompletion",
+      "disposition": "PROTOCOL_READ_EXEMPT",
+      "reason": "public invitation completion protocol; no authenticated read context",
+      "completionDatabaseEvidence": "REQUIRED_NO_BUDGET"
+    },
+    {
+      "operationId": "getPublicInvitationView",
+      "disposition": "PROTOCOL_READ_EXEMPT",
+      "reason": "public invitation-token protocol; no authenticated read context",
+      "completionDatabaseEvidence": "REQUIRED_NO_BUDGET"
+    },
+    {
+      "operationId": "getWorkspaceAccount",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 2,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员查看单个工作区账号、assignment、role 与组织展示路径",
+      "whyNotMergeable": "账号事实和组织路径分属 workspace-iam 与 organization owner；合并会跨 schema 或逐 assignment 读取路径",
+      "cardinalityBound": "恰好两个具名 owner-local projection，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java#detail",
+      "normalFixture": "PERF-READ-V1:getWorkspaceAccount:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceAccountTaskReadService.java#detail",
+      "primaryOwnerBoundaries": [
+        {
+          "owner": "workspace-iam",
+          "boundary": "PlatformWorkspaceAccountTaskReadService#detail",
+          "logicalStatementCap": 1
+        },
+        {
+          "owner": "organization",
+          "boundary": "OrganizationTaskPathLookup#describePersistedTaskPaths",
+          "logicalStatementCap": 1
+        }
+      ],
+      "primaryQueryCapReason": "workspace-iam account detail projection plus one organization display-path batch; two owner-local projections prevent cross-schema joins and per-assignment path reads",
+      "twoOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getWorkspaceAccounts",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 2,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员分页查看工作区账号、assignment、role 与组织展示路径",
+      "whyNotMergeable": "账号页事实和组织路径分属 workspace-iam 与 organization owner；合并会跨 schema 或逐账号读取路径",
+      "cardinalityBound": "恰好两个具名 owner-local projection，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java#list",
+      "normalFixture": "PERF-READ-V1:getWorkspaceAccounts:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceAccountTaskReadService.java#page",
+      "primaryOwnerBoundaries": [
+        {
+          "owner": "workspace-iam",
+          "boundary": "PlatformWorkspaceAccountTaskReadService#page",
+          "logicalStatementCap": 1
+        },
+        {
+          "owner": "organization",
+          "boundary": "OrganizationTaskPathLookup#describePersistedTaskPaths",
+          "logicalStatementCap": 1
+        }
+      ],
+      "primaryQueryCapReason": "workspace-iam account/assignment/role page projection plus one organization display-path batch; two owner-local projections prevent cross-schema joins and per-account path reads",
+      "twoOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getWorkspaceInvitation",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 2,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员查看单个工作区邀请、intent、issuer 与组织展示路径",
+      "whyNotMergeable": "邀请事实和组织路径分属 workspace-iam 与 organization owner；合并会跨 schema 或逐 intent 读取路径",
+      "cardinalityBound": "恰好两个具名 owner-local projection，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#detail",
+      "normalFixture": "PERF-READ-V1:getWorkspaceInvitation:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceInvitationTaskReadService.java#detail",
+      "primaryOwnerBoundaries": [
+        {
+          "owner": "workspace-iam",
+          "boundary": "PlatformWorkspaceInvitationTaskReadService#detail",
+          "logicalStatementCap": 1
+        },
+        {
+          "owner": "organization",
+          "boundary": "OrganizationTaskPathLookup#describePersistedTaskPaths",
+          "logicalStatementCap": 1
+        }
+      ],
+      "primaryQueryCapReason": "workspace-iam invitation detail/intents projection plus one organization display-path batch; two owner-local projections prevent cross-schema joins and per-intent path reads",
+      "twoOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getWorkspaceInvitationCandidates",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 2,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员按 organization 或 role 主体获取工作区邀请候选项",
+      "whyNotMergeable": "候选引用在 workspace-iam，organization 与 role 两种目标由 organization owner 的互斥 projection 验证；合并会跨 schema 或逐候选 lookup",
+      "cardinalityBound": "workspace-iam projection 加恰好一个 subjectType 互斥 organization projection，共两个，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#candidates",
+      "normalFixture": "PERF-READ-V1:getWorkspaceInvitationCandidates:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformInvitationCandidatesTaskReadService.java#candidates",
+      "primaryOwnerBoundaries": [
+        {
+          "owner": "workspace-iam",
+          "boundary": "PlatformInvitationCandidatesTaskReadService#candidates",
+          "logicalStatementCap": 1
+        },
+        {
+          "owner": "organization",
+          "alternativeBoundaries": [
+            {
+              "when": "subjectType=ORGANIZATION",
+              "boundary": "OrganizationAssignmentCandidateLookup#platformInvitationCandidates",
+              "logicalStatementCap": 1
+            },
+            {
+              "when": "subjectType=ROLE",
+              "boundary": "OrganizationAssignmentCandidateLookup#requireEnabledInvitationTarget",
+              "logicalStatementCap": 1
+            }
+          ],
+          "selectionInvariant": "exactly one organization boundary is selected by subjectType"
+        }
+      ],
+      "primaryQueryCapReason": "workspace-iam candidate-reference projection plus one organization platform-invitation-candidate batch; two owner-local projections prevent cross-schema joins and per-candidate lookup",
+      "twoOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getWorkspaceInvitations",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 2,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员分页查看工作区邀请、intent、issuer 与组织展示路径",
+      "whyNotMergeable": "邀请页事实和组织路径分属 workspace-iam 与 organization owner；合并会跨 schema 或逐邀请读取路径",
+      "cardinalityBound": "恰好两个具名 owner-local projection，每段 logicalStatementCap=1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#list",
+      "normalFixture": "PERF-READ-V1:getWorkspaceInvitations:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceInvitationTaskReadService.java#page",
+      "primaryOwnerBoundaries": [
+        {
+          "owner": "workspace-iam",
+          "boundary": "PlatformWorkspaceInvitationTaskReadService#page",
+          "logicalStatementCap": 1
+        },
+        {
+          "owner": "organization",
+          "boundary": "OrganizationTaskPathLookup#describePersistedTaskPaths",
+          "logicalStatementCap": 1
+        }
+      ],
+      "primaryQueryCapReason": "workspace-iam invitation/intents/issuer page projection plus one organization display-path batch; two owner-local projections prevent cross-schema joins and per-invitation path reads",
+      "twoOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    },
+    {
+      "operationId": "getWorkspaceRole",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#detail",
+      "normalFixture": "PERF-READ-V1:getWorkspaceRole:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#platformTaskDetail"
+    },
+    {
+      "operationId": "getWorkspaceRoles",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_WORKSPACE",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts",
+        "EnabledSelectedWorkspaceFact"
+      ],
+      "primaryQueryCap": 1,
+      "optionalCountCap": 0,
+      "declaredExtrasCap": 0,
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#list",
+      "normalFixture": "PERF-READ-V1:getWorkspaceRoles:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal detail/context/list fixture must satisfy one-primary-query policy",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#platformTaskPage"
+    },
+    {
+      "operationId": "listPlatformGroupWorkspaces",
+      "disposition": "TASK_READ",
+      "readContextKind": "PLATFORM_GLOBAL",
+      "requiredFactSet": [
+        "PlatformReadSessionFacts"
+      ],
+      "primaryQueryCap": 3,
+      "optionalCountCap": 1,
+      "declaredExtrasCap": 0,
+      "userTask": "平台管理员分页查看商业组工作区、组织初始化路径与资产公开引用",
+      "whyNotMergeable": "页面输出分别由 platform-workspace、organization 与 asset owner 持有；合并会跨 schema 或删减已有列表事实",
+      "cardinalityBound": "恰好三个具名 owner-local projection，每段 logicalStatementCap=1；列表 optional count 仍仅为1",
+      "reviewDue": "2026-08-23",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#list",
+      "normalFixture": "PERF-READ-V1:listPlatformGroupWorkspaces:NORMAL_SUCCESS",
+      "fixtureInvariant": "normal page fixture has at least two matching rows and valid total",
+      "primaryReader": "TASK_READER",
+      "primaryBoundary": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java#page",
+      "remainingOwnerProjectionException": "listPlatformGroupWorkspaces",
+      "remainingOwnerProjectionStatus": "SOURCE_IMPLEMENTED_UNMEASURED"
+    }
+  ],
+  "primaryReaderSchema": {
+    "closedPrimaryReaderKinds": [
+      "TASK_READER",
+      "NOT_YET_TASK_READER"
+    ],
+    "taskReaderApis": [
+      {
+        "api": "CatalogInventoryCoordinator",
+        "sourcePath": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+        "edgeFields": [
+          "application"
+        ]
+      },
+      {
+        "api": "WorkspaceTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceTaskReadService.java",
+        "edgeFields": [
+          "reads"
+        ]
+      },
+      {
+        "api": "OperationsOrganizationTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OperationsOrganizationTaskReadService.java",
+        "edgeFields": [
+          "reads"
+        ]
+      },
+      {
+        "api": "StoreCandidateTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java",
+        "edgeFields": [
+          "candidates",
+          "storeCandidates"
+        ]
+      },
+      {
+        "api": "ContractTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java",
+        "edgeFields": [
+          "contracts",
+          "reads"
+        ]
+      },
+      {
+        "api": "ExtensionDefinitionService",
+        "sourcePath": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+        "edgeFields": [
+          "definitions"
+        ]
+      },
+      {
+        "api": "WorkspaceRoleService",
+        "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java",
+        "edgeFields": [
+          "roles"
+        ]
+      },
+      {
+        "api": "PlatformAuthenticationService",
+        "sourcePath": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java",
+        "edgeFields": [
+          "service"
+        ]
+      },
+      {
+        "api": "PlatformWorkspaceAccountTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceAccountTaskReadService.java",
+        "edgeFields": ["reads"]
+      },
+      {
+        "api": "PlatformWorkspaceInvitationTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceInvitationTaskReadService.java",
+        "edgeFields": ["reads"]
+      },
+      {
+        "api": "PlatformInvitationCandidatesTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformInvitationCandidatesTaskReadService.java",
+        "edgeFields": ["candidates"]
+      },
+      {
+        "api": "PlatformWorkspaceAdministrationTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java",
+        "edgeFields": ["taskReads"]
+      },
+      {
+        "api": "OrganizationOverviewTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+        "edgeFields": ["overview"]
+      },
+      {
+        "api": "OperationsAuditTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/audit-read/src/main/java/com/catering/v2s/audit/read/OperationsAuditTaskReadService.java",
+        "edgeFields": ["reads"]
+      },
+      {
+        "api": "PlatformAuditHistoryTaskReadService",
+        "sourcePath": "apps/backend/catering-business-server/modules/audit-read/src/main/java/com/catering/v2s/audit/read/PlatformAuditHistoryTaskReadService.java",
+        "edgeFields": ["reads"]
+      }
+    ],
+    "blockedBoundary": "UNCLASSIFIED_BLOCKED",
+    "completionStatus": "BLOCKED_UNMEASURED",
+    "completedOperationCount": 78,
+    "blockedOperationCount": 0
+  },
+  "twoOwnerPrimaryProjectionExceptions": {
+    "decisionPath": "doc/decisions/2026-08-09-v2s-backend-performance-phase4-read-budget-rebaseline.md",
+    "operationIds": [
+      "getWorkspaceAccounts",
+      "getWorkspaceAccount",
+      "getWorkspaceInvitations",
+      "getWorkspaceInvitation",
+      "getWorkspaceInvitationCandidates"
+    ],
+    "maxPrimaryQueryCap": 2,
+    "implementationStatus": "SOURCE_IMPLEMENTED_UNMEASURED",
+    "nonExceptionPrimaryQueryCap": 1
+  },
+  "remainingOwnerProjectionExceptions": {
+    "decisionPath": "doc/decisions/2026-08-09-v2s-backend-performance-phase4-owner-projection-rebaseline.md",
+    "maxMultiOwnerExceptionCount": 10,
+    "implementationStatus": "SOURCE_IMPLEMENTED_UNMEASURED",
+    "exceptions": [
+      {"operationId":"getPlatformContractOverviewDetail","primaryQueryCap":2,"optionalCountCap":0,"branches":[{"when":"always","boundaries":[{"owner":"store-contract","boundary":"ContractTaskReadService#platformOverviewTaskDetail","logicalStatementCap":1},{"owner":"extension","boundary":"ExtensionDefinitionService#platformContractManagementDefinition","logicalStatementCap":1}]}],"sourceRequirement":{"readerPath":"apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java","readerMethod":"platformOverviewTaskDetail","typedInput":"UUID workspaceUuid,String groupWorkspaceKey,UUID contractId","typedOutput":"StoreContractView","edgeCall":"reads.platformOverviewTaskDetail(","forbiddenEdgeReads":[{"pattern":"\\breads\\s*\\.\\s*view\\s*\\("}],"status":"SOURCE_IMPLEMENTED_UNMEASURED"}},
+      {"operationId":"getPlatformOrganizationOverviewDetail","primaryQueryCap":2,"optionalCountCap":0,"branches":[{"when":"always","boundaries":[{"owner":"organization","boundary":"OrganizationOverviewTaskReadService#platformManagementBaseDetail","logicalStatementCap":1},{"owner":"extension","boundary":"ExtensionDefinitionService#platformManagementDefinition","logicalStatementCap":1}]}],"sourceRequirement":{"readerPath":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java","readerMethod":"platformManagementBaseDetail","typedInput":"UUID workspaceUuid,String groupWorkspaceKey,String category,UUID itemId","typedOutput":"PlatformManagementBaseDetail","edgeCall":"overview.platformManagementBaseDetail(","forbiddenEdgeReads":[{"pattern":"\\boverview\\s*\\.\\s*detail\\s*\\("}],"status":"SOURCE_IMPLEMENTED_UNMEASURED"}},
+      {"operationId":"getPlatformEntityAuditHistory","primaryQueryCap":2,"optionalCountCap":0,"branches":[{"when":"entityType=GROUP_WORKSPACE","boundaries":[{"owner":"platform-workspace","boundary":"PlatformWorkspaceAuditHistoryService#readGroupWorkspace","logicalStatementCap":1},{"owner":"organization","boundary":"OrganizationAuditHistoryService#readInitializationForGroupWorkspace","logicalStatementCap":1}]},{"when":"entityType=PLATFORM_ADMIN","boundaries":[{"owner":"platform-iam","boundary":"PlatformIamAuditHistoryService#readPlatformAdmin","logicalStatementCap":1}]},{"when":"entityType=WORKSPACE_ROLE|WORKSPACE_ACCOUNT|WORKSPACE_INVITATION","boundaries":[{"owner":"workspace-iam","boundary":"WorkspaceIamAuditHistoryService#readPlatformAuditProjection","logicalStatementCap":1}]},{"when":"entityType=EXTENSION_DEFINITION","boundaries":[{"owner":"extension","boundary":"ExtensionAuditHistoryService#readExtensionDefinition","logicalStatementCap":1}]},{"when":"entityType=STORE_CONTRACT","boundaries":[{"owner":"store-contract","boundary":"ContractAuditHistoryService#readStoreContract","logicalStatementCap":1}]}],"sourceRequirement":{"readerPath":"apps/backend/catering-business-server/modules/audit-read/src/main/java/com/catering/v2s/audit/read/PlatformAuditHistoryTaskReadService.java","readerMethod":"read","typedInput":"PlatformSessionReadback,PlatformAuditHistoryQuery","typedOutput":"AuditHistoryPage","edgeCall":"reads.read(","forbiddenEdgeReads":[{"pattern":"\\bgroupWorkspaceAudit\\s*\\.\\s*readGroupWorkspace\\s*\\("},{"pattern":"\\bplatformIamAudit\\s*\\.\\s*read\\s*\\("},{"pattern":"\\bworkspaceIamAudit\\s*\\.\\s*read\\s*\\("},{"pattern":"\\bextensionAudit\\s*\\.\\s*read\\s*\\("},{"pattern":"\\bcontractAudit\\s*\\.\\s*read\\s*\\("}],"status":"SOURCE_IMPLEMENTED_UNMEASURED"}},
+      {"operationId":"listPlatformGroupWorkspaces","primaryQueryCap":3,"optionalCountCap":1,"branches":[{"when":"always","boundaries":[{"owner":"platform-workspace","boundary":"WorkspaceAdministrationService#list","logicalStatementCap":1},{"owner":"organization","boundary":"OrganizationGroupWorkspaceInitializationLookup#listInitializationFacts","logicalStatementCap":1},{"owner":"asset","boundary":"PlatformAssetService#requireActivePublicReferences","logicalStatementCap":1}]}],"sourceRequirement":{"readerPath":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java","readerMethod":"page","typedInput":"WorkspaceAdministrationPageRequest","typedOutput":"WorkspaceAdministrationPage","edgeCall":"taskReads.page(","forbiddenEdgeReads":[{"pattern":"\\bworkspaces\\s*\\.\\s*list\\s*\\("},{"pattern":"\\binitializationFacts\\s*\\.\\s*list\\s*\\(","prospective":true},{"pattern":"\\bassets\\s*\\.\\s*requireActivePublicReferences\\s*\\("}],"ownerSourceAssertions":[{"kind":"FORBID_PATTERNS","anchor":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#list","forbiddenPatterns":[{"pattern":"\\borganization\\s*\\.","errorCode":"BP_U05_R5_LIST_ORGANIZATION_SCHEMA_LEAK"},{"pattern":"\\bEXISTS\\s*\\(","errorCode":"BP_U05_R5_LIST_EXISTS_DRIFT"}]},{"kind":"FORBID_PATTERNS","anchor":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationGroupWorkspaceInitializationTaskReadService.java#listInitializationFacts","forbiddenPatterns":[{"pattern":"\\bplatform_workspace\\s*\\.","errorCode":"BP_U05_R5_INITIALIZATION_PLATFORM_SCHEMA_LEAK"}]},{"kind":"OUTPUT_CONTRACT","sourcePath":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationGroupWorkspaceInitializationLookup.java","requiredPattern":"\\b(?:record\\s+InitializationState|Optional\\s*<\\s*CommercialGroupReadback\\s*>)","forbiddenPatterns":[{"pattern":"\\b(?:workspaceUuid|workspaceId|groupWorkspaceId|workspaceName|workspaceStatus)\\b","errorCode":"BP_U05_R5_INITIALIZATION_OUTPUT_DRIFT"}]}],"status":"SOURCE_IMPLEMENTED_UNMEASURED"}},
+      {"operationId":"getPlatformGroupWorkspaceDetail","primaryQueryCap":4,"optionalCountCap":0,"branches":[{"when":"always","boundaries":[{"owner":"platform-workspace","boundary":"WorkspaceAdministrationService#require","logicalStatementCap":1},{"owner":"organization","boundary":"OrganizationGroupWorkspaceInitializationLookup#initializationFact","logicalStatementCap":1},{"owner":"asset","boundary":"PlatformAssetService#requireActivePublicReference","logicalStatementCap":1},{"owner":"workspace-iam","boundary":"WorkspaceIamSummaryReadService#accountAndRoleSummary","logicalStatementCap":1}]}],"sourceRequirement":{"readerPath":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java","readerMethod":"detail","typedInput":"String groupWorkspaceKey","typedOutput":"WorkspaceAdministrationDetail","edgeCall":"taskReads.detail(","forbiddenEdgeReads":[{"pattern":"\\bworkspaces\\s*\\.\\s*require\\s*\\("},{"pattern":"\\binitializationFacts\\s*\\.\\s*detail\\s*\\("},{"pattern":"\\bassets\\s*\\.\\s*requireActivePublicReference\\s*\\("},{"pattern":"\\bworkspaces\\s*\\.\\s*accountCount\\s*\\("},{"pattern":"\\bworkspaces\\s*\\.\\s*roleCount\\s*\\("}],"ownerSourceAssertions":[{"kind":"JDBC_STATEMENT_COUNT","anchor":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamSummaryReadService.java#accountAndRoleSummary","jdbcPattern":"\\bjdbc\\.(?:query|queryForObject|queryForList|queryForMap|queryForRowSet|queryForStream)\\s*\\(","expectedCount":1,"errorCode":"BP_U05_R5_SUMMARY_LOGICAL_CAP_DRIFT","forbiddenPatterns":[{"pattern":"\\b(?:this\\s*\\.)?accountCount\\s*\\(","errorCode":"BP_U05_R5_SUMMARY_LEGACY_COUNT_DELEGATION"},{"pattern":"\\b(?:this\\s*\\.)?roleCount\\s*\\(","errorCode":"BP_U05_R5_SUMMARY_LEGACY_COUNT_DELEGATION"}]}],"status":"SOURCE_IMPLEMENTED_UNMEASURED"}}
+    ]
+  }
+}

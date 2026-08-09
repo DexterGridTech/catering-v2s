@@ -21,10 +21,13 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
 
   it('renders the code as a smaller tertiary visual while preserving owner path segments', () => {
     const display = renderToStaticMarkup(createElement(NameCodeText, {name: '河畔项目', code: 'RIVER'}));
+    const emphasized = renderToStaticMarkup(createElement(NameCodeText, {name: '河畔项目', code: 'RIVER', emphasizeName: true}));
     expect(display).toContain('河畔项目');
     expect(display).toContain('(RIVER)');
     expect(display).toContain('font-size:var(--ant-font-size-sm)');
     expect(display).toContain('color:var(--ant-color-text-tertiary)');
+    expect(display).not.toContain('font-weight');
+    expect(emphasized).toContain('font-weight:600');
     const path = renderToStaticMarkup(createElement(NameCodePathText, {value: 'EAST 东区 / RIVER 河畔项目'}));
     expect(path).toContain('东区');
     expect(path).toContain('(EAST)');

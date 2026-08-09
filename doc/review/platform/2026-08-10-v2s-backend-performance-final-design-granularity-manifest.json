@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "implementationAuthority": false,
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "BACKEND_PERFORMANCE_FINAL_CLOSURE_20260810",
+  "design": {
+    "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+    "sha256": "1e31b83759adf771c91c2489db3e4e449babaea5844de3d4fe1afd02f7d404d6"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-08-10-v2s-backend-performance-final-closure-authorization.md",
+    "sha256": "719d022d406814644d4eb5e57b902dfc54959634f2afacd09306e50a93336473",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {"path": "scripts/check/implementation-design-granularity", "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"},
+    "tool": {"path": "tools/implementation-design-granularity/cli.mjs", "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"},
+    "selfTest": true,
+    "redFixtures": ["DESIGN_HASH_DRIFT", "MISSING_BUSINESS_EVIDENCE", "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT", "REVIEWER_INPUT_CHECKLIST_NOT_FOUND", "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE", "UNIT_SOURCE_COMPLIANCE_DENOMINATOR_INVALID"]
+  },
+  "adversarialReviewPolicy": {"version": "INDEPENDENT_SUBAGENT_V1", "reviewerKindRequired": "INDEPENDENT_SUBAGENT", "blindReviewRequired": true},
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_CLOSURE_DESIGN_20260810",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-08-10-v2s-backend-performance-final-design-review-round2.md",
+    "reviewedManifestSha256": "852f441e02a44e30cacfa4456c71fa49592d10becc2ee533a218c0cddee42c6a",
+    "reviewSha256": "7e10a062b2d41129afc574bbabfc19709685f78d0631d4a00f8754a6552de7e6",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false,
+    "reason": "Final-only canonical fixture attribution and generated token-output consistency were discovered during authorized source reopening; no delivery-unit or denominator changed.",
+    "intake": {"path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-design-post-remediation-intake.md", "sha256": "b40587423a27b8c1633a9d4e03ca4e94602d1c7c25743a4e3f072c2f0269166d"}
+  },
+  "candidateJourney": {
+    "id": "BACKEND-PERFORMANCE-FINAL-CLOSURE",
+    "status": "DESIGN_ONLY_TECHNICAL_MAINTENANCE",
+    "actor": "Dexter-directed backend engineering",
+    "task": "retire the remaining legacy layout and prove exact performance behavior from one immutable managed-run snapshot",
+    "pageKey": "NON_UI_BACKEND_PERFORMANCE_FINAL_CLOSURE",
+    "ownerReadback": "typed owner response, request/database tuple and cleanup evidence",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "BP-U06",
+      "title": "Retire legacy app/application layout and dynamic catalog dispatch",
+      "approvedAssertions": [
+        "The retired source denominator is exactly three main sources, four colocated focused tests, two dynamic registry sources with two tests, and one root result artifact.",
+        "All 42 catalog routes are direct typed bindings: sixteen GET and twenty-six workspace command paths; all 196 handler bindings retain their existing route and owner.",
+        "The audit coordinators are moved to a dedicated consumer-only audit-read module, never into audit-model or edge ownership; platform audit consumes PlatformSessionReadback and does not import PlatformSessionResolver.",
+        "No compatibility String operation dispatcher, URI resolver or generic handler selection survives source absence admission."
+      ],
+      "approvedSources": [
+        {"path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md", "sha256": "1e31b83759adf771c91c2489db3e4e449babaea5844de3d4fe1afd02f7d404d6", "anchor": "#### Final-closure implementation-facing design"},
+        {"path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-final-design-source-inventory.json", "sha256": "50351dd2bc05c0a29abfcfe8ca0488e64c57d883fc7721a92ae2bb9797ad866e", "anchor": "\"bpU06\""},
+        {"path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-final-catalog-route-binding-map.json", "sha256": "fe14a4aa227078dd6aef16c52e327237a4cabc7e347410a5ecc37c02d771b5bb", "anchor": "\"bindings\""}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md", "anchor": "#### Final-closure implementation-facing design"},
+      "currentDeviation": "code-layout fails for app/application and root results; catalog runtime dispatch remains String-selected, while audit reader behavior is correct but located in the forbidden app root.",
+      "changeSurfaces": [
+        {"path":"settings.gradle.kts","disposition":"update","target":"include the dedicated audit-read coordinator module"},
+        {"path":"apps/backend/catering-business-server/build.gradle.kts","disposition":"update","target":"wire the deployable to audit-read"},
+        {"path":"apps/backend/catering-business-server/modules/audit-read/build.gradle.kts","disposition":"create","target":"declare consumer-only dependencies on existing owner APIs"},
+        {"path":"apps/backend/catering-business-server/modules/audit-read/src/main/java/com/catering/v2s/audit/read/OperationsAuditTaskReadService.java","disposition":"create","target":"relocate the closed nine-target coordinator without behavior drift"},
+        {"path":"apps/backend/catering-business-server/modules/audit-read/src/main/java/com/catering/v2s/audit/read/PlatformAuditHistoryTaskReadService.java","disposition":"create","target":"relocate the closed seven-target coordinator without behavior drift"},
+        {"path":"apps/backend/catering-business-server/modules/audit-read/src/test/java/com/catering/v2s/audit/read/OperationsAuditTaskReadServiceTest.java","disposition":"create","target":"preserve exact owner-branch focused proof"},
+        {"path":"apps/backend/catering-business-server/modules/audit-read/src/test/java/com/catering/v2s/audit/read/PlatformAuditHistoryTaskReadServiceTest.java","disposition":"create","target":"preserve platform-admin and group-workspace focused proof"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/build.gradle.kts","disposition":"update","target":"admit the typed catalog coordinator dependencies"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java","disposition":"create","target":"provide forty-two named typed route methods with owner transaction and readback parity"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinatorCopySourceAuthorityTest.java","disposition":"create","target":"relocate copy authority proof to the renamed coordinator target"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinatorAssetLifecycleTest.java","disposition":"create","target":"relocate asset lifecycle proof to the renamed coordinator target"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java","disposition":"update","target":"bind all sixteen GET and twenty-six command routes directly to typed coordinator methods"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryControllerRouteTest.java","disposition":"update","target":"prove the forty-two direct route mapping and legacy dispatcher absence"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryController.java","disposition":"update","target":"import the audit-read coordinator only"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java","disposition":"update","target":"import the audit-read coordinator only"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryControllerTest.java","disposition":"update","target":"update coordinator package while preserving nine-target proof"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryControllerTest.java","disposition":"update","target":"update coordinator package while preserving seven-target proof"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/audit/OperationsAuditTaskReadService.java","disposition":"delete","target":"retire forbidden app/application source after module replacement compiles"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/audit/PlatformAuditHistoryTaskReadService.java","disposition":"delete","target":"retire forbidden app/application source after module replacement compiles"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/cataloginventory/CatalogInventoryApplicationService.java","disposition":"delete","target":"retire String operation dispatcher after forty-two direct bindings compile"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/audit/OperationsAuditTaskReadServiceTest.java","disposition":"delete","target":"retire old test layout after focused module test replacement"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/audit/PlatformAuditHistoryTaskReadServiceTest.java","disposition":"delete","target":"retire old test layout after focused module test replacement"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/cataloginventory/CatalogCopySourceAuthorityTest.java","disposition":"delete","target":"retire old test layout after focused module test replacement"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/cataloginventory/CatalogInventoryAssetLifecycleTest.java","disposition":"delete","target":"retire old test layout after focused module test replacement"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/CatalogInventoryOperationRegistry.java","disposition":"delete","target":"remove URI-selected runtime dispatch"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/CatalogInventoryWorkspaceCommandTokenRegistry.java","disposition":"delete","target":"remove token-selected runtime dispatch"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/CatalogInventoryOperationRegistryTest.java","disposition":"delete","target":"remove retired dispatcher test"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/CatalogInventoryWorkspaceCommandTokenRegistryTest.java","disposition":"delete","target":"remove retired dispatcher test"},
+        {"path":"contracts/registry/task-read-surface-policy.json","disposition":"update","target":"replace eighteen app/application reader boundaries with final source paths"},
+        {"path":"scripts/generate/task-read-surface-policy.mjs","disposition":"update","target":"reject old app/application boundary or dynamic route dispatcher"},
+        {"path":"scripts/generate/catalog-inventory-workspace-command-tokens.mjs","disposition":"update","target":"regenerate the closed twenty-six token constants after direct binding cutover"},
+        {"path":"apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/CatalogInventoryWorkspaceCommandTokens.java","disposition":"update","target":"retain generated token constants as data only, without an edge runtime bridge"},
+        {"path":"contracts/registry/operation-handler-bindings.json","disposition":"update","target":"replace deferred legacy runtime integration with direct typed cutover declaration"},
+        {"path":"contracts/registry/generated/operation-handler-bindings/index.json","disposition":"update","target":"regenerate the runtime binding declaration"},
+        {"path":"tools/catalog-inventory-p2/cli.mjs","disposition":"update","target":"invert old registry requirement into a direct typed-binding source check"},
+        {"path":"scripts/test/catalog-image-bind-evidence-inputs.mjs","disposition":"update","target":"follow relocated catalog coordinator source"},
+        {"path":"scripts/test/catalog-inventory-backend-unit.mjs","disposition":"update","target":"run relocated focused coordinator tests"},
+        {"path":"tools/code-layout/cli.mjs","disposition":"update","target":"add exact app/application red fixture"},
+        {"path":"results/catalog-inventory-l2-test-fixture.json","disposition":"delete","target":"remove stale repository-root runtime artifact"}
+      ],
+      "orderedChain": ["create destination modules and typed coordinator methods", "rewire forty-two routes and audit imports with focused parity proof", "update source policy/bindings/gates", "delete all old paths atomically and run code-layout"],
+      "dependencyAndSerialBoundaries": ["No old source is deleted before its direct typed replacement compiles.", "Policy/generator update is serial with the final relocation paths.", "No dynamic run starts in this delivery."],
+      "dataEvolution": {"notApplicableReason":"No schema or data migration; only source layout and direct typed binding change."},
+      "uiAndTerms": {"notApplicableReason":"No UI interaction or consumer wording changes; HTTP contracts remain frozen.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"exact absence scans, code-layout red mutation and unchanged 196 binding assertion","l2":"forty-two route and sixteen audit-branch focused tests","l3":"final workload includes all forty-two catalog routes","business":"managed remote Testcontainers focused proof after static admission","cleanup":"no resources in static package; final workload has independent cleanup"},
+      "forbiddenPseudoFixes": ["move coordinator into edge", "move coordinator into audit-model", "compatibility String dispatcher", "unused old path", "operationId map/reflection dispatcher"],
+      "discriminator": {"fixture":"Restore app/application, add one URI-selected dispatch branch, or omit one of forty-two direct bindings and the corresponding source gate must fail."}
+    },
+    {
+      "id": "BP-U07",
+      "title": "Admit only immutable-snapshot backed performance measurement and final workload",
+      "approvedAssertions": [
+        "A measured status is legal only when an immutable final-run request/database tuple proves its exact operation and fixture membership.",
+        "The dynamic denominator remains 78 task reads, 5 protocol completions, 79 numeric command observations, 38 context parity commands and 196 route completion records.",
+        "M1=126, M2=60, M3=25, M4 source/behavior exact sets, M5 six rows and M6=11 remain finite and fail closed.",
+        "Final acceptance runs local application processes through a managed tunnel only and records independent business and cleanup outcomes."
+      ],
+      "approvedSources": [
+        {"path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md", "sha256": "1e31b83759adf771c91c2489db3e4e449babaea5844de3d4fe1afd02f7d404d6", "anchor": "#### Final-closure implementation-facing design"},
+        {"path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-final-design-source-inventory.json", "sha256": "50351dd2bc05c0a29abfcfe8ca0488e64c57d883fc7721a92ae2bb9797ad866e", "anchor": "\"dynamic\""}
+      ],
+      "detailDesign": {"path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md", "anchor": "#### Final-closure implementation-facing design"},
+      "currentDeviation": "All static sources are SOURCE_IMPLEMENTED_UNMEASURED or UNMEASURED_BLOCKS_OPTIMIZATION, and the current generator rejects every measured coverage status regardless of a supplied snapshot.",
+      "changeSurfaces": [
+        {"path":"contracts/registry/backend-performance-sql-merge-applicability.json","disposition":"update","target":"declare exact snapshot-backed status and fixture tuple admission"},
+        {"path":"contracts/registry/task-read-surface-policy.json","disposition":"update","target":"bind every task read fixture to dynamic cap evidence"},
+        {"path":"contracts/registry/performance-refactor-command-baselines.json","disposition":"update","target":"bind seventy-nine numeric and thirty-eight parity fixture identities to final workload"},
+        {"path":"contracts/policy/backend-performance-final-workload.json","disposition":"create","target":"freeze final runner provenance, exact fixture coverage and expected snapshot tuple discriminator"},
+        {"path":"scripts/generate/backend-performance-sql-merge-applicability.mjs","disposition":"update","target":"promote only snapshot tuple-backed rows and reject incomplete exact sets"},
+        {"path":"scripts/generate/task-read-surface-policy.mjs","disposition":"update","target":"export exact read fixture/cap admission metadata"},
+        {"path":"scripts/check/backend-performance-sql-merge-coverage","disposition":"update","target":"accept only immutable final snapshot input and report exact measured/blocking state"},
+        {"path":"scripts/check/backend-performance-read-budget","disposition":"update","target":"validate request component sums, zero unclassified and per-row logical caps from snapshot evidence"},
+        {"path":"scripts/check/backend-performance-evidence-snapshot","disposition":"update","target":"validate final workload evidence schema, digest and tuple join"},
+        {"path":"scripts/check/backend-performance-gate-dispositions","disposition":"update","target":"derive final runtime denominator from final snapshot admission rather than stale BP-U01 expectations"},
+        {"path":"scripts/dev/backend-performance-runtime-runner.mjs","disposition":"create","target":"managed local process/tunnel/isolated remote namespace lifecycle with identity and cleanup evidence"},
+        {"path":"scripts/dev/backend-performance-runtime-runner.test.mjs","disposition":"create","target":"prove lifecycle plan, identity rejection and cleanup failure handling without runtime"},
+        {"path":"scripts/test/backend-performance-workload.mjs","disposition":"create","target":"execute exact HTTP fixture recipes and collect request/database evidence"},
+        {"path":"scripts/test/backend-performance-workload.test.mjs","disposition":"create","target":"prove exact denominator, fixture uniqueness and no protocol numeric baseline"},
+        {"path":"scripts/test/backend-performance-final-acceptance.mjs","disposition":"create","target":"orchestrate snapshot creation and business/cleanup reporting"},
+        {"path":"scripts/test/backend-performance-final-acceptance.test.mjs","disposition":"create","target":"prove missing tuple, unclassified, cap and cleanup red outcomes"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java","disposition":"update","target":"emit final-mode-only validated fixture and area request-event fields at the canonical server boundary"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptorTest.java","disposition":"update","target":"prove final-mode event attribution and preserve all non-final diagnostic behavior"},
+        {"path":"doc/evidence/platform/2026-08-10-v2s-backend-performance-final-dynamic-acceptance.json","disposition":"create","target":"record final snapshot digest and separated business/cleanup results"}
+      ],
+      "orderedChain": ["implement immutable status-transition and snapshot gates with real red mutations", "implement managed runner and exact workload using the same declared metadata", "static compile/self-test and independent implementation review", "activate a separate runtime package, run isolated workload and import the immutable snapshot"],
+      "dependencyAndSerialBoundaries": ["No measured status can be written before static admission gates exist.", "Runtime package is activated only after static implementation review.", "Remote Testcontainers focused proof precedes the managed HTTP workload; cleanup PASS is required for closure."],
+      "dataEvolution": {"notApplicableReason":"The workload uses an isolated run-scoped namespace and removes it; it changes no persistent schema."},
+      "uiAndTerms": {"notApplicableReason":"This is API-level technical verification, not a browser or UI delivery.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"generator/checker real red mutations and exact denominator export","l2":"runner/workload static tests and managed Testcontainers proof","l3":"content-addressed final snapshot with complete request/database joins","business":"final HTTP workload PASS","cleanup":"manifest-owned local/remote cleanup PASS"},
+      "forbiddenPseudoFixes": ["flip status without snapshot", "reuse historic snapshot", "partial route coverage", "unclassified fallback", "controller wrapper measurement", "reuse RM1 workload or L2 evidence"],
+      "discriminator": {"fixture":"Remove one request/database tuple, add an unclassified operation, exceed one declared cap, or reuse a foreign run digest and final admission must fail."}
+    }
+  ]
+}

@@ -78,7 +78,7 @@ class OperationsCatalogAuthenticationControllerTest {
         );
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie(TOKEN), null, null, null);
         OperationsCatalogAuthenticationController controller = new OperationsCatalogAuthenticationController(
-            sessions, new OperationsSessionResolver(sessions), new EdgeSessionCookieWriter(), mock(PlatformAssetService.class)
+            sessions, new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(null, null, sessions), new OperationsSessionResolver(sessions), new EdgeSessionCookieWriter(), mock(PlatformAssetService.class)
         );
         return new Fixture(controller, sessions, request, entry);
     }

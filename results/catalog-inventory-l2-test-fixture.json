@@ -1,6 +1,0 @@
-{
-  "schemaVersion": 1,
-  "kind": "catalog-inventory-l2-test-fixture",
-  "status": "FAIL",
-  "reason": "V2S_RUNTIME_DIR_REQUIRED"
-}

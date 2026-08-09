@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "BACKEND_PERFORMANCE_PHASE4_U05_REMAINING_OWNER_PROJECTIONS_20260809",
+  "design": {
+    "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+    "sha256": "79ecbd69629f764529aa647cafa9efeea12f0cfe4a34a9904d87027b161c6f69"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-08-09-v2s-backend-performance-phase3-to-phase4-rebaseline.md",
+    "sha256": "ea4640a9138f03e0b01f6a0c99c8feed5104cff609bcf4e97e6823bf47ffb6aa",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "REVIEWER_INPUT_CHECKLIST_NOT_FOUND",
+      "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE",
+      "UNIT_SOURCE_COMPLIANCE_DENOMINATOR_INVALID"
+    ]
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "OVERALL_PHASE_4_U05_REMAINING_OWNER_PROJECTIONS_DESIGN_20260809",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-08-09-v2s-backend-performance-phase4-u05-remaining-owner-projection-design-review-round2.md",
+    "reviewSha256": "ad5c5e7eddf94f145180505bc795932351c87cf1229649e4cbd9cb5f3b2456e6",
+    "reviewedManifestSha256": "803abfc456502b8d4c9983a31fa0bfd8ce5ca6b461c3d7f45cd5978ee9fd25c7",
+    "intake": {
+      "path": "doc/review/platform/2026-08-09-v2s-backend-performance-phase4-u05-remaining-owner-projection-author-intake.md",
+      "sha256": "7158c78981a3853c2ca6cecee90463d8edb30e3e6cf60f1a09beef68e5849cab"
+    },
+    "reason": "Claude confirmed the prior absence controls, then identified a missing R5 implementation surface, a prospective-rule ambiguity, and the lack of mechanical owner-source assertions for R5's frozen replacement and aggregate rules. The remediation retains the exact R5 surface, freezes replacement of the cross-schema commercial-group EXISTS rather than duplication, models the fixed 15-rule forbidden-read denominator with one explicit prospective rule, and adds status-gated owner assertions with real mutations for base-page schema/EXISTS leakage, initialization-output ownership, and summary single-statement/no-legacy-count behavior. These current bytes were written after the cycle's final independent round; a Claude recheck is required and a third independent round is prohibited.",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false
+  },
+  "candidateJourney": {
+    "id": "BACKEND-PERFORMANCE-REMAINING-OWNER-PROJECTIONS",
+    "status": "DESIGN_ONLY_TECHNICAL_MAINTENANCE",
+    "actor": "Dexter-directed backend engineering team",
+    "task": "preserve frozen GET readbacks while moving their remaining owner projections into named typed task readers",
+    "pageKey": "NON_UI_BACKEND_PERFORMANCE_READ_SIDE",
+    "ownerReadback": "13 remaining policy rows, 10 cap exceptions, closed audit target types, and immutable snapshot budget evidence",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "BP-U05",
+      "title": "Remaining typed owner projections for the thirteen blocked task reads",
+      "approvedAssertions": [
+        "The exact remaining denominator is 13: eight existing named reader boundaries, one organization-plus-extension detail, one nine-type operations audit, one branched platform audit, and two group-workspace reads.",
+        "All 13 reader paths use compile-time typed inputs and named owner projections; no edge JDBC, operationId dispatcher, generic query bus, cross-request cache, or BP-U06 retirement is introduced.",
+        "The ten cap-exception rows remain the exact closed set; every owner segment has logicalStatementCap=1 and unmeasured status cannot be reported as numeric optimization success.",
+        "Operations audit remains cap one only through a closed nine-target coordinator; platform audit preserves PLATFORM_ADMIN ungated and the frozen group-workspace two-owner branch.",
+        "Group-workspace list replaces, rather than duplicates, WorkspaceAdministrationService's cross-schema commercial-group EXISTS: the page composes a platform base page, organization initialization batch, and asset batch; detail additionally consumes one workspace-IAM account-and-role summary statement.",
+        "After source admission the policy denominator becomes 78 TASK_READER and zero NOT_YET_TASK_READER, while runtime status remains BLOCKED_UNMEASURED until authorized immutable snapshot evidence exists."
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+          "sha256": "79ecbd69629f764529aa647cafa9efeea12f0cfe4a34a9904d87027b161c6f69",
+          "anchor": "#### BP-U05 剩余 owner-projection delivery（implementation-facing）"
+        },
+        {
+          "path": "doc/decisions/2026-08-09-v2s-backend-performance-phase4-owner-projection-rebaseline.md",
+          "sha256": "cd475e35288e9ebdafd3380d7756e27daeab0f17fdcf15e193cf92e9c8b30759",
+          "anchor": "## 2. 问题族、全量分母与反例"
+        },
+        {
+          "path": "contracts/registry/task-read-surface-policy.json",
+          "sha256": "a1f54fc79621ab204f6c6921fe8b4142cd6e1f420325c730bacc22d589bd6617",
+          "anchor": "\"kind\": \"task-read-surface-policy\""
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+        "anchor": "#### BP-U05 剩余 owner-projection delivery（implementation-facing）"
+      },
+      "currentDeviation": "The policy now reports 78 TASK_READER and zero NOT_YET_TASK_READER after the named owner projections and their focused proof surfaces were admitted. Immutable runtime snapshot evidence remains absent, so every read-budget status remains BLOCKED_UNMEASURED and no numeric optimization result is asserted.",
+      "changeSurfaces": [
+        {"path":"contracts/registry/task-read-surface-policy.json","disposition":"update","target":"admit each completed typed boundary, derive 78/0, and preserve the ten cap-exception exact set"},
+        {"path":"scripts/generate/task-read-surface-policy.mjs","disposition":"update","target":"validate source-bound reader closures, audit branches, cap segments, and production red mutations"},
+        {"path":"scripts/check/backend-performance-read-budget","disposition":"update","target":"report the closed reader denominator without treating absent runtime evidence as measured"},
+        {"path":"apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java","disposition":"update","target":"retain named contract page, detail, candidate, and platform page projections"},
+        {"path":"apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java","disposition":"update","target":"retain management definition projections and add platform organization detail definition projection"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java","disposition":"update","target":"provide typed platform page/tree/base-detail projections"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java","disposition":"update","target":"retain typed platform candidate projection"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java","disposition":"update","target":"call only the named task projections for its four GET operations"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java","disposition":"update","target":"call named task projections for page and frozen cap-two detail"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java","disposition":"update","target":"call typed page, candidate, tree, and cap-two detail projections"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/audit/OperationsAuditTaskReadService.java","disposition":"update","target":"closed nine-type cap-one operations audit coordinator"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/audit/OperationsAuditTaskReadServiceTest.java","disposition":"update","target":"nine-type, absent/mismatch, and old-chain rejection proof"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryController.java","disposition":"update","target":"replace legacy host authorization and owner dispatch with the nine-type typed reader call"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryControllerTest.java","disposition":"update","target":"prove the edge calls only the typed reader and cannot retain legacy detail/view/authorization lookups"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/audit/PlatformAuditHistoryTaskReadService.java","disposition":"update","target":"closed branched platform audit coordinator"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/audit/PlatformAuditHistoryTaskReadServiceTest.java","disposition":"update","target":"platform-admin ungated and group-workspace two-segment proof"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java","disposition":"update","target":"replace legacy switch with the typed reader while preserving PLATFORM_ADMIN ungated and group-workspace two-stage inputs"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryControllerTest.java","disposition":"update","target":"prove platform-admin does not load selected workspace and every remaining branch enters the typed reader"},
+        {"path":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java","disposition":"update","target":"typed group-workspace page/detail three- and four-segment coordinator"},
+        {"path":"apps/backend/catering-business-server/modules/workspace/src/test/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadServiceTest.java","disposition":"update","target":"page/detail owner-boundary and cap proof"},
+        {"path":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java","disposition":"update","target":"return only the platform-workspace base page; remove the commercial-group cross-schema EXISTS from list"},
+        {"path":"apps/backend/catering-business-server/modules/workspace/src/test/java/com/catering/v2s/platform/workspace/api/WorkspaceAdministrationPageRequestTest.java","disposition":"update","target":"prove list SQL contains no organization schema reference after base-page extraction"},
+        {"path":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/api/WorkspaceIamSummaryLookup.java","disposition":"update","target":"declare the typed account-and-role aggregate summary port"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamSummaryReadService.java","disposition":"update","target":"provide the one-statement owner-local account-and-role aggregate"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceIamSummaryReadServiceTest.java","disposition":"update","target":"prove the aggregate remains one logical statement rather than two count calls"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationGroupWorkspaceInitializationLookup.java","disposition":"update","target":"organization-owned initialization list/detail API with no platform-owned fields; avoids organization-to-workspace dependency"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationGroupWorkspaceInitializationTaskReadService.java","disposition":"update","target":"implement organization-owned bounded initialization list/detail facts without platform-owned columns"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationGroupWorkspaceInitializationTaskReadServiceTest.java","disposition":"update","target":"prove paged-key bounded input, owner-only output, and no platform-column projection"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java","disposition":"update","target":"replace direct page/detail owner composition with the typed three/four-segment reader"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationControllerTest.java","disposition":"update","target":"prove list/detail call only the typed reader and preserve platform read-session behavior"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/contract/OperationsContractControllerScopeAndCandidateTest.java","disposition":"update","target":"GET-only task reader and command separation proof"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewControllerTest.java","disposition":"update","target":"page/detail typed boundary proof"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewControllerTest.java","disposition":"update","target":"page/candidate/tree/detail typed boundary proof"}
+      ],
+      "orderedChain": [
+        "admit the eight existing reader boundaries with source-bound red fixtures",
+        "implement and prove organization detail before its extension projection is joined",
+        "implement the independent operations and platform audit coordinators from their closed target sets",
+        "replace the group-workspace base-page cross-schema EXISTS with organization-owned initialization facts, then implement page/detail from the frozen three/four owner projections",
+        "derive 78/0 only after all reader sources and focused proof are present; retain BLOCKED_UNMEASURED until future authorized snapshot evidence"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Control admission is serial because task-read policy is a single semantic source; owner reader units may otherwise proceed only on disjoint files.",
+        "No command may call a task reader, and no reader may remove or route through the BP-U06 legacy dispatcher.",
+        "No runtime execution is in this delivery; any future workload requires separate authority and must record business and cleanup independently."
+      ],
+      "dataEvolution": {"policy":"No schema, migration, DML, or cross-schema join is introduced; all projections remain typed owner-local reads."},
+      "uiAndTerms": {"notApplicableReason":"Existing HTTP response contracts and two admin applications are retained; this delivery changes internal typed reader boundaries only.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"policy exact-set/source red mutations and 78/0 static closure","l2":"owner reader and edge command-separation focused tests","l3":"future immutable snapshot component/cap evidence","business":"future authorized managed focused reader workload","cleanup":"future managed workload cleanup manifest"},
+      "forbiddenPseudoFixes": ["edge PRIMARY_QUERY wrapper","cross-owner schema join","string operation dispatch","generic query bus","task reader from command","numeric optimization claim before snapshot","BP-U06 legacy retirement"],
+      "discriminator": {"fixture":"Changing any admitted edge call to a legacy read, adding/removing an operations-audit target type, routing PLATFORM_ADMIN through selected workspace, or adding an undeclared owner segment must fail the source-bound policy gate."}
+    }
+  ]
+}

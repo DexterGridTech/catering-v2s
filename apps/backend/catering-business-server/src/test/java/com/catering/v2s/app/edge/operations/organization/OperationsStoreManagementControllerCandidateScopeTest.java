@@ -54,14 +54,14 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             List.of()
         );
         selectedProject(fixture, projectId);
-        when(fixture.storeCandidates.candidates(fixture.workspaceId, KEY, fixture.session.currentAssignmentId(), projectId, projectId, brandId, tenantId))
+        when(fixture.storeCandidates.operationsStoreCandidates(fixture.workspaceId, KEY, fixture.session.currentAssignmentId(), projectId, projectId, brandId, tenantId))
             .thenReturn(page);
 
         var result = fixture.controller.candidates(fixture.request, KEY, fixture.session.contextVersion(), brandId, tenantId);
 
         assertEquals(page, result);
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
-        verify(fixture.storeCandidates).candidates(fixture.workspaceId, KEY, fixture.session.currentAssignmentId(), projectId, projectId, brandId, tenantId);
+        verify(fixture.storeCandidates).operationsStoreCandidates(fixture.workspaceId, KEY, fixture.session.currentAssignmentId(), projectId, projectId, brandId, tenantId);
     }
 
     @Test
@@ -318,6 +318,9 @@ class OperationsStoreManagementControllerCandidateScopeTest {
     private static Fixture fixture(WorkspaceSessionReadback session) {
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(session);
+        var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
+        when(readFacts.sessionReadback()).thenReturn(session);
+        when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
         BusinessEntityService entities = mock(BusinessEntityService.class);
         StoreCandidateTaskReadService storeCandidates = mock(StoreCandidateTaskReadService.class);
         OrganizationOverviewTaskReadService overview = mock(OrganizationOverviewTaskReadService.class);

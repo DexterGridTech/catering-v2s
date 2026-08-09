@@ -56,9 +56,9 @@ public final class RequestCompletionDiagnosticInterceptor implements HandlerInte
     }
 
     private static boolean isManagedDiagnosticRequest(HttpServletRequest request) {
-        // Only the already-validated metrics interceptor may mark a request as managed. Raw
-        // headers are caller-controlled and must never provide an observability bypass.
-        return request.getAttribute(HttpRequestMetricsInterceptor.class.getName()) != null;
+        // Scope instrumentation covers every active non-production request, but only the
+        // secret/run-id authenticated request already has a managed completion event.
+        return HttpRequestMetricsInterceptor.isManagedEventRequest(request);
     }
 
     private static String safePattern(String pattern) {

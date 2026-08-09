@@ -78,8 +78,11 @@ class OperationsWorkspaceUserServerScopeTest {
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), UUID.randomUUID(), KEY, UUID.randomUUID(), UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 7L, 1L, Set.of(), Set.of(), "Operations tester");
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(session);
+        var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
+        when(readFacts.sessionReadback()).thenReturn(session);
+        when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
         WorkspaceUserService user = mock(WorkspaceUserService.class);
-        OperationsWorkspaceUserController controller = new OperationsWorkspaceUserController(new OperationsSessionResolver(authentication), user, mock(WorkspaceAccountService.class));
+        OperationsWorkspaceUserController controller = new OperationsWorkspaceUserController(new OperationsSessionResolver(authentication), user, mock(WorkspaceAccountService.class), new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(user, null, authentication));
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
         return new Fixture(controller, user, request, session, authentication);
     }

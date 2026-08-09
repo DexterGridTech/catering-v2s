@@ -5,11 +5,19 @@
   "sourceBindings": {
     "operationDesignContract": {
       "path": "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json",
-      "sha256": "b00674e6c55c3677221cdd166799b5e084daa6682d69ccf4de4cbfb4cce60750"
+      "sha256": "a9974ace285f2c4736769f231257395e5b8014056cf98fc09175b26dfc7ce850"
+    },
+    "categoryRemediationDesign": {
+      "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
+      "sha256": "6e84ffe73d4dcb77587f44aeaa2db1184e31e3a0ea24bafa79a245e8ad85edc1"
+    },
+    "referencePathMatrix": {
+      "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
+      "sha256": "5c6edebff250549a7c90cf12024992ddd6b426b4cf801d515c68abf192f8ff10"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
-      "sha256": "08be6b7b232e5bc220d5e2e79841e6a4dee0a7df965dbc71e49ceb3942101354"
+      "sha256": "68492c610d54ad0525d31f0863d21866058b4153a2be2208a7c6e974627e0f36"
     },
     "apiScenarios": {
       "path": "contracts/policy/catalog-inventory-api-scenarios.json"
@@ -34,6 +42,13 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
       "request": {
         "component": "CatalogContextQuery",
         "method": "GET",
@@ -284,6 +299,13 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
       "request": {
         "component": "CatalogNavigationQuery",
         "method": "GET",
@@ -425,6 +447,13 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
       "request": {
         "component": "CatalogItemPageQuery",
         "method": "GET",
@@ -699,6 +728,13 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
       "request": {
         "component": "CatalogItemDetailQuery",
         "method": "GET",
@@ -998,7 +1034,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ITEM",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogItemCreateRequest",
@@ -1160,7 +1207,22 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "coordinatedInventoryDefinitionCommands": [
+        "ensureCatalogInventoryTarget",
+        "saveCatalogProductBom"
       ],
       "request": {
         "component": "CatalogItemSaveRequest",
@@ -1189,7 +1251,7 @@
         {
           "order": 2,
           "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Load catalog and inventory versions plus asset grants; apply catalog and inventory owner writes atomically; audit and return both owner readbacks."
+          "action": "Load catalog and inventory versions plus transient asset bind grants from X-Catalog-Asset-Bind-Grants; apply catalog and inventory owner writes atomically without persisting or logging those grants; audit and return both owner readbacks."
         },
         {
           "order": 3,
@@ -1292,7 +1354,7 @@
           "precedence": 8,
           "problemCode": "ASSET_NOT_READY",
           "conditions": [
-            "Referenced staged asset is missing, not ready or has no bind grant."
+            "Referenced staged asset is missing, not ready, or has no matching transient header bind grant; an already ACTIVE CATALOG_ITEM_IMAGE remains reusable without a grant."
           ]
         }
       ],
@@ -1355,7 +1417,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogItemTransitionRequest",
@@ -1564,7 +1637,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_CATEGORY",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogCategoryCreateRequest",
@@ -1715,12 +1799,23 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_CATEGORY",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogCategoryUpdateRequest",
         "method": "PATCH",
-        "path": "/operations/catalog-inventory/categories/{categoryCode}"
+        "path": "/operations/catalog-inventory/categories/{categoryRef}"
       },
       "response": {
         "component": "CatalogCategoryReadback"
@@ -1731,8 +1826,7 @@
         "NOT_FOUND",
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE"
+        "RESULT_UNKNOWN"
       ],
       "logicSteps": [
         {
@@ -1814,13 +1908,6 @@
           "conditions": [
             "Idempotency receipt is indeterminate."
           ]
-        },
-        {
-          "precedence": 7,
-          "problemCode": "VOIDED_RECORD_IMMUTABLE",
-          "conditions": [
-            "Target is terminal VOIDED."
-          ]
         }
       ],
       "normalPathDbOperations": {
@@ -1869,12 +1956,23 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_MOVE_OPERATIONS_CATALOG_CATEGORY",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogCategoryMoveRequest",
         "method": "POST",
-        "path": "/operations/catalog-inventory/categories/{categoryCode}/move"
+        "path": "/operations/catalog-inventory/categories/{categoryRef}/move"
       },
       "response": {
         "component": "CatalogCategoryReadback"
@@ -1886,19 +1984,20 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE",
-        "HIERARCHY_CYCLE"
+        "HIERARCHY_CYCLE",
+        "CATEGORY_DEPTH_EXCEEDED",
+        "MOVE_BOUNDARY"
       ],
       "logicSteps": [
         {
           "order": 1,
           "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed move input, trusted context, page/capability and owner scope; require distinct target and proposed parent."
+          "action": "Validate typed reparent/up/down input, trusted context, page/capability and owner scope; a parent is required only for REPARENT."
         },
         {
           "order": 2,
           "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Load target, current parent, proposed parent and the proposed parent's ancestor closure set-wise; reject VOIDED/version drift or a closure containing the target; then CAS-update parent/order and append audit."
+          "action": "Lock the current sibling set; for REPARENT validate the proposed parent ancestor closure, otherwise exchange the latest adjacent sibling; then update parent/order and append audit."
         },
         {
           "order": 3,
@@ -1971,17 +2070,24 @@
           ]
         },
         {
-          "precedence": 7,
-          "problemCode": "VOIDED_RECORD_IMMUTABLE",
-          "conditions": [
-            "Target is terminal VOIDED."
-          ]
-        },
-        {
           "precedence": 8,
           "problemCode": "HIERARCHY_CYCLE",
           "conditions": [
-            "Requested category parent/order creates a cycle."
+            "Requested category parent creates a cycle."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "CATEGORY_DEPTH_EXCEEDED",
+          "conditions": [
+            "Requested reparenting exceeds the two-level tree limit."
+          ]
+        },
+        {
+          "precedence": 10,
+          "problemCode": "MOVE_BOUNDARY",
+          "conditions": [
+            "No adjacent sibling exists in the requested move direction."
           ]
         }
       ],
@@ -2022,7 +2128,7 @@
       ]
     },
     {
-      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "operationId": "deleteOperationsCatalogCategory",
       "face": "operations-admin",
       "initiatingOwner": "catalog",
       "coordinatedOwners": [],
@@ -2031,15 +2137,26 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
-        "component": "CatalogCategoryTransitionRequest",
-        "method": "POST",
-        "path": "/operations/catalog-inventory/categories/{categoryCode}/status"
+        "component": "CatalogCategoryDeleteRequest",
+        "method": "DELETE",
+        "path": "/operations/catalog-inventory/categories/{categoryRef}"
       },
       "response": {
-        "component": "CatalogCategoryReadback"
+        "component": "CatalogCategoryDeleteReadback"
       },
       "problemCodes": [
         "VALIDATION_ERROR",
@@ -2048,20 +2165,18 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE",
-        "REFERENCE_BLOCKS_VOID",
-        "DEPENDENT_FACTS_BLOCK_VOID"
+        "REFERENCE_BLOCKS_DELETE"
       ],
       "logicSteps": [
         {
           "order": 1,
           "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed input, trusted context, page/capability and owner scope."
+          "action": "Validate typed category-deletion input, trusted context, page/capability and owner scope."
         },
         {
           "order": 2,
           "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+          "action": "Lock the requested subtree, compare root version, verify zero product references, delete atomically, audit and return typed readback."
         },
         {
           "order": 3,
@@ -2135,23 +2250,9 @@
         },
         {
           "precedence": 7,
-          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "problemCode": "REFERENCE_BLOCKS_DELETE",
           "conditions": [
-            "Target is terminal VOIDED."
-          ]
-        },
-        {
-          "precedence": 8,
-          "problemCode": "REFERENCE_BLOCKS_VOID",
-          "conditions": [
-            "VOIDED transition requested while inbound references remain."
-          ]
-        },
-        {
-          "precedence": 9,
-          "problemCode": "DEPENDENT_FACTS_BLOCK_VOID",
-          "conditions": [
-            "VOIDED transition requested while owner dependent facts remain."
+            "One or more categories in the requested subtree are referenced by a product."
           ]
         }
       ],
@@ -2183,7 +2284,7 @@
         {
           "assertionId": "ASSERT-OPERATION-11",
           "iaIds": [],
-          "verifiedBusinessBehavior": "transitionOperationsCatalogCategoryStatus：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "verifiedBusinessBehavior": "deleteOperationsCatalogCategory：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
           "primaryVerifier": "API",
           "scenarioIds": [
             "CI-API-006"
@@ -2201,6 +2302,13 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
       "request": {
         "component": "CatalogDictionaryQuery",
         "method": "GET",
@@ -2364,7 +2472,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogDictionaryEntryCreateRequest",
@@ -2502,7 +2621,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogDictionaryEntryUpdateRequest",
@@ -2656,7 +2786,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogDictionaryEntryReorderRequest",
@@ -2810,7 +2951,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogDictionaryEntryTransitionRequest",
@@ -2980,6 +3132,13 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
       "request": {
         "component": "ProductionTagQuery",
         "method": "GET",
@@ -3095,7 +3254,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "ProductionTagCreateRequest",
@@ -3245,7 +3415,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "ProductionTagUpdateRequest",
@@ -3401,7 +3582,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "ProductionTagTransitionRequest",
@@ -3584,6 +3776,12 @@
         "PG-CATALOG-STORE-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
+      ],
       "request": {
         "component": "LocalCopyCandidateQuery",
         "method": "GET",
@@ -3709,7 +3907,15 @@
         "PG-CATALOG-STORE-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY",
+      "capabilityByDataNodeType": {
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "LocalCopyPreflightRequest",
@@ -3889,7 +4095,15 @@
         "PG-CATALOG-STORE-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY",
+      "capabilityByDataNodeType": {
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "LocalCopyExecuteRequest",
@@ -4078,7 +4292,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "TemporaryPromotionPreflightRequest",
@@ -4235,7 +4460,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "TemporaryPromotionExecuteRequest",
@@ -4399,6 +4635,12 @@
         "PG-CATALOG-STORE-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
+      ],
       "request": {
         "component": "BrandCopyCandidateQuery",
         "method": "GET",
@@ -4527,7 +4769,15 @@
         "PG-CATALOG-STORE-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY",
+      "capabilityByDataNodeType": {
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "BrandCopyPreflightRequest",
@@ -4837,7 +5087,15 @@
         "PG-CATALOG-STORE-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_BRAND_CATALOG_COPY",
+      "capabilityByDataNodeType": {
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "BrandCopyExecuteRequest",
@@ -5076,6 +5334,12 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
+      ],
       "request": {
         "component": "InventoryTargetPageQuery",
         "method": "GET",
@@ -5201,6 +5465,12 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
+      ],
       "request": {
         "component": "InventoryTargetQuery",
         "method": "GET",
@@ -5378,6 +5648,12 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
+      ],
       "request": {
         "component": "InventoryTargetPeriodQuery",
         "method": "GET",
@@ -5489,6 +5765,12 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
+      ],
       "request": {
         "component": "InventoryHistoryPageQuery",
         "method": "GET",
@@ -5602,6 +5884,12 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
+      ],
       "request": {
         "component": "InventoryReferencePageQuery",
         "method": "GET",
@@ -5725,6 +6013,12 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
+      ],
       "request": {
         "component": "InventoryLedgerPageQuery",
         "method": "GET",
@@ -5835,8 +6129,12 @@
       "pageKeys": [
         "PG-INVENTORY-STORE-STATUS"
       ],
-      "capabilityKeys": [
-        "READ_INVENTORY_ADVANCED_DIAGNOSTICS"
+      "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "InventoryDiagnosticsQuery",
@@ -5958,7 +6256,15 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_STORE_INVENTORY"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_COUNT_OPERATIONS_INVENTORY_TARGET",
+      "capabilityByDataNodeType": {
+        "STORE": "EDIT_STORE_INVENTORY"
+      },
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "InventoryCountRequest",
@@ -6116,7 +6422,15 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_STORE_INVENTORY"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_INCREASE_OPERATIONS_INVENTORY_TARGET",
+      "capabilityByDataNodeType": {
+        "STORE": "EDIT_STORE_INVENTORY"
+      },
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "InventoryIncreaseRequest",
@@ -6263,7 +6577,15 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_STORE_INVENTORY"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_ADJUST_OPERATIONS_INVENTORY_TARGET",
+      "capabilityByDataNodeType": {
+        "STORE": "EDIT_STORE_INVENTORY"
+      },
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "InventoryAdjustmentRequest",
@@ -6418,7 +6740,15 @@
         "PG-INVENTORY-STORE-STATUS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_STORE_INVENTORY"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION",
+      "capabilityByDataNodeType": {
+        "STORE": "EDIT_STORE_INVENTORY"
+      },
+      "allowedDataNodeTypes": [
+        "STORE"
       ],
       "request": {
         "component": "InventoryTargetConfigurationRequest",
@@ -6574,7 +6904,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_STAGE_OPERATIONS_CATALOG_ASSET",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogAssetStageRequest",
@@ -6738,7 +7079,18 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [
-        "EDIT_CATALOG_LIBRARY"
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_RELEASE_OPERATIONS_CATALOG_STAGED_ASSET",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
       ],
       "request": {
         "component": "CatalogAssetReleaseRequest",
@@ -6896,6 +7248,13 @@
         "PG-CATALOG-BRAND-ITEMS"
       ],
       "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
       "request": {
         "component": "CatalogShapeManifestQuery",
         "method": "GET",

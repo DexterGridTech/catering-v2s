@@ -1,7 +1,6 @@
 import type {CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
 
-export const EDIT_CATALOG_LIBRARY = 'EDIT_CATALOG_LIBRARY';
-export const READ_INVENTORY_ADVANCED_DIAGNOSTICS = 'READ_INVENTORY_ADVANCED_DIAGNOSTICS';
+export const EDIT_STORE_INVENTORY = 'EDIT_STORE_INVENTORY';
 
 export type StockView = 'ALL' | 'NEEDS_ATTENTION' | 'LOW' | 'OUT' | 'NEGATIVE' | 'UNKNOWN';
 
@@ -75,8 +74,8 @@ export function hasCapability(keys: readonly string[], capability: string) {
   return keys.includes(capability);
 }
 
-export function shouldRequestInventoryDiagnostics(drawerOpen: boolean, granted: boolean) {
-  return drawerOpen && granted;
+export function shouldRequestInventoryDiagnostics(drawerOpen: boolean) {
+  return drawerOpen;
 }
 
 export function matchesStockView(row: InventoryTargetSummary, view: StockView) {

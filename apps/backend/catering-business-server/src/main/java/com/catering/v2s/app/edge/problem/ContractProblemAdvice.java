@@ -61,6 +61,11 @@ public final class ContractProblemAdvice {
         return problem(HttpStatus.valueOf(status), code, "商品、生产标签或库存操作不满足 owner 约束", request);
     }
 
+    @ExceptionHandler(PlatformAssetService.AssetOwnerScopeForbiddenException.class)
+    ResponseEntity<Problem> catalogAssetOwnerScopeForbidden(PlatformAssetService.AssetOwnerScopeForbiddenException exception, HttpServletRequest request) {
+        return problem(HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN", "商品图片资产操作不满足 owner 约束", request);
+    }
+
     @ExceptionHandler({
         ContractCommandService.ContractNotFoundException.class,
         ExtensionDefinitionService.DefinitionNotFoundException.class,

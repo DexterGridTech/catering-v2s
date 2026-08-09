@@ -44,7 +44,8 @@
       "contracts/catalog/CatalogInventoryShapeManifest.java",
       "contracts/catalog/catalogInventoryShapeManifest.ts",
       "contracts/catalog/CatalogInventoryEdgeWire.java",
-      "contracts/catalog/catalogInventoryEdgeWire.ts"
+      "contracts/catalog/catalogInventoryEdgeWire.ts",
+      "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
     ]
   },
   "forbiddenSurfaces": [
@@ -59,7 +60,7 @@
   "authorizationBoundary": "P1 definition implementation only: contract/read-model/seed-fixture/scenario/generated artifacts; no owner runtime, schema, migration, reset/seed execution, browser execution or deployment.",
   "implementationInputs": {
     "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
-    "designSha256": "fe8c0d55a6947a4c61005be2061215779f661c9b09665d280c3dc6ff329ea244",
+    "designSha256": "def2e0490ee964233448063578c671dc5da9d1287eaceb189d886aa9a8252215",
     "designReviewIntakePath": "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-final-review-intake-codex.md",
     "designReviewIntakeSha256": "acda8e8e40109222b14c5fd4b01a2e1fab9a8e07743f73a6badf23e2ea37a4b6"
   }

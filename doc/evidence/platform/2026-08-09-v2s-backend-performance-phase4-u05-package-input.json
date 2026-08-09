@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-phase4-u05-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-PHASE4-U05-20260809",
+  "status": "ACTIVE_IMPLEMENTATION_AUTHORITY",
+  "scope": {
+    "includedUnits": ["BP-U05", "BP-U07-M2-C5-COMMAND-RECONCILIATION"],
+    "excludedUnits": ["BP-U06"],
+    "authorization": "Dexter explicitly authorized BP-U05 implementation and verification on 2026-08-09 after Claude's package-admission GO. This permits only BP-U05 plus the two C5 command reconciliations; BP-U06 remains excluded."
+  },
+  "sourceDenominators": {
+    "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+      "project-memory/decisions/deterministic-context-only.md",
+      "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "project-memory/decisions/incremental-compliance-hook.md",
+      "project-memory/operations/verification-governance.md"
+    ],
+    "APPROVED_ASSERTIONS": [
+      "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md#BP-U05",
+      "doc/decisions/2026-08-09-v2s-backend-performance-phase3-to-phase4-rebaseline.md",
+      "doc/review/platform/2026-08-09-v2s-backend-performance-phase4-u05-rebaseline-recheck-claude.md",
+      "contracts/registry/task-read-surface-policy.json"
+    ],
+    "FORBIDDEN_PSEUDO_FIXES": [
+      "no task reader from a command transaction or C5 command invocation",
+      "no WorkspaceSessionRequestCache-backed WorkspaceReadAuthorizationFacts",
+      "no global query bus, dynamic dispatcher, cross-owner cache, endpoint-specific SQL, or cross-schema DML",
+      "no protocol/content exemption receiving workspace facts or a task budget",
+      "no BP-U06 cutover, SQL numeric success claim, DEV, reset/seed, L2/UAT, deployment, or repository-control action"
+    ],
+    "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+      "83=78 task-read plus five protocol/content exemptions with exact source anchors and NORMAL fixtures",
+      "M1 read=58, M2 C5 command=2 plus task read=58; no face-derived expansion",
+      "request-local immutable facts and closed ReadBudgetComponent accounting with UNCLASSIFIED=0 for measured B operations",
+      "C5 post-mutation reconciliation remains WorkspaceAuthenticationService-local and separate from task readers"
+    ],
+    "OWNED_SURFACE_AND_OPERATION_KEYS": [
+      "policy/control: task-read policy 83 / B=78 / platform audit six enabled branches plus PLATFORM_ADMIN counterexample",
+      "workspace-iam/organization: fresh WorkspaceReadAuthorizationFacts, VisibleOrganizationFacts, and C5 command-local facts",
+      "platform: PlatformReadSessionFacts and EnabledSelectedWorkspaceFact; audit branch behavior preserved",
+      "catalog/inventory/contract/organization/workspace-iam task readers: owner-local typed read boundaries only",
+      "edge diagnostic: request-completion ReadBudgetComponent evidence"
+    ],
+    "DUE_STANDARDS_RULE_IDS": [
+      "scripts/check/implementation-design-granularity",
+      "scripts/check/backend-performance-read-budget",
+      "scripts/check/backend-performance-sql-merge-coverage",
+      "scripts/check/backend-performance-evidence-snapshot",
+      "scripts/check/standards-coverage --phase R5"
+    ]
+  },
+  "plannedImplementationSurfaces": {
+    "control": [
+      "contracts/registry/task-read-surface-policy.json",
+      "scripts/generate/task-read-surface-policy.mjs",
+      "scripts/check/backend-performance-read-budget",
+      "contracts/registry/backend-performance-sql-merge-applicability.json",
+      "scripts/generate/backend-performance-sql-merge-applicability.mjs",
+      "scripts/check/backend-performance-sql-merge-coverage"
+    ],
+    "workspaceAndOrganization": [
+      "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceReadAuthorizationFacts.java",
+      "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+      "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceSessionRequestCache.java",
+      "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java"
+    ],
+    "edgeAndPlatform": [
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java"
+    ],
+    "ownerTaskReaders": [
+      "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogTaskReadService.java",
+      "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryTaskReadService.java",
+      "existing owner-local contract, organization, platform-workspace, and workspace-iam task-reader sources selected only after per-operation reread"
+    ],
+    "tests": [
+      "focused owner/edge diagnostics tests selected from the exact 78 policy anchors; each actual file must be added to a later implementation activation before edit"
+    ]
+  },
+  "implementationAdmissionPreconditions": [
+    "the active package sets implementationAuthority=true and enumerates the exact production/test paths selected after pointwise reread",
+    "the active package preserves BP-U06 exclusion and this fresh IMPLEMENTATION review cycle",
+    "every actual changed file must obtain Pre/Post hook receipts before the final package exit"
+  ]
+}

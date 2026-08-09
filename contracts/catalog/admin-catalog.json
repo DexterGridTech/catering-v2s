@@ -1531,11 +1531,28 @@
       }
     },
     {
-      "key": "EDIT_CATALOG_LIBRARY",
+      "key": "EDIT_HEAD_COMPANY_CATALOG",
       "kind": "ACTION",
       "consumerFace": "operations-admin",
       "display": {
-        "label": "编辑商品库"
+        "label": "编辑总公司商品"
+      },
+      "action": {
+        "groupKey": "CATALOG_MANAGEMENT",
+        "targetPageKey": "PG-CATALOG-BRAND-ITEMS",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "HEAD_COMPANY"
+        ],
+        "scopeApplicability": "SELECTED_HEAD_COMPANY_SCOPE"
+      }
+    },
+    {
+      "key": "EDIT_STORE_CATALOG",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑门店商品"
       },
       "action": {
         "groupKey": "CATALOG_MANAGEMENT",
@@ -1544,18 +1561,17 @@
           "GROUP",
           "REGION",
           "PROJECT",
-          "HEAD_COMPANY",
           "STORE"
         ],
-        "scopeApplicability": "SELECTED_CATALOG_SCOPE"
+        "scopeApplicability": "SELECTED_STORE_SCOPE"
       }
     },
     {
-      "key": "READ_INVENTORY_ADVANCED_DIAGNOSTICS",
+      "key": "EDIT_STORE_INVENTORY",
       "kind": "ACTION",
       "consumerFace": "operations-admin",
       "display": {
-        "label": "查看库存高级诊断"
+        "label": "编辑门店库存"
       },
       "action": {
         "groupKey": "CATALOG_MANAGEMENT",

@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:extension"))
     implementation(project(":apps:backend:catering-business-server:modules:workspace-iam"))
     implementation(project(":apps:backend:catering-business-server:modules:store-contract"))
+    implementation(project(":apps:backend:catering-business-server:modules:audit-read"))
     implementation(project(":apps:backend:catering-business-server:modules:catalog"))
     implementation(project(":apps:backend:catering-business-server:modules:inventory"))
     implementation(project(":apps:backend:catering-business-server:modules:fulfillment-production"))

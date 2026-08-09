@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "runtime-start-token-safety-package-input",
+  "packageId": "RUNTIME-START-TOKEN-SAFETY-20260809",
+  "status": "PROPOSED_STATIC_IMPLEMENTATION",
+  "authorization": "Dexter authorized complete Phase 4 implementation and verification on 2026-08-09. This safety repair is mandatory before any managed dynamic verification because the active resource-budget preflight misses a live PID when ps lstart contains a double-space day token.",
+  "scope": {
+    "included": ["canonical local start-token normalization", "managed-resource preflight consistency", "static self-tests"],
+    "excluded": ["BP-U06", "DEV start or stop", "reset", "seed", "L2", "UAT", "deployment"]
+  },
+  "sourceDenominator": {
+    "runtimeSources": [
+      "scripts/env/check-runtime-resource-budget",
+      "scripts/dev/managed-process-tree.mjs",
+      "scripts/dev/r5-dev-runner.mjs",
+      "scripts/dev/http-diagnostic-runner.mjs",
+      "scripts/dev/r5-reset.mjs",
+      "scripts/dev/owner-command-seed-executor.mjs",
+      "scripts/dev/catalog-inventory-seed-executor.mjs",
+      "scripts/test/r5-joint-remote-l2.mjs",
+      "scripts/test/r5-remote-testcontainers.mjs"
+    ],
+    "invariant": "Every local PID identity comparison canonicalizes both manifest and live lstart tokens identically; internal whitespace does not evade a live-tree budget refusal."
+  },
+  "requiredEvidence": ["normalizer self-test preserves identity across double-space legacy tokens", "live managed PID is rejected by check-runtime-resource-budget", "mismatch identity remains non-owned", "no dynamic environment is started"]
+}

@@ -28,14 +28,15 @@ public final class RequestCompletionDiagnosticState {
     public static RequestCompletionDiagnosticState getOrCreate(HttpServletRequest request, HttpServletResponse response, EdgeRouteFaceRegistry.Definition definition) {
         Object existing = request.getAttribute(ATTRIBUTE);
         if (existing instanceof RequestCompletionDiagnosticState state) return state;
-        String correlationId = sanitizeCorrelationId(request.getHeader("X-Correlation-Id"));
-        String requestId = sanitizeRequestId(response.getHeader("X-Request-Id"));
-        RequestDiagnosticContext context = new RequestDiagnosticContext(
-                correlationId,
-                requestId,
-                definition.operationId(),
-                definition.path(),
-                definition.owner());
+        RequestDiagnosticContext context = HttpRequestMetricsInterceptor.context(request);
+        if (context == null) {
+            context = new RequestDiagnosticContext(
+                    sanitizeCorrelationId(request.getHeader("X-Correlation-Id")),
+                    sanitizeRequestId(response.getHeader("X-Request-Id")),
+                    definition.operationId(),
+                    definition.path(),
+                    definition.owner());
+        }
         RequestCompletionDiagnosticState state = new RequestCompletionDiagnosticState(context, definition.consumerFace());
         request.setAttribute(ATTRIBUTE, state);
         return state;

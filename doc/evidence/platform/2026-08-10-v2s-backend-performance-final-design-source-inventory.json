@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-design-source-inventory",
+  "status": "SOURCE_REOPENED",
+  "bpU06": {
+    "retiredProductionSources": [
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/audit/OperationsAuditTaskReadService.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/audit/PlatformAuditHistoryTaskReadService.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/cataloginventory/CatalogInventoryApplicationService.java"
+    ],
+    "retiredFocusedTests": [
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/audit/OperationsAuditTaskReadServiceTest.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/audit/PlatformAuditHistoryTaskReadServiceTest.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/cataloginventory/CatalogCopySourceAuthorityTest.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/cataloginventory/CatalogInventoryAssetLifecycleTest.java"
+    ],
+    "retiredDynamicRegistries": [
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/CatalogInventoryOperationRegistry.java",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/CatalogInventoryWorkspaceCommandTokenRegistry.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/CatalogInventoryOperationRegistryTest.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/CatalogInventoryWorkspaceCommandTokenRegistryTest.java"
+    ],
+    "retiredRootArtifact": "results/catalog-inventory-l2-test-fixture.json",
+    "routeDenominator": {"catalogInventory": 42, "typedGet": 16, "workspaceCommand": 26},
+    "auditDenominator": {"operationsTargetTypes": 9, "platformTargetTypes": 7},
+    "invariants": [
+      "all 42 routes use explicit typed coordinator methods",
+      "all 196 operation-handler bindings preserve their route and owner",
+      "old String operationId/ObjectNode dispatch has zero current production occurrences",
+      "audit coordinators retain sealed typed query branches without becoming edge-owned logic",
+      "no compatibility shim remains after source absence admission"
+    ]
+  },
+  "bpU07": {
+    "routeCoverage": 196,
+    "sqlMergeUnion": 134,
+    "exactSets": {"m1": 126, "m2": 60, "m3": 25, "m6": 11, "m4RetiredExpressions": 6, "m4RetainedExpressions": 5, "m5Rows": 6},
+    "admissionRule": "MEASURED_NEW_FIXTURE is legal only when backed by one immutable final-run snapshot tuple and exact operation/fixture membership."
+  },
+  "dynamic": {
+    "bpU05": {"taskRead": 78, "protocolCompletion": 5, "contextKinds": {"OPERATIONS_SCOPED": 58, "PLATFORM_WORKSPACE": 15, "PLATFORM_GLOBAL": 4, "PLATFORM_AUDIT_BRANCHED": 1}},
+    "bpU04": {"numericBaseline": 79, "contextParity": 38},
+    "evidenceFiles": ["run-manifest.json", "evidence/request-events.jsonl", "evidence/db-operations.jsonl", "evidence/statement-dictionary.json", "evidence/seed-report.json", "evidence/final-acceptance-report.json", "snapshots/<sha256>/snapshot-manifest.json"],
+    "requiredOutcome": ["business PASS", "cleanup PASS", "component sum equals database count", "UNCLASSIFIED equals zero", "per-row logical cap compliance"]
+  }
+}

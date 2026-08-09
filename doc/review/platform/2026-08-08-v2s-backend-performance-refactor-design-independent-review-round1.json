@@ -1,0 +1,145 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "BACKEND-PERFORMANCE-REFACTOR-DESIGN-20260808",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-08-v2s-backend-performance-refactor-design-independent-review-input-round1.md",
+    "sha256": "4b0c5fc1e1d2c034bfb580dc82d98d453b3e714cf2562cec503694f2f5963602"
+  },
+  "blindReviewDeclaration": "I received this checklist in a fresh subagent context, tried to falsify the reviewed design, and wrote my findings and verdict before reading author self-review or author finding disposition.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "b759ebf0386e750b660bfe7e3653b69ea2c386b75ed388a5a39892363907fa56",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "route denominator and GET-exemption classification",
+      "platform/public authorization-boundary preservation",
+      "transaction-local grant and replay ordering",
+      "command-baseline exact-set evidence",
+      "legacy-dispatch retirement dependency"
+    ]
+  },
+  "expectedBehavior": [
+    "The two generated route registries remain a disjoint 196-operation union with 83 GET operations.",
+    "A task-read budget applies only to independently declared task-read surfaces; the five protocol/content GET exemptions remain explicit and still emit completion and database-count evidence.",
+    "Workspace commands create one immutable transaction-local context and retain owner object-fact rechecks before receipt replay or mutation.",
+    "Platform-admin commands remain outside the workspace capability model, and public invitation/recovery commands retain owner-protocol facts rather than receiving a workspace grant.",
+    "Every command baseline is an exact operation-plus-branch-plus-fixture set with a frozen measurement basis before it drives a non-regression gate.",
+    "Legacy dynamic dispatch retires only after typed replacement parity and the complete owner-context coverage are proven."
+  ],
+  "findings": [
+    {
+      "id": "BP-M-001",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "BP-U02",
+        "BP-U03",
+        "BP-U06"
+      ],
+      "title": "The common command binding has no valid context path for platform or public commands.",
+      "evidence": "The reviewed design fixes every CommandOperation to handle(ExecutionContext<S>, Q) (design section 4, lines 104-114) and makes CommandExecutionContextResolver use a fresh workspace session, assignment, enabled role, requirement/capability, and organization task-path judgment (section 5.1, lines 125-136). Its binding contextKind nevertheless includes PLATFORM_CONTEXT without an interface or resolver path for it (section 3.1, lines 54-71). The actual disjoint registry has 30 non-GET platform-admin operations and nine non-GET public operations, including createPlatformAdmin and acceptPublicInvitation. PLATFORM-BLUEPRINT.md requires platform commands to stay outside workspace capability and requires public OTP/credential/invitation flows to use owner protocol facts. A forced workspace ExecutionContext would violate those boundaries; allowing a generic fallback would recreate the untyped dispatcher this design prohibits.",
+      "risk": "The 196 exact-set migration cannot be implemented for every command without either mis-authorizing platform/public routes, inventing a context escape hatch, or retaining an executable legacy path.",
+      "disposition": "Before another review, make context-kind an exhaustive generated binding contract and define corresponding typed invocation interfaces/factories: workspace ExecutionContext only for AUTHENTICATED_WORKSPACE commands, a platform-only context that performs platform owner recheck without workspace capability, and a public-protocol command context that carries only its protocol facts. Bind every non-GET operation to exactly one permitted context kind and add red fixtures for attempting cross-kind invocation."
+    },
+    {
+      "id": "BP-M-002",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "BP-U01",
+        "BP-U04",
+        "BP-U06"
+      ],
+      "title": "C1-C6 is not an executable command-baseline denominator.",
+      "evidence": "The reviewed design says a future performance-refactor-command-baselines.json will list C1-C6 operations, branches, fixtures, current values, and measurement schema (section 3.3, lines 87-91), but supplies none of those rows or an operation-to-candidate mapping. The cited C1-C6 labels are remediation themes, not operation IDs: the accepted Claude plan identifies C1 as six edge controllers, C2/C3 as shared session/capability paths, C4 as a catalog save candidate, C5 as visibility deduplication, and C6 as dictionary reference work. Therefore the proposed static gate cannot compute either its measured-baseline set or the stated complement of un-touched commands, and a later implementer could choose the denominator after observing results.",
+      "risk": "The package can claim command non-regression from a mutable or selectively chosen fixture set, contrary to the source problem's controlled-workload requirement and the design's own no-fabricated-number rule.",
+      "disposition": "Before another review, freeze an explicit per-operation baseline table in the design/manifest input: operationId, owner, candidate(s), success/replay/denial/conflict branches, immutable fixture identity, pre-change measurement-schema/basis hash, current observation or explicitly unmeasured state, and allowed comparison. Exclude read-only candidates from the command table explicitly. Make the gate exact-set check that table against the declared C1-C6 impact map before any baseline comparison."
+    },
+    {
+      "id": "BP-M-003",
+      "severity": "M",
+      "status": "OPEN",
+      "unitIds": [
+        "BP-U02",
+        "BP-U03",
+        "BP-U04",
+        "BP-U05"
+      ],
+      "title": "The design-granularity manifest cannot bind four delivery units to a unique design anchor.",
+      "evidence": "The manifest binds each unit's approved source and detailDesign anchor to the bare tokens BP-U01 through BP-U06. In the reviewed design, BP-U02 through BP-U05 each occur once in the batch table (lines 171-174) and again in the retirement table (lines 215-219). The production checker therefore currently fails before it can validate this review: IMPLEMENTATION_DESIGN_GRANULARITY=FAIL; REASON=UNIT_SOURCE_BP-U02_1_ANCHOR_NOT_UNIQUE:2. The other three repeated bare anchors have the same source shape.",
+      "risk": "The machine control cannot prove that the approved source for the affected units is unique, so later design changes can be attributed to the wrong table row and no package exit may honestly claim this manifest passed.",
+      "disposition": "Use unique, stable section anchors for every BP-U01 through BP-U06 delivery unit (for example dedicated headings), then update the manifest's approvedSources/detailDesign anchors and freeze the new hashes. Do not weaken unique-anchor validation or rely on table text matching."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "BP-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-002"
+      ]
+    },
+    {
+      "id": "BP-U02",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-001",
+        "BP-M-003"
+      ]
+    },
+    {
+      "id": "BP-U03",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-001",
+        "BP-M-003"
+      ]
+    },
+    {
+      "id": "BP-U04",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-002",
+        "BP-M-003"
+      ]
+    },
+    {
+      "id": "BP-U05",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-003"
+      ]
+    },
+    {
+      "id": "BP-U06",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-001",
+        "BP-M-002"
+      ]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "Owner-local static bindings, transaction-local workspace authorization, task-read boundaries, and branch-preserving duplicate-read remediation address the stated repeated-round-trip problem without treating raw database count as permission to remove correctness work.",
+    "simplerAlternativeAssessment": "A generic command context or a single dynamic registry would appear smaller but violates the platform/public and owner-sovereignty boundaries. The smaller safe repair is an exhaustive generated context-kind partition plus an explicit baseline table, not a broader framework.",
+    "costFit": "The proposed all-196 migration cost is justified only if its context and measurement denominators are frozen first; otherwise the required rework and evidence ambiguity exceed the benefit of starting implementation now.",
+    "verdict": "NO_GO_PENDING_EXACT_CONTEXT_AND_BASELINE_DENOMINATORS"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Independent falsification confirmed the 196/83 registry counts and found the five named GET exemptions plausibly protocol/content-specific, but the design cannot cover platform/public command contexts, does not define an executable C1-C6 command-baseline set, and presently fails its own unique-source-anchor control. All three gaps must close before implementation-facing design GO.",
+    "severityCounts": {
+      "M": 3,
+      "S": 0,
+      "N": 0
+    },
+    "authorizationBoundary": "This is a DESIGN round-1 verdict only. It authorizes no implementation, runtime, seed/reset, L2/UAT, or repository-control action."
+  }
+}

@@ -11,6 +11,8 @@ import {existsSync, mkdirSync, readFileSync, statSync, writeFileSync} from 'node
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById, writeSeedReportPair} from '../test/seed-report.mjs';
+import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents} from './managed-diagnostic-protocol.mjs';
+import {canonicalStartToken} from './managed-process-tree.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const fixturePath = path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json');
@@ -76,14 +78,17 @@ export function resolveInvitationCreationPlan(fixture) {
     const account = plan.accountKey === undefined ? null : accounts.get(required(plan.accountKey, 'SEED_INVITATION_PLAN_ACCOUNT_REQUIRED'));
     const node = nodes.get(required(plan.nodeKey, 'SEED_INVITATION_PLAN_NODE_REQUIRED'));
     const explicitMobile = plan.mobile === undefined ? null : required(plan.mobile, 'SEED_INVITATION_PLAN_MOBILE_REQUIRED');
+    const displayName = plan.displayName === undefined ? null : required(plan.displayName, 'SEED_INVITATION_PLAN_DISPLAY_NAME_REQUIRED');
     const mobile = account?.mobile ?? explicitMobile;
     if (!role || !node || !mobile || (account && explicitMobile) || role.serviceNodeType !== node.nodeType) fail('SEED_INVITATION_PLAN_REFERENCE_INVALID');
     if (states.get(invitationKey)?.status === 'COMPLETED' && !account) fail('SEED_COMPLETED_INVITATION_ACCOUNT_REQUIRED');
     if (states.get(invitationKey)?.status !== 'COMPLETED' && account) fail('SEED_NON_COMPLETED_INVITATION_ACCOUNT_FORBIDDEN');
+    if (states.get(invitationKey)?.status === 'CREDENTIAL_READY' && !account && !displayName) fail('SEED_INVITATION_DISPLAY_NAME_REQUIRED');
     plans.set(invitationKey, Object.freeze({
       invitationKey,
       roleKey: plan.roleKey,
       accountKey: plan.accountKey ?? null,
+      displayName,
       nodeKey: plan.nodeKey,
       mobile,
       targetOrganizationType: node.nodeType,
@@ -150,7 +155,7 @@ function managedRuntime() {
   if (manifest.kind !== 'r5-dev-run-manifest' || manifest.freshDatabase !== true || manifest.otpDebugExposure !== true) throw new FormalSeedFailure('SEED_MANAGED_RUN_INVALID');
   for (const process of manifest.processes ?? []) {
     const probe = spawnSync('ps', ['-o', 'lstart=', '-p', String(process.pid)], {encoding: 'utf8'});
-    if (probe.status !== 0 || probe.stdout.trim() !== process.startToken) throw new FormalSeedFailure(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
+    if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) throw new FormalSeedFailure(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
   }
   return {manifest, credentials: readEnv(requireValue(manifest.credentialsFile, 'SEED_CREDENTIALS_PATH_REQUIRED'))};
 }
@@ -174,7 +179,7 @@ function invocationKey(runId, stage) {
   return key;
 }
 export function invocationKeyForTest(runId, stage) { return invocationKey(runId, stage); }
-function canonicalUserName(key) { return `R5 ${key}`; }
+function canonicalUserName(displayName) { return requireValue(displayName, 'SEED_ACCOUNT_DISPLAY_NAME'); }
 function canonicalLogin(key) { return `r5-${key}`.replaceAll(/[^a-z0-9-]/g, '-').slice(0, 60); }
 function tokenFromInvitationPath(value) {
   const pieces = String(value ?? '').split('/').filter(Boolean);
@@ -243,11 +248,12 @@ async function executeFormalSeed() {
   const expectedNonApiStageIds = ['bootstrap', 'terminal-inv-expired'];
   const startedAt = new Date().toISOString();
   let firstFailure = null;
-  const persist = (business = 'RUNNING', cleanup = 'RUNNING') => writeFileSync(runManifest, `${JSON.stringify({kind: 'r5-formal-seed-manifest', schemaVersion: 1, runId, profile: 'r5-full', managedDevRunId: manifest.runId, startedAt, business, cleanup, firstFailure, phases}, null, 2)}\n`, {mode: 0o600});
+  const measurement = measurementMetadataForReport(manifest);
+  const persist = (business = 'RUNNING', cleanup = 'RUNNING') => writeFileSync(runManifest, `${JSON.stringify({kind: 'r5-formal-seed-manifest', schemaVersion: 2, runId, profile: 'r5-full', managedDevRunId: manifest.runId, measurement, startedAt, business, cleanup, firstFailure, phases}, null, 2)}\n`, {mode: 0o600});
   const phase = (stage, status, extra = {}) => { phases.push({atEpochMillis: Date.now(), stage, status, ...extra}); persist(); };
-  const seedEvents = () => existsSync(manifest.seedEventsPath) ? readFileSync(manifest.seedEventsPath, 'utf8').split('\n').filter(Boolean).flatMap((line) => { try { return [JSON.parse(line)]; } catch { return []; } }) : [];
+  const seedEvents = () => readManagedDiagnosticEvents(manifest);
   const finalize = (business, cleanup) => {
-    const report = buildSeedReport({runId, seedProfile: 'r5-full', startedAt, finishedAt: new Date().toISOString(), status: business, calls, events: seedEvents(), nonApiStages, expectedNonApiStageIds, firstFailure});
+    const report = buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: 'r5-full', startedAt, finishedAt: new Date().toISOString(), status: business, calls, events: seedEvents(), nonApiStages, expectedNonApiStageIds, firstFailure});
     writeSeedReportPair(reportPath, report);
     // A terminal PASS is valid only after the report pair is durable.  If the
     // report writer fails the caller records FAIL_REPORT_FINALIZATION instead
@@ -259,7 +265,7 @@ async function executeFormalSeed() {
     const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters});
     const requestIsIdempotent = idempotency ?? operation.method !== 'GET';
     const correlationId = `seed-${crypto.randomUUID()}`;
-    const headers = {Accept: 'application/json', 'X-Seed-Operation-Id': operation.operationId, 'X-Seed-Route-Template': operation.path, 'X-Seed-Run-Id': manifest.runId, 'X-Seed-Report-Secret': credentials.V2S_SEED_REPORT_SECRET, 'X-Correlation-Id': correlationId};
+    const headers = {Accept: 'application/json', ...buildManagedDiagnosticHeaders({manifest, credentials, operationId: operation.operationId, routeTemplate: operation.path, correlationId})};
     if (cookie) headers.Cookie = cookie;
     const idempotencyKey = requestIsIdempotent ? invocationKey(runId, stage) : null;
     if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
@@ -268,11 +274,11 @@ async function executeFormalSeed() {
     if (form) payload = form; else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
     let response;
     try { response = await fetch(`http://127.0.0.1:8080${pathname}`, {method: operation.method, headers, body: payload, signal: AbortSignal.timeout(15_000)}); }
-    catch { firstFailure ??= `${stage}_NETWORK`; calls.push({stageId: stage, owner: operation.owner, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs: Date.now() - started, status: 0, outcome: 'FAILED', correlationId, requestId: null}); phase(stage, 'FAIL', {operationId: operation.operationId, httpStatus: 0}); throw new FormalSeedFailure(firstFailure); }
+    catch { firstFailure ??= `${stage}_NETWORK`; calls.push({stageId: stage, managedDevRunId: manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(',') ?? null, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs: Date.now() - started, status: 0, outcome: 'FAILED', correlationId, requestId: null}); phase(stage, 'FAIL', {operationId: operation.operationId, httpStatus: 0}); throw new FormalSeedFailure(firstFailure); }
     const text = await response.text(); let json; try { json = text ? JSON.parse(text) : null; } catch { json = null; }
     const accepted = expected.includes(response.status);
     const requestId = response.headers.get('x-request-id');
-    calls.push({stageId: stage, owner: operation.owner, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs: Date.now() - started, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'FAILED', correlationId: response.headers.get('x-correlation-id') ?? correlationId, requestId});
+    calls.push({stageId: stage, managedDevRunId: manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(',') ?? null, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs: Date.now() - started, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'FAILED', correlationId: response.headers.get('x-correlation-id') ?? correlationId, requestId});
     const problemCode = typeof json?.errorCode === 'string' ? json.errorCode : 'UNCLASSIFIED';
     phase(stage, accepted ? 'PASS' : 'FAIL', {operationId: operation.operationId, httpStatus: response.status, requestId, ...(accepted ? {} : {problemCode})});
     if (!accepted) { firstFailure ??= `${stage}_HTTP_${response.status}_${problemCode}`; throw new FormalSeedFailure(firstFailure); }
@@ -289,7 +295,7 @@ async function executeFormalSeed() {
 
     const ids = {workspace: {}, asset: {}, extensionDefinition: {}, group: {}, region: {}, project: {}, brand: {}, tenant: {}, headCompany: {}, store: {}, role: {}, account: {}, invitation: {}};
     for (const admin of fixture.stableFixtures.platformAdmins.filter((entry) => !entry.builtIn)) {
-      const created = await request(`platform-admin-${admin.key}`, 'createPlatformAdmin', {}, {cookie: platformCookie, expected: [201], body: {loginName: admin.login, userName: admin.key === 'pa-support' ? 'R5 支持管理员' : 'R5 停用管理员', password: admin.key === 'pa-support' ? credentials.V2S_SEED_PLATFORM_SUPPORT_PASSWORD : credentials.V2S_SEED_PLATFORM_DISABLED_PASSWORD, idempotencyKey: '$header'}});
+      const created = await request(`platform-admin-${admin.key}`, 'createPlatformAdmin', {}, {cookie: platformCookie, expected: [201], body: {loginName: admin.login, userName: requireValue(admin.displayName, 'SEED_PLATFORM_ADMIN_DISPLAY_NAME'), password: admin.key === 'pa-support' ? credentials.V2S_SEED_PLATFORM_SUPPORT_PASSWORD : credentials.V2S_SEED_PLATFORM_DISABLED_PASSWORD, idempotencyKey: '$header'}});
       if (admin.status === 'DISABLED') await request(`platform-admin-disable-${admin.key}`, 'transitionPlatformAdminStatus', {platformAdminId: requireValue(created.json?.id, 'SEED_PLATFORM_ADMIN_ID')}, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(created.json?.version, 'SEED_PLATFORM_ADMIN_VERSION'), idempotencyKey: '$header'}});
     }
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64');
@@ -338,7 +344,7 @@ async function executeFormalSeed() {
     }
     const aurora = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === 'gw-aurora').groupWorkspaceKey;
     for (const role of fixture.stableFixtures.workspaceIam.roles) {
-      const created = await request(`role-${role.key}`, 'createWorkspaceRole', {groupWorkspaceKey: aurora}, {cookie: platformCookie, expected: [201], body: {name: `R5 ${role.key}`, serviceNodeType: role.serviceNodeType, pageAccessKeys: role.pageAccessKeys, capabilityKeys: role.actionCapabilityKeys}});
+      const created = await request(`role-${role.key}`, 'createWorkspaceRole', {groupWorkspaceKey: aurora}, {cookie: platformCookie, expected: [201], body: {name: requireValue(role.name, 'SEED_ROLE_DISPLAY_NAME'), serviceNodeType: role.serviceNodeType, pageAccessKeys: role.pageAccessKeys, capabilityKeys: role.actionCapabilityKeys}});
       ids.role[role.key] = created.json;
     }
     // One real completed GROUP invitation provides the operations session.  It is
@@ -363,7 +369,7 @@ async function executeFormalSeed() {
       if (target === 'MOBILE_VERIFIED') return;
       const account = fixture.stableFixtures.workspaceIam.accounts.find((entry) => entry.key === plan.accountKey);
       const transientKey = plan.accountKey ?? plan.invitationKey;
-      await request(`invitation-credentials-${plan.invitationKey}`, 'savePublicInvitationCredentials', publicInvitationPath, {body: {verificationGrant: requireValue(verified.json?.verificationGrant, 'SEED_VERIFICATION_GRANT'), userName: canonicalUserName(transientKey), loginName: canonicalLogin(transientKey), password: account?.status === 'DISABLED' ? credentials.V2S_SEED_OPERATIONS_DISABLED_PASSWORD : credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
+      await request(`invitation-credentials-${plan.invitationKey}`, 'savePublicInvitationCredentials', publicInvitationPath, {body: {verificationGrant: requireValue(verified.json?.verificationGrant, 'SEED_VERIFICATION_GRANT'), userName: canonicalUserName(account?.displayName ?? plan.displayName), loginName: canonicalLogin(transientKey), password: account?.status === 'DISABLED' ? credentials.V2S_SEED_OPERATIONS_DISABLED_PASSWORD : credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
       if (target === 'CREDENTIAL_READY') return;
       await request(`invitation-complete-${plan.invitationKey}`, 'completePublicInvitation', publicInvitationPath);
     };
@@ -422,7 +428,10 @@ async function executeFormalSeed() {
       const value = (page.json?.items ?? []).find((item) => item.loginName === canonicalLogin(account.key));
       ids.account[account.key] = requireValue(value, `SEED_ACCOUNT_READBACK_MISSING:${account.key}`);
     }
-    const assignmentFor = (accountKey, roleKey) => requireValue((ids.account[accountKey]?.assignments ?? []).find((assignment) => assignment.roleName === `R5 ${roleKey}`), `SEED_ASSIGNMENT_READBACK_MISSING:${accountKey}:${roleKey}`);
+    const assignmentFor = (accountKey, roleKey) => {
+      const role = fixture.stableFixtures.workspaceIam.roles.find((entry) => entry.key === roleKey);
+      return requireValue((ids.account[accountKey]?.assignments ?? []).find((assignment) => assignment.roleName === requireValue(role?.name, 'SEED_ROLE_DISPLAY_NAME')), `SEED_ASSIGNMENT_READBACK_MISSING:${accountKey}:${roleKey}`);
+    };
     for (const assignment of fixture.stableFixtures.workspaceIam.assignments.filter((entry) => entry.status === 'REVOKED' || entry.account === 'account-no-role')) {
       const account = ids.account[assignment.account]; const actual = assignmentFor(assignment.account, assignment.role);
       await request(`assignment-revoke-${assignment.key}`, 'revokePlatformWorkspaceAssignment', {groupWorkspaceKey: aurora, accountId: account.id, assignmentId: actual.id}, {cookie: platformCookie, body: {expectedVersion: requireValue(actual.revision, 'SEED_ASSIGNMENT_VERSION')}});
@@ -492,6 +501,10 @@ function selfTest() {
   expect('SEED_INVITATION_PLAN_REQUIRED', () => resolveInvitationCreationPlan({...fixture, executionPlan: {}}));
   expect('SEED_INVITATION_PLAN_REFERENCE_INVALID', () => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.map((entry) => entry.invitationKey === 'pending' ? {...entry, nodeKey: 'missing'} : entry)}}));
   expect('SEED_INVITATION_PLAN_REFERENCE_INVALID', () => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.map((entry) => entry.invitationKey === 'completed' ? {...entry, accountKey: 'missing'} : entry)}}));
+  const credentialReadyFixture = structuredClone(fixture);
+  credentialReadyFixture.stableFixtures.workspaceIam.invitationStates = [...credentialReadyFixture.stableFixtures.workspaceIam.invitationStates, {key: 'ready', status: 'CREDENTIAL_READY'}];
+  credentialReadyFixture.executionPlan.invitationPlans.push({invitationKey: 'ready', mobile: '13800000003', roleKey: 'role-store', nodeKey: 'store-a'});
+  expect('SEED_INVITATION_DISPLAY_NAME_REQUIRED', () => resolveInvitationCreationPlan(credentialReadyFixture));
   process.stdout.write('R5_OWNER_COMMAND_SEED_EXECUTOR_SELF_TEST=PASS; RED_MISSING_PLAN=PASS; RED_INVALID_REFERENCE=PASS\n');
 }
 

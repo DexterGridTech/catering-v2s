@@ -20,6 +20,13 @@
         "x-owner-module": "fulfillment-production",
         "x-coordinated-owners": [],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -85,8 +92,20 @@
           "organization"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -143,8 +162,20 @@
         "x-owner-module": "fulfillment-production",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -211,8 +242,20 @@
           "catalog"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",

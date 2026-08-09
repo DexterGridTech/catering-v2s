@@ -5,11 +5,11 @@
   "sourceBindings": {
     "requirements": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
-      "sha256": "21cfaa7ce6dced47d932db2ee9ea2d58bcbbe5b0ad2585dde7fa2829d4c9067a"
+      "sha256": "9c80dc61fb1a365b2b1dada76725fd169ef9bf874af79f561c53e821e7a159fd"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
-      "sha256": "08be6b7b232e5bc220d5e2e79841e6a4dee0a7df965dbc71e49ceb3942101354"
+      "sha256": "68492c610d54ad0525d31f0863d21866058b4153a2be2208a7c6e974627e0f36"
     },
     "v4Manifest": {
       "path": "../catering-server-v4/frontend/packages/generated-contracts/src/catalog-item-editor-manifest.ts",
@@ -2088,13 +2088,11 @@
       "selectedCount",
       "selectedLimit",
       "closureItems",
-      "closureEdges",
       "closureCount",
       "closureLimit",
       "objectVersions",
-      "mappingPreview",
+      "referenceMappings",
       "compatibilityResults",
-      "referenceRewritePreview",
       "preflightDigest",
       "blockingCount",
       "confirmationRequiredCount"
@@ -2186,5 +2184,5 @@
       "detailSections"
     ]
   },
-  "manifestDigest": "a5ced40bfcb3ae016b922237295d67fa2934e88c1863a90013c6fa87a53b230d"
+  "manifestDigest": "cb81db8d372345aa6732d40f558426b622d2c5428326b243cc1aae194cbcd772"
 }

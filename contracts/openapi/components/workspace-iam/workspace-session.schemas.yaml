@@ -487,7 +487,10 @@
                 "BC-IAM-STORE-INVITE",
                 "BC-CONTRACT-CREATE",
                 "BC-CONTRACT-EDIT",
-                "BC-CONTRACT-INVALIDATE"
+                "BC-CONTRACT-INVALIDATE",
+                "EDIT_HEAD_COMPANY_CATALOG",
+                "EDIT_STORE_CATALOG",
+                "EDIT_STORE_INVENTORY"
               ]
             }
           },

@@ -2,6 +2,7 @@ package com.catering.v2s.app.edge.diagnostic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.platform.foundation.diagnostic.RequestCompletionEvent;
 import com.catering.v2s.platform.foundation.diagnostic.SecurityDiagnosticEvent;
@@ -9,10 +10,12 @@ import com.catering.v2s.platform.foundation.diagnostic.SecurityDiagnosticRecorde
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
-import java.lang.reflect.Method;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.session.EdgeRequestContextArgumentResolver;
 import com.catering.v2s.app.edge.problem.ContractProblemAdvice;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.springframework.http.HttpStatus;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.context.request.ServletWebRequest;
@@ -52,18 +55,28 @@ class RequestCompletionDiagnosticInterceptorTest {
     }
 
     @Test
-    void managedDiagnosticRequestDoesNotProduceDuplicateCompletion() throws Exception {
+    void managedDiagnosticEventDoesNotProduceDuplicateCompletion() throws Exception {
         List<RequestCompletionEvent> events = new ArrayList<>();
         RequestCompletionDiagnosticInterceptor interceptor = new RequestCompletionDiagnosticInterceptor(new ObjectMapper(), new RecordingRecorder(events));
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/platform/admin-users");
         request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, "/api/platform/admin-users");
-        request.setAttribute(HttpRequestMetricsInterceptor.class.getName(), new Object());
+        request.addHeader("X-Seed-Run-Id", "run-test-1234");
+        request.addHeader("X-Seed-Report-Secret", "012345678901234567890123");
+        request.addHeader("X-Seed-Operation-Id", "getPlatformAdminPage");
+        request.addHeader("X-Seed-Route-Template", "/api/platform/admin-users");
         MockHttpServletResponse response = new MockHttpServletResponse();
+        Path eventsPath = Files.createTempFile("managed-request", ".jsonl");
+        Files.deleteIfExists(eventsPath);
+        HttpRequestMetricsInterceptor metrics = new HttpRequestMetricsInterceptor(new ObjectMapper(), "non-production", "r5-full", "run-test-1234", "012345678901234567890123", "v2s-dev-test", eventsPath.toString());
 
+        metrics.preHandle(request, response, new Object());
         interceptor.preHandle(request, response, new Object());
         interceptor.afterCompletion(request, response, new Object(), null);
+        metrics.afterCompletion(request, response, new Object(), null);
 
         assertEquals(0, events.size());
+        assertTrue(Files.readString(eventsPath).contains("\"requestId\":\"" + response.getHeader("X-Request-Id") + "\""));
+        Files.deleteIfExists(eventsPath);
     }
 
     @Test

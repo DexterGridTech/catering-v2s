@@ -28,6 +28,7 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
@@ -54,11 +55,24 @@ public final class OperationsBusinessEntityController {
     private final OperationsSessionResolver sessions;
     private final BusinessEntityService entities;
     private final WorkspaceCapabilityScopeResolver capabilityScopes;
+    private final OperationsOrganizationTaskReadService reads;
 
+    /** Legacy focused-test constructor; production uses the explicit GET-only task reader. */
     public OperationsBusinessEntityController(OperationsSessionResolver sessions, BusinessEntityService entities, WorkspaceCapabilityScopeResolver capabilityScopes) {
+        this(sessions, entities, capabilityScopes, new OperationsOrganizationTaskReadService(entities, null));
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public OperationsBusinessEntityController(
+        OperationsSessionResolver sessions,
+        BusinessEntityService entities,
+        WorkspaceCapabilityScopeResolver capabilityScopes,
+        OperationsOrganizationTaskReadService reads
+    ) {
         this.sessions = sessions;
         this.entities = entities;
         this.capabilityScopes = capabilityScopes;
+        this.reads = reads;
     }
 
     @PostMapping("/brands")
@@ -85,27 +99,27 @@ public final class OperationsBusinessEntityController {
     @GetMapping("/brands")
     BrandPage brands(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam long expectedContextVersion, @RequestParam(required = false) String queryText, @RequestParam(required = false) BusinessEntityStatus status, @RequestParam(required = false, defaultValue = "NAME") String sort, @RequestParam(required = false, defaultValue = "ASC") String direction, @RequestParam(required = false, defaultValue = "1") int page, @RequestParam(required = false, defaultValue = "20") int pageSize) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
-        BusinessEntityService.BrandPage values = entities.pageBrands(session.workspaceUuid(), groupWorkspaceKey, queryText, status == null ? null : status.wire(), sort, direction, page, pageSize);
+        BusinessEntityService.BrandPage values = reads.brands(session.workspaceUuid(), groupWorkspaceKey, queryText, status == null ? null : status.wire(), sort, direction, page, pageSize);
         return new BrandPage(new BrandPageMetadata(groupWorkspaceKey, (long) values.page(), (long) values.pageSize(), (long) values.total(), sortKey(sort), sortDirection(direction)), values.items().stream().map(BusinessEntityWireMapper::brand).toList());
     }
 
     @GetMapping("/tenants")
     TenantPage tenants(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam long expectedContextVersion, @RequestParam(required = false) String name, @RequestParam(required = false) String code, @RequestParam(required = false) String legalName, @RequestParam(required = false) String unifiedSocialCreditCode, @RequestParam(required = false) BusinessEntityStatus status, @RequestParam(required = false, defaultValue = "NAME") String sort, @RequestParam(required = false, defaultValue = "ASC") String direction, @RequestParam(required = false, defaultValue = "1") int page, @RequestParam(required = false, defaultValue = "20") int pageSize) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
-        BusinessEntityService.EntityPage values = entities.pageEntities(OrganizationEntityType.TENANT.wire(), session.workspaceUuid(), groupWorkspaceKey, name, code, legalName, unifiedSocialCreditCode, status == null ? null : status.wire(), sort, direction, page, pageSize);
+        BusinessEntityService.EntityPage values = reads.tenants(session.workspaceUuid(), groupWorkspaceKey, name, code, legalName, unifiedSocialCreditCode, status == null ? null : status.wire(), sort, direction, page, pageSize);
         return new TenantPage(new TenantPageMetadata(groupWorkspaceKey, (long) values.page(), (long) values.pageSize(), (long) values.total(), sortKey(sort), sortDirection(direction)), values.items().stream().map(BusinessEntityWireMapper::tenant).toList());
     }
 
     @GetMapping("/head-companies")
     HeadCompanyPage headCompanies(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam long expectedContextVersion, @RequestParam(required = false) String name, @RequestParam(required = false) String code, @RequestParam(required = false) String legalName, @RequestParam(required = false) String unifiedSocialCreditCode, @RequestParam(required = false) BusinessEntityStatus status, @RequestParam(required = false, defaultValue = "NAME") String sort, @RequestParam(required = false, defaultValue = "ASC") String direction, @RequestParam(required = false, defaultValue = "1") int page, @RequestParam(required = false, defaultValue = "20") int pageSize) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
-        BusinessEntityService.EntityPage values = entities.pageEntities(OrganizationEntityType.HEAD_COMPANY.wire(), session.workspaceUuid(), groupWorkspaceKey, name, code, legalName, unifiedSocialCreditCode, status == null ? null : status.wire(), sort, direction, page, pageSize);
+        BusinessEntityService.EntityPage values = reads.headCompanies(session.workspaceUuid(), groupWorkspaceKey, name, code, legalName, unifiedSocialCreditCode, status == null ? null : status.wire(), sort, direction, page, pageSize);
         return new HeadCompanyPage(new HeadCompanyPageMetadata(groupWorkspaceKey, (long) values.page(), (long) values.pageSize(), (long) values.total(), sortKey(sort), sortDirection(direction)), values.items().stream().map(BusinessEntityWireMapper::headCompanySummary).toList());
     }
 
-    @GetMapping("/brands/{brandId}") Brand brand(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID brandId, @RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion); return BusinessEntityWireMapper.brand(require(session, groupWorkspaceKey, OrganizationEntityType.BRAND, brandId)); }
-    @GetMapping("/tenants/{tenantId}") Tenant tenant(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID tenantId, @RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion); return BusinessEntityWireMapper.tenant(require(session, groupWorkspaceKey, OrganizationEntityType.TENANT, tenantId)); }
-    @GetMapping("/head-companies/{headCompanyId}") HeadCompany headCompany(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion); return headCompany(session, groupWorkspaceKey, require(session, groupWorkspaceKey, OrganizationEntityType.HEAD_COMPANY, headCompanyId)); }
+    @GetMapping("/brands/{brandId}") Brand brand(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID brandId, @RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion); return BusinessEntityWireMapper.brand(reads.brand(session.workspaceUuid(), groupWorkspaceKey, brandId)); }
+    @GetMapping("/tenants/{tenantId}") Tenant tenant(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID tenantId, @RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion); return BusinessEntityWireMapper.tenant(reads.tenant(session.workspaceUuid(), groupWorkspaceKey, tenantId)); }
+    @GetMapping("/head-companies/{headCompanyId}") HeadCompany headCompany(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion); return headCompany(reads.headCompany(session.workspaceUuid(), groupWorkspaceKey, headCompanyId)); }
 
     @PatchMapping("/brands/{brandId}") Brand updateBrand(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID brandId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BrandUpdateRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey); return BusinessEntityWireMapper.brand(update(session, groupWorkspaceKey, OrganizationEntityType.BRAND, brandId, body.code(), body.name(), null, null, body.alias(), body.remark(), required(body.expectedVersion()), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey)); }
     @PatchMapping("/tenants/{tenantId}") Tenant updateTenant(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID tenantId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody TenantUpdateRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey); return BusinessEntityWireMapper.tenant(update(session, groupWorkspaceKey, OrganizationEntityType.TENANT, tenantId, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), null, body.remark(), required(body.expectedVersion()), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey)); }
@@ -121,7 +135,8 @@ public final class OperationsBusinessEntityController {
     private static AuditActor actor(WorkspaceSessionReadback session) { return new AuditActor("WORKSPACE_ACCOUNT", session.accountId(), session.accountDisplayName()); }
     private OrganizationEntityReadback require(WorkspaceSessionReadback session, String key, OrganizationEntityType type, UUID id) { return entities.requireEntity(type.wire(), session.workspaceUuid(), key, id); }
     private HeadCompany headCompany(WorkspaceSessionReadback session, String key, OrganizationEntityReadback value) { return BusinessEntityWireMapper.headCompany(value, entities.authorizedBrands(session.workspaceUuid(), key, value.id())); }
-    private WorkspaceSessionReadback context(EdgeRequestContext request, String key, long expectedContextVersion) { return sessions.requireWorkspaceAtContextVersion(request, key, expectedContextVersion); }
+    private HeadCompany headCompany(OperationsOrganizationTaskReadService.HeadCompany value) { return BusinessEntityWireMapper.headCompany(value.entity(), value.authorizedBrands()); }
+    private WorkspaceSessionReadback context(EdgeRequestContext request, String key, long expectedContextVersion) { return sessions.requireWorkspaceReadAtContextVersion(request, key, expectedContextVersion); }
 
     private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(WorkspaceSessionReadback session, String requirementId, String targetType, UUID targetId) {
         var resolution = capabilityScopes.resolve(session, requirementId, new WorkspaceCapabilityScopeResolver.ServerResolvedResource(targetType, targetId));

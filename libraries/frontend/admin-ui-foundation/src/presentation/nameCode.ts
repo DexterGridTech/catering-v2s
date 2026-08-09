@@ -8,14 +8,15 @@ export function formatNameCode(name?: string | null, code?: string | null) {
 }
 
 /** Shared visual rule: keep the business name primary and make its code smaller and quieter. */
-export function NameCodeText({name, code}: {name?: string | null; code?: string | null}) {
+export function NameCodeText({name, code, emphasizeName = false}: {name?: string | null; code?: string | null; emphasizeName?: boolean}) {
   const displayName = name?.trim();
   const displayCode = code?.trim();
   const quietCode = {fontSize: 'var(--ant-font-size-sm)', color: 'var(--ant-color-text-tertiary)'};
   if (!displayName && !displayCode) return '—';
-  if (!displayCode) return displayName;
+  const nameElement = createElement('span', emphasizeName ? {style: {fontWeight: 600}} : null, displayName);
+  if (!displayCode) return emphasizeName ? nameElement : displayName;
   if (!displayName) return createElement('span', {style: quietCode}, displayCode);
-  return createElement('span', null, createElement('span', null, displayName), createElement('span', {style: quietCode}, `(${displayCode})`));
+  return createElement('span', null, nameElement, createElement('span', {style: quietCode}, `(${displayCode})`));
 }
 
 /** Shared visual rule for owner paths whose segments are encoded as `CODE name`. */

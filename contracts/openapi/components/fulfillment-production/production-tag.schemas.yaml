@@ -31,6 +31,11 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
+                  "tagRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
                   "code": {
                     "type": "string",
                     "description": "design-bound field"
@@ -142,6 +147,7 @@
                   }
                 },
                 "required": [
+                  "tagRef",
                   "code",
                   "name",
                   "tagKind",
@@ -184,7 +190,8 @@
       "required": [
         "code",
         "tagKind",
-        "name"
+        "name",
+        "dataNodeRef"
       ],
       "properties": {
         "dataNodeRef": {
@@ -220,7 +227,8 @@
         "tagCode",
         "expectedVersion",
         "tagKind",
-        "name"
+        "name",
+        "dataNodeRef"
       ],
       "properties": {
         "tagCode": {
@@ -246,6 +254,10 @@
         "name": {
           "type": "string",
           "description": "tag name"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
         }
       }
     },
@@ -352,7 +364,8 @@
       "required": [
         "tagCode",
         "expectedVersion",
-        "targetStatus"
+        "targetStatus",
+        "dataNodeRef"
       ],
       "properties": {
         "tagCode": {
@@ -366,6 +379,10 @@
         "targetStatus": {
           "type": "string",
           "description": "target lifecycle status"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
         }
       }
     }

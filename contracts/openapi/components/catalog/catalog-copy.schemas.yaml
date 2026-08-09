@@ -267,33 +267,6 @@
                 ]
               }
             },
-            "closureEdges": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "fromCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "toCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "referenceKind": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  }
-                },
-                "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind"
-                ]
-              }
-            },
             "objectVersions": {
               "type": "array",
               "description": "design-bound field",
@@ -326,35 +299,51 @@
                 ]
               }
             },
-            "mappingPreview": {
+            "referenceMappings": {
               "type": "array",
               "description": "design-bound field",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "fromCode": {
+                  "objectType": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "toCode": {
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "referenceKind": {
-                    "type": "string",
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
                   },
-                  "status": {
-                    "type": "string",
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
                   }
                 },
                 "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind",
-                  "status"
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
                 ]
               }
             },
@@ -382,33 +371,6 @@
                   "objectType",
                   "result",
                   "reason"
-                ]
-              }
-            },
-            "referenceRewritePreview": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "fromCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "toCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "referenceKind": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  }
-                },
-                "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind"
                 ]
               }
             },
@@ -446,11 +408,9 @@
             "targetScope",
             "selectedItems",
             "closureItems",
-            "closureEdges",
             "objectVersions",
-            "mappingPreview",
+            "referenceMappings",
             "compatibilityResults",
-            "referenceRewritePreview",
             "preflightDigest",
             "selectedCount",
             "selectedLimit",
@@ -554,30 +514,51 @@
                 ]
               }
             },
-            "mappings": {
+            "referenceMappings": {
               "type": "array",
               "description": "design-bound field",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "fromCode": {
+                  "objectType": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "toCode": {
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "referenceKind": {
-                    "type": "string",
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
                   }
                 },
                 "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind"
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
                 ]
               }
             },
@@ -636,7 +617,7 @@
             "created",
             "reused",
             "skipped",
-            "mappings",
+            "referenceMappings",
             "targetVersions",
             "ownerReadbacks"
           ]
@@ -789,13 +770,11 @@
         "selectedCount",
         "selectedLimit",
         "closureItems",
-        "closureEdges",
         "closureCount",
         "closureLimit",
         "objectVersions",
-        "mappingPreview",
+        "referenceMappings",
         "compatibilityResults",
-        "referenceRewritePreview",
         "preflightDigest",
         "blockingCount",
         "confirmationRequiredCount"
@@ -916,33 +895,6 @@
             ]
           }
         },
-        "closureEdges": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "fromCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "toCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "referenceKind": {
-                "type": "string",
-                "description": "design-bound field"
-              }
-            },
-            "required": [
-              "fromCode",
-              "toCode",
-              "referenceKind"
-            ]
-          }
-        },
         "closureCount": {
           "type": "integer",
           "description": "design-bound field"
@@ -983,35 +935,51 @@
             ]
           }
         },
-        "mappingPreview": {
+        "referenceMappings": {
           "type": "array",
           "description": "design-bound field",
           "items": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "fromCode": {
+              "objectType": {
                 "type": "string",
                 "description": "design-bound field"
               },
-              "toCode": {
+              "sourceRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "targetRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "targetCode": {
                 "type": "string",
                 "description": "design-bound field"
               },
-              "referenceKind": {
-                "type": "string",
+              "targetSkuCode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "design-bound field"
               },
-              "status": {
-                "type": "string",
+              "targetOptionValueCode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "design-bound field"
               }
             },
             "required": [
-              "fromCode",
-              "toCode",
-              "referenceKind",
-              "status"
+              "objectType",
+              "sourceRef",
+              "targetRef",
+              "targetCode"
             ]
           }
         },
@@ -1039,33 +1007,6 @@
               "objectType",
               "result",
               "reason"
-            ]
-          }
-        },
-        "referenceRewritePreview": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "fromCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "toCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "referenceKind": {
-                "type": "string",
-                "description": "design-bound field"
-              }
-            },
-            "required": [
-              "fromCode",
-              "toCode",
-              "referenceKind"
             ]
           }
         },
@@ -1153,30 +1094,51 @@
                 ]
               }
             },
-            "mappings": {
+            "referenceMappings": {
               "type": "array",
               "description": "design-bound field",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "fromCode": {
+                  "objectType": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "toCode": {
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "referenceKind": {
-                    "type": "string",
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
                   }
                 },
                 "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind"
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
                 ]
               }
             },
@@ -1234,7 +1196,7 @@
             "preflightDigest",
             "created",
             "reused",
-            "mappings",
+            "referenceMappings",
             "targetVersions",
             "ownerReadbacks"
           ]
@@ -1266,7 +1228,8 @@
       "required": [
         "sourceItemCode",
         "targetItemCode",
-        "selectedSections"
+        "selectedSections",
+        "dataNodeRef"
       ],
       "properties": {
         "sourceItemCode": {
@@ -1283,6 +1246,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
         }
       }
     },
@@ -1294,7 +1261,8 @@
         "targetItemCode",
         "preflightDigest",
         "expectedSourceVersion",
-        "expectedTargetVersion"
+        "expectedTargetVersion",
+        "dataNodeRef"
       ],
       "properties": {
         "sourceItemCode": {
@@ -1316,6 +1284,10 @@
         "expectedTargetVersion": {
           "type": "integer",
           "description": "expected target version"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
         }
       }
     },
@@ -1323,6 +1295,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "dataNodeRef",
         "itemCode",
         "formalCode",
         "shapeKey",
@@ -1330,6 +1303,10 @@
         "expectedSourceVersion"
       ],
       "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field"
+        },
         "itemCode": {
           "type": "string",
           "description": "design-bound field"
@@ -1547,6 +1524,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "dataNodeRef",
         "itemCode",
         "formalCode",
         "shapeKey",
@@ -1556,6 +1534,10 @@
         "preflightDigest"
       ],
       "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field"
+        },
         "itemCode": {
           "type": "string",
           "description": "design-bound field"
@@ -1746,7 +1728,8 @@
       "additionalProperties": false,
       "required": [
         "selectedItemCodes",
-        "targetDataNodeRef"
+        "targetDataNodeRef",
+        "dataNodeRef"
       ],
       "properties": {
         "selectedItemCodes": {
@@ -1759,6 +1742,10 @@
         "targetDataNodeRef": {
           "type": "string",
           "description": "target store node"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
         }
       }
     },
@@ -1770,7 +1757,8 @@
         "targetDataNodeRef",
         "preflightDigest",
         "expectedSourceVersion",
-        "expectedTargetVersion"
+        "expectedTargetVersion",
+        "dataNodeRef"
       ],
       "properties": {
         "selectedItemCodes": {
@@ -1795,6 +1783,10 @@
         "expectedTargetVersion": {
           "type": "integer",
           "description": "expected target version"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
         }
       }
     }

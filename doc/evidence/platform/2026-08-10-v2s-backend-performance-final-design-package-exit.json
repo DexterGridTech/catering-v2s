@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "packageId": "BACKEND-PERFORMANCE-FINAL-DESIGN-20260810",
+  "kind": "backend-performance-final-design-package-exit",
+  "staticProofStatus": "PENDING",
+  "businessStatus": "NOT_RUN_DESIGN",
+  "cleanupStatus": "NOT_RUN_DESIGN",
+  "completionCondition": "Fresh independent DESIGN review and Claude design recheck must be GO before a separate implementation package is activated."
+}

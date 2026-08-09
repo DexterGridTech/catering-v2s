@@ -10,7 +10,8 @@ import {chmodSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeF
 import {spawn, spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {resolveTrustedRemoteHost} from '../dev/r5-remote-host-trust.mjs';
-import {snapshotProcessTree, evaluateCleanupReadback} from '../dev/managed-process-tree.mjs';
+import {canonicalStartToken, snapshotProcessTree, evaluateCleanupReadback} from '../dev/managed-process-tree.mjs';
+import {catalogImageBindEvidenceInputs} from './catalog-image-bind-evidence-inputs.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runId = `rm1p6-joint-local-l2-${Date.now()}-${process.pid}-${randomUUID().slice(0, 8)}`;
@@ -18,6 +19,7 @@ const runtime = path.join(root, '.runtime/r5/joint-local-l2', runId);
 const evidenceDir = path.join(runtime, 'evidence');
 const manifestPath = path.join(runtime, 'run-manifest.json');
 const resultPath = path.join(evidenceDir, 'terminal-report.json');
+const imageBindEvidenceInputs = catalogImageBindEvidenceInputs(root);
 const namespace = `v2s-dev-${runId.slice(-24)}`.replaceAll('_', '-');
 const catalogStage = process.argv.includes('--catalog-api-only') ? 'API'
   : process.argv.includes('--catalog-l2-only') ? 'L2'
@@ -172,7 +174,8 @@ const localProcess = (value) => {
   const match = line.match(/^(\d+)\s+(\d+)\s+(.{24})\s+(.*)$/);
   if (!match) fail(`LOCAL_PROCESS_IDENTITY_INVALID:${value.name}`, 'LOCAL_PROCESS_IDENTITY');
   const [, pid, pgid, lstart, commandLine] = match;
-  const identity = {name: value.name, pid: Number(pid), pgid: Number(pgid), bootId: run('sysctl', ['-n', 'kern.boottime']).stdout.trim(), processStartTicks: lstart.trim(), startToken: lstart.trim(), commandSha256: sha256(commandLine), logPath: value.log};
+  const startToken = canonicalStartToken(lstart);
+  const identity = {name: value.name, pid: Number(pid), pgid: Number(pgid), bootId: run('sysctl', ['-n', 'kern.boottime']).stdout.trim(), processStartTicks: startToken, startToken, commandSha256: sha256(commandLine), logPath: value.log};
   return {...identity, tree: snapshotProcessTree(identity)};
 };
 const logMetadata = (file) => {
@@ -324,7 +327,7 @@ const writeTerminalReport = (extra = {}) => {
   const report = {
     schemaVersion: 1, kind: 'rm1p6-joint-local-execution-remote-middleware-l2-report', runId, sourceSha256: sha256(readFileSync(path.join(root, 'yarn.lock'))),
     localExecution: {checkout: root, processes: localProcessIdentities, logInspection: localLogInspection},
-    exactSpecs: effectiveSpecs, catalogStage, phases, fixture: existsSync(path.join(runtime, 'results', 'fixture.json')) ? {status: 'CREATED', sha256: sha256(readFileSync(path.join(runtime, 'results', 'fixture.json')))} : {status: 'NOT_CREATED'},
+    exactSpecs: effectiveSpecs, catalogStage, imageBindEvidenceInputs, phases, fixture: existsSync(path.join(runtime, 'results', 'fixture.json')) ? {status: 'CREATED', sha256: sha256(readFileSync(path.join(runtime, 'results', 'fixture.json')))} : {status: 'NOT_CREATED'},
     business: {status: business}, cleanup: {status: cleanup}, firstFailure, lastKnownGood, brokenBoundary, ...extra,
   };
   mkdirSync(evidenceDir, {recursive: true}); writeFileSync(resultPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});

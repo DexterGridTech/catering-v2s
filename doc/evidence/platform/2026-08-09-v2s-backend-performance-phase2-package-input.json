@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-phase2-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-PHASE2-20260809",
+  "status": "ACTIVE_NOT_EXIT",
+  "scope": {
+    "includedUnits": ["BP-U03", "BP-U04"],
+    "excludedUnits": ["BP-U05", "BP-U06", "BP-U07"],
+    "authorization": "Dexter authorized the complete second phase: transaction-local command context, opaque owner grant, catalog authorization scope, and exact command baseline preparation."
+  },
+  "sourceDenominators": {
+    "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+      "project-memory/decisions/deterministic-context-only.md",
+      "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "project-memory/decisions/incremental-compliance-hook.md",
+      "project-memory/operations/verification-governance.md"
+    ],
+    "APPROVED_ASSERTIONS": [
+      "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md#BP-U03",
+      "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md#BP-U04"
+    ],
+    "FORBIDDEN_PSEUDO_FIXES": [
+      "no client-derived authority in CatalogAuthorizationScope",
+      "no ThreadLocal, public grant record, string operation dispatcher, Map dispatcher, reflection or service locator",
+      "no SQL merge, cache, index, transaction-boundary or business optimization before the measured baseline is frozen",
+      "no BP-U05 through BP-U07 implementation"
+    ],
+    "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+      "BP-U03 transaction-start context creation, opaque grant verification, catalog scope judgment, object recheck before replay",
+      "BP-U04 exact 79 numeric rows plus 38 context-parity exclusions, all initially UNMEASURED_BLOCKS_OPTIMIZATION"
+    ],
+    "OWNED_SURFACE_AND_OPERATION_KEYS": [
+      "U03: catalog-inventory WORKSPACE_EXECUTION_CONTEXT command authorization, copy-source policy and receipt ordering",
+      "U04: two generated route registries, 113 command operations, 79 numeric baseline rows and 38 context-parity rows"
+    ],
+    "DUE_STANDARDS_RULE_IDS": [
+      "scripts/check/implementation-design-granularity",
+      "scripts/check/backend-performance-command-baselines",
+      "scripts/check/operation-handler-bindings",
+      "scripts/check/backend-performance-evidence-snapshot",
+      "scripts/check/standards-coverage --phase RM1-P6-3"
+    ]
+  }
+}

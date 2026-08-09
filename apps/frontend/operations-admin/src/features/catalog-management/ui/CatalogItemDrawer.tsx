@@ -4,17 +4,19 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {CatalogInventoryEnvelope, CatalogItemSaveRequest, JsonValue, ProductionTagPage, TemporaryPromotionExecuteRequest, TemporaryPromotionPreflight, TemporaryPromotionPreflightRequest} from '../../../app/api/generated/catalog-inventory-edge';
-import type {OperationsPageProps} from '../../../app/routing/model';
+import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import type {CatalogCompositeComponent, CatalogCompositeGroup, CatalogDetail, CatalogInventoryBomEntry, CatalogOrderOptionGroup, CatalogOrderOptionValue, CatalogSkuRow, CatalogSkuVariantDimension} from '../model/catalogModel';
 import {decodeDetail, decodeItems, decodeNavigation, displayValue} from '../model/catalogModel';
 import {CatalogDictionaryDrawer, type ProductionTagCandidate} from './CatalogDictionaryDrawer';
 import {LocalCatalogCopyDrawer} from './LocalCatalogCopyDrawer';
+import {CatalogAssetPreview} from './CatalogAssetPreview';
 
 type Props = {
   itemCode?: string;
   queryContext: OperationsPageProps['queryContext'];
   brandRef?: string;
-  canWrite: boolean;
+  canWriteCatalog: boolean;
+  surface: 'store' | 'brand';
   onOpenProductionTags?: () => void;
   onVoidAndRebuild?: (source: {name: string; shapeKey: string}) => void;
   onClose: () => void;
@@ -22,7 +24,7 @@ type Props = {
 };
 
 const tabLabels: Record<string, string> = {basic: '基础', 'sku-specifications-pricing': 'SKU规格与价格', identifiers: '条码与识别', ordering: '点单与定价', 'order-options': '点单选项', attributes: '属性', 'production-prompts': '生产提示', 'inventory-bom': '库存与BOM', governance: '治理与引用', 'composite-content': '套餐内容'};
-type MediaDraft = {id: string; assetRef?: string; fileName: string; mediaType: string; status: 'READY' | 'UPLOADING' | 'FAILED'; file?: File; error?: string; version?: number; staged: boolean; previous?: {assetRef?: string; version?: number; staged: boolean}};
+type MediaDraft = {id: string; assetRef?: string; bindGrant?: string; fileName: string; mediaType: string; status: 'READY' | 'UPLOADING' | 'FAILED'; file?: File; error?: string; version?: number; staged: boolean; skuIndex?: number; previous?: {assetRef?: string; version?: number; staged: boolean}};
 type ProfileLayer = 'item' | 'sku' | 'optionValue';
 type ProductionProfileDraft = CatalogDetail['item']['productionProfiles'];
 type OrderingDraft = CatalogDetail['item']['ordering'];
@@ -75,7 +77,7 @@ function profileNumber(profile: Record<string, JsonValue>, key: string) {
 function splitComma(value: string) { return value.split(',').map((entry) => entry.trim()).filter(Boolean); }
 function profileDisplayValue(value: JsonValue) { return Array.isArray(value) ? value.map((entry) => displayValue(entry)).join('、') || '—' : displayValue(value); }
 
-export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, onOpenProductionTags, onVoidAndRebuild, onClose, onChanged}: Props) {
+export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCatalog, surface, onOpenProductionTags, onVoidAndRebuild, onClose, onChanged}: Props) {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [activeTab, setActiveTab] = useState('basic');
   const [problem, setProblem] = useState<string>();
@@ -86,8 +88,11 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
   const initializedProductionItem = useRef<string | undefined>(undefined);
   const problemRef = useRef<HTMLDivElement | null>(null);
   const [mediaDraft, setMediaDraft] = useState<MediaDraft[]>([]);
+  const [skuStagedMedia, setSkuStagedMedia] = useState<MediaDraft[]>([]);
   const initializedMediaItem = useRef<string | undefined>(undefined);
   const [mediaProblem, setMediaProblem] = useState<string>();
+  const [releaseCloseFailed, setReleaseCloseFailed] = useState(false);
+  const [releasingBeforeClose, setReleasingBeforeClose] = useState(false);
   const [identifierDraft, setIdentifierDraft] = useState<CatalogDetail['item']['identifiers']>([]);
   const [orderingDraft, setOrderingDraft] = useState<OrderingDraft>({priceGranularity: 'ITEM', standardSalePrice: null, listedSalePrice: null, missingPriceCount: 0});
   const [orderOptionsDraft, setOrderOptionsDraft] = useState<CatalogOrderOptionGroup[]>([]);
@@ -107,7 +112,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
   const detailQuery = operationsRtk.useGetOperationsCatalogItemQuery(request, {skip: !itemCode});
   const detail = useMemo(() => decodeDetail(detailQuery.data as CatalogInventoryEnvelope | undefined), [detailQuery.data]);
   const productionTagsRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsProductionTags({}, {query: {dataNodeRef: queryContext.scopeRef ?? ''}, headers}), [headers, queryContext.scopeRef]);
-  const productionTagsQuery = operationsRtk.useGetOperationsProductionTagsQuery(productionTagsRequest, {skip: !itemCode || !canWrite});
+  const productionTagsQuery = operationsRtk.useGetOperationsProductionTagsQuery(productionTagsRequest, {skip: !itemCode || !canWriteCatalog});
   const availableProductionTags = (((productionTagsQuery.data as CatalogInventoryEnvelope | undefined)?.data as ProductionTagPage['data'] | undefined)?.entries ?? []).map((entry) => ({code: entry.code, name: entry.name, owner: 'fulfillment-production'}));
   const [save] = operationsRtk.useSaveOperationsCatalogItemMutation();
   const [stageAsset] = operationsRtk.useStageOperationsCatalogAssetMutation();
@@ -118,22 +123,40 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
   const releaseStagedAsset = useCallback(async (asset: MediaDraft) => {
     if (!asset.staged || !asset.assetRef || asset.version === undefined) return true;
     try {
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
       await releaseAsset(catalogInventoryRtkRequest.releaseOperationsCatalogStagedAsset({assetRef: asset.assetRef}, {
         headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()},
-        body: {assetRef: asset.assetRef, expectedVersion: asset.version},
+        body: {dataNodeRef, assetRef: asset.assetRef, expectedVersion: asset.version},
       })).unwrap();
       return true;
     } catch (error) {
       setMediaProblem(operationsProblemOf(error).detail || '图片资产释放未完成，请重试。');
       return false;
     }
-  }, [headers, releaseAsset]);
+  }, [headers, queryContext, releaseAsset]);
   const releaseStagedMedia = useCallback(async (assets: MediaDraft[]) => {
     const staged = assets.filter((asset) => asset.staged && asset.assetRef && asset.version !== undefined);
-    const outcomes = await Promise.all(staged.map((asset) => releaseStagedAsset(asset)));
-    return outcomes.every(Boolean);
+    return Promise.all(staged.map(async (asset) => ({asset, released: await releaseStagedAsset(asset)})));
   }, [releaseStagedAsset]);
-  const lifecycle = useDrawerFormLifecycle({open: Boolean(itemCode), onOpenChange: (open) => { if (!open) { void releaseStagedMedia(mediaDraft); onClose(); } }, dirtyMessage: '商品编辑内容尚未保存。', dirtyGuardTestIds: {confirm: testId('catalog-item-dirty-discard'), cancel: testId('catalog-item-dirty-continue')}, diagnosticOperationId: 'catalog-item-editor', idempotencyKey: true});
+  const closeAfterStagedRelease = useCallback(async () => {
+    setReleaseCloseFailed(false);
+    setReleasingBeforeClose(true);
+    const outcomes = await releaseStagedMedia([...mediaDraft, ...skuStagedMedia]);
+    const released = outcomes.every((outcome) => outcome.released);
+    const releasedIds = new Set(outcomes.filter((outcome) => outcome.released).map((outcome) => outcome.asset.id));
+    if (releasedIds.size > 0) {
+      setMediaDraft((current) => current.map((asset) => releasedIds.has(asset.id) ? {...asset, staged: false} : asset));
+      setSkuStagedMedia((current) => current.map((asset) => releasedIds.has(asset.id) ? {...asset, staged: false} : asset));
+    }
+    setReleasingBeforeClose(false);
+    if (!released) {
+      setReleaseCloseFailed(true);
+      setMediaProblem('图片资产释放未完成，请重试关闭。');
+      return;
+    }
+    onClose();
+  }, [mediaDraft, onClose, releaseStagedMedia, skuStagedMedia]);
+  const lifecycle = useDrawerFormLifecycle({open: Boolean(itemCode), onOpenChange: (open) => { if (!open) void closeAfterStagedRelease(); }, dirtyMessage: '商品编辑内容尚未保存。', dirtyGuardTestIds: {confirm: testId('catalog-item-dirty-discard'), cancel: testId('catalog-item-dirty-continue')}, diagnosticOperationId: 'catalog-item-editor', idempotencyKey: true});
   useEffect(() => {
     if (!detail) return;
     form.setFieldsValue({displayName: detail.item.name, shortName: detail.item.shortName ?? '', attributesText: JSON.stringify(detail.item.attributes, null, 2)});
@@ -153,7 +176,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
     }
     if (initializedMediaItem.current !== detail.item.code) {
       initializedMediaItem.current = detail.item.code;
-      setMediaDraft(detail.item.images.map((assetRef, index) => ({id: `existing-${assetRef}-${index}`, assetRef, fileName: assetRef, mediaType: 'image/*', status: 'READY', staged: false})));
+      setMediaDraft(detail.item.images.map((assetRef, index) => ({id: `existing-${assetRef}-${index}`, assetRef, fileName: index === 0 ? '已保存主图' : `已保存附图 ${index}`, mediaType: 'image/*', status: 'READY', staged: false})));
       setMediaProblem(undefined);
     }
     const first = detail.tabs.find((tab) => tab.visible)?.tabKey;
@@ -163,7 +186,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
     if (!(problem || detailQuery.error || mediaProblem)) return;
     window.requestAnimationFrame(() => problemRef.current?.focus());
   }, [detailQuery.error, mediaProblem, problem]);
-  useEffect(() => { if (!itemCode) { initializedProductionItem.current = undefined; initializedMediaItem.current = undefined; setMode('view'); setProblem(undefined); setMediaProblem(undefined); setMediaDraft([]); setIdentifierDraft([]); setOrderOptionsDraft([]); setProductionProfilesDraft({item: {}, sku: {}, optionValue: {}}); setInventoryBomDraft([]); setCompositeGroupsDraft([]); setSkuVariantDimensionsDraft([]); setSkusDraft([]); setLocalCopyOpen(false); setProductionTagQuickManageOpen(false); setPromotion(undefined); setPromotionOpen(false); setPromotionProblem(undefined); lifecycle.reset(); } }, [itemCode, lifecycle]);
+  useEffect(() => { if (!itemCode) { initializedProductionItem.current = undefined; initializedMediaItem.current = undefined; setMode('view'); setProblem(undefined); setMediaProblem(undefined); setReleaseCloseFailed(false); setReleasingBeforeClose(false); setMediaDraft([]); setSkuStagedMedia([]); setIdentifierDraft([]); setOrderOptionsDraft([]); setProductionProfilesDraft({item: {}, sku: {}, optionValue: {}}); setInventoryBomDraft([]); setCompositeGroupsDraft([]); setSkuVariantDimensionsDraft([]); setSkusDraft([]); setLocalCopyOpen(false); setProductionTagQuickManageOpen(false); setPromotion(undefined); setPromotionOpen(false); setPromotionProblem(undefined); lifecycle.reset(); } }, [itemCode, lifecycle]);
 
   const submit = async () => {
     if (!detail || !itemCode) return;
@@ -175,6 +198,16 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
     if (mediaDraft.some((asset) => asset.status === 'FAILED' && !asset.assetRef)) {
       setMediaProblem('存在未完成的图片上传，请重试或移除失败项后再保存。');
       setActiveTab('basic');
+      return;
+    }
+    if (skuStagedMedia.some((asset) => asset.status === 'UPLOADING')) {
+      setMediaProblem('SKU 图片仍在上传或处理中，请等待完成后再保存。');
+      setActiveTab('sku-specifications-pricing');
+      return;
+    }
+    if (skuStagedMedia.some((asset) => asset.status === 'FAILED' && !asset.assetRef)) {
+      setMediaProblem('存在未完成的 SKU 图片上传，请重试或移除失败项后再保存。');
+      setActiveTab('sku-specifications-pricing');
       return;
     }
     const values = await form.validateFields();
@@ -219,12 +252,13 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
       if (invalidNode >= 0) { setActiveTab('inventory-bom'); setProblem(`库存/BOM 第 ${invalidNode + 1} 个节点缺少合法模式、消耗数量/单位，或新建库存对象缺少消耗单位。`); return; }
     }
     if (visibleTabs.has('composite-content')) {
-      const invalidGroup = compositeGroupsDraft.findIndex((group) => !group.groupCode.trim() || !group.groupName.trim() || group.components.some((component) => !component.itemCode.trim() || !component.quantity.trim() || !component.unit.trim()));
-      if (invalidGroup >= 0) { setActiveTab('composite-content'); setProblem(`套餐内容第 ${invalidGroup + 1} 组缺少分组编码、分组名或组件数量/单位。`); return; }
+      const invalidGroup = compositeGroupsDraft.findIndex((group) => !group.groupCode.trim() || !group.groupName.trim() || group.components.some((component) => !component.itemCode.trim() || !component.itemRef.trim() || !component.quantity.trim() || !component.unit.trim()));
+      if (invalidGroup >= 0) { setActiveTab('composite-content'); setProblem(`套餐内容第 ${invalidGroup + 1} 组缺少分组编码、分组名、组件商品引用或数量/单位。`); return; }
     }
     lifecycle.setSubmitting(true);
     setProblem(undefined);
     try {
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
       const catalogDraft: CatalogItemSaveRequest['sections']['catalogDraft'] = {
         shortName: values.shortName?.trim() || null,
         name: values.displayName,
@@ -244,8 +278,11 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
       if (visibleTabs.has('composite-content')) catalogDraft.compositeGroups = compositeGroupsDraft;
       if (visibleTabs.has('production-prompts')) catalogDraft.productionProfiles = productionProfilesDraft;
       if (visibleTabs.has('inventory-bom')) catalogDraft.inventoryBom = inventoryBomDraft;
-      await save(catalogInventoryRtkRequest.saveOperationsCatalogItem({itemCode}, {headers: {...headers, 'Idempotency-Key': lifecycle.getIdempotencyKey()}, body: {
-        dataNodeRef: queryContext.scopeRef ?? undefined,
+      const bindGrants = Object.fromEntries([...mediaDraft, ...skuStagedMedia]
+        .filter((asset): asset is MediaDraft & {assetRef: string; bindGrant: string} => Boolean(asset.assetRef && asset.bindGrant))
+        .map((asset) => [asset.assetRef, asset.bindGrant]));
+      await save(catalogInventoryRtkRequest.saveOperationsCatalogItem({itemCode}, {headers: {...headers, 'Idempotency-Key': lifecycle.getIdempotencyKey(), ...(Object.keys(bindGrants).length ? {'X-Catalog-Asset-Bind-Grants': JSON.stringify(bindGrants)} : {})}, body: {
+        dataNodeRef,
         itemCode,
         sections: {
           catalogDraft,
@@ -264,7 +301,8 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
       }})).unwrap();
       lifecycle.reset();
       setMode('view');
-      setMediaDraft((current) => current.map((asset) => ({...asset, file: undefined, staged: false})));
+      setMediaDraft((current) => current.map((asset) => ({...asset, bindGrant: undefined, file: undefined, staged: false})));
+      setSkuStagedMedia((current) => current.map((asset) => ({...asset, bindGrant: undefined, file: undefined, staged: false})));
       await detailQuery.refetch();
       onChanged();
     } catch (error) {
@@ -277,7 +315,8 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
     if (targetStatus === 'VOIDED' && !detail.actionAvailability.voidAvailability?.canVoid) return;
     setProblem(undefined);
     try {
-      await transition(catalogInventoryRtkRequest.transitionOperationsCatalogItemStatus({itemCode}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body: {itemCode, targetStatus, expectedVersion: detail.item.version}})).unwrap();
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
+      await transition(catalogInventoryRtkRequest.transitionOperationsCatalogItemStatus({itemCode}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body: {dataNodeRef, itemCode, targetStatus, expectedVersion: detail.item.version}})).unwrap();
       await detailQuery.refetch();
       onChanged();
       if (targetStatus === 'VOIDED') onVoidAndRebuild?.({name: detail.item.name, shapeKey: detail.item.shapeKey});
@@ -297,17 +336,17 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
     if (!itemCode || !detail) return;
     setPromotion(undefined);
     setPromotionProblem(undefined);
-    const body: TemporaryPromotionPreflightRequest = {
-      itemCode,
-      formalCode: values.formalCode.trim(),
-      shapeKey: values.shapeKey,
-      name: values.name.trim(),
-      shortName: values.shortName?.trim() || null,
-      materialRole: values.materialRole?.trim() || null,
-      attributes: detail.item.attributes,
-      expectedSourceVersion: detail.item.version,
-    };
     try {
+      const body: TemporaryPromotionPreflightRequest = {
+        dataNodeRef: requireOperationsScopeRef(queryContext), itemCode,
+        formalCode: values.formalCode.trim(),
+        shapeKey: values.shapeKey,
+        name: values.name.trim(),
+        shortName: values.shortName?.trim() || null,
+        materialRole: values.materialRole?.trim() || null,
+        attributes: detail.item.attributes,
+        expectedSourceVersion: detail.item.version,
+      };
       const response = await preflightPromotion(catalogInventoryRtkRequest.preflightOperationsTemporaryCatalogItemPromotion({itemCode}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body})).unwrap();
       const value = (response as CatalogInventoryEnvelope<TemporaryPromotionPreflight>)?.data?.data;
       if (!value) throw new Error('TEMPORARY_PROMOTION_PREFLIGHT_MISSING');
@@ -334,7 +373,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
     try {
       const values = await promotionForm.validateFields();
       const body: TemporaryPromotionExecuteRequest = {
-        itemCode,
+        dataNodeRef: requireOperationsScopeRef(queryContext), itemCode,
         formalCode: values.formalCode.trim(),
         shapeKey: values.shapeKey,
         name: values.name.trim(),
@@ -370,24 +409,28 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
     setMediaProblem(undefined);
     const previous = existingId ? mediaDraft.find((asset) => asset.id === existingId) : undefined;
     setMediaDraft((current) => existingId ? current.map((asset) => asset.id === existingId ? {...asset, assetRef: undefined, version: undefined, file, fileName: file.name, mediaType: file.type || 'application/octet-stream', status: 'UPLOADING', error: undefined, staged: true, previous: previous ? {assetRef: previous.assetRef, version: previous.version, staged: previous.staged} : undefined} : asset) : [...current, {id, file, fileName: file.name, mediaType: file.type || 'application/octet-stream', status: 'UPLOADING', staged: true}]);
+    let stagedMedia: MediaDraft | undefined;
     try {
       const digest = await contentDigest(file);
-      const body = {fileName: file.name, content: file, mediaType: file.type || 'application/octet-stream', contentDigest: digest};
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
+      const body = {dataNodeRef, fileName: file.name, content: file, mediaType: file.type || 'application/octet-stream', contentDigest: digest};
       const response = await stageAsset(catalogInventoryRtkRequest.stageOperationsCatalogAsset({}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body})).unwrap();
       const responseEnvelope = response as CatalogInventoryEnvelope;
       const result = responseEnvelope.result as CatalogInventoryEnvelope['result'];
-      const readback = (result && typeof result === 'object' && 'result' in result ? result.result : result) as {assetRef?: string; mediaType?: string; version?: number} | undefined;
-      if (!readback?.assetRef) throw new Error('CATALOG_ASSET_STAGE_READBACK_MISSING');
-      const previousAsset = mediaDraft.find((asset) => asset.id === id)?.previous;
+      const readback = (result && typeof result === 'object' && 'result' in result ? result.result : result) as {assetRef?: string; bindGrant?: string; mediaType?: string; version?: number} | undefined;
+      if (!readback?.assetRef || !readback.bindGrant) throw new Error('CATALOG_ASSET_STAGE_READBACK_MISSING');
+      stagedMedia = {id, assetRef: readback.assetRef, bindGrant: readback.bindGrant, fileName: file.name, mediaType: readback.mediaType ?? file.type, status: 'READY', version: readback.version, staged: true};
+      const previousAsset = previous ? {assetRef: previous.assetRef, version: previous.version, staged: previous.staged} : undefined;
       if (previousAsset?.staged && previousAsset.assetRef && previousAsset.version !== undefined) {
-        await releaseStagedAsset({...previousAsset, id: `${id}-previous`, fileName: previousAsset.assetRef, mediaType: file.type, status: 'READY'});
+        if (!await releaseStagedAsset({...previousAsset, id: `${id}-previous`, fileName: previousAsset.assetRef, mediaType: file.type, status: 'READY'})) throw new Error('CATALOG_PREVIOUS_STAGED_ASSET_RELEASE_FAILED');
       }
-      setMediaDraft((current) => current.map((asset) => asset.id === id ? {...asset, assetRef: readback.assetRef, mediaType: readback.mediaType ?? file.type, status: 'READY', version: readback.version, staged: true, previous: undefined} : asset));
+      setMediaDraft((current) => current.map((asset) => asset.id === id ? {...asset, ...stagedMedia, previous: undefined} : asset));
       lifecycle.setDirty(true);
     } catch (error) {
-      const previousAsset = mediaDraft.find((asset) => asset.id === id)?.previous;
+      if (stagedMedia) await releaseStagedAsset(stagedMedia);
+      const previousAsset = previous ? {assetRef: previous.assetRef, version: previous.version, staged: previous.staged} : undefined;
       setMediaDraft((current) => current.map((asset) => asset.id === id ? {...asset, assetRef: previousAsset?.assetRef, version: previousAsset?.version, staged: previousAsset?.staged ?? true, previous: undefined, status: 'FAILED', error: operationsProblemOf(error).detail || '上传失败，请重试。'} : asset));
-      setMediaProblem(undefined);
+      setMediaProblem(operationsProblemOf(error).detail || '图片上传失败，请重试。');
     }
   };
   const removeMedia = async (id: string, index: number) => {
@@ -421,6 +464,45 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
     });
     lifecycle.setDirty(true);
   };
+  const stageSkuMedia = async (file: File, skuIndex: number, replaceAssetRef?: string, retryId?: string) => {
+    if (file.size > MAX_MEDIA_BYTES) { setMediaProblem('单张图片不能超过 2MB。'); return; }
+    const retry = retryId ? skuStagedMedia.find((asset) => asset.id === retryId) : undefined;
+    const previousStaged = replaceAssetRef ? skuStagedMedia.find((asset) => asset.assetRef === replaceAssetRef) : undefined;
+    const previous = retry?.previous ?? (replaceAssetRef ? {assetRef: replaceAssetRef, version: previousStaged?.version, staged: previousStaged?.staged ?? false} : undefined);
+    const id = retryId ?? globalThis.crypto.randomUUID();
+    const pending: MediaDraft = {id, skuIndex, file, fileName: file.name, mediaType: file.type || 'application/octet-stream', status: 'UPLOADING', staged: true, previous};
+    setMediaProblem(undefined);
+    setSkuStagedMedia((current) => retryId ? current.map((asset) => asset.id === retryId ? pending : asset) : [...current, pending]);
+    let stagedMedia: MediaDraft | undefined;
+    try {
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
+      const body = {dataNodeRef, fileName: file.name, content: file, mediaType: file.type || 'application/octet-stream', contentDigest: await contentDigest(file)};
+      const response = await stageAsset(catalogInventoryRtkRequest.stageOperationsCatalogAsset({}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body})).unwrap();
+      const result = (response as CatalogInventoryEnvelope).result as CatalogInventoryEnvelope['result'];
+      const readback = (result && typeof result === 'object' && 'result' in result ? result.result : result) as {assetRef?: string; bindGrant?: string; mediaType?: string; version?: number} | undefined;
+      if (!readback?.assetRef || !readback.bindGrant) throw new Error('CATALOG_ASSET_STAGE_READBACK_MISSING');
+      stagedMedia = {...pending, assetRef: readback.assetRef, bindGrant: readback.bindGrant, mediaType: readback.mediaType ?? file.type, status: 'READY', version: readback.version};
+      const readyMedia = stagedMedia;
+      if (previousStaged && !await releaseStagedAsset(previousStaged)) {
+        throw new Error('CATALOG_PREVIOUS_STAGED_ASSET_RELEASE_FAILED');
+      }
+      setSkusDraft((current) => current.map((sku, index) => index !== skuIndex ? sku : {...sku, mediaRefs: replaceAssetRef ? sku.mediaRefs.map((assetRef) => assetRef === replaceAssetRef ? readback.assetRef as string : assetRef) : [...sku.mediaRefs, readback.assetRef as string]}));
+      setSkuStagedMedia((current) => [...current.filter((asset) => asset.id !== id && asset.assetRef !== previous?.assetRef), readyMedia]);
+      lifecycle.setDirty(true);
+    } catch (error) {
+      if (stagedMedia) await releaseStagedAsset(stagedMedia);
+      setSkuStagedMedia((current) => current.map((asset) => asset.id === id ? {...asset, assetRef: undefined, status: 'FAILED', error: operationsProblemOf(error).detail || 'SKU 图片上传失败，请重试。'} : asset));
+      setMediaProblem(operationsProblemOf(error).detail || 'SKU 图片上传失败，请重试。');
+    }
+  };
+  const removeSkuMedia = async (skuIndex: number, assetRef: string) => {
+    const staged = skuStagedMedia.find((asset) => asset.assetRef === assetRef);
+    if (staged && !await releaseStagedAsset(staged)) return;
+    setSkusDraft((current) => current.map((sku, index) => index === skuIndex ? {...sku, mediaRefs: sku.mediaRefs.filter((entry) => entry !== assetRef)} : sku));
+    setSkuStagedMedia((current) => current.filter((asset) => asset.assetRef !== assetRef));
+    lifecycle.setDirty(true);
+  };
+  const removeSkuStagedMedia = (id: string) => setSkuStagedMedia((current) => current.filter((asset) => asset.id !== id));
   const updateIdentifiers = (next: CatalogDetail['item']['identifiers']) => { setIdentifierDraft(next); lifecycle.setDirty(true); };
   const updateOrdering = (next: OrderingDraft) => { setOrderingDraft(next); lifecycle.setDirty(true); };
   const updateOrderOptions = (next: CatalogOrderOptionGroup[]) => { setOrderOptionsDraft(next); lifecycle.setDirty(true); };
@@ -429,26 +511,26 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
   const updateCompositeGroups = (next: CatalogCompositeGroup[]) => { setCompositeGroupsDraft(next); lifecycle.setDirty(true); };
   const updateSkuVariantDimensions = (next: SkuDimensionDraft[]) => { setSkuVariantDimensionsDraft(next); lifecycle.setDirty(true); };
   const updateSkus = (next: SkuRowDraft[]) => { setSkusDraft(next); lifecycle.setDirty(true); };
-  const tabItems = detail ? detail.tabs.filter((tab) => tab.visible).map((tab) => ({key: tab.tabKey, label: tabLabels[tab.tabKey] ?? tab.tabKey, disabled: tab.disabled, children: <CatalogTabContent tabKey={tab.tabKey} detail={detail} editing={mode === 'edit'} canWrite={canWrite} form={form} mediaDraft={mediaDraft} onStageMedia={stageMedia} onRemoveMedia={removeMedia} onMoveMedia={moveMedia} onSetPrimaryMedia={setPrimaryMedia} availableProductionTags={availableProductionTags} selectedProductionTagRefs={selectedProductionTagRefs} selectedProductionTags={selectedProductionTags} onProductionTagsChange={(next) => { setSelectedProductionTagRefs(next); lifecycle.setDirty(true); }} identifierDraft={identifierDraft} orderingDraft={orderingDraft} orderOptionsDraft={orderOptionsDraft} productionProfilesDraft={productionProfilesDraft} productionProfileLayer={productionProfileLayer} onProductionProfileLayerChange={setProductionProfileLayer} inventoryBomDraft={inventoryBomDraft} compositeGroupsDraft={compositeGroupsDraft} skuVariantDimensionsDraft={skuVariantDimensionsDraft} skusDraft={skusDraft} queryContext={queryContext} brandRef={brandRef} currentItemCode={itemCode} onIdentifiersChange={updateIdentifiers} onOrderingChange={updateOrdering} onOrderOptionsChange={updateOrderOptions} onProductionProfilesChange={updateProductionProfiles} onInventoryBomChange={updateInventoryBom} onCompositeGroupsChange={updateCompositeGroups} onSkuVariantDimensionsChange={updateSkuVariantDimensions} onSkusChange={updateSkus} onDirty={() => lifecycle.setDirty(true)} onOpenProductionTags={onOpenProductionTags} onOpenProductionQuickManage={() => setProductionTagQuickManageOpen(true)}/> })) : [];
+  const tabItems = detail ? detail.tabs.filter((tab) => tab.visible).map((tab) => ({key: tab.tabKey, label: tabLabels[tab.tabKey] ?? tab.tabKey, disabled: tab.disabled, children: <CatalogTabContent tabKey={tab.tabKey} detail={detail} editing={mode === 'edit'} canWriteCatalog={canWriteCatalog} form={form} mediaDraft={mediaDraft} onStageMedia={stageMedia} onRemoveMedia={removeMedia} onMoveMedia={moveMedia} onSetPrimaryMedia={setPrimaryMedia} skuStagedMedia={skuStagedMedia} onStageSkuMedia={stageSkuMedia} onRemoveSkuMedia={removeSkuMedia} onRemoveSkuStagedMedia={removeSkuStagedMedia} availableProductionTags={availableProductionTags} selectedProductionTagRefs={selectedProductionTagRefs} selectedProductionTags={selectedProductionTags} onProductionTagsChange={(next) => { setSelectedProductionTagRefs(next); lifecycle.setDirty(true); }} identifierDraft={identifierDraft} orderingDraft={orderingDraft} orderOptionsDraft={orderOptionsDraft} productionProfilesDraft={productionProfilesDraft} productionProfileLayer={productionProfileLayer} onProductionProfileLayerChange={setProductionProfileLayer} inventoryBomDraft={inventoryBomDraft} compositeGroupsDraft={compositeGroupsDraft} skuVariantDimensionsDraft={skuVariantDimensionsDraft} skusDraft={skusDraft} queryContext={queryContext} brandRef={brandRef} currentItemCode={itemCode} onIdentifiersChange={updateIdentifiers} onOrderingChange={updateOrdering} onOrderOptionsChange={updateOrderOptions} onProductionProfilesChange={updateProductionProfiles} onInventoryBomChange={updateInventoryBom} onCompositeGroupsChange={updateCompositeGroups} onSkuVariantDimensionsChange={updateSkuVariantDimensions} onSkusChange={updateSkus} onDirty={() => lifecycle.setDirty(true)} onOpenProductionTags={onOpenProductionTags} onOpenProductionQuickManage={() => setProductionTagQuickManageOpen(true)}/> })) : [];
   const action = detail?.actionAvailability;
   // AUTO_SYNC is not an all-field read-only mode: the owner supplies the exact
   // deniedFields set, so local supplements (tags, prompts, attributes, etc.)
   // remain editable. Temporary items are the only whole-record read-only mode.
   const sourceLocked = detail ? detail.item.source === 'TEMPORARY' : false;
-  return <Drawer title={detail ? <Space><NameCodeText name={detail.item.name} code={detail.item.code}/><Tag>{detail.item.shapeKey}</Tag><Tag color={detail.item.status === 'ENABLED' ? 'green' : 'default'}>{detail.item.status}</Tag></Space> : '商品详情'} open={Boolean(itemCode)} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} destroyOnHidden={false} maskClosable={!lifecycle.dirty} {...adminWideDrawerSurfaceProps} {...testId('catalog-inventory-item-drawer')}
+  return <Drawer title={detail ? <Space>{detail.item.images[0] && <CatalogAssetPreview assetRef={detail.item.images[0]} alt={`${detail.item.name}主图`} width={40} height={40} preview={false} testId="catalog-item-drawer-thumbnail"/>}<NameCodeText name={detail.item.name} code={detail.item.code}/><Tag>{detail.item.shapeKey}</Tag><Tag color={detail.item.status === 'ENABLED' ? 'green' : 'default'}>{detail.item.status}</Tag></Space> : '商品详情'} open={Boolean(itemCode)} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} destroyOnHidden={false} maskClosable={!lifecycle.dirty} {...adminWideDrawerSurfaceProps} {...testId('catalog-inventory-item-drawer')}
     extra={detail && <Space>
-      {mode === 'view' && canWrite && action?.canEdit && !sourceLocked && <Button onClick={() => setMode('edit')} {...testId('catalog-item-edit')}>编辑</Button>}
-      {mode === 'view' && canWrite && action?.canEnable && <Button onClick={() => void changeStatus('ENABLED')}>启用</Button>}
-      {mode === 'view' && canWrite && action?.canDisable && <Button onClick={() => void changeStatus('DISABLED')}>停用</Button>}
-      {mode === 'view' && canWrite && action?.canArchive && <Button danger onClick={() => void changeStatus('ARCHIVED')}>归档</Button>}
-      {mode === 'view' && canWrite && detail.item.status !== 'VOIDED' && <Button danger disabled={!action?.voidAvailability?.canVoid} title={action?.voidAvailability?.canVoid ? undefined : '存在 owner 阻断事实，暂不能作废'} onClick={voidAndRebuild} {...testId('catalog-item-void-and-rebuild')}>作废并重建</Button>}
-      {mode === 'view' && canWrite && detail.item.status !== 'ARCHIVED' && <Button onClick={() => setLocalCopyOpen(true)} {...testId('catalog-item-copy-local-open')}>从已有商品复制配置</Button>}
-      {mode === 'view' && canWrite && detail.item.source === 'TEMPORARY' && <Button loading={preflightPromotionState.isLoading} onClick={() => void openPromotion()} {...testId('catalog-item-temporary-promotion')}>治理转正</Button>}
+      {mode === 'view' && canWriteCatalog && action?.canEdit && !sourceLocked && <Button onClick={() => setMode('edit')} {...testId('catalog-item-edit')}>编辑</Button>}
+      {mode === 'view' && canWriteCatalog && action?.canEnable && <Button onClick={() => void changeStatus('ENABLED')}>启用</Button>}
+      {mode === 'view' && canWriteCatalog && action?.canDisable && <Button onClick={() => void changeStatus('DISABLED')}>停用</Button>}
+      {mode === 'view' && canWriteCatalog && action?.canArchive && <Button danger onClick={() => void changeStatus('ARCHIVED')}>归档</Button>}
+      {mode === 'view' && canWriteCatalog && detail.item.status !== 'VOIDED' && <Button danger disabled={!action?.voidAvailability?.canVoid} title={action?.voidAvailability?.canVoid ? undefined : '存在 owner 阻断事实，暂不能作废'} onClick={voidAndRebuild} {...testId('catalog-item-void-and-rebuild')}>作废并重建</Button>}
+      {surface === 'store' && mode === 'view' && canWriteCatalog && detail.item.status !== 'ARCHIVED' && <Button onClick={() => setLocalCopyOpen(true)} {...testId('catalog-item-copy-local-open')}>从已有商品复制配置</Button>}
+      {mode === 'view' && canWriteCatalog && detail.item.source === 'TEMPORARY' && <Button loading={preflightPromotionState.isLoading} onClick={() => void openPromotion()} {...testId('catalog-item-temporary-promotion')}>治理转正</Button>}
       {mode === 'edit' && <Button onClick={lifecycle.requestClose}>取消</Button>}
       {mode === 'edit' && <Button type="primary" loading={lifecycle.submitting} onClick={() => void submit()} {...testId('catalog-item-save')}>保存</Button>}
     </Space>}>
     {detailQuery.isLoading && <Skeleton active {...testId('catalog-item-detail-loading')}/>} 
-    {(problem || detailQuery.error || mediaProblem) && <div ref={problemRef} tabIndex={-1} style={{marginBottom: 16}} {...testId('catalog-item-problem')}><Alert type="error" showIcon title="商品操作未完成" description={problem ?? mediaProblem ?? '商品详情暂时无法获取，请重试。'} action={detailQuery.error ? <Button size="small" onClick={() => void detailQuery.refetch()} {...testId('catalog-item-problem-retry')}>重试</Button> : undefined}/></div>} 
+    {(problem || detailQuery.error || mediaProblem) && <div ref={problemRef} tabIndex={-1} style={{marginBottom: 16}} {...testId('catalog-item-problem')}><Alert type="error" showIcon title="商品操作未完成" description={problem ?? mediaProblem ?? '商品详情暂时无法获取，请重试。'} action={detailQuery.error ? <Button size="small" onClick={() => void detailQuery.refetch()} {...testId('catalog-item-problem-retry')}>重试</Button> : releaseCloseFailed ? <Button size="small" loading={releasingBeforeClose} onClick={() => void closeAfterStagedRelease()} {...testId('catalog-item-release-close-retry')}>重试关闭</Button> : undefined}/></div>}
     {detail?.item.source === 'AUTO_SYNC' && <Alert type="info" showIcon title="自动同步商品" description={`带锁字段（${detail.deniedFields.join('、') || '来源声明字段'}）由上游维护；未被锁定的本地补充字段仍可编辑。`} {...testId('catalog-item-source-auto_sync')}/>} 
     {detail?.item.source === 'TEMPORARY' && <>
       <Alert type="info" showIcon title="外部订单临时商品" description="该商品可被查看但不可创建销售项；完成资料补齐和转正预检后才可进入正式治理。" {...testId('catalog-item-source-temporary')}/>
@@ -464,8 +546,8 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
       </Card>
     </>}
     {detail && <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} {...testId('catalog-item-tabs')}/>} 
-    <LocalCatalogCopyDrawer open={localCopyOpen} sourceItemCode={itemCode ?? ''} queryContext={queryContext} brandRef={brandRef} onClose={() => setLocalCopyOpen(false)} onCompleted={() => { setLocalCopyOpen(false); void detailQuery.refetch(); onChanged(); }}/>
-    <CatalogDictionaryDrawer open={productionTagQuickManageOpen} initialKind="PRODUCTION_TAG" queryContext={queryContext} brandRef={brandRef} canWrite={canWrite} quickManage onCreated={onProductionTagCreated} onClose={() => setProductionTagQuickManageOpen(false)}/>
+    {surface === 'store' && <LocalCatalogCopyDrawer open={localCopyOpen} sourceItemCode={itemCode ?? ''} queryContext={queryContext} brandRef={brandRef} onClose={() => setLocalCopyOpen(false)} onCompleted={() => { setLocalCopyOpen(false); void detailQuery.refetch(); onChanged(); }}/>} 
+    <CatalogDictionaryDrawer open={productionTagQuickManageOpen} initialKind="PRODUCTION_TAG" queryContext={queryContext} brandRef={brandRef} canWrite={canWriteCatalog} quickManage onCreated={onProductionTagCreated} onClose={() => setProductionTagQuickManageOpen(false)}/>
     <Modal title="外部订单临时商品转正预检" open={promotionOpen} onCancel={() => { setPromotionOpen(false); setPromotion(undefined); setPromotionProblem(undefined); }} okText="确认转正" cancelText="返回" okButtonProps={{disabled: !promotion?.canPromote, loading: executePromotionState.isLoading}} onOk={() => void executePromotionAction()} {...testId('catalog-temporary-promotion-preflight')}>
       <Space direction="vertical" size={12} style={{display: 'flex'}}>
         {promotionProblem && <Alert type="error" showIcon title="预检未完成" description={promotionProblem} {...testId('catalog-temporary-promotion-problem')}/>} 
@@ -509,7 +591,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWrite, o
   </Drawer>;
 }
 
-function CatalogTabContent({tabKey, detail, editing, canWrite, form, mediaDraft, onStageMedia, onRemoveMedia, onMoveMedia, onSetPrimaryMedia, availableProductionTags, selectedProductionTagRefs, selectedProductionTags, onProductionTagsChange, identifierDraft, orderingDraft, orderOptionsDraft, productionProfilesDraft, productionProfileLayer, onProductionProfileLayerChange, inventoryBomDraft, compositeGroupsDraft, skuVariantDimensionsDraft, skusDraft, queryContext, brandRef, currentItemCode, onIdentifiersChange, onOrderingChange, onOrderOptionsChange, onProductionProfilesChange, onInventoryBomChange, onCompositeGroupsChange, onSkuVariantDimensionsChange, onSkusChange, onDirty, onOpenProductionTags, onOpenProductionQuickManage}: {tabKey: string; detail: NonNullable<ReturnType<typeof decodeDetail>>; editing: boolean; canWrite: boolean; form: ReturnType<typeof Form.useForm<{displayName: string; shortName?: string; attributesText: string}>>[0]; mediaDraft: MediaDraft[]; onStageMedia: (file: File, existingId?: string) => Promise<void>; onRemoveMedia: (id: string, index: number) => void | Promise<void>; onMoveMedia: (id: string, offset: -1 | 1) => void; onSetPrimaryMedia: (id: string) => void; availableProductionTags: Array<{code: string; name: string; owner: string}>; selectedProductionTagRefs: string[]; selectedProductionTags: Array<{code: string; name: string; owner: string}>; onProductionTagsChange: (next: string[]) => void; identifierDraft: CatalogDetail['item']['identifiers']; orderingDraft: OrderingDraft; orderOptionsDraft: CatalogOrderOptionGroup[]; productionProfilesDraft: ProductionProfileDraft; productionProfileLayer: ProfileLayer; onProductionProfileLayerChange: (next: ProfileLayer) => void; inventoryBomDraft: CatalogInventoryBomEntry[]; compositeGroupsDraft: CatalogCompositeGroup[]; skuVariantDimensionsDraft: SkuDimensionDraft[]; skusDraft: SkuRowDraft[]; queryContext: OperationsPageProps['queryContext']; brandRef?: string; currentItemCode?: string; onIdentifiersChange: (next: CatalogDetail['item']['identifiers']) => void; onOrderingChange: (next: OrderingDraft) => void; onOrderOptionsChange: (next: CatalogOrderOptionGroup[]) => void; onProductionProfilesChange: (next: ProductionProfileDraft) => void; onInventoryBomChange: (next: CatalogInventoryBomEntry[]) => void; onCompositeGroupsChange: (next: CatalogCompositeGroup[]) => void; onSkuVariantDimensionsChange: (next: SkuDimensionDraft[]) => void; onSkusChange: (next: SkuRowDraft[]) => void; onDirty: () => void; onOpenProductionTags?: () => void; onOpenProductionQuickManage: () => void}) {
+function CatalogTabContent({tabKey, detail, editing, canWriteCatalog, form, mediaDraft, onStageMedia, onRemoveMedia, onMoveMedia, onSetPrimaryMedia, skuStagedMedia, onStageSkuMedia, onRemoveSkuMedia, onRemoveSkuStagedMedia, availableProductionTags, selectedProductionTagRefs, selectedProductionTags, onProductionTagsChange, identifierDraft, orderingDraft, orderOptionsDraft, productionProfilesDraft, productionProfileLayer, onProductionProfileLayerChange, inventoryBomDraft, compositeGroupsDraft, skuVariantDimensionsDraft, skusDraft, queryContext, brandRef, currentItemCode, onIdentifiersChange, onOrderingChange, onOrderOptionsChange, onProductionProfilesChange, onInventoryBomChange, onCompositeGroupsChange, onSkuVariantDimensionsChange, onSkusChange, onDirty, onOpenProductionTags, onOpenProductionQuickManage}: {tabKey: string; detail: NonNullable<ReturnType<typeof decodeDetail>>; editing: boolean; canWriteCatalog: boolean; form: ReturnType<typeof Form.useForm<{displayName: string; shortName?: string; attributesText: string}>>[0]; mediaDraft: MediaDraft[]; onStageMedia: (file: File, existingId?: string) => Promise<void>; onRemoveMedia: (id: string, index: number) => void | Promise<void>; onMoveMedia: (id: string, offset: -1 | 1) => void; onSetPrimaryMedia: (id: string) => void; skuStagedMedia: MediaDraft[]; onStageSkuMedia: (file: File, skuIndex: number, replaceAssetRef?: string, retryId?: string) => Promise<void>; onRemoveSkuMedia: (skuIndex: number, assetRef: string) => Promise<void>; onRemoveSkuStagedMedia: (id: string) => void; availableProductionTags: Array<{code: string; name: string; owner: string}>; selectedProductionTagRefs: string[]; selectedProductionTags: Array<{code: string; name: string; owner: string}>; onProductionTagsChange: (next: string[]) => void; identifierDraft: CatalogDetail['item']['identifiers']; orderingDraft: OrderingDraft; orderOptionsDraft: CatalogOrderOptionGroup[]; productionProfilesDraft: ProductionProfileDraft; productionProfileLayer: ProfileLayer; onProductionProfileLayerChange: (next: ProfileLayer) => void; inventoryBomDraft: CatalogInventoryBomEntry[]; compositeGroupsDraft: CatalogCompositeGroup[]; skuVariantDimensionsDraft: SkuDimensionDraft[]; skusDraft: SkuRowDraft[]; queryContext: OperationsPageProps['queryContext']; brandRef?: string; currentItemCode?: string; onIdentifiersChange: (next: CatalogDetail['item']['identifiers']) => void; onOrderingChange: (next: OrderingDraft) => void; onOrderOptionsChange: (next: CatalogOrderOptionGroup[]) => void; onProductionProfilesChange: (next: ProductionProfileDraft) => void; onInventoryBomChange: (next: CatalogInventoryBomEntry[]) => void; onCompositeGroupsChange: (next: CatalogCompositeGroup[]) => void; onSkuVariantDimensionsChange: (next: SkuDimensionDraft[]) => void; onSkusChange: (next: SkuRowDraft[]) => void; onDirty: () => void; onOpenProductionTags?: () => void; onOpenProductionQuickManage: () => void}) {
   if (tabKey === 'basic' && editing) return <Space direction="vertical" size={16} style={{display: 'flex'}}><Form form={form} layout="vertical" onValuesChange={onDirty}>
     <Alert type="info" showIcon title="商品编码与形态创建后不可修改" style={{marginBottom: 16}}/>
     <Form.Item label="商品名称" name="displayName" rules={[{required: true, message: '请输入商品名称'}]}><Input disabled={detail.deniedFields.includes('name')} {...testId('catalog-item-edit-name')}/></Form.Item>
@@ -520,10 +602,10 @@ function CatalogTabContent({tabKey, detail, editing, canWrite, form, mediaDraft,
     {key: 'shape', label: '商品形态', children: detail.item.shapeKey}, {key: 'status', label: '状态', children: detail.item.status},
     {key: 'kind', label: '商品类型', children: detail.item.itemKind}, {key: 'measure', label: '计量模式', children: detail.item.measureMode},
     {key: 'capabilities', label: '使用能力', children: detail.item.usageCapabilities.join('、') || '—'}, {key: 'version', label: '版本', children: detail.item.version},
-  ]}/><Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'images', label: '图片资产', children: <CatalogAssetGallery assetRefs={detail.item.images}/>} ]}/></Space>;
+  ]}/><Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'images', label: '图片资产', children: <CatalogAssetGallery assetRefs={detail.item.images} itemName={detail.item.name}/>} ]}/></Space>;
   if (tabKey === 'identifiers' && editing) return <IdentifierEditor values={identifierDraft} onChange={onIdentifiersChange} onDirty={onDirty}/>;
   if (tabKey === 'identifiers') return detail.item.identifiers.length ? <Descriptions {...adminWideDetailDescriptionsProps} items={detail.item.identifiers.map((entry, index) => ({key: `${entry.kind}-${index}`, label: entry.kind, children: <Space><NameCodeText name={entry.value} code={entry.code}/><Tag>绑定范围：商品</Tag><Tag>状态：当前契约未提供</Tag></Space>}))}/> : <EmptySection text="未维护条码与识别码"/>;
-  if (tabKey === 'sku-specifications-pricing' && editing) return <SkuMatrixEditor dimensions={skuVariantDimensionsDraft} skus={skusDraft} onDimensionsChange={onSkuVariantDimensionsChange} onSkusChange={onSkusChange} onDirty={onDirty}/>;
+  if (tabKey === 'sku-specifications-pricing' && editing) return <SkuMatrixEditor dimensions={skuVariantDimensionsDraft} skus={skusDraft} skuStagedMedia={skuStagedMedia} onDimensionsChange={onSkuVariantDimensionsChange} onSkusChange={onSkusChange} onStageSkuMedia={onStageSkuMedia} onRemoveSkuMedia={onRemoveSkuMedia} onRemoveSkuStagedMedia={onRemoveSkuStagedMedia} onDirty={onDirty}/>;
   if (tabKey === 'sku-specifications-pricing') return <SkuMatrixReadOnly dimensions={detail.item.skuVariantDimensions} skus={detail.item.skus} summary={detail.item.skuSummary} ordering={detail.item.ordering}/>;
   if (tabKey === 'ordering' && editing) return <OrderingEditor value={orderingDraft} onChange={onOrderingChange} onDirty={onDirty} skuManaged={detail.item.ordering.priceGranularity === 'SKU'}/>;
   if (tabKey === 'ordering') return <Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'granularity', label: '价格粒度', children: detail.item.ordering.priceGranularity}, {key: 'standard', label: '标准销售价', children: money(detail.item.ordering.standardSalePrice)}, {key: 'listed', label: '挂牌价', children: money(detail.item.ordering.listedSalePrice)}, {key: 'missing', label: '缺价', children: detail.item.ordering.missingPriceCount ? `缺少 ${detail.item.ordering.missingPriceCount} 项` : '完整'}]}/>;
@@ -536,8 +618,8 @@ function CatalogTabContent({tabKey, detail, editing, canWrite, form, mediaDraft,
     const selectedTags = selectedProductionTagRefs.map((code) => tagMap.get(code) ?? {code, name: code, owner: 'fulfillment-production'});
     const options = Array.from(tagMap.values()).map((tag) => ({label: tag.name || tag.code, value: tag.code}));
     return <Space direction="vertical" size={12} style={{display: 'flex'}}>
-      {editing && canWrite ? <Select mode="multiple" value={selectedProductionTagRefs} options={options} placeholder="选择商品处理标签" onChange={onProductionTagsChange} style={{width: '100%'}} {...testId('catalog-production-tag-field')}/> : <Space wrap>{selectedTags.length ? selectedTags.map((tag) => <Tag key={tag.code}>{tag.name || tag.code} · owner:{tag.owner}</Tag>) : <EmptySection text="未维护生产提示或商品处理标签"/>}</Space>}
-      {canWrite && editing && <Button onClick={onOpenProductionQuickManage} {...testId('catalog-production-tag-quick-manage')}>快速创建商品处理标签</Button>}
+      {editing && canWriteCatalog ? <Select mode="multiple" value={selectedProductionTagRefs} options={options} placeholder="选择商品处理标签" onChange={onProductionTagsChange} style={{width: '100%'}} {...testId('catalog-production-tag-field')}/> : <Space wrap>{selectedTags.length ? selectedTags.map((tag) => <Tag key={tag.code}>{tag.name || tag.code} · owner:{tag.owner}</Tag>) : <EmptySection text="未维护生产提示或商品处理标签"/>}</Space>}
+      {canWriteCatalog && editing && <Button onClick={onOpenProductionQuickManage} {...testId('catalog-production-tag-quick-manage')}>快速创建商品处理标签</Button>}
       {!editing && onOpenProductionTags && <Button type="link" onClick={onOpenProductionTags} {...testId('catalog-production-tag-owner-open')}>打开生产履约标签维护</Button>}
       {editing ? <ProductionProfileEditor layer={productionProfileLayer} profiles={productionProfilesDraft} onLayerChange={onProductionProfileLayerChange} onChange={onProductionProfilesChange} onDirty={onDirty}/> : <ProductionProfilesReadOnly profiles={detail.item.productionProfiles}/>} 
     </Space>;
@@ -581,7 +663,7 @@ function OrderingEditor({value, onChange, onDirty, skuManaged}: {value: Ordering
   </Space>;
 }
 
-function SkuMatrixEditor({dimensions, skus, onDimensionsChange, onSkusChange, onDirty}: {dimensions: SkuDimensionDraft[]; skus: SkuRowDraft[]; onDimensionsChange: (next: SkuDimensionDraft[]) => void; onSkusChange: (next: SkuRowDraft[]) => void; onDirty: () => void}) {
+function SkuMatrixEditor({dimensions, skus, skuStagedMedia, onDimensionsChange, onSkusChange, onStageSkuMedia, onRemoveSkuMedia, onRemoveSkuStagedMedia, onDirty}: {dimensions: SkuDimensionDraft[]; skus: SkuRowDraft[]; skuStagedMedia: MediaDraft[]; onDimensionsChange: (next: SkuDimensionDraft[]) => void; onSkusChange: (next: SkuRowDraft[]) => void; onStageSkuMedia: (file: File, skuIndex: number, replaceAssetRef?: string, retryId?: string) => Promise<void>; onRemoveSkuMedia: (skuIndex: number, assetRef: string) => Promise<void>; onRemoveSkuStagedMedia: (id: string) => void; onDirty: () => void}) {
   const updateDimension = (index: number, patch: Partial<SkuDimensionDraft>) => onDimensionsChange(dimensions.map((entry, entryIndex) => entryIndex === index ? {...entry, ...patch} : entry));
   const updateDimensionValue = (dimensionIndex: number, valueIndex: number, patch: Partial<SkuDimensionDraft['values'][number]>) => onDimensionsChange(dimensions.map((entry, entryIndex) => entryIndex === dimensionIndex ? {...entry, values: entry.values.map((value, index) => index === valueIndex ? {...value, ...patch} : value)} : entry));
   const updateSku = (index: number, patch: Partial<SkuRowDraft>) => onSkusChange(skus.map((entry, entryIndex) => entryIndex === index ? {...entry, ...patch} : entry));
@@ -623,6 +705,13 @@ function SkuMatrixEditor({dimensions, skus, onDimensionsChange, onSkusChange, on
             <Space><Typography.Text>默认</Typography.Text><Switch checked={sku.isDefault} onChange={(isDefault) => { updateSku(skuIndex, {isDefault}); onDirty(); }} {...testId(`catalog-item-sku-default-${skuIndex}`)}/></Space>
           </Space>
           <Divider style={{margin: '8px 0'}}/>
+          <Space direction="vertical" size={6} style={{display: 'flex'}} {...testId(`catalog-item-sku-media-${skuIndex}`)}>
+            <Typography.Text strong>SKU 图片</Typography.Text>
+            <Space wrap>{sku.mediaRefs.map((assetRef, mediaIndex) => <Space direction="vertical" size={2} key={assetRef}><CatalogAssetPreview assetRef={assetRef} alt={`${sku.skuName || sku.skuCode || `SKU ${skuIndex + 1}`}图片 ${mediaIndex + 1}`} width={96} height={72} testId={`catalog-item-sku-media-preview-${skuIndex}-${mediaIndex}`}/><Space><Upload accept="image/*" showUploadList={false} beforeUpload={(file) => { void onStageSkuMedia(file as File, skuIndex, assetRef); return Upload.LIST_IGNORE; }}><Button size="small" {...testId(`catalog-item-sku-media-replace-${skuIndex}-${mediaIndex}`)}>替换</Button></Upload><Button size="small" danger onClick={() => void onRemoveSkuMedia(skuIndex, assetRef)} {...testId(`catalog-item-sku-media-remove-${skuIndex}-${mediaIndex}`)}>移除</Button></Space></Space>)}</Space>
+            <Space direction="vertical" size={6} style={{display: 'flex'}}>{skuStagedMedia.filter((asset) => asset.skuIndex === skuIndex && asset.status !== 'READY').map((asset) => <Space key={asset.id} align="start" style={{border: '1px solid #f0f0f0', padding: 8, borderRadius: 6}} {...testId(`catalog-item-sku-media-draft-${skuIndex}-${asset.id}`)}><span style={{width: 96, height: 72, display: 'grid', placeItems: 'center'}}><Typography.Text type="secondary">{asset.status === 'UPLOADING' ? '上传中/处理中' : '上传失败'}</Typography.Text></span><Space direction="vertical" size={2}><Typography.Text ellipsis={{tooltip: asset.fileName}}>{asset.fileName}</Typography.Text><Typography.Text type={asset.status === 'FAILED' ? 'danger' : 'warning'} {...testId(`catalog-item-sku-media-status-${skuIndex}-${asset.id}`)}>{asset.status === 'FAILED' ? asset.error ?? '上传失败，请重试。' : '上传中/处理中'}</Typography.Text><Space>{asset.status === 'FAILED' && asset.file && <Button size="small" onClick={() => void onStageSkuMedia(asset.file as File, skuIndex, asset.previous?.assetRef, asset.id)} {...testId(`catalog-item-sku-media-retry-${skuIndex}-${asset.id}`)}>重试</Button>}<Button size="small" danger disabled={asset.status === 'UPLOADING'} onClick={() => onRemoveSkuStagedMedia(asset.id)} {...testId(`catalog-item-sku-media-draft-remove-${skuIndex}-${asset.id}`)}>移除</Button></Space></Space></Space>)}</Space>
+            <Upload accept="image/*" showUploadList={false} beforeUpload={(file) => { void onStageSkuMedia(file as File, skuIndex); return Upload.LIST_IGNORE; }}><Button size="small" {...testId(`catalog-item-sku-media-upload-${skuIndex}`)}>上传 SKU 图片</Button></Upload>
+          </Space>
+          <Divider style={{margin: '8px 0'}}/>
           <Space direction="vertical" size={6} style={{display: 'flex'}}>
             <Typography.Text strong>属性值引用</Typography.Text>
             {sku.attributeValueRefs.map((value, valueIndex) => <Space key={`${value.attributeCode}-${value.valueCode}-${valueIndex}`} wrap>
@@ -643,7 +732,7 @@ function SkuMatrixReadOnly({dimensions, skus, summary, ordering}: {dimensions: S
   return <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-sku-matrix-readonly')}>
     <Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'sku', label: 'SKU 数量', children: `${summary.enabledCount}/${summary.nonArchivedCount}/${summary.totalCount}（启用/未归档/总数）`}, {key: 'granularity', label: '价格粒度', children: ordering.priceGranularity}, {key: 'standard', label: '商品标准价', children: money(ordering.standardSalePrice)}, {key: 'listed', label: '挂牌价', children: money(ordering.listedSalePrice)}, {key: 'missing', label: '缺价数', children: ordering.missingPriceCount}]}/>
     <Card size="small" title="规格维度">{dimensions.length ? dimensions.map((dimension) => <Typography.Text key={dimension.attributeCode} style={{display: 'block'}}>{dimension.attributeName || dimension.attributeCode}（{dimension.attributeCode}）：{dimension.values.map((value) => `${value.valueLabel || value.valueCode}${value.status === 'ARCHIVED' ? ' · 归档' : ''}`).join('、') || '—'}</Typography.Text>) : <EmptySection text="未维护规格维度"/>}</Card>
-    <Card size="small" title="SKU 明细">{skus.length ? <Space direction="vertical" size={8} style={{display: 'flex'}}>{skus.map((sku) => <Card key={sku.skuCode} size="small" title={<NameCodeText name={sku.skuName} code={sku.skuCode}/>}> <Descriptions size="small" column={2} items={[{key: 'refs', label: '属性值', children: sku.attributeValueRefs.map((value) => `${value.attributeName || value.attributeCode}=${value.valueLabel || value.valueCode}`).join('、') || '—'}, {key: 'barcode', label: '条码', children: sku.skuBarcode || '—'}, {key: 'price', label: '标准价', children: money(sku.standardSalePrice)}, {key: 'status', label: '状态', children: `${sku.status}${sku.isDefault ? ' · 默认' : ''}`}, {key: 'version', label: '版本', children: sku.version}]}/></Card>)}</Space> : <EmptySection text="未维护 SKU 明细"/>}</Card>
+    <Card size="small" title="SKU 明细">{skus.length ? <Space direction="vertical" size={8} style={{display: 'flex'}}>{skus.map((sku, skuIndex) => <Card key={sku.skuCode} size="small" title={<NameCodeText name={sku.skuName} code={sku.skuCode}/>}> <Descriptions size="small" column={2} items={[{key: 'refs', label: '属性值', children: sku.attributeValueRefs.map((value) => `${value.attributeName || value.attributeCode}=${value.valueLabel || value.valueCode}`).join('、') || '—'}, {key: 'barcode', label: '条码', children: sku.skuBarcode || '—'}, {key: 'price', label: '标准价', children: money(sku.standardSalePrice)}, {key: 'status', label: '状态', children: `${sku.status}${sku.isDefault ? ' · 默认' : ''}`}, {key: 'images', label: '图片', children: sku.mediaRefs.length ? <Space wrap>{sku.mediaRefs.map((assetRef, mediaIndex) => <CatalogAssetPreview key={assetRef} assetRef={assetRef} alt={`${sku.skuName || sku.skuCode || `SKU ${skuIndex + 1}`}图片 ${mediaIndex + 1}`} width={96} height={72} testId={`catalog-item-sku-media-readonly-${skuIndex}-${mediaIndex}`}/>)}</Space> : '未配置'}, {key: 'version', label: '版本', children: sku.version}]}/></Card>)}</Space> : <EmptySection text="未维护 SKU 明细"/>}</Card>
   </Space>;
 }
 
@@ -678,7 +767,7 @@ function OrderOptionsEditor({values, onChange, onDirty}: {values: CatalogOrderOp
             <Space><Typography.Text>必选</Typography.Text><Switch checked={selectedGroup.required} onChange={(required) => { updateGroup(selectedGroupIndex, {required}); onDirty(); }} {...testId(`catalog-item-order-option-group-required-${selectedGroupIndex}`)}/></Space>
           </Space>
           <Divider style={{margin: '4px 0'}}/>
-          <Space style={{justifyContent: 'space-between', width: '100%'}}><Typography.Text strong>选项值</Typography.Text><Space><Button size="small" onClick={() => { updateGroup(selectedGroupIndex, {values: [...selectedGroup.values, {code: '', name: '', default: false, extraPrice: null, productionEffects: []}]}); onDirty(); }} {...testId(`catalog-item-order-option-value-add-${selectedGroupIndex}`)}>新增选项值</Button><Button size="small" danger onClick={() => { onChange(values.filter((_, index) => index !== selectedGroupIndex)); onDirty(); }} {...testId(`catalog-item-order-option-group-remove-${selectedGroupIndex}`)}>移除组</Button></Space></Space>
+          <Space style={{justifyContent: 'space-between', width: '100%'}}><Typography.Text strong>选项值</Typography.Text><Space><Button size="small" onClick={() => { updateGroup(selectedGroupIndex, {values: [...selectedGroup.values, {code: '', attributeValueRef: globalThis.crypto.randomUUID(), name: '', default: false, extraPrice: null, productionEffects: []}]}); onDirty(); }} {...testId(`catalog-item-order-option-value-add-${selectedGroupIndex}`)}>新增选项值</Button><Button size="small" danger onClick={() => { onChange(values.filter((_, index) => index !== selectedGroupIndex)); onDirty(); }} {...testId(`catalog-item-order-option-group-remove-${selectedGroupIndex}`)}>移除组</Button></Space></Space>
           {selectedGroup.values.map((value, valueIndex) => <Card key={`${value.code}-${valueIndex}`} size="small" title={`选项值 ${valueIndex + 1}`}>
             <Space wrap>
               <Input addonBefore="值编码" value={value.code} onChange={(event) => { updateValue(selectedGroupIndex, valueIndex, {code: event.target.value}); onDirty(); }} {...testId(`catalog-item-order-option-value-code-${selectedGroupIndex}-${valueIndex}`)}/>
@@ -766,15 +855,14 @@ function InventoryBomEditor({values, onChange, onDirty}: {values: CatalogInvento
 }
 
 function InventoryBomReadOnly({values}: {values: CatalogInventoryBomEntry[]}) {
-  if (!values.length) return <EmptySection text="未维护库存对象或 BOM"/>;
   return <Space direction="vertical" size={8} style={{display: 'flex'}} {...testId('catalog-item-inventory-bom-readonly')}>
-    {values.map((entry, index) => <Card key={`${entry.targetRef}-${index}`} size="small" title={`lineSign：${entry.nodeType}`}>
+    {!values.length ? <EmptySection text="未维护库存对象或 BOM"/> : values.map((entry, index) => <Card key={`${entry.targetRef}-${index}`} size="small" title={`lineSign：${entry.nodeType}`}>
       <Descriptions size="small" column={2} items={[{key: 'mode', label: '允许模式', children: entry.mode}, {key: 'owner', label: 'BOM 所属选项值', children: entry.optionValueCode || '商品/SKU'}, {key: 'target', label: '库存对象', children: entry.targetRef || '—'}, {key: 'quantity', label: 'BOM 每份消耗', children: `${entry.quantity || '—'} ${entry.unit || ''}`}]}/>
     </Card>)}
   </Space>;
 }
 
-function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRef, onSelect, testIdValue}: {value: string; currentItemCode?: string; queryContext: OperationsPageProps['queryContext']; brandRef?: string; onSelect: (itemCode: string) => void; testIdValue: string}) {
+function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRef, onSelect, testIdValue}: {value: string; currentItemCode?: string; queryContext: OperationsPageProps['queryContext']; brandRef?: string; onSelect: (item: {itemCode: string; itemRef: string}) => void; testIdValue: string}) {
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [categoryRef, setCategoryRef] = useState<string>();
@@ -786,7 +874,7 @@ function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRe
   const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemRequest, {skip: !open});
   const navigation = decodeNavigation(navigationQuery.data as CatalogInventoryEnvelope | undefined);
   const page = decodeItems(itemsQuery.data as CatalogInventoryEnvelope | undefined);
-  const treeData = useMemo(() => buildCategoryTree(navigation.tree.filter((node) => node.nodeRef.startsWith('CATEGORY:') || Boolean(node.parentCode))), [navigation.tree]);
+  const treeData = useMemo(() => buildCategoryTree(navigation.tree), [navigation.tree]);
   useEffect(() => { if (!open) { setKeyword(''); setCategoryRef(undefined); setCursor(''); } }, [open]);
   return <>
     <Button onClick={() => setOpen(true)} {...testId(testIdValue)}>{value ? <NameCodeText name={value} code={value}/> : '选择组件商品'}</Button>
@@ -798,7 +886,7 @@ function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRe
         <Col span={16}><Space direction="vertical" size={12} style={{display: 'flex'}}>
           <Input.Search value={keyword} placeholder="在选定分类中搜索商品名称或编码" allowClear onChange={(event) => { setKeyword(event.target.value); setCursor(''); }} onSearch={() => setCursor('')} {...testId(`${testIdValue}-search`)}/>
           {itemsQuery.isError && <Alert type="error" showIcon title="候选查询失败" description="商品 owner 未返回可验证候选，请重试。" action={<Button size="small" onClick={() => void itemsQuery.refetch()}>重试</Button>} {...testId(`${testIdValue}-error`)}/>} 
-          <List loading={itemsQuery.isLoading || itemsQuery.isFetching} dataSource={page.items.filter((item) => item.code !== currentItemCode)} locale={{emptyText: '暂无可引用商品'}} renderItem={(item) => <List.Item actions={[<Button key="select" type="link" onClick={() => { onSelect(item.code); setOpen(false); }} {...testId(`${testIdValue}-select-${item.code}`)}>选择</Button>]}>
+          <List loading={itemsQuery.isLoading || itemsQuery.isFetching} dataSource={page.items.filter((item) => item.code !== currentItemCode)} locale={{emptyText: '暂无可引用商品'}} renderItem={(item) => <List.Item actions={[<Button key="select" type="link" onClick={() => { onSelect({itemCode: item.code, itemRef: item.itemRef}); setOpen(false); }} {...testId(`${testIdValue}-select-${item.code}`)}>选择</Button>]}>
             <List.Item.Meta title={<NameCodeText name={item.name} code={item.code}/>} description={`${item.shapeKey} · ${item.status} · ${item.source}`}/>
           </List.Item>}
           />
@@ -812,10 +900,10 @@ function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRe
 type CategoryTreeNode = {key: string; title: string; children?: CategoryTreeNode[]};
 function buildCategoryTree(nodes: ReturnType<typeof decodeNavigation>['tree']): CategoryTreeNode[] {
   const byParent = new Map<string, typeof nodes>();
-  nodes.forEach((node) => { const parent = node.parentCode ?? ''; byParent.set(parent, [...(byParent.get(parent) ?? []), node]); });
+  nodes.forEach((node) => { const parent = node.parentCategoryRef ?? ''; byParent.set(parent, [...(byParent.get(parent) ?? []), node]); });
   const build = (parent: string): CategoryTreeNode[] => (byParent.get(parent) ?? []).map((node) => {
-    const children = build(node.code);
-    return {key: node.code, title: `${node.label}（${node.count}）`, ...(children.length ? {children} : {})};
+    const children = build(node.categoryRef);
+    return {key: node.categoryRef, title: `${node.name}（${node.count}）`, ...(children.length ? {children} : {})};
   });
   return build('');
 }
@@ -834,9 +922,9 @@ function CompositeGroupsEditor({values, onChange, onDirty, queryContext, brandRe
           <Input addonBefore="组名" value={group.groupName} onChange={(event) => { updateGroup(groupIndex, {groupName: event.target.value}); onDirty(); }} {...testId(`catalog-item-composite-group-name-${groupIndex}`)}/>
           <Select value={group.selectionRule} options={[{value: 'FIXED', label: '固定包含'}, {value: 'SINGLE', label: '单选'}, {value: 'MULTIPLE', label: '多选'}]} onChange={(selectionRule) => { updateGroup(groupIndex, {selectionRule}); onDirty(); }} {...testId(`catalog-item-composite-group-rule-${groupIndex}`)}/>
         </Space>
-        <Button size="small" onClick={() => { updateGroup(groupIndex, {components: [...group.components, {itemCode: '', skuCode: null, quantity: '1', unit: '', default: false, extraPrice: null, status: 'ENABLED'}]}); onDirty(); }} {...testId(`catalog-item-composite-component-add-${groupIndex}`)}>添加组件</Button>
+        <Button size="small" onClick={() => { updateGroup(groupIndex, {components: [...group.components, {itemCode: '', itemRef: '', productSkuRef: null, skuCode: null, quantity: '1', unit: '', default: false, extraPrice: null, status: 'ENABLED'}]}); onDirty(); }} {...testId(`catalog-item-composite-component-add-${groupIndex}`)}>添加组件</Button>
         {group.components.map((component, componentIndex) => <Space key={`${component.itemCode}-${componentIndex}`} wrap>
-          <CompositeCandidatePicker value={component.itemCode} currentItemCode={currentItemCode} queryContext={queryContext} brandRef={brandRef} testIdValue={`catalog-item-composite-component-item-${groupIndex}-${componentIndex}`} onSelect={(itemCode) => { updateComponent(groupIndex, componentIndex, {itemCode}); onDirty(); }}/>
+          <CompositeCandidatePicker value={component.itemCode} currentItemCode={currentItemCode} queryContext={queryContext} brandRef={brandRef} testIdValue={`catalog-item-composite-component-item-${groupIndex}-${componentIndex}`} onSelect={(item) => { updateComponent(groupIndex, componentIndex, item); onDirty(); }}/>
           <Input addonBefore="SKU" value={component.skuCode ?? ''} onChange={(event) => { updateComponent(groupIndex, componentIndex, {skuCode: event.target.value || null}); onDirty(); }} {...testId(`catalog-item-composite-component-sku-${groupIndex}-${componentIndex}`)}/>
           <Input addonBefore="数量" value={component.quantity} onChange={(event) => { updateComponent(groupIndex, componentIndex, {quantity: event.target.value}); onDirty(); }} {...testId(`catalog-item-composite-component-quantity-${groupIndex}-${componentIndex}`)}/>
           <Input addonBefore="单位" value={component.unit} onChange={(event) => { updateComponent(groupIndex, componentIndex, {unit: event.target.value}); onDirty(); }} {...testId(`catalog-item-composite-component-unit-${groupIndex}-${componentIndex}`)}/>
@@ -871,6 +959,7 @@ function CatalogAssetEditor({mediaDraft, onStageMedia, onRemoveMedia, onMoveMedi
     <Space direction="vertical" size={8} style={{display: 'flex'}} {...testId('catalog-item-media-list')}>
       {mediaDraft.length === 0 && <EmptySection text="未配置图片"/>}
       {mediaDraft.map((asset, index) => <Space key={asset.id} align="start" style={{display: 'flex', border: '1px solid #f0f0f0', padding: 8, borderRadius: 6}} {...testId(`catalog-item-media-${index}`)}>
+        {asset.assetRef ? <CatalogAssetPreview assetRef={asset.assetRef} alt={`${index === 0 ? '主图' : `附图 ${index}`}预览`} width={96} height={72} testId={`catalog-item-media-preview-${index}`}/> : <span style={{width: 96, height: 72, display: 'grid', placeItems: 'center'}}><Typography.Text type="secondary">待上传</Typography.Text></span>}
         <Space direction="vertical" size={2} style={{minWidth: 220}}>
           <Typography.Text strong>{index === 0 ? '★ 主图' : `附图 ${index}`}</Typography.Text>
           <Typography.Text ellipsis={{tooltip: asset.fileName}}>{asset.fileName}</Typography.Text>
@@ -891,9 +980,9 @@ function CatalogAssetEditor({mediaDraft, onStageMedia, onRemoveMedia, onMoveMedi
   </Space>;
 }
 
-function CatalogAssetGallery({assetRefs}: {assetRefs: string[]}) {
-  return <Space direction="vertical" size={4} {...testId('catalog-item-media-gallery')}>
-    {assetRefs.length ? assetRefs.map((assetRef, index) => <Typography.Text key={`${assetRef}-${index}`}>{index === 0 ? '主图' : `附图 ${index}`}：{assetRef}</Typography.Text>) : '未配置图片'}
+function CatalogAssetGallery({assetRefs, itemName}: {assetRefs: string[]; itemName: string}) {
+  return <Space wrap size={8} {...testId('catalog-item-media-gallery')}>
+    {assetRefs.length ? assetRefs.map((assetRef, index) => <Space direction="vertical" size={2} key={`${assetRef}-${index}`}><CatalogAssetPreview assetRef={assetRef} alt={`${itemName}${index === 0 ? '主图' : `附图 ${index}`}预览`} width={160} height={120} testId={`catalog-item-media-gallery-${index}`}/><Typography.Text type="secondary">{index === 0 ? '主图' : `附图 ${index}`}</Typography.Text></Space>) : '未配置图片'}
   </Space>;
 }
 

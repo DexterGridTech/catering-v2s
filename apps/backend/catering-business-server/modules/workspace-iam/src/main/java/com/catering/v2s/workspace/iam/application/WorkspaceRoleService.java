@@ -6,8 +6,8 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
+import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
-import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
@@ -43,11 +43,10 @@ public class WorkspaceRoleService {
     private final JdbcTemplate jdbc;
     private final TimeProvider time;
     private final WorkspaceIamCommandReceiptService receipts;
-    private final WorkspaceStatusLookup workspaces;
     private final PlatformGovernanceAuthorization platformAuthorization;
-    public WorkspaceRoleService(JdbcTemplate jdbc, TimeProvider time) { this(jdbc, time, new WorkspaceIamCommandReceiptService(jdbc, time), localWorkspaceStatus(jdbc), null); }
+    public WorkspaceRoleService(JdbcTemplate jdbc, TimeProvider time) { this(jdbc, time, new WorkspaceIamCommandReceiptService(jdbc, time), null); }
     @org.springframework.beans.factory.annotation.Autowired
-    public WorkspaceRoleService(JdbcTemplate jdbc, TimeProvider time, WorkspaceIamCommandReceiptService receipts, WorkspaceStatusLookup workspaces, PlatformGovernanceAuthorization platformAuthorization) { this.jdbc = jdbc; this.time = time; this.receipts = receipts; this.workspaces = workspaces; this.platformAuthorization = platformAuthorization; }
+    public WorkspaceRoleService(JdbcTemplate jdbc, TimeProvider time, WorkspaceIamCommandReceiptService receipts, PlatformGovernanceAuthorization platformAuthorization) { this.jdbc = jdbc; this.time = time; this.receipts = receipts; this.platformAuthorization = platformAuthorization; }
 
     @Transactional
     public WorkspaceRoleReadback create(UUID workspaceUuid, String groupWorkspaceKey, String name, String serviceNodeType, String description, Set<String> pageAccessKeys, Set<String> actionCapabilityKeys) {
@@ -55,7 +54,6 @@ public class WorkspaceRoleService {
     }
     @Transactional
     public WorkspaceRoleReadback create(UUID workspaceUuid, String groupWorkspaceKey, String name, String serviceNodeType, String description, Set<String> pageAccessKeys, Set<String> actionCapabilityKeys, AuditActor actor) {
-        requireWorkspace(workspaceUuid, groupWorkspaceKey);
         String type = requiredNodeType(serviceNodeType); validateCatalogs(type, pageAccessKeys, actionCapabilityKeys); UUID id = UUID.randomUUID(); long now = time.currentEpochMillis();
         try { jdbc.update("INSERT INTO workspace_iam.workspace_role (id, workspace_uuid, group_workspace_key, name, service_node_type, description, status, version, created_at_epoch_millis, updated_at_epoch_millis, page_access_keys, capability_keys) VALUES (?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?, CAST(? AS JSONB), CAST(? AS JSONB))", id, workspaceUuid, groupWorkspaceKey, requiredName(name), type, optional(description), now, now, json(pageAccessKeys), json(actionCapabilityKeys)); }
         catch (DuplicateKeyException duplicate) { throw new RoleConflictException(); }
@@ -77,7 +75,6 @@ public class WorkspaceRoleService {
     }
     @Transactional
     public WorkspaceRoleReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID roleId, long expectedVersion, String name, String description, Set<String> pageAccessKeys, Set<String> actionCapabilityKeys, AuditActor actor) {
-        requireWorkspace(workspaceUuid, groupWorkspaceKey);
         WorkspaceRoleReadback current = require(workspaceUuid, groupWorkspaceKey, roleId);
         validateCatalogs(current.serviceNodeType(), pageAccessKeys, actionCapabilityKeys);
         if (jdbc.update("UPDATE workspace_iam.workspace_role SET name=?, description=?, page_access_keys=CAST(? AS JSONB), capability_keys=CAST(? AS JSONB), version=version+1, updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?", requiredName(name), optional(description), json(pageAccessKeys), json(actionCapabilityKeys), time.currentEpochMillis(), roleId, workspaceUuid, groupWorkspaceKey, expectedVersion) != 1) throw new RoleConflictException();
@@ -105,7 +102,6 @@ public class WorkspaceRoleService {
     }
     @Transactional
     public WorkspaceRoleReadback transitionStatus(UUID workspaceUuid, String groupWorkspaceKey, UUID roleId, String status, long expectedVersion, AuditActor actor) {
-        requireWorkspace(workspaceUuid, groupWorkspaceKey);
         String beforeStatus = currentStatus(workspaceUuid, groupWorkspaceKey, roleId);
         if (!Set.of("ENABLED", "DISABLED").contains(status) || jdbc.update("UPDATE workspace_iam.workspace_role SET status=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?", status, time.currentEpochMillis(), roleId, workspaceUuid, groupWorkspaceKey, expectedVersion) != 1) throw new RoleConflictException();
         WorkspaceRoleReadback updated = require(workspaceUuid, groupWorkspaceKey, roleId);
@@ -127,21 +123,63 @@ public class WorkspaceRoleService {
     /** Owner-bounded platform role search; the edge never materializes or slices this list. */
     @Transactional(readOnly = true)
     public Page page(UUID workspaceUuid, String groupWorkspaceKey, String name, String organizationType, String status, int page, int pageSize, String sort, String direction) {
+        return queryPage(workspaceUuid, groupWorkspaceKey, name, organizationType, status, page, pageSize, sort, direction);
+    }
+
+    /** Explicit platform GET page boundary with one owner-local statement, including an empty page's total. */
+    @Transactional(readOnly = true)
+    public Page platformTaskPage(UUID workspaceUuid, String groupWorkspaceKey, String name, String organizationType, String status, int page, int pageSize, String sort, String direction) {
+        return ReadBudgetComponent.measure(
+            ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> queryPage(workspaceUuid, groupWorkspaceKey, name, organizationType, status, page, pageSize, sort, direction)
+        );
+    }
+
+    private Page queryPage(UUID workspaceUuid, String groupWorkspaceKey, String name, String organizationType, String status, int page, int pageSize, String sort, String direction) {
         if (page < 1 || pageSize < 1 || pageSize > 100 || (organizationType != null && !SERVICE_NODE_TYPES.contains(organizationType)) || (status != null && !Set.of("ENABLED", "DISABLED").contains(status))) throw new RoleValidationException();
         String effectiveSort = sort == null ? "NAME" : sort;
         String effectiveDirection = direction == null ? "ASC" : direction;
         if (!Set.of("NAME", "UPDATED_AT").contains(effectiveSort) || !Set.of("ASC", "DESC").contains(effectiveDirection)) throw new RoleValidationException();
-        String where = " WHERE workspace_uuid=? AND group_workspace_key=? AND (CAST(? AS text) IS NULL OR name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR service_node_type=?) AND (CAST(? AS text) IS NULL OR status=?)";
-        Object[] values = new Object[] {workspaceUuid, groupWorkspaceKey, name, name, organizationType, organizationType, status, status};
-        long total = jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.workspace_role" + where, Long.class, values);
-        List<Object> pageValues = new ArrayList<>(java.util.Arrays.asList(values)); pageValues.add(pageSize); pageValues.add((page - 1) * pageSize);
         String orderBy = "NAME".equals(effectiveSort) ? "name" : "updated_at_epoch_millis";
-        List<WorkspaceRoleReadback> items = jdbc.query("SELECT id, workspace_uuid, group_workspace_key, name, description, service_node_type, status, version, created_at_epoch_millis, updated_at_epoch_millis, page_access_keys, capability_keys FROM workspace_iam.workspace_role" + where + " ORDER BY " + orderBy + " " + effectiveDirection + ", id ASC LIMIT ? OFFSET ?", (row, index) -> readback(row), pageValues.toArray());
-        return new Page(items, page, pageSize, total, effectiveSort, effectiveDirection);
+        String where = "workspace_uuid=? AND group_workspace_key=? AND (CAST(? AS text) IS NULL OR name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR service_node_type=?) AND (CAST(? AS text) IS NULL OR status=?)";
+        String sql = "WITH filtered AS MATERIALIZED (SELECT id, workspace_uuid, group_workspace_key, name, description, service_node_type, status, version, created_at_epoch_millis, updated_at_epoch_millis, page_access_keys, capability_keys, COUNT(*) OVER () AS total FROM workspace_iam.workspace_role WHERE " + where + "), paged AS (SELECT * FROM filtered ORDER BY " + orderBy + " " + effectiveDirection + ", id ASC LIMIT ? OFFSET ?), page_total AS (SELECT COALESCE(MAX(total), (SELECT COUNT(*) FROM filtered)) AS total FROM paged) SELECT paged.id, paged.workspace_uuid, paged.group_workspace_key, paged.name, paged.description, paged.service_node_type, paged.status, paged.version, paged.created_at_epoch_millis, paged.updated_at_epoch_millis, paged.page_access_keys, paged.capability_keys, page_total.total FROM page_total LEFT JOIN paged ON TRUE ORDER BY paged." + orderBy + " " + effectiveDirection + ", paged.id ASC";
+        return jdbc.query(sql, statement -> {
+            statement.setObject(1, workspaceUuid);
+            statement.setString(2, groupWorkspaceKey);
+            statement.setString(3, name);
+            statement.setString(4, name);
+            statement.setString(5, organizationType);
+            statement.setString(6, organizationType);
+            statement.setString(7, status);
+            statement.setString(8, status);
+            statement.setInt(9, pageSize);
+            statement.setInt(10, (page - 1) * pageSize);
+        }, result -> {
+            List<WorkspaceRoleReadback> items = new ArrayList<>();
+            long total = 0;
+            while (result.next()) {
+                total = result.getLong(13);
+                if (result.getObject(1) != null) items.add(readback(result));
+            }
+            return new Page(List.copyOf(items), page, pageSize, total, effectiveSort, effectiveDirection);
+        });
     }
 
     @Transactional(readOnly = true)
     public WorkspaceRoleReadback require(UUID workspaceUuid, String groupWorkspaceKey, UUID roleId) {
+        return queryRole(workspaceUuid, groupWorkspaceKey, roleId);
+    }
+
+    /** Explicit platform GET boundary; role commands retain their existing owner-local reads. */
+    @Transactional(readOnly = true)
+    public WorkspaceRoleReadback platformTaskDetail(UUID workspaceUuid, String groupWorkspaceKey, UUID roleId) {
+        return ReadBudgetComponent.measure(
+            ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> queryRole(workspaceUuid, groupWorkspaceKey, roleId)
+        );
+    }
+
+    private WorkspaceRoleReadback queryRole(UUID workspaceUuid, String groupWorkspaceKey, UUID roleId) {
         return jdbc.query("SELECT id, workspace_uuid, group_workspace_key, name, description, service_node_type, status, version, created_at_epoch_millis, updated_at_epoch_millis, page_access_keys, capability_keys FROM workspace_iam.workspace_role WHERE id=? AND workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, roleId); statement.setObject(2, workspaceUuid); statement.setString(3, groupWorkspaceKey); }, result -> {
             if (!result.next()) throw new RoleNotFoundException();
             return readback(result);
@@ -187,7 +225,6 @@ public class WorkspaceRoleService {
         }
     }
 
-    private void requireWorkspace(UUID workspaceUuid, String key) { if (!workspaces.isEnabled(workspaceUuid, key)) throw new WorkspaceDisabledException(); }
     private void audit(UUID workspaceUuid, String key, UUID roleId, String action, AuditActor actor, AuditChangePolicy policy, List<AuditChange> changes) {
         jdbc.update("INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'WORKSPACE_ROLE', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))", UUID.randomUUID(), workspaceUuid, key, roleId.toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), action, time.currentEpochMillis(), jsonChanges(policy.allow(changes)));
     }
@@ -201,7 +238,6 @@ public class WorkspaceRoleService {
     private static String keys(Set<String> values) { return String.join(",", values.stream().sorted().toList()); }
     private static String jsonChanges(List<AuditChange> changes) { return AuditChangeJson.write(changes); }
     private void requirePlatformActor(AuditActor actor) { if (platformAuthorization == null) throw new IllegalStateException("platform authorization is required"); platformAuthorization.requireEnabledPlatformAdministrator(actor); }
-    private static WorkspaceStatusLookup localWorkspaceStatus(JdbcTemplate jdbc) { return (workspaceUuid, key) -> Boolean.TRUE.equals(jdbc.query("SELECT status='ENABLED' FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, workspaceUuid); statement.setString(2, key); }, result -> result.next() && result.getBoolean(1))); }
     private static String canonical(String operation, String key, UUID roleId, Object... values) { StringBuilder request = new StringBuilder(operation).append('|').append(key).append('|').append(roleId); for (Object value : values) request.append('|').append(value instanceof Set<?> set ? set.stream().map(String::valueOf).sorted().toList() : value); return request.toString(); }
     private static void validateCatalogs(String nodeType, Set<String> pages, Set<String> actions) {
         if (pages == null || actions == null || pages.stream().anyMatch(page -> !PAGE_CATALOG.containsKey(page) || !PAGE_CATALOG.get(page).contains(nodeType))) throw new PageAccessCatalogMismatchException();

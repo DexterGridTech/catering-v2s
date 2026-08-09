@@ -22,6 +22,8 @@ schema、migration、seed/runtime 或应用源码，不执行 reset/seed、DEV/U
 
 implementationAuthority: false
 
+> **2026-08-08 Dexter 裁决 supersede（有限）：** 本文任何“`EW` 唯一写 key 为 `EDIT_CATALOG_LIBRARY`”“`DR` 使用独立读取 key”“无诊断权限隐藏第六区”的叙述均已被 `doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md` 取代。P1 必须生成按目标类型映射的三项写 capability 和每 mutation 的 requirement；P2 必须 live resolver → owner grant 闭环；P3 必须按 surface 显示对应写 UI，并让普通库存 reader 读取诊断。原文的阶段独立、owner 分离、API/L2/DEV seed 隔离要求继续生效。
+
 ## 1. 输入、目标与不变约束
 
 ### 1.1 绑定输入
@@ -155,7 +157,7 @@ generated client/RTK client，以及由形态 manifest 生成的 Java/TS typed m
 | 编号 | operation exact-set |
 |---|---|
 | 01—07 | `getOperationsCatalogWorkbenchContext`, `getOperationsCatalogNavigation`, `getOperationsCatalogItems`, `getOperationsCatalogItem`, `createOperationsCatalogItem`, `saveOperationsCatalogItem`, `transitionOperationsCatalogItemStatus` |
-| 08—11 | `createOperationsCatalogCategory`, `updateOperationsCatalogCategory`, `moveOperationsCatalogCategory`, `transitionOperationsCatalogCategoryStatus` |
+| 08—11 | `createOperationsCatalogCategory`, `updateOperationsCatalogCategory`, `moveOperationsCatalogCategory`, `deleteOperationsCatalogCategory` |
 | 12—16 | `getOperationsCatalogDictionary`, `createOperationsCatalogDictionaryEntry`, `updateOperationsCatalogDictionaryEntry`, `reorderOperationsCatalogDictionaryEntry`, `transitionOperationsCatalogDictionaryEntryStatus` |
 | 17—20 | `getOperationsProductionTags`, `createOperationsProductionTag`, `updateOperationsProductionTag`, `transitionOperationsProductionTagStatus` |
 | 21—23 | `getOperationsLocalCatalogCopyCandidates`, `preflightOperationsLocalCatalogCopy`, `executeOperationsLocalCatalogCopy` |
@@ -210,7 +212,7 @@ P1 实际规范源不是本表的 prose，而是新增
 | 8 | `createOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryCreateRequest` → `CatalogCategoryReadback` | E-W | API-006 |
 | 9 | `updateOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryUpdateRequest` → `CatalogCategoryReadback` | E-W | API-006 |
 | 10 | `moveOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryMoveRequest` → `CatalogCategoryReadback` | E-W | API-006 |
-| 11 | `transitionOperationsCatalogCategoryStatus` | catalog / catalog reference judgment | EW | `CatalogCategoryTransitionRequest` → `CatalogCategoryReadback` | E-W | API-006 |
+| 11 | `deleteOperationsCatalogCategory` | catalog / catalog reference judgment | EW | `CatalogCategoryDeleteRequest` → `CatalogCategoryDeleteReadback` | E-W | API-006 |
 | 12 | `getOperationsCatalogDictionary` | catalog / none | PR | `CatalogDictionaryQuery` → `CatalogDictionaryView` | E-R | API-005,006 |
 | 13 | `createOperationsCatalogDictionaryEntry` | catalog / none | EW | `CatalogDictionaryEntryCreateRequest` → `CatalogDictionaryEntryReadback` | E-W | API-006 |
 | 14 | `updateOperationsCatalogDictionaryEntry` | catalog / none | EW | `CatalogDictionaryEntryUpdateRequest` → `CatalogDictionaryEntryReadback` | E-W | API-006 |

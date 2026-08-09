@@ -8,6 +8,7 @@
     "catalogId",
     "revision",
     "sourceBindings",
+    "seedBusinessLabels",
     "seedDatasets",
     "testDatasets",
     "scenarioCatalog",
@@ -107,6 +108,26 @@
             }
           }
         }
+      }
+    },
+    "seedBusinessLabels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["categories", "productionTags", "dictionary", "optionGroups", "units"],
+      "properties": {
+        "categories": {"type": "object", "additionalProperties": {"type": "string"}},
+        "productionTags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "dictionary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE"],
+          "properties": {
+            "SKU_ATTRIBUTE": {"type": "object", "additionalProperties": {"type": "string"}},
+            "SKU_ATTRIBUTE_VALUE": {"type": "object", "additionalProperties": {"type": "string"}}
+          }
+        },
+        "optionGroups": {"type": "object", "additionalProperties": {"type": "string"}},
+        "units": {"type": "object", "additionalProperties": {"type": "string"}}
       }
     },
     "scenarioCatalog": {
@@ -394,32 +415,63 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "strategy",
-            "mediaPurgeRequired",
-            "mediaNamespace",
-            "readback",
+            "seed",
+            "reset",
             "businessAndCleanupSeparate"
           ],
           "properties": {
-            "strategy": {
-              "type": "string",
-              "description": "cleanup strategy"
+            "seed": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "strategy",
+                "readback",
+                "destructiveCleanupOwner"
+              ],
+              "properties": {
+                "strategy": {
+                  "const": "PASS_PRESERVED_DEV_STATE"
+                },
+                "readback": {
+                  "type": "string",
+                  "description": "seed business readback"
+                },
+                "destructiveCleanupOwner": {
+                  "const": "r5-reset"
+                }
+              }
             },
-            "mediaPurgeRequired": {
-              "type": "boolean",
-              "description": "media purge required"
-            },
-            "mediaNamespace": {
-              "type": "string",
-              "description": "media namespace"
-            },
-            "readback": {
-              "type": "string",
-              "description": "cleanup readback"
+            "reset": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "strategy",
+                "mediaPurgeRequired",
+                "mediaNamespace",
+                "readback",
+                "owner"
+              ],
+              "properties": {
+                "strategy": {
+                  "const": "MANAGED_RESET_RUN_SCOPED_REVERT"
+                },
+                "mediaPurgeRequired": {
+                  "const": true
+                },
+                "mediaNamespace": {
+                  "const": "run-scoped"
+                },
+                "readback": {
+                  "type": "string",
+                  "description": "reset cleanup readback"
+                },
+                "owner": {
+                  "const": "r5-reset"
+                }
+              }
             },
             "businessAndCleanupSeparate": {
-              "type": "boolean",
-              "description": "separate statuses"
+              "const": true
             }
           }
         },

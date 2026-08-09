@@ -6,17 +6,120 @@
   "sourceBindings": {
     "requirements": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
-      "sha256": "21cfaa7ce6dced47d932db2ee9ea2d58bcbbe5b0ad2585dde7fa2829d4c9067a"
+      "sha256": "9c80dc61fb1a365b2b1dada76725fd169ef9bf874af79f561c53e821e7a159fd"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
-      "sha256": "08be6b7b232e5bc220d5e2e79841e6a4dee0a7df965dbc71e49ceb3942101354"
+      "sha256": "68492c610d54ad0525d31f0863d21866058b4153a2be2208a7c6e974627e0f36"
     },
     "copyPolicy": {
       "path": "contracts/policy/catalog-inventory-copy-policy.json"
     },
     "mediaCatalog": {
       "path": "contracts/policy/catalog-inventory-media-assets.json"
+    }
+  },
+  "seedBusinessLabels": {
+    "categories": {
+      "APPETIZER": "开胃小食",
+      "BENEFIT": "权益商品",
+      "BEVERAGE": "饮品",
+      "COMBO": "套餐",
+      "DESSERT": "甜品",
+      "MAIN": "主菜",
+      "MATERIAL": "原材料",
+      "PASTA_RICE": "意面饭食",
+      "PIZZA": "披萨",
+      "SALAD": "沙拉",
+      "SERVICE": "服务",
+      "SOUP": "汤品"
+    },
+    "productionTags": {
+      "DINNER": "晚餐推荐",
+      "LUNCH": "午市推荐",
+      "SIGNATURE": "招牌推荐",
+      "TAKEOUT": "外带适用"
+    },
+    "dictionary": {
+      "SKU_ATTRIBUTE": {
+        "DONENESS": "熟度",
+        "DRINK_SIZE": "饮品规格",
+        "PIZZA_SIZE": "披萨尺寸",
+        "PORTION_SIZE": "份量",
+        "SIZE": "规格"
+      },
+      "SKU_ATTRIBUTE_VALUE": {
+        "BURRATA_SAUCE_BALSAMIC": "意式黑醋",
+        "BURRATA_SAUCE_OLIVE": "橄榄油",
+        "CAESAR_ADDON_BACON": "培根",
+        "CAESAR_ADDON_CHICKEN": "鸡胸肉",
+        "CAESAR_ADDON_EGG": "鸡蛋",
+        "CAESAR_CUTLERY_NO": "不需要餐具",
+        "CAESAR_CUTLERY_YES": "需要餐具",
+        "CAESAR_SAUCE_CLASSIC": "经典凯撒酱",
+        "CAESAR_SAUCE_LIGHT": "轻盈凯撒酱",
+        "CAESAR_SAUCE_VINAIGRETTE": "油醋汁",
+        "COFFEE_BEAN_COLOMBIA": "哥伦比亚",
+        "COFFEE_BEAN_ETHIOPIA": "埃塞俄比亚",
+        "COFFEE_PROCESS_NATURAL": "日晒处理",
+        "COFFEE_PROCESS_WASHED": "水洗处理",
+        "COFFEE_SERVE_HOT": "热饮",
+        "COFFEE_SERVE_ICEBALL": "冰球",
+        "COFFEE_SERVE_ICED": "加冰",
+        "DRESSING-CLASSIC": "经典酱汁",
+        "FRIES_ADDON_BACON": "培根",
+        "FRIES_ADDON_LARGE": "加大份",
+        "FRIES_ADDON_PARMESAN": "帕玛森芝士",
+        "FRIES_DIP_GARLIC_MAYO": "蒜香蛋黄酱",
+        "FRIES_DIP_KETCHUP": "番茄酱",
+        "FRIES_DIP_TRUFFLE_CHEESE": "松露芝士酱",
+        "HQ_CAESAR_ADDON_CHICKEN": "鸡胸肉",
+        "LARGE": "大杯",
+        "LEMONADE_FLAVOR_BERRY": "莓果风味",
+        "LEMONADE_FLAVOR_MINT": "薄荷风味",
+        "LEMONADE_ICE_LESS": "少冰",
+        "LEMONADE_ICE_NONE": "去冰",
+        "LEMONADE_ICE_NORMAL": "正常冰",
+        "LEMONADE_SWEETNESS_LESS": "少糖",
+        "LEMONADE_SWEETNESS_REGULAR": "标准糖",
+        "LEMONADE_SWEETNESS_ZERO": "无糖",
+        "MEDIUM": "中杯",
+        "MEDIUM_RARE": "七分熟",
+        "NINE_INCH": "九寸",
+        "REGULAR": "常规份",
+        "SIZE-LARGE": "大份",
+        "SMALL": "小杯",
+        "TOMATO_PASTA_ADDON_CHEESE": "芝士",
+        "TOMATO_PASTA_ADDON_CHICKEN": "鸡胸肉",
+        "TOMATO_PASTA_ADDON_MUSHROOM": "蘑菇",
+        "TOMATO_PASTA_COOK_AL_DENTE": "弹牙",
+        "TOMATO_PASTA_COOK_NORMAL": "正常熟度",
+        "TOMATO_PASTA_SPICY_MEDIUM": "中辣",
+        "TOMATO_PASTA_SPICY_MILD": "微辣",
+        "TOMATO_PASTA_SPICY_NONE": "不辣",
+        "TOPPING-BACON": "培根",
+        "TWELVE_INCH": "十二寸",
+        "WELL_DONE": "全熟"
+      }
+    },
+    "optionGroups": {
+      "CAESAR-DRESSING": "酱汁选择",
+      "CAESAR-SIZE": "份量选择",
+      "CAESAR-TOPPING": "加料选择"
+    },
+    "units": {
+      "EACH": "个",
+      "GRAM": "克",
+      "KILOGRAM": "千克",
+      "BOX": "盒",
+      "g": "克",
+      "pack": "包",
+      "piece": "个",
+      "case": "箱",
+      "ml": "毫升",
+      "bottle": "瓶",
+      "套": "套",
+      "个": "个"
     }
   },
   "seedDatasets": [
@@ -4013,7 +4116,7 @@
       "sourceDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items",
       "expectedCatalogItemCount": 73,
       "expectedMediaAssetCount": 34,
-      "requiredIn": "P2",
+      "requiredIn": "P4",
       "reductionIsNotFinalSeedPolicy": true
     },
     "readback": [
@@ -4031,10 +4134,18 @@
       }
     ],
     "cleanup": {
-      "strategy": "MANAGED_RESET_RUN_SCOPED_REVERT",
-      "mediaPurgeRequired": true,
-      "mediaNamespace": "run-scoped",
-      "readback": "asset namespace absence",
+      "seed": {
+        "strategy": "PASS_PRESERVED_DEV_STATE",
+        "readback": "business readback complete; DEV facts retained",
+        "destructiveCleanupOwner": "r5-reset"
+      },
+      "reset": {
+        "strategy": "MANAGED_RESET_RUN_SCOPED_REVERT",
+        "mediaPurgeRequired": true,
+        "mediaNamespace": "run-scoped",
+        "readback": "asset namespace absence",
+        "owner": "r5-reset"
+      },
       "businessAndCleanupSeparate": true
     },
     "failureRule": "If asset upload or create readback fails, stop and retain first failure evidence; do not fall back to SQL."
@@ -4048,5 +4159,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "f00dfd10ccb4320c5772060f24c05ae1ac8c230e6a423d247bbd77f7ab8c70d2"
+  "fixtureDigest": "4ff0154c950e20d103e249619e89ef16f9568a16ba81f75e1d090ea15e3c21c9"
 }

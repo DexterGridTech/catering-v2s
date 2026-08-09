@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-phase4-u05-clean-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-PHASE4-U05-CLEAN-20260809",
+  "status": "ACTIVE_NOT_EXIT",
+  "authorization": "Dexter authorized complete BP-U05 implementation and verification on 2026-08-09. This clean package supersedes the contaminated historical BP-U05 package baseline; BP-U06 remains excluded.",
+  "freshImplementationReviewAuthorization": {
+    "authorizedBy": "Dexter",
+    "authorizedAt": "2026-08-09",
+    "reviewCycleId": "OVERALL_PHASE_4_U05_CLEAN_IMPLEMENTATION_REVIEW_3_20260809",
+    "reason": "Dexter explicitly authorized a new independent IMPLEMENTATION review after Cycle 2 reached its two-round hard stop; its manifest binding and focused owner-boundary proof were remediated before this fresh cycle.",
+    "scope": "current BP-U05 clean-package bytes only; BP-U06 and runtime remain excluded"
+  },
+  "scope": {
+    "includedUnits": ["BP-U05", "BP-U07-M2-C5-COMMAND-RECONCILIATION"],
+    "excludedUnits": ["BP-U06", "DEV", "reset", "seed", "L2", "UAT", "deployment"]
+  },
+  "denominators": {
+    "getOperations": 83,
+    "taskRead": 78,
+    "protocolReadExempt": 5,
+    "currentlyTaskReader": 78,
+    "remainingOwnerProjection": 0,
+    "m1Read": 58,
+    "m2": 60
+  },
+  "completion": ["all 13 remaining rows admitted as source-implemented only after reader/edge/owner assertions pass", "read-budget status remains BLOCKED_UNMEASURED until a separately authorized managed workload supplies immutable evidence", "fresh independent implementation review and Claude implementation review required"],
+  "forbidden": ["BP-U06 cutover", "operationId dispatch", "cross-schema DML", "task reader from command path", "SQL numeric success claim"]
+}

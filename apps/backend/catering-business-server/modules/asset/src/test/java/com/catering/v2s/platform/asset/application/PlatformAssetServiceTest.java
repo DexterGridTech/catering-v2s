@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,6 +30,9 @@ class PlatformAssetServiceTest {
     private static PlatformAssetService assets;
     private static JdbcTemplate jdbc;
     private static UUID workspaceId;
+    private static UUID secondWorkspaceId;
+    private static UUID dataNodeId;
+    private static UUID secondDataNodeId;
 
     @BeforeAll static void setup() {
         flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).locations("filesystem:../../src/main/resources/db/migration").schemas("public").defaultSchema("public").cleanDisabled(false).load();
@@ -36,7 +40,11 @@ class PlatformAssetServiceTest {
         jdbc = new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
         long now = 1_785_000_000_000L;
         workspaceId = UUID.randomUUID();
+        secondWorkspaceId = UUID.randomUUID();
+        dataNodeId = UUID.randomUUID();
+        secondDataNodeId = UUID.randomUUID();
         jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, 'asset-flow', 'Asset flow', 'asset flow', 'Asset flow', 'ENABLED', 1, 1, ?, ?, ?)", workspaceId, now, now, now);
+        jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, 'asset-flow-b', 'Asset flow B', 'asset flow b', 'Asset flow B', 'ENABLED', 1, 1, ?, ?, ?)", secondWorkspaceId, now, now, now);
         TimeProvider time = () -> now;
         assets = new PlatformAssetService(jdbc, time, new MemoryObjects());
     }
@@ -83,31 +91,86 @@ class PlatformAssetServiceTest {
 
     @Test void catalogReferenceOwnsImageLifecycleAndReleaseIsIdempotentByVersion() {
         byte[] png = png(0xff2f855a);
-        var staged = assets.stageContent("CATALOG_ITEM_IMAGE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-claim-0001");
+        var staged = assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-claim-0001", grant(workspaceId, "asset-flow", dataNodeId));
         assertEquals("STAGED", assets.require(staged.assetRef()).status());
-        var active = assets.claimCatalogStaged(staged.assetRef());
+        var active = assets.claimCatalogStaged(staged.assetRef(), workspaceId, "asset-flow", dataNodeId.toString(), "STORE", staged.bindGrant(), grant(workspaceId, "asset-flow", dataNodeId));
         assertEquals("ACTIVE", active.status());
         assertEquals("CATALOG_ITEM_IMAGE", active.usage());
-        var released = assets.releaseCatalogStaged(staged.assetRef(), active.version(), "catalog-image-release-0001");
+        var released = assets.releaseUnreferencedCatalogAsset(staged.assetRef(), active.version(), "catalog-image-release-0001", workspaceId, "asset-flow", dataNodeId.toString(), "STORE", grant(workspaceId, "asset-flow", dataNodeId));
         assertEquals("RELEASED", released.status());
-        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.claimCatalogStaged(staged.assetRef()));
+        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.claimCatalogStaged(staged.assetRef(), workspaceId, "asset-flow", dataNodeId.toString(), "STORE", staged.bindGrant(), grant(workspaceId, "asset-flow", dataNodeId)));
     }
 
     @Test void contentAddressedCatalogStageReusesAnExistingAssetReference() {
         byte[] png = png(0xff9f1234);
-        var first = assets.stageContent("CATALOG_ITEM_IMAGE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0001");
-        assets.claimCatalogStaged(first.assetRef());
+        var first = assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0001", grant(workspaceId, "asset-flow", dataNodeId));
+        assets.claimCatalogStaged(first.assetRef(), workspaceId, "asset-flow", dataNodeId.toString(), "STORE", first.bindGrant(), grant(workspaceId, "asset-flow", dataNodeId));
 
-        var replay = assets.stageContent("CATALOG_ITEM_IMAGE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0001");
+        var replay = assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0001", grant(workspaceId, "asset-flow", dataNodeId));
 
-        var second = assets.stageContent("CATALOG_ITEM_IMAGE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0002");
+        var second = assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", png.length, new ByteArrayInputStream(png), "catalog-image-dedupe-0002", grant(workspaceId, "asset-flow", dataNodeId));
 
         assertEquals(first.assetRef(), replay.assetRef());
         assertEquals(first.assetRef(), second.assetRef());
         assertEquals("ACTIVE", assets.require(second.assetRef()).status());
     }
 
+    @Test void catalogStageCannotBeClaimedOrDiscardedByAnotherWorkspaceButActiveRefCanBeReusedAcrossScopes() {
+        byte[] firstPng = png(0xff7c3aed);
+        var staged = assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", firstPng.length, new ByteArrayInputStream(firstPng), "catalog-scope-stage-0001", grant(workspaceId, "asset-flow", dataNodeId));
+
+        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.claimCatalogStaged(staged.assetRef(), secondWorkspaceId, "asset-flow-b", secondDataNodeId.toString(), "STORE", staged.bindGrant(), grant(secondWorkspaceId, "asset-flow-b", secondDataNodeId)));
+        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.releaseCatalogStaged(staged.assetRef(), assets.require(staged.assetRef()).version(), "catalog-scope-release-b-0001", secondWorkspaceId, "asset-flow-b", secondDataNodeId.toString(), "STORE", grant(secondWorkspaceId, "asset-flow-b", secondDataNodeId)));
+        assertEquals("STAGED", assets.require(staged.assetRef()).status());
+
+        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.claimCatalogStaged(staged.assetRef(), workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "wrong-grant", grant(workspaceId, "asset-flow", dataNodeId)));
+        var active = assets.claimCatalogStaged(staged.assetRef(), workspaceId, "asset-flow", dataNodeId.toString(), "STORE", staged.bindGrant(), grant(workspaceId, "asset-flow", dataNodeId));
+        assertEquals(active, assets.claimCatalogStaged(staged.assetRef(), secondWorkspaceId, "asset-flow-b", secondDataNodeId.toString(), "STORE", null, grant(secondWorkspaceId, "asset-flow-b", secondDataNodeId)));
+
+        byte[] secondPng = png(0xff0891b2);
+        var ownedStage = assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", secondPng.length, new ByteArrayInputStream(secondPng), "catalog-scope-stage-0002", grant(workspaceId, "asset-flow", dataNodeId));
+        var released = assets.releaseCatalogStaged(ownedStage.assetRef(), assets.require(ownedStage.assetRef()).version(), "catalog-scope-release-a-0002", workspaceId, "asset-flow", dataNodeId.toString(), "STORE", grant(workspaceId, "asset-flow", dataNodeId));
+        assertEquals("RELEASED", released.status());
+    }
+
+    @Test void catalogCommandsRejectWrongServerResolvedScopeBeforeAssetReceiptAccess() {
+        byte[] png = png(0xff047857);
+        assertThrows(PlatformAssetService.AssetOwnerScopeForbiddenException.class,
+            () -> assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", png.length,
+                new ByteArrayInputStream(png), "catalog-owner-scope-denied-0001", grant(secondWorkspaceId, "asset-flow-b", secondDataNodeId)));
+    }
+
+    @Test void catalogLifecycleCommandsRejectScopeMatchingInventoryCapabilityBeforeReceiptAccess() {
+        byte[] png = png(0xff0f766e);
+        OperationsOwnerScopeGrant inventoryGrant = grant(workspaceId, "asset-flow", dataNodeId, "EDIT_STORE_INVENTORY");
+
+        assertThrows(PlatformAssetService.AssetOwnerScopeForbiddenException.class,
+            () -> assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", png.length,
+                new ByteArrayInputStream(png), "catalog-owner-capability-denied-stage-0001", inventoryGrant));
+
+        var staged = assets.stageCatalogContent(workspaceId, "asset-flow", dataNodeId.toString(), "STORE", "image/png", png.length,
+            new ByteArrayInputStream(png), "catalog-owner-capability-valid-stage-0001", grant(workspaceId, "asset-flow", dataNodeId));
+        assertThrows(PlatformAssetService.AssetOwnerScopeForbiddenException.class,
+            () -> assets.claimCatalogStaged(staged.assetRef(), workspaceId, "asset-flow", dataNodeId.toString(), "STORE", staged.bindGrant(), inventoryGrant));
+        assertThrows(PlatformAssetService.AssetOwnerScopeForbiddenException.class,
+            () -> assets.releaseCatalogStaged(staged.assetRef(), assets.require(staged.assetRef()).version(), "catalog-owner-capability-denied-release-0001",
+                workspaceId, "asset-flow", dataNodeId.toString(), "STORE", inventoryGrant));
+
+        var active = assets.claimCatalogStaged(staged.assetRef(), workspaceId, "asset-flow", dataNodeId.toString(), "STORE", staged.bindGrant(), grant(workspaceId, "asset-flow", dataNodeId));
+        assertThrows(PlatformAssetService.AssetOwnerScopeForbiddenException.class,
+            () -> assets.releaseUnreferencedCatalogAsset(active.assetRef(), active.version(), "catalog-owner-capability-denied-global-release-0001",
+                workspaceId, "asset-flow", dataNodeId.toString(), "STORE", inventoryGrant));
+    }
+
     @AfterAll static void cleanup() { if (flyway != null) flyway.clean(); }
+
+    private static OperationsOwnerScopeGrant grant(UUID workspaceUuid, String groupWorkspaceKey, UUID targetId) {
+        return grant(workspaceUuid, groupWorkspaceKey, targetId, "EDIT_STORE_CATALOG");
+    }
+
+    private static OperationsOwnerScopeGrant grant(UUID workspaceUuid, String groupWorkspaceKey, UUID targetId, String capabilityKey) {
+        return new OperationsOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, "CATALOG_INVENTORY_OWNER_TEST", capabilityKey, "STORE", targetId, "STORE", targetId, java.util.List.of(targetId));
+    }
 
     private static byte[] png(int argb) {
         try {

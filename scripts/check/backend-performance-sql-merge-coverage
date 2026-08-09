@@ -1,0 +1,14 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+if [[ "${1:-}" == "--self-test" ]]; then
+  node "$repo_root/scripts/generate/backend-performance-sql-merge-applicability.mjs" --self-test
+else
+  node "$repo_root/scripts/generate/backend-performance-sql-merge-applicability.mjs" --check "$@"
+fi
+if [[ " ${*:-} " == *" --snapshot "* ]]; then
+  printf 'BP_U07_SQL_MERGE_SUCCESS=MEASURED_FINAL_SNAPSHOT_ADMITTED\n'
+else
+  printf 'BP_U07_SQL_MERGE_SUCCESS=BLOCKED_UNMEASURED\n'
+fi

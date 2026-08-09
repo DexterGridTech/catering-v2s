@@ -4,7 +4,7 @@
   "status": "PASS",
   "authority": "STATIC_PLAN_ONLY",
   "revision": "CATALOG_INVENTORY_P1_20260806",
-  "fixtureDigest": "f00dfd10ccb4320c5772060f24c05ae1ac8c230e6a423d247bbd77f7ab8c70d2",
+  "fixtureDigest": "4ff0154c950e20d103e249619e89ef16f9568a16ba81f75e1d090ea15e3c21c9",
   "profile": "catalog-inventory",
   "mediaPlan": [
     {

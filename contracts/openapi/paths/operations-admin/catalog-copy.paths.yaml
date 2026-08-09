@@ -22,8 +22,17 @@
           "inventory"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -82,8 +91,17 @@
           "inventory"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -144,8 +162,17 @@
           "fulfillment-production"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -206,8 +233,17 @@
           "fulfillment-production"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_BRAND_CATALOG_COPY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_BRAND_CATALOG_COPY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",

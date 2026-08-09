@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "CATALOG-INVENTORY-DUAL-SCOPE-WRITE-AUTHORIZATION-20260808",
+  "promptSha256": "9d25308eb1e458c86d2cd6f11d0ae9929ae3a348e513a116b071a56245e07030",
+  "genericProblem": "A shared operations surface conflated selected data-node scope, UI action visibility, fact-owner boundaries, and server-side command authorization, so a persisted multi-scope session could be resolved to the wrong owner target, a coarse role key could be mistaken for owner-safe write authority, or a whole-save could be incorrectly split into two user permissions.",
+  "rootCauseClass": "CAPABILITY_SCOPE_AND_OWNER_ENFORCEMENT_MODEL_DRIFT",
+  "finiteDenominator": {
+    "operations": "All 42 catalog-inventory edge operations: 16 GET reads, 18 dual HEAD_COMPANY/STORE catalog writes, 8 STORE-only catalog-copy or inventory writes.",
+    "capabilities": "The catalog role catalog, workspace session schema, P1 operation generator, generated edge wire, platform role editor, operations catalog/inventory pages, edge controller, application coordinator, catalog/inventory/production/asset owner command boundaries, role migration, API/L2/DEV fixtures.",
+    "counterexamples": "PageAccess remains route admission rather than a write capability; public asset reads and ordinary inventory diagnostics are reads and therefore do not receive a capability key."
+  },
+  "searchedSurfaces": [
+    "contracts/catalog/admin-catalog.json",
+    "contracts/openapi/catalog-inventory.openapi.yaml",
+    "contracts/openapi/components/workspace-iam/workspace-session.schemas.yaml",
+    "scripts/generate/catalog-inventory-p1.mjs",
+    "scripts/generate/edge-codegen.mjs",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/cataloginventory/CatalogInventoryApplicationService.java",
+    "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolePermissionFields.tsx",
+    "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+    "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+    "scripts/dev/catalog-inventory-seed-executor.mjs",
+    "scripts/test/catalog-inventory-api.mjs",
+    "scripts/test/catalog-inventory-l2-test-fixture.mjs",
+    "scripts/test/r5-joint-remote-l2-fixture.mjs"
+  ],
+  "findings": [
+    {
+      "findingId": "CI-AUTH-001",
+      "status": "CONFIRMED",
+      "finding": "The catalog controller selected Store before Head Company from a session that can validly retain both, ignoring the explicit requested data-node reference and producing brand-workbench SCOPE_FORBIDDEN responses.",
+      "rootLayer": "server scope selection"
+    },
+    {
+      "findingId": "CI-AUTH-002",
+      "status": "CONFIRMED",
+      "finding": "EDIT_CATALOG_LIBRARY conflated Head Company catalog, Store catalog, and Store inventory owner writes; READ_INVENTORY_ADVANCED_DIAGNOSTICS made a GET into a role capability.",
+      "rootLayer": "capability taxonomy"
+    },
+    {
+      "findingId": "CI-AUTH-003",
+      "status": "CONFIRMED",
+      "finding": "Catalog-inventory mutation contracts advertised a UI capability but the edge, application coordinator, and owner command APIs did not live-recheck it or pass a server-minted owner scope grant.",
+      "rootLayer": "command enforcement"
+    },
+    {
+      "findingId": "CI-AUTH-004",
+      "status": "CONFIRMED",
+      "finding": "The platform role editor required a non-empty capability set and the shared catalog drawer exposed Store-only local copy from the Head Company surface.",
+      "rootLayer": "consumer policy projection"
+    },
+    {
+      "findingId": "CI-AUTH-005",
+      "status": "CONFIRMED",
+      "finding": "A review correctly found that scope-only owner grants let catalog whole-save reach inventory commands, but treating that as a requirement for a second inventory capability would contradict the approved one-save product task. The missing boundary was command purpose: only the catalog whole-save requirement may coordinate the two named inventory-definition commands; direct inventory workflows remain inventory-authorized.",
+      "rootLayer": "cross-owner user-task authorization"
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "CI-AUTH-001",
+      "destination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/catalog-inventory-p2/cli.mjs plus dual-selection focused controller coverage"
+    },
+    {
+      "findingId": "CI-AUTH-002",
+      "destination": "PROJECT_MEMORY",
+      "owningSourceOrControl": "project-memory/operations/phase-retrospective-and-systemic-repair.md#CATALOG_INVENTORY_SCOPE_BOUND_WRITE_CAPABILITY"
+    },
+    {
+      "findingId": "CI-AUTH-003",
+      "destination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/catalog-inventory-p1/cli.mjs and tools/capability-invariants/cli.mjs with real red mutations"
+    },
+    {
+      "findingId": "CI-AUTH-004",
+      "destination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md#review-checklist"
+    },
+    {
+      "findingId": "CI-AUTH-005",
+      "destination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/catalog-inventory-p1/cli.mjs and tools/capability-invariants/cli.mjs require the save-only named inventory-definition command set; owner focused tests reject generic catalog, inventory, and wrong-operation grants."
+    }
+  ]
+}

@@ -3,9 +3,9 @@ import {adminWideDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycl
 import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import type {BrandCopyCandidatePage, CatalogInventoryEnvelope, JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
-import type {OperationsPageProps} from '../../../app/routing/model';
-import {catalogCopyVersionRows, decodeBrandCopyReadback, decodeBrandCopyScopes, decodeCandidates, decodePreflight, displayValue, type BrandCopyReadback, type BrandCopyScope, type CopyPreflight} from '../model/catalogModel';
+import type {BrandCopyCandidatePage, CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
+import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
+import {catalogCopyVersionRows, decodeBrandCopyReadback, decodeBrandCopyScopes, decodeCandidates, decodePreflight, type BrandCopyReadback, type BrandCopyScope, type CatalogCopyReferenceMapping, type CopyPreflight} from '../model/catalogModel';
 
 type Props = {open: boolean; queryContext: OperationsPageProps['queryContext']; brandRef?: string; onClose: () => void; onCompleted: () => void};
 
@@ -31,7 +31,8 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
   const runPreflight = async () => {
     setProblem(undefined);
     try {
-      const response = await preflightCopy(catalogInventoryRtkRequest.preflightOperationsBrandCatalogCopy({}, {headers: {...(headers ?? {}), 'Idempotency-Key': globalThis.crypto.randomUUID()}, body: {selectedItemCodes: selected, targetDataNodeRef: queryContext.scopeRef ?? ''}})).unwrap();
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
+      const response = await preflightCopy(catalogInventoryRtkRequest.preflightOperationsBrandCatalogCopy({}, {headers: {...(headers ?? {}), 'Idempotency-Key': globalThis.crypto.randomUUID()}, body: {dataNodeRef, selectedItemCodes: selected, targetDataNodeRef: dataNodeRef}})).unwrap();
       const next = decodePreflight(response as CatalogInventoryEnvelope);
       if (!next) throw new Error('COPY_PREFLIGHT_SHAPE_MISSING');
       setPreflight(next); setConfirmed(false); setReadback(undefined); setStep(2); lifecycle.setDirty(true);
@@ -45,7 +46,8 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
       if (!versionRows.length) throw new Error('COPY_PREFLIGHT_CATALOG_VERSIONS_MISSING');
       const expectedSourceVersion = Math.max(...versionRows.map((row) => Number(row.sourceVersion ?? 0)), 0);
       const expectedTargetVersion = Math.max(...versionRows.map((row) => Number(row.targetVersion ?? 0)), 0);
-      const response = await executeCopy(catalogInventoryRtkRequest.executeOperationsBrandCatalogCopy({}, {headers: {...(headers ?? {}), 'Idempotency-Key': submission.getIdempotencyKey()}, body: {selectedItemCodes: selected, targetDataNodeRef: queryContext.scopeRef ?? '', preflightDigest: preflight.preflightDigest, expectedSourceVersion, expectedTargetVersion}})).unwrap();
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
+      const response = await executeCopy(catalogInventoryRtkRequest.executeOperationsBrandCatalogCopy({}, {headers: {...(headers ?? {}), 'Idempotency-Key': submission.getIdempotencyKey()}, body: {dataNodeRef, selectedItemCodes: selected, targetDataNodeRef: dataNodeRef, preflightDigest: preflight.preflightDigest, expectedSourceVersion, expectedTargetVersion}})).unwrap();
       const next = decodeBrandCopyReadback(response as CatalogInventoryEnvelope);
       if (!next) throw new Error('COPY_READBACK_SHAPE_MISSING');
       lifecycle.reset(); submission.reset(); setReadback(next); setStep(4);
@@ -75,24 +77,23 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
     {step === 2 && preflight && <>
       <Descriptions size="small" bordered column={4} items={[{key: 'selected', label: '起始商品', children: `${preflight.selectedCount}/${preflight.selectedLimit}`}, {key: 'closure', label: '闭包对象', children: `${preflight.closureCount}/${preflight.closureLimit}`}, {key: 'blocking', label: '阻断', children: preflight.blockingCount}, {key: 'confirmations', label: '需确认', children: preflight.confirmationRequiredCount}]}/>
       <Tabs style={{marginTop: 16}} items={[
-        {key: 'items', label: '商品与结构', children: <PreflightList rows={preflight.closureItems}/>},
-        {key: 'mapping', label: '字典与映射', children: <PreflightList rows={preflight.mappingPreview}/>},
-        {key: 'inventory', label: '库存与BOM', children: <PreflightList rows={preflight.compatibilityResults.filter((row) => String(row.objectType ?? '').includes('STOCK') || String(row.objectType ?? '').includes('BOM'))}/>},
-        {key: 'production', label: '生产提示', children: <PreflightList rows={preflight.compatibilityResults.filter((row) => String(row.objectType ?? '').includes('PRODUCTION'))}/>},
-        {key: 'references', label: '引用重写', children: <PreflightList rows={preflight.referenceRewritePreview}/>},
+        {key: 'items', label: '商品与结构', children: <ClosureItemList rows={preflight.closureItems}/>},
+        {key: 'mapping', label: '引用映射', children: <ReferenceMappingList rows={preflight.referenceMappings}/>},
+        {key: 'inventory', label: '库存与BOM', children: <CompatibilityList rows={preflight.compatibilityResults.filter((row) => row.objectType.includes('STOCK') || row.objectType.includes('BOM'))}/>},
+        {key: 'production', label: '生产提示', children: <CompatibilityList rows={preflight.compatibilityResults.filter((row) => row.objectType.includes('PRODUCTION'))}/>},
       ]} {...testId('catalog-inventory-copy-preflight')}/>
-      <Checkbox checked={confirmed} onChange={(event) => { setConfirmed(event.target.checked); submission.markBusinessIntentChanged(); }} disabled={preflight.blockingCount > 0} {...testId('catalog-copy-confirm')}>我已核对所有可确认差异与引用重写</Checkbox>
+      <Checkbox checked={confirmed} onChange={(event) => { setConfirmed(event.target.checked); submission.markBusinessIntentChanged(); }} disabled={preflight.blockingCount > 0} {...testId('catalog-copy-confirm')}>我已核对所有可确认差异与引用映射</Checkbox>
       {preflight.blockingCount > 0 && <Alert type="warning" showIcon title="仍有阻断项，清零后才能执行复制" style={{marginTop: 12}}/>}
       <Space style={{marginTop: 16}}><Button onClick={() => { setStep(1); setPreflight(undefined); setConfirmed(false); }}>返回选择</Button><Button type="primary" disabled={preflight.blockingCount > 0} onClick={() => setStep(3)} {...testId('catalog-brand-copy-preflight-next')}>下一步：确认执行</Button></Space>
     </>}
     {step === 3 && preflight && <>
       <Descriptions size="small" bordered column={2} items={[{key: 'selected', label: '起始商品', children: `${preflight.selectedCount}/${preflight.selectedLimit}`}, {key: 'closure', label: '闭包对象', children: `${preflight.closureCount}/${preflight.closureLimit}`}, {key: 'digest', label: '预检摘要', children: preflight.preflightDigest}]}/>
-      <Checkbox checked={confirmed} onChange={(event) => { setConfirmed(event.target.checked); submission.markBusinessIntentChanged(); }} disabled={preflight.blockingCount > 0} {...testId('catalog-copy-confirm')}>我已核对所有可确认差异与引用重写</Checkbox>
+      <Checkbox checked={confirmed} onChange={(event) => { setConfirmed(event.target.checked); submission.markBusinessIntentChanged(); }} disabled={preflight.blockingCount > 0} {...testId('catalog-copy-confirm')}>我已核对所有可确认差异与引用映射</Checkbox>
       <Space style={{marginTop: 16}}><Button onClick={() => setStep(2)}>返回预检</Button><Button type="primary" disabled={preflight.blockingCount > 0 || !confirmed} loading={executeState.isLoading} onClick={() => void execute()} {...testId('catalog-copy-execute')}>确认并原子复制</Button></Space>
     </>}
     {step === 4 && readback && <>
       <Alert type="success" showIcon title="品牌商品已复制" description="目录、库存定义、BOM、生产提示与引用已按 owner readback 完成处理。" {...testId('catalog-copy-result')}/>
-      <Tabs style={{marginTop: 16}} items={[{key: 'created', label: `新建 ${readback.created.length}`, children: <PreflightList rows={readback.created}/>}, {key: 'reused', label: `复用 ${readback.reused.length}`, children: <PreflightList rows={readback.reused}/>}, {key: 'mapping', label: `映射 ${readback.mappings.length}`, children: <PreflightList rows={readback.mappings}/>}, {key: 'owners', label: 'Owner readback', children: <PreflightList rows={readback.ownerReadbacks}/>}]}/>
+      <Tabs style={{marginTop: 16}} items={[{key: 'created', label: `新建 ${readback.created.length}`, children: <ReadbackRows rows={readback.created}/>}, {key: 'reused', label: `复用 ${readback.reused.length}`, children: <ReadbackRows rows={readback.reused}/>}, {key: 'mapping', label: `引用映射 ${readback.referenceMappings.length}`, children: <ReferenceMappingList rows={readback.referenceMappings}/>}, {key: 'owners', label: 'Owner readback', children: <OwnerReadbackList rows={readback.ownerReadbacks}/>}]}/>
       <Button type="primary" onClick={() => { onCompleted(); onClose(); }} {...testId('catalog-copy-result-close')}>完成</Button>
     </>}
   </Drawer>;
@@ -100,7 +101,27 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
 
 function scopeText(scope: BrandCopyScope) { return `${scope.ownerType} / ${scope.ownerRef} / ${scope.brandRef}`; }
 
-function PreflightList({rows}: {rows: Array<Record<string, JsonValue>>}) {
+function ClosureItemList({rows}: {rows: CopyPreflight['closureItems']}) {
   if (!rows.length) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本类无差异"/>;
-  return <List size="small" dataSource={rows} renderItem={(row) => <List.Item><Typography.Text>{Object.entries(row).map(([key, value]) => `${key}: ${displayValue(value)}`).join(' · ')}</Typography.Text></List.Item>}/>;
+  return <List size="small" dataSource={rows} renderItem={(row) => <List.Item><Space size={8}><Tag>{row.objectType}</Tag><Typography.Text code>{row.code}</Typography.Text><Typography.Text>{row.name}</Typography.Text><Tag>{row.action}</Tag></Space></List.Item>}/>;
+}
+
+function CompatibilityList({rows}: {rows: CopyPreflight['compatibilityResults']}) {
+  if (!rows.length) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本类无差异"/>;
+  return <List size="small" dataSource={rows} renderItem={(row) => <List.Item><Space size={8}><Tag>{row.objectType}</Tag><Tag>{row.result}</Tag><Typography.Text>{row.reason || '—'}</Typography.Text></Space></List.Item>}/>;
+}
+
+function ReferenceMappingList({rows}: {rows: CatalogCopyReferenceMapping[]}) {
+  if (!rows.length) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本类无差异"/>;
+  return <List size="small" dataSource={rows} renderItem={(row) => <List.Item><Space size={8} wrap><Tag>{row.objectType}</Tag><Typography.Text code>{row.targetCode}</Typography.Text>{row.targetSkuCode && <Tag>SKU：{row.targetSkuCode}</Tag>}{row.targetOptionValueCode && <Tag>选项：{row.targetOptionValueCode}</Tag>}</Space></List.Item>}/>;
+}
+
+function ReadbackRows({rows}: {rows: Array<{objectType: string; code: string}>}) {
+  if (!rows.length) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本类无差异"/>;
+  return <List size="small" dataSource={rows} renderItem={(row) => <List.Item><Space size={8}><Tag>{row.objectType}</Tag><Typography.Text code>{row.code}</Typography.Text></Space></List.Item>}/>;
+}
+
+function OwnerReadbackList({rows}: {rows: BrandCopyReadback['ownerReadbacks']}) {
+  if (!rows.length) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本类无差异"/>;
+  return <List size="small" dataSource={rows} renderItem={(row) => <List.Item><Space size={8}><Typography.Text>{row.owner}</Typography.Text><Tag>{row.status}</Tag><Typography.Text type="secondary">v{row.version}</Typography.Text></Space></List.Item>}/>;
 }

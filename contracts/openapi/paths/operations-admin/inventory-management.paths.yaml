@@ -20,8 +20,17 @@
         "x-owner-module": "inventory",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_STORE_INVENTORY"
         ],
+        "x-capability-by-data-node-type": {
+          "STORE": "EDIT_STORE_INVENTORY"
+        },
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_COUNT_OPERATIONS_INVENTORY_TARGET",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_COUNT_OPERATIONS_INVENTORY_TARGET",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -86,8 +95,17 @@
         "x-owner-module": "inventory",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_STORE_INVENTORY"
         ],
+        "x-capability-by-data-node-type": {
+          "STORE": "EDIT_STORE_INVENTORY"
+        },
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_INCREASE_OPERATIONS_INVENTORY_TARGET",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_INCREASE_OPERATIONS_INVENTORY_TARGET",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -152,8 +170,17 @@
         "x-owner-module": "inventory",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_STORE_INVENTORY"
         ],
+        "x-capability-by-data-node-type": {
+          "STORE": "EDIT_STORE_INVENTORY"
+        },
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_ADJUST_OPERATIONS_INVENTORY_TARGET",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_ADJUST_OPERATIONS_INVENTORY_TARGET",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -218,8 +245,17 @@
         "x-owner-module": "inventory",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_STORE_INVENTORY"
         ],
+        "x-capability-by-data-node-type": {
+          "STORE": "EDIT_STORE_INVENTORY"
+        },
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",

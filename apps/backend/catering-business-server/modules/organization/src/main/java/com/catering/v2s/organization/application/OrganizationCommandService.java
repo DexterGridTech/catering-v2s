@@ -17,6 +17,7 @@ import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -30,23 +31,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OrganizationCommandService implements InitializeCommercialGroupCommand, UpdateCommercialGroupCommand, CommercialGroupLookup {
     private final JdbcTemplate jdbcTemplate;
-    private final WorkspaceStatusLookup workspaces;
     private final TimeProvider time;
     private final ExtensionDefinitionLookup definitions;
     private final CommercialGroupCommandReceiptService receipts;
 
     public OrganizationCommandService(JdbcTemplate jdbcTemplate, WorkspaceStatusLookup workspaces, TimeProvider time) {
-        this(jdbcTemplate, workspaces, time, null, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
+        this(jdbcTemplate, time, null, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
     public OrganizationCommandService(JdbcTemplate jdbcTemplate, WorkspaceStatusLookup workspaces, TimeProvider time, ExtensionDefinitionLookup definitions) {
-        this(jdbcTemplate, workspaces, time, definitions, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
+        this(jdbcTemplate, time, definitions, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
     @org.springframework.beans.factory.annotation.Autowired
-    public OrganizationCommandService(JdbcTemplate jdbcTemplate, WorkspaceStatusLookup workspaces, TimeProvider time, ExtensionDefinitionLookup definitions, CommercialGroupCommandReceiptService receipts) {
+    public OrganizationCommandService(JdbcTemplate jdbcTemplate, TimeProvider time, ExtensionDefinitionLookup definitions, CommercialGroupCommandReceiptService receipts) {
         this.jdbcTemplate = jdbcTemplate;
-        this.workspaces = workspaces;
         this.time = time;
         this.definitions = definitions;
         this.receipts = receipts;
@@ -129,7 +128,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
                 requestFingerprint
             );
         }
-        try {
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             UUID commercialGroupUuid = UUID.randomUUID();
             long createdAtEpochMillis = time.currentEpochMillis();
             long id = jdbcTemplate.queryForObject(
@@ -171,7 +170,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
                 time.currentEpochMillis(),
                 AuditChangeJson.write(java.util.List.of(new com.catering.v2s.audit.contract.AuditChange("commercialGroupCode", null, code), new com.catering.v2s.audit.contract.AuditChange("commercialGroupName", null, name)))
             );
-            return readback(id, groupWorkspaceKey, code, name, actor.displaySnapshot());
+            return OwnerOperationDiagnostics.readback(() -> readback(id, groupWorkspaceKey, code, name, actor.displaySnapshot()));
         } catch (DuplicateKeyException exception) {
             throw new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_ALREADY_INITIALIZED, "commercial group already exists");
         }
@@ -205,23 +204,21 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
         AuditActor actor,
         OperationsOwnerScopeGrant ownerScopeGrant
     ) {
-        requireEnabledWorkspace(workspaceUuid, groupWorkspaceKey);
-        if (ownerScopeGrant != null) {
-            CommercialGroupReadback current = requireCommercialGroup(groupWorkspaceKey);
-            if (!ownerScopeGrant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, current.id())) {
-                throw new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group authorization target does not match");
-            }
+        // Receipt replay remains after a fresh owner fact and grant-target recheck.
+        CommercialGroupReadback current = requireCommercialGroup(groupWorkspaceKey);
+        if (ownerScopeGrant != null && !ownerScopeGrant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, current.id())) {
+            throw new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group authorization target does not match");
         }
         String code = normalize(commercialGroupCode, 64);
         String name = normalize(commercialGroupName, 120);
         Map<String, String> requested = extensionValues == null ? Map.of() : extensionValues;
         String canonical = "update-commercial-group\u0000" + groupWorkspaceKey + "\u0000" + code + "\u0000" + name + "\u0000" + expectedVersion + "\u0000"
             + requested.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> entry.getKey() + "=" + entry.getValue()).collect(java.util.stream.Collectors.joining("\u001f"));
-        return receipts.execute(workspaceUuid, idempotencyKey, canonical, () -> updateOnce(workspaceUuid, groupWorkspaceKey, code, name, expectedVersion, requested, actor, ownerScopeGrant));
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical, () -> updateOnce(workspaceUuid, groupWorkspaceKey, code, name, expectedVersion, requested, actor, current));
     }
 
-    private CommercialGroupReadback updateOnce(UUID workspaceUuid, String groupWorkspaceKey, String code, String name, long expectedVersion, Map<String, String> requested, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
-        CommercialGroupReadback current = requireCommercialGroup(groupWorkspaceKey);
+    /** Immutable owner pre-state is shared by grant validation, CAS/audit and this write. */
+    private CommercialGroupReadback updateOnce(UUID workspaceUuid, String groupWorkspaceKey, String code, String name, long expectedVersion, Map<String, String> requested, AuditActor actor, CommercialGroupReadback current) {
         ExtensionValues extensions = extensionValues(workspaceUuid, groupWorkspaceKey, valuesJson(current.extensionValues()), requested);
         long now = time.currentEpochMillis();
         if (current.revision() != expectedVersion || jdbcTemplate.update(
@@ -255,7 +252,6 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
     @Override
     @Transactional(readOnly = true)
     public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) {
-        requireEnabledWorkspace(workspaceUuid, groupWorkspaceKey);
         return jdbcTemplate.query(
             "SELECT commercial_group_uuid FROM organization.commercial_group WHERE group_workspace_key=?",
             statement -> {
@@ -273,7 +269,8 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
     @Override
     @Transactional(readOnly = true)
     public boolean isEnterableCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) {
-        if (!workspaces.isEnabled(workspaceUuid, groupWorkspaceKey)) return false;
+        // Post-auth callers establish workspace-session eligibility before this owner fact check.
+        // This method intentionally checks commercial-group enterability only.
         Boolean found = jdbcTemplate.query(
             "SELECT EXISTS(SELECT 1 FROM organization.commercial_group WHERE commercial_group_uuid=? AND group_workspace_key=?)",
             statement -> {
@@ -288,7 +285,6 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
     @Override
     @Transactional(readOnly = true)
     public String describeCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) {
-        requireEnabledWorkspace(workspaceUuid, groupWorkspaceKey);
         return jdbcTemplate.query(
             "SELECT commercial_group_code, commercial_group_name FROM organization.commercial_group WHERE commercial_group_uuid=? AND group_workspace_key=?",
             statement -> {
@@ -302,12 +298,6 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
                 return nameCode(result.getString(2), result.getString(1));
             }
         );
-    }
-
-    private void requireEnabledWorkspace(UUID workspaceUuid, String groupWorkspaceKey) {
-        if (!workspaces.isEnabled(workspaceUuid, groupWorkspaceKey)) {
-            throw new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group is unavailable");
-        }
     }
 
     private static String json(String value) {

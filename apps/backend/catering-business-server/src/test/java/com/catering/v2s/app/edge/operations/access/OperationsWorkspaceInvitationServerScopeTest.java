@@ -91,7 +91,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         UUID scopeRef = UUID.randomUUID();
         when(fixture.user.candidates(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == fixture.session && "PROJECT".equals(query.targetType()) && scopeRef.equals(query.requestedScopeRef()) && "ORGANIZATION".equals(query.subjectType()) && "INVITATION_TARGET".equals(query.candidateUsage()))))
             .thenReturn(new WorkspaceUserService.CandidatePage(new WorkspaceUserService.CandidateQueryMetadata("ORGANIZATION", null, 1, 20, 0, null), List.of(), List.of()));
-        OperationsWorkspaceInvitationCandidateController candidates = new OperationsWorkspaceInvitationCandidateController(fixture.sessions, fixture.user);
+        OperationsWorkspaceInvitationCandidateController candidates = new OperationsWorkspaceInvitationCandidateController(fixture.sessions, fixture.user, new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(fixture.user, fixture.invitations, fixture.authentication));
 
         var result = candidates.projectCandidates(fixture.request, KEY, scopeRef, "ORGANIZATION", "INVITATION_TARGET", null, 1, 20, null, fixture.session.contextVersion());
 
@@ -134,11 +134,14 @@ class OperationsWorkspaceInvitationServerScopeTest {
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), UUID.randomUUID(), KEY, accountId, UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 7L, 1L, Set.of(), Set.of(), "Operations tester");
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(session);
+        var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
+        when(readFacts.sessionReadback()).thenReturn(session);
+        when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
         OperationsSessionResolver sessions = new OperationsSessionResolver(authentication);
         WorkspaceInvitationService invitations = mock(WorkspaceInvitationService.class);
         WorkspaceUserService user = mock(WorkspaceUserService.class);
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
-        return new Fixture(new OperationsWorkspaceInvitationController(sessions, invitations, user), sessions, authentication, invitations, user, request, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), session);
+        return new Fixture(new OperationsWorkspaceInvitationController(sessions, invitations, user, new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(user, invitations, authentication)), sessions, authentication, invitations, user, request, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), session);
     }
 
     private record Fixture(OperationsWorkspaceInvitationController controller, OperationsSessionResolver sessions, WorkspaceAuthenticationService authentication, WorkspaceInvitationService invitations, WorkspaceUserService user, EdgeRequestContext request, AuditActor actor, WorkspaceSessionReadback session) { }

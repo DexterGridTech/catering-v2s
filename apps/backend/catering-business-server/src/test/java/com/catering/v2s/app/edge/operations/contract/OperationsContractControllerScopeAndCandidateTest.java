@@ -53,44 +53,39 @@ class OperationsContractControllerScopeAndCandidateTest {
     }
 
     @Test
-    void candidatesUseTheRetainedSelectedProjectAndReadSelectedStoreTenantFromOwner() {
+    void candidatesUseTheRetainedSelectedProjectAndCarrySelectedStoreTenantFromContractProjection() {
         Fixture fixture = fixture();
         UUID selectedProjectId = selectedProjectId(fixture);
         UUID storeId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
         selectedProject(fixture, selectedProjectId);
-        when(fixture.reads.candidates(fixture.workspaceId, KEY, selectedProjectId, storeId, "门店", 1, 50)).thenReturn(new ContractTaskReadService.CandidatePage(
+        when(fixture.reads.operationsTaskCandidates(fixture.workspaceId, KEY, selectedProjectId, storeId, "门店", 1, 50)).thenReturn(new ContractTaskReadService.CandidatePage(
             KEY,
             new ContractTaskReadService.Project(selectedProjectId, "PRJ-01", "项目一"),
             new ContractTaskReadService.CandidateMetadata("门店", 1, 50, 1L),
             List.of(new ContractTaskReadService.StoreCandidate(storeId, "STORE-01", "门店一", "ENABLED")),
-            List.of("一期")
+            List.of("一期"), new ContractTaskReadService.SelectedTenant(tenantId, "TEN-01", "经营主体一")
         ));
-        when(fixture.entities.requireStoreContractContext(fixture.workspaceId, KEY, storeId))
-            .thenReturn(new StoreContractLookup.StoreContractContext(storeId, tenantId, selectedProjectId, "ENABLED", List.of("一期")));
-        when(fixture.entities.requireEntity("TENANT", fixture.workspaceId, KEY, tenantId))
-            .thenReturn(new OrganizationEntityReadback(tenantId, "TENANT", fixture.workspaceId, KEY, "TEN-01", "经营主体一", null, null, "ENABLED", 1L, null, null, null, 0L, 10L, 11L, Map.of()));
 
         var result = fixture.controller.candidates(fixture.request, KEY, fixture.session.contextVersion(), "门店", storeId, 1, 50);
 
         assertEquals(selectedProjectId.toString(), result.project().id());
         assertEquals("经营主体一", result.selectedStoreTenant().get("name").asText());
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
-        verify(fixture.reads).candidates(fixture.workspaceId, KEY, selectedProjectId, storeId, "门店", 1, 50);
-        verify(fixture.entities).requireStoreContractContext(fixture.workspaceId, KEY, storeId);
-        verify(fixture.entities).requireEntity("TENANT", fixture.workspaceId, KEY, tenantId);
+        verify(fixture.reads).operationsTaskCandidates(fixture.workspaceId, KEY, selectedProjectId, storeId, "门店", 1, 50);
+        verifyNoInteractions(fixture.entities);
     }
 
     @Test
     void extensionDefinitionIsWorkspaceScopedAssociationMetadataWithoutProjectRangeResolution() {
         Fixture fixture = fixture();
-        when(fixture.definitions.managementDefinition(fixture.workspaceId, KEY, "CONTRACT"))
+        when(fixture.definitions.operationsManagementDefinition(fixture.workspaceId, KEY, "CONTRACT"))
             .thenReturn(new ExtensionDefinitionReadback(KEY, "CONTRACT", 2L, 10L, List.of()));
 
         var result = fixture.controller.extensionDefinition(fixture.request, KEY, fixture.session.contextVersion());
 
         assertEquals("CONTRACT", result.entityType().wire());
-        verify(fixture.definitions).managementDefinition(fixture.workspaceId, KEY, "CONTRACT");
+        verify(fixture.definitions).operationsManagementDefinition(fixture.workspaceId, KEY, "CONTRACT");
         verifyNoInteractions(fixture.user);
     }
 
@@ -240,6 +235,9 @@ class OperationsContractControllerScopeAndCandidateTest {
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, KEY, accountId, UUID.randomUUID(), new WorkspaceSessionEntryReadback.ScopeContext(null, project, null, null), 11L, 7L, Set.of(), Set.of(), "Operations tester");
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(session);
+        var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
+        when(readFacts.sessionReadback()).thenReturn(session);
+        when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
         ContractCommandService contracts = mock(ContractCommandService.class);
         ContractTaskReadService reads = mock(ContractTaskReadService.class);
         ExtensionDefinitionService definitions = mock(ExtensionDefinitionService.class);

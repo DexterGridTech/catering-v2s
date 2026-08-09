@@ -144,12 +144,26 @@ body {
   background: var(--operations-admin-color-primary-bg) !important;
 }
 
-.operations-scope-trigger-line {
-  display: block;
+.operations-scope-trigger-summary {
+  display: grid;
   width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: 8px;
+}
+
+.operations-scope-trigger-line {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 2px;
+}
+
+.operations-scope-trigger-type {
+  display: block;
+}
+
+.operations-scope-trigger-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .auth-page,

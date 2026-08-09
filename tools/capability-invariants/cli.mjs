@@ -8,6 +8,29 @@ import {fileURLToPath, pathToFileURL} from "node:url";
 
 const OPENAPI_ROOT = "contracts/openapi";
 const REGISTRY_PATH = "contracts/registry/iam-org-governance-manifest.json";
+const CATALOG_INVENTORY_EDGE_CONTRACT_PATH = "contracts/catalog/catalog-inventory-edge-contract.json";
+const CATALOG_INVENTORY_OPENAPI_PATH = "contracts/openapi/catalog-inventory.openapi.yaml";
+const CATALOG_INVENTORY_PATH_SHARDS = [
+  "contracts/openapi/paths/operations-admin/catalog-workbench.paths.yaml",
+  "contracts/openapi/paths/operations-admin/catalog-item-management.paths.yaml",
+  "contracts/openapi/paths/operations-admin/catalog-dictionary-management.paths.yaml",
+  "contracts/openapi/paths/operations-admin/catalog-copy.paths.yaml",
+  "contracts/openapi/paths/operations-admin/inventory-workbench.paths.yaml",
+  "contracts/openapi/paths/operations-admin/inventory-management.paths.yaml",
+  "contracts/openapi/paths/operations-admin/production-tag-management.paths.yaml",
+];
+const CATALOG_INVENTORY_OWNER_AUTHORIZATION = Object.freeze({
+  catalog: {ownerRecheckId: "OWNER_RECHECK_CATALOG", typedProblemMappingId: "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION"},
+  inventory: {ownerRecheckId: "OWNER_RECHECK_INVENTORY", typedProblemMappingId: "PROBLEM_INVENTORY_TYPED_OWNER_EXCEPTION"},
+  "fulfillment-production": {ownerRecheckId: "OWNER_RECHECK_FULFILLMENT_PRODUCTION", typedProblemMappingId: "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION"},
+  asset: {ownerRecheckId: "OWNER_RECHECK_ASSET", typedProblemMappingId: "PROBLEM_ASSET_TYPED_OWNER_EXCEPTION"},
+});
+const CATALOG_SAVE_OPERATION_ID = "saveOperationsCatalogItem";
+const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = ["ensureCatalogInventoryTarget", "saveCatalogProductBom"];
+const DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID = "updateOperationsInventoryTargetConfiguration";
+const CATALOG_SHAPE_MANIFEST_OPERATION_ID = "getOperationsCatalogShapeManifest";
+const CATALOG_DUAL_SCOPE_READ_DATA_NODE_TYPES = ["HEAD_COMPANY", "STORE"];
+const CATALOG_DUAL_SCOPE_READ_COUNT = 7;
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const AUTHENTICATED_MODE = "AUTHENTICATED_WORKSPACE";
 const PLATFORM_SUPER_ADMIN_MODE = "AUTHENTICATED_PLATFORM_SUPER_ADMIN";
@@ -189,8 +212,8 @@ const TYPED_OWNER_EXCEPTION_ROOTS = [
   "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application",
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application",
 ];
-const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 94;
-const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "5aa8e91794bbc8aba87582c7bdd0561951db31e236fe62dcaaba946a2f27fc96";
+const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 95;
+const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "542028c938f0c7b12dcbf4d4cb9d573ca0fe1587f35e37106042e18828f465e9";
 const EXACT_TYPED_OWNER_EXCEPTION_MAPPINGS = [
   "com.catering.v2s.organization.application.BusinessEntityService.HeadCompanyBrandAuthorizationInUseException",
 ];
@@ -405,16 +428,198 @@ function capabilityRequirementId(operationId) {
     : `REQ_${operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/[^A-Za-z0-9]+/g, "_").toUpperCase()}`;
 }
 
+function catalogInventoryRequirementId(operationId) {
+  return `CATALOG_INVENTORY_OPERATION_${operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase()}`;
+}
+
+function exactStringMap(left, right) {
+  if (!left || typeof left !== "object" || Array.isArray(left)
+    || !right || typeof right !== "object" || Array.isArray(right)) return false;
+  const leftEntries = Object.entries(left).sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey));
+  const rightEntries = Object.entries(right).sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey));
+  return leftEntries.length === rightEntries.length
+    && leftEntries.every(([key, value], index) => key === rightEntries[index][0] && value === rightEntries[index][1]);
+}
+
+function exactStringList(left, right) {
+  return Array.isArray(left) && Array.isArray(right)
+    && left.length === right.length
+    && left.every((value, index) => value === right[index]);
+}
+
+function catalogInventoryContractOperations(root) {
+  if (!fs.existsSync(path.join(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH))) return new Map();
+  const contract = json(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH, "CATALOG_INVENTORY_CONTRACT_INVALID");
+  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 42) {
+    fail("CATALOG_INVENTORY_CONTRACT_OPERATION_COUNT_INVALID");
+  }
+  const rows = new Map();
+  let mutations = 0;
+  let reads = 0;
+  for (const operation of contract.operations) {
+    const identity = operationIdentity({
+      operationId: operation?.operationId,
+      method: operation?.method,
+      path: operation?.path,
+      consumerFace: "operations-admin",
+    });
+    if (typeof operation?.operationId !== "string" || typeof operation?.method !== "string" || typeof operation?.path !== "string"
+      || !exactSet(operation?.consumerFaces || [], ["operations-admin"]) || rows.has(identity)) {
+      fail(`CATALOG_INVENTORY_CONTRACT_IDENTITY_INVALID:${operation?.operationId || "UNSET"}`);
+    }
+    const mapping = operation.capabilityByDataNodeType;
+    if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)
+      || !Array.isArray(operation.allowedDataNodeTypes) || !Array.isArray(operation.capabilityKeys)
+      || !CATALOG_INVENTORY_OWNER_AUTHORIZATION[operation.initiatingOwner]) {
+      fail(`CATALOG_INVENTORY_CONTRACT_POLICY_INVALID:${operation.operationId}`);
+    }
+    if (operation.mutation === true) {
+      mutations += 1;
+      if (!WRITE_METHODS.has(operation.method)
+        || operation.authorizationRequirementId !== catalogInventoryRequirementId(operation.operationId)
+        || !exactSet(operation.allowedDataNodeTypes, Object.keys(mapping))
+        || !exactSet(operation.capabilityKeys, [...new Set(Object.values(mapping))])) {
+        fail(`CATALOG_INVENTORY_CONTRACT_WRITE_POLICY_INVALID:${operation.operationId}`);
+      }
+    } else if (operation.mutation === false) {
+      reads += 1;
+      if (operation.method !== "GET" || operation.authorizationRequirementId !== null
+        || operation.capabilityKeys.length !== 0 || Object.keys(mapping).length !== 0) {
+        fail(`CATALOG_INVENTORY_CONTRACT_READ_POLICY_INVALID:${operation.operationId}`);
+      }
+    } else {
+      fail(`CATALOG_INVENTORY_CONTRACT_MUTATION_FLAG_INVALID:${operation.operationId}`);
+    }
+    if (operation.operationId === CATALOG_SAVE_OPERATION_ID) {
+      if (!exactStringList(operation.coordinatedInventoryDefinitionCommands, CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS)
+        || !exactStringMap(operation.capabilityByDataNodeType, {HEAD_COMPANY: "EDIT_HEAD_COMPANY_CATALOG", STORE: "EDIT_STORE_CATALOG"})) {
+        fail(`CATALOG_INVENTORY_CONTRACT_DEFINITION_COMMAND_INVALID:${operation.operationId}`);
+      }
+    } else if (Object.hasOwn(operation, "coordinatedInventoryDefinitionCommands")) {
+      fail(`CATALOG_INVENTORY_CONTRACT_DEFINITION_COMMAND_PLACEMENT:${operation.operationId}`);
+    }
+    if (operation.operationId === DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID
+      && (!exactStringMap(operation.capabilityByDataNodeType, {STORE: "EDIT_STORE_INVENTORY"})
+        || Object.hasOwn(operation, "coordinatedInventoryDefinitionCommands"))) {
+      fail(`CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY_INVALID:${operation.operationId}`);
+    }
+    rows.set(identity, operation);
+  }
+  if (mutations !== 26 || reads !== 16) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
+  return rows;
+}
+
+function catalogInventoryOpenApiOperations(document, expected, sourcePath) {
+  const actual = new Map();
+  for (const [route, methods] of Object.entries(document?.paths || {})) {
+    for (const [rawMethod, operation] of Object.entries(methods || {})) {
+      if (!operation || typeof operation !== "object") continue;
+      const method = rawMethod.toUpperCase();
+      const identity = operationIdentity({operationId: operation.operationId, method, path: route, consumerFace: "operations-admin"});
+      if (actual.has(identity)) fail(`CATALOG_INVENTORY_OPENAPI_OPERATION_DUPLICATE:${sourcePath}:${operation.operationId || "UNSET"}`);
+      const contractOperation = expected.get(identity);
+      if (!contractOperation
+        || !exactSet(operation["x-consumer-faces"] || [], ["operations-admin"])
+        || operation["x-owner-module"] !== contractOperation.initiatingOwner
+        || operation["x-mutation"] !== contractOperation.mutation
+        || operation["x-authorization-requirement-id"] !== contractOperation.authorizationRequirementId
+        || !exactSet(operation["x-capability-keys"] || [], contractOperation.capabilityKeys)
+        || !exactStringMap(operation["x-capability-by-data-node-type"], contractOperation.capabilityByDataNodeType)
+        || !exactSet(operation["x-allowed-data-node-types"] || [], contractOperation.allowedDataNodeTypes)
+        || (contractOperation.mutation
+          ? operation["x-required-capability"] !== contractOperation.authorizationRequirementId
+          : Object.hasOwn(operation, "x-required-capability"))
+        || (contractOperation.operationId === CATALOG_SAVE_OPERATION_ID
+          ? !exactStringList(operation["x-coordinated-inventory-definition-commands"], CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS)
+          : Object.hasOwn(operation, "x-coordinated-inventory-definition-commands"))) {
+        fail(`CATALOG_INVENTORY_OPENAPI_OPERATION_PROJECTION_DRIFT:${sourcePath}:${operation.operationId || "UNSET"}`);
+      }
+      if (!contractOperation.mutation && exactSet(contractOperation.allowedDataNodeTypes, CATALOG_DUAL_SCOPE_READ_DATA_NODE_TYPES)) {
+        const selectors = (operation.parameters || []).filter((parameter) => parameter?.name === "dataNodeRef" && parameter.in === "query");
+        if (selectors.length !== 1 || selectors[0].required !== false || selectors[0].schema?.type !== "string") {
+          fail(`CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER_INVALID:${sourcePath}:${operation.operationId}`);
+        }
+      }
+      actual.set(identity, operation);
+    }
+  }
+  return actual;
+}
+
+function validateCatalogInventoryOpenApiProjection(root, expected) {
+  const expectedIdentities = [...expected.keys()];
+  const rootDocument = json(root, CATALOG_INVENTORY_OPENAPI_PATH, "CATALOG_INVENTORY_OPENAPI_ROOT_INVALID");
+  const rootOperations = catalogInventoryOpenApiOperations(rootDocument, expected, CATALOG_INVENTORY_OPENAPI_PATH);
+  if (!exactSet([...rootOperations.keys()], expectedIdentities)) {
+    fail(`CATALOG_INVENTORY_OPENAPI_ROOT_SET_DRIFT:${rootOperations.size}`);
+  }
+  const dualScopeReads = [...expected.values()].filter((operation) => !operation.mutation
+    && exactSet(operation.allowedDataNodeTypes, CATALOG_DUAL_SCOPE_READ_DATA_NODE_TYPES));
+  if (dualScopeReads.length !== CATALOG_DUAL_SCOPE_READ_COUNT
+    || !dualScopeReads.some((operation) => operation.operationId === CATALOG_SHAPE_MANIFEST_OPERATION_ID)) {
+    fail(`CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_DENOMINATOR_DRIFT:${dualScopeReads.length}`);
+  }
+  for (const operation of dualScopeReads) {
+    const schema = rootDocument.components?.schemas?.[operation.requestComponent];
+    if (schema?.additionalProperties !== false || schema?.properties?.dataNodeRef?.type !== "string"
+      || (schema.required || []).includes("dataNodeRef")) {
+      fail(`CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA_INVALID:${operation.operationId}`);
+    }
+  }
+  const shardIdentities = new Set();
+  for (const shardPath of CATALOG_INVENTORY_PATH_SHARDS) {
+    const shard = json(root, shardPath, "CATALOG_INVENTORY_OPENAPI_SHARD_INVALID");
+    if (shard.kind !== "catalog-inventory-openapi-path-shard" || !Array.isArray(shard.operationIds)) {
+      fail(`CATALOG_INVENTORY_OPENAPI_SHARD_HEADER_INVALID:${shardPath}`);
+    }
+    const shardOperations = catalogInventoryOpenApiOperations(shard, expected, shardPath);
+    if (!exactSet(shard.operationIds, [...shardOperations.values()].map((operation) => operation.operationId))) {
+      fail(`CATALOG_INVENTORY_OPENAPI_SHARD_OPERATION_IDS_DRIFT:${shardPath}`);
+    }
+    for (const identity of shardOperations.keys()) {
+      if (shardIdentities.has(identity)) fail(`CATALOG_INVENTORY_OPENAPI_SHARD_DUPLICATE:${identity}`);
+      shardIdentities.add(identity);
+    }
+  }
+  if (!exactSet([...shardIdentities], expectedIdentities)) {
+    fail(`CATALOG_INVENTORY_OPENAPI_SHARD_SET_DRIFT:${shardIdentities.size}`);
+  }
+}
+
+function catalogInventoryManifestRequirement(operation) {
+  const ownerAuthorization = CATALOG_INVENTORY_OWNER_AUTHORIZATION[operation.initiatingOwner];
+  return {
+    requirementId: operation.authorizationRequirementId,
+    operationIdentity: {
+      operationId: operation.operationId,
+      method: operation.method,
+      path: operation.path,
+      consumerFace: "operations-admin",
+      ownerModule: operation.initiatingOwner,
+    },
+    authorizationMode: AUTHENTICATED_MODE,
+    capabilityMapping: {
+      kind: "SERVER_RESOLVED_RESOURCE_TYPE",
+      resourceTypeCapabilities: operation.capabilityByDataNodeType,
+      unsupportedResourceTypeDecision: "DENY",
+    },
+    resolverId: "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+    ownerModule: operation.initiatingOwner,
+    ownerRecheckId: ownerAuthorization.ownerRecheckId,
+    typedProblemMappingId: ownerAuthorization.typedProblemMappingId,
+    redFixtureId: `RED_${operation.authorizationRequirementId}`,
+    noClientDerivedAuthorization: true,
+    ...(operation.coordinatedInventoryDefinitionCommands ? {coordinatedInventoryDefinitionCommands: operation.coordinatedInventoryDefinitionCommands} : {}),
+  };
+}
+
 export function mutatingOperationInventory(root = process.cwd()) {
   const rows = [];
   for (const sourcePath of walkOpenApi(root)) {
     const document = json(root, sourcePath, "OPENAPI_DOCUMENT_INVALID");
-    // Catalog P1 definition documents and their path shards are not the IAM
-    // capability inventory's canonical edge surface. They are consumed by the
-    // catalog-specific contract/codegen gates; scanning them here both double
-    // counts projections and invents capability requirements absent from the
-    // IAM governance manifest.
-    if (isCatalogInventoryDefinitionOnly(document)) continue;
+    // P1's root is its finite, canonical operation definition. Its generated
+    // path shards remain projections, and must not double-count the operation.
+    if (isCatalogInventoryDefinitionOnly(document) && sourcePath !== CATALOG_INVENTORY_OPENAPI_PATH) continue;
     for (const [route, methods] of Object.entries(document.paths || {})) {
       for (const [method, operation] of Object.entries(methods || {})) {
         if (!WRITE_METHODS.has(String(method).toUpperCase()) || !operation || typeof operation !== "object") continue;
@@ -799,6 +1004,7 @@ export function validateCapabilityInvariants(root = process.cwd()) {
     || !["serverCatalog", "typedResolverRegistry", "workspaceIamCatalog", "operationsCatalog"].every((key) => typeof manifest.generationTargets[key] === "string" && manifest.generationTargets[key].length > 0)) {
     fail("CAPABILITY_GENERATION_TARGETS_INVALID");
   }
+  const catalogInventoryOperations = catalogInventoryContractOperations(root);
 
   const resolvers = indexBy(manifest.resolvers, "resolverId", "CAPABILITY_RESOLVER_DUPLICATE");
   for (const resolver of resolvers.values()) validateResolver(resolver);
@@ -812,6 +1018,7 @@ export function validateCapabilityInvariants(root = process.cwd()) {
   }, "CAPABILITY_REQUIREMENT_OPERATION_DUPLICATE");
 
   validateCapabilityWriteOnlyBoundary(root, manifest);
+  if (catalogInventoryOperations.size > 0) validateCatalogInventoryOpenApiProjection(root, catalogInventoryOperations);
 
   const inventoryKeys = inventory.map(operationIdentity);
   const p3cReadRequirementKeys = String(manifest.authority).startsWith("P3-A authoritative")
@@ -838,7 +1045,8 @@ export function validateCapabilityInvariants(root = process.cwd()) {
   const failures = [];
   for (const row of inventory) {
     const requirement = byIdentity.get(operationIdentity(row));
-    const expectedRequirement = capabilityRequirementId(row.operationId);
+    const catalogInventoryOperation = catalogInventoryOperations.get(operationIdentity(row));
+    const expectedRequirement = catalogInventoryOperation?.authorizationRequirementId || capabilityRequirementId(row.operationId);
     if (typeof row.requiredCapability !== "string" || row.requiredCapability.length === 0) {
       failures.push(`CAPABILITY_REQUIRED_MISSING:${row.operationId}`);
       continue;
@@ -854,7 +1062,8 @@ export function validateCapabilityInvariants(root = process.cwd()) {
     }
     const r24RequirementId = R24_OPERATION_REQUIREMENTS.get(operationIdentity(row));
     const fixedBusinessCapability = FIXED_BUSINESS_CAPABILITY_OPERATIONS.get(operationIdentity(row));
-    const resourceTypeCapabilities = RESOURCE_TYPE_CAPABILITY_OPERATIONS.get(operationIdentity(row));
+    const resourceTypeCapabilities = RESOURCE_TYPE_CAPABILITY_OPERATIONS.get(operationIdentity(row))
+      || catalogInventoryOperation?.capabilityByDataNodeType;
     const p3cOperation = P3_C_OPERATIONS.get(row.operationId);
     const selfSessionOperation = SELF_SESSION_OPERATION_IDS.has(row.operationId);
     const mapping = requirement.capabilityMapping;
@@ -878,8 +1087,14 @@ export function validateCapabilityInvariants(root = process.cwd()) {
           : /^CAP_[A-Z0-9_]+$/.test(requirement.capabilityKey))
       && requirement.capabilityMapping === undefined;
     if (resourceTypeCapabilities && !validResourceTypeMapping) {
-      failures.push("CAPABILITY_ORG_NODE_EDIT_MAPPING_INVALID:" + row.operationId);
+      failures.push((catalogInventoryOperation ? "CAPABILITY_CATALOG_INVENTORY_MAPPING_INVALID:" : "CAPABILITY_ORG_NODE_EDIT_MAPPING_INVALID:") + row.operationId);
       continue;
+    }
+    if (catalogInventoryOperation) {
+      const definitionCommandsValid = catalogInventoryOperation.operationId === CATALOG_SAVE_OPERATION_ID
+        ? exactStringList(requirement.coordinatedInventoryDefinitionCommands, CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS)
+        : !Object.hasOwn(requirement, "coordinatedInventoryDefinitionCommands");
+      if (!definitionCommandsValid) failures.push(`CAPABILITY_CATALOG_INVENTORY_DEFINITION_COMMANDS_INVALID:${row.operationId}`);
     }
     if (r24RequirementId && requirement.requirementId !== r24RequirementId) {
       failures.push(`CAPABILITY_R24_REQUIREMENT_ID_DRIFT:${row.operationId}:${r24RequirementId}`);
@@ -981,6 +1196,42 @@ function writeFixture(root, operation) {
       noClientDerivedAuthorization: true,
     }],
   }, null, 2) + "\n");
+}
+
+function writeCatalogInventoryGlobalFixture(root) {
+  const sourceRoot = process.cwd();
+  for (const relative of [CATALOG_INVENTORY_EDGE_CONTRACT_PATH, CATALOG_INVENTORY_OPENAPI_PATH, ...CATALOG_INVENTORY_PATH_SHARDS]) {
+    const target = path.join(root, relative);
+    fs.mkdirSync(path.dirname(target), {recursive: true});
+    fs.copyFileSync(path.join(sourceRoot, relative), target);
+  }
+  const manifest = governanceManifest(root);
+  for (const [ownerModule, binding] of Object.entries(CATALOG_INVENTORY_OWNER_AUTHORIZATION)) {
+    if (!manifest.ownerRechecks.some((entry) => entry.ownerRecheckId === binding.ownerRecheckId)) {
+      manifest.ownerRechecks.push({
+        ownerRecheckId: binding.ownerRecheckId,
+        ownerModule,
+        requiredInOwnerCommand: true,
+        transactionRequirement: "REQUIRED",
+        crossOwnerWritesUsePublicCommandApi: true,
+      });
+    }
+    if (!manifest.typedProblemMappings.some((entry) => entry.typedProblemMappingId === binding.typedProblemMappingId)) {
+      manifest.typedProblemMappings.push({
+        typedProblemMappingId: binding.typedProblemMappingId,
+        ownerModule,
+        typedProblemOnly: true,
+        noTestCodeInResponse: true,
+        unmappedExceptionFails: true,
+      });
+    }
+  }
+  const operations = catalogInventoryContractOperations(root);
+  manifest.requirements.push(...[...operations.values()]
+    .filter((operation) => operation.mutation)
+    .map(catalogInventoryManifestRequirement));
+  fs.writeFileSync(path.join(root, REGISTRY_PATH), `${JSON.stringify(manifest, null, 2)}\n`);
+  return operations;
 }
 
 function writeR24Fixture(root) {
@@ -1152,6 +1403,104 @@ function selfTest() {
       process.stdout.write("RED_GENERATED_OPENAPI_PROJECTION=PASS\n");
     }
     fs.rmSync(projectionPath, {force: true});
+
+    writeFixture(root, publicOperation);
+    const catalogInventoryOperations = writeCatalogInventoryGlobalFixture(root);
+    validateCapabilityInvariants(root);
+    const catalogInventoryMutation = [...catalogInventoryOperations.values()].find((operation) => operation.mutation);
+    const catalogInventoryRead = [...catalogInventoryOperations.values()].find((operation) => !operation.mutation);
+    if (!catalogInventoryMutation || !catalogInventoryRead) fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_FIXTURE_INVALID");
+
+    const catalogInventorySave = [...catalogInventoryOperations.values()].find((operation) => operation.operationId === CATALOG_SAVE_OPERATION_ID);
+    const catalogInventoryDirectConfiguration = [...catalogInventoryOperations.values()].find((operation) => operation.operationId === DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID);
+    if (!catalogInventorySave || !catalogInventoryDirectConfiguration) fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_DEFINITION_FIXTURE_INVALID");
+
+    const missingCatalogInventoryRequirement = governanceManifest(root);
+    missingCatalogInventoryRequirement.requirements = missingCatalogInventoryRequirement.requirements
+      .filter((requirement) => requirement.requirementId !== catalogInventoryMutation.authorizationRequirementId);
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(missingCatalogInventoryRequirement));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_REQUIREMENT_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_OPERATION_REGISTRY_SET_DRIFT:")) throw error; }
+
+    writeFixture(root, publicOperation);
+    writeCatalogInventoryGlobalFixture(root);
+    const missingDefinitionCommands = governanceManifest(root);
+    delete missingDefinitionCommands.requirements.find((requirement) => requirement.requirementId === catalogInventorySave.authorizationRequirementId).coordinatedInventoryDefinitionCommands;
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(missingDefinitionCommands));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_DEFINITION_COMMAND_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes(`CAPABILITY_CATALOG_INVENTORY_DEFINITION_COMMANDS_INVALID:${CATALOG_SAVE_OPERATION_ID}`)) throw error; }
+
+    writeFixture(root, publicOperation);
+    writeCatalogInventoryGlobalFixture(root);
+    const expandedDefinitionCommands = governanceManifest(root);
+    expandedDefinitionCommands.requirements.find((requirement) => requirement.requirementId === catalogInventorySave.authorizationRequirementId).coordinatedInventoryDefinitionCommands.push("updateOperationsInventoryTargetConfiguration");
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(expandedDefinitionCommands));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes(`CAPABILITY_CATALOG_INVENTORY_DEFINITION_COMMANDS_INVALID:${CATALOG_SAVE_OPERATION_ID}`)) throw error; }
+
+    writeFixture(root, publicOperation);
+    writeCatalogInventoryGlobalFixture(root);
+    const readDefinitionCommandContract = json(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH, "CAPABILITY_SELF_TEST_CATALOG_INVENTORY_CONTRACT_INVALID");
+    readDefinitionCommandContract.operations.find((operation) => !operation.mutation).coordinatedInventoryDefinitionCommands = CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS.slice();
+    fs.writeFileSync(path.join(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH), JSON.stringify(readDefinitionCommandContract));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CATALOG_INVENTORY_CONTRACT_DEFINITION_COMMAND_PLACEMENT:")) throw error; }
+
+    writeFixture(root, publicOperation);
+    writeCatalogInventoryGlobalFixture(root);
+    const directConfigurationManifest = governanceManifest(root);
+    directConfigurationManifest.requirements.find((requirement) => requirement.requirementId === catalogInventoryDirectConfiguration.authorizationRequirementId).capabilityMapping.resourceTypeCapabilities.STORE = "EDIT_STORE_CATALOG";
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(directConfigurationManifest));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_DIRECT_CONFIGURATION_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes(`CAPABILITY_CATALOG_INVENTORY_MAPPING_INVALID:${DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID}`)) throw error; }
+
+    writeFixture(root, publicOperation);
+    writeCatalogInventoryGlobalFixture(root);
+    const catalogInventoryOpenApi = json(root, CATALOG_INVENTORY_OPENAPI_PATH, "CAPABILITY_SELF_TEST_CATALOG_INVENTORY_OPENAPI_INVALID");
+    delete catalogInventoryOpenApi.paths[catalogInventoryMutation.path][catalogInventoryMutation.method.toLowerCase()]["x-required-capability"];
+    fs.writeFileSync(path.join(root, CATALOG_INVENTORY_OPENAPI_PATH), JSON.stringify(catalogInventoryOpenApi));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_OPENAPI_REQUIREMENT_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CATALOG_INVENTORY_OPENAPI_OPERATION_PROJECTION_DRIFT:")) throw error; }
+
+    writeFixture(root, publicOperation);
+    writeCatalogInventoryGlobalFixture(root);
+    const catalogInventoryMappingManifest = governanceManifest(root);
+    const catalogInventoryMappingRequirement = catalogInventoryMappingManifest.requirements
+      .find((requirement) => requirement.requirementId === catalogInventoryMutation.authorizationRequirementId);
+    catalogInventoryMappingRequirement.capabilityMapping.resourceTypeCapabilities.HEAD_COMPANY = "EDIT_STORE_CATALOG";
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(catalogInventoryMappingManifest));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_MAPPING_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes(`CAPABILITY_CATALOG_INVENTORY_MAPPING_INVALID:${catalogInventoryMutation.operationId}`)) throw error; }
+
+    writeFixture(root, publicOperation);
+    writeCatalogInventoryGlobalFixture(root);
+    const catalogInventoryReadOpenApi = json(root, CATALOG_INVENTORY_OPENAPI_PATH, "CAPABILITY_SELF_TEST_CATALOG_INVENTORY_OPENAPI_INVALID");
+    catalogInventoryReadOpenApi.paths[catalogInventoryRead.path][catalogInventoryRead.method.toLowerCase()]["x-required-capability"] = "READ_CAPABILITY_FORBIDDEN";
+    fs.writeFileSync(path.join(root, CATALOG_INVENTORY_OPENAPI_PATH), JSON.stringify(catalogInventoryReadOpenApi));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_READ_CAPABILITY_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_READ_OPENAPI_CAPABILITY_PRESENT:")) throw error; }
+
+    writeFixture(root, publicOperation);
+    const catalogInventorySelectorSchema = writeCatalogInventoryGlobalFixture(root);
+    const catalogInventoryShapeManifest = [...catalogInventorySelectorSchema.values()].find((operation) => operation.operationId === CATALOG_SHAPE_MANIFEST_OPERATION_ID);
+    if (!catalogInventoryShapeManifest) fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_SHAPE_MANIFEST_INVALID");
+    const catalogInventorySelectorSchemaOpenApi = json(root, CATALOG_INVENTORY_OPENAPI_PATH, "CAPABILITY_SELF_TEST_CATALOG_INVENTORY_OPENAPI_INVALID");
+    delete catalogInventorySelectorSchemaOpenApi.components.schemas.CatalogShapeManifestQuery.properties.dataNodeRef;
+    fs.writeFileSync(path.join(root, CATALOG_INVENTORY_OPENAPI_PATH), JSON.stringify(catalogInventorySelectorSchemaOpenApi));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_SELECTOR_SCHEMA_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes(`CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA_INVALID:${CATALOG_SHAPE_MANIFEST_OPERATION_ID}`)) throw error; }
+
+    writeFixture(root, publicOperation);
+    writeCatalogInventoryGlobalFixture(root);
+    const catalogInventorySelectorParameterOpenApi = json(root, CATALOG_INVENTORY_OPENAPI_PATH, "CAPABILITY_SELF_TEST_CATALOG_INVENTORY_OPENAPI_INVALID");
+    catalogInventorySelectorParameterOpenApi.paths[catalogInventoryShapeManifest.path][catalogInventoryShapeManifest.method.toLowerCase()].parameters
+      .find((parameter) => parameter.name === "dataNodeRef").required = true;
+    fs.writeFileSync(path.join(root, CATALOG_INVENTORY_OPENAPI_PATH), JSON.stringify(catalogInventorySelectorParameterOpenApi));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_SELECTOR_PARAMETER_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes(`CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER_INVALID:${CATALOG_INVENTORY_OPENAPI_PATH}:${CATALOG_SHAPE_MANIFEST_OPERATION_ID}`)) throw error; }
+    for (const relative of [CATALOG_INVENTORY_EDGE_CONTRACT_PATH, CATALOG_INVENTORY_OPENAPI_PATH, ...CATALOG_INVENTORY_PATH_SHARDS]) {
+      fs.rmSync(path.join(root, relative), {force: true});
+    }
 
     const anonymousAdminOperation = {operationId: "platformPasswordLogin", path: "/api/platform/auth/password-login", consumerFace: "platform-admin", ownerModule: "platform-iam", security: []};
     writeFixture(root, anonymousAdminOperation);
@@ -1339,7 +1688,7 @@ function selfTest() {
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_PROBLEM_ADVICE_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("P3_A_TYPED_PROBLEM_ADVICE_HANDLER_MISSING")) throw error; }
 
-    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
+    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

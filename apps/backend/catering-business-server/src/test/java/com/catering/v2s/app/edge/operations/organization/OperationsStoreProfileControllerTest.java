@@ -29,8 +29,11 @@ class OperationsStoreProfileControllerTest {
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, "store-profile-test", UUID.randomUUID(), UUID.randomUUID(), new com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext(null, null, selectedStore, null), 7L, 1L, Set.of(), Set.of(), "tester");
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(session);
+        var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
+        when(readFacts.sessionReadback()).thenReturn(session);
+        when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
         ContractTaskReadService reads = mock(ContractTaskReadService.class);
-        when(reads.fixedStoreContractPage(workspaceId, "store-profile-test", storeId, ContractTaskReadService.FixedStoreContractViewState.PENDING_EFFECTIVE, 2, 10)).thenReturn(new ContractTaskReadService.FixedStoreContractPage(
+        when(reads.operationsFixedStoreContractPage(workspaceId, "store-profile-test", storeId, ContractTaskReadService.FixedStoreContractViewState.PENDING_EFFECTIVE, 2, 10)).thenReturn(new ContractTaskReadService.FixedStoreContractPage(
             "store-profile-test", new ContractTaskReadService.Project(UUID.randomUUID(), "PRJ-01", "项目一"), 2, 10, 1L,
             List.of(new ContractTaskReadService.StoreContractView(UUID.randomUUID(), "store-profile-test", new ContractTaskReadService.Reference(UUID.randomUUID(), "PRJ-01", "项目一"), new ContractTaskReadService.Reference(storeId, "STORE-01", "门店一"), new ContractTaskReadService.Reference(UUID.randomUUID(), "TEN-01", "经营主体一"), "一期", "HT-001", LocalDate.of(2026, 8, 2), null, null, Map.of(), 0L, "VALID", 1L, "MANUAL", 1L, 1L, List.of(), "一期"))
         ));
@@ -41,6 +44,6 @@ class OperationsStoreProfileControllerTest {
 
         assertEquals(1L, page.metadata().total());
         assertEquals("HT-001", page.items().getFirst().contractNo());
-        verify(reads).fixedStoreContractPage(workspaceId, "store-profile-test", storeId, ContractTaskReadService.FixedStoreContractViewState.PENDING_EFFECTIVE, 2, 10);
+        verify(reads).operationsFixedStoreContractPage(workspaceId, "store-profile-test", storeId, ContractTaskReadService.FixedStoreContractViewState.PENDING_EFFECTIVE, 2, 10);
     }
 }

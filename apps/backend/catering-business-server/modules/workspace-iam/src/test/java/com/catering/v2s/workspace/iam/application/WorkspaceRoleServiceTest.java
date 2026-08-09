@@ -45,13 +45,33 @@ class WorkspaceRoleServiceTest {
         assertEquals("ENABLED", updated.status());
         assertEquals("DISABLED", service.transitionStatus(workspaceId, "iam-test", updated.id(), "DISABLED", updated.version()).status());
     }
-    @Test void rejectsEveryRoleWriteWhenTheOwnerWorkspaceIsDisabled() {
+    @Test void platformTaskDetailPreservesOwnerScopedRoleLookupAndTypedAbsence() {
+        var role = service.create(workspaceId, "iam-test", "Platform task detail", "PROJECT", null, Set.of(), Set.of());
+
+        assertEquals(role, service.platformTaskDetail(workspaceId, "iam-test", role.id()));
+        assertThrows(WorkspaceRoleService.RoleNotFoundException.class,
+            () -> service.platformTaskDetail(workspaceId, "iam-test", UUID.randomUUID()));
+    }
+    @Test void platformTaskPageKeepsFilteredTotalAndOrderingForAnEmptyRequestedPage() {
+        service.create(workspaceId, "iam-test", "Window role Z", "PROJECT", null, Set.of(), Set.of());
+        service.create(workspaceId, "iam-test", "Window role A", "PROJECT", null, Set.of(), Set.of());
+
+        var first = service.platformTaskPage(workspaceId, "iam-test", "Window role", null, null, 1, 1, "NAME", "ASC");
+        var second = service.platformTaskPage(workspaceId, "iam-test", "Window role", null, null, 2, 1, "NAME", "ASC");
+        var empty = service.platformTaskPage(workspaceId, "iam-test", "Window role", null, null, 3, 1, "NAME", "ASC");
+
+        assertEquals(2L, first.total()); assertEquals("Window role A", first.items().getFirst().name());
+        assertEquals(2L, second.total()); assertEquals("Window role Z", second.items().getFirst().name());
+        assertEquals(2L, empty.total()); assertEquals(Set.of(), Set.copyOf(empty.items()));
+    }
+    @Test void postAuthenticationRoleCommandsDoNotRecheckCommercialWorkspaceStatus() {
         var role = service.create(workspaceId, "iam-test", "Disabled workspace boundary", "PROJECT", null, Set.of(), Set.of());
         JdbcTemplate jdbc = new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
         jdbc.update("UPDATE platform_workspace.group_workspace SET status='DISABLED' WHERE workspace_uuid=?", workspaceId);
-        assertThrows(WorkspaceRoleService.WorkspaceDisabledException.class, () -> service.create(workspaceId, "iam-test", "Cannot create", "PROJECT", null, Set.of(), Set.of()));
-        assertThrows(WorkspaceRoleService.WorkspaceDisabledException.class, () -> service.update(workspaceId, "iam-test", role.id(), role.version(), "Cannot update", null, Set.of(), Set.of()));
-        assertThrows(WorkspaceRoleService.WorkspaceDisabledException.class, () -> service.transitionStatus(workspaceId, "iam-test", role.id(), "DISABLED", role.version()));
+        var created = service.create(workspaceId, "iam-test", "Natural expiry command", "PROJECT", null, Set.of(), Set.of());
+        var updated = service.update(workspaceId, "iam-test", role.id(), role.version(), "Updated after disable", null, Set.of(), Set.of());
+        assertEquals("Updated after disable", updated.name());
+        assertEquals("DISABLED", service.transitionStatus(workspaceId, "iam-test", created.id(), "DISABLED", created.version()).status());
         jdbc.update("UPDATE platform_workspace.group_workspace SET status='ENABLED' WHERE workspace_uuid=?", workspaceId);
     }
     @AfterAll static void cleanup() { if (flyway != null) flyway.clean(); }

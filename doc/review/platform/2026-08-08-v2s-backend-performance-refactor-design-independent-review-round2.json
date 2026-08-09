@@ -1,0 +1,162 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "BACKEND-PERFORMANCE-REFACTOR-DESIGN-20260808",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-08-v2s-backend-performance-refactor-design-independent-review-input-round2.md",
+    "sha256": "5efe47f156b505a88a720377c745b11fb2d7ddf00fb3910c0513e4dc5a5af0d0"
+  },
+  "blindReviewDeclaration": "I received this checklist in a fresh subagent context, tried to falsify the current design, and wrote my findings and verdict before reading author self-review or author finding disposition.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "9ad7d4f3128f3a2ec432c848990ddd46ff6c4cde06bb501c856ada43c7e437ad",
+  "inputIntegrity": {
+    "design": {
+      "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+      "sha256": "f22372eef78d26f36a5c6a3455c1b96735ddd2693fd5d1fb483a107e719cd68d"
+    },
+    "round1Verdict": {
+      "path": "doc/review/platform/2026-08-08-v2s-backend-performance-refactor-design-independent-review-round1.json",
+      "sha256": "b8134fea7cd7dd9bba8a28487859559efc118aece546f41c94745cb5c65fc6d0"
+    },
+    "routeRegistries": [
+      {
+        "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+        "sha256": "1f7900fb24b930dfb41fd5c73659a094c75f7e4e827de1ecd2e763596d7e2824"
+      },
+      {
+        "path": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json",
+        "sha256": "fe3c3f7bbc5dda2b1289d4ce81b61d93f9ac52d94845acae7fb3505180117118"
+      }
+    ]
+  },
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "generated command context-kind type isolation",
+      "command-baseline impact-map completeness",
+      "task-read versus command-readback transaction boundary",
+      "unique delivery-unit source anchor binding"
+    ]
+  },
+  "expectedBehavior": [
+    "The two generated registries form a disjoint 196-operation union; their commands partition to operations-admin=75, platform-admin=29, and public=9.",
+    "Every command has exactly one generated context kind; platform and public commands cannot receive a workspace grant, and a cross-kind invocation is rejected at compilation rather than by a runtime cast.",
+    "The numeric command baseline remains exactly 74 operations-admin normal branches plus five save branches, while the 34 platform/public commands are context-parity-only.",
+    "C5 and C6 are not fabricated numeric candidates: any C6 command readback remains in the command transaction with an owner-local bounded snapshot, never through a task reader.",
+    "BP-U01 through BP-U06 each bind to exactly one current design heading and the manifest keeps the reviewed hash."
+  ],
+  "round1FindingDispositions": [
+    {
+      "id": "BP-M-001",
+      "status": "PARTIALLY_CONFIRMED",
+      "evidence": "Design section 4 now defines PLATFORM_COMMAND_CONTEXT and PUBLIC_PROTOCOL_CONTEXT and fixes the 75+29+9 partition, so the missing factory path is repaired. However OwnerOperationBindings.invoke(CommandContext, Object) accepts the sealed supertype at lines 104-118; a PlatformCommandContext or PublicProtocolCommandContext is assignable wherever a workspace binding is invoked. This contradicts the stated compile-fail cross-kind invariant at line 125 and leaves the binding boundary unable to enforce the repaired partition."
+    },
+    {
+      "id": "BP-M-002",
+      "status": "PARTIALLY_CONFIRMED",
+      "evidence": "BP-U04 now supplies deterministic 75 operations-admin normal rows with save's normal branch replaced by five branches, yielding 74+5=79, and separately declares 29 platform plus 9 public parity-only rows. But it falsely classifies C6 as having no command consumer: CatalogOwnerService.dictionary is returned by the POST reorderOperationsCatalogDictionaryEntry command readback, so C6 lacks an honest command/readback impact and evidence disposition."
+    },
+    {
+      "id": "BP-M-003",
+      "status": "VERIFIED",
+      "evidence": "The current manifest binds BP-U01..BP-U06 to six distinct dedicated headings, each occurring exactly once in the reviewed design: lines 191, 195, 199, 203, 217, and 221. The manifest and design hashes equal the Round 2 fixed inputs."
+    }
+  ],
+  "findings": [
+    {
+      "id": "BP-M-001",
+      "severity": "M",
+      "status": "PARTIALLY_CONFIRMED",
+      "unitIds": [
+        "BP-U02",
+        "BP-U03",
+        "BP-U06"
+      ],
+      "title": "The repaired context partition is not compile-time safe at the generated binding boundary.",
+      "evidence": "The new sealed CommandContext correctly lists WorkspaceExecutionContext, WorkspaceProtocolContext, PlatformCommandContext, and PublicProtocolCommandContext, and section 4 assigns 75+29+9 commands to the kinds. Yet the sole OwnerOperationBindings command entry point is Object invoke(CommandContext context, Object command). Every kind is assignable to CommandContext, so a caller can invoke a workspace-bound branch with platform/public context and the declared cross-kind invocation cannot fail compilation. The current design allows runtime generated casts while claiming a compile-fail red fixture, which does not prove the stated isolation.",
+      "risk": "A generated callable boundary can accept a context from the wrong authorization domain. The implementation must either trust a runtime cast/failure or recreate an unchecked common dispatcher, breaking the design's platform/public versus workspace authority partition.",
+      "disposition": "Replace the shared callable command signature with generated kind-specific invocation interfaces or per-kind closed entry points whose parameter type is the exact context kind; retain Object only inside an immediately typed generated branch if needed. Add a real compile-fail fixture for passing PlatformCommandContext/PublicProtocolCommandContext to a workspace binding and the reciprocal cases."
+    },
+    {
+      "id": "BP-M-002",
+      "severity": "M",
+      "status": "PARTIALLY_CONFIRMED",
+      "unitIds": [
+        "BP-U04",
+        "BP-U05",
+        "BP-U06"
+      ],
+      "title": "C6 is wrongly declared task-read-only although its N+1 path is returned from a command readback.",
+      "evidence": "BP-U04 lines 211-215 says C6 has no command and must not enter the command baseline, while BP-U05 line 219 forbids a task reader from command use. In current CatalogOwnerService, dictionary() performs dictionaryReferenced once per row (lines 528-533), and reorderDictionary() returns dictionary(...) after the POST mutation (line 784). The generated registry identifies reorderOperationsCatalogDictionaryEntry as a POST operations-admin catalog command. Therefore C6 is simultaneously a task-read and a command-readback concern, not a task-read-only candidate.",
+      "risk": "The design either leaves the command readback N+1 unresolved or calls a task reader inside the command transaction, which is explicitly forbidden. Its C1-C6 impact/evidence map would also omit the only command surface that exposes the C6 behavior.",
+      "disposition": "Keep the numeric 79 baseline cardinality unchanged because reorder is already one of its 74 normal operations, but amend C6 to name reorderOperationsCatalogDictionaryEntry and define an owner-local bounded dictionary-reference snapshot reusable by its command readback and the task-read handler. The shared helper must not be a TaskReadService call; add the command fixture and exact impact/evidence linkage before legacy retirement."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "BP-U01",
+      "verdict": "GO",
+      "findingIds": []
+    },
+    {
+      "id": "BP-U02",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-001"
+      ]
+    },
+    {
+      "id": "BP-U03",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-001"
+      ]
+    },
+    {
+      "id": "BP-U04",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-002"
+      ]
+    },
+    {
+      "id": "BP-U05",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-002"
+      ]
+    },
+    {
+      "id": "BP-U06",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "BP-M-001",
+        "BP-M-002"
+      ]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The current design's owner-local generated binding, transaction-local authorization facts, and per-operation measured baseline approach remains a proportionate response to repeated database round trips without deleting correctness work.",
+    "simplerAlternativeAssessment": "A dynamic shared dispatcher or a single permissive context would be smaller but violates static exact-set and authorization partitioning. The smallest sound repair is kind-specific generated invocation plus one owner-local bounded snapshot shared by C6's command readback and task-read paths.",
+    "costFit": "The two repairs are bounded design/generator changes; proceeding without them would either make the claimed compile-time safety false or preserve the C6 command N+1 under a misleading task-read-only label.",
+    "verdict": "NO_GO_PENDING_CONTEXT_BOUNDARY_AND_C6_COMMAND_READBACK_CLOSURE"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Round 2 independently verifies the unique-anchor repair and the 74+5=79 baseline arithmetic, and confirms platform/public factories are now explicitly modeled. It nevertheless finds two blocking residuals: the common CommandContext callable binding cannot enforce the promised cross-kind compile failure, and C6 incorrectly excludes the reorder dictionary command's N+1 readback. No implementation, runtime, seed/reset, L2/UAT, or repository-control action is authorized.",
+    "severityCounts": {
+      "M": 2,
+      "S": 0,
+      "N": 0
+    },
+    "authorizationBoundary": "This is the final independent DESIGN round for this cycle. It authorizes no implementation, dynamic execution, seed/reset, L2/UAT, or repository-control action; further Codex adversarial review for this cycle is not allowed."
+  }
+}

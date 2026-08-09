@@ -4,7 +4,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {CatalogInventoryEnvelope, CatalogItemCreateRequest, CatalogShapeManifestView, JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
-import type {OperationsPageProps} from '../../../app/routing/model';
+import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 
 type Props = {
   open: boolean;
@@ -31,8 +31,8 @@ export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialVa
   const [form] = Form.useForm<FormValues>();
   const [problem, setProblem] = useState<string>();
   const headers = useMemo(() => brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined, [brandRef]);
-  const manifestRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogShapeManifest({}, {headers}), [headers]);
-  const manifestQuery = operationsRtk.useGetOperationsCatalogShapeManifestQuery(manifestRequest, {skip: !open});
+  const manifestRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogShapeManifest({}, {query: {dataNodeRef: queryContext.scopeRef ?? ''}, headers}), [headers, queryContext.scopeRef]);
+  const manifestQuery = operationsRtk.useGetOperationsCatalogShapeManifestQuery(manifestRequest, {skip: !open || !queryContext.scopeRef});
   const [create, createState] = operationsRtk.useCreateOperationsCatalogItemMutation();
   const lifecycle = useDrawerFormLifecycle({open, onOpenChange: (next) => { if (!next) onClose(); }, dirtyMessage: '新建商品内容尚未保存。', dirtyGuardTestIds: {confirm: testId('catalog-create-dirty-discard'), cancel: testId('catalog-create-dirty-continue')}, diagnosticOperationId: 'catalog-item-create', idempotencyKey: true});
   const manifest = (manifestQuery.data as CatalogInventoryEnvelope<CatalogShapeManifestView> | undefined)?.data;
@@ -55,7 +55,7 @@ export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialVa
       const attributes = parseAttributes(values.attributesText);
       lifecycle.setSubmitting(true);
       setProblem(undefined);
-      const body: CatalogItemCreateRequest = {dataNodeRef: queryContext.scopeRef ?? undefined, code: values.code.trim(), name: values.name.trim(), shapeKey: values.shapeKey, attributes};
+      const body: CatalogItemCreateRequest = {dataNodeRef: requireOperationsScopeRef(queryContext), code: values.code.trim(), name: values.name.trim(), shapeKey: values.shapeKey, attributes};
       await create(catalogInventoryRtkRequest.createOperationsCatalogItem({}, {headers: {...headers, 'Idempotency-Key': lifecycle.getIdempotencyKey()}, body})).unwrap();
       lifecycle.reset();
       onCreated(body.code);

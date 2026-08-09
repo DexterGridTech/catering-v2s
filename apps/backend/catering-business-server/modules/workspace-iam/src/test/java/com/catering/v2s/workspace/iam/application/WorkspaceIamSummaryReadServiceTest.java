@@ -1,0 +1,33 @@
+package com.catering.v2s.workspace.iam.application;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import com.catering.v2s.platform.workspace.api.WorkspaceIamSummaryLookup.AccountAndRoleSummary;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+
+class WorkspaceIamSummaryReadServiceTest {
+    @Test
+    void aggregateSummaryUsesOneOwnerQueryInsteadOfTheLegacyCounts() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        UUID workspace = UUID.randomUUID();
+        AccountAndRoleSummary expected = new AccountAndRoleSummary(3, 4);
+        when(jdbc.queryForObject(any(String.class), any(RowMapper.class), eq(workspace), eq(workspace))).thenReturn(expected);
+
+        AccountAndRoleSummary actual = new WorkspaceIamSummaryReadService(jdbc).accountAndRoleSummary(workspace);
+
+        assertEquals(expected, actual);
+        verify(jdbc, times(1)).queryForObject(contains("workspace_account"), any(RowMapper.class), eq(workspace), eq(workspace));
+        verifyNoMoreInteractions(jdbc);
+    }
+}

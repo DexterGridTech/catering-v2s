@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-FINAL-IMPLEMENTATION-20260810",
+  "status": "ACTIVE_STATIC_IMPLEMENTATION",
+  "authorization": "Dexter authorized implementation of the exact final-closure design surfaces on 2026-08-10. This package is static-only; dynamic acceptance is a later isolated package.",
+  "designAdmission": {
+    "manifest": "doc/review/platform/2026-08-10-v2s-backend-performance-final-design-granularity-manifest.json",
+    "independentRound2": "doc/review/platform/2026-08-10-v2s-backend-performance-final-design-review-round2.md",
+    "verdict": "GO"
+  },
+  "implementationNecessaryDesignAmendment": {
+    "authorizedBy": "Dexter",
+    "reason": "The final evidence schema requires canonical server-side fixture attribution; the existing interceptor lacked a final-only mode and could not produce a trustworthy request/database fixture join. The final token generator also needs its generated data output to reflect the direct-binding cutover.",
+    "addedSurfaces": [
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptorTest.java",
+      "scripts/generate/catalog-inventory-workspace-command-tokens.mjs",
+      "apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/CatalogInventoryWorkspaceCommandTokens.java"
+    ],
+    "invariant": "Only final mode and its run namespace emit validated fixture/area attribution; generated token constants remain data and never restore runtime operation selection."
+  },
+  "includedUnits": ["BP-U06 exact retirement", "BP-U07 final snapshot admission", "final performance workload static implementation"],
+  "denominators": {
+    "catalogDirectRoutes": 42,
+    "operationsAuditTargets": 9,
+    "platformAuditTargets": 7,
+    "taskReads": 78,
+    "protocolReadExempt": 5,
+    "sqlMergeUnion": 134,
+    "routes": 196,
+    "numericBaselines": 79,
+    "contextParity": 38
+  },
+  "requiredStaticEvidence": [
+    "source absence and direct-binding controls have real red mutations",
+    "final snapshot admission rejects historic R5 bytes",
+    "compileJava and compileTestJava for affected modules and app",
+    "focused test source and static checker evidence",
+    "fresh independent IMPLEMENTATION review before any dynamic package"
+  ],
+  "forbidden": ["runtime", "DEV", "remote Testcontainers", "seed", "reset", "L2", "UAT", "deployment", "SQL numeric success claim", "BP-U06 scope expansion"]
+}

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,24 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 class StoreCandidateTaskReadServiceTest {
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void platformContractCandidatesUseOneBoundedOwnerProjection() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(List.of());
+        StoreCandidateTaskReadService service = new StoreCandidateTaskReadService(jdbc, mock(WorkspaceAssignmentScopeLookup.class), mock(OrganizationTaskPathLookup.class));
+
+        StoreCandidateTaskReadService.CandidatePage page = service.platformContractCandidatePage(
+            UUID.randomUUID(), "candidate-scope",
+            new StoreCandidateTaskReadService.PlatformContractCandidateQuery(
+                StoreCandidateTaskReadService.PlatformContractCandidateSubject.STORE, "north", 1, 20, null, UUID.randomUUID()
+            )
+        );
+
+        assertEquals(0L, page.metadata().total());
+        verify(jdbc).query(anyString(), any(RowMapper.class), any(Object[].class));
+    }
+
     @Test
     void associationCandidatesDoNotResolveVisibleScope() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);

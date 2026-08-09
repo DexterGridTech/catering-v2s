@@ -1,0 +1,60 @@
+#!/usr/bin/env node
+
+import {existsSync, readFileSync, readdirSync} from "node:fs";
+import path from "node:path";
+import {fileURLToPath, pathToFileURL} from "node:url";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const tracker = path.join(ROOT, "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTracker.java");
+const interceptor = path.join(ROOT, "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java");
+const snapshotTool = path.join(ROOT, "scripts/check/backend-performance-evidence-snapshot");
+
+function fail(code, detail = "") {
+  const error = new Error(`${code}${detail ? `:${detail}` : ""}`);
+  error.code = code;
+  throw error;
+}
+
+function requireText(file, tokens) {
+  if (!existsSync(file)) fail("BP_U01_SOURCE_MISSING", file);
+  const source = readFileSync(file, "utf8");
+  for (const token of tokens) if (!source.includes(token)) fail("BP_U01_SOURCE_CONTRACT_MISSING", `${file}:${token}`);
+}
+
+function findSnapshot(runDir) {
+  const root = path.join(path.resolve(runDir), "snapshots");
+  if (!existsSync(root)) fail("BP_U01_SNAPSHOT_REQUIRED", root);
+  const candidates = readdirSync(root).map((name) => path.join(root, name)).filter((candidate) => existsSync(path.join(candidate, "snapshot-manifest.json")));
+  if (candidates.length !== 1) fail("BP_U01_SNAPSHOT_CARDINALITY_INVALID", String(candidates.length));
+  return candidates[0];
+}
+
+async function runSnapshotSelfTest() {
+  const module = await import(pathToFileURL(snapshotTool).href);
+  module.selfTest();
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  requireText(tracker, ["MEASUREMENT_SCHEMA_VERSION", "MEASUREMENT_BASIS", "statementId", "paramsHash", "UNCLASSIFIED", "phaseCheckpoints", "batchStatementTotal"]);
+  requireText(interceptor, ["scopeActive", "eventActive", "logicalSectionCounts", "kindCounts", "databaseOperationsPath", "eventAuthorized"]);
+  if (args.length === 1 && args[0] === "--self-test") {
+    await runSnapshotSelfTest();
+    process.stdout.write("BP_U01_OBSERVABILITY=PASS\nEVIDENCE=SELF_TEST_ONLY\n");
+    return;
+  }
+  const runFlag = args.indexOf("--run-dir");
+  if (runFlag >= 0 && args[runFlag + 1]) {
+    const module = await import(pathToFileURL(snapshotTool).href);
+    const snapshotDir = findSnapshot(args[runFlag + 1]);
+    const manifest = module.validateSnapshot(snapshotDir);
+    process.stdout.write(`BP_U01_OBSERVABILITY=PASS\nEVIDENCE=${manifest.optimizationStatus === "MEASURABLE" ? "SNAPSHOT" : "SNAPSHOT_UNMEASURED_BLOCKS_OPTIMIZATION"}\nUNCLASSIFIED_RATIO=${manifest.unclassifiedRatio}\nMISSING_PHASES=${(manifest.missingPhases ?? []).join(",")}\nDIGEST=${manifest.contentDigest}\n`);
+    return;
+  }
+  if (args.length) fail("BP_U01_OBSERVABILITY_ARGUMENT_INVALID");
+  // Source-token presence is intentionally not evidence. A PASS requires either a real
+  // content-addressed snapshot (--run-dir) or the snapshot tool's executable red/green proof.
+  process.stdout.write("BP_U01_OBSERVABILITY=UNVERIFIED\nEVIDENCE=UNMEASURED_BLOCKS_OPTIMIZATION\n");
+}
+
+main().catch((error) => { process.stderr.write(`${error.code || "BP_U01_OBSERVABILITY_FAIL"}: ${error.message}\n`); process.exitCode = 1; });

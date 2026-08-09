@@ -93,10 +93,10 @@ ROADMAP_OWNER=self
 ROADMAP_REVIEWED=true
 R0_STATUS=GO
 LAST_CLOSED_STEP=RM1-P6-2-STATIC
-CURRENT_STEP=RM1-P6-3
-CURRENT_STATUS=RM1_P6_3_IMPLEMENTATION_IN_PROGRESS
-CURRENT_ACTIVITY=运营管理后台与公开业务完成路径；先升级逐目标 prewrite reread receipt，再闭合 owner/edge truth、generated consumer 与 IA04 逐项品牌授权
-CURRENT_NEXT_ACTION=严格执行 RM1 P6-3：先以现有 PreToolUse/receipt 机制证明每一写点的 IA/design reread，随后完成 owner/edge/contract/generated/operations-admin 链和逐屏 IA 对照；全部静态与 focused proof 后执行唯一一次 P6-2/P6-3 联合受管 L2，并分离 business/cleanup 验收与独立 implementation review
+CURRENT_STEP=BACKEND_PERFORMANCE_FINAL_CLOSURE
+CURRENT_STATUS=BACKEND_PERFORMANCE_FINAL_CLOSURE_DESIGN_IN_PROGRESS
+CURRENT_ACTIVITY=在 Dexter 2026-08-10 的直接授权下，串行完成 BP-U06 旧布局/dispatcher 退出、BP-U07 immutable-snapshot measurement admission 与独立性能动态验收；RM1-P6-3 暂停但不关闭
+CURRENT_NEXT_ACTION=先完成 BACKEND-PERFORMANCE-FINAL-DESIGN-20260810 的 exact-surface 详设、独立 DESIGN review 与 Claude recheck；随后才可进入静态实施、最终受管 workload、immutable snapshot 与 fresh IMPLEMENTATION review
 R1_STATUS=GO
 R2_STATUS=GO
 TARGET_STATUS=V2S_HANDOFF_READY
@@ -139,10 +139,25 @@ RM1_P6_3_AUTHORIZED_AT=2026-07-30
 RM1_P6_3_JOINT_L2_AUTHORIZED=true
 RM1_P6_3_MINIMAL_SEED_AUTHORIZED=true
 RM1_P6_3_RESET_AUTHORIZED=false
+RM1_P6_3_SCHEDULING_STATE=PAUSED_FOR_BACKEND_PERFORMANCE_FINAL_CLOSURE
+BACKEND_PERFORMANCE_FINAL_CLOSURE_AUTHORIZED_BY=Dexter
+BACKEND_PERFORMANCE_FINAL_CLOSURE_AUTHORIZED_AT=2026-08-10
+BACKEND_PERFORMANCE_FINAL_CLOSURE_RUNTIME_AUTHORIZED_AFTER_STATIC_ADMISSION=true
+BACKEND_PERFORMANCE_FINAL_CLOSURE_MINIMAL_SEED_AUTHORIZED=true
+BACKEND_PERFORMANCE_FINAL_CLOSURE_RESET_AUTHORIZED=false
 GIT_OWNER=Dexter
 ```
 
-## Current RM1 P6-3 status
+## Current backend-performance final-closure status
+
+Dexter explicitly reprioritized the final backend-performance closure on 2026-08-10. This is a serial
+operational pause of RM1-P6-3, not an RM1 completion, cancellation, or substitution: the two deliveries
+share the local managed runner, tunnel, remote non-production database/object-storage capacity, and
+`.runtime` ownership. No P6 L2 evidence can be reused as performance evidence. The final-closure work is
+authorized in three packages: design; static implementation; and a separate managed dynamic-acceptance
+package. The dynamic package may use minimal isolated owner-command fixture preparation but never reset.
+
+## Paused RM1 P6-3 status
 
 Dexter has granted Codex full authority for RM1 P6 work without repeated authorization prompts. The current
 delivery is `RM1-P6-3`; its established U03 operations/public denominator is bound by

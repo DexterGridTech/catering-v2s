@@ -395,7 +395,8 @@
         },
         "categoryRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "stockView": {
           "type": "string",
@@ -450,7 +451,8 @@
                 "properties": {
                   "targetRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "targetType": {
                     "type": "string",
@@ -459,6 +461,19 @@
                   "productCode": {
                     "type": "string",
                     "description": "design-bound field"
+                  },
+                  "itemRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "productSkuRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "productName": {
                     "type": [
@@ -588,6 +603,8 @@
                   "targetRef",
                   "targetType",
                   "productCode",
+                  "itemRef",
+                  "productSkuRef",
                   "productName",
                   "skuCode",
                   "skuName",
@@ -713,7 +730,8 @@
           "properties": {
             "targetRef": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             },
             "targetType": {
               "type": "string",
@@ -722,6 +740,19 @@
             "productCode": {
               "type": "string",
               "description": "design-bound field"
+            },
+            "itemRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "productSkuRef": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field",
+              "format": "uuid"
             },
             "productName": {
               "type": [
@@ -778,6 +809,8 @@
             "targetRef",
             "targetType",
             "productCode",
+            "itemRef",
+            "productSkuRef",
             "productName",
             "productShape",
             "skuCode",

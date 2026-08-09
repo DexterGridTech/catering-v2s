@@ -50,6 +50,7 @@ test('human-readable markdown report is emitted beside machine JSON', () => {
   const markdown = readFileSync(markdownPath, 'utf8');
   assert.match(markdown, /# Seed 报告/);
   assert.match(markdown, /结论：PASS/);
+  assert.match(markdown, /Managed DEV Run ID/);
   assert.match(markdown, /createThing/);
   assert.match(markdown, /10 \/ 10 \/ 10/);
   assert.equal(renderSeedReportMarkdown(report), markdown);
@@ -60,6 +61,28 @@ test('zero database operations remain valid when a completion event exists', () 
   const report = buildSeedReport({runId: 'run-12345678', seedProfile: 'r5-full', startedAt: '2026-08-01T00:00:00Z', finishedAt: '2026-08-01T00:00:01Z', status: 'PASS', calls: [call(4)], events: [event(0, '4', 0)]});
   assert.equal(report.status, 'PASS');
   assert.deepEqual(report.apiEndpoints[0].databaseOperationCount, {average: 0, min: 0, max: 0});
+});
+
+test('joins request measurements by managed DEV run, correlation id, and request id while retaining out-of-scope event accounting', () => {
+  const catalogCall = {...call(4, 'catalog'), managedDevRunId: 'dev-run-12345678'};
+  const catalogEvent = {...event(7, 'catalog', 5), runId: 'dev-run-12345678'};
+  const sameRunOtherExecutorEvent = {...event(8, 'same-run-other', 8), runId: 'dev-run-12345678'};
+  const historicalEvent = {...event(9, 'old', 9), runId: 'old-dev-run'};
+  const report = buildSeedReport({
+    runId: 'catalog-seed-12345678',
+    managedDevRunId: 'dev-run-12345678',
+    seedProfile: 'catalog-inventory',
+    startedAt: '2026-08-01T00:00:00Z',
+    finishedAt: '2026-08-01T00:00:01Z',
+    status: 'PASS',
+    calls: [catalogCall],
+    events: [catalogEvent, sameRunOtherExecutorEvent, historicalEvent],
+    measurement: {schemaVersion: 2, basis: 'JDBC_LOGICAL_OPERATION'},
+  });
+  assert.equal(report.status, 'PASS');
+  assert.equal(report.managedDevRunId, 'dev-run-12345678');
+  assert.deepEqual(report.measurement, {schemaVersion: 2, basis: 'JDBC_LOGICAL_OPERATION'});
+  assert.equal(report.completeness.outOfScopeDatabaseEventCount, 2);
 });
 
 test('failure reporting retains controlled lower-case stages while redacting sensitive values', () => {

@@ -1,6 +1,12 @@
 package com.catering.v2s.inventory.application;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.platform.command.CatalogAuthorizationScope;
+import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
+import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,11 +33,50 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class InventoryOwnerService implements InventoryOwnerApi {
     private static final String REVISION = "CATALOG_INVENTORY_P1_20260806";
+    private static final String CATALOG_ITEM_SAVE_REQUIREMENT = "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM";
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final TimeProvider time;
 
     public InventoryOwnerService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) { this.jdbc = jdbc; this.mapper = mapper; this.time = time; }
+
+    @Override @Transactional(readOnly = true)
+    public JsonNode readTargets(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType) {
+        requireStoreDataNodeType(dataNodeType); requireScope(dataNodeRef, brandRef);
+        return targets(dataNodeRef, brandRef, requestId, request);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public JsonNode readTarget(String dataNodeRef, String brandRef, String targetRef, String requestId, String dataNodeType) {
+        requireStoreDataNodeType(dataNodeType); requireScope(dataNodeRef, brandRef);
+        return current(dataNodeRef, brandRef, requestId, targetRef);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public JsonNode readTargetChangeSummary(String targetRef, String period) {
+        return changeSummaryData(targetRef, period);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public JsonNode readTargetBusinessHistory(String targetRef, ObjectNode request, String requestId) {
+        return history(requestId, targetRef, request);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public JsonNode readTargetConsumptionReferences(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId) {
+        requireScope(dataNodeRef, brandRef);
+        return references(dataNodeRef, brandRef, requestId, targetRef, request);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public JsonNode readTargetLedger(String targetRef, ObjectNode request, String requestId) {
+        return ledger(requestId, targetRef, request);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public JsonNode readTargetDiagnostics(String targetRef, String requestId) {
+        return diagnostics(requestId, targetRef);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -52,12 +97,32 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     @Override
     @Transactional
-    public JsonNode write(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey, String dataNodeType) {
-        requireStoreDataNodeType(dataNodeType);
+    public JsonNode write(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey, String dataNodeType,
+                          UUID workspaceUuid, String groupWorkspaceKey, OperationsOwnerScopeGrant ownerScopeGrant) {
+        return writeCore(operationId, dataNodeRef, brandRef, request, requestId, idempotencyKey, () -> {
+            requireStoreDataNodeType(dataNodeType);
+            requireOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, dataNodeType, dataNodeRef, inventoryWriteCapabilityForTarget(dataNodeType), ownerScopeGrant);
+        });
+    }
+
+    @Override
+    @Transactional
+    public JsonNode write(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "inventory", null);
+        return writeCore(context.operationToken().operationId(), scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey, () -> requireStoreDataNodeType(scope.dataNodeType()));
+    }
+
+    private JsonNode writeCore(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey, Runnable authorization) {
         requireScope(dataNodeRef, brandRef);
+        authorization.run();
         String key = requireIdempotencyKey(idempotencyKey);
+        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
+            recheckWriteFactsBeforeReceipt(operationId, dataNodeRef, brandRef, request);
+        }
         JsonNode replay = replay(dataNodeRef, key, operationId, request);
         if (replay != null) return replay;
+        try (var command = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
         JsonNode result = switch (operationId) {
             case "countOperationsInventoryTarget" -> adjust(dataNodeRef, brandRef, requestId, request, "COUNT");
             case "increaseOperationsInventoryTarget" -> adjust(dataNodeRef, brandRef, requestId, request, "INCREASE");
@@ -67,79 +132,112 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         };
         saveReceipt(dataNodeRef, key, operationId, request, result);
         return result;
+        }
     }
 
     @Override
     @Transactional
-    public JsonNode copy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId) {
-        return copy(sourceDataNodeRef, targetDataNodeRef, brandRef, request, requestId, null);
+    public JsonNode copy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
+                         UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
+        return copyCore(sourceDataNodeRef, targetDataNodeRef, brandRef, request, requestId, idempotencyKey, () -> {
+            requireCatalogDefinitionDataNodeType(targetDataNodeType);
+            requireOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, targetDataNodeType, targetDataNodeRef, catalogCopyCapabilityForTarget(targetDataNodeType), ownerScopeGrant);
+        });
     }
 
     @Override
     @Transactional
-    public JsonNode copy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey) {
+    public JsonNode copy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireCopyContext(context);
+        return copyCore(copySourceDataNodeRef(scope), scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey, () -> requireCatalogDefinitionDataNodeType(scope.dataNodeType()));
+    }
+
+    private JsonNode copyCore(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey, Runnable authorization) {
         requireScope(sourceDataNodeRef, brandRef); requireScope(targetDataNodeRef, brandRef);
+        authorization.run();
+        JsonNode judgement;
+        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
+            recheckCopySourceFactsBeforeReceipt(sourceDataNodeRef, brandRef, request);
+            judgement = preflightCopyCore(sourceDataNodeRef, targetDataNodeRef, brandRef, request, authorization);
+        }
+        String currentFingerprint = judgement.path("digest").asText();
+        String blocker = judgement.path("firstBlockingProblem").asText("");
+        if (!blocker.isBlank()) throw new InventoryOwnerApi.Problem(blocker, 422, "库存复制存在不兼容事实");
         String receiptKey = idempotencyKey == null ? "" : idempotencyKey.trim();
         if (!receiptKey.isBlank()) {
             JsonNode replay = replay(targetDataNodeRef, receiptKey, "coordinatedCopy", request);
-            if (replay != null) return replay;
+            if (replay != null) return replayCopyIfCurrent(replay, currentFingerprint);
         }
+        try (var command = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
         if (request.hasNonNull("inventoryPreflightDigest")) {
-            JsonNode judgement = preflightCopy(sourceDataNodeRef, targetDataNodeRef, brandRef, request);
             String expected = request.path("inventoryPreflightDigest").asText();
-            String actual = judgement.path("digest").asText();
-            if (!expected.equals(actual)) throw new InventoryOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "库存复制预检已失效，请重新预检");
-            String blocker = judgement.path("firstBlockingProblem").asText("");
-            if (!blocker.isBlank()) throw new InventoryOwnerApi.Problem(blocker, 422, "库存复制存在不兼容事实");
+            if (!expected.equals(currentFingerprint)) throw new InventoryOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "库存复制预检已失效，请重新预检");
         }
-        String localSource = optional(request, "sourceItemCode");
-        String localTarget = optional(request, "targetItemCode");
-        if (localSource != null && localTarget != null) {
-            JsonNode result = copyLocalConfiguration(sourceDataNodeRef, targetDataNodeRef, brandRef, localSource, localTarget);
-            if (!receiptKey.isBlank()) saveReceipt(targetDataNodeRef, receiptKey, "coordinatedCopy", request, result);
-            return result;
-        }
-        JsonNode codes = request.path("closureItemCodes"); if (!codes.isArray()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存复制闭包缺少商品编码");
+        Map<UUID, ReferenceMapping> mappings = referenceMappings(request);
+        List<UUID> closureItemRefs = requiredOpaqueRefArray(request, "closureItemRefs");
+        SourceCopyClosure sourceClosure = sourceCopyClosure(sourceDataNodeRef, brandRef, closureItemRefs);
         int copied = 0;
-        List<String> copiedCodes = new ArrayList<>();
-        Map<UUID, TargetRow> sourceByRef = new java.util.LinkedHashMap<>();
-        for (JsonNode code : codes) {
-            copiedCodes.add(code.asText());
-            List<TargetRow> rows = loadTargets(sourceDataNodeRef, brandRef, code.asText());
-            rows.forEach(row -> { assertSourceNoOwnerReference(row, sourceDataNodeRef); sourceByRef.putIfAbsent(row.ref(), row); });
-        }
-        List<TargetRow> sourceRows = new ArrayList<>(sourceByRef.values());
-        List<BomOwnerRow> sourceBomOwners = new ArrayList<>();
-        Set<String> copiedBomOwnerKeys = new LinkedHashSet<>();
-        for (String itemCode : copiedCodes) {
-            for (BomOwnerRow owner : loadBomOwners(sourceDataNodeRef, brandRef, itemCode)) {
-                if (copiedBomOwnerKeys.add(bomOwnerIdentity(owner))) sourceBomOwners.add(owner);
-            }
-        }
+        List<TargetRow> sourceRows = sourceClosure.targets();
+        List<BomOwnerRow> sourceBomOwners = sourceClosure.bomOwners();
         // First materialize every target in the closure.  Only after the complete
         // identity map exists may BOM references be rewritten; this prevents an
         // order-dependent source UUID from leaking into a target BOM.
         for (TargetRow row : sourceRows) {
-            copied += jdbc.update("INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_code,sku_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT DO NOTHING", UUID.randomUUID(), targetDataNodeRef, brandRef, row.itemCode(), row.skuCode(), row.measureMode(), row.configuration(), time.currentEpochMillis(), time.currentEpochMillis());
+            ReferenceMapping itemMapping = mappingFor(mappings, row.itemRef(), "CATALOG_ITEM");
+            ReferenceMapping skuMapping = row.productSkuRef() == null ? null : mappingFor(mappings, row.productSkuRef(), "PRODUCT_SKU");
+            copied += jdbc.update("INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT DO NOTHING", UUID.randomUUID(), targetDataNodeRef, brandRef, itemMapping.targetRef(), skuMapping == null ? null : skuMapping.targetRef(), requiredLabel(itemMapping.targetCode(), "CATALOG_ITEM targetCode"), skuMapping == null ? null : requiredLabel(skuMapping.targetSkuCode(), "PRODUCT_SKU targetSkuCode"), row.measureMode(), row.configuration(), time.currentEpochMillis(), time.currentEpochMillis());
         }
         Map<UUID, UUID> targetRefs = new java.util.LinkedHashMap<>();
         for (TargetRow row : sourceRows) {
-            TargetRow target = loadTargets(targetDataNodeRef, brandRef, row.itemCode()).stream().filter(candidate -> java.util.Objects.equals(candidate.skuCode(), row.skuCode())).findFirst().orElseThrow(() -> new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象不存在"));
+            ReferenceMapping itemMapping = mappingFor(mappings, row.itemRef(), "CATALOG_ITEM");
+            ReferenceMapping skuMapping = row.productSkuRef() == null ? null : mappingFor(mappings, row.productSkuRef(), "PRODUCT_SKU");
+            TargetRow target = targetByIdentity(targetDataNodeRef, brandRef, itemMapping.targetRef(), skuMapping == null ? null : skuMapping.targetRef());
             targetRefs.put(row.ref(), target.ref());
         }
-        for (BomOwnerRow bomOwner : sourceBomOwners) copyRewrittenBom(sourceDataNodeRef, targetDataNodeRef, brandRef, bomOwner, targetRefs);
-        if (!sourceDataNodeRef.equals(targetDataNodeRef)) verifyTargetNoOwnerReference(targetDataNodeRef, brandRef, copiedCodes, sourceDataNodeRef);
-        JsonNode result = mapper.createObjectNode().put("owner", "inventory").put("status", "COMMITTED").put("version", copied);
+        for (BomOwnerRow bomOwner : sourceBomOwners) copyRewrittenBom(sourceDataNodeRef, targetDataNodeRef, brandRef, bomOwner, targetRefs, mappings);
+        if (!sourceDataNodeRef.equals(targetDataNodeRef)) {
+            List<UUID> targetItemRefs = sourceClosure.itemRefs().stream()
+                .map(sourceItemRef -> mappingFor(mappings, sourceItemRef, "CATALOG_ITEM").targetRef())
+                .toList();
+            verifyTargetNoOwnerReference(targetDataNodeRef, brandRef, targetItemRefs, sourceDataNodeRef);
+        }
+        ObjectNode result = mapper.createObjectNode().put("owner", "inventory").put("status", "COMMITTED").put("version", copied);
+        result.put("receiptObjectFingerprint", preflightCopyCore(sourceDataNodeRef, targetDataNodeRef, brandRef, request, authorization).path("digest").asText());
         if (!receiptKey.isBlank()) saveReceipt(targetDataNodeRef, receiptKey, "coordinatedCopy", request, result);
         return result;
+        }
+    }
+
+    private JsonNode replayCopyIfCurrent(JsonNode replay, String currentFingerprint) {
+        if (!currentFingerprint.equals(replay.path("receiptObjectFingerprint").asText())) {
+            throw new InventoryOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "库存复制对象事实已变化，请重新预检");
+        }
+        return replay;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public JsonNode preflightCopy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request) {
+    public JsonNode preflightCopy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request,
+                                  UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
+        return preflightCopyCore(sourceDataNodeRef, targetDataNodeRef, brandRef, request, () -> {
+            requireCatalogDefinitionDataNodeType(targetDataNodeType);
+            requireOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, targetDataNodeType, targetDataNodeRef, catalogCopyCapabilityForTarget(targetDataNodeType), ownerScopeGrant);
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JsonNode preflightCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request) {
+        CatalogAuthorizationScope scope = requireCopyContext(context);
+        return preflightCopyCore(copySourceDataNodeRef(scope), scope.dataNodeId().toString(), scope.brandRef(), request, () -> requireCatalogDefinitionDataNodeType(scope.dataNodeType()));
+    }
+
+    private JsonNode preflightCopyCore(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, Runnable authorization) {
         requireScope(sourceDataNodeRef, brandRef); requireScope(targetDataNodeRef, brandRef);
-        JsonNode codes = request.path("closureItemCodes");
-        if (!codes.isArray()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存复制闭包缺少商品编码");
+        authorization.run();
+        Map<UUID, ReferenceMapping> mappingsBySource = referenceMappings(request);
+        List<UUID> closureItemRefs = requiredOpaqueRefArray(request, "closureItemRefs");
         ObjectNode snapshot = mapper.createObjectNode();
         ArrayNode versions = snapshot.putArray("versions");
         ArrayNode closureItems = snapshot.putArray("closureItems");
@@ -148,21 +246,20 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         ArrayNode rewrites = snapshot.putArray("referenceRewritePreview");
         ArrayNode bomOwners = snapshot.putArray("bomOwners");
         String firstBlocking = "";
-        LinkedHashSet<String> closureCodes = new LinkedHashSet<>();
-        ArrayDeque<String> pendingCodes = new ArrayDeque<>();
-        for (JsonNode codeNode : codes) {
-            String code = codeNode.asText();
-            if (closureCodes.add(code)) pendingCodes.add(code);
+        LinkedHashSet<UUID> closureRefs = new LinkedHashSet<>();
+        ArrayDeque<UUID> pendingRefs = new ArrayDeque<>();
+        for (UUID itemRef : closureItemRefs) {
+            if (closureRefs.add(itemRef)) pendingRefs.add(itemRef);
         }
         Map<UUID, TargetRow> sourceByRef = new LinkedHashMap<>();
         Set<String> processedBomOwners = new LinkedHashSet<>();
-        while (!pendingCodes.isEmpty()) {
-            String code = pendingCodes.removeFirst();
-            List<TargetRow> sourceRows = loadTargets(sourceDataNodeRef, brandRef, code);
+        while (!pendingRefs.isEmpty()) {
+            UUID itemRef = pendingRefs.removeFirst();
+            List<TargetRow> sourceRows = loadTargetsByItemRef(sourceDataNodeRef, brandRef, itemRef);
             for (TargetRow source : sourceRows) {
                 sourceByRef.putIfAbsent(source.ref(), source);
             }
-            for (BomOwnerRow owner : loadBomOwners(sourceDataNodeRef, brandRef, code)) {
+            for (BomOwnerRow owner : loadBomOwnersByItemRef(sourceDataNodeRef, brandRef, itemRef)) {
                 if (!processedBomOwners.add(bomOwnerIdentity(owner))) continue;
                 bomOwners.addObject().put("code", bomOwnerIdentity(owner)).put("itemCode", owner.itemCode()).put("version", owner.version());
                 JsonNode rows = json(owner.rows());
@@ -172,7 +269,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     TargetRow component = sourceRef.isBlank() ? null : findTargetByRef(sourceDataNodeRef, brandRef, sourceRef);
                     String status = component == null ? "BLOCKED" : "REWRITE";
                     if (component == null && firstBlocking.isBlank()) firstBlocking = "REFERENCE_MAPPING_UNRESOLVED";
-                    if (component != null && closureCodes.add(component.itemCode())) pendingCodes.add(component.itemCode());
+                    if (component != null && closureRefs.add(component.itemRef())) pendingRefs.add(component.itemRef());
                     rewrites.addObject().put("fromCode", sourceRef).put("toCode", component == null ? "" : targetIdentityCode(component.itemCode(), component.skuCode())).put("referenceKind", "STOCK_BOM").put("status", status);
                 }
             }
@@ -182,19 +279,18 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         // not merely over catalog item codes. Every component item must be
         // materialized before a BOM targetRef can be rewritten.
         for (TargetRow source : allSourceRows) {
-            String code = source.itemCode();
-            String targetCode = optional(request, "targetItemCode");
-            List<TargetRow> targets = loadTargets(targetDataNodeRef, brandRef, targetCode == null ? code : targetCode);
-            TargetRow existing = targets.stream().filter(target -> java.util.Objects.equals(target.skuCode(), source.skuCode())).findFirst().orElse(null);
+            ReferenceMapping itemMapping = mappingFor(mappingsBySource, source.itemRef(), "CATALOG_ITEM");
+            ReferenceMapping skuMapping = source.productSkuRef() == null ? null : mappingFor(mappingsBySource, source.productSkuRef(), "PRODUCT_SKU");
+            TargetRow existing = findTargetByIdentity(targetDataNodeRef, brandRef, itemMapping.targetRef(), skuMapping == null ? null : skuMapping.targetRef());
             String result = existing == null ? "CREATE" : "REUSE";
             String reason = existing == null ? "目标库存对象不存在，将创建且余额从零开始" : "库存对象身份一致，可复用";
             String problem = "";
             if (existing != null && !java.util.Objects.equals(existing.measureMode(), source.measureMode())) { result = "BLOCKED"; reason = "消耗单位不一致"; problem = "CONSUMPTION_UNIT_INCOMPATIBLE"; if (firstBlocking.isBlank()) firstBlocking = problem; }
-            String identityCode = targetIdentityCode(code, source.skuCode());
-            closureItems.addObject().put("objectType", "STOCK_TARGET").put("code", identityCode).put("itemCode", code).put("name", code).put("action", result);
-            compatibility.addObject().put("objectType", "STOCK_TARGET").put("code", identityCode).put("itemCode", code).put("result", result).put("reason", reason).put("problemCode", problem);
-            versions.addObject().put("objectType", "STOCK_TARGET").put("code", identityCode).put("itemCode", code).put("sourceVersion", source.version()).put("targetVersion", existing == null ? 0 : existing.version());
-            mappings.addObject().put("fromCode", source.ref().toString()).put("toCode", identityCode).put("itemCode", code).put("referenceKind", "STOCK_TARGET").put("status", existing == null ? "CREATE" : "REUSE");
+            String identityCode = targetIdentityCode(requiredLabel(itemMapping.targetCode(), "CATALOG_ITEM targetCode"), skuMapping == null ? null : requiredLabel(skuMapping.targetSkuCode(), "PRODUCT_SKU targetSkuCode"));
+            closureItems.addObject().put("objectType", "STOCK_TARGET").put("code", identityCode).put("itemCode", source.itemCode()).put("name", source.itemCode()).put("action", result);
+            compatibility.addObject().put("objectType", "STOCK_TARGET").put("code", identityCode).put("itemCode", source.itemCode()).put("result", result).put("reason", reason).put("problemCode", problem);
+            versions.addObject().put("objectType", "STOCK_TARGET").put("code", identityCode).put("itemCode", source.itemCode()).put("sourceVersion", source.version()).put("targetVersion", existing == null ? 0 : existing.version());
+            mappings.addObject().put("fromCode", source.ref().toString()).put("toCode", identityCode).put("itemCode", source.itemCode()).put("referenceKind", "STOCK_TARGET").put("status", existing == null ? "CREATE" : "REUSE");
         }
         snapshot.put("firstBlockingProblem", firstBlocking);
         ObjectNode result = mapper.createObjectNode().put("owner", "inventory").put("firstBlockingProblem", firstBlocking).put("digest", hash(snapshot));
@@ -204,12 +300,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     @Override
     @Transactional(readOnly = true)
-    public JsonNode readCatalogInventoryDefinition(String scope, String brand, String itemCode, String requestId) {
+    public JsonNode readCatalogInventoryDefinition(String scope, String brand, String itemRef, String requestId) {
         requireScope(scope, brand);
-        if (itemCode == null || itemCode.isBlank()) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "itemCode is required");
-        ObjectNode data = mapper.createObjectNode().put("itemCode", itemCode);
+        UUID catalogItemRef = opaqueRef(itemRef, "itemRef");
+        ObjectNode data = mapper.createObjectNode().put("itemRef", catalogItemRef.toString());
         ArrayNode nodes = data.putArray("nodes");
-        List<TargetRow> targets = loadTargets(scope, brand, itemCode);
+        List<TargetRow> targets = loadTargetsByItemRef(scope, brand, catalogItemRef);
         for (TargetRow row : targets) {
             JsonNode config = json(row.configuration());
             ObjectNode node = nodes.addObject()
@@ -222,21 +318,25 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             node.put("quantity", "0").put("unit", row.measureMode());
             node.set("configuration", config);
         }
-        jdbc.query("SELECT sku_code,option_value_code,version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_code=? ORDER BY sku_code NULLS FIRST,option_value_code NULLS FIRST", statement -> {
-            statement.setString(1, scope); statement.setString(2, brand); statement.setString(3, itemCode);
+        jdbc.query("SELECT product_sku_ref,option_value_ref,sku_code,option_value_code,version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? ORDER BY sku_code NULLS FIRST,option_value_code NULLS FIRST", statement -> {
+            statement.setString(1, scope); statement.setString(2, brand); statement.setObject(3, catalogItemRef);
         }, result -> {
             while (result.next()) {
-                String skuCode = result.getString(1);
-                String optionValueCode = result.getString(2);
-                long version = result.getLong(3);
-                JsonNode rows = json(result.getString(4));
+                UUID productSkuRef = result.getObject(1, UUID.class);
+                UUID optionValueRef = result.getObject(2, UUID.class);
+                String skuCode = result.getString(3);
+                String optionValueCode = result.getString(4);
+                long version = result.getLong(5);
+                JsonNode rows = json(result.getString(6));
                 if (!rows.isArray()) continue;
                 for (JsonNode row : rows) {
                     ObjectNode node = nodes.addObject().put("nodeType", optionValueCode != null ? "OPTION_VALUE_BOM" : (skuCode == null ? "ITEM_BOM" : "SKU_BOM"))
                         .put("mode", "BOM").put("targetRef", row.path("targetRef").asText(row.path("componentTargetRef").asText("")))
                         .put("quantity", row.path("quantity").asText(row.path("quantityPerUnit").asText("0")))
                         .put("unit", row.path("unit").asText(""))
-                        .put("version", version).put("itemCode", itemCode);
+                        .put("version", version).put("itemRef", catalogItemRef.toString());
+                    if (productSkuRef == null) node.putNull("productSkuRef"); else node.put("productSkuRef", productSkuRef.toString());
+                    if (optionValueRef == null) node.putNull("optionValueRef"); else node.put("optionValueRef", optionValueRef.toString());
                     if (skuCode == null) node.putNull("skuCode"); else node.put("skuCode", skuCode);
                     if (optionValueCode == null) node.putNull("optionValueCode"); else node.put("optionValueCode", optionValueCode);
                     if (row.hasNonNull("lineSign")) node.put("lineSign", row.path("lineSign").asText());
@@ -249,16 +349,16 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     @Override
     @Transactional(readOnly = true)
-    public JsonNode catalogItemVoidDependencies(String scope, String brand, String itemCode, String requestId) {
+    public JsonNode catalogItemVoidDependencies(String scope, String brand, String itemRef, String requestId) {
         requireScope(scope, brand);
-        if (itemCode == null || itemCode.isBlank()) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "itemCode is required");
+        UUID catalogItemRef = opaqueRef(itemRef, "itemRef");
         long targetCount = jdbc.queryForObject(
-            "SELECT COUNT(*) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_code=?",
-            Long.class, scope, brand, itemCode);
+            "SELECT COUNT(*) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_ref=?",
+            Long.class, scope, brand, catalogItemRef);
         long bomCount = jdbc.queryForObject(
-            "SELECT COUNT(*) FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_code=?",
-            Long.class, scope, brand, itemCode);
-        ObjectNode result = mapper.createObjectNode().put("itemCode", itemCode)
+            "SELECT COUNT(*) FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=?",
+            Long.class, scope, brand, catalogItemRef);
+        ObjectNode result = mapper.createObjectNode().put("itemRef", catalogItemRef.toString())
             .put("hasDependentFacts", targetCount > 0 || bomCount > 0)
             .put("stockTargetCount", targetCount).put("productBomCount", bomCount);
         ArrayNode facts = result.putArray("dependentFacts");
@@ -277,16 +377,34 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     @Override
     @Transactional
-    public JsonNode ensureCatalogInventoryTarget(String scope, String brand, ObjectNode request, String requestId, String idempotencyKey) {
+    public JsonNode ensureCatalogInventoryTarget(String scope, String brand, ObjectNode request, String requestId, String idempotencyKey,
+                                                 UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
+        return ensureCatalogInventoryTargetCore(scope, brand, request, requestId, idempotencyKey, () -> {
+            requireCatalogDefinitionDataNodeType(dataNodeType);
+            requireCatalogDefinitionOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, dataNodeType, scope, catalogDefinitionCapabilityForTarget(dataNodeType), ownerScopeGrant);
+        });
+    }
+
+    @Override
+    @Transactional
+    public JsonNode ensureCatalogInventoryTarget(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", CATALOG_ITEM_SAVE_REQUIREMENT);
+        return ensureCatalogInventoryTargetCore(scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey, () -> requireCatalogDefinitionDataNodeType(scope.dataNodeType()));
+    }
+
+    private JsonNode ensureCatalogInventoryTargetCore(String scope, String brand, ObjectNode request, String requestId, String idempotencyKey, Runnable authorization) {
         requireScope(scope, brand);
-        String itemCode = required(request, "itemCode");
+        authorization.run();
+        UUID itemRef = requiredOpaqueRef(request, "itemRef");
+        UUID productSkuRef = optionalOpaqueRef(request, "productSkuRef");
+        String itemCode = optional(request, "itemCode");
         String skuCode = optional(request, "skuCode");
         String mode = required(request, "mode");
         if (!Set.of("INDEPENDENT_STOCK", "BOM").contains(mode)) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "库存对象只能由独立库存控制或 BOM 规则创建");
         String targetRef = optional(request, "targetRef");
         if (targetRef != null && !targetRef.isBlank()) {
             TargetRow existing = target(scope, brand, targetRef);
-            if (!itemCode.equals(existing.itemCode()) || !java.util.Objects.equals(skuCode, existing.skuCode())) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存对象身份与商品/SKU 不一致");
+            if (!itemRef.equals(existing.itemRef()) || !java.util.Objects.equals(productSkuRef, existing.productSkuRef())) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存对象身份与商品/SKU 引用不一致");
             if (request.path("configuration").isObject() && request.path("configuration").size() > 0) {
                 if (!request.has("expectedVersion")) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "inventory target version is required");
                 long expected = requiredLong(request, "expectedVersion");
@@ -314,61 +432,136 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         configuration.put("conversionFactor", configuredFactor.isBlank() ? "1" : configuredFactor);
         if (!configuration.has("allowNegative")) configuration.put("allowNegative", false);
         normalizeConfiguration(configuration);
-        jdbc.update("INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_code,sku_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT (data_node_ref,brand_ref,item_code,(COALESCE(sku_code, ''))) DO NOTHING", UUID.randomUUID(), scope, brand, itemCode, skuCode, consumptionUnit, canonical(configuration), time.currentEpochMillis(), time.currentEpochMillis());
-        TargetRow created = loadTargets(scope, brand, itemCode).stream().filter(row -> java.util.Objects.equals(row.skuCode(), skuCode)).findFirst().orElseThrow(() -> new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存对象创建后无法读取"));
+        jdbc.update("INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT (data_node_ref,brand_ref,item_ref,(COALESCE(product_sku_ref, '00000000-0000-0000-0000-000000000000'::uuid))) DO NOTHING", UUID.randomUUID(), scope, brand, itemRef, productSkuRef, itemCode, skuCode, consumptionUnit, canonical(configuration), time.currentEpochMillis(), time.currentEpochMillis());
+        TargetRow created = targetByIdentity(scope, brand, itemRef, productSkuRef);
         return mapper.createObjectNode().put("targetRef", created.ref().toString()).put("version", created.version()).put("created", true);
     }
 
     @Override
     @Transactional
-    public JsonNode saveCatalogProductBom(String scope, String brand, ObjectNode request, String requestId, String idempotencyKey) {
+    public JsonNode saveCatalogProductBom(String scope, String brand, ObjectNode request, String requestId, String idempotencyKey,
+                                          UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
+        return saveCatalogProductBomCore(scope, brand, request, requestId, idempotencyKey, () -> {
+            requireCatalogDefinitionDataNodeType(dataNodeType);
+            requireCatalogDefinitionOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, dataNodeType, scope, catalogDefinitionCapabilityForTarget(dataNodeType), ownerScopeGrant);
+        });
+    }
+
+    @Override
+    @Transactional
+    public JsonNode saveCatalogProductBom(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", CATALOG_ITEM_SAVE_REQUIREMENT);
+        return saveCatalogProductBomCore(scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey, () -> requireCatalogDefinitionDataNodeType(scope.dataNodeType()));
+    }
+
+    private JsonNode saveCatalogProductBomCore(String scope, String brand, ObjectNode request, String requestId, String idempotencyKey, Runnable authorization) {
         requireScope(scope, brand);
-        String itemCode = required(request, "itemCode");
+        authorization.run();
+        UUID itemRef = requiredOpaqueRef(request, "itemRef");
+        UUID productSkuRef = optionalOpaqueRef(request, "productSkuRef");
+        UUID optionValueRef = optionalOpaqueRef(request, "optionValueRef");
+        String itemCode = optional(request, "itemCode");
         String skuCode = optional(request, "skuCode");
         String optionValueCode = optional(request, "optionValueCode");
-        if (skuCode != null && optionValueCode != null) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM owner 不能同时指定 SKU 与选项值");
+        if (productSkuRef != null && optionValueRef != null) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM owner 不能同时指定 SKU 与选项值");
         JsonNode rows = request.path("rows");
         if (!rows.isArray()) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM rows must be an array");
         long expected = request.has("expectedVersion") ? requiredLong(request, "expectedVersion") : 0L;
-        List<String> targets = new ArrayList<>();
+        List<UUID> targetRefs = new ArrayList<>();
         rows.forEach(row -> {
             String component = row.path("targetRef").asText(row.path("componentTargetRef").asText(""));
             if (component.isBlank()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "BOM 组件必须选择已有库存对象");
-            targets.add(component);
-            try { target(scope, brand, component); } catch (InventoryOwnerApi.Problem failure) { throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "BOM 组件库存对象不存在"); }
+            try { targetRefs.add(UUID.fromString(component)); }
+            catch (IllegalArgumentException failure) { throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "BOM 组件库存对象不存在"); }
             BigDecimal quantity = decimalValue((ObjectNode) row, "quantity");
             String lineSign = normalizeLineSign(row.path("lineSign").asText("POSITIVE"));
             if (!Set.of("POSITIVE", "NEGATIVE").contains(lineSign) || quantity.signum() == 0 || row.path("unit").asText("").isBlank()) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 组件数量、单位与行方向必须有效");
             if (("POSITIVE".equals(lineSign) && quantity.signum() < 0) || ("NEGATIVE".equals(lineSign) && quantity.signum() > 0)) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行方向与数量符号不一致");
         });
-        String currentSql = optionValueCode != null
-            ? "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_code=? AND sku_code IS NULL AND option_value_code=?"
-            : (skuCode == null
-                ? "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_code=? AND sku_code IS NULL AND option_value_code IS NULL"
-                : "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_code=? AND sku_code=? AND option_value_code IS NULL");
+        ResolvedBomTargets resolvedTargets = ResolvedBomTargets.load(jdbc, scope, brand, targetRefs);
+        // Apply the result in the submitted order so the first missing component
+        // retains the owner contract's original line-order diagnostic.
+        targetRefs.forEach(resolvedTargets::requireResolved);
+        String currentSql = optionValueRef != null
+            ? "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? AND product_sku_ref IS NULL AND option_value_ref=?"
+            : (productSkuRef == null
+                ? "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? AND product_sku_ref IS NULL AND option_value_ref IS NULL"
+                : "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? AND product_sku_ref=? AND option_value_ref IS NULL");
         List<Long> current = jdbc.query(currentSql,
-            statement -> { statement.setString(1, scope); statement.setString(2, brand); statement.setString(3, itemCode); if (optionValueCode != null) statement.setString(4, optionValueCode); else if (skuCode != null) statement.setString(4, skuCode); },
+            statement -> { statement.setString(1, scope); statement.setString(2, brand); statement.setObject(3, itemRef); if (optionValueRef != null) statement.setObject(4, optionValueRef); else if (productSkuRef != null) statement.setObject(4, productSkuRef); },
             result -> { List<Long> values = new ArrayList<>(); while (result.next()) values.add(result.getLong(1)); return values; });
         if ((current.isEmpty() ? 0L : current.get(0)) != expected) throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "商品 BOM 版本已变化");
         ArrayNode normalized = mapper.createArrayNode();
-        rows.forEach(row -> normalized.addObject().put("lineSign", normalizeLineSign(row.path("lineSign").asText("POSITIVE"))).put("targetRef", row.path("targetRef").asText(row.path("componentTargetRef").asText())).put("quantity", row.path("quantity").asText(row.path("quantityPerUnit").asText("0"))).put("unit", row.path("unit").asText("")));
+        rows.forEach(row -> {
+            ObjectNode line = normalized.addObject().put("lineSign", normalizeLineSign(row.path("lineSign").asText("POSITIVE"))).put("targetRef", row.path("targetRef").asText(row.path("componentTargetRef").asText())).put("quantity", row.path("quantity").asText(row.path("quantityPerUnit").asText("0"))).put("unit", row.path("unit").asText(""));
+            line.put("ownerRef", itemRef.toString());
+            if (productSkuRef == null) line.putNull("productSkuRef"); else line.put("productSkuRef", productSkuRef.toString());
+            if (optionValueRef == null) line.putNull("optionValueRef"); else line.put("optionValueRef", optionValueRef.toString());
+        });
         long next = expected + 1;
-        jdbc.update("INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,CAST(? AS JSONB),?) ON CONFLICT (data_node_ref,brand_ref,item_code,(COALESCE(sku_code, '')),(COALESCE(option_value_code, ''))) DO UPDATE SET version=EXCLUDED.version,rows=EXCLUDED.rows,updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis", UUID.randomUUID(), scope, brand, itemCode, skuCode, optionValueCode, next, canonical(normalized), time.currentEpochMillis());
-        return mapper.createObjectNode().put("itemCode", itemCode).put("version", next).put("saved", true);
+        jdbc.update("INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_ref,item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),?) ON CONFLICT (data_node_ref,brand_ref,item_ref,(COALESCE(product_sku_ref, '00000000-0000-0000-0000-000000000000'::uuid)),(COALESCE(option_value_ref, '00000000-0000-0000-0000-000000000000'::uuid))) DO UPDATE SET version=EXCLUDED.version,rows=EXCLUDED.rows,updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis", UUID.randomUUID(), scope, brand, itemRef, productSkuRef, optionValueRef, itemCode, skuCode, optionValueCode, next, canonical(normalized), time.currentEpochMillis());
+        return mapper.createObjectNode().put("itemRef", itemRef.toString()).put("version", next).put("saved", true);
     }
 
-    private List<TargetRow> loadTargets(String scope, String brand, String itemCode) {
-        return jdbc.query("SELECT target_ref,item_code,sku_code,measure_mode,balance,configuration::text,version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_code=? ORDER BY sku_code NULLS FIRST", (r, n) -> new TargetRow(r.getObject(1, UUID.class), r.getString(2), r.getString(3), r.getString(4), r.getBigDecimal(5), r.getString(6), r.getLong(7), r.getLong(8)), scope, brand, itemCode);
+    private TargetRow targetByIdentity(String scope, String brand, UUID itemRef, UUID productSkuRef) {
+        List<TargetRow> rows = jdbc.query("SELECT target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_ref=? AND product_sku_ref IS NOT DISTINCT FROM ?", (r, n) -> targetRow(r), scope, brand, itemRef, productSkuRef);
+        if (rows.size() != 1) throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存对象创建后无法读取");
+        return rows.get(0);
+    }
+
+    private TargetRow findTargetByIdentity(String scope, String brand, UUID itemRef, UUID productSkuRef) {
+        List<TargetRow> rows = jdbc.query("SELECT target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_ref=? AND product_sku_ref IS NOT DISTINCT FROM ?", (r, n) -> targetRow(r), scope, brand, itemRef, productSkuRef);
+        if (rows.size() > 1) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    private List<TargetRow> loadTargetsByItemRef(String scope, String brand, UUID itemRef) {
+        return jdbc.query("SELECT target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_ref=? ORDER BY product_sku_ref NULLS FIRST", (r, n) -> targetRow(r), scope, brand, itemRef);
+    }
+
+    private List<BomOwnerRow> loadBomOwnersByItemRef(String scope, String brand, UUID itemRef) {
+        return jdbc.query("SELECT item_ref,product_sku_ref,option_value_ref,item_code,sku_code,option_value_code,version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? ORDER BY product_sku_ref NULLS FIRST,option_value_ref NULLS FIRST", (r, n) -> new BomOwnerRow(r.getObject(1, UUID.class), r.getObject(2, UUID.class), r.getObject(3, UUID.class), r.getString(4), r.getString(5), r.getString(6), r.getLong(7), r.getString(8)), scope, brand, itemRef);
+    }
+
+    /** Resolve the same recursive target-reference closure that preflight validates before copy writes it. */
+    private SourceCopyClosure sourceCopyClosure(String scope, String brand, List<UUID> initialItemRefs) {
+        LinkedHashSet<UUID> itemRefs = new LinkedHashSet<>();
+        ArrayDeque<UUID> pendingItemRefs = new ArrayDeque<>();
+        for (UUID itemRef : initialItemRefs) if (itemRefs.add(itemRef)) pendingItemRefs.add(itemRef);
+        Map<UUID, TargetRow> targetsByRef = new LinkedHashMap<>();
+        Map<String, BomOwnerRow> bomOwnersByIdentity = new LinkedHashMap<>();
+        while (!pendingItemRefs.isEmpty()) {
+            UUID itemRef = pendingItemRefs.removeFirst();
+            for (TargetRow target : loadTargetsByItemRef(scope, brand, itemRef)) {
+                assertSourceNoOwnerReference(target, scope);
+                targetsByRef.putIfAbsent(target.ref(), target);
+            }
+            for (BomOwnerRow bomOwner : loadBomOwnersByItemRef(scope, brand, itemRef)) {
+                if (bomOwnersByIdentity.putIfAbsent(bomOwnerIdentity(bomOwner), bomOwner) != null) continue;
+                JsonNode rows = json(bomOwner.rows());
+                if (!rows.isArray()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存 BOM 行不是有效数组");
+                for (JsonNode row : rows) {
+                    TargetRow component = findTargetByRef(scope, brand, row.path("targetRef").asText(row.path("componentTargetRef").asText("")));
+                    if (component == null) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存 BOM 组件不在复制闭包中");
+                    if (itemRefs.add(component.itemRef())) pendingItemRefs.add(component.itemRef());
+                }
+            }
+        }
+        return new SourceCopyClosure(List.copyOf(itemRefs), List.copyOf(targetsByRef.values()), List.copyOf(bomOwnersByIdentity.values()));
+    }
+
+    private static TargetRow targetRow(java.sql.ResultSet row) throws java.sql.SQLException {
+        return new TargetRow(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getObject(3, UUID.class), row.getString(4), row.getString(5), row.getString(6), row.getBigDecimal(7), row.getString(8), row.getLong(9), row.getLong(10));
     }
 
     private void assertSourceNoOwnerReference(TargetRow row, String sourceScope) {
         assertJsonNoOwnerReference(json(row.configuration()), sourceScope);
     }
 
-    private void verifyTargetNoOwnerReference(String targetScope, String brand, List<String> itemCodes, String sourceScope) {
-        for (String itemCode : itemCodes) {
-            for (TargetRow row : loadTargets(targetScope, brand, itemCode)) assertJsonNoOwnerReference(json(row.configuration()), sourceScope);
-            jdbc.query("SELECT rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_code=?", result -> { while (result.next()) { assertJsonNoOwnerReference(json(result.getString(1)), sourceScope); } return null; }, targetScope, brand, itemCode);
+    private void verifyTargetNoOwnerReference(String targetScope, String brand, List<UUID> itemRefs, String sourceScope) {
+        for (UUID itemRef : itemRefs) {
+            for (TargetRow row : loadTargetsByItemRef(targetScope, brand, itemRef)) assertJsonNoOwnerReference(json(row.configuration()), sourceScope);
+            jdbc.query("SELECT rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=?", result -> { while (result.next()) { assertJsonNoOwnerReference(json(result.getString(1)), sourceScope); } return null; }, targetScope, brand, itemRef);
         }
     }
 
@@ -387,12 +580,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         } else if (node.isArray()) node.forEach(value -> assertJsonNoOwnerReference(value, sourceScope));
     }
 
-    private JsonNode copyLocalConfiguration(String scope, String targetScope, String brand, String sourceItemCode, String targetItemCode) {
-        int changed = jdbc.update("INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) SELECT ?,?,?,?,sku_code,option_value_code,version,rows,? FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_code=? ON CONFLICT (data_node_ref,brand_ref,item_code,(COALESCE(sku_code, '')),(COALESCE(option_value_code, ''))) DO UPDATE SET rows=EXCLUDED.rows,version=inventory.stock_bom.version+1,updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis", UUID.randomUUID(), targetScope, brand, targetItemCode, time.currentEpochMillis(), scope, brand, sourceItemCode);
-        return mapper.createObjectNode().put("owner", "inventory").put("status", "COMMITTED").put("version", changed);
-    }
-
-    private void copyRewrittenBom(String sourceScope, String targetScope, String brand, BomOwnerRow source, Map<UUID, UUID> targetRefs) {
+    private void copyRewrittenBom(String sourceScope, String targetScope, String brand, BomOwnerRow source, Map<UUID, UUID> targetRefs, Map<UUID, ReferenceMapping> mappings) {
         JsonNode parsed = json(source.rows());
         if (!parsed.isArray()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存 BOM 行不是有效数组");
         ArrayNode rewritten = mapper.createArrayNode();
@@ -405,15 +593,24 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             if (mapped == null) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存 BOM 组件不在复制闭包中");
             row.put("targetRef", mapped.toString());
             row.remove("componentTargetRef");
+            ReferenceMapping itemMapping = mappingFor(mappings, source.itemRef(), "CATALOG_ITEM");
+            ReferenceMapping skuMapping = source.productSkuRef() == null ? null : mappingFor(mappings, source.productSkuRef(), "PRODUCT_SKU");
+            ReferenceMapping optionMapping = source.optionValueRef() == null ? null : mappingFor(mappings, source.optionValueRef(), "SKU_ATTRIBUTE_VALUE");
+            row.put("ownerRef", itemMapping.targetRef().toString());
+            if (skuMapping == null) row.putNull("productSkuRef"); else row.put("productSkuRef", skuMapping.targetRef().toString());
+            if (optionMapping == null) row.putNull("optionValueRef"); else row.put("optionValueRef", optionMapping.targetRef().toString());
             rewritten.add(row);
         }
         assertJsonNoOwnerReference(rewritten, sourceScope);
-        jdbc.update("INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,CAST(? AS JSONB),?) ON CONFLICT (data_node_ref,brand_ref,item_code,(COALESCE(sku_code, '')),(COALESCE(option_value_code, ''))) DO UPDATE SET version=EXCLUDED.version,rows=EXCLUDED.rows,updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis", UUID.randomUUID(), targetScope, brand, source.itemCode(), source.skuCode(), source.optionValueCode(), source.version(), canonical(rewritten), time.currentEpochMillis());
+        ReferenceMapping itemMapping = mappingFor(mappings, source.itemRef(), "CATALOG_ITEM");
+        ReferenceMapping skuMapping = source.productSkuRef() == null ? null : mappingFor(mappings, source.productSkuRef(), "PRODUCT_SKU");
+        ReferenceMapping optionMapping = source.optionValueRef() == null ? null : mappingFor(mappings, source.optionValueRef(), "SKU_ATTRIBUTE_VALUE");
+        jdbc.update("INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_ref,item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),?) ON CONFLICT (data_node_ref,brand_ref,item_ref,(COALESCE(product_sku_ref, '00000000-0000-0000-0000-000000000000'::uuid)),(COALESCE(option_value_ref, '00000000-0000-0000-0000-000000000000'::uuid))) DO UPDATE SET version=EXCLUDED.version,rows=EXCLUDED.rows,updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis", UUID.randomUUID(), targetScope, brand, itemMapping.targetRef(), skuMapping == null ? null : skuMapping.targetRef(), optionMapping == null ? null : optionMapping.targetRef(), requiredLabel(itemMapping.targetCode(), "CATALOG_ITEM targetCode"), skuMapping == null ? null : requiredLabel(skuMapping.targetSkuCode(), "PRODUCT_SKU targetSkuCode"), optionMapping == null ? null : requiredLabel(optionMapping.targetOptionValueCode(), "SKU_ATTRIBUTE_VALUE targetOptionValueCode"), source.version(), canonical(rewritten), time.currentEpochMillis());
     }
 
     private TargetRow findTargetByRef(String scope, String brand, String targetRef) {
         if (targetRef == null || targetRef.isBlank()) return null;
-        try { UUID ref = UUID.fromString(targetRef); return jdbc.query("SELECT target_ref,item_code,sku_code,measure_mode,balance,configuration::text,version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=?", r -> { if (!r.next()) return null; return new TargetRow(r.getObject(1, UUID.class), r.getString(2), r.getString(3), r.getString(4), r.getBigDecimal(5), r.getString(6), r.getLong(7), r.getLong(8)); }, scope, brand, ref); }
+        try { UUID ref = UUID.fromString(targetRef); return jdbc.query("SELECT target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=?", r -> { if (!r.next()) return null; return targetRow(r); }, scope, brand, ref); }
         catch (IllegalArgumentException ignored) { return null; }
     }
 
@@ -428,15 +625,15 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         List<String> catalogItemCodes = textArray(request.path("catalogItemCodes"));
         if (request.has("catalogItemCodes") && catalogItemCodes.isEmpty()) return emptyTargetPage(requestId, scope, brand);
         String viewPredicate = stockView == null || stockView.isBlank() || "ALL".equals(stockView) ? "TRUE" : "NEEDS_ATTENTION".equals(stockView) ? "stock_state <> 'OK'" : "stock_state='" + stockView + "'";
-        StringBuilder sql = new StringBuilder("WITH base AS (SELECT st.target_ref, st.item_code, st.sku_code, st.measure_mode, st.balance, st.configuration::text AS configuration, st.version, st.updated_at_epoch_millis, COALESCE(NULLIF(st.configuration->>'lowStockThreshold','')::numeric,0) AS threshold, st.configuration->>'unknown'='true' AS unknown_flag FROM inventory.stock_target st WHERE st.data_node_ref=? AND st.brand_ref=?");
+        StringBuilder sql = new StringBuilder("WITH base AS (SELECT st.target_ref, st.item_ref, st.product_sku_ref, st.item_code, st.sku_code, st.measure_mode, st.balance, st.configuration::text AS configuration, st.version, st.updated_at_epoch_millis, COALESCE(NULLIF(st.configuration->>'lowStockThreshold','')::numeric,0) AS threshold, st.configuration->>'unknown'='true' AS unknown_flag FROM inventory.stock_target st WHERE st.data_node_ref=? AND st.brand_ref=?");
         List<Object> args = new ArrayList<>(); args.add(scope); args.add(brand);
         if (keyword == null || keyword.isBlank()) sql.append(" AND (?::text IS NULL)"); else sql.append(" AND st.item_code ILIKE '%'||?||'%'"); args.add(keyword);
         if (!catalogItemCodes.isEmpty()) { sql.append(" AND st.item_code IN (").append(String.join(",", java.util.Collections.nCopies(catalogItemCodes.size(), "?"))).append(")"); args.addAll(catalogItemCodes); }
-        sql.append("), classified AS (SELECT target_ref, item_code, sku_code, measure_mode, balance, configuration, version, updated_at_epoch_millis, threshold, unknown_flag, CASE WHEN unknown_flag THEN 'UNKNOWN' WHEN balance < 0 THEN 'NEGATIVE' WHEN balance = 0 THEN 'OUT' WHEN threshold > 0 AND balance < threshold THEN 'LOW' ELSE 'OK' END AS stock_state FROM base), aggregate AS (SELECT COUNT(*) AS all_count, COUNT(*) FILTER (WHERE stock_state <> 'OK') AS attention_count, COUNT(*) FILTER (WHERE stock_state='LOW') AS low_count, COUNT(*) FILTER (WHERE stock_state='OUT') AS out_count, COUNT(*) FILTER (WHERE stock_state='NEGATIVE') AS negative_count, COUNT(*) FILTER (WHERE stock_state='UNKNOWN') AS unknown_count, COUNT(*) FILTER (WHERE ").append(viewPredicate).append(") AS view_count FROM classified), paged AS (SELECT target_ref, item_code, sku_code, measure_mode, balance, configuration, version, updated_at_epoch_millis, stock_state FROM classified WHERE ").append(viewPredicate).append(" ORDER BY item_code, sku_code NULLS FIRST, target_ref OFFSET ? LIMIT ?) SELECT p.target_ref,p.item_code,p.sku_code,p.measure_mode,p.balance,p.configuration,p.version,p.updated_at_epoch_millis,p.stock_state,a.all_count,a.attention_count,a.low_count,a.out_count,a.negative_count,a.unknown_count,a.view_count FROM aggregate a LEFT JOIN paged p ON TRUE ORDER BY p.item_code,p.sku_code NULLS FIRST,p.target_ref");
+        sql.append("), classified AS (SELECT target_ref, item_ref, product_sku_ref, item_code, sku_code, measure_mode, balance, configuration, version, updated_at_epoch_millis, threshold, unknown_flag, CASE WHEN unknown_flag THEN 'UNKNOWN' WHEN balance < 0 THEN 'NEGATIVE' WHEN balance = 0 THEN 'OUT' WHEN threshold > 0 AND balance < threshold THEN 'LOW' ELSE 'OK' END AS stock_state FROM base), aggregate AS (SELECT COUNT(*) AS all_count, COUNT(*) FILTER (WHERE stock_state <> 'OK') AS attention_count, COUNT(*) FILTER (WHERE stock_state='LOW') AS low_count, COUNT(*) FILTER (WHERE stock_state='OUT') AS out_count, COUNT(*) FILTER (WHERE stock_state='NEGATIVE') AS negative_count, COUNT(*) FILTER (WHERE stock_state='UNKNOWN') AS unknown_count, COUNT(*) FILTER (WHERE ").append(viewPredicate).append(") AS view_count FROM classified), paged AS (SELECT target_ref, item_ref, product_sku_ref, item_code, sku_code, measure_mode, balance, configuration, version, updated_at_epoch_millis, stock_state FROM classified WHERE ").append(viewPredicate).append(" ORDER BY item_code, sku_code NULLS FIRST, target_ref OFFSET ? LIMIT ?) SELECT p.target_ref,p.item_ref,p.product_sku_ref,p.item_code,p.sku_code,p.measure_mode,p.balance,p.configuration,p.version,p.updated_at_epoch_millis,p.stock_state,a.all_count,a.attention_count,a.low_count,a.out_count,a.negative_count,a.unknown_count,a.view_count FROM aggregate a LEFT JOIN paged p ON TRUE ORDER BY p.item_code,p.sku_code NULLS FIRST,p.target_ref");
         args.add(offset); args.add(pageSize + 1);
         List<TargetPageRow> rows = jdbc.query(sql.toString(), (r, n) -> {
-            UUID ref = r.getObject(1, UUID.class); TargetRow target = ref == null ? null : new TargetRow(ref, r.getString(2), r.getString(3), r.getString(4), r.getBigDecimal(5), r.getString(6), r.getLong(7), r.getLong(8));
-            return new TargetPageRow(target, r.getString(9), r.getLong(10), r.getLong(11), r.getLong(12), r.getLong(13), r.getLong(14), r.getLong(15), r.getLong(16));
+            UUID ref = r.getObject(1, UUID.class); TargetRow target = ref == null ? null : new TargetRow(ref, r.getObject(2, UUID.class), r.getObject(3, UUID.class), r.getString(4), r.getString(5), r.getString(6), r.getBigDecimal(7), r.getString(8), r.getLong(9), r.getLong(10));
+            return new TargetPageRow(target, r.getString(11), r.getLong(12), r.getLong(13), r.getLong(14), r.getLong(15), r.getLong(16), r.getLong(17), r.getLong(18));
         }, args.toArray());
         long total = rows.isEmpty() ? 0 : rows.get(0).allCount(); long viewTotal = rows.isEmpty() ? 0 : rows.get(0).viewCount();
         boolean hasNext = rows.stream().filter(row -> row.target() != null).count() > pageSize;
@@ -687,8 +884,29 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         if (config.hasNonNull("lowStockThreshold")) { BigDecimal threshold = decimalValue(config, "lowStockThreshold"); if (threshold.signum() < 0) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "configuration.lowStockThreshold cannot be negative"); }
         return (ObjectNode) config.deepCopy();
     }
+    /** Revalidates the mutable target/version before any receipt replay can return. */
+    private void recheckWriteFactsBeforeReceipt(String operationId, String scope, String brand, ObjectNode request) {
+        if (!Set.of("countOperationsInventoryTarget", "increaseOperationsInventoryTarget", "adjustOperationsInventoryTarget", "updateOperationsInventoryTargetConfiguration").contains(operationId)) {
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "inventory write operation is not registered");
+        }
+        TargetRow current = target(scope, brand, required(request, "targetRef"));
+        long expected = requiredLong(request, "expectedVersion");
+        if (current.version() != expected && current.version() != expected + 1L) {
+            throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "库存对象版本已变化");
+        }
+    }
+
+    /** Every selected source item/BOM must still resolve before a copy receipt may be replayed. */
+    private void recheckCopySourceFactsBeforeReceipt(String sourceScope, String brand, ObjectNode request) {
+        List<UUID> refs = requiredOpaqueRefArray(request, "closureItemRefs");
+        SourceCopyClosure closure = sourceCopyClosure(sourceScope, brand, refs);
+        if (closure.itemRefs().size() != refs.size()) {
+            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "库存复制来源事实已变化");
+        }
+    }
+
     private TargetRow target(String scope, String brand, String ref) {
-        try { UUID id = UUID.fromString(ref); return jdbc.queryForObject("SELECT target_ref,item_code,sku_code,measure_mode,balance,configuration::text,version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=?", (r, n) -> new TargetRow(r.getObject(1, UUID.class), r.getString(2), r.getString(3), r.getString(4), r.getBigDecimal(5), r.getString(6), r.getLong(7), r.getLong(8)), scope, brand, id); }
+        try { UUID id = UUID.fromString(ref); return jdbc.queryForObject("SELECT target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=?", (r, n) -> targetRow(r), scope, brand, id); }
         catch (EmptyResultDataAccessException | IllegalArgumentException ex) { throw new InventoryOwnerApi.Problem("NOT_FOUND", 404, "库存对象不存在"); }
     }
 
@@ -726,25 +944,22 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     private ObjectNode targetListRow(TargetRow row) { return targetListRow(row, null, false, null); }
 
-    private List<BomOwnerRow> loadBomOwners(String scope, String brand, String itemCode) {
-        return jdbc.query("SELECT item_code,sku_code,option_value_code,version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_code=? ORDER BY sku_code NULLS FIRST,option_value_code NULLS FIRST", (r, n) -> new BomOwnerRow(r.getString(1), r.getString(2), r.getString(3), r.getLong(4), r.getString(5)), scope, brand, itemCode);
-    }
-
     private String bomOwnerIdentity(BomOwnerRow owner) {
-        return owner.itemCode() + "::" + (owner.optionValueCode() == null ? (owner.skuCode() == null ? "ITEM" : "SKU:" + owner.skuCode()) : "OPTION_VALUE:" + owner.optionValueCode());
+        return owner.itemRef() + "::" + (owner.optionValueRef() == null ? (owner.productSkuRef() == null ? "ITEM" : "SKU:" + owner.productSkuRef()) : "OPTION_VALUE:" + owner.optionValueRef());
     }
 
     private ObjectNode targetListRow(TargetRow row, String queriedState, boolean queriedUnknown) { return targetListRow(row, queriedState, queriedUnknown, null); }
     private ObjectNode targetListRow(TargetRow row, String queriedState, boolean queriedUnknown, ChangeSnapshot snapshot) {
         JsonNode config = json(row.configuration()); BigDecimal threshold = decimalNode(config, "lowStockThreshold"); String stockState = queriedState == null ? state(row.balance(), config) : queriedState; String countingUnit = config.path("countingUnit").asText(row.measureMode()); BigDecimal factor = decimalNode(config, "conversionFactor"); if (factor.signum() <= 0) factor = BigDecimal.ONE;
         BigDecimal today = snapshot == null ? BigDecimal.ZERO : snapshot.today(); BigDecimal seven = snapshot == null ? BigDecimal.ZERO : snapshot.sevenDays(); BigDecimal thirty = snapshot == null ? BigDecimal.ZERO : snapshot.thirtyDays();
-        ObjectNode result = mapper.createObjectNode().put("targetRef", row.ref().toString()).put("targetType", "PRODUCT").put("productCode", row.itemCode()).putNull("productName").putNull("skuCode").putNull("skuName").putNull("categoryName").putNull("materialRole").put("consumptionUnit", row.measureMode()).put("countingUnit", countingUnit).put("conversionSummary", countingUnit + " -> " + row.measureMode() + " × " + decimal(factor)).put("balance", decimal(row.balance())).put("stockState", stockState).put("stale", false).put("unknown", queriedUnknown || "UNKNOWN".equals(stockState)).put("threshold", decimal(threshold)).put("gap", decimal(threshold.subtract(row.balance()))).put("changeToday", decimal(today)).put("change7d", decimal(seven)).put("change30d", decimal(thirty)).put("authorityType", "INTERNAL");
+        ObjectNode result = mapper.createObjectNode().put("targetRef", row.ref().toString()).put("itemRef", row.itemRef().toString()).put("targetType", "PRODUCT").put("productCode", row.itemCode()).putNull("productName").putNull("productSkuRef").putNull("skuCode").putNull("skuName").putNull("categoryName").putNull("materialRole").put("consumptionUnit", row.measureMode()).put("countingUnit", countingUnit).put("conversionSummary", countingUnit + " -> " + row.measureMode() + " × " + decimal(factor)).put("balance", decimal(row.balance())).put("stockState", stockState).put("stale", false).put("unknown", queriedUnknown || "UNKNOWN".equals(stockState)).put("threshold", decimal(threshold)).put("gap", decimal(threshold.subtract(row.balance()))).put("changeToday", decimal(today)).put("change7d", decimal(seven)).put("change30d", decimal(thirty)).put("authorityType", "INTERNAL");
         if (snapshot == null || snapshot.lastSource() == null) result.putNull("lastChangeSource"); else result.put("lastChangeSource", snapshot.lastSource());
         if (snapshot == null || snapshot.lastAt() == null) result.putNull("lastChangeAt"); else result.put("lastChangeAt", snapshot.lastAt());
+        if (row.productSkuRef() != null) result.put("productSkuRef", row.productSkuRef().toString());
         if (row.skuCode() != null) result.put("skuCode", row.skuCode()); return result;
     }
 
-    private ObjectNode targetDetail(TargetRow row) { JsonNode config = json(row.configuration()); String countingUnit = config.path("countingUnit").asText(row.measureMode()); BigDecimal factor = decimalNode(config, "conversionFactor"); if (factor.signum() <= 0) factor = BigDecimal.ONE; ObjectNode result = mapper.createObjectNode().put("targetRef", row.ref().toString()).put("targetType", "PRODUCT").put("productCode", row.itemCode()).putNull("productName").put("productShape", row.measureMode()); if (row.skuCode() == null) result.putNull("skuCode").putNull("skuName"); else result.put("skuCode", row.skuCode()).putNull("skuName"); return result.put("consumptionUnit", row.measureMode()).put("countingUnit", countingUnit).put("conversionSummary", countingUnit + " -> " + row.measureMode() + " × " + decimal(factor)).put("authorityType", "INTERNAL"); }
+    private ObjectNode targetDetail(TargetRow row) { JsonNode config = json(row.configuration()); String countingUnit = config.path("countingUnit").asText(row.measureMode()); BigDecimal factor = decimalNode(config, "conversionFactor"); if (factor.signum() <= 0) factor = BigDecimal.ONE; ObjectNode result = mapper.createObjectNode().put("targetRef", row.ref().toString()).put("itemRef", row.itemRef().toString()).put("targetType", "PRODUCT").put("productCode", row.itemCode()).putNull("productName").put("productShape", row.measureMode()); if (row.productSkuRef() == null) result.putNull("productSkuRef"); else result.put("productSkuRef", row.productSkuRef().toString()); if (row.skuCode() == null) result.putNull("skuCode").putNull("skuName"); else result.put("skuCode", row.skuCode()).putNull("skuName"); return result.put("consumptionUnit", row.measureMode()).put("countingUnit", countingUnit).put("conversionSummary", countingUnit + " -> " + row.measureMode() + " × " + decimal(factor)).put("authorityType", "INTERNAL"); }
     private ArrayNode ledgerEntries(String targetRef, int limit) { ArrayNode entries = mapper.createArrayNode(); jdbc.query("SELECT entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_millis FROM inventory.stock_ledger WHERE target_ref=? ORDER BY occurred_at_epoch_millis DESC LIMIT " + limit, s -> s.setObject(1, UUID.fromString(targetRef)), r -> { while (r.next()) entries.addObject().put("entryRef", r.getObject(1, UUID.class).toString()).put("source", r.getString(2)).put("reasonCode", r.getString(6) == null ? "" : r.getString(6)).put("beforeQuantity", decimal(r.getBigDecimal(4))).put("changeQuantity", decimal(r.getBigDecimal(3))).put("afterQuantity", decimal(r.getBigDecimal(5))).put("occurredAt", r.getLong(7)); return null; }); return entries; }
     private ArrayNode recentChanges(String targetRef) { ArrayNode entries = mapper.createArrayNode(); jdbc.query("SELECT operation_id,delta,occurred_at_epoch_millis FROM inventory.stock_ledger WHERE target_ref=? ORDER BY occurred_at_epoch_millis DESC LIMIT 20", s -> s.setObject(1, UUID.fromString(targetRef)), r -> { while (r.next()) entries.addObject().put("occurredAt", r.getLong(3)).put("changeType", r.getString(1)).put("quantity", decimal(r.getBigDecimal(2))).put("source", r.getString(1)); return null; }); return entries; }
     private ArrayNode referencesData(String scope, String brand, String targetRef) {
@@ -788,6 +1003,61 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     private BigDecimal decimalNode(JsonNode node, String key) { JsonNode value = node.path(key); return value.isNumber() ? value.decimalValue() : value.isTextual() ? new BigDecimal(value.asText()) : BigDecimal.ZERO; }
     private static BigDecimal decimalValue(ObjectNode req, String key) { JsonNode v = req.get(key); if (v == null || (!v.isNumber() && !v.isTextual())) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be decimal"); try { return new BigDecimal(v.asText()); } catch (NumberFormatException ex) { throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be decimal"); } }
     private static String required(ObjectNode req, String key) { String value = optional(req, key); if (value == null || value.isBlank()) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required"); return value; }
+    static UUID requiredOpaqueRef(ObjectNode request, String key) {
+        String value = required(request, key);
+        try { return UUID.fromString(value); }
+        catch (IllegalArgumentException exception) { throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " must be an opaque UUID reference"); }
+    }
+    private static UUID opaqueRef(String value, String key) {
+        try { return UUID.fromString(value); }
+        catch (RuntimeException exception) { throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " must be an opaque UUID reference"); }
+    }
+    static UUID optionalOpaqueRef(ObjectNode request, String key) {
+        String value = optional(request, key);
+        if (value == null || value.isBlank()) return null;
+        try { return UUID.fromString(value); }
+        catch (IllegalArgumentException exception) { throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " must be an opaque UUID reference"); }
+    }
+    private static List<UUID> requiredOpaqueRefArray(ObjectNode request, String key) {
+        JsonNode values = request == null ? null : request.get(key);
+        if (values == null || !values.isArray() || values.isEmpty()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " must contain opaque UUID refs");
+        List<UUID> refs = new ArrayList<>();
+        for (JsonNode value : values) {
+            if (!value.isTextual()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " must contain opaque UUID refs");
+            try { refs.add(UUID.fromString(value.asText())); }
+            catch (IllegalArgumentException exception) { throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " cannot contain a business code"); }
+        }
+        return refs.stream().distinct().toList();
+    }
+    private static Map<UUID, ReferenceMapping> referenceMappings(ObjectNode request) {
+        JsonNode values = request == null ? null : request.get("referenceMappings");
+        if (values == null || !values.isArray()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "referenceMappings is required for inventory copy");
+        Map<UUID, ReferenceMapping> result = new LinkedHashMap<>();
+        for (JsonNode value : values) {
+            if (!value.isObject()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "referenceMappings must contain objects");
+            UUID sourceRef = opaqueRefValue(value, "sourceRef");
+            UUID targetRef = opaqueRefValue(value, "targetRef");
+            String objectType = value.path("objectType").asText("");
+            if (!Set.of("CATALOG_ITEM", "PRODUCT_SKU", "SKU_ATTRIBUTE_VALUE").contains(objectType) || result.putIfAbsent(sourceRef, new ReferenceMapping(objectType, targetRef, value.path("targetCode").asText(null), value.path("targetSkuCode").asText(null), value.path("targetOptionValueCode").asText(null))) != null) {
+                throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "referenceMappings contains an unsupported or duplicate sourceRef");
+            }
+        }
+        return Map.copyOf(result);
+    }
+    private static UUID opaqueRefValue(JsonNode node, String key) {
+        String value = node.path(key).asText("");
+        try { return UUID.fromString(value); }
+        catch (IllegalArgumentException exception) { throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " must be an opaque UUID reference"); }
+    }
+    private static ReferenceMapping mappingFor(Map<UUID, ReferenceMapping> mappings, UUID sourceRef, String objectType) {
+        ReferenceMapping mapping = mappings.get(sourceRef);
+        if (mapping == null || !objectType.equals(mapping.objectType())) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "inventory copy reference mapping is missing or mismatched");
+        return mapping;
+    }
+    private static String requiredLabel(String value, String field) {
+        if (value == null || value.isBlank()) throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, field + " is required as a read label");
+        return value;
+    }
     private static String optional(ObjectNode req, String key) { JsonNode v = req == null ? null : req.get(key); return v == null || v.isNull() ? null : v.asText(); }
     static String normalizeLineSign(String value) { return switch (value) { case "COMPONENT", "ADD", "POSITIVE" -> "POSITIVE"; case "REMOVE", "SUBTRACT", "NEGATIVE" -> "NEGATIVE"; default -> value; }; }
     private static long requiredLong(ObjectNode req, String key) { JsonNode v = req == null ? null : req.get(key); if (v == null || !v.isIntegralNumber()) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required"); return v.asLong(); }
@@ -808,6 +1078,86 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         if (!Set.of("STORE", "HEAD_COMPANY").contains(dataNodeType)) throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "商品库存定义只支持门店或总公司数据节点");
     }
     private static void requireScope(String scope, String brand) { if (scope == null || scope.isBlank() || brand == null || brand.isBlank()) throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "owner scope is required"); }
+    private static void requireOwnerScopeGrant(UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, String dataNodeRef,
+                                               String expectedCapability, OperationsOwnerScopeGrant ownerScopeGrant) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || expectedCapability == null) throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "inventory owner scope grant is required");
+        try {
+            UUID targetId = UUID.fromString(dataNodeRef);
+            if (ownerScopeGrant != null && ownerScopeGrant.matchesCapability(workspaceUuid, groupWorkspaceKey, dataNodeType, targetId, expectedCapability)) return;
+        } catch (RuntimeException ignored) { }
+        throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "inventory owner scope grant is required");
+    }
+    private static CatalogAuthorizationScope requireTypedContext(
+        WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+        String expectedOwner,
+        String requiredRequirement
+    ) {
+        if (context == null || context.operationToken() == null || context.ownerScope() == null || context.ownerGrant() == null
+            || context.workspaceUuid() == null || context.groupWorkspaceKey() == null || context.groupWorkspaceKey().isBlank()
+            || !"operations-admin".equals(context.consumerFace())) {
+            throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "inventory execution context is required");
+        }
+        WorkspaceCommandOperationToken token = context.operationToken();
+        CatalogAuthorizationScope scope = context.ownerScope();
+        String capability = token.capabilityFor(scope.dataNodeType());
+        if (!expectedOwner.equals(token.owner()) || (requiredRequirement != null && !requiredRequirement.equals(token.requirementId()))
+            || scope.dataNodeId() == null || scope.brandRef() == null || scope.brandRef().isBlank()
+            || !token.allowedDataNodeTypes().contains(scope.dataNodeType()) || capability == null
+            || !context.ownerGrant().verifyFor(token.requirementId(), capability, scope.dataNodeType(), scope.dataNodeId())) {
+            throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "inventory execution context is not authorized");
+        }
+        return scope;
+    }
+    private static CatalogAuthorizationScope requireCopyContext(WorkspaceExecutionContext<CatalogAuthorizationScope> context) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        String operationId = context.operationToken().operationId();
+        if (!Set.of("preflightOperationsBrandCatalogCopy", "executeOperationsBrandCatalogCopy", "preflightOperationsLocalCatalogCopy", "executeOperationsLocalCatalogCopy").contains(operationId)) {
+            throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "inventory copy context is not authorized");
+        }
+        return scope;
+    }
+    private static String copySourceDataNodeRef(CatalogAuthorizationScope scope) {
+        return switch (scope.copySourcePolicy()) {
+            case TARGET_SCOPE -> scope.dataNodeId().toString();
+            case ORGANIZATION_JUDGMENT -> {
+                if (scope.copySourceDataNodeId() == null) throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "inventory copy source judgment is required");
+                yield scope.copySourceDataNodeId().toString();
+            }
+            default -> throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "inventory copy source policy is not authorized");
+        };
+    }
+    private static void requireCatalogDefinitionOwnerScopeGrant(UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType,
+                                                                 String dataNodeRef, String expectedCapability,
+                                                                 OperationsOwnerScopeGrant ownerScopeGrant) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || expectedCapability == null) {
+            throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "catalog inventory definition owner scope grant is required");
+        }
+        try {
+            UUID targetId = UUID.fromString(dataNodeRef);
+            if (ownerScopeGrant != null && ownerScopeGrant.matchesRequirementAndCapability(
+                workspaceUuid, groupWorkspaceKey, dataNodeType, targetId, CATALOG_ITEM_SAVE_REQUIREMENT, expectedCapability)) {
+                return;
+            }
+        } catch (RuntimeException ignored) { }
+        throw new InventoryOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "catalog inventory definition owner scope grant is required");
+    }
+    private static String inventoryWriteCapabilityForTarget(String dataNodeType) {
+        return "STORE".equals(dataNodeType) ? "EDIT_STORE_INVENTORY" : null;
+    }
+    private static String catalogCopyCapabilityForTarget(String dataNodeType) {
+        return switch (dataNodeType) {
+            case "HEAD_COMPANY" -> "EDIT_HEAD_COMPANY_CATALOG";
+            case "STORE" -> "EDIT_STORE_CATALOG";
+            default -> null;
+        };
+    }
+    private static String catalogDefinitionCapabilityForTarget(String dataNodeType) {
+        return switch (dataNodeType) {
+            case "HEAD_COMPANY" -> "EDIT_HEAD_COMPANY_CATALOG";
+            case "STORE" -> "EDIT_STORE_CATALOG";
+            default -> null;
+        };
+    }
     private long periodStart(String period) { return time.currentEpochMillis() - periodDurationMillis(period); }
     static String state(BigDecimal balance, JsonNode config) {
         if (config.path("unknown").asBoolean(false)) return "UNKNOWN";
@@ -819,8 +1169,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         catch (NumberFormatException ignored) { threshold = BigDecimal.ZERO; }
         return threshold.signum() > 0 && balance.compareTo(threshold) < 0 ? "LOW" : "OK";
     }
-    private record TargetRow(UUID ref, String itemCode, String skuCode, String measureMode, BigDecimal balance, String configuration, long version, long updatedAt) { }
-    private record BomOwnerRow(String itemCode, String skuCode, String optionValueCode, long version, String rows) { }
+    private record TargetRow(UUID ref, UUID itemRef, UUID productSkuRef, String itemCode, String skuCode, String measureMode, BigDecimal balance, String configuration, long version, long updatedAt) { }
+    private record BomOwnerRow(UUID itemRef, UUID productSkuRef, UUID optionValueRef, String itemCode, String skuCode, String optionValueCode, long version, String rows) { }
+    private record SourceCopyClosure(List<UUID> itemRefs, List<TargetRow> targets, List<BomOwnerRow> bomOwners) { }
+    private record ReferenceMapping(String objectType, UUID targetRef, String targetCode, String targetSkuCode, String targetOptionValueCode) { }
     private record TargetPageRow(TargetRow target, String stockState, long allCount, long attentionCount, long lowCount, long outCount, long negativeCount, long unknownCount, long viewCount) { }
     private record ChangeSnapshot(BigDecimal today, BigDecimal sevenDays, BigDecimal thirtyDays, String lastSource, Long lastAt) { }
     private record Receipt(String operation, String requestHash, JsonNode response) { }

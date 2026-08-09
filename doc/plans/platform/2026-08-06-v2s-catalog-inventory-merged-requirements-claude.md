@@ -17,6 +17,8 @@ mergedFrom:
 > **这不是最终需求稿。** 本文是两份独立分析的合并中间件，供 Codex 辩证 review 与后续几轮讨论使用。
 > 定稿前不得据此进入 Journey、契约或实现。
 
+> **2026-08-08 Dexter 裁决 supersede（有限）：** 本文关于单一 `编辑商品库` capability 和独立“高级诊断读取权限”的历史结论失效，不能再作为实现依据。当前规则见 `doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md`：总公司商品、门店商品、门店库存是三项按 owner/目标范围拆分的写 capability；所有 GET（含高级诊断）不是 capability。本文其余交易前边界、catalog/inventory owner 分离和品牌到门店复制业务事实不变。
+
 ## 0. 合并方法与本轮处置
 
 两份分析独立完成（Codex 未读 Claude 产出，且逐份声明了源文件 SHA-256 与活环境亲验）。

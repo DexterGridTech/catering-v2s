@@ -1,6 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -41,14 +42,16 @@ public final class WorkspaceIamCommandReceiptService {
             }
             return read(prior.responseJson(), resultType);
         }
-        T result = command.get();
-        jdbc.update(
-            "INSERT INTO workspace_iam.workspace_command_receipt "
-                + "(workspace_uuid, idempotency_key, request_hash, response_json, created_at_epoch_millis) "
-                + "VALUES (?, ?, ?, ?::jsonb, ?)",
-            workspaceUuid, key, requestHash, write(result), time.currentEpochMillis()
-        );
-        return result;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            T result = command.get();
+            jdbc.update(
+                "INSERT INTO workspace_iam.workspace_command_receipt "
+                    + "(workspace_uuid, idempotency_key, request_hash, response_json, created_at_epoch_millis) "
+                    + "VALUES (?, ?, ?, ?::jsonb, ?)",
+                workspaceUuid, key, requestHash, write(result), time.currentEpochMillis()
+            );
+            return result;
+        }
     }
 
     private static <T> T read(String value, Class<T> resultType) {

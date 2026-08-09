@@ -50,6 +50,27 @@ public interface OrganizationVisibilityLookup {
         );
     }
 
+    /**
+     * Invocation-scoped organization facts for the authenticated session entry.  The owner
+     * supplies candidates and fixed selector context from one consistent read pass; callers may
+     * not cache or reuse this value after the current session-entry invocation.
+     */
+    default VisibleOrganizationFacts resolveSessionEntryFacts(
+        UUID workspaceUuid,
+        String groupWorkspaceKey,
+        String assignmentNodeType,
+        UUID assignmentNodeId,
+        UUID regionId,
+        UUID projectId,
+        UUID storeId,
+        UUID headCompanyId
+    ) {
+        return new VisibleOrganizationFacts(
+            listVisibleDataNodeCandidates(workspaceUuid, groupWorkspaceKey, assignmentNodeType, assignmentNodeId),
+            describeScopeContext(workspaceUuid, groupWorkspaceKey, regionId, projectId, storeId, headCompanyId)
+        );
+    }
+
     private static VisibleDataNodeCandidate find(List<VisibleDataNodeCandidate> candidates, String type, UUID id) {
         return id == null ? null : candidates.stream().filter(value -> type.equals(value.dataNodeType()) && id.equals(value.dataNodeId())).findFirst().orElse(null);
     }
@@ -60,6 +81,12 @@ public interface OrganizationVisibilityLookup {
         VisibleDataNodeCandidate store,
         VisibleDataNodeCandidate headCompany
     ) { }
+
+    record VisibleOrganizationFacts(List<VisibleDataNodeCandidate> candidates, ScopeContext scopeContext) {
+        public VisibleOrganizationFacts {
+            candidates = List.copyOf(candidates);
+        }
+    }
 
     record VisibleDataNodeCandidate(
         String dataNodeType,

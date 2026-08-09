@@ -1,7 +1,14 @@
 package com.catering.v2s.platform.asset.application;
 
+import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.asset.api.WorkspaceLogoAssetCommand;
+import com.catering.v2s.platform.command.CatalogAuthorizationScope;
+import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Owner service for public static images and videos. Business owners retain only asset references. */
 @Service
-public class PlatformAssetService implements WorkspaceLogoAssetCommand {
+public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogAssetReferenceLock {
     private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
     /** Video is deliberately not capped at the image/logo limit; future approved video usage stays streaming. */
     private static final long MAX_VIDEO_BYTES = 512L * 1024 * 1024;
@@ -58,9 +65,33 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
     }
 
     public StageReadback stageContent(String usage, String contentType, long declaredSizeBytes, InputStream content, String idempotencyKey) {
+        return stageContent(usage, contentType, declaredSizeBytes, content, idempotencyKey, null, null);
+    }
+
+    /** Catalog staging rechecks the target-scope grant before its asset receipt can replay. */
+    public StageReadback stageCatalogContent(UUID workspaceUuid, String groupWorkspaceKey, String dataNodeRef, String dataNodeType,
+                                             String contentType, long declaredSizeBytes, InputStream content, String idempotencyKey,
+                                             OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireCatalogOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, dataNodeRef, dataNodeType, ownerScopeGrant);
+        return stageContent("CATALOG_ITEM_IMAGE", contentType, declaredSizeBytes, content, idempotencyKey, workspaceUuid, groupWorkspaceKey);
+    }
+
+    /**
+     * Catalog staging accepts only the transaction-local command context.  The legacy
+     * scalar/grant overload remains for unmigrated callers and is deliberately not used
+     * by the catalog-inventory command path.
+     */
+    public StageReadback stageCatalogContent(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                             String contentType, long declaredSizeBytes, InputStream content, String idempotencyKey) {
+        requireCatalogContext(context, "asset", "stageOperationsCatalogAsset");
+        return stageContent("CATALOG_ITEM_IMAGE", contentType, declaredSizeBytes, content, idempotencyKey,
+            context.workspaceUuid(), context.groupWorkspaceKey());
+    }
+
+    private StageReadback stageContent(String usage, String contentType, long declaredSizeBytes, InputStream content, String idempotencyKey, UUID workspaceUuid, String groupWorkspaceKey) {
         if (!validUsageContentType(usage, contentType) || content == null || declaredSizeBytes <= 0 || declaredSizeBytes > maxBytes(contentType)) throw new AssetInputInvalidException();
         MaterializedContent materialized = materializeAndValidate(contentType, declaredSizeBytes, content);
-        String requestHash = sha256((usage + "|" + contentType + "|" + materialized.sizeBytes() + "|" + materialized.sha256()).getBytes(StandardCharsets.UTF_8));
+        String requestHash = sha256((usage + "|" + contentType + "|" + materialized.sizeBytes() + "|" + materialized.sha256() + "|" + workspaceUuid + "|" + groupWorkspaceKey).getBytes(StandardCharsets.UTF_8));
         if (idempotencyKey != null) {
             if (idempotencyKey.length() < 16 || idempotencyKey.length() > 128) { deleteQuietly(materialized.path()); throw new AssetInputInvalidException(); }
             Replay replay = jdbc.query("SELECT receipt.request_hash, asset.asset_ref, asset.status, asset.content_type, asset.size_bytes, asset.sha256 FROM platform_asset.asset_command_receipt receipt JOIN platform_asset.staged_asset asset ON asset.asset_ref=receipt.asset_ref WHERE receipt.idempotency_key=? FOR UPDATE", statement -> statement.setString(1, idempotencyKey), result -> result.next() ? new Replay(result.getString(1), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getLong(5), result.getString(6)) : null);
@@ -75,14 +106,16 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
                 return new StageReadback(replay.assetRef(), renewed, replayExpires, replay.contentType(), replay.sizeBytes(), replay.sha256());
             }
         }
-        UUID assetRef = UUID.randomUUID();
-        String digest = materialized.sha256();
-        String objectKey = objects.objectKey("static/" + digest + suffix(contentType));
-        String grant = secret();
-        long now = time.currentEpochMillis();
-        long expires = now + 15 * 60 * 1000L;
-        boolean uploadedByThisAttempt = false;
-        try (InputStream upload = Files.newInputStream(materialized.path())) {
+        try (var ignored = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+            UUID assetRef = UUID.randomUUID();
+            String digest = materialized.sha256();
+            String objectKey = objects.objectKey("static/" + digest + suffix(contentType));
+            String grant = secret();
+            long now = time.currentEpochMillis();
+            long expires = now + 15 * 60 * 1000L;
+            boolean uploadedByThisAttempt = false;
+            try (InputStream upload = Files.newInputStream(materialized.path())) {
             // Object I/O deliberately happens outside a database transaction. Content-addressed
             // objects are shared, so an existing object is never overwritten or later deleted by
             // this attempt's relational rollback/constraint failure.
@@ -98,34 +131,37 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
                 // The object key is content-addressed and the asset row is globally unique by
                 // design. Re-uploading identical catalog bytes must reuse the existing ref;
                 // creating another row would turn a normal seed/API overlap into a 500.
+                if ("STAGED".equals(existing.status())) requireCatalogStageScope(existing.assetRef(), workspaceUuid, groupWorkspaceKey);
                 issueBindGrant(existing.assetRef(), grant, expires);
                 recordStageReceipt(idempotencyKey, existing.assetRef(), requestHash, contentType, materialized.sizeBytes(), digest, now);
                 return new StageReadback(existing.assetRef(), grant, expires, contentType, materialized.sizeBytes(), digest);
             }
             try {
-                jdbc.update("INSERT INTO platform_asset.staged_asset (asset_ref, usage, storage_key, bucket_name, object_key, content_type, size_bytes, sha256, status, created_at_epoch_millis, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'STAGED', ?, 1)", assetRef, usage, objectKey, objects.bucketName(), objectKey, contentType, materialized.sizeBytes(), digest, now);
+                jdbc.update("INSERT INTO platform_asset.staged_asset (asset_ref, usage, workspace_uuid, group_workspace_key, storage_key, bucket_name, object_key, content_type, size_bytes, sha256, status, created_at_epoch_millis, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'STAGED', ?, 1)", assetRef, usage, workspaceUuid, groupWorkspaceKey, objectKey, objects.bucketName(), objectKey, contentType, materialized.sizeBytes(), digest, now);
             } catch (DuplicateKeyException race) {
                 // Another request may have won the content-addressed insert between the read
                 // above and this write. Re-read the authoritative row and apply the same reuse
                 // path instead of leaking a database duplicate-key failure to HTTP.
                 ExistingAsset winner = findByStorageKey(objectKey);
                 if (winner == null || !compatible(winner, usage, contentType, materialized.sizeBytes(), digest)) throw race;
+                if ("STAGED".equals(winner.status())) requireCatalogStageScope(winner.assetRef(), workspaceUuid, groupWorkspaceKey);
                 issueBindGrant(winner.assetRef(), grant, expires);
                 recordStageReceipt(idempotencyKey, winner.assetRef(), requestHash, contentType, materialized.sizeBytes(), digest, now);
                 return new StageReadback(winner.assetRef(), grant, expires, contentType, materialized.sizeBytes(), digest);
             }
             issueBindGrant(assetRef, grant, expires);
             recordStageReceipt(idempotencyKey, assetRef, requestHash, contentType, materialized.sizeBytes(), digest, now);
-        } catch (RuntimeException failure) {
-            deleteOnlyUnreferencedUpload(objectKey, uploadedByThisAttempt);
-            throw failure;
-        } catch (IOException failure) {
-            deleteOnlyUnreferencedUpload(objectKey, uploadedByThisAttempt);
-            throw new AssetStorageUnavailableException(failure);
-        } finally {
-            try { Files.deleteIfExists(materialized.path()); } catch (IOException ignored) { }
+            } catch (RuntimeException failure) {
+                deleteOnlyUnreferencedUpload(objectKey, uploadedByThisAttempt);
+                throw failure;
+            } catch (IOException failure) {
+                deleteOnlyUnreferencedUpload(objectKey, uploadedByThisAttempt);
+                throw new AssetStorageUnavailableException(failure);
+            } finally {
+                try { Files.deleteIfExists(materialized.path()); } catch (IOException cleanupFailure) { }
+            }
+            return new StageReadback(assetRef, grant, expires, contentType, materialized.sizeBytes(), digest);
         }
-        return new StageReadback(assetRef, grant, expires, contentType, materialized.sizeBytes(), digest);
     }
 
     @Override @Transactional
@@ -140,21 +176,38 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
     }
 
     /**
-     * Activates a catalog image after the catalog owner has persisted its assetRef.
-     * Catalog references are the business usage proof; they must not be forced through
-     * the workspace-logo bind grant path.  Repeating the call for an already active
-     * catalog image is deliberately idempotent so a save retry cannot create a second
-     * lifecycle transition.
+     * The initial catalog claim consumes the scope-bound staging grant.  An ACTIVE
+     * catalog image is deliberately reusable from another approved catalog scope and
+     * therefore never requires a second asset bind proof, but every command still
+     * rechecks its server-minted catalog grant before reading lifecycle state.
      */
     @Transactional
-    public AssetReadback claimCatalogStaged(UUID assetRef) {
+    public AssetReadback claimCatalogStaged(UUID assetRef, UUID workspaceUuid, String groupWorkspaceKey, String dataNodeRef, String dataNodeType,
+                                            String bindGrant, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireCatalogOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, dataNodeRef, dataNodeType, ownerScopeGrant);
+        return claimCatalogStagedAfterAuthorization(assetRef, workspaceUuid, groupWorkspaceKey, bindGrant);
+    }
+
+    /** Catalog save settlement retains its catalog command token; no legacy grant is reconstructed. */
+    @Transactional
+    public AssetReadback claimCatalogStaged(UUID assetRef, String bindGrant,
+                                            WorkspaceExecutionContext<CatalogAuthorizationScope> context) {
+        requireCatalogContext(context, "catalog", null);
+        return claimCatalogStagedAfterAuthorization(assetRef, context.workspaceUuid(), context.groupWorkspaceKey(), bindGrant);
+    }
+
+    private AssetReadback claimCatalogStagedAfterAuthorization(UUID assetRef, UUID workspaceUuid, String groupWorkspaceKey,
+                                                               String bindGrant) {
         if (assetRef == null) throw new AssetClaimRejectedException();
         AssetReadback current = require(assetRef);
         if ("ACTIVE".equals(current.status()) && "CATALOG_ITEM_IMAGE".equals(current.usage())) return current;
+        if (bindGrant == null || bindGrant.isBlank()) throw new AssetClaimRejectedException();
         long now = time.currentEpochMillis();
-        int changed = jdbc.update("UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='CATALOG_ITEM_IMAGE', claimed_by_id=?, activated_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='STAGED'", assetRef, now, assetRef);
+        String proof = sha256(bindGrant.getBytes(StandardCharsets.UTF_8));
+        int consumed = jdbc.update("UPDATE platform_asset.asset_bind_grant g SET consumed_at_epoch_millis=? FROM platform_asset.staged_asset a WHERE g.asset_ref=? AND a.asset_ref=g.asset_ref AND a.usage='CATALOG_ITEM_IMAGE' AND a.status='STAGED' AND a.workspace_uuid=? AND a.group_workspace_key=? AND g.consumed_at_epoch_millis IS NULL AND g.expires_at_epoch_millis>=? AND g.grant_hash=?", now, assetRef, workspaceUuid, groupWorkspaceKey, now, proof);
+        if (consumed != 1) throw new AssetClaimRejectedException();
+        int changed = jdbc.update("UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='CATALOG_ITEM_IMAGE', claimed_by_id=?, activated_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND workspace_uuid=? AND group_workspace_key=?", assetRef, now, assetRef, workspaceUuid, groupWorkspaceKey);
         if (changed != 1) throw new AssetClaimRejectedException();
-        jdbc.update("UPDATE platform_asset.asset_bind_grant SET consumed_at_epoch_millis=? WHERE asset_ref=? AND consumed_at_epoch_millis IS NULL", now, assetRef);
         return require(assetRef);
     }
 
@@ -174,18 +227,24 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
         jdbc.update("UPDATE platform_asset.asset_bind_grant SET consumed_at_epoch_millis=? WHERE asset_ref=? AND consumed_at_epoch_millis IS NULL AND grant_hash=?", now, assetRef, proof);
     }
 
-    /** Catalog owner release path; the caller is already inside the catalog command boundary. */
-    @Transactional
-    public AssetReadback releaseCatalogStaged(UUID assetRef, long expectedVersion) {
-        if (assetRef == null) throw new AssetClaimRejectedException();
-        int changed = jdbc.update("UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status IN ('STAGED','ACTIVE') AND version=?", time.currentEpochMillis(), assetRef, expectedVersion);
+    /** Discards only an unclaimed catalog stage belonging to the authenticated workspace. */
+    private AssetReadback releaseCatalogStaged(UUID assetRef, long expectedVersion, UUID workspaceUuid, String groupWorkspaceKey) {
+        if (assetRef == null || workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank()) throw new AssetClaimRejectedException();
+        int changed = jdbc.update("UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND version=? AND workspace_uuid=? AND group_workspace_key=?", time.currentEpochMillis(), assetRef, expectedVersion, workspaceUuid, groupWorkspaceKey);
         if (changed != 1) throw new AssetClaimRejectedException();
         return require(assetRef);
     }
 
     /** Idempotent catalog release path.  The receipt is owned by the asset owner. */
     @Transactional
-    public AssetReadback releaseCatalogStaged(UUID assetRef, long expectedVersion, String idempotencyKey) {
+    public AssetReadback releaseCatalogStaged(UUID assetRef, long expectedVersion, String idempotencyKey, UUID workspaceUuid, String groupWorkspaceKey,
+                                              String dataNodeRef, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireCatalogOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, dataNodeRef, dataNodeType, ownerScopeGrant);
+        return releaseCatalogStagedAfterAuthorization(assetRef, expectedVersion, idempotencyKey, workspaceUuid, groupWorkspaceKey);
+    }
+
+    private AssetReadback releaseCatalogStagedAfterAuthorization(UUID assetRef, long expectedVersion, String idempotencyKey,
+                                                                  UUID workspaceUuid, String groupWorkspaceKey) {
         if (assetRef == null || idempotencyKey == null || idempotencyKey.isBlank()) throw new AssetClaimRejectedException();
         String requestHash = sha256((assetRef + "|" + expectedVersion + "|CATALOG_ITEM_IMAGE_RELEASE").getBytes(StandardCharsets.UTF_8));
         Replay replay = jdbc.query("SELECT receipt.request_hash, receipt.asset_ref, asset.status, asset.content_type, asset.size_bytes, asset.sha256 FROM platform_asset.asset_command_receipt receipt JOIN platform_asset.staged_asset asset ON asset.asset_ref=receipt.asset_ref WHERE receipt.idempotency_key=? FOR UPDATE", s -> s.setString(1, idempotencyKey), r -> r.next() ? new Replay(r.getString(1), r.getObject(2, UUID.class), r.getString(3), r.getString(4), r.getLong(5), r.getString(6)) : null);
@@ -193,9 +252,79 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
             if (!requestHash.equals(replay.requestHash()) || !assetRef.equals(replay.assetRef())) throw new AssetIdempotencyConflictException();
             return require(assetRef);
         }
-        AssetReadback released = releaseCatalogStaged(assetRef, expectedVersion);
-        jdbc.update("INSERT INTO platform_asset.asset_command_receipt (idempotency_key, asset_ref, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, CAST(? AS JSONB), ?)", idempotencyKey, assetRef, requestHash, "{\"assetRef\":\"" + assetRef + "\",\"disposition\":\"RELEASED\",\"version\":" + released.version() + "}", time.currentEpochMillis());
-        return released;
+        try (var command = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+            AssetReadback released = releaseCatalogStaged(assetRef, expectedVersion, workspaceUuid, groupWorkspaceKey);
+            jdbc.update("INSERT INTO platform_asset.asset_command_receipt (idempotency_key, asset_ref, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, CAST(? AS JSONB), ?)", idempotencyKey, assetRef, requestHash, "{\"assetRef\":\"" + assetRef + "\",\"disposition\":\"RELEASED\",\"version\":" + released.version() + "}", time.currentEpochMillis());
+            return released;
+        }
+    }
+
+    /** Transaction-local typed catalog release entry; see {@link #stageCatalogContent(WorkspaceExecutionContext, String, long, InputStream, String)}. */
+    @Transactional
+    public AssetReadback releaseCatalogStaged(UUID assetRef, long expectedVersion, String idempotencyKey,
+                                              WorkspaceExecutionContext<CatalogAuthorizationScope> context) {
+        requireCatalogContext(context, "asset", "releaseOperationsCatalogStagedAsset");
+        return releaseCatalogStagedAfterAuthorization(assetRef, expectedVersion, idempotencyKey,
+            context.workspaceUuid(), context.groupWorkspaceKey());
+    }
+
+    /** Releases an active catalog asset only after the catalog owner supplied a global no-reference judgment. */
+    @Transactional
+    public AssetReadback releaseUnreferencedCatalogAsset(UUID assetRef, long expectedVersion, String idempotencyKey,
+                                                         UUID workspaceUuid, String groupWorkspaceKey, String dataNodeRef, String dataNodeType,
+                                                         OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireCatalogOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, dataNodeRef, dataNodeType, ownerScopeGrant);
+        return releaseUnreferencedCatalogAssetAfterAuthorization(assetRef, expectedVersion, idempotencyKey);
+    }
+
+    private AssetReadback releaseUnreferencedCatalogAssetAfterAuthorization(UUID assetRef, long expectedVersion, String idempotencyKey) {
+        if (assetRef == null || idempotencyKey == null || idempotencyKey.isBlank()) throw new AssetClaimRejectedException();
+        String requestHash = sha256((assetRef + "|" + expectedVersion + "|CATALOG_ITEM_IMAGE_GLOBAL_RELEASE").getBytes(StandardCharsets.UTF_8));
+        Replay replay = jdbc.query("SELECT receipt.request_hash, receipt.asset_ref, asset.status, asset.content_type, asset.size_bytes, asset.sha256 FROM platform_asset.asset_command_receipt receipt JOIN platform_asset.staged_asset asset ON asset.asset_ref=receipt.asset_ref WHERE receipt.idempotency_key=? FOR UPDATE", s -> s.setString(1, idempotencyKey), r -> r.next() ? new Replay(r.getString(1), r.getObject(2, UUID.class), r.getString(3), r.getString(4), r.getLong(5), r.getString(6)) : null);
+        if (replay != null) {
+            if (!requestHash.equals(replay.requestHash()) || !assetRef.equals(replay.assetRef())) throw new AssetIdempotencyConflictException();
+            return require(assetRef);
+        }
+        try (var command = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+            int changed = jdbc.update("UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='ACTIVE' AND version=?", time.currentEpochMillis(), assetRef, expectedVersion);
+            if (changed != 1) throw new AssetClaimRejectedException();
+            AssetReadback released = require(assetRef);
+            jdbc.update("INSERT INTO platform_asset.asset_command_receipt (idempotency_key, asset_ref, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, CAST(? AS JSONB), ?)", idempotencyKey, assetRef, requestHash, "{\"assetRef\":\"" + assetRef + "\",\"disposition\":\"RELEASED\",\"version\":" + released.version() + "}", time.currentEpochMillis());
+            return released;
+        }
+    }
+
+    @Transactional
+    public AssetReadback releaseUnreferencedCatalogAsset(UUID assetRef, long expectedVersion, String idempotencyKey,
+                                                         WorkspaceExecutionContext<CatalogAuthorizationScope> context) {
+        // This lifecycle release is coordinated by a catalog save, not the public
+        // asset-release endpoint. It must therefore retain the caller's catalog token.
+        requireCatalogContext(context, "catalog", null);
+        return releaseUnreferencedCatalogAssetAfterAuthorization(assetRef, expectedVersion, idempotencyKey);
+    }
+
+    /**
+     * Holds one PostgreSQL transaction advisory lock for every catalog assetRef until the
+     * surrounding REQUIRED transaction finishes. Catalog mutations acquire the same locks
+     * before changing a reference, so a global reference judgment and lifecycle release
+     * share one assetRef-level serialization point without a duplicate reference table.
+     */
+    @Override
+    @Transactional
+    public void lockCatalogReferences(Collection<UUID> assetRefs) {
+        if (assetRefs == null || assetRefs.isEmpty()) return;
+        LinkedHashSet<UUID> distinct = new LinkedHashSet<>();
+        for (UUID assetRef : assetRefs) if (assetRef != null) distinct.add(assetRef);
+        distinct.stream().sorted().forEach(assetRef -> jdbc.query(
+            "SELECT pg_advisory_xact_lock(?, ?)",
+            statement -> {
+                statement.setInt(1, (int) (assetRef.getMostSignificantBits() >>> 32));
+                statement.setInt(2, (int) assetRef.getLeastSignificantBits());
+            },
+            result -> null
+        ));
     }
 
     @Transactional(readOnly = true)
@@ -325,6 +454,48 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
     private void issueBindGrant(UUID assetRef, String grant, long expiresAt) {
         jdbc.update("INSERT INTO platform_asset.asset_bind_grant (asset_ref, grant_hash, expires_at_epoch_millis, consumed_at_epoch_millis) VALUES (?, ?, ?, NULL) ON CONFLICT (asset_ref) DO UPDATE SET grant_hash=EXCLUDED.grant_hash, expires_at_epoch_millis=EXCLUDED.expires_at_epoch_millis, consumed_at_epoch_millis=NULL", assetRef, sha256(grant.getBytes(StandardCharsets.UTF_8)), expiresAt);
     }
+    private void requireCatalogStageScope(UUID assetRef, UUID workspaceUuid, String groupWorkspaceKey) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank()) throw new AssetClaimRejectedException();
+        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM platform_asset.staged_asset WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND workspace_uuid=? AND group_workspace_key=?", Integer.class, assetRef, workspaceUuid, groupWorkspaceKey);
+        if (count == null || count != 1) throw new AssetClaimRejectedException();
+    }
+    private static void requireCatalogOwnerScopeGrant(UUID workspaceUuid, String groupWorkspaceKey, String dataNodeRef, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
+        String expectedCapability = catalogCapabilityForTarget(dataNodeType);
+        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || expectedCapability == null) throw new AssetOwnerScopeForbiddenException();
+        try {
+            UUID targetId = UUID.fromString(dataNodeRef);
+            if (ownerScopeGrant != null && ownerScopeGrant.matchesCapability(workspaceUuid, groupWorkspaceKey, dataNodeType, targetId, expectedCapability)) return;
+        } catch (RuntimeException ignored) { }
+        throw new AssetOwnerScopeForbiddenException();
+    }
+
+    /** Verifies the generated operation policy and opaque grant without reconstructing legacy scope state. */
+    private static CatalogAuthorizationScope requireCatalogContext(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                   String expectedOwner, String expectedOperationId) {
+        if (context == null || context.workspaceUuid() == null || context.groupWorkspaceKey() == null || context.groupWorkspaceKey().isBlank()
+            || context.ownerScope() == null || context.ownerGrant() == null || context.operationToken() == null) {
+            throw new AssetOwnerScopeForbiddenException();
+        }
+        WorkspaceCommandOperationToken token = context.operationToken();
+        CatalogAuthorizationScope scope = context.ownerScope();
+        String capability = token.capabilityFor(scope.dataNodeType());
+        if (!expectedOwner.equals(token.owner())
+            || (expectedOperationId != null && !expectedOperationId.equals(token.operationId()))
+            || token.copySourcePolicy() != WorkspaceCommandOperationToken.CopySourcePolicy.NONE
+            || capability == null
+            || !token.allowedDataNodeTypes().contains(scope.dataNodeType())
+            || !context.ownerGrant().verifyFor(token.requirementId(), capability, scope.dataNodeType(), scope.dataNodeId())) {
+            throw new AssetOwnerScopeForbiddenException();
+        }
+        return scope;
+    }
+    private static String catalogCapabilityForTarget(String dataNodeType) {
+        return switch (dataNodeType) {
+            case "HEAD_COMPANY" -> "EDIT_HEAD_COMPANY_CATALOG";
+            case "STORE" -> "EDIT_STORE_CATALOG";
+            default -> null;
+        };
+    }
 
     private void recordStageReceipt(String idempotencyKey, UUID assetRef, String requestHash, String contentType, long sizeBytes, String digest, long now) {
         if (idempotencyKey == null) return;
@@ -344,5 +515,6 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand {
     public static final class AssetIdempotencyConflictException extends RuntimeException { }
     public static final class AssetStorageUnavailableException extends RuntimeException { public AssetStorageUnavailableException(Throwable cause) { super(cause); } }
     public static final class AssetClaimRejectedException extends RuntimeException { }
+    public static final class AssetOwnerScopeForbiddenException extends RuntimeException { }
     public static final class AssetNotFoundException extends RuntimeException { }
 }

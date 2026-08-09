@@ -7,6 +7,7 @@ import type {
 } from '../../../app/api/generated/catalog-inventory-edge';
 
 export type CatalogItemSummary = {
+  itemRef: string;
   code: string;
   name: string;
   shortName?: string;
@@ -36,21 +37,28 @@ export type CatalogItemSummary = {
 
 export type CatalogNavigation = {
   tree: Array<{
-    nodeRef: string;
-    label: string;
+    categoryRef: string;
     code: string;
-    parentCode?: string;
-    status?: string;
-    version?: number;
+    name: string;
+    parentCategoryRef: string | null;
+    version: number;
+    displayOrder: number;
     count: number;
-    countSemantics?: 'SELF_ONLY' | 'SELF_AND_DESCENDANTS';
-    voidAvailability?: CatalogVoidAvailability;
+    countSemantics: 'SELF_ONLY' | 'SELF_AND_DESCENDANTS';
+    deletionAvailability: CatalogCategoryDeletionAvailability;
   }>;
   smartViews: Array<{viewKey: string; count: number}>;
   shapeCounts: Array<{shapeKey: string; count: number}>;
   /** Optional until the navigation owner exposes the unclassified aggregate. */
   uncategorizedCount?: number;
   generation: number;
+};
+
+export type CatalogCategoryDeletionAvailability = {
+  canDelete: boolean;
+  subtreeSize: number;
+  blockingReferenceCount: number;
+  blockingReferenceLabels: string[];
 };
 
 export type CatalogVoidAvailability = {
@@ -88,7 +96,7 @@ export type CatalogDetail = {
   tabs: Array<{tabKey: string; visible: boolean; disabled: boolean; reason?: string}>;
   references: Array<{referenceKind: string; code: string; direction: string}>;
   inventoryBom: CatalogInventoryBomEntry[];
-  productionTags: Array<{code: string; name: string; owner: string}>;
+  productionTags: Array<{code: string; tagRef: string; name: string; owner: string}>;
   orderOptions: CatalogOrderOptionGroup[];
   compositeGroups: CatalogCompositeGroup[];
   actionAvailability: {canEdit: boolean; canEnable: boolean; canDisable: boolean; canArchive: boolean; voidAvailability?: CatalogVoidAvailability};
@@ -98,9 +106,9 @@ export type CatalogDetail = {
   queryIdentity: {dataNodeRef: string; generation: string};
 };
 
-export type CatalogOrderOptionValue = {code: string; name: string; default: boolean; extraPrice: number | null; productionEffects: string[]};
+export type CatalogOrderOptionValue = {code: string; attributeValueRef: string; name: string; default: boolean; extraPrice: number | null; productionEffects: string[]};
 export type CatalogOrderOptionGroup = {groupCode: string; groupName: string; selectionMode: string; required: boolean; values: CatalogOrderOptionValue[]};
-export type CatalogCompositeComponent = {itemCode: string; skuCode: string | null; quantity: string; unit: string; default: boolean; extraPrice: number | null; status: string};
+export type CatalogCompositeComponent = {itemCode: string; itemRef: string; productSkuRef: string | null; skuCode: string | null; quantity: string; unit: string; default: boolean; extraPrice: number | null; status: string};
 export type CatalogCompositeGroup = {groupCode: string; groupName: string; selectionRule: string; components: CatalogCompositeComponent[]};
 export type CatalogInventoryConfiguration = {
   allowNegative?: boolean;
@@ -115,7 +123,10 @@ export type CatalogInventoryBomEntry = {
   quantity: string;
   unit: string;
   itemCode?: string;
+  itemRef?: string;
+  productSkuRef?: string | null;
   skuCode?: string | null;
+  optionValueRef?: string | null;
   optionValueCode?: string | null;
   version?: number;
   lineSign?: string;
@@ -139,7 +150,15 @@ export type CatalogWorkbenchContext = {
 
 export type CopyCandidate = {code: string; name: string; shapeKey: string; status: string; version: number};
 export type BrandCopyScope = {ownerType: string; ownerRef: string; brandRef: string};
-export type BrandCopyReadback = {preflightDigest: string; created: Array<Record<string, JsonValue>>; reused: Array<Record<string, JsonValue>>; mappings: Array<Record<string, JsonValue>>; targetVersions: Array<Record<string, JsonValue>>; ownerReadbacks: Array<Record<string, JsonValue>>};
+export type CatalogCopyReferenceMapping = {objectType: string; targetCode: string; targetSkuCode?: string; targetOptionValueCode?: string};
+export type BrandCopyReadback = {
+  preflightDigest: string;
+  created: Array<{objectType: string; code: string}>;
+  reused: Array<{objectType: string; code: string}>;
+  referenceMappings: CatalogCopyReferenceMapping[];
+  targetVersions: Array<{version: number}>;
+  ownerReadbacks: Array<{owner: string; status: string; version: number}>;
+};
 
 /**
  * The combined brand-copy preflight also contains inventory and production
@@ -167,11 +186,10 @@ export type CopyPreflight = {
   preflightDigest: string;
   blockingCount: number;
   confirmationRequiredCount: number;
-  selectedItems: Array<Record<string, JsonValue>>;
-  closureItems: Array<Record<string, JsonValue>>;
-  mappingPreview: Array<Record<string, JsonValue>>;
-  compatibilityResults: Array<Record<string, JsonValue>>;
-  referenceRewritePreview: Array<Record<string, JsonValue>>;
+  selectedItems: Array<{objectType: string; code: string; name: string}>;
+  closureItems: Array<{objectType: string; code: string; name: string; action: string}>;
+  referenceMappings: CatalogCopyReferenceMapping[];
+  compatibilityResults: Array<{objectType: string; result: string; reason: string}>;
   objectVersions: Array<Record<string, JsonValue>>;
 };
 
@@ -254,25 +272,23 @@ export function decodeNavigation(envelope: CatalogInventoryEnvelope | undefined)
   const value = envelopeData(envelope) ?? {};
   return {
     tree: recordArray(value.tree).map((row) => {
-      const voidAvailability = asRecord(row.voidAvailability);
-      const countSemantics = row.countSemantics === 'SELF_ONLY' || row.countSemantics === 'SELF_AND_DESCENDANTS' ? row.countSemantics : undefined;
-      const treeNode: CatalogNavigation['tree'][number] = {
-        nodeRef: text(row.nodeRef), label: text(row.label), code: text(row.code),
-        count: integer(row.count), countSemantics,
+      const deletion = asRecord(row.deletionAvailability) ?? {};
+      return {
+        categoryRef: text(row.categoryRef),
+        code: text(row.code),
+        name: text(row.name),
+        parentCategoryRef: row.parentCategoryRef === null ? null : optionalText(row.parentCategoryRef) ?? null,
+        version: integer(row.version),
+        displayOrder: integer(row.displayOrder),
+        count: integer(row.count),
+        countSemantics: row.countSemantics === 'SELF_AND_DESCENDANTS' ? 'SELF_AND_DESCENDANTS' : 'SELF_ONLY',
+        deletionAvailability: {
+          canDelete: truth(deletion.canDelete),
+          subtreeSize: integer(deletion.subtreeSize),
+          blockingReferenceCount: integer(deletion.blockingReferenceCount),
+          blockingReferenceLabels: textArray(deletion.blockingReferenceLabels),
+        },
       };
-      const parentCode = optionalText(row.parentCode);
-      const status = optionalText(row.status);
-      const version = optionalInteger(row.version);
-      if (parentCode !== undefined) treeNode.parentCode = parentCode;
-      if (status !== undefined) treeNode.status = status;
-      if (version !== undefined) treeNode.version = version;
-      if (voidAvailability) treeNode.voidAvailability = {
-        canVoid: truth(voidAvailability.canVoid),
-        blockingReferences: recordArray(voidAvailability.blockingReferences).map((entry) => ({referenceKind: text(entry.referenceKind), referenceRef: text(entry.referenceRef)})),
-        dependentFacts: recordArray(voidAvailability.dependentFacts).map((entry) => ({factKind: text(entry.factKind), factRef: text(entry.factRef)})),
-      };
-      if (countSemantics === undefined) delete treeNode.countSemantics;
-      return treeNode;
     }),
     smartViews: recordArray(value.smartViews).map((row) => ({viewKey: text(row.viewKey), count: integer(row.count)})),
     shapeCounts: recordArray(value.shapeCounts).map((row) => ({shapeKey: text(row.shapeKey), count: integer(row.count)})),
@@ -316,7 +332,7 @@ export function decodeDetail(envelope: CatalogInventoryEnvelope | undefined): Ca
     tabs: recordArray(root.tabs).map((row) => ({tabKey: text(row.tabKey), visible: truth(row.visible), disabled: truth(row.disabled), reason: optionalText(row.reason)})),
     references: recordArray(root.references).map((row) => ({referenceKind: text(row.referenceKind), code: text(row.code), direction: text(row.direction)})),
     inventoryBom: rootInventoryBom,
-    productionTags: recordArray(root.productionTags).map((row) => ({code: text(row.code), name: text(row.name), owner: text(row.owner)})),
+    productionTags: recordArray(root.productionTags).map((row) => ({code: text(row.code), tagRef: text(row.tagRef), name: text(row.name), owner: text(row.owner)})),
     orderOptions: rootOrderOptions.length ? rootOrderOptions : itemOrderOptions,
     compositeGroups: rootCompositeGroups.length ? rootCompositeGroups : itemCompositeGroups,
     actionAvailability: {canEdit: truth(action.canEdit), canEnable: truth(action.canEnable), canDisable: truth(action.canDisable), canArchive: truth(action.canArchive), ...(voidFacts ? {voidAvailability: voidFacts} : {})},
@@ -349,14 +365,43 @@ export function decodeBrandCopyReadback(envelope: CatalogInventoryEnvelope | und
   const root = envelopeData(envelope) ?? asRecord(envelope?.result);
   const value = asRecord(root?.data) ?? root;
   if (!value?.preflightDigest) return undefined;
-  return {preflightDigest: text(value.preflightDigest), created: recordArray(value.created), reused: recordArray(value.reused), mappings: recordArray(value.mappings), targetVersions: recordArray(value.targetVersions), ownerReadbacks: recordArray(value.ownerReadbacks)};
+  return {
+    preflightDigest: text(value.preflightDigest),
+    created: recordArray(value.created).map((row) => ({objectType: text(row.objectType), code: text(row.code)})),
+    reused: recordArray(value.reused).map((row) => ({objectType: text(row.objectType), code: text(row.code)})),
+    referenceMappings: referenceMappings(value.referenceMappings),
+    targetVersions: recordArray(value.targetVersions).map((row) => ({version: integer(row.version)})),
+    ownerReadbacks: recordArray(value.ownerReadbacks).map((row) => ({owner: text(row.owner), status: text(row.status), version: integer(row.version)})),
+  };
 }
 
 export function decodePreflight(envelope: CatalogInventoryEnvelope | undefined): CopyPreflight | undefined {
   const root = envelopeData(envelope) ?? asRecord(envelope?.result);
   const value = asRecord(root?.data) ?? root;
   if (!value?.preflightDigest) return undefined;
-  return {selectedCount: integer(value.selectedCount), selectedLimit: integer(value.selectedLimit), closureCount: integer(value.closureCount), closureLimit: integer(value.closureLimit), preflightDigest: text(value.preflightDigest), blockingCount: integer(value.blockingCount), confirmationRequiredCount: integer(value.confirmationRequiredCount), selectedItems: recordArray(value.selectedItems), closureItems: recordArray(value.closureItems), mappingPreview: recordArray(value.mappingPreview), compatibilityResults: recordArray(value.compatibilityResults), referenceRewritePreview: recordArray(value.referenceRewritePreview), objectVersions: recordArray(value.objectVersions)};
+  return {
+    selectedCount: integer(value.selectedCount),
+    selectedLimit: integer(value.selectedLimit),
+    closureCount: integer(value.closureCount),
+    closureLimit: integer(value.closureLimit),
+    preflightDigest: text(value.preflightDigest),
+    blockingCount: integer(value.blockingCount),
+    confirmationRequiredCount: integer(value.confirmationRequiredCount),
+    selectedItems: recordArray(value.selectedItems).map((row) => ({objectType: text(row.objectType), code: text(row.code), name: text(row.name)})),
+    closureItems: recordArray(value.closureItems).map((row) => ({objectType: text(row.objectType), code: text(row.code), name: text(row.name), action: text(row.action)})),
+    referenceMappings: referenceMappings(value.referenceMappings),
+    compatibilityResults: recordArray(value.compatibilityResults).map((row) => ({objectType: text(row.objectType), result: text(row.result), reason: text(row.reason)})),
+    objectVersions: recordArray(value.objectVersions),
+  };
+}
+
+function referenceMappings(value: JsonValue | undefined): CatalogCopyReferenceMapping[] {
+  return recordArray(value).map((row) => ({
+    objectType: text(row.objectType),
+    targetCode: text(row.targetCode),
+    ...(text(row.targetSkuCode) ? {targetSkuCode: text(row.targetSkuCode)} : {}),
+    ...(text(row.targetOptionValueCode) ? {targetOptionValueCode: text(row.targetOptionValueCode)} : {}),
+  }));
 }
 
 export function displayValue(value: JsonValue | undefined) {
@@ -366,7 +411,7 @@ export function displayValue(value: JsonValue | undefined) {
 }
 
 function decodeItemSummary(row: Record<string, JsonValue>): CatalogItemSummary {
-  const summary: CatalogItemSummary = {code: text(row.code), name: text(row.name), shortName: optionalText(row.shortName), categoryRefs: textArray(row.categoryRefs), productionTagRefs: textArray(row.productionTagRefs), shapeKey: text(row.shapeKey), status: text(row.status), governanceStatus: text(row.governanceStatus), source: text(row.source), skuEnabledCount: integer(row.skuEnabledCount), skuNonArchivedCount: integer(row.skuNonArchivedCount), skuTotalCount: integer(row.skuTotalCount), skuDimensionSummary: textArray(row.skuDimensionSummary), standardSalePrice: optionalNumber(row.standardSalePrice), listedSalePrice: optionalNumber(row.listedSalePrice), standardPriceDelta: optionalNumber(row.standardPriceDelta), standardExtraPrice: optionalNumber(row.standardExtraPrice), priceGranularity: text(row.priceGranularity), missingPriceCount: integer(row.missingPriceCount), stockTargetCount: integer(row.stockTargetCount), bomCount: integer(row.bomCount), riskFlags: textArray(row.riskFlags), version: integer(row.version), updatedAt: integer(row.updatedAt)};
+  const summary: CatalogItemSummary = {itemRef: text(row.itemRef), code: text(row.code), name: text(row.name), shortName: optionalText(row.shortName), categoryRefs: textArray(row.categoryRefs), productionTagRefs: textArray(row.productionTagRefs), shapeKey: text(row.shapeKey), status: text(row.status), governanceStatus: text(row.governanceStatus), source: text(row.source), skuEnabledCount: integer(row.skuEnabledCount), skuNonArchivedCount: integer(row.skuNonArchivedCount), skuTotalCount: integer(row.skuTotalCount), skuDimensionSummary: textArray(row.skuDimensionSummary), standardSalePrice: optionalNumber(row.standardSalePrice), listedSalePrice: optionalNumber(row.listedSalePrice), standardPriceDelta: optionalNumber(row.standardPriceDelta), standardExtraPrice: optionalNumber(row.standardExtraPrice), priceGranularity: text(row.priceGranularity), missingPriceCount: integer(row.missingPriceCount), stockTargetCount: integer(row.stockTargetCount), bomCount: integer(row.bomCount), riskFlags: textArray(row.riskFlags), version: integer(row.version), updatedAt: integer(row.updatedAt)};
   const primaryImageAssetRef = optionalText(row.primaryImageAssetRef);
   if (primaryImageAssetRef) summary.primaryImageAssetRef = primaryImageAssetRef;
   return summary;
@@ -410,22 +455,21 @@ function decodeSkuRows(value: JsonValue | undefined): CatalogSkuRow[] {
 function decodeOrderOptions(value: JsonValue | undefined): CatalogOrderOptionGroup[] {
   return recordArray(value).map((row) => ({
     groupCode: text(row.groupCode), groupName: text(row.groupName), selectionMode: text(row.selectionMode), required: truth(row.required),
-    values: recordArray(row.values).map((entry) => ({code: text(entry.code), name: text(entry.name), default: truth(entry.default), extraPrice: typeof entry.extraPrice === 'number' ? entry.extraPrice : null, productionEffects: textArray(entry.productionEffects)})),
+    values: recordArray(row.values).map((entry) => ({code: text(entry.code), attributeValueRef: text(entry.attributeValueRef), name: text(entry.name), default: truth(entry.default), extraPrice: typeof entry.extraPrice === 'number' ? entry.extraPrice : null, productionEffects: textArray(entry.productionEffects)})),
   }));
 }
 function decodeCompositeGroups(value: JsonValue | undefined): CatalogCompositeGroup[] {
   return recordArray(value).map((row) => ({
     groupCode: text(row.groupCode), groupName: text(row.groupName), selectionRule: text(row.selectionRule),
-    components: recordArray(row.components).map((entry) => ({itemCode: text(entry.itemCode), skuCode: optionalText(entry.skuCode) ?? null, quantity: text(entry.quantity), unit: text(entry.unit), default: truth(entry.default), extraPrice: typeof entry.extraPrice === 'number' ? entry.extraPrice : null, status: text(entry.status)})),
+    components: recordArray(row.components).map((entry) => ({itemCode: text(entry.itemCode), itemRef: text(entry.itemRef), productSkuRef: optionalText(entry.productSkuRef) ?? null, skuCode: optionalText(entry.skuCode) ?? null, quantity: text(entry.quantity), unit: text(entry.unit), default: truth(entry.default), extraPrice: typeof entry.extraPrice === 'number' ? entry.extraPrice : null, status: text(entry.status)})),
   }));
 }
 function decodeInventoryBom(value: JsonValue | undefined): CatalogInventoryBomEntry[] {
   return recordArray(value).map((row) => {
     const entry: CatalogInventoryBomEntry = {
       nodeType: text(row.nodeType), mode: text(row.mode), targetRef: text(row.targetRef),
-      quantity: text(row.quantity), unit: text(row.unit), itemCode: optionalText(row.itemCode),
-      skuCode: optionalText(row.skuCode) ?? null, version: optionalInteger(row.version),
-      optionValueCode: optionalText(row.optionValueCode) ?? null,
+      quantity: text(row.quantity), unit: text(row.unit), itemCode: optionalText(row.itemCode), itemRef: optionalText(row.itemRef), productSkuRef: optionalText(row.productSkuRef) ?? null,
+      skuCode: optionalText(row.skuCode) ?? null, optionValueRef: optionalText(row.optionValueRef) ?? null, version: optionalInteger(row.version), optionValueCode: optionalText(row.optionValueCode) ?? null,
       lineSign: optionalText(row.lineSign), consumptionUnit: optionalText(row.consumptionUnit),
     };
     const configuration = asRecord(row.configuration);

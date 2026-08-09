@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, normalizeEdgePath, resolveGeneratedOperationById} from './seed-report.mjs';
+import {catalogImageBindEvidenceInputs} from './catalog-image-bind-evidence-inputs.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR || '');
@@ -31,6 +32,8 @@ const required = (value, name) => { if (value === null || value === undefined ||
 const itemResult = (json) => json?.result ?? json?.data?.result ?? json?.data ?? json;
 const envelopeData = (json) => json?.data ?? json;
 const responseErrorCode = (json) => json?.errorCode ?? json?.code ?? json?.problemCode ?? json?.error?.code ?? null;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const requiredUuid = (value, label) => { if (typeof value !== 'string' || !uuidPattern.test(value)) fail(`API_OWNER_REF_MISSING:${label}`); return value; };
 function canonicalJson(value) {
   if (Array.isArray(value)) return value.map(canonicalJson);
   if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalJson(value[key])]));
@@ -83,11 +86,14 @@ async function execute() {
     assertThat(scenarios.scenarioCount === 26 && scenarios.caseCount === 100, 'API_SCENARIO_DENOMINATOR_INVALID');
     const sample = {scopeContext: {store: {dataNodeRef: 'store-ref'}}, dataNodeCandidates: [{dataNodeType: 'STORE', dataNodeRef: 'store-ref'}], contextVersion: 7};
     assertThat(scalarSessionNode(sample, 'STORE', 'store-ref').ref === 'store-ref', 'SESSION_WIRE_DATA_NODE_REF_REQUIRED');
+    let codeRefRejected = false; try { requiredUuid('LATTE-001', 'PRODUCT_SKU'); } catch { codeRefRejected = true; }
+    assertThat(codeRefRejected, 'API_CODE_TYPED_REF_MUST_REJECT');
     process.stdout.write('CATALOG_INVENTORY_API_SELF_TEST=PASS\nAPI_CASE_DENOMINATOR=100\nHTTP_ONLY=true\n');
     return;
   }
 
   const {manifest, credentials} = loadManagedRun();
+  const imageBindEvidenceInputs = catalogImageBindEvidenceInputs(root);
   const all = registry();
   const scenarios = readJson(scenarioPath);
   const fixtures = readJson(fixturePath);
@@ -130,6 +136,7 @@ async function execute() {
     if (options.testFailurePoint) headers['X-Catalog-Test-Failure-Point'] = options.testFailurePoint;
     if (options.cookie) headers.Cookie = options.cookie;
     if (options.brandRef) headers['X-Workspace-Brand-Ref'] = options.brandRef;
+    Object.assign(headers, options.headers || {});
     let body;
     if (options.form) body = options.form;
     else if (options.body !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(options.body); }
@@ -242,19 +249,55 @@ async function execute() {
       await Promise.all(batch.map((code) => createItem(client, `${phase}_${index + 1}`, code)));
     }
   };
-  const saveItem = async (client, phase, code, version, draft, inventoryConfiguration = {nodes: []}, expectedInventoryVersions = []) => request(phase, 'saveOperationsCatalogItem', {itemCode: code}, {cookie: client.cookie, brandRef: client.brandRef, body: {itemCode: code, sections: {catalogDraft: draft, inventoryConfiguration, expectedCatalogVersion: version, expectedInventoryVersions}}});
-  const compositeGroups = (components, groupCode) => ({compositeGroups: [{groupCode: `API-GROUP-${groupCode}`, groupName: 'API fixture group', selectionRule: 'SINGLE', components: components.map((itemCode) => ({itemCode, skuCode: null, quantity: '1', unit: 'EACH', default: true, extraPrice: null, status: 'ENABLED'}))}]});
+  const saveItem = async (client, phase, code, version, draft, inventoryConfiguration = {nodes: []}, expectedInventoryVersions = [], assetBindGrants = {}) => request(phase, 'saveOperationsCatalogItem', {itemCode: code}, {cookie: client.cookie, brandRef: client.brandRef, headers: Object.keys(assetBindGrants).length ? {'X-Catalog-Asset-Bind-Grants': JSON.stringify(assetBindGrants)} : {}, body: {dataNodeRef: client.dataNodeRef, itemCode: code, sections: {catalogDraft: draft, inventoryConfiguration, expectedCatalogVersion: version, expectedInventoryVersions}}});
+  const refsByScope = new Map();
+  const refsFor = (client) => {
+    const key = `${client.scopeType}:${client.dataNodeRef}`;
+    if (!refsByScope.has(key)) refsByScope.set(key, {dictionary: new Map(), item: new Map(), sku: new Map(), value: new Map(), local: new Map()});
+    return refsByScope.get(key);
+  };
+  const dictionaryKey = (kind, code) => `${kind}:${code}`;
+  const localRef = (refs, key) => { if (!refs.local.has(key)) refs.local.set(key, randomUUID()); return refs.local.get(key); };
+  const dictionaryRef = (refs, kind, code) => requiredUuid(refs.dictionary.get(dictionaryKey(kind, code)), `${kind}:${code}`);
+  const itemRef = (refs, code) => requiredUuid(refs.item.get(code), `CATALOG_ITEM:${code}`);
+  const skuRef = (refs, code) => requiredUuid(refs.sku.get(code), `PRODUCT_SKU:${code}`);
+  const valueRef = (refs, code) => requiredUuid(refs.value.get(code), `SKU_ATTRIBUTE_VALUE:${code}`);
+  const recordItemRefs = async (client, phase, code) => {
+    const detail = envelopeData((await getDetail(client, `${phase}_READBACK`, code)).json);
+    const item = detail.item || detail;
+    const refs = refsFor(client);
+    refs.item.set(code, requiredUuid(item.itemRef, `CATALOG_ITEM:${code}:readback`));
+    for (const sku of item.skus || []) refs.sku.set(sku.skuCode, requiredUuid(sku.productSkuRef, `PRODUCT_SKU:${sku.skuCode}:readback`));
+    for (const dimension of item.skuVariantDimensions || []) for (const value of dimension.values || []) refs.value.set(value.valueCode, requiredUuid(value.valueRef, `SKU_ATTRIBUTE_VALUE:${value.valueCode}:readback`));
+    for (const group of item.orderOptions || []) for (const value of group.values || []) if (value.code) refs.value.set(value.code, requiredUuid(value.attributeValueRef, `SKU_ATTRIBUTE_VALUE:${value.code}:readback`));
+    return item;
+  };
+  const materializeDictionaryRefs = async (client) => {
+    const refs = refsFor(client);
+    const entries = [
+      ['SKU_ATTRIBUTE', ['SIZE']],
+      ['SKU_ATTRIBUTE_VALUE', ['S', 'M', 'L', 'DRESSING-DEFAULT', 'SIZE-DEFAULT', 'TOPPING-DEFAULT', 'SMALL', 'LARGE']],
+    ];
+    for (const [kind, codes] of entries) {
+      for (const code of codes) await request(`API_${client.scopeType}_${kind}_${code}`, 'createOperationsCatalogDictionaryEntry', {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, dictionaryKind: kind, code, name: code}});
+      const readback = envelopeData((await request(`API_${client.scopeType}_${kind}_READBACK`, 'getOperationsCatalogDictionary', {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}})).json);
+      for (const entry of readback.entries || []) refs.dictionary.set(dictionaryKey(kind, entry.code), requiredUuid(entry.entryRef, `${kind}:${entry.code}:readback`));
+      for (const code of codes) dictionaryRef(refs, kind, code);
+    }
+  };
+  const compositeGroups = (client, components, groupCode, {allowMissing = false} = {}) => { const refs = refsFor(client); return {compositeGroups: [{groupCode: `API-GROUP-${groupCode}`, groupName: 'API fixture group', selectionRule: 'SINGLE', components: components.map((code) => ({itemCode: code, itemRef: refs.item.has(code) ? itemRef(refs, code) : (allowMissing ? randomUUID() : itemRef(refs, code)), skuCode: null, productSkuRef: null, quantity: '1', unit: 'EACH', default: true, extraPrice: null, status: 'ENABLED'}))}]}; };
   const apiCode = (code) => `API-${code}`;
-  const apiFixtureDraft = (fixtureId, item) => {
+  const apiFixtureDraft = (client, fixtureId, item) => {
+    const refs = refsFor(client);
     const code = apiCode(item.code);
-    const skus = item.code === 'LATTE-001' ? ['S', 'M', 'L'].map((size, index) => ({productSkuRef: `${code}-SKU-${size}-REF`, skuCode: `${code}-SKU-${size}`, skuName: `${size}杯`, attributeValueRefs: [{attributeRef: 'SIZE', attributeCode: 'SIZE', attributeName: '杯型', attributeValueRef: size, valueCode: size, valueLabel: size, displayOrder: index, status: index === 2 ? 'ARCHIVED' : (index === 1 ? 'DISABLED' : 'ENABLED')}], skuBarcode: `${code}-SKU-${size}-BARCODE`, standardSalePrice: 100 + index * 20, isDefault: index === 0, status: index === 2 ? 'ARCHIVED' : (index === 1 ? 'DISABLED' : 'ENABLED'), version: 1, mediaRefs: []})) : [];
-    const draft = {name: item.name || code, shapeKey: item.shapeKey, attributes: {fixtureRef: fixtureId, apiFixture: true}, images: [], productionTagRefs: [], categoryRefs: [], ordering: {priceGranularity: item.shapeKey === 'SKU_VARIANT_SALE_COUNTED' ? 'SKU' : 'ITEM', standardSalePrice: item.shapeKey === 'MATERIAL' ? null : 100, listedSalePrice: item.shapeKey === 'MATERIAL' ? null : 100, missingPriceCount: item.shapeKey === 'MATERIAL' ? 1 : 0}, skus, skuVariantDimensions: skus.length ? [{attributeRef: 'SIZE', attributeCode: 'SIZE', attributeName: '杯型', values: ['S', 'M', 'L'].map((value, displayOrder) => ({valueRef: value, valueCode: value, valueLabel: value, displayOrder, status: displayOrder === 2 ? 'ARCHIVED' : (displayOrder === 1 ? 'DISABLED' : 'ENABLED')}))}] : [], orderOptions: item.code === 'CAESAR-001' ? ['DRESSING', 'SIZE', 'TOPPING'].map((groupCode) => ({groupCode: `API-${groupCode}`, groupName: groupCode, selectionMode: 'SINGLE', required: true, values: [{code: `${groupCode}-DEFAULT`, name: `${groupCode}-DEFAULT`, default: true, extraPrice: null, productionEffects: []}]})) : [], compositeGroups: item.code === 'DINNER-SET-001' ? [{groupCode: 'API-DINNER-COMPONENTS', groupName: '套餐组件', selectionRule: 'REQUIRED', components: [{itemCode: apiCode('LATTE-001'), skuCode: `${apiCode('LATTE-001')}-SKU-M`, quantity: '1', unit: 'EACH', default: true, extraPrice: null, status: 'ENABLED'}]}] : [], productionProfiles: {item: item.materialRole ? {materialRole: item.materialRole} : {}, sku: {}, optionValue: {}}};
+    const skus = item.code === 'LATTE-001' ? ['S', 'M', 'L'].map((size, index) => ({productSkuRef: localRef(refs, `SKU:${code}-SKU-${size}`), skuCode: `${code}-SKU-${size}`, skuName: `${size}杯`, attributeValueRefs: [{attributeRef: dictionaryRef(refs, 'SKU_ATTRIBUTE', 'SIZE'), attributeCode: 'SIZE', attributeName: '杯型', attributeValueRef: dictionaryRef(refs, 'SKU_ATTRIBUTE_VALUE', size), valueCode: size, valueLabel: size, displayOrder: index, status: index === 2 ? 'ARCHIVED' : (index === 1 ? 'DISABLED' : 'ENABLED')}], skuBarcode: `${code}-SKU-${size}-BARCODE`, standardSalePrice: 100 + index * 20, isDefault: index === 0, status: index === 2 ? 'ARCHIVED' : (index === 1 ? 'DISABLED' : 'ENABLED'), version: 1, mediaRefs: []})) : [];
+    const draft = {name: item.name || code, shapeKey: item.shapeKey, attributes: {fixtureRef: fixtureId, apiFixture: true}, images: [], productionTagRefs: [], categoryRefs: [], ordering: {priceGranularity: item.shapeKey === 'SKU_VARIANT_SALE_COUNTED' ? 'SKU' : 'ITEM', standardSalePrice: item.shapeKey === 'MATERIAL' ? null : 100, listedSalePrice: item.shapeKey === 'MATERIAL' ? null : 100, missingPriceCount: item.shapeKey === 'MATERIAL' ? 1 : 0}, skus, skuVariantDimensions: skus.length ? [{attributeRef: dictionaryRef(refs, 'SKU_ATTRIBUTE', 'SIZE'), attributeCode: 'SIZE', attributeName: '杯型', values: ['S', 'M', 'L'].map((value, displayOrder) => ({valueRef: dictionaryRef(refs, 'SKU_ATTRIBUTE_VALUE', value), valueCode: value, valueLabel: value, displayOrder, status: displayOrder === 2 ? 'ARCHIVED' : (displayOrder === 1 ? 'DISABLED' : 'ENABLED')}))}] : [], orderOptions: item.code === 'CAESAR-001' ? ['DRESSING', 'SIZE', 'TOPPING'].map((groupCode) => ({groupCode: `API-${groupCode}`, groupName: groupCode, selectionMode: 'SINGLE', required: true, values: [{code: `${groupCode}-DEFAULT`, name: `${groupCode}-DEFAULT`, attributeValueRef: dictionaryRef(refs, 'SKU_ATTRIBUTE_VALUE', `${groupCode}-DEFAULT`), default: true, extraPrice: null, productionEffects: []}]})) : [], compositeGroups: item.code === 'DINNER-SET-001' ? [{groupCode: 'API-DINNER-COMPONENTS', groupName: '套餐组件', selectionRule: 'REQUIRED', components: [{itemCode: apiCode('LATTE-001'), itemRef: itemRef(refs, apiCode('LATTE-001')), skuCode: `${apiCode('LATTE-001')}-SKU-M`, productSkuRef: skuRef(refs, `${apiCode('LATTE-001')}-SKU-M`), quantity: '1', unit: 'EACH', default: true, extraPrice: null, status: 'ENABLED'}]}] : [], productionProfiles: {item: item.materialRole ? {materialRole: item.materialRole} : {}, sku: {}, optionValue: {}}};
     if (item.materialRole) draft.materialRole = item.materialRole;
     return draft;
   };
-  const apiMaterialConfig = (itemCode) => {
+  const apiMaterialConfig = (client, itemCode) => {
     const gram = ['BEAN-001', 'LETTUCE-001', 'BACON-001', 'CHICKEN-001', 'DRESSING-001'].includes(itemCode);
-    return {nodes: [{nodeType: 'ITEM', itemCode: apiCode(itemCode), mode: 'INDEPENDENT_STOCK', consumptionUnit: gram ? 'GRAM' : 'EACH', configuration: {allowNegative: false, lowStockThreshold: '1', countingUnit: gram ? 'KILOGRAM' : 'BOX', conversionFactor: gram ? '1000' : '1'}}]};
+    return {nodes: [{nodeType: 'ITEM', itemCode: apiCode(itemCode), itemRef: itemRef(refsFor(client), apiCode(itemCode)), productSkuRef: null, mode: 'INDEPENDENT_STOCK', consumptionUnit: gram ? 'GRAM' : 'EACH', configuration: {allowNegative: false, lowStockThreshold: '1', countingUnit: gram ? 'KILOGRAM' : 'BOX', conversionFactor: gram ? '1000' : '1'}}]};
   };
   const ensureApiBaseline = async () => {
     // These are static contract fixture definitions, not rows loaded by the
@@ -263,6 +306,7 @@ async function execute() {
     const entries = fixtureDatasets.flatMap((dataset) => (dataset.entities?.catalogItems || []).map((item) => ({fixtureId: dataset.fixtureId, item})));
     const byCode = new Map(entries.map((entry) => [entry.item.code, entry]));
     for (const client of [head, store]) {
+      await materializeDictionaryRefs(client);
       for (const {fixtureId, item} of entries) {
         const code = apiCode(item.code);
         const existing = await getDetailAllowMissing(client, `API_BASE_${fixtureId}_${client.scopeType}_${code}`, code);
@@ -275,8 +319,13 @@ async function execute() {
           assertThat(current?.shapeKey === item.shapeKey, `API_BASE_SHAPE_${code}`);
           version = Number(current?.version || 1);
         }
-        const saved = await saveItem(client, `API_BASE_SAVE_${fixtureId}_${client.scopeType}_${code}`, code, version, apiFixtureDraft(fixtureId, item), client.scopeType === 'STORE' && item.shapeKey === 'MATERIAL' ? apiMaterialConfig(item.code) : {nodes: []});
+        const saved = await saveItem(client, `API_BASE_SAVE_${fixtureId}_${client.scopeType}_${code}`, code, version, apiFixtureDraft(client, fixtureId, item));
         assertThat(itemResult(saved.json)?.version !== undefined, `API_BASE_SAVE_READBACK_${code}`);
+        const stored = await recordItemRefs(client, `API_BASE_${fixtureId}_${client.scopeType}_${code}`, code);
+        if (client.scopeType === 'STORE' && item.shapeKey === 'MATERIAL') {
+          const configured = await saveItem(client, `API_BASE_CONFIG_${fixtureId}_${client.scopeType}_${code}`, code, Number(stored.version || 1), apiFixtureDraft(client, fixtureId, item), apiMaterialConfig(client, item.code));
+          assertThat(itemResult(configured.json)?.version !== undefined, `API_BASE_CONFIG_READBACK_${code}`);
+        }
       }
     }
     return byCode;
@@ -296,7 +345,7 @@ async function execute() {
     const readback = envelopeData((await getDetail(client, `${phase}_READBACK`, code)).json);
     return {version: Number((readback.item || readback).version || readback.version || item.version || 1), response: saved};
   };
-  const shape = envelopeData((await request('SHAPE_MANIFEST', 'getOperationsCatalogShapeManifest', {}, {cookie: store.cookie, brandRef: store.brandRef})).json);
+  const shape = envelopeData((await request('SHAPE_MANIFEST', 'getOperationsCatalogShapeManifest', {}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json);
   const storePage = envelopeData((await getItems(store, 'STORE_ITEMS')).json);
   const headPage = envelopeData((await getItems(head, 'HEAD_ITEMS')).json);
   const storeCodes = (storePage.items || []).map((row) => row.code).filter(Boolean);
@@ -374,11 +423,13 @@ async function execute() {
     const consumerCode = `API-VOID-CONSUMER-${Date.now()}`;
     const target = await createItem(store, 'VOID_INBOUND_TARGET_CREATE', targetCode);
     const consumer = await createItem(store, 'VOID_INBOUND_CONSUMER_CREATE', consumerCode);
+    await recordItemRefs(store, 'VOID_INBOUND_TARGET', targetCode);
+    await recordItemRefs(store, 'VOID_INBOUND_CONSUMER', consumerCode);
     const consumerVersion = Number(itemResult(consumer.json)?.version || 1);
     await saveItem(store, 'VOID_INBOUND_CONSUMER_SAVE', consumerCode, consumerVersion, {
       name: consumerCode,
       shapeKey: 'STANDARD_SALE_COUNTED',
-      ...compositeGroups([targetCode], consumerCode),
+      ...compositeGroups(store, [targetCode], consumerCode),
     });
     const targetDetail = envelopeData((await getDetail(store, 'VOID_INBOUND_TARGET_DETAIL', targetCode)).json);
     inboundVoidFixture = {targetCode, targetVersion: Number(targetDetail.item?.version || targetDetail.version || itemResult(target.json)?.version || 1)};
@@ -389,12 +440,13 @@ async function execute() {
     if (dependentVoidFixture) return dependentVoidFixture;
     const code = `API-VOID-DEPENDENT-${Date.now()}`;
     const created = await createItem(store, 'VOID_DEPENDENT_CREATE', code);
+    await recordItemRefs(store, 'VOID_DEPENDENT', code);
     const version = Number(itemResult(created.json)?.version || 1);
     const saved = await saveItem(store, 'VOID_DEPENDENT_SAVE', code, version, {
       name: code,
       shapeKey: 'STANDARD_SALE_COUNTED',
     }, {
-      nodes: [{nodeType: 'ITEM', itemCode: code, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'EACH', configuration: {countingUnit: 'EACH', conversionFactor: '1', lowStockThreshold: '1', allowNegative: false}}],
+      nodes: [{nodeType: 'ITEM', itemCode: code, itemRef: itemRef(refsFor(store), code), productSkuRef: null, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'EACH', configuration: {countingUnit: 'EACH', conversionFactor: '1', lowStockThreshold: '1', allowNegative: false}}],
     });
     const detail = envelopeData((await getDetail(store, 'VOID_DEPENDENT_DETAIL', code)).json);
     dependentVoidFixture = {code, version: Number(detail.item?.version || detail.version || itemResult(saved.json)?.version || version + 1)};
@@ -408,11 +460,12 @@ async function execute() {
     const componentCodes = Array.from({length: closureLimit}, (_, index) => `API-CLOSURE-COMP-${stamp}-${String(index + 1).padStart(3, '0')}`);
     await createItem(head, 'COPY_CLOSURE_CREATE_ROOT', rootCode);
     await createItemsInBatches(head, 'COPY_CLOSURE_CREATE', componentCodes);
+    for (const code of [rootCode, ...componentCodes]) await recordItemRefs(head, 'COPY_CLOSURE', code);
     const rootDetail = envelopeData((await getDetail(head, 'COPY_CLOSURE_ROOT_DETAIL', rootCode)).json);
     await saveItem(head, 'COPY_CLOSURE_ROOT_SAVE', rootCode, Number(rootDetail.item?.version || rootDetail.version || 1), {
       name: rootCode,
       shapeKey: 'STANDARD_SALE_COUNTED',
-      ...compositeGroups(componentCodes, rootCode),
+      ...compositeGroups(head, componentCodes, rootCode),
     });
     closureOverflowFixture = {rootCode, componentCodes};
     bindFixture('FIXTURE-CLOSURE-LIMIT', {catalogItemCodes: [rootCode, ...componentCodes], primaryCatalogItemCode: rootCode});
@@ -437,11 +490,13 @@ async function execute() {
     const targetCode = `API-LOCAL-TARGET-${stamp}`;
     const createdSource = await createItem(store, 'LOCAL_COPY_SOURCE_CREATE', sourceCode);
     await createItem(store, 'LOCAL_COPY_TARGET_CREATE', targetCode);
+    await recordItemRefs(store, 'LOCAL_COPY_SOURCE', sourceCode);
+    await recordItemRefs(store, 'LOCAL_COPY_TARGET', targetCode);
     const sourceVersion = Number(itemResult(createdSource.json)?.version || 1);
     await saveItem(store, 'LOCAL_COPY_SOURCE_SAVE', sourceCode, sourceVersion, {
       name: sourceCode,
       shapeKey: 'STANDARD_SALE_COUNTED',
-      ...compositeGroups([`API-MISSING-COMPONENT-${stamp}`], sourceCode),
+      ...compositeGroups(store, [`API-MISSING-COMPONENT-${stamp}`], sourceCode, {allowMissing: true}),
     });
     localCopyMappingFixture = {sourceCode, targetCode};
     bindFixture('FIXTURE-LOCAL-COPY', {catalogItemCodes: [sourceCode, targetCode], primaryCatalogItemCode: sourceCode});
@@ -467,12 +522,13 @@ async function execute() {
     await createItem(head, 'DAG_SOURCE_CREATE', middleCode);
     await createItem(head, 'DAG_SOURCE_CREATE', leafCode);
     await createItem(head, 'DAG_SOURCE_CREATE', inboundOnlyCode);
+    for (const code of [rootCode, middleCode, leafCode, inboundOnlyCode]) await recordItemRefs(head, 'DAG_SOURCE', code);
     for (const [code, components] of [[rootCode, [middleCode]], [middleCode, [leafCode]], [leafCode, [rootCode]], [inboundOnlyCode, [rootCode]]]) {
       const detail = envelopeData((await getDetail(head, 'DAG_SOURCE_DETAIL', code)).json);
       // The request helper derives idempotency from phase.  Each node link is
       // a distinct command, so keep its phase/key distinct as well; reusing a
       // phase would correctly surface IDEMPOTENCY_MISMATCH on the second node.
-      await saveItem(head, `DAG_SOURCE_LINK_${code}`, code, Number(detail.item?.version || detail.version || 1), {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ...compositeGroups(components, code)});
+      await saveItem(head, `DAG_SOURCE_LINK_${code}`, code, Number(detail.item?.version || detail.version || 1), {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ...compositeGroups(head, components, code)});
     }
     dagFixture = {rootCode, middleCode, leafCode, inboundOnlyCode, targetConflictCode: rootCode};
     bindFixture('FIXTURE-DAG-CYCLE', {catalogItemCodes: [rootCode, middleCode, leafCode, inboundOnlyCode], primaryCatalogItemCode: rootCode});
@@ -490,6 +546,8 @@ async function execute() {
     await createItemsInBatches(head, 'COMPAT_SOURCE_CREATE', pairs);
     await createItemsInBatches(store, 'COMPAT_TARGET_CREATE', pairs.filter((code) => code !== shapeCode));
     await createItem(store, 'COMPAT_TARGET_SHAPE_CREATE', shapeCode, 'MATERIAL');
+    for (const code of pairs) await recordItemRefs(head, 'COMPAT_SOURCE', code);
+    for (const code of pairs) await recordItemRefs(store, 'COMPAT_TARGET', code);
     const sourceShape = envelopeData((await getDetail(head, 'COMPAT_SOURCE_DETAIL', shapeCode)).json);
     const targetShape = envelopeData((await getDetail(store, 'COMPAT_TARGET_DETAIL', shapeCode)).json);
     const sourceSku = envelopeData((await getDetail(head, 'COMPAT_SOURCE_SKU_DETAIL', skuCode)).json);
@@ -499,26 +557,26 @@ async function execute() {
     const sourceRef = envelopeData((await getDetail(head, 'COMPAT_SOURCE_REF_DETAIL', referenceCode)).json);
     await saveItem(head, 'COMPAT_SHAPE_SAVE', shapeCode, Number(sourceShape.item?.version || sourceShape.version || 1), {name: shapeCode, shapeKey: 'STANDARD_SALE_COUNTED'});
     await saveItem(store, 'COMPAT_SHAPE_SAVE_TARGET', shapeCode, Number(targetShape.item?.version || targetShape.version || 1), {name: shapeCode, shapeKey: 'MATERIAL'});
-    const skuDraft = (size, owner) => ({
-      productSkuRef: `API-SKU-REF-${stamp}-${owner}`,
+    const skuDraft = (client, size, owner) => ({
+      productSkuRef: localRef(refsFor(client), `COMPAT-SKU:${skuCode}:${owner}`),
       skuCode: 'SKU-001', skuName: `${skuCode}-${size}`,
-      attributeValueRefs: [{attributeRef: 'ATTR-SIZE', attributeCode: 'SIZE', attributeName: 'Size', attributeValueRef: `VAL-${size}`, valueCode: size, valueLabel: size, displayOrder: 0, status: 'ENABLED'}],
+      attributeValueRefs: [{attributeRef: dictionaryRef(refsFor(client), 'SKU_ATTRIBUTE', 'SIZE'), attributeCode: 'SIZE', attributeName: 'Size', attributeValueRef: dictionaryRef(refsFor(client), 'SKU_ATTRIBUTE_VALUE', size), valueCode: size, valueLabel: size, displayOrder: 0, status: 'ENABLED'}],
       skuBarcode: `API-${skuCode}-${owner}`, standardSalePrice: 100, isDefault: true, status: 'ENABLED', version: 1, mediaRefs: [],
     });
-    await saveItem(head, 'COMPAT_SKU_SAVE', skuCode, Number(sourceSku.item?.version || sourceSku.version || 1), {name: skuCode, shapeKey: 'STANDARD_SALE_COUNTED', skus: [skuDraft('SMALL', 'HEAD')]});
-    await saveItem(store, 'COMPAT_SKU_SAVE_TARGET', skuCode, Number(targetSku.item?.version || targetSku.version || 1), {name: skuCode, shapeKey: 'STANDARD_SALE_COUNTED', skus: [skuDraft('LARGE', 'STORE')]});
+    await saveItem(head, 'COMPAT_SKU_SAVE', skuCode, Number(sourceSku.item?.version || sourceSku.version || 1), {name: skuCode, shapeKey: 'STANDARD_SALE_COUNTED', skus: [skuDraft(head, 'SMALL', 'HEAD')]});
+    await saveItem(store, 'COMPAT_SKU_SAVE_TARGET', skuCode, Number(targetSku.item?.version || targetSku.version || 1), {name: skuCode, shapeKey: 'STANDARD_SALE_COUNTED', skus: [skuDraft(store, 'LARGE', 'STORE')]});
     // Consumption units belong to the inventory owner, not to the catalog
     // draft.  Keep the fixture contract-valid by creating the real stock
     // targets through the whole-save inventory configuration section; this is
     // also what makes the inventory owner's compatibility result observable
     // during brand-copy preflight.
     await saveItem(head, 'COMPAT_UNIT_SAVE', unitCode, Number(sourceUnit.item?.version || sourceUnit.version || 1), {name: unitCode, shapeKey: 'STANDARD_SALE_COUNTED'}, {
-      nodes: [{nodeType: 'ITEM', itemCode: unitCode, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'GRAM', configuration: {countingUnit: 'GRAM', conversionFactor: '1', lowStockThreshold: '0', allowNegative: false}}],
+      nodes: [{nodeType: 'ITEM', itemCode: unitCode, itemRef: itemRef(refsFor(head), unitCode), productSkuRef: null, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'GRAM', configuration: {countingUnit: 'GRAM', conversionFactor: '1', lowStockThreshold: '0', allowNegative: false}}],
     });
     await saveItem(store, 'COMPAT_UNIT_SAVE_TARGET', unitCode, Number(targetUnit.item?.version || targetUnit.version || 1), {name: unitCode, shapeKey: 'STANDARD_SALE_COUNTED'}, {
-      nodes: [{nodeType: 'ITEM', itemCode: unitCode, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'EACH', configuration: {countingUnit: 'EACH', conversionFactor: '1', lowStockThreshold: '0', allowNegative: false}}],
+      nodes: [{nodeType: 'ITEM', itemCode: unitCode, itemRef: itemRef(refsFor(store), unitCode), productSkuRef: null, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'EACH', configuration: {countingUnit: 'EACH', conversionFactor: '1', lowStockThreshold: '0', allowNegative: false}}],
     });
-    await saveItem(head, 'COMPAT_REFERENCE_SAVE', referenceCode, Number(sourceRef.item?.version || sourceRef.version || 1), {name: referenceCode, shapeKey: 'STANDARD_SALE_COUNTED', ...compositeGroups([`API-COMPAT-MISSING-${stamp}`], referenceCode)});
+    await saveItem(head, 'COMPAT_REFERENCE_SAVE', referenceCode, Number(sourceRef.item?.version || sourceRef.version || 1), {name: referenceCode, shapeKey: 'STANDARD_SALE_COUNTED', ...compositeGroups(head, [`API-COMPAT-MISSING-${stamp}`], referenceCode, {allowMissing: true})});
     compatibilityFixture = {reuseCode, shapeCode, skuCode, unitCode, referenceCode};
     bindFixture('FIXTURE-COMPATIBILITY-MATRIX', {catalogItemCodes: pairs, primaryCatalogItemCode: reuseCode});
     bindFixture('FIXTURE-SKU-STRUCTURE-CONFLICT', {catalogItemCodes: [skuCode], primaryCatalogItemCode: skuCode});
@@ -568,13 +626,14 @@ async function execute() {
     await request('VOID_DICTIONARY_CREATE', 'createOperationsCatalogDictionaryEntry', {dictionaryKind: 'SALES_UNIT'}, {
       cookie: store.cookie, brandRef: store.brandRef, expected: [200],
       idempotencyKey: `catalog-api-dictionary-${runId}`,
-      body: {dictionaryKind: 'SALES_UNIT', code: dictionaryCode, name: 'API unit'},
+      body: {dataNodeRef: store.dataNodeRef, dictionaryKind: 'SALES_UNIT', code: dictionaryCode, name: 'API unit'},
     });
     await ensureProductionTagFixture();
 
     const fileName = 'coffee.jpg';
     const bytes = fs.readFileSync(path.join(root, 'contracts/policy/catalog-inventory-p1-media', fileName));
     const form = new FormData();
+    form.set('dataNodeRef', store.dataNodeRef);
     form.set('fileName', fileName);
     form.set('mediaType', 'image/jpeg');
     form.set('contentDigest', sha256(bytes));
@@ -584,13 +643,15 @@ async function execute() {
       idempotencyKey: `catalog-api-void-asset-${runId}`,
     });
     const assetRef = itemResult(staged.json)?.assetRef;
+    const bindGrant = itemResult(staged.json)?.bindGrant;
     assertThat(assetRef, 'VOID_ASSET_STAGE_READBACK');
+    assertThat(bindGrant, 'VOID_ASSET_STAGE_BIND_GRANT_READBACK');
     const currentItem = sampleDetail.item || sampleDetail;
     const imageSaved = await saveItem(store, 'VOID_ASSET_CLAIM', sampleStoreCode, Number(currentItem.version || sampleDetail.version || 1), {
       name: currentItem.name || sampleStoreCode,
       shapeKey: currentItem.shapeKey || 'STANDARD_SALE_COUNTED',
       images: [assetRef],
-    });
+    }, {nodes: []}, [], {[assetRef]: bindGrant});
     assertThat(itemResult(imageSaved.json)?.version !== undefined, 'VOID_ASSET_CLAIM_READBACK');
 
     const currentAfterAsset = envelopeData((await getDetail(store, 'VOID_BOM_PARENT_DETAIL', sampleStoreCode)).json);
@@ -600,7 +661,7 @@ async function execute() {
       shapeKey: currentAfterAsset.item?.shapeKey || 'STANDARD_SALE_COUNTED',
       inventoryBom: [{
         nodeType: 'STOCK_TARGET', mode: 'BOM', targetRef,
-        itemCode: apiCode('BEAN-001'), quantity: '1', unit: 'GRAM', lineSign: 'POSITIVE', version: 0,
+        itemCode: sampleStoreCode, itemRef: itemRef(refsFor(store), sampleStoreCode), productSkuRef: null, optionValueCode: null, optionValueRef: null, quantity: '1', unit: 'GRAM', lineSign: 'POSITIVE', version: 0,
       }],
     });
     assertThat(itemResult(bomSaved.json)?.version !== undefined, 'VOID_BOM_SAVE_READBACK');
@@ -627,7 +688,7 @@ async function execute() {
       shapeKey: repeatDetail.item?.shapeKey || 'STANDARD_SALE_COUNTED',
       inventoryBom: [{
         nodeType: 'STOCK_TARGET', mode: 'BOM', targetRef,
-        itemCode: apiCode('BEAN-001'), quantity: '1', unit: 'GRAM', lineSign: 'POSITIVE', version: repeatBomVersion,
+        itemCode: sampleStoreCode, itemRef: itemRef(refsFor(store), sampleStoreCode), productSkuRef: null, optionValueCode: null, optionValueRef: null, quantity: '1', unit: 'GRAM', lineSign: 'POSITIVE', version: repeatBomVersion,
       }],
     });
     assertThat(itemResult(repeatSaved.json)?.version !== undefined, 'VOID_BOM_REPEAT_UPSERT_READBACK');
@@ -651,7 +712,7 @@ async function execute() {
         name: code,
         shapeKey: 'SKU_VARIANT_SALE_COUNTED',
         skus: [{
-          productSkuRef: `${code}-REF`, skuCode: `${code}-SKU`, skuName: code,
+          productSkuRef: localRef(refsFor(store), `SKU:${code}`), skuCode: `${code}-SKU`, skuName: code,
           attributeValueRefs: [], skuBarcode: `${code}-BARCODE`, standardSalePrice: 100,
           isDefault: true, status, version: 1, mediaRefs: [],
         }],
@@ -850,10 +911,10 @@ async function execute() {
         else if (objectType === 'ProductBom') assertThat(Array.isArray(sampleDetail.inventoryBom) && sampleDetail.inventoryBom.length > 0, 'VOID_BOM_FACT');
         else if (objectType === 'InboundReference') {
           const fixture = await ensureInboundVoidFixture();
-          await expectedProblem('VOID_INBOUND', 'transitionOperationsCatalogItemStatus', {itemCode: fixture.targetCode}, {cookie: store.cookie, brandRef: store.brandRef, body: {itemCode: fixture.targetCode, expectedVersion: fixture.targetVersion, targetStatus: 'VOIDED'}, idempotencyKey: `api-void-inbound-${runId}`}, 'REFERENCE_BLOCKS_VOID', [422]);
+          await expectedProblem('VOID_INBOUND', 'transitionOperationsCatalogItemStatus', {itemCode: fixture.targetCode}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, itemCode: fixture.targetCode, expectedVersion: fixture.targetVersion, targetStatus: 'VOIDED'}, idempotencyKey: `api-void-inbound-${runId}`}, 'REFERENCE_BLOCKS_VOID', [422]);
         } else if (objectType === 'DependentFact') {
           const fixture = await ensureDependentVoidFixture();
-          await expectedProblem('VOID_DEPENDENT', 'transitionOperationsCatalogItemStatus', {itemCode: fixture.code}, {cookie: store.cookie, brandRef: store.brandRef, body: {itemCode: fixture.code, expectedVersion: fixture.version, targetStatus: 'VOIDED'}, idempotencyKey: `api-void-dependent-${runId}`}, 'DEPENDENT_FACTS_BLOCK_VOID', [422]);
+          await expectedProblem('VOID_DEPENDENT', 'transitionOperationsCatalogItemStatus', {itemCode: fixture.code}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, itemCode: fixture.code, expectedVersion: fixture.version, targetStatus: 'VOIDED'}, idempotencyKey: `api-void-dependent-${runId}`}, 'DEPENDENT_FACTS_BLOCK_VOID', [422]);
         }
         return;
       }
@@ -870,12 +931,12 @@ async function execute() {
         let version = Number(itemResult(created.json)?.version || 1);
         if (p.lifecycleCase === 'status-transition') {
           const saved = await saveItem(store, 'LIFECYCLE_SAVE', code, version, {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ordering: {priceGranularity: 'ITEM', standardSalePrice: 100, listedSalePrice: 100, missingPriceCount: 0}}); version = Number(itemResult(saved.json)?.version || version + 1);
-          const transitioned = await request('LIFECYCLE_ENABLE', 'transitionOperationsCatalogItemStatus', {itemCode: code}, {cookie: store.cookie, brandRef: store.brandRef, body: {itemCode: code, expectedVersion: version, targetStatus: 'ENABLED'}});
+          const transitioned = await request('LIFECYCLE_ENABLE', 'transitionOperationsCatalogItemStatus', {itemCode: code}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, itemCode: code, expectedVersion: version, targetStatus: 'ENABLED'}});
           assertThat(Number(itemResult(transitioned.json)?.version || 0) === version + 1, 'LIFECYCLE_TRANSITION_READBACK');
         } else if (p.lifecycleCase === 'version-conflict') {
           const saved = await saveItem(store, 'LIFECYCLE_CAS_SAVE', code, version, {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ordering: {priceGranularity: 'ITEM', standardSalePrice: 100, listedSalePrice: 100, missingPriceCount: 0}});
           version = Number(itemResult(saved.json)?.version || version + 1);
-          await expectedProblem('LIFECYCLE_CAS', 'transitionOperationsCatalogItemStatus', {itemCode: code}, {cookie: store.cookie, brandRef: store.brandRef, body: {itemCode: code, expectedVersion: version + 1, targetStatus: 'ENABLED'}}, 'VERSION_CONFLICT', [409]);
+          await expectedProblem('LIFECYCLE_CAS', 'transitionOperationsCatalogItemStatus', {itemCode: code}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, itemCode: code, expectedVersion: version + 1, targetStatus: 'ENABLED'}}, 'VERSION_CONFLICT', [409]);
         } else {
           const key = `api-idempotency-${runId}-${entry.caseId}`;
           const first = await request('LIFECYCLE_REPLAY_A', 'createOperationsCatalogItem', {}, {cookie: store.cookie, brandRef: store.brandRef, expected: [200], idempotencyKey: key, requestId: key, body: {dataNodeRef: store.dataNodeRef, name: `REPLAY-${code}`, code: `REPLAY-${code}`, shapeKey: 'STANDARD_SALE_COUNTED', attributes: {fixtureRef: entry.fixtureRef}}});
@@ -886,7 +947,7 @@ async function execute() {
       }
       if (entry.caseId.startsWith('CI-API-009-')) {
         const fileName = 'coffee.jpg'; const file = path.join(root, 'contracts/policy/catalog-inventory-p1-media', fileName); const bytes = fs.readFileSync(file); const digest = sha256(bytes);
-        const form = new FormData(); form.set('fileName', fileName); form.set('mediaType', 'image/jpeg'); form.set('contentDigest', digest); form.set('content', new Blob([bytes], {type: 'image/jpeg'}), fileName);
+        const form = new FormData(); form.set('dataNodeRef', store.dataNodeRef); form.set('fileName', fileName); form.set('mediaType', 'image/jpeg'); form.set('contentDigest', digest); form.set('content', new Blob([bytes], {type: 'image/jpeg'}), fileName);
         if (p.variant === 1) {
           const failed = await request('ASSET_STAGE_FAILURE', 'stageOperationsCatalogAsset', {}, {cookie: store.cookie, brandRef: store.brandRef, form, testFailurePoint: 'asset-processing', expected: [422], allowRejected: true});
           assertThat(responseErrorCode(failed.json) === 'ASSET_PROCESSING_FAILED', 'ASSET_PROCESSING_FAILURE_CODE');
@@ -894,14 +955,15 @@ async function execute() {
         }
         const staged = await request('ASSET_STAGE', 'stageOperationsCatalogAsset', {}, {cookie: store.cookie, brandRef: store.brandRef, form});
         const stagedResult = itemResult(staged.json);
-        const assetRef = stagedResult?.assetRef; const assetVersion = Number(stagedResult?.version || 1);
+        const assetRef = stagedResult?.assetRef; const bindGrant = stagedResult?.bindGrant; const assetVersion = Number(stagedResult?.version || 1);
         assertThat(assetRef, 'ASSET_STAGE_READBACK');
+        assertThat(bindGrant, 'ASSET_STAGE_BIND_GRANT_READBACK');
         if (p.variant === 2) {
           const holderCode = `API-ASSET-HOLDER-${Date.now()}`;
           const holder = await createItem(store, 'ASSET_HOLDER_CREATE', holderCode);
           const holderVersion = Number(itemResult(holder.json)?.version || 1);
-          await saveItem(store, 'ASSET_HOLDER_SAVE', holderCode, holderVersion, {name: holderCode, images: [assetRef]});
-          await expectedProblem('ASSET_REFERENCE_PROTECTED', 'releaseOperationsCatalogStagedAsset', {assetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {assetRef, expectedVersion: assetVersion}, idempotencyKey: `api-asset-release-${runId}`}, 'ASSET_REFERENCE_PROTECTED', [409]);
+          await saveItem(store, 'ASSET_HOLDER_SAVE', holderCode, holderVersion, {name: holderCode, images: [assetRef]}, {nodes: []}, [], {[assetRef]: bindGrant});
+          await expectedProblem('ASSET_REFERENCE_PROTECTED', 'releaseOperationsCatalogStagedAsset', {assetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, assetRef, expectedVersion: assetVersion}, idempotencyKey: `api-asset-release-${runId}`}, 'ASSET_REFERENCE_PROTECTED', [409]);
         }
         return;
       }
@@ -917,9 +979,8 @@ async function execute() {
         assertThat(detailTargetRef, 'INVENTORY_TARGET_REQUIRED');
         const opByZone = {current: 'getOperationsInventoryTarget', changeSummary: 'getOperationsInventoryTargetChangeSummary', businessHistory: 'getOperationsInventoryTargetBusinessHistory', consumptionReferences: 'getOperationsInventoryTargetConsumptionReferences', ledger: 'getOperationsInventoryTargetLedger', advancedDiagnostics: 'getOperationsInventoryTargetDiagnostics'};
         const operationId = opByZone[p.detailZone];
-        const result = await request(`INVENTORY_${p.detailZone}`, operationId, {targetRef: detailTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}, expected: p.detailZone === 'advancedDiagnostics' ? [200, 403] : [200], allowRejected: p.detailZone === 'advancedDiagnostics'});
-        if (p.detailZone === 'advancedDiagnostics' && result.status === 403) assertThat(responseErrorCode(result.json) === 'SCOPE_FORBIDDEN', 'DIAGNOSTIC_PROBLEM');
-        else { const data = envelopeData(result.json); const valid = p.detailZone === 'changeSummary' ? ['period', 'increase', 'decrease', 'netChange', 'entryCount'].every((field) => data?.[field] !== undefined) : (data?.target || data?.entries || data?.permission || data?.changeSummary); assertThat(data !== null && Boolean(valid), `INVENTORY_ZONE_${p.detailZone}`); }
+        const result = await request(`INVENTORY_${p.detailZone}`, operationId, {targetRef: detailTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}, expected: [200]});
+        const data = envelopeData(result.json); const valid = p.detailZone === 'changeSummary' ? ['period', 'increase', 'decrease', 'netChange', 'entryCount'].every((field) => data?.[field] !== undefined) : (data?.target || data?.entries || data?.permission || data?.changeSummary); assertThat(data !== null && Boolean(valid), `INVENTORY_ZONE_${p.detailZone}`);
         return;
       }
       if (entry.caseId.startsWith('CI-API-012-')) {
@@ -930,16 +991,16 @@ async function execute() {
         assertThat(freshTarget?.version !== undefined, 'INVENTORY_WRITE_TARGET_VERSION');
         const version = Number(freshTarget.version); const unit = freshTarget.configuration?.countingUnit || freshTarget.target?.consumptionUnit || 'EACH';
         if (p.command === 'count') {
-          const response = await request('INVENTORY_COUNT', 'countOperationsInventoryTarget', {targetRef: commandTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {targetRef: commandTargetRef, expectedVersion: version, countedQuantity: String(freshTarget.balance ?? '0'), unit, zeroConfirmation: true}});
+          const response = await request('INVENTORY_COUNT', 'countOperationsInventoryTarget', {targetRef: commandTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, targetRef: commandTargetRef, expectedVersion: version, countedQuantity: String(freshTarget.balance ?? '0'), unit, zeroConfirmation: true}});
           const result = itemResult(response.json); assertThat(result?.targetRef === commandTargetRef && result?.before !== undefined && result?.change !== undefined && result?.after !== undefined && result?.ledgerEntryRef, 'COUNT_READBACK');
         } else if (p.command === 'increase') {
-          const response = await request('INVENTORY_INCREASE', 'increaseOperationsInventoryTarget', {targetRef: commandTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {targetRef: commandTargetRef, expectedVersion: version, quantity: '1', unit}});
+          const response = await request('INVENTORY_INCREASE', 'increaseOperationsInventoryTarget', {targetRef: commandTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, targetRef: commandTargetRef, expectedVersion: version, quantity: '1', unit}});
           const result = itemResult(response.json); assertThat(result?.targetRef === commandTargetRef && result?.before !== undefined && result?.change !== undefined && result?.after !== undefined && result?.ledgerEntryRef, 'INCREASE_READBACK');
         } else if (p.command === 'adjust') {
-          const response = await request('INVENTORY_ADJUST', 'adjustOperationsInventoryTarget', {targetRef: commandTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {targetRef: commandTargetRef, expectedVersion: version, direction: 'INCREASE', quantity: '1', unit, reasonCode: 'RECOUNT'}});
+          const response = await request('INVENTORY_ADJUST', 'adjustOperationsInventoryTarget', {targetRef: commandTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, targetRef: commandTargetRef, expectedVersion: version, direction: 'INCREASE', quantity: '1', unit, reasonCode: 'RECOUNT'}});
           const result = itemResult(response.json); assertThat(result?.targetRef === commandTargetRef && result?.before !== undefined && result?.change !== undefined && result?.after !== undefined && result?.ledgerEntryRef, 'ADJUST_READBACK');
         } else {
-          const response = await request('INVENTORY_CONFIG', 'updateOperationsInventoryTargetConfiguration', {targetRef: commandTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {targetRef: commandTargetRef, expectedVersion: version, configuration: {allowNegative: Boolean(freshTarget.configuration?.allowNegative), lowStockThreshold: String(freshTarget.configuration?.lowStockThreshold ?? '0'), countingUnit: unit, conversionFactor: String(freshTarget.configuration?.conversionFactor ?? '1')}}});
+          const response = await request('INVENTORY_CONFIG', 'updateOperationsInventoryTargetConfiguration', {targetRef: commandTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, targetRef: commandTargetRef, expectedVersion: version, configuration: {allowNegative: Boolean(freshTarget.configuration?.allowNegative), lowStockThreshold: String(freshTarget.configuration?.lowStockThreshold ?? '0'), countingUnit: unit, conversionFactor: String(freshTarget.configuration?.conversionFactor ?? '1')}}});
           const result = envelopeData(response.json); assertThat(result?.version !== undefined && result?.configuration && String(result.balance) === String(freshTarget.balance), 'CONFIG_READBACK');
         }
         return;
@@ -968,7 +1029,7 @@ async function execute() {
           const target = await getDetailAllowMissing(store, 'DAG_TARGET_LOOKUP', fixture.targetConflictCode);
           if (target.status === 404) await createItem(store, 'DAG_TARGET_CONFLICT_CREATE', fixture.targetConflictCode, 'MATERIAL');
         }
-        const preflight = await request('DAG_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-dag-preflight-${runId}-${p.variant}`, body: {selectedItemCodes: [fixture.rootCode], targetDataNodeRef: store.dataNodeRef}});
+        const preflight = await request('DAG_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-dag-preflight-${runId}-${p.variant}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.rootCode], targetDataNodeRef: store.dataNodeRef}});
         const data = envelopeData(preflight.json);
         const closureCodes = (data.closureItems || []).map((item) => item.code);
         if (p.variant === 1) {
@@ -976,7 +1037,7 @@ async function execute() {
           assertThat((data.closureEdges || []).filter((edge) => edge.referenceKind === 'COMPOSITE_COMPONENT').length >= 3, 'DAG_EDGE_READBACK');
         } else {
           await expectedProblem('DAG_STRUCTURAL_BLOCK', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {
-            selectedItemCodes: [fixture.rootCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest,
+            dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.rootCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest,
             expectedSourceVersion: Number(data.objectVersions?.find((value) => value.code === fixture.rootCode)?.sourceVersion || 1),
             expectedTargetVersion: Number(data.objectVersions?.find((value) => value.code === fixture.rootCode)?.targetVersion || 0),
           }}, 'STRUCTURE_INCOMPATIBLE', [422]);
@@ -988,10 +1049,10 @@ async function execute() {
         assertThat(Number.isInteger(limit) && limit > 0, 'COPY_LIMIT_POLICY');
         if (p.variant === 2) {
           const selected = entry.caseId.startsWith('CI-API-016-') ? (await ensureSelectedOverflowFixture(limit)).selectedCodes.slice(0, limit + 1) : [(await ensureClosureOverflowFixture(limit)).rootCode];
-          await expectedProblem('COPY_LIMIT_OVERFLOW', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-copy-limit-${runId}-${entry.caseId}`, body: {selectedItemCodes: selected, targetDataNodeRef: store.dataNodeRef}}, entry.caseId.startsWith('CI-API-016-') ? 'COPY_SELECTED_ITEMS_TOO_LARGE' : 'COPY_CLOSURE_TOO_LARGE', [422]);
+          await expectedProblem('COPY_LIMIT_OVERFLOW', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-copy-limit-${runId}-${entry.caseId}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: selected, targetDataNodeRef: store.dataNodeRef}}, entry.caseId.startsWith('CI-API-016-') ? 'COPY_SELECTED_ITEMS_TOO_LARGE' : 'COPY_CLOSURE_TOO_LARGE', [422]);
         } else {
           const selected = entry.caseId.startsWith('CI-API-016-') ? (await ensureSelectedOverflowFixture(limit)).selectedCodes.slice(0, limit) : [sampleHeadCode];
-          const preflight = await request('COPY_LIMIT_BOUNDARY', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-copy-limit-${runId}-${entry.caseId}`, body: {selectedItemCodes: selected, targetDataNodeRef: store.dataNodeRef}}); const data = envelopeData(preflight.json); assertThat(Number(data.selectedLimit) === copyPolicy.limits.selectedItemCount && Number(data.closureLimit) === copyPolicy.limits.closureItemCount, 'COPY_LIMIT_READBACK');
+          const preflight = await request('COPY_LIMIT_BOUNDARY', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-copy-limit-${runId}-${entry.caseId}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: selected, targetDataNodeRef: store.dataNodeRef}}); const data = envelopeData(preflight.json); assertThat(Number(data.selectedLimit) === copyPolicy.limits.selectedItemCount && Number(data.closureLimit) === copyPolicy.limits.closureItemCount, 'COPY_LIMIT_READBACK');
         }
         return;
       }
@@ -1000,7 +1061,7 @@ async function execute() {
         const code = p.outcome === 'STRUCTURAL_BLOCK'
           ? ({10: fixture.shapeCode, 11: fixture.skuCode, 12: fixture.unitCode, 13: fixture.shapeCode, 14: fixture.referenceCode, 15: fixture.unitCode}[p.matrixRow] || fixture.shapeCode)
           : fixture.reuseCode;
-        const preflight = await request('COMPATIBILITY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-compat-preflight-${runId}-${p.matrixRow}`, body: {selectedItemCodes: [code], targetDataNodeRef: store.dataNodeRef}});
+        const preflight = await request('COMPATIBILITY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-compat-preflight-${runId}-${p.matrixRow}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [code], targetDataNodeRef: store.dataNodeRef}});
         const data = envelopeData(preflight.json);
         assertThat(Array.isArray(data.compatibilityResults) && data.compatibilityResults.length >= 1, 'COMPATIBILITY_MATRIX_READBACK');
         // The frozen compatibility item deliberately has no code field; the
@@ -1016,7 +1077,7 @@ async function execute() {
           assertThat(data.blockingCount > 0 && result?.result === 'BLOCKED', `COMPATIBILITY_BLOCK_ROW_${p.matrixRow}`);
           const expectedCode = ({10: 'STRUCTURE_INCOMPATIBLE', 11: 'STRUCTURE_INCOMPATIBLE', 12: 'CONSUMPTION_UNIT_INCOMPATIBLE', 13: 'STRUCTURE_INCOMPATIBLE', 14: 'REFERENCE_MAPPING_UNRESOLVED', 15: 'CONSUMPTION_UNIT_INCOMPATIBLE'})[p.matrixRow] || 'STRUCTURE_INCOMPATIBLE';
           const versions = data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === code) || {};
-          await expectedProblem(`COMPATIBILITY_BLOCK_EXECUTE_${p.matrixRow}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {selectedItemCodes: [code], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(versions.sourceVersion || 1), expectedTargetVersion: Number(versions.targetVersion || 0)}}, expectedCode, [422]);
+          await expectedProblem(`COMPATIBILITY_BLOCK_EXECUTE_${p.matrixRow}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [code], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(versions.sourceVersion || 1), expectedTargetVersion: Number(versions.targetVersion || 0)}}, expectedCode, [422]);
         } else {
           assertThat(data.blockingCount === 0 && ['REUSE', 'REUSE_OR_CREATE', 'CREATE'].includes(result?.result), `COMPATIBILITY_REUSE_ROW_${p.matrixRow}`);
         }
@@ -1024,7 +1085,7 @@ async function execute() {
       }
       if (entry.caseId.startsWith('CI-API-019-')) {
         const fixture = await ensureCompatibilityFixture();
-        const preflight = await request('UNIT_CONFLICT_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-unit-preflight-${runId}-${p.variant}`, body: {selectedItemCodes: [fixture.unitCode], targetDataNodeRef: store.dataNodeRef}});
+        const preflight = await request('UNIT_CONFLICT_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-unit-preflight-${runId}-${p.variant}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.unitCode], targetDataNodeRef: store.dataNodeRef}});
         const data = envelopeData(preflight.json);
         assertThat(data.blockingCount > 0, `UNIT_CONFLICT_PREFLIGHT_${p.variant}`);
         // Compatibility rows do not carry an item code in the frozen wire;
@@ -1035,21 +1096,21 @@ async function execute() {
         assertThat(result?.result === 'BLOCKED', `UNIT_CONFLICT_RESULT_${p.variant}`);
         assertThat(String(result?.reason || '').includes('消耗单位'), `UNIT_CONFLICT_REASON_${p.variant}`);
         const versions = data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.unitCode) || {};
-        await expectedProblem(`UNIT_CONFLICT_EXECUTE_${p.variant}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {selectedItemCodes: [fixture.unitCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(versions.sourceVersion || 1), expectedTargetVersion: Number(versions.targetVersion || 0)}}, 'CONSUMPTION_UNIT_INCOMPATIBLE', [422]);
+        await expectedProblem(`UNIT_CONFLICT_EXECUTE_${p.variant}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.unitCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(versions.sourceVersion || 1), expectedTargetVersion: Number(versions.targetVersion || 0)}}, 'CONSUMPTION_UNIT_INCOMPATIBLE', [422]);
         return;
       }
       if (entry.caseId === 'CI-API-020-01') {
         const fixture = await ensureLocalCopyMappingFixture();
-        const preflight = await request('LOCAL_COPY_MAPPING_PREFLIGHT', 'preflightOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO']}});
+        const preflight = await request('LOCAL_COPY_MAPPING_PREFLIGHT', 'preflightOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO']}});
         const data = envelopeData(preflight.json);
-        await expectedProblem('LOCAL_COPY_MAPPING', 'executeOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO'], preflightDigest: data.preflightDigest, expectedSourceVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.sourceVersion || 1), expectedTargetVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.targetCode)?.targetVersion || 1)}}, 'REFERENCE_MAPPING_UNRESOLVED', [422]); return;
+        await expectedProblem('LOCAL_COPY_MAPPING', 'executeOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO'], preflightDigest: data.preflightDigest, expectedSourceVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.sourceVersion || 1), expectedTargetVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.targetCode)?.targetVersion || 1)}}, 'REFERENCE_MAPPING_UNRESOLVED', [422]); return;
       }
       if (entry.caseId === 'CI-API-020-02') {
-        const preflight = await request('BRAND_COPY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {selectedItemCodes: [sampleHeadCode], targetDataNodeRef: store.dataNodeRef}}); assertThat(Array.isArray(envelopeData(preflight.json).referenceRewritePreview), 'REFERENCE_REWRITE_PREVIEW'); return;
+        const preflight = await request('BRAND_COPY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [sampleHeadCode], targetDataNodeRef: store.dataNodeRef}}); assertThat(Array.isArray(envelopeData(preflight.json).referenceRewritePreview), 'REFERENCE_REWRITE_PREVIEW'); return;
       }
       if (entry.caseId.startsWith('CI-API-021-')) {
         const fixture = await ensureStaleFixture();
-        const preflight = await request('STALE_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-stale-preflight-${runId}-${p.variant}`, body: {selectedItemCodes: [fixture.code], targetDataNodeRef: store.dataNodeRef}});
+        const preflight = await request('STALE_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-stale-preflight-${runId}-${p.variant}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.code], targetDataNodeRef: store.dataNodeRef}});
         const data = envelopeData(preflight.json);
         const row = data.objectVersions?.find((v) => v.objectType === 'CATALOG_ITEM' && v.code === fixture.code);
         assertThat(row?.code === fixture.code, 'STALE_PREFLIGHT_EXACT_OBJECT_VERSION');
@@ -1057,16 +1118,16 @@ async function execute() {
         const expectedTarget = Number(row?.targetVersion || 0);
         if (p.variant === 1) await mutateItem(head, 'STALE_SOURCE_MUTATE', fixture.code, `source:${runId}`);
         else await mutateItem(store, 'STALE_TARGET_MUTATE', fixture.code, `target:${runId}`);
-        await expectedProblem('STALE_EXECUTE', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {selectedItemCodes: [fixture.code], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: expectedSource, expectedTargetVersion: expectedTarget}}, 'STALE_COPY_PREFLIGHT', [409]); return;
+        await expectedProblem('STALE_EXECUTE', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.code], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: expectedSource, expectedTargetVersion: expectedTarget}}, 'STALE_COPY_PREFLIGHT', [409]); return;
       }
       if (entry.caseId === 'CI-API-022-01') {
         const code = `API-REPLAY-${Date.now()}`; const key = `api-replay-${runId}`; const body = {dataNodeRef: store.dataNodeRef, name: code, code, shapeKey: 'STANDARD_SALE_COUNTED', attributes: {fixtureRef: entry.fixtureRef}}; const first = await request('REPLAY_A', 'createOperationsCatalogItem', {}, {cookie: store.cookie, brandRef: store.brandRef, expected: [200], idempotencyKey: key, requestId: key, body}); const second = await request('REPLAY_B', 'createOperationsCatalogItem', {}, {cookie: store.cookie, brandRef: store.brandRef, expected: [200], idempotencyKey: key, requestId: key, body}); assertThat(JSON.stringify(canonicalJson(first.json)) === JSON.stringify(canonicalJson(second.json)), 'REPLAY_SAME_RESULT'); return;
       }
       if (entry.caseId === 'CI-API-022-02') {
         const fixture = await ensureOwnerFailureFixture();
-        const preflight = await request('OWNER_FAILURE_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {selectedItemCodes: [fixture.sourceCode], targetDataNodeRef: store.dataNodeRef}});
+        const preflight = await request('OWNER_FAILURE_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.sourceCode], targetDataNodeRef: store.dataNodeRef}});
         const data = envelopeData(preflight.json);
-        await expectedProblem('OWNER_FAILURE', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, testFailurePoint: 'owner-failure', body: {selectedItemCodes: [fixture.sourceCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.sourceVersion || 1), expectedTargetVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.targetVersion || 0)}}, 'RESULT_UNKNOWN', [500]);
+        await expectedProblem('OWNER_FAILURE', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, testFailurePoint: 'owner-failure', body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.sourceCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.sourceVersion || 1), expectedTargetVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.targetVersion || 0)}}, 'RESULT_UNKNOWN', [500]);
         return;
       }
       if (entry.caseId === 'CI-API-023-01') {
@@ -1102,7 +1163,7 @@ async function execute() {
           await expectedProblem('PROJECT_TAG_SCOPE', 'transitionOperationsProductionTagStatus', {tagCode: fixture.code}, {
             cookie: project.cookie,
             brandRef: project.brandRef,
-            body: {tagCode: fixture.code, expectedVersion: fixture.version, targetStatus: 'DISABLED'},
+            body: {dataNodeRef: project.dataNodeRef, tagCode: fixture.code, expectedVersion: fixture.version, targetStatus: 'DISABLED'},
           }, 'SCOPE_FORBIDDEN', [403]);
         } else {
           await ensureProductionTagFixture();
@@ -1140,6 +1201,7 @@ async function execute() {
     apiRunId: runId,
     startedAt: executionStartedAt,
     finishedAt: new Date().toISOString(),
+    imageBindEvidenceInputs,
     sourceBindings: {scenarioCatalog: {path: path.relative(root, scenarioPath), sha256: sha256(fs.readFileSync(scenarioPath))}, fixtureCatalog: {path: path.relative(root, fixturePath), sha256: sha256(fs.readFileSync(fixturePath))}, copyPolicy: {path: path.relative(root, copyPolicyPath), sha256: sha256(fs.readFileSync(copyPolicyPath))}, generatedShape: {path: path.relative(root, shapePath), sha256: sha256(fs.readFileSync(shapePath))}},
     denominator: {scenarioCount: 26, caseCount: 100, caseResults: caseResults.length, passed: passCount, failed: failCount},
     caseResults,

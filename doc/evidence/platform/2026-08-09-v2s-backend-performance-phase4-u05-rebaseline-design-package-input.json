@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-phase4-u05-rebaseline-design-package-input",
+  "packageId": "BACKEND-PERFORMANCE-PHASE4-U05-REBASELINE-DESIGN-20260809",
+  "status": "ACTIVE_DESIGN_NOT_IMPLEMENTATION",
+  "scope": {
+    "includedUnits": ["BP-U05", "BP-U07-M2-C5-COMMAND-RECONCILIATION"],
+    "excludedUnits": ["BP-U06"],
+    "authorization": "Dexter approved the BP-U07 partial-delivery rebaseline. This design package owns the exact read-side transfer and the source-proven C5 command reconciliation; it does not authorize implementation until a fresh DESIGN review admits the revised units."
+  },
+  "sourceDenominators": {
+    "APPROVED_ASSERTIONS": [
+      "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md#BP-U05",
+      "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md#BP-U07",
+      "contracts/registry/operation-handler-bindings.json"
+    ],
+    "OPERATION_PARTITIONS": [
+      "GET=83; TASK_READ=78; PROTOCOL_CONTENT_EXEMPT=5",
+      "operations-admin=134; OWNER_COMMAND=68; PROTOCOL_COMMAND=7; TASK_READ=58; PROTOCOL_GET=1",
+      "SQL-M1=68 command plus 58 task-read operations = 126",
+      "SQL-M2 source-proven set=2 C5 commands plus 58 task reads = 60; the remaining operations are not inferred applicable from consumer face"
+    ],
+    "FORBIDDEN_PSEUDO_FIXES": [
+      "no blanket face-derived SQL-M2 applicability",
+      "no protocol GET in read authorization or structural scope facts",
+      "no task reader invoked from a command transaction",
+      "no global read module, dynamic dispatcher, cross-owner cache, BP-U06 retirement, reset, seed, DEV, L2, or UAT"
+    ],
+    "DESIGN_ACCEPTANCE": [
+      "a durable Dexter rebaseline decision binds the corrected denominator and unit ownership",
+      "the plan, design manifest, and SQL applicability control agree on the corrected partition",
+      "a fresh independent DESIGN review is required before implementation authority"
+    ]
+  }
+}

@@ -3,7 +3,8 @@ import {spawn, spawnSync} from 'node:child_process';
 import {chmodSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
-import {evaluateCleanupReadback, snapshotProcessTree, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
+import {canonicalStartToken, evaluateCleanupReadback, snapshotProcessTree, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
+import {catalogImageBindEvidenceInputs} from '../test/catalog-image-bind-evidence-inputs.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -13,10 +14,10 @@ const localPostgresPort = String(process.env.V2S_DEV_LOCAL_POSTGRES_PORT ?? '254
 const localAssetPort = String(process.env.V2S_DEV_LOCAL_ASSET_PORT ?? '29000');
 if (!/^\d{4,5}$/.test(localPostgresPort) || !/^\d{4,5}$/.test(localAssetPort)) throw new Error('R5_DEV_LOCAL_PORT_INVALID');
 const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
-const startToken = (pid) => run('ps', ['-o', 'lstart=', '-p', String(pid)]).trim();
+const startToken = (pid) => canonicalStartToken(run('ps', ['-o', 'lstart=', '-p', String(pid)]));
 const readStartToken = (pid) => {
   const result = spawnSync('ps', ['-o', 'lstart=', '-p', String(pid)], {encoding: 'utf8'});
-  return result.status === 0 && result.stdout.trim() ? result.stdout.trim() : null;
+  return result.status === 0 && result.stdout.trim() ? canonicalStartToken(result.stdout) : null;
 };
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const fail = (reason) => { throw new Error(`R5_DEV_RUNNER=REFUSED; REASON=${reason}`); };
@@ -25,7 +26,11 @@ const run = (command, args, options = {}) => {
   if (result.status !== 0) fail(`${command}:${(result.stderr || result.stdout || 'FAILED').trim().replace(/\s+/g, '_').slice(0, 160)}`);
   return result.stdout;
 };
-const processIdentity = (value) => ({pid: value.pid, pgid: value.pgid ?? value.pid, startToken: value.startToken});
+// Manifests written before canonical token admission preserve macOS's double
+// space before a single-digit day. Normalize the stored identity before every
+// comparison, while still rejecting a genuinely different process start time.
+const ownedStartToken = (value) => canonicalStartToken(value.startToken);
+const processIdentity = (value) => ({pid: value.pid, pgid: value.pgid ?? value.pid, startToken: ownedStartToken(value)});
 const cleanupStatusFromTree = (treeReadback) => evaluateCleanupReadback(treeReadback) ? 'PASS' : 'FAIL';
 async function stopOwnedIdentity(value) {
   if (!Number.isInteger(value.pid) || typeof value.startToken !== 'string') fail(`PROCESS_IDENTITY_INVALID:${value.name}`);
@@ -45,7 +50,7 @@ async function stopOwnedIdentity(value) {
     if (!pidAlive(value.pid) && remaining.length === 0) return [];
     fail(`PROCESS_IDENTITY_UNAVAILABLE:${value.name}`);
   }
-  if (currentStartToken !== value.startToken) fail(`PROCESS_IDENTITY_MISMATCH:${value.name}`);
+  if (currentStartToken !== ownedStartToken(value)) fail(`PROCESS_IDENTITY_MISMATCH:${value.name}`);
   let result = await terminateOwnedProcessTree(processIdentity(value), {readTable: readProcessTable});
   if (result.status !== 'PASS') {
     const remainingAfterGraceful = readProcessTable().filter((entry) => entry.pgid === (value.pgid ?? value.pid));
@@ -92,6 +97,7 @@ function credentials() {
     if (!entries.CATERING_ASSET_S3_ACCESS_KEY) entries.CATERING_ASSET_S3_ACCESS_KEY = `r5asset${crypto.randomBytes(8).toString('hex')}`;
     if (!entries.CATERING_ASSET_S3_SECRET_KEY) entries.CATERING_ASSET_S3_SECRET_KEY = secret();
     if (!entries.V2S_SEED_REPORT_SECRET) entries.V2S_SEED_REPORT_SECRET = secret();
+    if (!entries.V2S_DB_OPERATIONS_HMAC_KEY) entries.V2S_DB_OPERATIONS_HMAC_KEY = secret();
     entries.V2S_SEED_PLATFORM_ROOT_PASSWORD = 'root';
     delete entries.V2S_SEED_PLATFORM_BOOTSTRAP_PASSWORD;
     writeFileSync(target, `${Object.entries(entries).map(([name, value]) => `${name}=${value}`).join('\n')}\n`, {mode: 0o600});
@@ -112,6 +118,7 @@ function credentials() {
     CATERING_ASSET_S3_ACCESS_KEY: `r5asset${crypto.randomBytes(8).toString('hex')}`,
     CATERING_ASSET_S3_SECRET_KEY: secret(),
     V2S_SEED_REPORT_SECRET: secret(),
+    V2S_DB_OPERATIONS_HMAC_KEY: secret(),
   };
   writeFileSync(target, `${Object.entries(values).map(([name, value]) => `${name}=${value}`).join('\n')}\n`, {mode: 0o600});
   chmodSync(target, 0o600);
@@ -187,6 +194,22 @@ async function start() {
   const credential = credentials();
   const runId = `rm1-seed-${crypto.randomUUID()}`;
   const seedEventsPath = path.join(runtime, 'evidence', 'seed-request-events.jsonl');
+  const dbOperationsPath = path.join(runtime, 'evidence', 'db-operations.jsonl');
+  const statementDictionaryPath = path.join(runtime, 'evidence', 'statement-dictionary.json');
+  const diagnosticProtocol = {
+    measurement: {
+      schemaVersion: 2,
+      basis: 'JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH',
+    },
+    profile: 'r5-seed',
+    runIdHeader: 'X-Seed-Run-Id',
+    secretHeader: 'X-Seed-Report-Secret',
+    operationIdHeader: 'X-Seed-Operation-Id',
+    routeTemplateHeader: 'X-Seed-Route-Template',
+    correlationIdHeader: 'X-Correlation-Id',
+    secretCredentialKey: 'V2S_SEED_REPORT_SECRET',
+  };
+  const imageBindEvidenceInputs = catalogImageBindEvidenceInputs(root);
   const provision = provisionRemote(env, credential.values, requireFreshDatabase);
   if (requireFreshDatabase && !provision.freshDatabase) fail('FRESH_DATABASE_PROOF_MISSING');
   const objectStorage = provisionObjectStorage(env, credential.values);
@@ -195,7 +218,7 @@ async function start() {
   try {
   const tunnel = openTunnel(env);
   const commands = [
-    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
+    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, V2S_DB_OPERATIONS_EVENTS: dbOperationsPath, V2S_DB_OPERATIONS_HMAC_KEY: credential.values.V2S_DB_OPERATIONS_HMAC_KEY, V2S_DB_STATEMENT_DICTIONARY: statementDictionaryPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
     {name: 'platform-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/platform-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_PLATFORM_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
     {name: 'operations-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/operations-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_OPERATIONS_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
   ];
@@ -212,7 +235,7 @@ async function start() {
   const businessServer = processes.find((value) => value.name === 'business-server');
   const readiness = await waitForBusinessReady(businessServer);
   businessServer.runtimeIdentity = readListeningProcessIdentity(8080, 'business-server-runtime');
-  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, portLock, processes, readiness}, null, 2) + '\n');
+  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, dbOperationsPath, statementDictionaryPath, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, imageBindEvidenceInputs, portLock, processes, readiness}, null, 2) + '\n');
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
     for (const value of processes) {
@@ -242,6 +265,9 @@ if (mode === '--self-test') {
   const processTable = [{pid: 10, ppid: 1, pgid: 10, startToken: 'root', command: 'runner'}, {pid: 11, ppid: 10, pgid: 10, startToken: 'child', command: 'child'}];
   const deadLeaderTree = snapshotProcessTree({pid: 10, pgid: 10, startToken: 'reused'}, processTable);
   if (cleanupStatusFromTree(deadLeaderTree) !== 'FAIL' || !deadLeaderTree.every((value) => value.ownershipUnverified === true)) fail('R5_DEV_RUNNER_PRODUCTION_RED_NOT_DETECTED');
+  const legacyManifestIdentity = {pid: 10, pgid: 10, startToken: 'Sun Aug  9 11:09:26 2026'};
+  if (processIdentity(legacyManifestIdentity).startToken !== 'Sun Aug 9 11:09:26 2026') fail('R5_DEV_RUNNER_LEGACY_MANIFEST_TOKEN_NOT_NORMALIZED');
+  if (processIdentity({...legacyManifestIdentity, startToken: 'Sun Aug 10 11:09:26 2026'}).startToken === 'Sun Aug 9 11:09:26 2026') fail('R5_DEV_RUNNER_REUSED_PID_TOKEN_NOT_REJECTED');
   syntheticManifest.firstFailure = 'R5_DEV_PROCESS_TREE_REMAINS:synthetic'; syntheticManifest.brokenBoundary = 'LOCAL_CLEANUP'; syntheticManifest.cleanup = 'FAIL';
   if (syntheticManifest.business !== 'PASS' || syntheticManifest.cleanup !== 'FAIL' || !syntheticManifest.firstFailure || !syntheticManifest.lastKnownGood || !syntheticManifest.brokenBoundary) fail('R5_DEV_RUNNER_CLEANUP_EVIDENCE_RED_NOT_RETAINED');
   process.stdout.write('R5_DEV_RUNNER_SELF_TEST=PASS\nRED=LEADER_DEAD_CHILD_ALIVE_CLEANUP_FAIL\nEVIDENCE=FIRST_FAILURE,LAST_KNOWN_GOOD,BROKEN_BOUNDARY\n');

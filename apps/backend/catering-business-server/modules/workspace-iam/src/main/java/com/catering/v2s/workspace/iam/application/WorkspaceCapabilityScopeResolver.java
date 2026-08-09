@@ -1,6 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
@@ -64,16 +65,33 @@ public class WorkspaceCapabilityScopeResolver {
         return resolve(session, requirementId, target, true);
     }
 
+    /**
+     * Resolves a generated operation policy only when its edge projection agrees
+     * with the authoritative global IAM requirement catalog.  The generated edge
+     * registry is therefore a finite transport projection, never a replacement
+     * for requirement registration or live role-scope resolution.
+     */
+    public ScopeResolution resolveGeneratedOperation(
+        WorkspaceSessionReadback session,
+        String requirementId,
+        String capabilityKey,
+        ServerResolvedResource target
+    ) {
+        if (target == null || !java.util.Objects.equals(
+            WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirementId, target.resourceType()).orElse(null),
+            capabilityKey
+        )) {
+            return ScopeResolution.deny();
+        }
+        return resolve(session, requirementId, target);
+    }
+
     private ScopeResolution resolve(
         WorkspaceSessionReadback session,
         String requirementId,
         ServerResolvedResource target,
         boolean statusTransitionTarget
     ) {
-        if (session == null || session.currentAssignmentId() == null || target == null
-            || target.resourceType() == null || target.resourceId() == null) {
-            return ScopeResolution.deny();
-        }
         var requirement = WorkspaceCapabilityRequirementCatalog.requirement(requirementId).orElse(null);
         if (requirement == null
             || !AUTHENTICATED_WORKSPACE.equals(requirement.authorizationMode())
@@ -83,14 +101,26 @@ public class WorkspaceCapabilityScopeResolver {
         String capability = WorkspaceCapabilityRequirementCatalog
             .resolveCapabilityKey(requirement.requirementId(), target.resourceType())
             .orElse(null);
-        if (capability == null || !hasCurrentCapability(session, capability)) {
+        return resolveWithCapability(session, requirementId, capability, target, statusTransitionTarget);
+    }
+
+    private ScopeResolution resolveWithCapability(
+        WorkspaceSessionReadback session,
+        String requirementId,
+        String capability,
+        ServerResolvedResource target,
+        boolean statusTransitionTarget
+    ) {
+        try (var scopeSection = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.SCOPE)) {
+        if (session == null || session.currentAssignmentId() == null || target == null
+            || target.resourceType() == null || target.resourceId() == null
+            || requirementId == null || requirementId.isBlank()
+            || capability == null || capability.isBlank()) {
             return ScopeResolution.deny();
         }
         WorkspaceAssignmentScopeLookup.AssignmentScope assignment;
         try {
-            assignment = assignments.requireActiveScope(
-                session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId()
-            );
+            assignment = loadWorkspaceCommandAuthorizationFacts(session, capability).assignmentScope();
         } catch (RuntimeException ignored) {
             return ScopeResolution.deny();
         }
@@ -115,6 +145,9 @@ public class WorkspaceCapabilityScopeResolver {
                 assignment.serviceNodeType(), assignment.serviceNodeId(), taskPath.ancestorIds()
             )
         );
+        } finally {
+            DatabaseOperationTracker.markPhase(DatabaseOperationTracker.Phase.SCOPE_RESOLVED);
+        }
     }
 
     /**
@@ -133,34 +166,49 @@ public class WorkspaceCapabilityScopeResolver {
     }
 
     /**
-     * A session readback is only a navigation projection.  Production authorization must
-     * re-read the active assignment and role capability so revocation between page load and
-     * command/read execution cannot be bypassed by a stale session snapshot.
+     * One command-transaction fact loader binds the fresh active assignment and its ENABLED
+     * role capability.  It replaces the former sibling capability and assignment reads without
+     * borrowing any task-path or owner-object fact from another module.
      */
-    private boolean hasCurrentCapability(WorkspaceSessionReadback session, String capability) {
-        if (jdbc == null) {
-            return session.actionCapabilityKeys() != null && session.actionCapabilityKeys().contains(capability);
+    private WorkspaceCommandAuthorizationFacts loadWorkspaceCommandAuthorizationFacts(WorkspaceSessionReadback session, String capability) {
+        try (var ignored = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.AUTHZ)) {
+            if (jdbc == null) {
+                if (session.actionCapabilityKeys() == null || !session.actionCapabilityKeys().contains(capability)) {
+                    throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException();
+                }
+                return new WorkspaceCommandAuthorizationFacts(assignments.requireActiveScope(
+                    session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId()
+                ));
+            }
+            return jdbc.query(
+                "SELECT assignment.service_node_type, assignment.service_node_id FROM workspace_iam.role_assignment assignment "
+                    + "JOIN workspace_iam.workspace_role role ON role.id=assignment.role_id "
+                    + "WHERE assignment.id=? AND assignment.workspace_uuid=? "
+                    + "AND assignment.group_workspace_key=? AND assignment.status='ACTIVE' "
+                    + "AND role.workspace_uuid=assignment.workspace_uuid "
+                    + "AND role.group_workspace_key=assignment.group_workspace_key "
+                    + "AND role.status='ENABLED' AND jsonb_exists(role.capability_keys, ?)",
+                statement -> {
+                    statement.setObject(1, session.currentAssignmentId());
+                    statement.setObject(2, session.workspaceUuid());
+                    statement.setString(3, session.groupWorkspaceKey());
+                    statement.setString(4, capability);
+                },
+                result -> {
+                    if (!result.next()) throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException();
+                    return new WorkspaceCommandAuthorizationFacts(new WorkspaceAssignmentScopeLookup.AssignmentScope(
+                        result.getString(1), result.getObject(2, UUID.class)
+                    ));
+                }
+            );
+        } finally {
+            DatabaseOperationTracker.markPhase(DatabaseOperationTracker.Phase.AUTHORIZED);
         }
-        Boolean allowed = jdbc.query(
-            "SELECT EXISTS(SELECT 1 FROM workspace_iam.role_assignment assignment "
-                + "JOIN workspace_iam.workspace_role role ON role.id=assignment.role_id "
-                + "WHERE assignment.id=? AND assignment.workspace_uuid=? "
-                + "AND assignment.group_workspace_key=? AND assignment.status='ACTIVE' "
-                + "AND role.workspace_uuid=assignment.workspace_uuid "
-                + "AND role.group_workspace_key=assignment.group_workspace_key "
-                + "AND role.status='ENABLED' AND jsonb_exists(role.capability_keys, ?))",
-            statement -> {
-                statement.setObject(1, session.currentAssignmentId());
-                statement.setObject(2, session.workspaceUuid());
-                statement.setString(3, session.groupWorkspaceKey());
-                statement.setString(4, capability);
-            },
-            result -> result.next() && result.getBoolean(1)
-        );
-        return Boolean.TRUE.equals(allowed);
     }
 
     public record ServerResolvedResource(String resourceType, UUID resourceId) { }
+
+    private record WorkspaceCommandAuthorizationFacts(WorkspaceAssignmentScopeLookup.AssignmentScope assignmentScope) { }
 
     /** Owner commands must apply this predicate in their first target query, then re-check their invariant. */
     public record FirstOwnerQueryPredicate(

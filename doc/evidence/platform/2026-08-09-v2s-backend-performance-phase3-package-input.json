@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-phase3-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-PHASE3-20260809",
+  "status": "ACTIVE_NOT_EXIT",
+  "scope": {
+    "includedUnits": ["BP-U07"],
+    "excludedUnits": ["BP-U05", "BP-U06"],
+    "authorization": "Dexter authorized the complete third stage: owner-local SQL-M1 through SQL-M6 abstractions, 196-route applicability and snapshot-only coverage validation."
+  },
+  "sourceDenominators": {
+    "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+      "project-memory/decisions/deterministic-context-only.md",
+      "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "project-memory/decisions/incremental-compliance-hook.md",
+      "project-memory/operations/verification-governance.md"
+    ],
+    "APPROVED_ASSERTIONS": [
+      "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md#BP-U07",
+      "doc/review/platform/2026-08-09-v2s-backend-performance-refactor-operation-coverage-initial.md"
+    ],
+    "FORBIDDEN_PSEUDO_FIXES": [
+      "no endpoint-specific SQL catalog",
+      "no operationId-selected SQL or dynamic registry",
+      "no global query bus, generic RequestFacts or cross-owner cache",
+      "no cross-schema DML, BP-U05 or BP-U06 implementation",
+      "no success claim for an SQL-M with unmeasured applicable operations"
+    ],
+    "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+      "finite owner-local typed facts or bounded batch judgments only",
+      "exact source-retirement/retained-preauth control for SQL-M4",
+      "complete 196-route applicability disposition and snapshot-only coverage gate"
+    ],
+    "OWNED_SURFACE_AND_OPERATION_KEYS": [
+      "M1/M2=128 operations-admin non-protocol routes",
+      "M3=25 catalog routes; M6=11 inventory routes",
+      "M4=5 retired post-auth groups / 6 expressions plus 5 retained pre-auth expressions",
+      "M5=six explicit owner/table rows"
+    ],
+    "DUE_STANDARDS_RULE_IDS": [
+      "scripts/check/implementation-design-granularity",
+      "scripts/check/backend-performance-sql-merge-coverage",
+      "scripts/check/backend-performance-evidence-snapshot",
+      "scripts/check/standards-coverage --phase RM1-P6-3"
+    ]
+  }
+}

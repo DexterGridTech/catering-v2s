@@ -2,6 +2,7 @@ package com.catering.v2s.extension.application;
 
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -30,11 +31,13 @@ public class ExtensionCommandReceiptService {
             try { return JSON.readValue(existing.responseJson(), ExtensionDefinitionReadback.class); }
             catch (Exception failure) { throw new ExtensionReceiptCorruptException(failure); }
         }
-        ExtensionDefinitionReadback response = command.get();
-        try {
-            jdbc.update("UPDATE extension.extension_command_receipt SET response_json=CAST(? AS JSONB), state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND state='IN_PROGRESS'", JSON.writeValueAsString(response), workspaceUuid, key);
-        } catch (Exception failure) { throw new ExtensionReceiptCorruptException(failure); }
-        return response;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            ExtensionDefinitionReadback response = command.get();
+            try {
+                jdbc.update("UPDATE extension.extension_command_receipt SET response_json=CAST(? AS JSONB), state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND state='IN_PROGRESS'", JSON.writeValueAsString(response), workspaceUuid, key);
+            } catch (Exception failure) { throw new ExtensionReceiptCorruptException(failure); }
+            return response;
+        }
     }
     /** Insert, rather than an absent-row lock, is the workspace-scoped receipt linearization point. */
     private Receipt claim(String key, UUID workspaceUuid, String groupWorkspaceKey, String entityType, String requestHash) {

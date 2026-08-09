@@ -48,6 +48,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertProblem(advice.headCompanyBrandAuthorizationInUse(new BusinessEntityService.HeadCompanyBrandAuthorizationInUseException(), request), HttpStatus.CONFLICT, "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE");
         assertProblem(advice.notFound(new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException(), request), HttpStatus.NOT_FOUND, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         assertProblem(advice.notFound(new OrganizationTaskPathService.TaskPathNotFoundException(), request), HttpStatus.NOT_FOUND, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
+        assertProblem(advice.catalogAssetOwnerScopeForbidden(new PlatformAssetService.AssetOwnerScopeForbiddenException(), request), HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN");
         assertProblem(advice.multipartTooLarge(new MaxUploadSizeExceededException(5L * 1024 * 1024), request), HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR");
     }
 
@@ -64,6 +65,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertTrue(declared.contains(WorkspaceAuthenticationService.OtpInvalidException.class));
         assertTrue(declared.contains(WorkspaceInvitationService.InvitationStateException.class));
         assertTrue(declared.contains(BusinessEntityService.HeadCompanyBrandAuthorizationInUseException.class));
+        assertTrue(declared.contains(PlatformAssetService.AssetOwnerScopeForbiddenException.class));
         assertTrue(declared.contains(ContractCommandReceiptService.ContractReceiptCorruptException.class));
         assertTrue(declared.contains(ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class));
         assertTrue(declared.contains(MaxUploadSizeExceededException.class));

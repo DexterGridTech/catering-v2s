@@ -56,11 +56,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         return taskPath;
     }
 
-    /**
-     * Bounded display-path resolution for list/readback callers.  The owner performs
-     * one read per physical target family, rather than making consumer loops infer
-     * hierarchy through repeated scalar owner calls.
-     */
+    /** Bounded enabled task-path resolution for authority, candidate, and session callers. */
     @Override
     @Transactional(readOnly = true)
     public Map<TaskPathRef, TaskPath> requireTaskPaths(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
@@ -70,7 +66,29 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     @Override
     @Transactional(readOnly = true)
     public Map<TaskPathRef, TaskPath> describePersistedTaskPaths(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
-        return resolveTaskPaths(workspaceUuid, key, targets, true);
+        if (workspaceUuid == null || key == null || targets == null) throw new TaskPathNotFoundException();
+        LinkedHashSet<TaskPathRef> requested = validatedTargets(targets);
+        if (requested.isEmpty()) return Map.of();
+        Map<TaskPathRef, TaskPath> result = jdbc.query(
+            persistedTaskPathsSql(),
+            statement -> bindPersistedTaskPaths(statement, workspaceUuid, key, requested),
+            rows -> {
+                LinkedHashMap<TaskPathRef, TaskPath> paths = new LinkedHashMap<>();
+                while (rows.next()) {
+                    TaskPathRef target = new TaskPathRef(rows.getString("target_type"), rows.getObject("target_id", UUID.class));
+                    Array array = rows.getArray("ancestor_ids");
+                    Object[] values = (Object[]) array.getArray();
+                    List<UUID> ancestors = new ArrayList<>(values.length);
+                    for (Object value : values) ancestors.add((UUID) value);
+                    if (paths.put(target, new TaskPath(target.targetType(), target.targetId(), ancestors, rows.getString("display_path"))) != null) {
+                        throw new TaskPathNotFoundException();
+                    }
+                }
+                return Map.copyOf(paths);
+            }
+        );
+        if (result == null || result.size() != requested.size() || !result.keySet().equals(requested)) throw new TaskPathNotFoundException();
+        return result;
     }
 
     /**
@@ -79,11 +97,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
      */
     private Map<TaskPathRef, TaskPath> resolveTaskPaths(UUID workspaceUuid, String key, List<TaskPathRef> targets, boolean includeDisabledFacts) {
         if (workspaceUuid == null || key == null || targets == null) throw new TaskPathNotFoundException();
-        LinkedHashSet<TaskPathRef> requested = new LinkedHashSet<>(targets);
+        LinkedHashSet<TaskPathRef> requested = validatedTargets(targets);
         if (requested.isEmpty()) return Map.of();
-        for (TaskPathRef target : requested) {
-            if (target == null || target.targetId() == null || !Set.of(ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE).contains(target.targetType())) throw new TaskPathNotFoundException();
-        }
         UUID groupId = groups.requireCommercialGroupRef(workspaceUuid, key);
         LinkedHashMap<TaskPathRef, TaskPath> result = new LinkedHashMap<>();
 
@@ -128,6 +143,74 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
             }
         }
         return Map.copyOf(result);
+    }
+
+    /**
+     * Presentation-only persisted display needs one organization logical statement even when
+     * a page mixes every target family. Authority callers intentionally retain resolveTaskPaths.
+     */
+    private static String persistedTaskPathsSql() {
+        return "WITH RECURSIVE requested(target_type, target_id) AS ("
+            + "SELECT target_type, target_id FROM jsonb_to_recordset(?::jsonb) AS request(target_type text, target_id uuid)"
+            + "), commercial_group AS ("
+            + "SELECT commercial_group_uuid AS id, commercial_group_code, commercial_group_name FROM organization.commercial_group WHERE group_workspace_key=?"
+            + "), target_rows AS ("
+            + "SELECT requested.target_type, requested.target_id, commercial_group.id AS group_id, node.id AS node_id, head_company.id AS head_company_id, store.id AS store_id, store.project_id "
+            + "FROM requested CROSS JOIN commercial_group "
+            + "LEFT JOIN organization.organization_node node ON requested.target_type IN ('REGION','PROJECT') AND node.id=requested.target_id AND node.workspace_uuid=? AND node.group_workspace_key=? "
+            + "LEFT JOIN organization.head_company head_company ON requested.target_type='HEAD_COMPANY' AND head_company.id=requested.target_id AND head_company.workspace_uuid=? AND head_company.group_workspace_key=? "
+            + "LEFT JOIN organization.store store ON requested.target_type='STORE' AND store.id=requested.target_id AND store.workspace_uuid=? AND store.group_workspace_key=?"
+            + "), node_seeds AS ("
+            + "SELECT target_type, target_id, node.id, node.parent_id, node.code, node.name FROM target_rows JOIN organization.organization_node node ON node.id=target_rows.node_id "
+            + "UNION ALL SELECT target_rows.target_type, target_rows.target_id, project.id, project.parent_id, project.code, project.name FROM target_rows JOIN organization.organization_node project ON project.id=target_rows.project_id AND project.workspace_uuid=? AND project.group_workspace_key=?"
+            + "), ancestry AS ("
+            + "SELECT target_type, target_id, id, parent_id, code, name, 0 AS depth FROM node_seeds "
+            + "UNION ALL SELECT ancestry.target_type, ancestry.target_id, parent.id, parent.parent_id, parent.code, parent.name, ancestry.depth + 1 FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?"
+            + "), node_paths AS ("
+            + "SELECT target_type, target_id, array_agg(id ORDER BY depth DESC) AS ancestor_ids, string_agg(code || ' ' || name, ' / ' ORDER BY depth DESC) AS display_path FROM ancestry GROUP BY target_type, target_id"
+            + ") SELECT target_rows.target_type, target_rows.target_id, "
+            + "CASE WHEN target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id THEN ARRAY[target_rows.group_id] "
+            + "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN array_prepend(target_rows.group_id, node_paths.ancestor_ids) "
+            + "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ARRAY[target_rows.group_id, target_rows.head_company_id] "
+            + "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id IS NOT NULL THEN array_append(array_prepend(target_rows.group_id, node_paths.ancestor_ids), target_rows.store_id) END AS ancestor_ids, "
+            + "CASE WHEN target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id THEN commercial_group.commercial_group_name || '（' || commercial_group.commercial_group_code || '）' "
+            + "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN node_paths.display_path "
+            + "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN head_company.code || ' ' || head_company.name "
+            + "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id IS NOT NULL THEN node_paths.display_path || ' / ' || store.code || ' ' || store.name END AS display_path "
+            + "FROM target_rows CROSS JOIN commercial_group "
+            + "LEFT JOIN node_paths ON node_paths.target_type=target_rows.target_type AND node_paths.target_id=target_rows.target_id "
+            + "LEFT JOIN organization.head_company head_company ON head_company.id=target_rows.head_company_id "
+            + "LEFT JOIN organization.store store ON store.id=target_rows.store_id "
+            + "WHERE (target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id) "
+            + "OR (target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL) "
+            + "OR (target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL) "
+            + "OR (target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id IS NOT NULL)";
+    }
+
+    private static LinkedHashSet<TaskPathRef> validatedTargets(List<TaskPathRef> targets) {
+        LinkedHashSet<TaskPathRef> requested = new LinkedHashSet<>(targets);
+        for (TaskPathRef target : requested) {
+            if (target == null || target.targetId() == null || !Set.of(ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE).contains(target.targetType())) {
+                throw new TaskPathNotFoundException();
+            }
+        }
+        return requested;
+    }
+
+    private static void bindPersistedTaskPaths(java.sql.PreparedStatement statement, UUID workspaceUuid, String key, Set<TaskPathRef> targets) throws java.sql.SQLException {
+        statement.setString(1, persistedTargetJson(targets));
+        statement.setString(2, key);
+        int index = 3;
+        for (int ownerPredicate = 0; ownerPredicate < 5; ownerPredicate++) {
+            statement.setObject(index++, workspaceUuid);
+            statement.setString(index++, key);
+        }
+    }
+
+    private static String persistedTargetJson(Set<TaskPathRef> targets) {
+        return targets.stream()
+            .map(target -> "{\"target_type\":\"" + target.targetType() + "\",\"target_id\":\"" + target.targetId() + "\"}")
+            .collect(java.util.stream.Collectors.joining(",", "[", "]"));
     }
 
     @Override

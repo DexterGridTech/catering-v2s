@@ -70,6 +70,11 @@ class ExtensionDefinitionServiceTest {
         assertThrows(ExtensionDefinitionService.DefinitionNotFoundException.class, () -> service.requireDefinition(workspaceId, "extension-test", "BRAND"));
     }
 
+    @Test void platformTaskReadBoundariesPreserveManagementSemantics() {
+        assertEquals(8, service.platformManagementDefinitions(workspaceId, "extension-test").size());
+        assertEquals("BRAND", service.platformManagementDefinition(workspaceId, "extension-test", "BRAND").hostType());
+    }
+
     @Test void sharedOwnerValueMergeKeepsTypedRequiredAndDisabledSemantics() {
         var definition = service.replace(workspaceId, "extension-test", "REGION", 0, List.of(
             new ExtensionDefinitionService.Field("area", "Area", "NUMBER", true, List.of(), "ENABLED", 0, null),

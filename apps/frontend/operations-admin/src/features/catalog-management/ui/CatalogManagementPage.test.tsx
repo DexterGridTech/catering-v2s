@@ -1,10 +1,12 @@
 import {describe, expect, it} from 'vitest';
 import {readFile} from 'node:fs/promises';
 import type {CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
-import {decodeDetail, decodeNavigation} from '../model/catalogModel';
+import {requireOperationsScopeRef} from '../../../app/routing/model';
+import {decodeBrandCopyReadback, decodeDetail, decodeNavigation, decodePreflight} from '../model/catalogModel';
 
 const workbench = await readFile(new URL('./CatalogWorkbenchPage.tsx', import.meta.url), 'utf8');
 const detail = await readFile(new URL('./CatalogItemDrawer.tsx', import.meta.url), 'utf8');
+const assetPreview = await readFile(new URL('./CatalogAssetPreview.tsx', import.meta.url), 'utf8');
 const copy = await readFile(new URL('./BrandCatalogCopyDrawer.tsx', import.meta.url), 'utf8');
 const localCopy = await readFile(new URL('./LocalCatalogCopyDrawer.tsx', import.meta.url), 'utf8');
 const create = await readFile(new URL('./CatalogItemCreateDrawer.tsx', import.meta.url), 'utf8');
@@ -12,6 +14,17 @@ const dictionary = await readFile(new URL('./CatalogDictionaryDrawer.tsx', impor
 const model = await readFile(new URL('../model/catalogModel.ts', import.meta.url), 'utf8');
 
 describe('catalog management focused contract', () => {
+  it('fails closed when a write request has no selected data-node scope', () => {
+    expect(requireOperationsScopeRef({groupWorkspaceKey: 'workspace-1', expectedContextVersion: 3, scopeRef: 'store-1'})).toBe('store-1');
+    expect(() => requireOperationsScopeRef({groupWorkspaceKey: 'workspace-1', expectedContextVersion: 3})).toThrow('OPERATIONS_DATA_NODE_SCOPE_REQUIRED');
+    for (const source of [workbench, detail, copy, localCopy, create, dictionary]) expect(source).toContain('requireOperationsScopeRef');
+  });
+
+  it('binds the shape-manifest read to the selected data-node scope', () => {
+    expect(create).toContain("getOperationsCatalogShapeManifest({}, {query: {dataNodeRef: queryContext.scopeRef ?? ''}, headers})");
+    expect(create).toContain('{skip: !open || !queryContext.scopeRef}');
+  });
+
   it('keeps store and brand as distinct approved workbench surfaces', () => {
     expect(workbench).toContain('StoreCatalogManagementPage');
     expect(workbench).toContain('BrandCatalogManagementPage');
@@ -20,11 +33,52 @@ describe('catalog management focused contract', () => {
     expect(workbench).toContain('catalog-inventory-view-switch');
     expect(workbench).toContain('catalog-inventory-brand-switch');
     expect(workbench).toContain('catalog-inventory-item-table');
-    expect(workbench).toContain("editCatalogCapability = 'EDIT_CATALOG_LIBRARY'");
-    expect(workbench).toContain("surface === 'store' && canWrite && context?.headCompanyRef && context.brandRef && context.copySourceAvailable");
+    expect(workbench).toMatch(/surface\s*===\s*'brand'\s*\?\s*'EDIT_HEAD_COMPANY_CATALOG'\s*:\s*'EDIT_STORE_CATALOG'/);
+    expect(workbench).not.toContain('EDIT_CATALOG_LIBRARY');
+    expect(workbench).toContain("surface === 'store' && canWriteCatalog && context?.headCompanyRef && context.brandRef && context.copySourceAvailable");
     expect(workbench).not.toContain('导入');
     expect(workbench).not.toContain('导出');
     expect(workbench).not.toContain('当前库存');
+  });
+
+  it('uses one bounded tree-and-table layout for both catalog surfaces', () => {
+    expect(workbench).toContain("width: 312, flex: '0 0 312px'");
+    expect(workbench).toContain('<Tree blockNode');
+    expect(workbench).toContain('function CatalogTreeLine');
+    expect(workbench).toContain("flex: '1 1 auto', minWidth: 0");
+    expect(workbench).toContain('ellipsis={{tooltip: label}}');
+    expect(workbench).toContain('count !== undefined && <Tag');
+    expect(workbench.indexOf('count !== undefined && <Tag')).toBeLessThan(workbench.indexOf('Typography.Text ellipsis'));
+    for (const icon of ['BulbOutlined', 'AppstoreOutlined', 'TagsOutlined', 'smartViewIcons', 'shapeIcons']) expect(workbench).toContain(icon);
+    expect(workbench).toContain('icon={smartViewIcons[node.viewKey]');
+    expect(workbench).toContain('icon={shapeIcons[node.shapeKey]');
+    expect(workbench).toContain("marginLeft: 'auto'");
+    expect(workbench).toContain('toolBarRender={() => selectedRows.length');
+    expect(workbench).toContain('catalog-inventory-selection-summary');
+    expect(workbench).toContain('tableAlertRender={false}');
+    expect(workbench).toContain('tableAlertOptionRender={false}');
+  });
+
+  it('keeps inventory/BOM in the catalog item save under the catalog capability', () => {
+    expect(workbench).toMatch(/const canWriteCatalog = \(actionCapabilityKeys as readonly string\[\]\)\.includes\(editCatalogCapability\)/);
+    expect(workbench).toContain('surface === \'store\' && canWriteCatalog && context?.headCompanyRef');
+    expect(workbench).toContain('canWriteCatalog={canWriteCatalog}');
+    expect(workbench).not.toContain('EDIT_STORE_INVENTORY');
+
+    expect(detail).toContain("if (visibleTabs.has('inventory-bom')) {");
+    expect(detail).toContain("if (visibleTabs.has('inventory-bom')) catalogDraft.inventoryBom = inventoryBomDraft;");
+    expect(detail).toContain("if (tabKey === 'inventory-bom' && editing) return <InventoryBomEditor");
+    expect(detail).toContain("inventoryConfiguration: {nodes: visibleTabs.has('inventory-bom')");
+    expect(detail).toContain("expectedInventoryVersions: visibleTabs.has('inventory-bom')");
+    expect(detail).toContain('canWriteCatalog');
+    expect(detail).not.toContain('canWriteInventory');
+    expect(detail).not.toContain('EDIT_STORE_INVENTORY');
+
+    for (const action of ['action?.canEdit', 'action?.canEnable', 'action?.canDisable', 'action?.canArchive']) {
+      expect(detail).toContain(`canWriteCatalog && ${action}`);
+    }
+    expect(detail).toContain("surface === 'store' && mode === 'view' && canWriteCatalog");
+    expect(detail).not.toMatch(/canWriteInventory\s*&&\s*action\?\.(canEdit|canEnable|canDisable|canArchive)/);
   });
 
   it('uses generated operations and foundation behavior instead of routes or local lifecycle copies', () => {
@@ -43,6 +97,24 @@ describe('catalog management focused contract', () => {
     expect(model).toContain('queryGeneration: text(value.queryGeneration)');
   });
 
+  it('resolves catalog image URLs only through the generated public asset operation', () => {
+    expect(assetPreview).toContain('publicRtkRequest.getPublicAssetContent');
+    expect(assetPreview).toContain('assetQuery.data?.publicUrl');
+    expect(assetPreview).toContain('data-testid={testId ? `${testId}-retry` : undefined}');
+    expect(assetPreview).toContain('重试加载');
+    expect(assetPreview).toContain('图片不可用');
+    expect(assetPreview).not.toMatch(/\/api\/public\/assets/);
+    expect(workbench).toContain('catalog-item-thumbnail-');
+    expect(detail).toContain('catalog-item-media-gallery-');
+    expect(detail).toContain('catalog-item-media-preview-');
+    expect(detail).toContain('catalog-item-drawer-thumbnail');
+    expect(detail).toContain('catalog-item-sku-media-preview-');
+    expect(detail).toContain('catalog-item-sku-media-readonly-');
+    expect(detail).toContain('catalog-item-sku-media-upload-');
+    expect(detail).toContain('catalog-item-sku-media-replace-');
+    expect(detail).toContain('catalog-item-sku-media-remove-');
+  });
+
   it('keeps one wide view-edit drawer with manifest tabs and dirty protection', () => {
     expect(detail).toContain('catalog-inventory-item-drawer');
     expect(detail).toContain('catalog-item-dirty-discard');
@@ -50,6 +122,18 @@ describe('catalog management focused contract', () => {
     expect(detail).toContain('detail.tabs');
     expect(detail).toContain('expectedCatalogVersion: detail.item.version');
     expect(detail).toContain("'Idempotency-Key': lifecycle.getIdempotencyKey()");
+  });
+
+  it('carries staged-asset bind grants only through the transient save header', () => {
+    expect(detail).toContain('bindGrant?: string');
+    expect(detail).toContain("'X-Catalog-Asset-Bind-Grants'");
+    expect(detail).toContain('CATALOG_ASSET_STAGE_READBACK_MISSING');
+    expect(detail).not.toContain('bindGrant: asset.bindGrant');
+  });
+
+  it('binds each staged asset request to the currently selected data node', () => {
+    expect(detail.match(/stageOperationsCatalogAsset/g)).toHaveLength(2);
+    expect(detail.match(/const body = \{dataNodeRef, fileName:/g)).toHaveLength(2);
   });
 
   it('keeps temporary-item promotion as a typed completion journey, not a direct status flip', () => {
@@ -82,6 +166,19 @@ describe('catalog management focused contract', () => {
     expect(copy).toContain('preflight.blockingCount > 0 || !confirmed');
     expect(copy).toContain("(feedback.errorCode as string) === 'STALE_COPY_PREFLIGHT'");
     expect(copy).not.toContain('sourceDataNodeRef:');
+    expect(copy).toContain('referenceMappings');
+    expect(copy).toContain('targetSkuCode');
+    expect(copy).toContain('targetOptionValueCode');
+    for (const retiredField of ['mappingPreview', 'referenceRewritePreview', '.mappings', 'Object.entries', 'JSON.stringify', 'sourceRef', 'targetRef']) expect(copy).not.toContain(retiredField);
+  });
+
+  it('keeps brand-copy reference mappings label-only after decoding', () => {
+    const preflight = decodePreflight({data: {preflightDigest: 'digest', selectedCount: 1, selectedLimit: 20, closureCount: 1, closureLimit: 500, blockingCount: 0, confirmationRequiredCount: 0, selectedItems: [], closureItems: [], objectVersions: [], compatibilityResults: [], referenceMappings: [{objectType: 'OPTION_VALUE_BOM', sourceRef: '11111111-1111-1111-1111-111111111111', targetRef: '22222222-2222-2222-2222-222222222222', targetCode: 'LATTE-001', targetSkuCode: 'LATTE-001-L', targetOptionValueCode: 'HOT'}]}} as CatalogInventoryEnvelope);
+    expect(preflight?.referenceMappings).toEqual([{objectType: 'OPTION_VALUE_BOM', targetCode: 'LATTE-001', targetSkuCode: 'LATTE-001-L', targetOptionValueCode: 'HOT'}]);
+
+    const readback = decodeBrandCopyReadback({data: {preflightDigest: 'digest', created: [], reused: [], targetVersions: [{targetRef: '33333333-3333-3333-3333-333333333333', version: 2}], ownerReadbacks: [], referenceMappings: [{objectType: 'SKU_BOM', sourceRef: '44444444-4444-4444-4444-444444444444', targetRef: '55555555-5555-5555-5555-555555555555', targetCode: 'LATTE-001', targetSkuCode: 'LATTE-001-L', targetOptionValueCode: null}]}} as CatalogInventoryEnvelope);
+    expect(readback?.referenceMappings).toEqual([{objectType: 'SKU_BOM', targetCode: 'LATTE-001', targetSkuCode: 'LATTE-001-L'}]);
+    expect(readback?.targetVersions).toEqual([{version: 2}]);
   });
 
   it('keeps local copy bound to the approved preflight/execute contract', () => {
@@ -107,9 +204,12 @@ describe('catalog management focused contract', () => {
     expect(localCopy).toContain('decodeLocalCopyPreflight');
     expect(localCopy).toContain('decodeLocalCopyReadback');
     expect(localCopy).toContain('catalog-local-copy-closure-items');
-    expect(localCopy).toContain('catalog-local-copy-mapping-preview');
+    expect(localCopy).toContain('catalog-local-copy-reference-mappings');
     expect(localCopy).toContain('catalog-local-copy-compatibility-results');
-    expect(localCopy).toContain('catalog-local-copy-reference-rewrite-preview');
+    expect(localCopy).toContain('referenceMappings');
+    expect(localCopy).toContain('targetSkuCode');
+    expect(localCopy).toContain('targetOptionValueCode');
+    for (const retiredField of ['mappingPreview', 'closureEdges', 'referenceRewritePreview', '.mappings', 'sourceRef', 'targetRef']) expect(localCopy).not.toContain(retiredField);
     expect(localCopy).toContain('catalog-local-copy-created');
     expect(localCopy).toContain('catalog-local-copy-reused');
     expect(localCopy).toContain('catalog-local-copy-skipped');
@@ -123,24 +223,36 @@ describe('catalog management focused contract', () => {
     expect(model).toContain('decodeLocalCopyCandidatePage');
     expect(model).toContain('decodeLocalCopyPreflight');
     expect(model).toContain('decodeLocalCopyReadback');
-    expect(model).toContain('parentCode?: string');
-    expect(model).toContain('status?: string');
-    expect(model).toContain('version?: number');
-    expect(model).toContain('voidAvailability?: CatalogVoidAvailability');
+    expect(model).toContain('parentCategoryRef: string | null');
+    expect(model).toContain('categoryRef: string');
+    expect(model).toContain('displayOrder: number');
+    expect(model).toContain('deletionAvailability: CatalogCategoryDeletionAvailability');
   });
 
-  it('retains typed category navigation owner facts when the edge returns them', () => {
-    const envelope = {data: {tree: [{nodeRef: 'CAT-ROOT', label: '根类', code: 'CAT-ROOT', parentCode: null, status: 'ENABLED', version: 3, count: 2, countSemantics: 'SELF_ONLY', voidAvailability: {canVoid: false, blockingReferences: [{referenceKind: 'CATALOG_ITEM', referenceRef: 'ITEM-1'}], dependentFacts: []}}], smartViews: [], shapeCounts: [], generation: 7}} as CatalogInventoryEnvelope;
+  it('keeps truthful category refs, versions and safe deletion availability from navigation', () => {
+    const envelope = {data: {tree: [{categoryRef: 'a0f5f2c9-3e80-4e10-9ecf-a6d8186dfd49', code: 'CAT-ROOT', name: '根类', parentCategoryRef: null, version: 3, displayOrder: 0, count: 2, countSemantics: 'SELF_ONLY', deletionAvailability: {canDelete: false, subtreeSize: 2, blockingReferenceCount: 1, blockingReferenceLabels: ['烤鸡翅(APP-CHICKEN-WINGS-001)']}}], smartViews: [], shapeCounts: [], generation: 7}} as CatalogInventoryEnvelope;
     const node = decodeNavigation(envelope).tree[0];
-    expect(node.parentCode).toBeUndefined();
-    expect(node).toMatchObject({nodeRef: 'CAT-ROOT', status: 'ENABLED', version: 3, countSemantics: 'SELF_ONLY', voidAvailability: {canVoid: false, blockingReferences: [{referenceKind: 'CATALOG_ITEM', referenceRef: 'ITEM-1'}]}});
+    expect(node.parentCategoryRef).toBeNull();
+    expect(node).toMatchObject({categoryRef: 'a0f5f2c9-3e80-4e10-9ecf-a6d8186dfd49', name: '根类', version: 3, displayOrder: 0, countSemantics: 'SELF_ONLY', deletionAvailability: {canDelete: false, subtreeSize: 2, blockingReferenceCount: 1, blockingReferenceLabels: ['烤鸡翅(APP-CHICKEN-WINGS-001)']}});
   });
 
-  it('rebuilds a voided category under its original parent instead of the voided code', () => {
-    expect(workbench).toContain('rebuildParentCode?: string');
-    expect(workbench).toContain('rebuildParentCode: rebuildNode.parentCode ??');
-    expect(workbench).toContain('const parentCode = categoryAction.rebuildParentCode !== undefined');
-    expect(workbench).toContain("categoryAction.rebuildParentCode ? '作废后重建子分类' : '作废后重建分类'");
+  it('maps category management to distinct rename, reparent, ordering and delete commands', () => {
+    for (const control of ['更换父分类', '向上移动', '向下移动', '删除分类']) expect(workbench).toContain(control);
+    expect(workbench).toContain("action === 'REPARENT'");
+    expect(workbench).toContain("? 'UP' : 'DOWN'");
+    expect(workbench).toContain('deleteOperationsCatalogCategory');
+    expect(workbench).toContain('categoryAction.node?.categoryRef');
+    expect(workbench).toContain('deletionAvailability.blockingReferenceLabels');
+    expect(workbench).toContain('function itemReferenceSummary');
+    expect(workbench).toContain('生产标签 ${row.productionTagRefs.length}');
+    expect(workbench).not.toContain('[...row.categoryRefs, ...row.productionTagRefs].slice(0, 2).join');
+    expect(workbench).not.toContain('transitionOperationsCatalogCategoryStatus');
+    expect(workbench).not.toContain('作废并重建');
+    expect(workbench).not.toContain('重新启用');
+    expect(workbench).not.toContain('停用分类');
+    expect(detail).toContain('组件商品引用');
+    expect(detail).toContain('itemRef: item.itemRef');
+    expect(detail).toContain('attributeValueRef: globalThis.crypto.randomUUID()');
   });
 
   it('keeps free-map attributes editable without inventing a schema', () => {
@@ -195,5 +307,32 @@ describe('catalog management focused contract', () => {
     expect(detail).toContain('catalog-item-media-move-up');
     expect(detail).toContain('images: mediaDraft.filter');
     expect(workbench).toContain("setDictionaryKind('PRODUCTION_TAG')");
+  });
+
+  it('keeps staged item replacement and SKU upload recoverable without changing owner or asset-preview boundaries', () => {
+    expect(detail).toContain('const previousAsset = previous');
+    expect(detail).not.toContain('mediaDraft.find((asset) => asset.id === id)?.previous');
+    expect(detail).toContain('if (stagedMedia) await releaseStagedAsset(stagedMedia);');
+    expect(detail).toContain("skuStagedMedia.some((asset) => asset.status === 'UPLOADING')");
+    expect(detail).toContain("skuStagedMedia.some((asset) => asset.status === 'FAILED' && !asset.assetRef)");
+    expect(detail).toContain("status: 'UPLOADING'");
+    expect(detail).toContain("status: 'FAILED'");
+    expect(detail).toContain('catalog-item-sku-media-status-');
+    expect(detail).toContain('catalog-item-sku-media-retry-');
+    expect(detail).toContain('catalog-item-sku-media-draft-remove-');
+    expect(detail).toContain('CatalogAssetPreview assetRef={assetRef}');
+    expect(detail).not.toMatch(/publicUrl|\/api\/public\/assets/);
+  });
+
+  it('keeps the Drawer open with a retryable recovery action when any staged asset release fails', () => {
+    expect(detail).toContain('releaseStagedMedia([...mediaDraft, ...skuStagedMedia])');
+    expect(detail).toContain('if (!released) {');
+    expect(detail).toContain('setMediaDraft((current) => current.map((asset) => releasedIds.has(asset.id) ? {...asset, staged: false} : asset));');
+    expect(detail).toContain('setSkuStagedMedia((current) => current.map((asset) => releasedIds.has(asset.id) ? {...asset, staged: false} : asset));');
+    expect(detail).toContain('setReleaseCloseFailed(true);');
+    expect(detail).toContain("setMediaProblem('图片资产释放未完成，请重试关闭。')");
+    expect(detail).toContain('catalog-item-release-close-retry');
+    expect(detail).toContain('closeAfterStagedRelease');
+    expect(detail).not.toContain('void releaseStagedMedia([...mediaDraft, ...skuStagedMedia]); onClose();');
   });
 });

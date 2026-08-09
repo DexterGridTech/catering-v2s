@@ -5,7 +5,7 @@ import {spawn, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {resolveTrustedRemoteHost} from './r5-remote-host-trust.mjs';
-import {snapshotProcessTree, evaluateCleanupReadback, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
+import {canonicalStartToken, snapshotProcessTree, evaluateCleanupReadback, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -30,7 +30,7 @@ function identity(processValue) {
   if (result.status !== 0 || !result.stdout.trim()) throw new Error(`HTTP_DIAGNOSTIC_PROCESS_IDENTITY_UNAVAILABLE:${processValue.name}`);
   const match = result.stdout.trim().match(/^(\d+)\s+(\d+)\s+(.{24})\s+(.*)$/);
   if (!match) throw new Error(`HTTP_DIAGNOSTIC_PROCESS_IDENTITY_INVALID:${processValue.name}`);
-  const startToken = match[3].trim();
+  const startToken = canonicalStartToken(match[3]);
   const value = {name: processValue.name, pid: Number(match[1]), pgid: Number(match[2]), processStart: startToken, startToken, commandSha256: sha256(match[4]), logPath: processValue.log ?? processValue.logPath};
   return {...value, tree: snapshotProcessTree(value)};
 }
@@ -92,6 +92,7 @@ function writePrivateCredentials(value, secrets = {
   CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: randomBytes(24).toString('base64url'),
   CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: randomBytes(24).toString('base64url'),
   V2S_HTTP_DIAGNOSTIC_SECRET: randomBytes(24).toString('base64url'),
+  V2S_DB_OPERATIONS_HMAC_KEY: randomBytes(32).toString('base64url'),
   V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_LOGIN: 'diagnostic-admin',
   V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_CREDENTIAL: randomBytes(18).toString('base64url'),
 }) {
@@ -135,6 +136,8 @@ function startBackend(planValue, secrets) {
   const log = path.join(planValue.runtime, 'business-server.log');
   const fd = openSync(log, 'a');
   const eventPath = path.join(planValue.runtime, 'evidence', 'http-request-events.jsonl');
+  const dbOperationsPath = path.join(planValue.runtime, 'evidence', 'db-operations.jsonl');
+  const statementDictionaryPath = path.join(planValue.runtime, 'evidence', 'statement-dictionary.json');
   const child = spawn('gradle', ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], {
     cwd: root, detached: true, stdio: ['ignore', fd, fd], env: {...process.env,
       CATERING_BUSINESS_DB_URL: `jdbc:postgresql://127.0.0.1:${planValue.tunnelPort}/${planValue.database}`,
@@ -143,6 +146,7 @@ function startBackend(planValue, secrets) {
       CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: 'http://127.0.0.1:29001', CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: secrets.CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: secrets.CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: 'http://127.0.0.1:29001', CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/http-diagnostic/${planValue.namespace}/`,
       V2S_RUNTIME_ENVIRONMENT: 'non-production', V2S_DEV_PROFILE: 'rm1-http-diagnostic', V2S_DEV_NAMESPACE: planValue.namespace,
       V2S_HTTP_DIAGNOSTIC_RUN_ID: planValue.runId, V2S_HTTP_DIAGNOSTIC_SECRET: secrets.V2S_HTTP_DIAGNOSTIC_SECRET, V2S_HTTP_DIAGNOSTIC_EVENTS: eventPath,
+      V2S_DB_OPERATIONS_EVENTS: dbOperationsPath, V2S_DB_OPERATIONS_HMAC_KEY: secrets.V2S_DB_OPERATIONS_HMAC_KEY, V2S_DB_STATEMENT_DICTIONARY: statementDictionaryPath,
       // Public-invitation verification is a controlled diagnostic prerequisite.  The
       // value stays in the backend response only; the workload keeps it in memory
       // and never writes it to the manifest, report, event log, or stdout.
@@ -150,7 +154,7 @@ function startBackend(planValue, secrets) {
       V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_ENABLED: 'true', V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_LOGIN: secrets.V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_LOGIN, V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_CREDENTIAL: secrets.V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_CREDENTIAL, SERVER_PORT: String(planValue.backendPort),
     }});
   if (!child.pid) throw new Error('HTTP_DIAGNOSTIC_BACKEND_START_FAILED');
-  child.unref(); return {name: 'business-server', pid: child.pid, log, eventPath};
+  child.unref(); return {name: 'business-server', pid: child.pid, log, eventPath, dbOperationsPath, statementDictionaryPath};
 }
 function hasMatchingIdentity(processValue) {
   if (!pidAlive(processValue.pid)) return true;
@@ -186,7 +190,9 @@ export function validateManagedManifest(manifestPath, manifest) {
   if (manifest.plan?.runtime !== runtime || manifest.plan?.runId !== manifest.runId) throw new Error('HTTP_DIAGNOSTIC_MANIFEST_INVALID');
   validateRuntimePlan(manifest.plan);
   if (manifest.credentialPath !== path.join(runtime, 'private.env') || !isPathInside(runtime, manifest.credentialPath)) throw new Error('HTTP_DIAGNOSTIC_MANIFEST_INVALID');
-  if (typeof manifest.eventPath !== 'string' || !isPathInside(path.join(runtime, 'evidence'), manifest.eventPath)) throw new Error('HTTP_DIAGNOSTIC_MANIFEST_INVALID');
+  if (typeof manifest.eventPath !== 'string' || !isPathInside(path.join(runtime, 'evidence'), manifest.eventPath)
+    || typeof manifest.dbOperationsPath !== 'string' || !isPathInside(path.join(runtime, 'evidence'), manifest.dbOperationsPath)
+    || typeof manifest.statementDictionaryPath !== 'string' || !isPathInside(path.join(runtime, 'evidence'), manifest.statementDictionaryPath)) throw new Error('HTTP_DIAGNOSTIC_MANIFEST_INVALID');
   for (const processValue of manifest.processes) {
     const expectedName = processValue?.name === 'remote-middleware-tunnel' || processValue?.name === 'business-server';
     if (!expectedName || !Number.isInteger(processValue.pid) || processValue.pid < 2 || processValue.pgid !== processValue.pid || typeof processValue.startToken !== 'string' || !processValue.startToken || processValue.processStart !== processValue.startToken || !/^[a-f0-9]{64}$/.test(processValue.commandSha256 ?? '') || typeof processValue.logPath !== 'string' || !isPathInside(runtime, processValue.logPath)) throw new Error('HTTP_DIAGNOSTIC_MANIFEST_INVALID');
@@ -263,14 +269,14 @@ async function start() {
   const planValue = plan();
   mkdirSync(path.join(planValue.runtime, 'evidence'), {recursive: true, mode: 0o700});
   const {credentialPath, secrets} = writePrivateCredentials(planValue);
-  let manifest = {schemaVersion: 1, kind: 'rm1-http-diagnostic-local-runtime', runId: planValue.runId, plan: {...planValue}, credentialPath, processes: [], phaseEvents: [{phase: 'PREPARED', status: 'PASS', at: new Date().toISOString()}], business: {status: 'NOT_APPLICABLE_HTTP_DIAGNOSTIC'}, cleanup: {status: 'NOT_ATTEMPTED'}, firstFailure: null};
+  let manifest = {schemaVersion: 2, kind: 'rm1-http-diagnostic-local-runtime', runId: planValue.runId, plan: {...planValue}, credentialPath, diagnosticProtocol: {measurement: {schemaVersion: 2, basis: 'JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH'}}, processes: [], phaseEvents: [{phase: 'PREPARED', status: 'PASS', at: new Date().toISOString()}], business: {status: 'NOT_APPLICABLE_HTTP_DIAGNOSTIC'}, cleanup: {status: 'NOT_ATTEMPTED'}, firstFailure: null};
   const manifestPath = path.join(planValue.runtime, 'run-manifest.json');
   persistManifest(manifestPath, manifest);
   try {
     provision(planValue, secrets); writePrivateCredentials(planValue, secrets); manifest.phaseEvents.push({phase: 'REMOTE_MIDDLEWARE_PROVISIONED', status: 'PASS', at: new Date().toISOString()}); persistManifest(manifestPath, manifest);
     const tunnel = openTunnel(planValue); manifest.processes.push(identity(tunnel)); persistManifest(manifestPath, manifest);
     const backend = startBackend(planValue, secrets); const backendIdentity = identity(backend); manifest.processes.push(backendIdentity);
-    manifest.phaseEvents.push({phase: 'LOCAL_BACKEND_AND_TUNNEL_STARTED', status: 'PASS', at: new Date().toISOString()}); manifest.eventPath = backend.eventPath; persistManifest(manifestPath, manifest);
+    manifest.phaseEvents.push({phase: 'LOCAL_BACKEND_AND_TUNNEL_STARTED', status: 'PASS', at: new Date().toISOString()}); manifest.eventPath = backend.eventPath; manifest.dbOperationsPath = backend.dbOperationsPath; manifest.statementDictionaryPath = backend.statementDictionaryPath; persistManifest(manifestPath, manifest);
     const readiness = await waitForBackendReady({backend: backendIdentity, backendPort: planValue.backendPort});
     manifest.phaseEvents.push({phase: 'LOCAL_BACKEND_HTTP_READY', status: 'PASS', at: new Date().toISOString(), ...readiness});
     persistManifest(manifestPath, manifest);

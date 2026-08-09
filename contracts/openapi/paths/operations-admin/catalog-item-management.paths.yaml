@@ -25,8 +25,20 @@
           "asset"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ITEM",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ITEM",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -86,8 +98,24 @@
           "asset"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM",
+        "x-coordinated-inventory-definition-commands": [
+          "ensureCatalogInventoryTarget",
+          "saveCatalogProductBom"
+        ],
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -126,6 +154,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Catalog-Asset-Bind-Grants",
+            "in": "header",
+            "required": false,
+            "description": "JSON assetRef-to-bindGrant map for this save only. It is transient proof material, never catalog data or log content.",
+            "schema": {
+              "type": "string",
+              "writeOnly": true
+            }
           }
         ],
         "requestBody": {
@@ -154,8 +192,20 @@
           "inventory"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -220,8 +270,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -286,8 +348,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -352,8 +426,20 @@
         "x-owner-module": "asset",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_STAGE_OPERATIONS_CATALOG_ASSET",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_STAGE_OPERATIONS_CATALOG_ASSET",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -412,8 +498,20 @@
           "catalog"
         ],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_RELEASE_OPERATIONS_CATALOG_STAGED_ASSET",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_RELEASE_OPERATIONS_CATALOG_STAGED_ASSET",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",

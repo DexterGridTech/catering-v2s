@@ -7,6 +7,7 @@ const ROOT = process.cwd();
 const REVISION = "CATALOG_INVENTORY_P1_20260806";
 const SHAPE_PATH = "contracts/catalog/catalog-item-editor-manifest.json";
 const EDGE_PATH = "contracts/catalog/catalog-inventory-edge-contract.json";
+const CATALOG_ROUTE_REGISTRY_PATH = "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json";
 const PLACEMENT_PATH = "contracts/catalog/catalog-inventory-edge-placement.json";
 const READ_MODEL_PATH = "contracts/catalog/catalog-inventory-read-models.json";
 const POLICY_PATH = "contracts/policy/catalog-inventory-copy-policy.json";
@@ -14,6 +15,7 @@ const FIXTURE_PATH = "contracts/policy/catalog-inventory-fixture-catalog.json";
 const FIXTURE_SCHEMA_PATH = "contracts/policy/catalog-inventory-fixture-catalog.schema.json";
 const MEDIA_CATALOG_PATH = "contracts/policy/catalog-inventory-media-assets.json";
 const DESIGN_COVERAGE_PATH = "contracts/policy/catalog-inventory-design-byte-coverage.json";
+const REFERENCE_PATH_MATRIX = "contracts/policy/catalog-inventory-reference-path-matrix.json";
 const ASSERTION_PATH = "contracts/policy/catalog-inventory-assertion-matrix.json";
 const API_SCENARIO_PATH = "contracts/policy/catalog-inventory-api-scenarios.json";
 const L2_SCENARIO_PATH = "contracts/policy/catalog-inventory-l2-scenarios.json";
@@ -22,6 +24,12 @@ const DESIGN_PATH = "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-s
 const OPENAPI_ROOT_PATH = "contracts/openapi/catalog-inventory.openapi.yaml";
 const GENERATED_EDGE_JAVA = "contracts/catalog/CatalogInventoryEdgeWire.java";
 const GENERATED_EDGE_TS = "contracts/catalog/catalogInventoryEdgeWire.ts";
+const SAVE_OPERATION_ID = "saveOperationsCatalogItem";
+const DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID = "updateOperationsInventoryTargetConfiguration";
+const SAVE_INVENTORY_DEFINITION_COMMANDS = ["ensureCatalogInventoryTarget", "saveCatalogProductBom"];
+const SHAPE_MANIFEST_OPERATION_ID = "getOperationsCatalogShapeManifest";
+const DUAL_SCOPE_READ_DATA_NODE_TYPES = ["HEAD_COMPANY", "STORE"];
+const DUAL_SCOPE_READ_COUNT = 7;
 
 function abs(rel) { return path.join(ROOT, rel); }
 function readJson(rel) { return JSON.parse(fs.readFileSync(abs(rel), "utf8")); }
@@ -84,7 +92,7 @@ function assertNoEmptyClosedSchema(value, currentPath) {
   else for (const [key, child] of Object.entries(value)) assertNoEmptyClosedSchema(child, currentPath + "." + key);
 }
 function schemaTypeSignature(schema) {
-  return JSON.stringify({type: schema?.type, format: schema?.format, enum: schema?.enum});
+  return JSON.stringify({type: schema?.type, format: schema?.format, enum: schema?.enum, items: schema?.type === "array" ? {type: schema?.items?.type ?? schema?.itemType, format: schema?.items?.format ?? schema?.itemFormat} : undefined});
 }
 function collectSchemaFields(schema, prefix = "", output = new Map()) {
   for (const [name, child] of Object.entries(schema?.properties || {})) {
@@ -159,6 +167,73 @@ function validateDesignByteCoverage(openapi, readModels, policy, shape) {
   return {modelCount: rows.length, fieldCount: rows.reduce((sum, row) => sum + row.fields.length, 0), closedFindingCount: (policy.closedFindingRows || []).length, typeConventionCount: (policy.typeConventions || []).length, fieldDigest: expectedFieldDigest};
 }
 
+function validateOpaqueReferencePaths(openapi, policy, matrix) {
+  const matrixIds = matrix.entries?.filter((entry) => /^R(?:0[1-9]|1[0-4])$/.test(entry.id)).map((entry) => entry.id) || [];
+  expect(matrix.policyId === "CATALOG_TYPED_REFERENCE_PATH_MATRIX" && matrix.status === "DEXTER_ACCEPTED_20260808" && exact(matrixIds, ["R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10", "R11", "R12", "R13", "R14"]), "P1_REFERENCE_PATH_MATRIX_DENOMINATOR");
+  const fields = new Map([...policy.rows, ...(policy.requestRows || [])].map((row) => [row.model, new Map((row.fields || []).map((field) => [field.path, field]))]));
+  const requiredCoverage = {
+    R02: [["CatalogItemPage", "items[].categoryRefs"], ["CatalogItemDetail", "item.categoryRefs"], ["CatalogItemSaveRequest", "sections.catalogDraft.categoryRefs"]],
+    R03: [["CatalogItemDetail", "item.tagRefs"], ["CatalogItemSaveRequest", "sections.catalogDraft.tagRefs"]],
+    R04: [["CatalogItemDetail", "item.salesUnitRefs"], ["CatalogItemSaveRequest", "sections.catalogDraft.salesUnitRefs"]],
+    R05: [["CatalogItemDetail", "item.skuVariantDimensions[].attributeRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.skuVariantDimensions[].attributeRef"]],
+    R06: [["CatalogItemDetail", "item.skus[].attributeValueRefs[].attributeValueRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.skus[].attributeValueRefs[].attributeValueRef"]],
+    R07: [["CatalogItemPage", "items[].productionTagRefs"], ["CatalogItemDetail", "item.productionTagRefs"], ["CatalogItemSaveRequest", "sections.catalogDraft.productionTagRefs"]],
+    R08: [["CatalogItemDetail", "item.skus[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.skus[].productSkuRef"]],
+    R09: [["CatalogItemDetail", "item.compositeGroups[].components[].itemRef"], ["CatalogItemDetail", "item.compositeGroups[].components[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.compositeGroups[].components[].itemRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.compositeGroups[].components[].productSkuRef"]],
+    R10: [["CatalogItemDetail", "item.inventoryBom[].itemRef"], ["CatalogItemDetail", "item.inventoryBom[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].itemRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].productSkuRef"]],
+    R11: [["CatalogItemDetail", "productionTags[].tagRef"]],
+    R12: [["CatalogItemDetail", "item.orderOptions[].values[].attributeValueRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.orderOptions[].values[].attributeValueRef"]],
+    R13: [["InventoryTargetPage", "data.items[].itemRef"], ["InventoryTargetPage", "data.items[].productSkuRef"], ["InventoryTargetCurrentView", "target.itemRef"], ["InventoryTargetCurrentView", "target.productSkuRef"], ["CatalogItemSaveRequest", "sections.inventoryConfiguration.nodes[].itemRef"], ["CatalogItemSaveRequest", "sections.inventoryConfiguration.nodes[].productSkuRef"]],
+    R14: [["CatalogItemDetail", "inventoryBom[].itemRef"], ["CatalogItemDetail", "inventoryBom[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].optionValueRef"]]
+  };
+  for (const [rowId, locations] of Object.entries(requiredCoverage)) for (const [model, pathValue] of locations) {
+    const field = fields.get(model)?.get(pathValue);
+    expect(field && ((field.type === "array" && field.itemFormat === "uuid") || (field.type !== "array" && field.format === "uuid")), "P1_OPAQUE_REFERENCE_COVERAGE:" + rowId + ":" + model + "." + pathValue);
+  }
+  const navigation = openapi.components?.schemas?.CatalogNavigationView?.properties?.tree?.items?.properties || {};
+  expect(navigation.categoryRef?.format === "uuid" && navigation.parentCategoryRef?.format === "uuid" && !Object.hasOwn(navigation, "status") && navigation.deletionAvailability?.properties?.canDelete?.type === "boolean", "P1_CATEGORY_NAVIGATION_TRUTHFUL_REF_READBACK");
+  const categoryCreate = openapi.components?.schemas?.CatalogCategoryCreateRequest?.properties || {};
+  const categoryMove = openapi.components?.schemas?.CatalogCategoryMoveRequest?.properties || {};
+  const categoryDelete = openapi.components?.schemas?.CatalogCategoryDeleteRequest?.properties || {};
+  expect(categoryCreate.parentCategoryRef?.format === "uuid" && categoryMove.categoryRef?.format === "uuid" && JSON.stringify(categoryMove.action?.enum) === JSON.stringify(["REPARENT", "UP", "DOWN"]) && categoryDelete.categoryRef?.format === "uuid", "P1_CATEGORY_COMMAND_REF_MATRIX");
+}
+
+function validateOperationAuthorizationPolicy(edge, openapi) {
+  const writes = edge.operations.filter((operation) => operation.mutation);
+  const reads = edge.operations.filter((operation) => !operation.mutation);
+  expect(writes.length === 26 && reads.length === 16, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
+  expect(reads.every((operation) => operation.authorizationRequirementId === null && operation.capabilityKeys.length === 0 && Object.keys(operation.capabilityByDataNodeType || {}).length === 0), "P1_GET_ACTION_CAPABILITY_FORBIDDEN");
+  expect(writes.every((operation) => typeof operation.authorizationRequirementId === "string" && operation.authorizationRequirementId.startsWith("CATALOG_INVENTORY_OPERATION_") && operation.capabilityKeys.length > 0), "P1_MUTATION_AUTHORIZATION_REQUIREMENT");
+  expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).length === 18 && writes.filter((operation) => operation.allowedDataNodeTypes.length === 1).length === 8, "P1_MUTATION_SCOPE_POLICY_CARDINALITY");
+  expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).every((operation) => exact(operation.allowedDataNodeTypes, ["HEAD_COMPANY", "STORE"]) && operation.capabilityByDataNodeType.HEAD_COMPANY === "EDIT_HEAD_COMPANY_CATALOG" && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_CATALOG"), "P1_DUAL_TARGET_CAPABILITY_MAPPING");
+  expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 1 && operation.operationId.includes("Inventory")).every((operation) => exact(operation.allowedDataNodeTypes, ["STORE"]) && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_INVENTORY"), "P1_INVENTORY_CAPABILITY_MAPPING");
+  expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 1 && !operation.operationId.includes("Inventory")).every((operation) => exact(operation.allowedDataNodeTypes, ["STORE"]) && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_CATALOG"), "P1_STORE_CATALOG_CAPABILITY_MAPPING");
+  const wholeSave = edge.operations.find((operation) => operation.operationId === SAVE_OPERATION_ID);
+  expect(wholeSave && JSON.stringify(wholeSave.capabilityKeys) === JSON.stringify(["EDIT_HEAD_COMPANY_CATALOG", "EDIT_STORE_CATALOG"]) && JSON.stringify(wholeSave.coordinatedInventoryDefinitionCommands) === JSON.stringify(SAVE_INVENTORY_DEFINITION_COMMANDS), "P1_SAVE_INVENTORY_DEFINITION_COMMANDS");
+  expect(edge.operations.every((operation) => operation.operationId === SAVE_OPERATION_ID || !Object.hasOwn(operation, "coordinatedInventoryDefinitionCommands")), "P1_INVENTORY_DEFINITION_COMMAND_PLACEMENT");
+  const directInventoryConfiguration = edge.operations.find((operation) => operation.operationId === DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID);
+  expect(directInventoryConfiguration && directInventoryConfiguration.capabilityByDataNodeType.STORE === "EDIT_STORE_INVENTORY" && !Object.hasOwn(directInventoryConfiguration, "coordinatedInventoryDefinitionCommands"), "P1_DIRECT_INVENTORY_CONFIGURATION_CAPABILITY");
+  const rootOperations = Object.values(openapi.paths || {}).flatMap((pathItem) => Object.values(pathItem)).filter((operation) => operation?.operationId);
+  const rootOperationById = new Map(rootOperations.map((operation) => [operation.operationId, operation]));
+  for (const operation of edge.operations) {
+    const projected = rootOperations.find((candidate) => candidate.operationId === operation.operationId);
+    const inventoryDefinitionCommandsProjected = operation.operationId === SAVE_OPERATION_ID
+      ? JSON.stringify(projected?.["x-coordinated-inventory-definition-commands"]) === JSON.stringify(SAVE_INVENTORY_DEFINITION_COMMANDS)
+      : !Object.hasOwn(projected || {}, "x-coordinated-inventory-definition-commands");
+    expect(projected && projected["x-mutation"] === operation.mutation && projected["x-authorization-requirement-id"] === operation.authorizationRequirementId && JSON.stringify(projected["x-capability-by-data-node-type"]) === JSON.stringify(operation.capabilityByDataNodeType) && exact(projected["x-allowed-data-node-types"] || [], operation.allowedDataNodeTypes) && inventoryDefinitionCommandsProjected, "P1_OPENAPI_AUTHORIZATION_PROJECTION:" + operation.operationId);
+  }
+  const dualScopeReads = reads.filter((operation) => exact(operation.allowedDataNodeTypes, DUAL_SCOPE_READ_DATA_NODE_TYPES));
+  expect(dualScopeReads.length === DUAL_SCOPE_READ_COUNT && dualScopeReads.some((operation) => operation.operationId === SHAPE_MANIFEST_OPERATION_ID), "P1_DUAL_SCOPE_READ_SELECTOR_DENOMINATOR");
+  for (const operation of dualScopeReads) {
+    const schema = openapi.components?.schemas?.[operation.requestComponent];
+    const selector = schema?.properties?.dataNodeRef;
+    expect(schema?.additionalProperties === false && selector?.type === "string" && !(schema.required || []).includes("dataNodeRef"), "P1_DUAL_SCOPE_READ_SELECTOR_SCHEMA:" + operation.operationId);
+    const selectorParameters = (rootOperationById.get(operation.operationId)?.parameters || [])
+      .filter((parameter) => parameter?.name === "dataNodeRef" && parameter.in === "query");
+    expect(selectorParameters.length === 1 && selectorParameters[0].required === false && selectorParameters[0].schema?.type === "string", "P1_DUAL_SCOPE_READ_SELECTOR_PARAMETER:" + operation.operationId);
+  }
+}
+
 const expectedCapabilities = ["SELLABLE", "STOCK_MANAGED", "BOM_COMPONENT", "PRODUCIBLE"];
 const expectedShapes = ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"];
 const expectedModeRuleKeys = ["CATALOG_ITEM|HAS_SKU", "CATALOG_ITEM|NO_SKU", "SKU|null", "OPTION_VALUE|null"];
@@ -169,6 +244,7 @@ const expectedL2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 function validate(root = ROOT) {
   const shape = readJson(SHAPE_PATH);
   const edge = readJson(EDGE_PATH);
+  const catalogRouteRegistry = readJson(CATALOG_ROUTE_REGISTRY_PATH);
   const placement = readJson(PLACEMENT_PATH);
   const readModels = readJson(READ_MODEL_PATH);
   const policy = readJson(POLICY_PATH);
@@ -176,6 +252,7 @@ function validate(root = ROOT) {
   const fixtureSchema = readJson(FIXTURE_SCHEMA_PATH);
   const mediaCatalog = readJson(MEDIA_CATALOG_PATH);
   const designCoverage = readJson(DESIGN_COVERAGE_PATH);
+  const referencePathMatrix = readJson(REFERENCE_PATH_MATRIX);
   const assertions = readJson(ASSERTION_PATH);
   const apiScenarios = readJson(API_SCENARIO_PATH);
   const l2Scenarios = readJson(L2_SCENARIO_PATH);
@@ -230,23 +307,30 @@ function validate(root = ROOT) {
   const generatedTs = fs.readFileSync(abs("contracts/catalog/catalogInventoryShapeManifest.ts"), "utf8");
   expect(generatedJava.includes(shape.manifestDigest) && generatedJava.includes("SHAPE_COUNT = 7") && generatedJava.includes("SURFACE_KEYS") && generatedJava.includes("record ShapeRule") && generatedJava.includes("record ModeRule") && generatedJava.includes("SHAPE_RULES") && generatedJava.includes("MODE_RULES"), "P1_GENERATED_JAVA_DRIFT");
   expect(generatedTs.includes(shape.manifestDigest) && generatedTs.includes("shapeKeys") && generatedTs.includes("modeRules"), "P1_GENERATED_TS_DRIFT");
-  expect(fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8").includes("OPERATION_COUNT = 42") && fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8").includes("record Operation") && fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8").includes("OPERATIONS"), "P1_GENERATED_EDGE_JAVA_DRIFT");
-  expect(fs.readFileSync(abs(GENERATED_EDGE_TS), "utf8").includes("operationCount"), "P1_GENERATED_EDGE_TS_DRIFT");
+  const generatedEdgeJava = fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8");
+  const generatedEdgeTs = fs.readFileSync(abs(GENERATED_EDGE_TS), "utf8");
+  expect(generatedEdgeJava.includes("OPERATION_COUNT = 42") && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("ensureCatalogInventoryTarget") && generatedEdgeJava.includes("saveCatalogProductBom"), "P1_GENERATED_EDGE_JAVA_DRIFT");
+  expect(generatedEdgeTs.includes("operationCount") && generatedEdgeTs.includes("coordinatedInventoryDefinitionCommands") && generatedEdgeTs.includes("ensureCatalogInventoryTarget") && generatedEdgeTs.includes("saveCatalogProductBom"), "P1_GENERATED_EDGE_TS_DRIFT");
 
   expect(edge.revision === REVISION && edge.operationCount === 42 && edge.operations.length === 42, "P1_EDGE_OPERATION_COUNT");
   expect(edge.contractDigest === digest(edge, "contractDigest"), "P1_EDGE_DIGEST");
+  expect(catalogRouteRegistry.schemaVersion === 1 && catalogRouteRegistry.kind === "catalog-inventory-edge-route-registry" && catalogRouteRegistry.revision === REVISION && catalogRouteRegistry.generatedFrom === EDGE_PATH && catalogRouteRegistry.contractDigest === edge.contractDigest, "P1_CATALOG_ROUTE_REGISTRY_BINDING");
+  const expectedCatalogRoutes = edge.operations.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, owner: entry.initiatingOwner, consumerFaces: entry.consumerFaces}));
+  expect(JSON.stringify(catalogRouteRegistry.operations) === JSON.stringify(expectedCatalogRoutes), "P1_CATALOG_ROUTE_REGISTRY_EXACT_PROJECTION");
+  expect(!catalogRouteRegistry.operations.some((entry) => entry.operationId === "transitionOperationsCatalogCategoryStatus" || entry.path.includes("{categoryCode}")), "P1_CATALOG_ROUTE_REGISTRY_RETIRED_CATEGORY_OPERATION");
   expect(placement.placementDigest === digest(placement, "placementDigest"), "P1_PLACEMENT_DIGEST");
   expect(exact(edge.operations.map((entry) => entry.operationId), operationDesign.operations.map((entry) => entry.operationId)), "P1_EDGE_OPERATION_EXACT_SET");
   expect(exact(placement.operationPlacement.map((entry) => entry.operationId), edge.operations.map((entry) => entry.operationId)), "P1_PLACEMENT_OPERATION_EXACT_SET");
   expect(edge.operations.every((entry) => exact(entry.consumerFaces, ["operations-admin"])), "P1_CONSUMER_FACE");
   expect(edge.operations.every((entry) => entry.path && entry.method && entry.requestComponent && entry.responseComponent), "P1_EDGE_ROUTE_SHAPE");
+  validateOperationAuthorizationPolicy(edge, openapi);
   const rootOperations = [];
   for (const [route, pathItem] of Object.entries(openapi.paths || {})) {
     for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) rootOperations.push(operation.operationId);
   }
   expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 42, "P1_OPENAPI_OPERATION_REACHABILITY");
   const assetStageSchema = openapi.components?.schemas?.CatalogAssetStageRequest;
-  expect(assetStageSchema?.properties?.content?.type === "string" && assetStageSchema.properties.content.format === "binary" && !Object.prototype.hasOwnProperty.call(assetStageSchema.properties, "assetRef"), "P1_ASSET_UPLOAD_BINARY_SCHEMA");
+  expect(assetStageSchema?.properties?.content?.type === "string" && assetStageSchema.properties.content.format === "binary" && assetStageSchema.required?.includes("dataNodeRef") && !Object.prototype.hasOwnProperty.call(assetStageSchema.properties, "assetRef"), "P1_ASSET_UPLOAD_BINARY_SCHEMA");
   const assetStageOperation = Object.values(openapi.paths || {}).flatMap((pathItem) => Object.values(pathItem)).find((operation) => operation?.operationId === "stageOperationsCatalogAsset");
   expect(assetStageOperation?.requestBody?.content?.["multipart/form-data"]?.schema?.$ref === "#/components/schemas/CatalogAssetStageRequest", "P1_ASSET_UPLOAD_MULTIPART_ROUTE");
   for (const [name, schema] of Object.entries(openapi.components?.schemas || {})) {
@@ -265,8 +349,22 @@ function validate(root = ROOT) {
   expect(readModels.sixInventoryDetailZones.length === 6 && exact(readModels.sixInventoryDetailZones, expectedZones), "P1_SIX_INVENTORY_ZONES");
   for (const modelName of shape.readModelNames) expect(readModels.models.some((entry) => entry.name === modelName), "P1_READ_MODEL_MISSING:" + modelName);
   for (const required of ["tree", "smartViews", "shapeCounts", "generation"]) expect(readModels.models.find((entry) => entry.name === "CatalogNavigationView").required.includes(required), "P1_NAV_REQUIRED:" + required);
-  for (const required of ["closureItems", "closureEdges", "mappingPreview", "compatibilityResults", "preflightDigest"]) expect(readModels.models.find((entry) => entry.name === "BrandCatalogCopyPreflight").required.includes(required), "P1_PREFLIGHT_REQUIRED:" + required);
+  const productionTagPage = openapi.components?.schemas?.ProductionTagPage;
+  const productionTagEntry = productionTagPage?.properties?.data?.properties?.entries?.items;
+  expect(productionTagEntry?.properties?.tagRef?.type === "string" && productionTagEntry.properties.tagRef.format === "uuid" && productionTagEntry.required?.includes("tagRef"), "P1_PRODUCTION_TAG_PAGE_REF_REQUIRED");
+  for (const required of ["closureItems", "referenceMappings", "compatibilityResults", "preflightDigest"]) expect(readModels.models.find((entry) => entry.name === "BrandCatalogCopyPreflight").required.includes(required), "P1_PREFLIGHT_REQUIRED:" + required);
+  for (const name of ["LocalCopyPreflight", "BrandCatalogCopyPreflight", "LocalCopyReadback", "BrandCatalogCopyReadback"]) {
+    const schema = openapi.components?.schemas?.[name];
+    const result = schema?.properties?.data?.properties || schema?.properties;
+    const mappings = result?.referenceMappings;
+    expect(mappings?.type === "array", "P1_COPY_REFERENCE_MAPPINGS_ARRAY:" + name);
+    const mapping = mappings.items;
+    expect(mapping?.properties?.objectType?.type === "string" && mapping.properties?.sourceRef?.format === "uuid" && mapping.properties?.targetRef?.format === "uuid" && mapping.properties?.targetCode?.type === "string", "P1_COPY_REFERENCE_MAPPING_SHAPE:" + name);
+    expect(["objectType", "sourceRef", "targetRef", "targetCode"].every((field) => mapping.required?.includes(field)), "P1_COPY_REFERENCE_MAPPING_REQUIRED:" + name);
+    expect(!JSON.stringify(schema).includes("fromCode") && !JSON.stringify(schema).includes("toCode"), "P1_COPY_REFERENCE_MAPPING_NO_CODE_IDENTITY:" + name);
+  }
   const designByteCoverage = validateDesignByteCoverage(openapi, readModels, designCoverage, shape);
+  validateOpaqueReferencePaths(openapi, designCoverage, referencePathMatrix);
 
   expect(Number.isInteger(policy.limits.selectedItemCount) && Number.isInteger(policy.limits.closureItemCount), "P1_COPY_LIMIT_SHAPE");
   expect(policy.limitResponseShape?.actual === "integer" && policy.limitResponseShape?.limit === "integer", "P1_COPY_LIMIT_RESPONSE_SHAPE");
@@ -287,7 +385,7 @@ function validate(root = ROOT) {
   expect(fixtures.seedExecutionPlan?.transport === "HTTP" && fixtures.seedExecutionPlan.noDirectDatabaseWrites === true, "P1_SEED_HTTP_NO_DIRECT_DB");
   expect(fixtures.seedExecutionPlan.assetUpload?.operationId === "stageOperationsCatalogAsset" && fixtures.seedExecutionPlan.assetUpload.transport === "HTTP_MULTIPART" && fixtures.seedExecutionPlan.assetUpload.requestField === "content" && fixtures.seedExecutionPlan.assetUpload.contentMustBeRealBytes === true, "P1_SEED_REAL_ASSET_UPLOAD");
   expect(fixtures.seedExecutionPlan.catalogCreate?.operationId === "createOperationsCatalogItem" && fixtures.seedExecutionPlan.catalogCreate.usesReturnedAssetRefs === true, "P1_SEED_REAL_CATALOG_CREATE");
-  expect(fixtures.seedExecutionPlan.cleanup?.strategy === "MANAGED_RESET_RUN_SCOPED_REVERT" && fixtures.seedExecutionPlan.cleanup.mediaPurgeRequired === true && fixtures.seedExecutionPlan.cleanup.mediaNamespace === "run-scoped" && fixtures.seedExecutionPlan.cleanup.businessAndCleanupSeparate === true, "P1_RESET_MEDIA_CLEANUP");
+  expect(fixtures.seedExecutionPlan.cleanup?.seed?.strategy === "PASS_PRESERVED_DEV_STATE" && fixtures.seedExecutionPlan.cleanup.seed.destructiveCleanupOwner === "r5-reset" && fixtures.seedExecutionPlan.cleanup.reset?.strategy === "MANAGED_RESET_RUN_SCOPED_REVERT" && fixtures.seedExecutionPlan.cleanup.reset.mediaPurgeRequired === true && fixtures.seedExecutionPlan.cleanup.reset.mediaNamespace === "run-scoped" && fixtures.seedExecutionPlan.cleanup.businessAndCleanupSeparate === true, "P1_RESET_MEDIA_CLEANUP");
   expect(fixtures.seedDatasets.every((entry) => entry.setupChannel === "P2_HTTP_OWNER_APIS" && entry.entities.mediaAssets?.length > 0 && entry.mediaAssetKeys?.length > 0), "P1_SEED_MEDIA_BINDINGS");
   expect(Object.keys(mediaCatalog.assets || {}).length === 34 && mediaCatalog.sourceBindings?.v4MediaDirectory && mediaCatalog.sourceBindings?.v4AssetManifest && mediaCatalog.sourceBindings?.v4CatalogItemSources, "P1_V4_MEDIA_COVERAGE");
   expect(mediaCatalog.coverage?.v4CatalogItemCount === 73 && mediaCatalog.coverage?.v4MediaAssetCount === 34 && mediaCatalog.coverage?.p1RepresentativeSeedDatasetCount === 5 && mediaCatalog.coverage?.fullCatalogParityRequiredInP2 === true && mediaCatalog.coverage?.reductionIsNotFinalSeedPolicy === true, "P1_V4_SEED_PARITY_COVERAGE");
@@ -295,7 +393,7 @@ function validate(root = ROOT) {
     const assetPath = "contracts/policy/catalog-inventory-p1-media/" + asset.fileName;
     expect(fs.existsSync(abs(assetPath)) && fileHash(assetPath) === asset.sha256, "P1_MEDIA_ASSET_HASH:" + assetKey);
   }
-  expect(fixtures.seedExecutionPlan.fullCatalogParity?.expectedCatalogItemCount === 73 && fixtures.seedExecutionPlan.fullCatalogParity.expectedMediaAssetCount === 34 && fixtures.seedExecutionPlan.fullCatalogParity.requiredIn === "P2" && fixtures.seedExecutionPlan.fullCatalogParity.reductionIsNotFinalSeedPolicy === true, "P1_FULL_CATALOG_PARITY_PLAN");
+  expect(fixtures.seedExecutionPlan.fullCatalogParity?.expectedCatalogItemCount === 73 && fixtures.seedExecutionPlan.fullCatalogParity.expectedMediaAssetCount === 34 && fixtures.seedExecutionPlan.fullCatalogParity.requiredIn === "P4" && fixtures.seedExecutionPlan.fullCatalogParity.reductionIsNotFinalSeedPolicy === true, "P1_FULL_CATALOG_PARITY_PLAN");
   expect(fixtures.seedDatasets.every((entry) => Object.keys(entry.entities || {}).some((key) => Array.isArray(entry.entities[key]) && entry.entities[key].length > 0)), "P1_SEED_NONEMPTY_GRAPH");
   expect(fixtures.testDatasets.every((entry) => (entry.objects || entry.entities?.objects || []).length > 0 || (entry.edges || entry.entities?.edges || []).length > 0), "P1_TEST_NONEMPTY_GRAPH");
 
@@ -336,6 +434,9 @@ function validate(root = ROOT) {
   expect(assertions.count === 42 && assertions.operations.length === 42, "P1_ASSERTION_OPERATION_COUNT");
   const operationIds = operationDesign.operations.map((entry) => entry.operationId);
   expect(exact(assertions.operations.map((entry) => entry.operationId), operationIds), "P1_ASSERTION_OPERATION_EXACT_SET");
+  const saveAssertion = assertions.operations.find((entry) => entry.operationId === SAVE_OPERATION_ID);
+  expect(saveAssertion && JSON.stringify(saveAssertion.coordinatedInventoryDefinitionCommands) === JSON.stringify(SAVE_INVENTORY_DEFINITION_COMMANDS), "P1_ASSERTION_SAVE_INVENTORY_DEFINITION_COMMANDS");
+  expect(assertions.operations.every((entry) => entry.operationId === SAVE_OPERATION_ID || !Object.hasOwn(entry, "coordinatedInventoryDefinitionCommands")), "P1_ASSERTION_INVENTORY_DEFINITION_COMMAND_PLACEMENT");
   const allAssertionIaIds = [];
   const apiScenarioIds = new Set(apiScenarios.scenarios.map((entry) => entry.scenarioId));
   for (const row of assertions.operations) {
@@ -420,7 +521,67 @@ function selfTest() {
   redCoverage("inventory-current-version", (candidate) => delete candidate.components.schemas.InventoryTargetCurrentView.properties.version);
   redCoverage("closed-void-finding", (candidate) => delete candidate.components.schemas.CatalogDictionaryView.properties.data.properties.entries.items.properties.voidAvailability);
   redCoverage("occurred-at-type", (candidate) => { const field = candidate.components.schemas.InventoryLedgerPage.properties.entries.items.properties.occurredAt; field.type = "string"; delete field.format; });
-  process.stdout.write("CATALOG_INVENTORY_P1_SELF_TEST=PASS\nRED_SHAPE_COUNT=PASS\nRED_CAPABILITY_EXACT_SET=PASS\nRED_SHAPE_SURFACE_EXACT_SET=PASS\nRED_TAB_RULES=PASS\nRED_COMPOSITE_CONTENT_RULE=PASS\nRED_PROBLEM_EXACT_SET=PASS\nRED_OPENAPI_REACHABILITY=PASS\nRED_TYPED_SCHEMA=PASS\nRED_FIXTURE_SCENARIO_EXACT_SET=PASS\nRED_DESIGN_FIELD_COVERAGE=PASS\nRED_INVENTORY_CURRENT_VERSION=PASS\nRED_CLOSED_FINDING_REGRESSION=PASS\nRED_TIME_TYPE_CONVENTION=PASS\n");
+  const referenceMatrix = readJson(REFERENCE_PATH_MATRIX);
+  const redReferencePolicy = JSON.parse(JSON.stringify(designPolicy));
+  redReferencePolicy.requestRows.find((row) => row.model === "CatalogItemSaveRequest").fields.find((field) => field.path === "sections.catalogDraft.categoryRefs").itemFormat = "code";
+  let opaqueReferenceRed = false;
+  try { validateOpaqueReferencePaths(root, redReferencePolicy, referenceMatrix); }
+  catch (error) { opaqueReferenceRed = String(error.message).startsWith("P1_OPAQUE_REFERENCE_COVERAGE:"); }
+  expect(opaqueReferenceRed, "SELF_TEST_OPAQUE_REFERENCE_NOT_RED");
+  const authorizationPolicy = readJson(EDGE_PATH);
+  const authorizationOpenApi = readJson(OPENAPI_ROOT_PATH);
+  const redAuthorization = (label, mutate) => {
+    const candidate = JSON.parse(JSON.stringify(authorizationPolicy));
+    mutate(candidate);
+    let red = false;
+    try { validateOperationAuthorizationPolicy(candidate, authorizationOpenApi); }
+    catch (error) { red = String(error.message).startsWith("P1_"); }
+    expect(red, "SELF_TEST_OPERATION_AUTHORIZATION_NOT_RED:" + label);
+  };
+  redAuthorization("get-capability", (candidate) => {
+    const read = candidate.operations.find((operation) => !operation.mutation);
+    read.capabilityKeys = ["EDIT_STORE_CATALOG"];
+  });
+  redAuthorization("missing-head-company-mapping", (candidate) => {
+    const dualScopeWrite = candidate.operations.find((operation) => operation.mutation && operation.allowedDataNodeTypes.length === 2);
+    delete dualScopeWrite.capabilityByDataNodeType.HEAD_COMPANY;
+  });
+  redAuthorization("swapped-scope-mapping", (candidate) => {
+    const dualScopeWrite = candidate.operations.find((operation) => operation.mutation && operation.allowedDataNodeTypes.length === 2);
+    dualScopeWrite.capabilityByDataNodeType.HEAD_COMPANY = "EDIT_STORE_CATALOG";
+    dualScopeWrite.capabilityByDataNodeType.STORE = "EDIT_HEAD_COMPANY_CATALOG";
+  });
+  redAuthorization("missing-save-inventory-definition-command", (candidate) => {
+    delete candidate.operations.find((operation) => operation.operationId === SAVE_OPERATION_ID).coordinatedInventoryDefinitionCommands;
+  });
+  redAuthorization("expanded-save-inventory-definition-command", (candidate) => {
+    candidate.operations.find((operation) => operation.operationId === SAVE_OPERATION_ID).coordinatedInventoryDefinitionCommands.push("updateOperationsInventoryTargetConfiguration");
+  });
+  redAuthorization("read-inventory-definition-command", (candidate) => {
+    candidate.operations.find((operation) => !operation.mutation).coordinatedInventoryDefinitionCommands = SAVE_INVENTORY_DEFINITION_COMMANDS.slice();
+  });
+  redAuthorization("direct-inventory-configuration-capability", (candidate) => {
+    candidate.operations.find((operation) => operation.operationId === DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID).capabilityByDataNodeType.STORE = "EDIT_STORE_CATALOG";
+  });
+  const redDualScopeReadSelector = (label, mutate) => {
+    const candidateEdge = JSON.parse(JSON.stringify(authorizationPolicy));
+    const candidateOpenApi = JSON.parse(JSON.stringify(authorizationOpenApi));
+    mutate(candidateEdge, candidateOpenApi);
+    let red = false;
+    try { validateOperationAuthorizationPolicy(candidateEdge, candidateOpenApi); }
+    catch (error) { red = String(error.message).startsWith("P1_DUAL_SCOPE_READ_SELECTOR_"); }
+    expect(red, "SELF_TEST_DUAL_SCOPE_READ_SELECTOR_NOT_RED:" + label);
+  };
+  redDualScopeReadSelector("missing-shape-manifest-selector", (_candidateEdge, candidateOpenApi) => {
+    delete candidateOpenApi.components.schemas.CatalogShapeManifestQuery.properties.dataNodeRef;
+    candidateOpenApi.paths["/operations/catalog-inventory/shape-manifest"].get.parameters = candidateOpenApi.paths["/operations/catalog-inventory/shape-manifest"].get.parameters
+      .filter((parameter) => parameter.name !== "dataNodeRef");
+  });
+  redDualScopeReadSelector("required-selector", (_candidateEdge, candidateOpenApi) => {
+    candidateOpenApi.components.schemas.CatalogShapeManifestQuery.required.push("dataNodeRef");
+    candidateOpenApi.paths["/operations/catalog-inventory/shape-manifest"].get.parameters.find((parameter) => parameter.name === "dataNodeRef").required = true;
+  });
+  process.stdout.write("CATALOG_INVENTORY_P1_SELF_TEST=PASS\nRED_SHAPE_COUNT=PASS\nRED_CAPABILITY_EXACT_SET=PASS\nRED_SHAPE_SURFACE_EXACT_SET=PASS\nRED_TAB_RULES=PASS\nRED_COMPOSITE_CONTENT_RULE=PASS\nRED_PROBLEM_EXACT_SET=PASS\nRED_OPENAPI_REACHABILITY=PASS\nRED_TYPED_SCHEMA=PASS\nRED_FIXTURE_SCENARIO_EXACT_SET=PASS\nRED_DESIGN_FIELD_COVERAGE=PASS\nRED_INVENTORY_CURRENT_VERSION=PASS\nRED_CLOSED_FINDING_REGRESSION=PASS\nRED_TIME_TYPE_CONVENTION=PASS\nRED_OPAQUE_REFERENCE=PASS\nRED_GET_ACTION_CAPABILITY=PASS\nRED_MISSING_TARGET_CAPABILITY_MAPPING=PASS\nRED_SWAPPED_TARGET_CAPABILITY_MAPPING=PASS\nRED_SAVE_INVENTORY_DEFINITION_COMMAND=PASS\nRED_EXPANDED_INVENTORY_DEFINITION_COMMAND=PASS\nRED_READ_INVENTORY_DEFINITION_COMMAND=PASS\nRED_DIRECT_INVENTORY_CONFIGURATION_CAPABILITY=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_MISSING=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_REQUIRED=PASS\n");
 }
 
 function writeEvidence() {

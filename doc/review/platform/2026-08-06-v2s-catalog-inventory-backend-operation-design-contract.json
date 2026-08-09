@@ -607,7 +607,7 @@
         {
           "order": 2,
           "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Load catalog and inventory versions plus asset grants; apply catalog and inventory owner writes atomically; audit and return both owner readbacks."
+      "action": "Load catalog and inventory versions plus transient asset bind grants from X-Catalog-Asset-Bind-Grants; apply catalog and inventory owner writes atomically without persisting or logging those grants; audit and return both owner readbacks."
         },
         {
           "order": 3,
@@ -710,7 +710,7 @@
           "precedence": 8,
           "problemCode": "ASSET_NOT_READY",
           "conditions": [
-            "Referenced staged asset is missing, not ready or has no bind grant."
+        "Referenced staged asset is missing, not ready, or has no matching transient header bind grant; an already ACTIVE CATALOG_ITEM_IMAGE remains reusable without a grant."
           ]
         }
       ],
@@ -1027,8 +1027,7 @@
         "NOT_FOUND",
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE"
+        "RESULT_UNKNOWN"
       ],
       "logicSteps": [
         {
@@ -1110,13 +1109,6 @@
           "conditions": [
             "Idempotency receipt is indeterminate."
           ]
-        },
-        {
-          "precedence": 7,
-          "problemCode": "VOIDED_RECORD_IMMUTABLE",
-          "conditions": [
-            "Target is terminal VOIDED."
-          ]
         }
       ],
       "normalPathDbOperations": {
@@ -1155,19 +1147,20 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE",
-        "HIERARCHY_CYCLE"
+        "HIERARCHY_CYCLE",
+        "CATEGORY_DEPTH_EXCEEDED",
+        "MOVE_BOUNDARY"
       ],
       "logicSteps": [
         {
           "order": 1,
           "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed move input, trusted context, page/capability and owner scope; require distinct target and proposed parent."
+          "action": "Validate typed reparent/up/down input, trusted context, page/capability and owner scope; a parent is required only for REPARENT."
         },
         {
           "order": 2,
           "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Load target, current parent, proposed parent and the proposed parent's ancestor closure set-wise; reject VOIDED/version drift or a closure containing the target; then CAS-update parent/order and append audit."
+          "action": "Lock the current sibling set; for REPARENT validate the proposed parent ancestor closure, otherwise exchange the latest adjacent sibling; then update parent/order and append audit."
         },
         {
           "order": 3,
@@ -1240,18 +1233,19 @@
           ]
         },
         {
-          "precedence": 7,
-          "problemCode": "VOIDED_RECORD_IMMUTABLE",
-          "conditions": [
-            "Target is terminal VOIDED."
-          ]
-        },
-        {
           "precedence": 8,
           "problemCode": "HIERARCHY_CYCLE",
-          "conditions": [
-            "Requested category parent/order creates a cycle."
-          ]
+          "conditions": ["Requested category parent creates a cycle."]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "CATEGORY_DEPTH_EXCEEDED",
+          "conditions": ["Requested reparenting exceeds the two-level tree limit."]
+        },
+        {
+          "precedence": 10,
+          "problemCode": "MOVE_BOUNDARY",
+          "conditions": ["No adjacent sibling exists in the requested move direction."]
         }
       ],
       "normalPathDbOperations": {
@@ -1280,7 +1274,7 @@
       }
     },
     {
-      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "operationId": "deleteOperationsCatalogCategory",
       "initiatingOwner": "catalog",
       "coordinatedOwners": [],
       "problemCodes": [
@@ -1290,20 +1284,18 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE",
-        "REFERENCE_BLOCKS_VOID",
-        "DEPENDENT_FACTS_BLOCK_VOID"
+        "REFERENCE_BLOCKS_DELETE"
       ],
       "logicSteps": [
         {
           "order": 1,
           "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed input, trusted context, page/capability and owner scope."
+          "action": "Validate typed category-deletion input, trusted context, page/capability and owner scope."
         },
         {
           "order": 2,
           "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Validate immutable/scope/version facts, execute the owner command, audit and return owner readback."
+          "action": "Lock the requested subtree, compare root version, verify zero product references, delete atomically, audit and return typed readback."
         },
         {
           "order": 3,
@@ -1377,23 +1369,9 @@
         },
         {
           "precedence": 7,
-          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "problemCode": "REFERENCE_BLOCKS_DELETE",
           "conditions": [
-            "Target is terminal VOIDED."
-          ]
-        },
-        {
-          "precedence": 8,
-          "problemCode": "REFERENCE_BLOCKS_VOID",
-          "conditions": [
-            "VOIDED transition requested while inbound references remain."
-          ]
-        },
-        {
-          "precedence": 9,
-          "problemCode": "DEPENDENT_FACTS_BLOCK_VOID",
-          "conditions": [
-            "VOIDED transition requested while owner dependent facts remain."
+            "One or more categories in the requested subtree are referenced by a product."
           ]
         }
       ],

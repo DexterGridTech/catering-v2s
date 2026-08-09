@@ -372,6 +372,8 @@ const execute = async () => {
   const run = new ManagedRun(directory, expected);
   let control; let lifecycle; let artifactsCollected = false; let remotePrepared = false; let failure;
   try {
+    const localBudget = spawnSync(path.join(root, 'scripts/env/check-runtime-resource-budget'), [path.join(root, '.runtime')], {cwd: root, encoding: 'utf8'});
+    if (localBudget.status !== 0) fail('LOCAL_MANAGED_RESOURCE_BUDGET_EXCEEDED', 'ENVIRONMENT_BOUNDARY');
     const preflight = preflightResources(); run.manifest.resourceBudget.preflight = {status: 'PASS', ...preflight}; run.manifest.resourceBudget.samples.push({observedAt: now(), memoryAvailableMiB: preflight.memoryAvailableMiB, previousRssMiB: preflight.previousRssMiB}); run.persist();
     remote(script('set -euo pipefail', `root=${quote(remoteRoot)}`, `cache=${quote(remoteDependencyCache)}`, 'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac', 'case "$cache" in /tmp/catering-v2s-r5-gradle-cache) ;; *) exit 64 ;; esac', 'mkdir -p "$root/workspace" "$root/results" "$cache"', `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/before-container-ids"`)); remotePrepared = true;
     await uploadSource(); run.phase('SOURCE_SYNCED', 'PASS');

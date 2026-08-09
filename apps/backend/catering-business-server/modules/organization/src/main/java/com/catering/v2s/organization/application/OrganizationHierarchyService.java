@@ -30,26 +30,28 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
     private final JdbcTemplate jdbc;
     private final TimeProvider time;
     private final OrganizationHierarchyCommandReceiptService receipts;
-    private final WorkspaceStatusLookup workspaces;
     private final CommercialGroupLookup commercialGroups;
     private final ExtensionDefinitionLookup definitions;
 
     public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time) {
-        this(jdbc, time, new OrganizationHierarchyCommandReceiptService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, null, null);
+        this(jdbc, time, new OrganizationHierarchyCommandReceiptService(jdbc, time), null, null);
     }
 
     public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time, ExtensionDefinitionLookup definitions) {
-        this(jdbc, time, new OrganizationHierarchyCommandReceiptService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, null, definitions);
+        this(jdbc, time, new OrganizationHierarchyCommandReceiptService(jdbc, time), null, definitions);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
-    public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time, OrganizationHierarchyCommandReceiptService receipts, WorkspaceStatusLookup workspaces, CommercialGroupLookup commercialGroups, ExtensionDefinitionLookup definitions) {
+    public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time, OrganizationHierarchyCommandReceiptService receipts, CommercialGroupLookup commercialGroups, ExtensionDefinitionLookup definitions) {
         this.jdbc = jdbc;
         this.time = time;
         this.receipts = receipts;
-        this.workspaces = workspaces;
         this.commercialGroups = commercialGroups;
         this.definitions = definitions;
+    }
+    /** Compatibility construction only; post-auth hierarchy commands no longer read workspace status. */
+    public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time, OrganizationHierarchyCommandReceiptService receipts, WorkspaceStatusLookup ignoredWorkspaceStatus, CommercialGroupLookup commercialGroups, ExtensionDefinitionLookup definitions) {
+        this(jdbc, time, receipts, commercialGroups, definitions);
     }
 
     @Transactional
@@ -78,7 +80,6 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         UUID workspaceUuid, String groupWorkspaceKey, String nodeType, UUID parentId, String code, String name, String notes, List<String> phaseNames, Map<String, String> extensionValues, AuditActor actor
     ) {
         String type = requiredType(nodeType);
-        requireWorkspace(workspaceUuid, groupWorkspaceKey);
         validateParent(workspaceUuid, groupWorkspaceKey, type, parentId);
         List<String> phases = normalizedPhases(type, phaseNames);
         ExtensionValues extensions = extensionValues(workspaceUuid, groupWorkspaceKey, type, "{}", extensionValues);
@@ -165,6 +166,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         if (!projectIds.isEmpty()) jdbc.query("SELECT project_id, phase_name FROM organization.project_phase_name WHERE project_id IN (" + String.join(",", java.util.Collections.nCopies(projectIds.size(), "?")) + ") ORDER BY project_id, display_order", statement -> { for (int index = 0; index < projectIds.size(); index++) statement.setObject(index + 1, projectIds.get(index)); }, result -> { while (result.next()) phases.computeIfAbsent(result.getObject(1, UUID.class), ignored -> new ArrayList<>()).add(result.getString(2)); });
         return nodes.stream().map(node -> new OrganizationNodeReadback(node.id(), node.workspaceUuid(), node.groupWorkspaceKey(), node.parentId(), node.nodeType(), node.code(), node.name(), node.notes(), node.status(), node.version(), node.createdAtEpochMillis(), node.updatedAtEpochMillis(), phases.getOrDefault(node.id(), List.of()), ExtensionDefinitionService.readValues(node.extensionValuesJson()), node.extensionRuleRevision())).toList();
     }
+
 
     /**
      * Canonical paged hierarchy read for every consumer face.  A consumer may
@@ -359,9 +361,6 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         );
     }
 
-    private void requireWorkspace(UUID workspaceUuid, String groupWorkspaceKey) {
-        if (!workspaces.isEnabled(workspaceUuid, groupWorkspaceKey)) throw new OrganizationValidationException();
-    }
     private record NodeListRow(UUID id, UUID workspaceUuid, String groupWorkspaceKey, UUID parentId, String nodeType, String code, String name, String notes, String status, long version, long createdAtEpochMillis, long updatedAtEpochMillis, String extensionValuesJson, long extensionRuleRevision) { }
 
     private static OrganizationNodeReadback node(java.sql.ResultSet result, List<String> phases) throws java.sql.SQLException {

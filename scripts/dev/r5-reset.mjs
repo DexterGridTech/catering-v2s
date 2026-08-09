@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {resolveTrustedRemoteHost} from "./r5-remote-host-trust.mjs";
+import {canonicalStartToken} from "./managed-process-tree.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, ".runtime/r5"));
@@ -22,7 +23,7 @@ const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex"
 const productionLike = (value) => /(?:^|[._/-])(?:prod|production)(?:$|[._/-])/i.test(value);
 const expectedDatabaseFor = (namespace) => `catering_v2s_dev_${namespace.replace(/^v2s-dev-/, "").replaceAll("-", "_")}`;
 const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
-const processStartToken = (pid) => spawnSync("ps", ["-o", "lstart=", "-p", String(pid)], {encoding: "utf8"}).stdout.trim();
+const processStartToken = (pid) => canonicalStartToken(spawnSync("ps", ["-o", "lstart=", "-p", String(pid)], {encoding: "utf8"}).stdout);
 
 export function validateResetTopology(resolved) {
   const namespace = resolved?.namespace;

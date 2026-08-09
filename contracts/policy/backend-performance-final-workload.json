@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-workload-policy",
+  "status": "STATIC_ADMISSION_ONLY",
+  "runnerKind": "backend-performance-final-acceptance",
+  "runtimeRoot": ".runtime/backend-performance",
+  "finalImplementationManifest": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-design-granularity-manifest.json",
+    "sha256": "0ea428559639c1609e152d3458a8483a7f99b57a59f2c75942a382579f922c95"
+  },
+  "sourcePolicies": {
+    "sqlMergeApplicability": "contracts/registry/backend-performance-sql-merge-applicability.json",
+    "taskReadSurface": "contracts/registry/task-read-surface-policy.json",
+    "commandBaselines": "contracts/registry/performance-refactor-command-baselines.json"
+  },
+  "denominators": {
+    "u05TaskReads": 78,
+    "u05ProtocolCompletions": 5,
+    "u05ReadContextPartition": [58, 15, 4, 1],
+    "u05CapExceptions": 10,
+    "u04NumericBaselines": 79,
+    "u04NormalBaselines": 74,
+    "u04CatalogSaveBranches": 5,
+    "u04ContextParity": 38,
+    "u07RouteCompletions": 196,
+    "u07M1": 126,
+    "u07M2": 60,
+    "u07M3": 25,
+    "u07M4Retired": 6,
+    "u07M4Retained": 5,
+    "u07M5": 6,
+    "u07M6": 11
+  },
+  "snapshotAdmission": {
+    "requiredInputKinds": ["DATABASE_OPERATIONS", "STATEMENT_DICTIONARY", "REQUEST_EVENTS", "SEED_REPORT", "RUN_MANIFEST"],
+    "requiredRunManifest": ["runId", "kind", "finalImplementationManifestSha256", "workloadPolicySha256"],
+    "requiredMeasurementFields": ["operationId", "requestId", "correlationId", "performanceFixtureId", "performanceArea"],
+    "allowedAreas": ["U05_TASK_READ", "U05_PROTOCOL", "U04_NUMERIC", "U04_CONTEXT_PARITY", "U07_ROUTE"],
+    "unclassifiedMustEqual": 0,
+    "sameRunTupleRequired": true,
+    "historicRuntimeRootsRejected": [".runtime/r5", ".runtime/rm1"]
+  },
+  "executionBoundary": {
+    "localApplicationsOnly": true,
+    "managedTunnelRequired": true,
+    "remoteNamespaceIsolationRequired": true,
+    "resetAuthorized": false,
+    "seedMode": "MINIMAL_FIXTURE_ONLY_AFTER_DYNAMIC_PACKAGE",
+    "staticPackageMayRun": false
+  }
+}

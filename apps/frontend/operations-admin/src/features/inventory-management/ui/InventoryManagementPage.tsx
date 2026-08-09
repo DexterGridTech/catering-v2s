@@ -6,7 +6,7 @@ import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {InventoryDetailDrawer} from './InventoryDetailDrawer';
-import {EDIT_CATALOG_LIBRARY, envelopeData, hasCapability, READ_INVENTORY_ADVANCED_DIAGNOSTICS, type InventoryCounts, type InventoryPage, type InventoryTargetSummary, type StockView} from './inventoryManagementModel';
+import {EDIT_STORE_INVENTORY, envelopeData, hasCapability, type InventoryCounts, type InventoryPage, type InventoryTargetSummary, type StockView} from './inventoryManagementModel';
 
 const stockLabels: Record<StockView, string> = {ALL: '全部', NEEDS_ATTENTION: '需处理', LOW: '低库存', OUT: '无库存', NEGATIVE: '负库存', UNKNOWN: '未知'};
 const stateLabels: Record<string, string> = {IN_STOCK: '在库', OK: '在库', LOW: '低库存', OUT: '无库存', NEGATIVE: '负库存', UNKNOWN: '未知'};
@@ -36,8 +36,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
     const serverCounts = page?.counts ?? {};
     return (Object.keys(stockLabels) as StockView[]).reduce<InventoryCounts>((result, key) => ({...result, [key]: serverCounts[key] ?? 0}), {ALL: 0, NEEDS_ATTENTION: 0, LOW: 0, OUT: 0, NEGATIVE: 0, UNKNOWN: 0});
   }, [page?.counts]);
-  const canEdit = hasCapability(actionCapabilityKeys as readonly string[], EDIT_CATALOG_LIBRARY);
-  const canReadDiagnostics = hasCapability(actionCapabilityKeys as readonly string[], READ_INVENTORY_ADVANCED_DIAGNOSTICS);
+  const canEdit = hasCapability(actionCapabilityKeys as readonly string[], EDIT_STORE_INVENTORY);
   const openDetail = useCallback((targetRef: string) => detail.open(targetRef), [detail]);
   const closeDetail = useCallback(() => {
     detail.close();
@@ -80,6 +79,6 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
         }}
         locale={{emptyText: scopeReady ? '暂无库存对象' : '请选择门店'}} {...testId('inventory-target-table')}/>
     </Space>
-    <InventoryDetailDrawer targetRef={detail.isOpen ? detail.target : undefined} canEdit={canEdit} canReadDiagnostics={canReadDiagnostics} onClose={closeDetail} onListChanged={() => void list.refetch()}/>
+    <InventoryDetailDrawer targetRef={detail.isOpen ? detail.target : undefined} canEdit={canEdit} queryContext={queryContext} onClose={closeDetail} onListChanged={() => void list.refetch()}/>
   </section>;
 }

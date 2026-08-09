@@ -1,6 +1,7 @@
 package com.catering.v2s.platform.workspace.application;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -33,9 +34,11 @@ public final class WorkspaceCommandReceiptService {
             if (!requestHash.equals(existing.requestHash())) throw new WorkspaceIdempotencyConflictException();
             return deserialize(existing.responseJson());
         }
-        WorkspaceAdministrationReadback result = command.get();
-        jdbc.update("INSERT INTO platform_workspace.workspace_command_receipt (idempotency_key, workspace_uuid, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?::jsonb, ?)", key, result.workspaceUuid(), requestHash, serialize(result), time.currentEpochMillis());
-        return result;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            WorkspaceAdministrationReadback result = command.get();
+            jdbc.update("INSERT INTO platform_workspace.workspace_command_receipt (idempotency_key, workspace_uuid, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?::jsonb, ?)", key, result.workspaceUuid(), requestHash, serialize(result), time.currentEpochMillis());
+            return result;
+        }
     }
 
     private WorkspaceAdministrationReadback deserialize(String value) {

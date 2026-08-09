@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-design-package-input",
+  "packageId": "BACKEND-PERFORMANCE-FINAL-DESIGN-20260810",
+  "status": "ACTIVE_NOT_EXIT",
+  "authorization": "Dexter authorized completion of the remaining backend-performance program through managed dynamic acceptance on 2026-08-10. This package records design only.",
+  "scope": {
+    "includedUnits": ["BP-U06 exact retirement design", "BP-U07 snapshot measurement-admission design", "final managed performance-workload design"],
+    "excludedUnits": ["production implementation", "runtime", "DEV", "reset", "seed", "L2", "UAT", "deployment"]
+  },
+  "denominators": {
+    "bpU06AppApplicationSources": 3,
+    "bpU06RootResultFixtures": 1,
+    "bpU05TaskRead": 78,
+    "bpU05ProtocolReadExempt": 5,
+    "bpU07SqlMergeUnion": 134,
+    "bpU07Routes": 196,
+    "bpU04NumericBaseline": 79,
+    "bpU04ContextParity": 38
+  },
+  "completion": [
+    "freeze exact source/test/control surfaces for BP-U06 and final workload",
+    "make immutable-snapshot admission falsifiable before any dynamic run",
+    "complete fresh DESIGN review and Claude recheck"
+  ],
+  "forbidden": ["BP-U06 implementation before design admission", "measurement success claim", "runtime execution", "RM1-P6 execution", "reset"]
+}

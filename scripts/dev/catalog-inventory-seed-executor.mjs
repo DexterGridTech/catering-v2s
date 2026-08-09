@@ -9,7 +9,9 @@ import fs from "node:fs";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
-import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, normalizeEdgePath, resolveGeneratedOperationById} from "../test/seed-report.mjs";
+import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, normalizeEdgePath, resolveGeneratedOperationById, writeSeedReportPair} from "../test/seed-report.mjs";
+import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents} from "./managed-diagnostic-protocol.mjs";
+import {canonicalStartToken} from "./managed-process-tree.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const fixturePath = path.join(root, "contracts/policy/catalog-inventory-fixture-catalog.json");
@@ -56,7 +58,7 @@ const loadManagedRun = () => {
   if (manifest.kind !== "r5-dev-run-manifest" || manifest.freshDatabase !== true) fail("SEED_MANAGED_RUN_INVALID");
   for (const process of manifest.processes ?? []) {
     const probe = spawnSync("ps", ["-o", "lstart=", "-p", String(process.pid)], {encoding: "utf8"});
-    if (probe.status !== 0 || probe.stdout.trim() !== process.startToken) fail(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
+    if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) fail(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
   }
   return {manifest, credentials: requiredCredentials(manifest)};
 };
@@ -87,15 +89,49 @@ const dataNodeFromSession = (session, type, requested, diagnostic = () => {}) =>
   return {candidate: chosen, contextVersion: session.contextVersion};
 };
 
-const convertSourceItem = (source, assetRefs, sourceByKey = new Map()) => {
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const requiredUuid = (value, label) => {
+  if (typeof value !== "string" || !uuidPattern.test(value)) fail(`SEED_OWNER_REF_MISSING:${label}`);
+  return value;
+};
+const dictionaryRefKey = (kind, code) => `${kind}:${code}`;
+const seedBusinessLabels = fixture.seedBusinessLabels ?? {};
+const isChineseBusinessText = (value) => typeof value === "string" && /[\u3400-\u9fff]/.test(value) && !/[A-Za-z]/.test(value);
+const businessLabel = (labels, code, kind) => {
+  const label = labels?.[code];
+  if (!isChineseBusinessText(label) || (label === code && !isChineseBusinessText(code))) fail(`SEED_BUSINESS_LABEL_INVALID:${kind}:${code}`);
+  return label;
+};
+const categoryLabel = (code) => businessLabel(seedBusinessLabels.categories, code, "CATALOG_CATEGORY");
+const productionTagLabel = (code) => businessLabel(seedBusinessLabels.productionTags, code, "PRODUCTION_TAG");
+const dictionaryLabel = (kind, code) => businessLabel(seedBusinessLabels.dictionary?.[kind], code, kind);
+const optionGroupLabel = (code) => businessLabel(seedBusinessLabels.optionGroups, code, "ORDER_OPTION_GROUP");
+const unitLabel = (code) => businessLabel(seedBusinessLabels.units, code, "UNIT");
+const freshLocalRef = (refs, key) => {
+  if (!refs.localRefs.has(key)) refs.localRefs.set(key, randomUUID());
+  return refs.localRefs.get(key);
+};
+const dictionaryRef = (refs, kind, code) => requiredUuid(refs.dictionaryRefs.get(dictionaryRefKey(kind, code)), `${kind}:${code}`);
+const itemRef = (refs, code) => requiredUuid(refs.itemRefs.get(code), `CATALOG_ITEM:${code}`);
+const skuCode = (refs, referenceOrCode) => refs.skuCodeByReference.get(referenceOrCode) ?? referenceOrCode;
+const skuRef = (refs, referenceOrCode) => requiredUuid(refs.skuRefs.get(skuCode(refs, referenceOrCode)), `PRODUCT_SKU:${referenceOrCode}`);
+const optionValueRef = (refs, code) => requiredUuid(refs.optionValueRefs.get(code), `SKU_ATTRIBUTE_VALUE:${code}`);
+const skuDisplayName = (itemName, sku) => {
+  const values = Object.values(sku.attributeValues ?? {}).map((valueCode) => dictionaryLabel("SKU_ATTRIBUTE_VALUE", valueCode));
+  return values.length ? `${itemName}（${values.join("、")}）` : itemName;
+};
+const sourceBusinessAttributes = (source) => ({商品来源: source.headquarterTemplate ? "总部标准商品" : "门店体验商品"});
+const canonicalBusinessAttributes = () => ({商品来源: "目录体验样品"});
+
+const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {includeComposite = true} = {}) => {
   const shapeKey = source.shapeKey;
   const priceGranularity = shapeKey === "SKU_VARIANT_SALE_COUNTED" ? "SKU" : "ITEM";
   const price = source.standardSalePriceCents ?? null;
   const skus = (source.skus ?? []).map((sku) => ({
-    productSkuRef: sku.productSkuRef ?? sku.skuCode,
+    productSkuRef: freshLocalRef(refs, `SKU:${sku.skuCode}`),
     skuCode: sku.skuCode,
     skuName: sku.skuName,
-    attributeValueRefs: Object.entries(sku.attributeValues ?? {}).map(([attributeCode, valueCode], index) => ({attributeRef: attributeCode, attributeCode, attributeName: attributeCode, attributeValueRef: valueCode, valueCode, valueLabel: valueCode, displayOrder: index, status: "ENABLED"})),
+    attributeValueRefs: Object.entries(sku.attributeValues ?? {}).map(([attributeCode, valueCode], index) => ({attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode), attributeCode, attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode), attributeValueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", valueCode), valueCode, valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", valueCode), displayOrder: index, status: "ENABLED"})),
     skuBarcode: sku.skuBarcode ?? "",
     standardSalePrice: sku.standardSalePriceCents ?? null,
     isDefault: Boolean(sku.isDefault),
@@ -103,15 +139,15 @@ const convertSourceItem = (source, assetRefs, sourceByKey = new Map()) => {
     version: 1,
     mediaRefs: assetRefs[sku.mediaAssetKey ?? source.mediaAssetKey] ? [assetRefs[sku.mediaAssetKey ?? source.mediaAssetKey]] : [],
   }));
-  const orderOptions = (source.optionGroups ?? []).map((group) => ({groupCode: group.optionGroupCode ?? group.optionGroupRef ?? group.groupName, groupName: group.groupName, selectionMode: group.selectionRule ?? "SINGLE", required: Boolean(group.required), values: (group.optionValues ?? []).map((value) => ({code: value.optionValueCode ?? value.optionValueRef, name: value.name, default: false, extraPrice: value.standardPriceDeltaCents ?? null, productionEffects: value.preparationImpact ? [value.preparationImpact] : []}))}));
-  const compositeGroups = (source.compositeStructure?.componentGroups ?? []).map((group, index) => ({groupCode: `GROUP-${index + 1}`, groupName: group.groupName, selectionRule: group.selectionRule, components: (group.components ?? []).map((component) => ({itemCode: sourceByKey.get(component.componentFixtureKey)?.catalogItemCode ?? component.componentFixtureKey, skuCode: component.componentSkuRef ?? null, quantity: String(component.quantity ?? 1), unit: "EACH", default: Boolean(component.defaultSelected), extraPrice: component.standardExtraPriceCents ?? null, status: "ENABLED"}))}));
+  const orderOptions = (source.optionGroups ?? []).map((group) => ({groupCode: group.optionGroupCode ?? group.optionGroupRef ?? group.groupName, groupName: group.groupName, selectionMode: group.selectionRule ?? "SINGLE", required: Boolean(group.required), values: (group.optionValues ?? []).map((value) => { const code = value.optionValueCode ?? value.optionValueRef; return {code, name: value.name, attributeValueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", code), default: false, extraPrice: value.standardPriceDeltaCents ?? null, productionEffects: value.preparationImpact ? [value.preparationImpact] : []}; })}));
+  const compositeGroups = includeComposite ? (source.compositeStructure?.componentGroups ?? []).map((group, index) => ({groupCode: `GROUP-${index + 1}`, groupName: group.groupName, selectionRule: group.selectionRule, components: (group.components ?? []).map((component) => { const componentCode = sourceByKey.get(component.componentFixtureKey)?.catalogItemCode ?? component.componentFixtureKey; const componentSkuReference = component.componentSkuRef ?? null; const componentSkuCode = componentSkuReference ? skuCode(refs, componentSkuReference) : null; return {itemCode: componentCode, itemRef: itemRef(refs, componentCode), skuCode: componentSkuCode, productSkuRef: componentSkuReference ? skuRef(refs, componentSkuReference) : null, quantity: String(component.quantity ?? 1), unit: unitLabel("EACH"), default: Boolean(component.defaultSelected), extraPrice: component.standardExtraPriceCents ?? null, status: "ENABLED"}; })})) : [];
   return {
     name: source.name,
     shapeKey,
-    attributes: {sourceFixtureKey: source.fixtureKey, sourceFile: source.sourceFile, v4CategoryKey: source.categoryKey, v4ShapeKey: source.shapeKey},
+    attributes: sourceBusinessAttributes(source),
     images: assetRefs[source.mediaAssetKey] ? [assetRefs[source.mediaAssetKey]] : [],
-    productionTagRefs: (source.tagKeys ?? []).map(String),
-    categoryRefs: source.categoryKey ? [String(source.categoryKey)] : [],
+    productionTagRefs: (source.tagKeys ?? []).map((code) => requiredUuid(refs.productionTagRefs.get(String(code)), `PRODUCTION_TAG:${code}`)),
+    categoryRefs: source.categoryKey ? [requiredUuid(refs.categoryRefs.get(String(source.categoryKey)), `CATALOG_CATEGORY:${source.categoryKey}`)] : [],
     shortName: source.shortName ?? source.name,
     identifiers: source.identifiers ?? [],
     ordering: {priceGranularity, standardSalePrice: price, listedSalePrice: price, missingPriceCount: price === null ? 1 : 0},
@@ -131,19 +167,19 @@ const canonicalSeedEntries = (seedDatasets = [], dependencyOrder = []) => {
   });
 };
 
-const canonicalDraft = (dataset, item, assetRefs) => {
+const canonicalDraft = (dataset, item, assetRefs, refs) => {
   const entities = dataset.entities || {};
   const skuEntries = (entities.skus || []).map((sku) => ({
-    productSkuRef: `${sku.code}-REF`,
+    productSkuRef: freshLocalRef(refs, `SKU:${sku.code}`),
     skuCode: sku.code,
-    skuName: sku.code,
+    skuName: skuDisplayName(item.name, sku),
     attributeValueRefs: Object.entries(sku.attributeValues || {}).map(([attributeCode, valueCode], index) => ({
-      attributeRef: attributeCode,
+      attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode),
       attributeCode,
-      attributeName: attributeCode,
-      attributeValueRef: valueCode,
+      attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode),
+      attributeValueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", valueCode),
       valueCode,
-      valueLabel: valueCode,
+      valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", valueCode),
       displayOrder: index,
       status: sku.status || "ENABLED",
     })),
@@ -156,25 +192,26 @@ const canonicalDraft = (dataset, item, assetRefs) => {
   }));
   const dimensionCodes = [...new Set((entities.skus || []).flatMap((sku) => Object.keys(sku.attributeValues || {})))];
   const skuVariantDimensions = dimensionCodes.map((attributeCode) => ({
-    attributeRef: attributeCode,
+    attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode),
     attributeCode,
-    attributeName: attributeCode,
+    attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode),
     values: (entities.skus || []).map((sku, displayOrder) => ({
-      valueRef: sku.attributeValues?.[attributeCode] || `${sku.code}-VALUE`,
+      valueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", sku.attributeValues?.[attributeCode] || `${sku.code}-VALUE`),
       valueCode: sku.attributeValues?.[attributeCode] || `${sku.code}-VALUE`,
-      valueLabel: sku.attributeValues?.[attributeCode] || `${sku.code}-VALUE`,
+      valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", sku.attributeValues?.[attributeCode] || `${sku.code}-VALUE`),
       displayOrder,
       status: sku.status || "ENABLED",
     })),
   }));
   const optionGroups = (entities.optionGroups || []).map((group) => ({
     groupCode: group.code,
-    groupName: group.code,
+    groupName: optionGroupLabel(group.code),
     selectionMode: "SINGLE",
     required: true,
     values: (entities.optionValues || []).filter((value) => value.groupCode === group.code).map((value) => ({
       code: value.code,
-      name: value.code,
+      name: dictionaryLabel("SKU_ATTRIBUTE_VALUE", value.code),
+      attributeValueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", value.code),
       default: false,
       extraPrice: null,
       productionEffects: [],
@@ -185,7 +222,7 @@ const canonicalDraft = (dataset, item, assetRefs) => {
     groupCode: `${item.code}-COMPONENTS`,
     groupName: "套餐组件",
     selectionRule: "REQUIRED",
-    components: compositeRelations.map((edge) => ({itemCode: edge.to, skuCode: edge.refCode || null, quantity: "1", unit: "EACH", default: true, extraPrice: null, status: "ENABLED"})),
+    components: compositeRelations.map((edge) => ({itemCode: edge.to, itemRef: itemRef(refs, edge.to), skuCode: edge.refCode || null, productSkuRef: edge.refCode ? skuRef(refs, edge.refCode) : null, quantity: "1", unit: unitLabel("EACH"), default: true, extraPrice: null, status: "ENABLED"})),
   }] : [];
   const sourceImage = assetRefs[item.mediaAssetKey] ? [assetRefs[item.mediaAssetKey]] : [];
   const standardPrice = null;
@@ -193,7 +230,7 @@ const canonicalDraft = (dataset, item, assetRefs) => {
     name: item.name,
     shapeKey: item.shapeKey,
     shortName: item.name,
-    attributes: {sourceFixtureKey: dataset.fixtureId, sourceFile: "contracts/policy/catalog-inventory-fixture-catalog.json", seedDataset: dataset.fixtureId},
+    attributes: canonicalBusinessAttributes(),
     images: sourceImage,
     identifiers: [],
     productionTagRefs: [],
@@ -217,17 +254,62 @@ const canonicalMaterialEntries = (seedDatasets = [], dependencyOrder = []) => {
 };
 
 const keyForTarget = (itemCode, skuCode = null) => `${itemCode}::${skuCode || "ITEM"}`;
-const bomStageKey = ({optionValueCode = null, skuCode = null} = {}) => optionValueCode || skuCode || "ITEM";
+const bomStageKey = ({ownerCode = null, optionValueCode = null, skuCode = null} = {}) => [
+  ["owner", ownerCode || ""],
+  ["sku", skuCode || ""],
+  ["option", optionValueCode || ""],
+].map(([name, value]) => `${name}=${encodeURIComponent(value)}`).join("|");
 const buildTargetIndex = (json) => {
   const index = new Map();
   for (const row of json?.data?.items ?? []) index.set(keyForTarget(row.itemCode ?? row.productCode, row.skuCode), row.targetRef ?? row.ref);
   return index;
 };
 
+const assertExactBusinessLabelSet = (kind, codes, labels) => {
+  const expected = [...new Set(codes.filter(Boolean).map(String))].sort();
+  const actual = Object.keys(labels ?? {}).sort();
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) fail(`SEED_BUSINESS_LABEL_SET_DRIFT:${kind}`);
+  for (const code of expected) businessLabel(labels, code, kind);
+};
+
+const assertSeedBusinessLabels = (seedPlan) => {
+  if (!seedPlan) fail("SEED_STATIC_PLAN_REQUIRED");
+  const canonical = canonicalSeedEntries(seedPlan.seedDatasets, seedPlan.canonicalDependencyOrder);
+  const attributeCodes = [];
+  const attributeValueCodes = [];
+  const unitCodes = ["EACH"];
+  const collectSku = (sku) => Object.entries(sku?.attributeValues ?? {}).forEach(([attributeCode, valueCode]) => {
+    attributeCodes.push(attributeCode); attributeValueCodes.push(valueCode);
+  });
+  for (const source of seedPlan.sourceItems ?? []) {
+    (source.skus ?? []).forEach(collectSku);
+    for (const group of source.optionGroups ?? []) for (const value of group.optionValues ?? []) attributeValueCodes.push(value.optionValueCode ?? value.optionValueRef);
+    for (const rule of source.inventoryBomRules ?? []) {
+      if (rule.independentStock) {
+        unitCodes.push(rule.independentStock.consumptionUnitRef ?? "EACH", rule.independentStock.countingUnitRef ?? rule.independentStock.consumptionUnitRef ?? "EACH");
+      }
+      for (const line of rule.bomLines ?? []) unitCodes.push(line.unit ?? "EACH");
+    }
+  }
+  for (const {dataset} of canonical) {
+    (dataset.entities?.skus ?? []).forEach(collectSku);
+    for (const value of dataset.entities?.optionValues ?? []) attributeValueCodes.push(value.code);
+    for (const line of dataset.entities?.bomLines ?? []) unitCodes.push(line.unit ?? "EACH");
+    for (const target of dataset.entities?.stockTargets ?? []) unitCodes.push(target.consumptionUnit, target.countingUnit);
+  }
+  assertExactBusinessLabelSet("CATALOG_CATEGORY", (seedPlan.sourceItems ?? []).map((item) => item.categoryKey), seedBusinessLabels.categories);
+  assertExactBusinessLabelSet("PRODUCTION_TAG", (seedPlan.sourceItems ?? []).flatMap((item) => item.tagKeys ?? []), seedBusinessLabels.productionTags);
+  assertExactBusinessLabelSet("SKU_ATTRIBUTE", attributeCodes, seedBusinessLabels.dictionary?.SKU_ATTRIBUTE);
+  assertExactBusinessLabelSet("SKU_ATTRIBUTE_VALUE", attributeValueCodes, seedBusinessLabels.dictionary?.SKU_ATTRIBUTE_VALUE);
+  assertExactBusinessLabelSet("ORDER_OPTION_GROUP", canonical.flatMap(({dataset}) => (dataset.entities?.optionGroups ?? []).map((group) => group.code)), seedBusinessLabels.optionGroups);
+  assertExactBusinessLabelSet("UNIT", unitCodes, seedBusinessLabels.units);
+};
+
 async function execute() {
   launcherLog("EXECUTE_STARTED", {profile: profile.profile, hasPlan: Boolean(plan)});
   if (process.env.CATALOG_INVENTORY_SEED_CONFIRMATION !== profile.runtime.confirmationValue) fail("EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED");
   if (!plan || plan.status !== "PASS" || plan.sourceItems?.length !== profile.parity.catalogItems || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems) || !plan.eligibility?.eligibleByScope || plan.mediaPlan?.length !== profile.parity.mediaAssets || !Array.isArray(plan.seedDatasets) || plan.seedDatasets.length !== 5 || !Array.isArray(plan.canonicalDependencyOrder)) fail("SEED_STATIC_PLAN_REQUIRED");
+  assertSeedBusinessLabels(plan);
   if (plan.eligibleSourceItems.length + plan.excludedSourceItems.length !== plan.sourceItems.length) fail("SEED_ELIGIBILITY_PLAN_INVALID");
   const {manifest, credentials} = loadManagedRun();
   launcherLog("MANAGED_RUN_LOADED", {runId: manifest.runId});
@@ -239,7 +321,8 @@ async function execute() {
   const reportPath = path.join(directory, "seed-report.json");
   const eventsPath = path.join(directory, "events.jsonl");
   const phases = []; const calls = []; let firstFailure = null; let business = "RUNNING"; let cleanup = "NOT_RUN";
-  const persist = () => fs.writeFileSync(runManifestPath, `${JSON.stringify({schemaVersion: 1, kind: "catalog-inventory-seed-run-manifest", runId, managedDevRunId: manifest.runId, profile: profile.profile, planDigest: plan.planDigest, startedAt, firstFailure, business, cleanup, phases}, null, 2)}\n`, {mode: 0o600});
+  const measurement = measurementMetadataForReport(manifest);
+  const persist = () => fs.writeFileSync(runManifestPath, `${JSON.stringify({schemaVersion: 2, kind: "catalog-inventory-seed-run-manifest", runId, managedDevRunId: manifest.runId, measurement, profile: profile.profile, planDigest: plan.planDigest, startedAt, firstFailure, business, cleanup, phases}, null, 2)}\n`, {mode: 0o600});
   const phase = (stage, status, detail = {}) => { const event = {at: new Date().toISOString(), stage, status, ...detail}; phases.push(event); fs.appendFileSync(eventsPath, `${JSON.stringify(event)}\n`, {mode: 0o600}); persist(); };
   const startedAt = new Date().toISOString(); persist();
   const combined = registry;
@@ -249,9 +332,12 @@ async function execute() {
   const request = async (stage, operationId, pathParameters = {}, options = {}) => {
     const operation = resolveGeneratedOperationById(combined, operationId);
     const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters: options.queryParameters || {}});
-    const headers = {Accept: "application/json", "X-Seed-Operation-Id": operationId, "X-Seed-Run-Id": manifest.runId, "X-Correlation-Id": `catalog-${randomUUID()}`};
+    const correlationId = `catalog-${randomUUID()}`;
+    const headers = {Accept: "application/json"};
     if (options.cookie) headers.Cookie = options.cookie;
     if (options.brandRef) headers["X-Workspace-Brand-Ref"] = options.brandRef;
+    Object.assign(headers, options.headers || {});
+    Object.assign(headers, buildManagedDiagnosticHeaders({manifest, credentials, operationId, routeTemplate: operation.path, correlationId}));
     if (operation.method !== "GET") headers["Idempotency-Key"] = key(stage);
     let body; if (options.form) body = options.form; else if (options.body !== undefined) { headers["Content-Type"] = "application/json"; body = JSON.stringify(options.body); }
     const began = Date.now(); let response;
@@ -259,7 +345,7 @@ async function execute() {
     catch (error) { firstFailure ??= `${stage}_NETWORK`; phase(stage, "FAIL", {operationId, status: 0, reason: compact(error.message)}); throw error; }
     const text = await response.text(); let json = null; try { json = text ? JSON.parse(text) : null; } catch { }
     const requestId = response.headers.get("x-request-id"); const accepted = (options.expected || [200]).includes(response.status);
-    calls.push({stageId: stage, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, durationMs: Date.now() - began, requestId, outcome: accepted ? "SUCCEEDED" : "FAILED"});
+    calls.push({stageId: stage, managedDevRunId: manifest.runId, correlationId: response.headers.get("x-correlation-id") || correlationId, requestId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(",") || null, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, durationMs: Date.now() - began, outcome: accepted ? "SUCCEEDED" : "FAILED"});
     phase(stage, accepted ? "PASS" : "FAIL", {operationId, status: response.status, requestId, ...(accepted ? {} : {problemCode: json?.errorCode || json?.code || "UNCLASSIFIED"})});
     if (!accepted) { firstFailure ??= `${stage}_HTTP_${response.status}`; const error = new Error(firstFailure); error.response = json; throw error; }
     return {json, cookie: cookies(response.headers.get("set-cookie"))};
@@ -298,12 +384,21 @@ async function execute() {
     if (store.brandRef !== head.brandRef) fail("SEED_BRAND_SCOPE_MISMATCH");
     const clients = [head, store];
     const assetRefs = {};
+    const assetBindGrants = {};
+    const catalogAssetBindGrantHeaders = (draft) => {
+      const refs = [
+        ...(draft.images || []),
+        ...(draft.skus || []).flatMap((sku) => sku.mediaRefs || []),
+      ].map((ref) => typeof ref === "string" ? ref : ref?.assetRef).filter(Boolean);
+      const grants = Object.fromEntries(refs.map((assetRef) => [assetRef, assetBindGrants[assetRef]]).filter(([, bindGrant]) => typeof bindGrant === "string" && bindGrant.length > 0));
+      return Object.keys(grants).length ? {"X-Catalog-Asset-Bind-Grants": JSON.stringify(grants)} : {};
+    };
     for (const asset of plan.mediaPlan) {
       const file = path.join(root, profile.mediaDirectory, asset.fileName); const content = fs.readFileSync(file);
-      const form = new FormData(); form.set("fileName", asset.fileName); form.set("mediaType", asset.mediaType); form.set("contentDigest", asset.contentDigest); form.set("content", new Blob([content], {type: asset.mediaType}), asset.fileName);
+      const form = new FormData(); form.set("dataNodeRef", store.dataNodeRef); form.set("fileName", asset.fileName); form.set("mediaType", asset.mediaType); form.set("contentDigest", asset.contentDigest); form.set("content", new Blob([content], {type: asset.mediaType}), asset.fileName);
       const staged = await request(`asset-${asset.mediaAssetKey}`, "stageOperationsCatalogAsset", {}, {cookie: store.cookie, brandRef: store.brandRef, form});
       const stagedResult = itemResult(staged.json);
-      if (!stagedResult?.assetRef) {
+      if (!stagedResult?.assetRef || typeof stagedResult.bindGrant !== "string" || stagedResult.bindGrant.length === 0) {
         phase(`asset-${asset.mediaAssetKey}-readback-diagnostic`, "FAIL", {
           operationId: "stageOperationsCatalogAsset",
           responseKeys: Object.keys(staged.json ?? {}).sort(),
@@ -313,39 +408,100 @@ async function execute() {
         fail(`SEED_ASSET_REF_MISSING:${asset.mediaAssetKey}`);
       }
       assetRefs[asset.mediaAssetKey] = stagedResult.assetRef;
+      assetBindGrants[stagedResult.assetRef] = stagedResult.bindGrant;
     }
     const canonicalEntries = canonicalSeedEntries(plan.seedDatasets, plan.canonicalDependencyOrder);
     const canonicalByCode = new Map(canonicalEntries.map((entry) => [entry.item.code, entry]));
+    const referenceCodes = (() => {
+      const attributes = new Set(); const values = new Set();
+      const collectSku = (sku) => Object.entries(sku.attributeValues || {}).forEach(([attributeCode, valueCode]) => { attributes.add(attributeCode); values.add(valueCode); });
+      canonicalEntries.forEach(({dataset}) => {
+        (dataset.entities?.skus || []).forEach(collectSku);
+        (dataset.entities?.optionValues || []).forEach((value) => values.add(value.code));
+      });
+      plan.sourceItems.forEach((source) => {
+        (source.skus || []).forEach(collectSku);
+        (source.optionGroups || []).forEach((group) => (group.optionValues || []).forEach((value) => values.add(value.optionValueCode ?? value.optionValueRef)));
+      });
+      return {attributes: [...attributes].filter(Boolean).sort(), values: [...values].filter(Boolean).sort()};
+    })();
+    const refsByClient = new Map();
+    const refsFor = (client) => {
+      const key = `${client.scopeType}:${client.dataNodeRef}`;
+      if (!refsByClient.has(key)) refsByClient.set(key, {categoryRefs: new Map(), productionTagRefs: new Map(), dictionaryRefs: new Map(), itemRefs: new Map(), skuRefs: new Map(), skuCodeByReference: new Map(), optionValueRefs: new Map(), localRefs: new Map()});
+      return refsByClient.get(key);
+    };
+    const recordItemReadback = async (client, refs, code, stage) => {
+      const detail = await request(`${stage}-typed-readback`, "getOperationsCatalogItem", {itemCode: code}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
+      const item = (detail.json?.data ?? detail.json)?.item ?? (detail.json?.data ?? detail.json);
+      refs.itemRefs.set(code, requiredUuid(item?.itemRef, `CATALOG_ITEM:${code}:readback`));
+      for (const sku of item?.skus || []) refs.skuRefs.set(sku.skuCode, requiredUuid(sku.productSkuRef, `PRODUCT_SKU:${sku.skuCode}:readback`));
+      for (const dimension of item?.skuVariantDimensions || []) for (const value of dimension.values || []) refs.optionValueRefs.set(value.valueCode, requiredUuid(value.valueRef, `SKU_ATTRIBUTE_VALUE:${value.valueCode}:readback`));
+      for (const group of item?.orderOptions || []) for (const value of group.values || []) if (value.code) refs.optionValueRefs.set(value.code, requiredUuid(value.attributeValueRef, `SKU_ATTRIBUTE_VALUE:${value.code}:readback`));
+      return item;
+    };
+    const materializeOwnerRefs = async (client) => {
+      const refs = refsFor(client);
+      const categoryCodes = [...new Set(plan.sourceItems.map((item) => item.categoryKey).filter(Boolean))];
+      const tagCodes = [...new Set(plan.sourceItems.flatMap((item) => item.tagKeys || []))];
+      for (const code of categoryCodes) await request(`${client.scopeType}-category-${code}`, "createOperationsCatalogCategory", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, code, name: categoryLabel(code), parentCategoryRef: null}});
+      const navigation = await request(`${client.scopeType}-category-readback`, "getOperationsCatalogNavigation", {}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
+      for (const row of (navigation.json?.data ?? navigation.json)?.tree || []) {
+        if (categoryCodes.includes(row.code) && row.name !== categoryLabel(row.code)) fail(`SEED_CATEGORY_LABEL_READBACK_INVALID:${row.code}`);
+        refs.categoryRefs.set(row.code, requiredUuid(row.categoryRef, `CATALOG_CATEGORY:${row.code}:readback`));
+      }
+      for (const code of categoryCodes) requiredUuid(refs.categoryRefs.get(code), `CATALOG_CATEGORY:${code}`);
+      for (const code of tagCodes) await request(`${client.scopeType}-tag-${code}`, "createOperationsProductionTag", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, code, name: productionTagLabel(code), tagKind: "PRODUCTION"}});
+      const tags = await request(`${client.scopeType}-tag-readback`, "getOperationsProductionTags", {}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
+      for (const row of (tags.json?.data ?? tags.json)?.entries || (tags.json?.data ?? tags.json)?.items || []) {
+        if (tagCodes.includes(row.code) && row.name !== productionTagLabel(row.code)) fail(`SEED_PRODUCTION_TAG_LABEL_READBACK_INVALID:${row.code}`);
+        refs.productionTagRefs.set(row.code, requiredUuid(row.tagRef, `PRODUCTION_TAG:${row.code}:readback`));
+      }
+      for (const code of tagCodes) requiredUuid(refs.productionTagRefs.get(code), `PRODUCTION_TAG:${code}`);
+      const dictionaries = [["SKU_ATTRIBUTE", referenceCodes.attributes], ["SKU_ATTRIBUTE_VALUE", referenceCodes.values]];
+      for (const [kind, codes] of dictionaries) {
+        for (const code of codes) await request(`${client.scopeType}-${kind}-${code}`, "createOperationsCatalogDictionaryEntry", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, dictionaryKind: kind, code, name: dictionaryLabel(kind, code)}});
+        const dictionary = await request(`${client.scopeType}-${kind}-readback`, "getOperationsCatalogDictionary", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
+        for (const row of (dictionary.json?.data ?? dictionary.json)?.entries || []) {
+          if (codes.includes(row.code) && row.name !== dictionaryLabel(kind, row.code)) fail(`SEED_DICTIONARY_LABEL_READBACK_INVALID:${kind}:${row.code}`);
+          refs.dictionaryRefs.set(dictionaryRefKey(kind, row.code), requiredUuid(row.entryRef, `${kind}:${row.code}:readback`));
+        }
+        for (const code of codes) dictionaryRef(refs, kind, code);
+      }
+      return refs;
+    };
     const canonicalVersions = new Map();
     const canonicalItemKey = (client, code) => `${client.scopeType}:CANONICAL:${code}`;
+    // Materialize all non-item references through this runner's owner HTTP
+    // commands and owner readbacks.  These maps are process-local: DEV never
+    // consumes API/L2 reports or their namespace facts.
+    for (const client of clients) await materializeOwnerRefs(client);
     // The five representative datasets are a separate business graph from the
     // 73-item V4 parity graph.  Load them through the same create/save owner
     // commands, in the dependency order derived by the static plan.
     for (const client of clients) {
+      const refs = refsFor(client);
       for (const {dataset, item} of canonicalEntries) {
         const create = await request(`${client.scopeType}-canonical-create-${item.code}`, "createOperationsCatalogItem", {}, {
           cookie: client.cookie,
           brandRef: client.brandRef,
-          body: {name: item.name, code: item.code, shapeKey: item.shapeKey, attributes: {sourceFixtureKey: dataset.fixtureId, sourceFile: "contracts/policy/catalog-inventory-fixture-catalog.json", seedDataset: dataset.fixtureId}},
+          body: {dataNodeRef: client.dataNodeRef, name: item.name, code: item.code, shapeKey: item.shapeKey, attributes: canonicalBusinessAttributes()},
         });
         const expectedCatalogVersion = itemVersion(create.json);
+        const catalogDraft = canonicalDraft(dataset, item, assetRefs, refs);
         const save = await request(`${client.scopeType}-canonical-save-${item.code}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
           cookie: client.cookie,
           brandRef: client.brandRef,
-          body: {itemCode: item.code, sections: {catalogDraft: canonicalDraft(dataset, item, assetRefs), inventoryConfiguration: {nodes: []}, expectedCatalogVersion, expectedInventoryVersions: []}},
+          headers: catalogAssetBindGrantHeaders(catalogDraft),
+          body: {dataNodeRef: client.dataNodeRef, itemCode: item.code, sections: {catalogDraft, inventoryConfiguration: {nodes: []}, expectedCatalogVersion, expectedInventoryVersions: []}},
         });
         if (!itemResult(save.json)?.version) fail(`SEED_CANONICAL_SAVE_READBACK_MISSING:${client.scopeType}:${item.code}`);
         canonicalVersions.set(canonicalItemKey(client, item.code), itemVersion(save.json));
+        await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-${item.code}`);
       }
     }
     const sourceByKey = new Map(plan.sourceItems.map((item) => [item.fixtureKey, item]));
     const seedItems = plan.eligibleSourceItems;
-    const categoryCodes = [...new Set(plan.sourceItems.map((item) => item.categoryKey).filter(Boolean))];
-    const tagCodes = [...new Set(plan.sourceItems.flatMap((item) => item.tagKeys || []))];
-    for (const client of clients) {
-      for (const code of categoryCodes) await request(`${client.scopeType}-category-${code}`, "createOperationsCatalogCategory", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {code, name: code, parentCode: ""}});
-      for (const code of tagCodes) await request(`${client.scopeType}-tag-${code}`, "createOperationsProductionTag", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {code, name: code, tagKind: "PRODUCTION"}});
-    }
     const inventoryIndexByClient = new Map();
     const currentVersions = new Map();
     const clientItemKey = (client, itemCode) => `${client.scopeType}:${itemCode}`;
@@ -375,15 +531,34 @@ async function execute() {
       return null;
     };
     for (const client of clients) {
+      const refs = refsFor(client);
+      for (const source of seedItems) {
+        if (client.scopeType === "HEAD_COMPANY" && !source.headquarterTemplate) continue;
+        if (client.scopeType === "STORE" && source.headquarterTemplate) continue;
+        for (const sku of source.skus ?? []) refs.skuCodeByReference.set(sku.productSkuRef ?? sku.skuCode, sku.skuCode);
+      }
       // Create and save every source item through the owner HTTP lifecycle.
       for (const source of seedItems) {
         if (client.scopeType === "HEAD_COMPANY" && !source.headquarterTemplate) continue;
         if (client.scopeType === "STORE" && source.headquarterTemplate) continue;
-        const create = await request(`${client.scopeType}-create-${source.catalogItemCode}`, "createOperationsCatalogItem", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {name: source.name, code: source.catalogItemCode, shapeKey: source.shapeKey, attributes: {sourceFixtureKey: source.fixtureKey, sourceFile: source.sourceFile, v4CategoryKey: source.categoryKey, v4ShapeKey: source.shapeKey}}});
+        const create = await request(`${client.scopeType}-create-${source.catalogItemCode}`, "createOperationsCatalogItem", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, name: source.name, code: source.catalogItemCode, shapeKey: source.shapeKey, attributes: sourceBusinessAttributes(source)}});
         const expectedCatalogVersion = itemVersion(create.json);
-        const draft = convertSourceItem(source, assetRefs, sourceByKey);
-        const save = await request(`${client.scopeType}-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, body: {itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryConfiguration: {nodes: []}, expectedCatalogVersion, expectedInventoryVersions: []}}});
+        // Source fixture order is not a graph topological order.  Persist the
+        // independent item shape first, read each owner UUID back, then add
+        // composite edges in a second whole-save pass below.
+        const draft = convertSourceItem(source, assetRefs, refs, sourceByKey, {includeComposite: false});
+        const save = await request(`${client.scopeType}-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryConfiguration: {nodes: []}, expectedCatalogVersion, expectedInventoryVersions: []}}});
         if (!itemResult(save.json)?.version) fail(`SEED_SAVE_READBACK_MISSING:${source.catalogItemCode}`);
+        currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(save.json));
+        await recordItemReadback(client, refs, source.catalogItemCode, `${client.scopeType}-${source.catalogItemCode}`);
+      }
+      for (const source of seedItems) {
+        if (client.scopeType === "HEAD_COMPANY" && !source.headquarterTemplate) continue;
+        if (client.scopeType === "STORE" && source.headquarterTemplate) continue;
+        if (!(source.compositeStructure?.componentGroups || []).length) continue;
+        const draft = convertSourceItem(source, assetRefs, refs, sourceByKey);
+        const save = await request(`${client.scopeType}-composite-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryConfiguration: {nodes: []}, expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1, expectedInventoryVersions: []}}});
+        if (!itemResult(save.json)?.version) fail(`SEED_COMPOSITE_SAVE_READBACK_MISSING:${source.catalogItemCode}`);
         currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(save.json));
       }
       if (client.scopeType !== "HEAD_COMPANY") {
@@ -425,27 +600,32 @@ async function execute() {
     // deliberately has no balance/list endpoint; its target refs are read back
     // through the catalog detail owner below before BOM rows are written.
     for (const client of clients) {
+      const refs = refsFor(client);
       for (const {dataset, item, target} of canonicalMaterialEntries(plan.seedDatasets, plan.canonicalDependencyOrder)) {
         if (!target) fail(`SEED_CANONICAL_MATERIAL_TARGET_MISSING:${item.code}`);
         const node = {
           nodeType: "CATALOG_ITEM",
           mode: "INDEPENDENT_STOCK",
           itemCode: item.code,
-          consumptionUnit: target.consumptionUnit,
+          itemRef: itemRef(refs, item.code),
+          productSkuRef: null,
+          consumptionUnit: unitLabel(target.consumptionUnit),
           configuration: {
             allowNegative: false,
             lowStockThreshold: "0",
-            countingUnit: target.countingUnit,
+            countingUnit: unitLabel(target.countingUnit),
             conversionFactor: "1",
           },
         };
         const configured = await request(`${client.scopeType}-canonical-material-config-${item.code}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
           cookie: client.cookie,
           brandRef: client.brandRef,
+          headers: catalogAssetBindGrantHeaders(canonicalDraft(dataset, item, assetRefs, refs)),
           body: {
+            dataNodeRef: client.dataNodeRef,
             itemCode: item.code,
             sections: {
-              catalogDraft: canonicalDraft(dataset, item, assetRefs),
+              catalogDraft: canonicalDraft(dataset, item, assetRefs, refs),
               inventoryConfiguration: {nodes: [node]},
               expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, item.code)) ?? 1,
               expectedInventoryVersions: [],
@@ -462,14 +642,16 @@ async function execute() {
         const materialRule = rules.find((rule) => rule.mode === "INDEPENDENT_STOCK" && rule.independentStock);
         if (materialRule) {
           const stock = materialRule.independentStock;
-          const node = {nodeType: "CATALOG_ITEM", mode: "INDEPENDENT_STOCK", itemCode: source.catalogItemCode, consumptionUnit: stock.consumptionUnitRef || "EACH", configuration: {allowNegative: Boolean(stock.allowNegative), lowStockThreshold: String(stock.lowStockThreshold ?? 0), countingUnit: stock.countingUnitRef || stock.consumptionUnitRef || "EACH", conversionFactor: String(stock.countingToConsumptionQuantity || 1)}};
+          const node = {nodeType: "CATALOG_ITEM", mode: "INDEPENDENT_STOCK", itemCode: source.catalogItemCode, itemRef: itemRef(refs, source.catalogItemCode), productSkuRef: null, consumptionUnit: unitLabel(stock.consumptionUnitRef || "EACH"), configuration: {allowNegative: Boolean(stock.allowNegative), lowStockThreshold: String(stock.lowStockThreshold ?? 0), countingUnit: unitLabel(stock.countingUnitRef || stock.consumptionUnitRef || "EACH"), conversionFactor: String(stock.countingToConsumptionQuantity || 1)}};
           const detail = await request(`${client.scopeType}-material-config-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {
             cookie: client.cookie,
             brandRef: client.brandRef,
-            body: {
+          headers: catalogAssetBindGrantHeaders({images: assetRefs[source.mediaAssetKey] ? [assetRefs[source.mediaAssetKey]] : []}),
+          body: {
+            dataNodeRef: client.dataNodeRef,
               itemCode: source.catalogItemCode,
               sections: {
-                catalogDraft: {name: source.name, shapeKey: source.shapeKey, attributes: {sourceFixtureKey: source.fixtureKey}, images: assetRefs[source.mediaAssetKey] ? [assetRefs[source.mediaAssetKey]] : [], productionTagRefs: [], categoryRefs: source.categoryKey ? [String(source.categoryKey)] : []},
+                catalogDraft: convertSourceItem(source, assetRefs, refs, sourceByKey),
                 inventoryConfiguration: {nodes: [node]},
                 expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1,
                 expectedInventoryVersions: [],
@@ -505,6 +687,7 @@ async function execute() {
     // item with several BOM nodes cannot collide on a hard-coded version.
     const expectedBomReadbacks = [];
     for (const client of clients) {
+      const refs = refsFor(client);
       const index = inventoryIndexByClient.get(client.scopeType) || new Map();
       for (const {dataset, item} of canonicalEntries) {
         const lines = dataset.entities?.bomLines || [];
@@ -523,7 +706,7 @@ async function execute() {
           for (const line of group.lines) {
             const targetRef = await resolveTargetRef(client, index, line.componentCode, null, `${client.scopeType}-canonical-bom-${item.code}`);
             if (!targetRef) fail(`SEED_CANONICAL_BOM_TARGET_MISSING:${client.scopeType}:${item.code}:${line.componentCode}`);
-            rows.push({targetRef, quantity: String(line.quantity), unit: line.unit, lineSign: "POSITIVE"});
+            rows.push({targetRef, quantity: String(line.quantity), unit: unitLabel(line.unit), lineSign: "POSITIVE"});
           }
           const nodeType = group.optionValueCode ? "OPTION_VALUE_BOM" : (group.skuCode ? "SKU_BOM" : "ITEM_BOM");
           // The idempotency key is derived from the stage.  Option-value BOM
@@ -534,10 +717,12 @@ async function execute() {
           const save = await request(`${client.scopeType}-canonical-bom-${item.code}-${stageKey}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
             cookie: client.cookie,
             brandRef: client.brandRef,
-            body: {
+          headers: catalogAssetBindGrantHeaders(canonicalDraft(dataset, item, assetRefs, refs)),
+          body: {
+            dataNodeRef: client.dataNodeRef,
               itemCode: item.code,
               sections: {
-                catalogDraft: {...canonicalDraft(dataset, item, assetRefs), inventoryBom: rows.map((row) => ({...row, mode: "BOM", nodeType, skuCode: group.skuCode, optionValueCode: group.optionValueCode, itemCode: item.code, version: 0}))},
+                catalogDraft: {...canonicalDraft(dataset, item, assetRefs, refs), inventoryBom: rows.map((row) => ({...row, mode: "BOM", nodeType, itemCode: item.code, itemRef: itemRef(refs, item.code), skuCode: group.skuCode, productSkuRef: group.skuCode ? skuRef(refs, group.skuCode) : null, optionValueCode: group.optionValueCode, optionValueRef: group.optionValueCode ? optionValueRef(refs, group.optionValueCode) : null, version: 0}))},
                 inventoryConfiguration: {nodes: []},
                 expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, item.code)) ?? 1,
                 expectedInventoryVersions: [],
@@ -555,24 +740,27 @@ async function execute() {
         const rules = source.inventoryBomRules || [];
         const bomRules = rules.filter((rule) => rule.mode === "BOM" && ["CATALOG_ITEM", "SKU"].includes(rule.nodeType));
         for (const rule of bomRules) {
-          const nodeSku = rule.nodeType === "SKU" ? String(rule.nodeKey).replace(/^SKU:/, "") : null;
+          const nodeSkuReference = rule.nodeType === "SKU" ? String(rule.nodeKey).replace(/^SKU:/, "") : null;
+          const nodeSku = nodeSkuReference ? skuCode(refs, nodeSkuReference) : null;
           const rows = [];
           for (const line of rule.bomLines || []) {
             const component = sourceByKey.get(line.componentFixtureKey);
             if (!component) fail(`SEED_BOM_COMPONENT_MISSING:${client.scopeType}:${source.fixtureKey}:${rule.nodeKey}:${line.componentFixtureKey}`);
-            const componentSku = line.componentSkuRef || null;
+            const componentSku = line.componentSkuRef ? skuCode(refs, line.componentSkuRef) : null;
             const targetRef = await resolveTargetRef(client, index, component.catalogItemCode, componentSku, `${client.scopeType}-bom-${source.catalogItemCode}`);
             if (!targetRef) fail(`SEED_BOM_TARGET_MISSING:${client.scopeType}:${source.fixtureKey}:${rule.nodeKey}:${component.fixtureKey}:${componentSku || "ITEM"}`);
-            rows.push({targetRef, quantity: String(line.quantityPerUnit ?? line.quantity ?? 1), unit: line.unit || "EACH", lineSign: "POSITIVE"});
+            rows.push({targetRef, quantity: String(line.quantityPerUnit ?? line.quantity ?? 1), unit: unitLabel(line.unit || "EACH"), lineSign: "POSITIVE"});
           }
           if (rows.length !== (rule.bomLines || []).length || !rows.length) fail(`SEED_BOM_ROWS_INCOMPLETE:${client.scopeType}:${source.fixtureKey}:${rule.nodeKey}`);
           const bomSave = await request(`${client.scopeType}-bom-${source.catalogItemCode}-${nodeSku || "ITEM"}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {
             cookie: client.cookie,
             brandRef: client.brandRef,
-            body: {
+          headers: catalogAssetBindGrantHeaders({images: assetRefs[source.mediaAssetKey] ? [assetRefs[source.mediaAssetKey]] : []}),
+          body: {
+            dataNodeRef: client.dataNodeRef,
               itemCode: source.catalogItemCode,
               sections: {
-                catalogDraft: {name: source.name, shapeKey: source.shapeKey, attributes: {sourceFixtureKey: source.fixtureKey}, images: assetRefs[source.mediaAssetKey] ? [assetRefs[source.mediaAssetKey]] : [], productionTagRefs: [], categoryRefs: source.categoryKey ? [String(source.categoryKey)] : [], inventoryBom: rows.map((row) => ({...row, mode: "BOM", nodeType: rule.nodeType, skuCode: nodeSku, version: 0}))},
+                catalogDraft: {...convertSourceItem(source, assetRefs, refs, sourceByKey), inventoryBom: rows.map((row) => ({...row, mode: "BOM", nodeType: rule.nodeType, itemCode: source.catalogItemCode, itemRef: itemRef(refs, source.catalogItemCode), skuCode: nodeSku, productSkuRef: nodeSkuReference ? skuRef(refs, nodeSkuReference) : null, optionValueCode: null, optionValueRef: null, version: 0}))},
                 inventoryConfiguration: {nodes: []},
                 expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1,
                 expectedInventoryVersions: [],
@@ -609,7 +797,7 @@ async function execute() {
         const detailData = detail.json?.data ?? detail.json;
         const actual = detailData?.item ?? detailData;
         if (actual?.code !== item.code || actual?.shapeKey !== item.shapeKey) fail(`SEED_CANONICAL_ITEM_READBACK_INVALID:${client.scopeType}:${item.code}`);
-        if (actual?.attributes?.sourceFixtureKey !== dataset.fixtureId || typeof actual?.attributes?.sourceFile !== "string") fail(`SEED_CANONICAL_SOURCE_READBACK_INVALID:${client.scopeType}:${item.code}`);
+        if (actual?.attributes?.商品来源 !== "目录体验样品") fail(`SEED_CANONICAL_SOURCE_READBACK_INVALID:${client.scopeType}:${item.code}`);
         if (dataset.fixtureId === "SEED-LATTE") {
           const expectedSkus = (dataset.entities?.skus || []).map((entry) => entry.code).sort();
           const actualSkus = (actual.skus || []).map((entry) => entry.skuCode).sort();
@@ -664,8 +852,8 @@ async function execute() {
   } catch (error) {
     firstFailure ??= error.code || compact(error.message); business = "FAIL"; phase("SEED_BUSINESS", "FAIL", {reason: firstFailure});
   }
-  const report = {schemaVersion: 1, kind: "catalog-inventory-seed-report", runId, profile: profile.profile, planDigest: plan.planDigest, startedAt, finishedAt: new Date().toISOString(), business, cleanup, firstFailure, calls, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? []};
-  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});
+  const report = {...buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: profile.profile, startedAt, finishedAt: new Date().toISOString(), status: business, calls, events: readManagedDiagnosticEvents(manifest), firstFailure}), schemaVersion: 2, kind: "catalog-inventory-seed-report", profile: profile.profile, planDigest: plan.planDigest, business, cleanup, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? []};
+  writeSeedReportPair(reportPath, report);
   launcherLog("EXECUTE_FINISHED", {business, firstFailure});
   persist();
   process.stdout.write(`CATALOG_INVENTORY_SEED=${business}; CLEANUP=${cleanup}; RUN_MANIFEST=${runManifestPath}; REPORT=${reportPath}; LOG=${eventsPath}\n`);
@@ -673,6 +861,7 @@ async function execute() {
 }
 
 const selfTest = () => {
+  assertSeedBusinessLabels(plan);
   const sample = {scopeContext: {store: {dataNodeRef: "store-ref"}}, dataNodeCandidates: [{dataNodeType: "STORE", dataNodeRef: "store-ref"}], contextVersion: 7};
   if (dataNodeFromSession(sample, "STORE", "store-ref").ref !== "store-ref") fail("SESSION_WIRE_DATA_NODE_REF_REQUIRED");
   const checks = [
@@ -681,25 +870,27 @@ const selfTest = () => {
     ["NO_PLAN", () => { const mutatedPlan = null; if (!mutatedPlan || mutatedPlan.status !== "PASS") fail("SEED_STATIC_PLAN_REQUIRED"); }],
     ["NO_SQL_FALLBACK", () => { const mutatedForbidden = []; if (!mutatedForbidden.includes("direct-database-writes") || !mutatedForbidden.includes("sql-fallback")) fail("SEED_TRANSPORT_POLICY_INVALID"); }],
     ["BOM_OPTION_STAGE_COLLISION", () => {
-      const mutatedBomStageKey = ({skuCode = null} = {}) => skuCode || "ITEM";
+      const mutatedBomStageKey = ({skuCode = null, optionValueCode = null} = {}) => optionValueCode || skuCode || "ITEM";
       const keys = new Set([
-        mutatedBomStageKey({}),
-        mutatedBomStageKey({optionValueCode: "DRESSING-CLASSIC"}),
-        mutatedBomStageKey({optionValueCode: "TOPPING-BACON"}),
+        mutatedBomStageKey({skuCode: "SAME-CODE"}),
+        mutatedBomStageKey({optionValueCode: "SAME-CODE"}),
       ]);
       if (keys.size === 1) fail("SEED_BOM_STAGE_IDENTITY_INVALID");
     }],
+    ["CODE_AS_TYPED_REF", () => requiredUuid("LATTE-001", "PRODUCT_SKU")],
   ];
   const realBomStageKeys = new Set([
-    bomStageKey({}),
-    bomStageKey({optionValueCode: "DRESSING-CLASSIC"}),
-    bomStageKey({optionValueCode: "TOPPING-BACON"}),
+    bomStageKey({ownerCode: "CAESAR-001", skuCode: "SAME-CODE"}),
+    bomStageKey({ownerCode: "CAESAR-001", optionValueCode: "SAME-CODE"}),
+    bomStageKey({ownerCode: "CAESAR-001"}),
   ]);
   if (realBomStageKeys.size !== 3) fail("SEED_BOM_STAGE_IDENTITY_INVALID");
+  const skuAliasRefs = {skuRefs: new Map([["STEAK-MEDIUM", "11111111-1111-4111-8111-111111111111"]]), skuCodeByReference: new Map([["sku-steak-medium", "STEAK-MEDIUM"]])};
+  if (skuRef(skuAliasRefs, "sku-steak-medium") !== "11111111-1111-4111-8111-111111111111") fail("SEED_SKU_REFERENCE_ALIAS_INVALID");
   for (const [name, check] of checks) { let rejected = false; try { check(); } catch { rejected = true; } if (!rejected) fail(`SEED_EXECUTOR_RED_MUTATION_NOT_REJECTED:${name}`); process.stdout.write(`SEED_EXECUTOR_RED_MUTATION=${name}\n`); }
   process.stdout.write("CATALOG_INVENTORY_SEED_EXECUTOR_SELF_TEST=PASS\n");
 };
 
 if (process.argv.includes("--self-test")) selfTest();
-else if (process.argv.includes("--dry-run")) { if (!plan || plan.status !== "PASS" || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems)) fail("SEED_STATIC_PLAN_REQUIRED"); process.stdout.write(`CATALOG_INVENTORY_SEED_DRY_RUN=PASS; SOURCE_ITEMS=${plan.sourceItems.length}; CREATED_ITEMS=${plan.eligibleSourceItems.length}; EXCLUDED_ITEMS=${plan.excludedSourceItems.length}; MEDIA=${plan.mediaPlan.length}; NO_DIRECT_DB=true\n`); }
+else if (process.argv.includes("--dry-run")) { if (!plan || plan.status !== "PASS" || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems)) fail("SEED_STATIC_PLAN_REQUIRED"); assertSeedBusinessLabels(plan); process.stdout.write(`CATALOG_INVENTORY_SEED_DRY_RUN=PASS; SOURCE_ITEMS=${plan.sourceItems.length}; CREATED_ITEMS=${plan.eligibleSourceItems.length}; EXCLUDED_ITEMS=${plan.excludedSourceItems.length}; MEDIA=${plan.mediaPlan.length}; NO_DIRECT_DB=true\n`); }
 else execute().catch((error) => { launcherLog("EXECUTE_REFUSED", {reason: error.code || compact(error.message)}); process.stderr.write(`CATALOG_INVENTORY_SEED=REFUSED; REASON=${error.code || compact(error.message)}\n`); process.exitCode = 2; });

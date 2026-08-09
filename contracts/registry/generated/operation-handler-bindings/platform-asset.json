@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "generated-owner-operation-bindings",
+  "owner": "platform-asset",
+  "operationCount": 3,
+  "readCount": 1,
+  "commandCount": 2,
+  "dispatchStrategy": "CLOSED_SWITCH",
+  "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
+  "dynamicDispatch": false,
+  "operations": [
+    {
+      "operationId": "getPublicAssetContent",
+      "method": "GET",
+      "path": "/api/public/assets/{assetRef}/content",
+      "normalizedPath": "/api/public/assets/{assetRef}/content",
+      "face": "public",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.platform.asset.application.GetPublicAssetContentOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "PublicAssetReference",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "getPublicAssetContent"
+    },
+    {
+      "operationId": "releasePlatformStagedAsset",
+      "method": "POST",
+      "path": "/api/platform/assets/staging/{assetRef}/release",
+      "normalizedPath": "/api/platform/assets/staging/{assetRef}/release",
+      "face": "platform-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.platform.asset.application.ReleasePlatformStagedAssetOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "NoContent",
+      "contextKind": "PLATFORM_COMMAND_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "releasePlatformStagedAsset"
+    },
+    {
+      "operationId": "stagePlatformAsset",
+      "method": "POST",
+      "path": "/api/platform/assets/staging",
+      "normalizedPath": "/api/platform/assets/staging",
+      "face": "platform-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.platform.asset.application.StagePlatformAssetOperation",
+      "wireRequest": "PlatformAssetStageMultipart",
+      "wireResponse": "PlatformAssetStagingResult",
+      "contextKind": "PLATFORM_COMMAND_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "stagePlatformAsset"
+    }
+  ],
+  "commandContextGroups": {
+    "PLATFORM_COMMAND_CONTEXT": [
+      "releasePlatformStagedAsset",
+      "stagePlatformAsset"
+    ]
+  }
+}

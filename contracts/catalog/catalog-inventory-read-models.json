@@ -5,7 +5,15 @@
   "sourceBindings": {
     "designCoverage": {
       "path": "contracts/policy/catalog-inventory-design-byte-coverage.json",
-      "sha256": "cbf2acd2201c17e7a3ec8f0d15851f34f6e23af587af5b2cb25a7a1945c1ec1b"
+      "sha256": "e89e8310e7209bba70e71941a558b97164aca64e250cb470b8eabd9f7d6e8388"
+    },
+    "categoryRemediationDesign": {
+      "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
+      "sha256": "6e84ffe73d4dcb77587f44aeaa2db1184e31e3a0ea24bafa79a245e8ad85edc1"
+    },
+    "referencePathMatrix": {
+      "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
+      "sha256": "5c6edebff250549a7c90cf12024992ddd6b426b4cf801d515c68abf192f8ff10"
     }
   },
   "models": [
@@ -212,13 +220,11 @@
         "selectedCount",
         "selectedLimit",
         "closureItems",
-        "closureEdges",
         "closureCount",
         "closureLimit",
         "objectVersions",
-        "mappingPreview",
+        "referenceMappings",
         "compatibilityResults",
-        "referenceRewritePreview",
         "preflightDigest",
         "blockingCount",
         "confirmationRequiredCount"

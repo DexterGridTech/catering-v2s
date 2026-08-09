@@ -10,10 +10,13 @@ import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
+import com.catering.v2s.organization.api.CommercialGroupReadback;
+import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +71,8 @@ class OrganizationOwnerServiceTest {
         var project = hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "P1", "Project");
         var phases = hierarchy.replaceProjectPhaseNames(workspaceId, "organization-test", project.id(), project.version(), List.of("Preparation", "Operating"));
         assertEquals(List.of("Preparation", "Operating"), phases.phaseNames());
+        assertThrows(OrganizationHierarchyService.OrganizationConflictException.class, () -> hierarchy.replaceProjectPhaseNames(workspaceId, "organization-test", project.id(), phases.version(), List.of("Preparation", "Preparation")));
+        assertEquals(List.of("Preparation", "Operating"), hierarchy.requireNode(workspaceId, "organization-test", project.id(), "PROJECT").phaseNames());
         assertThrows(OrganizationHierarchyService.OrganizationValidationException.class, () -> hierarchy.create(workspaceId, "organization-test", "REGION", region.id(), "bad", "Bad parent"));
 
         var brand = entities.createEntity("BRAND", workspaceId, "organization-test", "brand-1", "Brand", null, null, Map.of());
@@ -86,6 +91,37 @@ class OrganizationOwnerServiceTest {
     @Test void rejectsUnknownExtensionValueAndCrossWorkspaceReference() {
         assertThrows(BusinessEntityService.OrganizationValidationException.class, () -> entities.createEntity("BRAND", workspaceId, "organization-test", "bad-brand", "Bad", null, null, Map.of("unknown", "\"value\"")));
         assertThrows(OrganizationHierarchyService.OrganizationNotFoundException.class, () -> hierarchy.requireNode(UUID.randomUUID(), "other", UUID.randomUUID(), "PROJECT"));
+    }
+
+    @Test void catalogBrandJudgmentUsesOrganizationFactsRatherThanTheRawSelection() {
+        var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "brand-judgment-region", "Brand judgment region");
+        var project = hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "brand-judgment-project", "Brand judgment project");
+        var brand = entities.createEntity("BRAND", workspaceId, "organization-test", "brand-judgment-brand", "Brand judgment brand", null, null, Map.of());
+        var anotherBrand = entities.createEntity("BRAND", workspaceId, "organization-test", "brand-judgment-other", "Other brand", null, null, Map.of());
+        var tenant = entities.createEntity("TENANT", workspaceId, "organization-test", "brand-judgment-tenant", "Brand judgment tenant", "Brand judgment tenant", "91310000JUDGMENTTENANT", Map.of());
+        var head = entities.createEntity("HEAD_COMPANY", workspaceId, "organization-test", "brand-judgment-head", "Brand judgment head", "Brand judgment head", "91310000JUDGMENT", Map.of());
+        entities.addHeadCompanyBrandAuthorization(workspaceId, "organization-test", head.id(), brand.id(), "organization-brand-judgment-add-0001", AuditActor.system());
+        var store = entities.createStore(workspaceId, "organization-test", project.id(), tenant.id(), brand.id(), head.id(), "brand-judgment-store", "Brand judgment store", Map.of("floorArea", "120"));
+
+        var storeJudgment = entities.resolveCatalogBrand(
+            workspaceId, "organization-test", "STORE", store.id(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(null)
+        );
+        assertEquals(brand.id().toString(), storeJudgment.brandRef());
+        assertEquals("STORE_PERSISTED_BRAND", storeJudgment.judgmentSource());
+        assertTrue(storeJudgment.judgmentRevision().startsWith("STORE_VERSION:"));
+        assertThrows(BusinessEntityService.OrganizationValidationException.class, () -> entities.resolveCatalogBrand(
+            workspaceId, "organization-test", "STORE", store.id(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(anotherBrand.id().toString())
+        ));
+
+        var headJudgment = entities.resolveCatalogBrand(
+            workspaceId, "organization-test", "HEAD_COMPANY", head.id(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(brand.id().toString())
+        );
+        assertEquals(brand.id().toString(), headJudgment.brandRef());
+        assertEquals("HEAD_COMPANY_BRAND_AUTHORIZATION", headJudgment.judgmentSource());
+        assertTrue(headJudgment.judgmentRevision().contains("AUTHORIZED_AT:"));
+        assertThrows(BusinessEntityService.OrganizationValidationException.class, () -> entities.resolveCatalogBrand(
+            workspaceId, "organization-test", "HEAD_COMPANY", head.id(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(anotherBrand.id().toString())
+        ));
     }
 
     @Test void idempotentTenantCreationCommitsInsideOneRequiredTransaction() {
@@ -108,8 +144,18 @@ class OrganizationOwnerServiceTest {
         PlatformExecutionContext context = new PlatformExecutionContext("organization-owner-test", "platform-admin", Instant.ofEpochMilli(NOW + 60_000L), "organization-owner-test");
         String idempotencyKey = "organization-extension-group-0001";
 
-        var initialized = commands.execute(context, extensionWorkspaceId, extensionWorkspaceKey, legacyWorkspaceId, idempotencyKey, "ORG-ROOT", "Organization root", Map.of("groupLabel", "\"Primary group\""), AuditActor.system());
-        var replay = commands.execute(context, extensionWorkspaceId, extensionWorkspaceKey, legacyWorkspaceId, idempotencyKey, "ORG-ROOT", "Organization root", Map.of("groupLabel", "\"Primary group\""), AuditActor.system());
+        CommercialGroupReadback initialized;
+        CommercialGroupReadback replay;
+        try (DatabaseOperationTracker.Scope ignored = DatabaseOperationTracker.open()) {
+            initialized = commands.execute(context, extensionWorkspaceId, extensionWorkspaceKey, legacyWorkspaceId, idempotencyKey, "ORG-ROOT", "Organization root", Map.of("groupLabel", "\"Primary group\""), AuditActor.system());
+            var phasesAfterFreshCommand = DatabaseOperationTracker.snapshot().phaseCheckpoints().stream().map(DatabaseOperationTracker.PhaseCheckpoint::phase).toList();
+            assertTrue(phasesAfterFreshCommand.contains(DatabaseOperationTracker.Phase.OWNER_COMMAND_BEGIN));
+            assertTrue(phasesAfterFreshCommand.contains(DatabaseOperationTracker.Phase.OWNER_COMMAND_END));
+            int phaseCountAfterFreshCommand = phasesAfterFreshCommand.size();
+
+            replay = commands.execute(context, extensionWorkspaceId, extensionWorkspaceKey, legacyWorkspaceId, idempotencyKey, "ORG-ROOT", "Organization root", Map.of("groupLabel", "\"Primary group\""), AuditActor.system());
+            assertEquals(phaseCountAfterFreshCommand, DatabaseOperationTracker.snapshot().phaseCheckpoints().size());
+        }
 
         assertEquals(initialized.id(), replay.id());
         assertEquals(NOW, initialized.createdAtEpochMillis());
@@ -468,6 +514,7 @@ class OrganizationOwnerServiceTest {
         OrganizationTaskPathService paths = new OrganizationTaskPathService(jdbc(), groups);
         var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "PERSISTED-R", "Persisted region");
         var project = hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "PERSISTED-P", "Persisted project");
+        var headCompany = entities.createEntity("HEAD_COMPANY", workspaceId, "organization-test", "persisted-head", "Persisted head", "Persisted head", "91310000PERSISTEDHEAD", Map.of());
         var tenant = entities.createEntity("TENANT", workspaceId, "organization-test", "persisted-tenant", "Persisted tenant", "Persisted tenant", "91310000PERSISTED", Map.of());
         var brand = entities.createEntity("BRAND", workspaceId, "organization-test", "persisted-brand", "Persisted brand", null, null, Map.of());
         var store = entities.createStore(workspaceId, "organization-test", project.id(), tenant.id(), brand.id(), null, "persisted-store", "Persisted store", Map.of("floorArea", "100"));
@@ -478,9 +525,19 @@ class OrganizationOwnerServiceTest {
         assertThrows(OrganizationTaskPathService.TaskPathNotFoundException.class, () -> paths.requireTaskPaths(workspaceId, "organization-test", List.of(ref)));
         assertFalse(paths.availableTaskTargets(workspaceId, "organization-test", List.of(ref)).contains(ref));
 
-        var displayed = paths.describePersistedTaskPaths(workspaceId, "organization-test", List.of(ref));
+        var displayed = paths.describePersistedTaskPaths(workspaceId, "organization-test", List.of(
+            new OrganizationTaskPathLookup.TaskPathRef("GROUP", group),
+            new OrganizationTaskPathLookup.TaskPathRef("REGION", region.id()),
+            new OrganizationTaskPathLookup.TaskPathRef("PROJECT", project.id()),
+            new OrganizationTaskPathLookup.TaskPathRef("HEAD_COMPANY", headCompany.id()),
+            ref
+        ));
         assertEquals("PERSISTED-R Persisted region / PERSISTED-P Persisted project / persisted-store Persisted store", displayed.get(ref).displayPath());
         assertEquals(List.of(group, region.id(), project.id(), store.id()), displayed.get(ref).ancestorIds());
+        assertEquals("Organization root（ORG-ROOT）", displayed.get(new OrganizationTaskPathLookup.TaskPathRef("GROUP", group)).displayPath());
+        assertEquals("PERSISTED-R Persisted region", displayed.get(new OrganizationTaskPathLookup.TaskPathRef("REGION", region.id())).displayPath());
+        assertEquals("PERSISTED-R Persisted region / PERSISTED-P Persisted project", displayed.get(new OrganizationTaskPathLookup.TaskPathRef("PROJECT", project.id())).displayPath());
+        assertEquals("persisted-head Persisted head", displayed.get(new OrganizationTaskPathLookup.TaskPathRef("HEAD_COMPANY", headCompany.id())).displayPath());
     }
 
     private static JdbcTemplate jdbc() { return new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())); }

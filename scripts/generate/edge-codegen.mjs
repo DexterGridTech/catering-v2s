@@ -270,9 +270,7 @@ function loadAdminCatalog(base = root) {
     const action = node.action;
     const group = actionGroupByKey.get(action?.groupKey);
     const page = operationsPages.find((candidate) => candidate.pageDesignKey === action?.targetPageKey);
-    const actionRoleTargetPages = node.key === "EDIT_CATALOG_LIBRARY"
-      ? operationsPages.filter((candidate) => ["PG-CATALOG-STORE-ITEMS", "PG-CATALOG-BRAND-ITEMS"].includes(candidate.pageDesignKey))
-      : [page];
+    const actionRoleTargetPages = [page];
     const actionRoleTargetSet = new Set(actionRoleTargetPages.flatMap((candidate) => candidate?.supportedRoleNodeTypes ?? []));
     if (node.consumerFace !== "operations-admin" || !group || !page || page.kind !== "BUSINESS" || !Array.isArray(action?.grantableRoleNodeTypes) || action.grantableRoleNodeTypes.length === 0
       || actionRoleTargetPages.length === 0 || action.grantableRoleNodeTypes.some((role) => !actionRoleTargetSet.has(role)) || typeof action.scopeApplicability !== "string") fail("R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT", node.key);

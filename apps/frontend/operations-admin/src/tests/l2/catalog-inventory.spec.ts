@@ -1,4 +1,4 @@
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test, type Locator, type Page} from '@playwright/test';
 import {appendFileSync, mkdirSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 import {selectOperationsDataScope} from './operationsL2';
@@ -14,7 +14,7 @@ type LocatorBinding = {
   activation: string;
 };
 type CatalogCaseContext = {loginEnv: string; scope: 'STORE' | 'HEAD_COMPANY'; route: string; storeEnv?: string};
-type RuntimeFixtureBinding = {catalogItemCodes?: string[]; primaryCatalogItemCode?: string; primaryTargetRef?: string; primaryTargetProductCode?: string; productionTagCodes?: string[]; primaryProductionTagCode?: string};
+type RuntimeFixtureBinding = {catalogItemCodes?: string[]; primaryCatalogItemCode?: string; primaryTargetRef?: string; primaryTargetProductCode?: string; productionTagCodes?: string[]; primaryProductionTagCode?: string; assetRefs?: string[]};
 
 const locatorPolicy = JSON.parse(readFileSync(new URL('../../../../../../contracts/policy/catalog-inventory-l2-locator-bindings.json', import.meta.url), 'utf8')) as {bindings: LocatorBinding[]};
 const bindingsByCase = new Map(locatorPolicy.bindings.map((binding) => [binding.caseId, binding]));
@@ -165,6 +165,103 @@ async function openCatalogItemByCode(page: Page, fixtureRef: string, options: {s
   return {detailRoute, disableDetailFailure: async () => { if (options.simulateDetailFailure) await page.unroute(detailRoute); }};
 }
 
+function publicAssetLookupPath(assetRef: string) {
+  return `/api/public/assets/${encodeURIComponent(assetRef)}/content`;
+}
+
+async function assertLoadedImages(page: Page, expectedUrls: string[], label: string) {
+  await expect.poll(async () => page.evaluate((urls) => urls.every((url) => Array.from(document.images).some((image) => image.currentSrc === url && image.complete && image.naturalWidth > 0)), expectedUrls), `${label} actual image bytes loaded`).toBe(true);
+}
+
+async function assertImageOrder(images: Locator, expectedUrls: string[], label: string) {
+  await expect.poll(async () => images.evaluateAll((nodes) => nodes.map((image) => (image as HTMLImageElement).currentSrc)), `${label} primary/secondary order`).toEqual(expectedUrls);
+}
+
+function capturePublicAssetLookups(page: Page, fixtureRef: string) {
+  const assetRefs = fixtureBinding(fixtureRef).assetRefs;
+  if (!assetRefs || assetRefs.length !== 2) throw new Error(`CATALOG_INVENTORY_IMAGE_FIXTURE_ASSET_REFS_MISSING:${fixtureRef}`);
+  const responses = new Map<string, {status: () => number; json: () => Promise<unknown>}>();
+  page.on('response', (response) => {
+    const assetRef = assetRefs.find((candidate) => publicAssetLookupPath(candidate) === new URL(response.url()).pathname);
+    if (assetRef && response.request().method() === 'GET') responses.set(assetRef, response);
+  });
+  return {assetRefs, responses};
+}
+
+async function assertCatalogAssetPresentation(
+  page: Page,
+  fixtureRef: string,
+  publicAssetLookups: ReturnType<typeof capturePublicAssetLookups>,
+) {
+  const {assetRefs, responses} = publicAssetLookups;
+  const opened = await openCatalogItemByCode(page, fixtureRef);
+  await expect.poll(() => responses.size, {message: 'both staged image public-asset lookups must occur'}).toBe(2);
+  const lookupResponses = assetRefs.map((assetRef) => responses.get(assetRef));
+  const publicUrls: string[] = [];
+  for (const response of lookupResponses) {
+    if (!response) throw new Error('CATALOG_INVENTORY_PUBLIC_ASSET_LOOKUP_MISSING');
+    expect(response.status(), 'public asset reference response').toBe(200);
+    const payload = await response.json() as {publicUrl?: unknown; contentType?: unknown};
+    expect(payload.contentType, 'public asset content type').toBe('image/jpeg');
+    expect(typeof payload.publicUrl, 'public asset URL').toBe('string');
+    publicUrls.push(payload.publicUrl as string);
+  }
+  const drawer = page.getByTestId('catalog-inventory-item-drawer');
+  const listItem = page.getByTestId(`catalog-inventory-open-item-${fixtureBinding(fixtureRef).primaryCatalogItemCode}`);
+  await expect(listItem.locator('img')).toHaveCount(1);
+  await expect(drawer.getByTestId('catalog-item-media-gallery').locator('img')).toHaveCount(2);
+  await assertLoadedImages(page, publicUrls, 'list and Drawer gallery');
+  return {drawer, publicUrls, opened};
+}
+
+async function setCatalogMediaFile(drawer: ReturnType<Page['getByTestId']>, fileName: string) {
+  const input = drawer.getByTestId('catalog-item-media-upload').locator('input[type=file]');
+  await expect(input).toHaveCount(1);
+  await input.setInputFiles(path.resolve(process.cwd(), '../../../../contracts/policy/catalog-inventory-p1-media', fileName));
+}
+
+async function assertCatalogImageEditor(
+  page: Page,
+  fixtureRef: string,
+  publicAssetLookups: ReturnType<typeof capturePublicAssetLookups>,
+) {
+  const {drawer, publicUrls} = await assertCatalogAssetPresentation(page, fixtureRef, publicAssetLookups);
+  const gallery = drawer.getByTestId('catalog-item-media-gallery').locator('img');
+  await assertImageOrder(gallery, publicUrls, 'saved gallery');
+  await drawer.getByTestId('catalog-item-edit').click();
+  const editor = drawer.getByTestId('catalog-item-media-editor');
+  await expect(editor.locator('img')).toHaveCount(2);
+  await assertLoadedImages(page, publicUrls, 'edit preview');
+  await drawer.getByTestId('catalog-item-media-set-primary-1').click();
+  await expect(drawer.getByTestId('catalog-item-media-0')).toContainText('★ 主图');
+  await assertImageOrder(editor.locator('img'), [publicUrls[1], publicUrls[0]], 'editor primary promotion');
+  await drawer.getByTestId('catalog-item-save').click();
+  await expect(gallery).toHaveCount(2);
+  await assertImageOrder(gallery, [publicUrls[1], publicUrls[0]], 'saved gallery after primary promotion');
+}
+
+async function assertCatalogImageFailureRecovery(
+  page: Page,
+  fixtureRef: string,
+  publicAssetLookups: ReturnType<typeof capturePublicAssetLookups>,
+) {
+  const {drawer} = await assertCatalogAssetPresentation(page, fixtureRef, publicAssetLookups);
+  await drawer.getByTestId('catalog-item-edit').click();
+  const editor = drawer.getByTestId('catalog-item-media-editor');
+  await page.route('**/api/operations/catalog-inventory/assets/stage', async (route) => {
+    await route.fulfill({status: 422, contentType: 'application/problem+json', body: JSON.stringify({errorCode: 'ASSET_PROCESSING_FAILED', detail: 'L2 controlled image failure'})});
+  });
+  await setCatalogMediaFile(drawer, 'beef-burger.jpg');
+  await expect(drawer.getByTestId('catalog-item-media-status-2')).toContainText('L2 controlled image failure');
+  await expect(editor.locator('img')).toHaveCount(2);
+  await page.unroute('**/api/operations/catalog-inventory/assets/stage');
+  await drawer.getByTestId('catalog-item-media-retry-2').click();
+  await expect(drawer.getByTestId('catalog-item-media-status-2')).toContainText('可用');
+  await expect(editor.locator('img')).toHaveCount(3);
+  await drawer.getByTestId('catalog-item-save').click();
+  await expect(drawer.getByTestId('catalog-item-media-gallery').locator('img')).toHaveCount(3);
+}
+
 async function openInventoryTargetByFixture(page: Page, fixtureRef: string) {
   const binding = fixtureBinding(fixtureRef);
   const productCode = binding.primaryTargetProductCode;
@@ -278,6 +375,9 @@ test.describe('catalog and light-inventory L2 business scenarios', () => {
       test.info().annotations.push({type: 'iaWireframe', description: binding.wireframe});
       test.info().annotations.push({type: 'expectedBusinessResult', description: binding.expectedBusinessResult});
       await signInOperations(page, binding);
+      const publicAssetLookups = binding.scenarioId === 'CI-L2-011'
+        ? capturePublicAssetLookups(page, binding.fixtureRef)
+        : undefined;
       await page.goto(routeForScenario(binding));
       // The management-range control is owned by the scoped page shell. Select
       // the range only after navigation; the post-login dashboard intentionally
@@ -328,7 +428,6 @@ test.describe('catalog and light-inventory L2 business scenarios', () => {
         case 'CI-L2-006':
         case 'CI-L2-007':
         case 'CI-L2-010':
-        case 'CI-L2-011':
         case 'CI-L2-017':
           {
             const detailFailure = await openCatalogItemByCode(page, binding.fixtureRef, {simulateDetailFailure: true});
@@ -343,6 +442,11 @@ test.describe('catalog and light-inventory L2 business scenarios', () => {
             await expect(problem).toBeHidden();
             await expect(page.getByTestId('catalog-item-tabs')).toBeVisible();
           }
+          break;
+        case 'CI-L2-011':
+          if (binding.caseId.endsWith('-01')) await assertCatalogImageEditor(page, binding.fixtureRef, publicAssetLookups!);
+          else await assertCatalogImageFailureRecovery(page, binding.fixtureRef, publicAssetLookups!);
+          await assertBoundControl(page, binding);
           break;
         case 'CI-L2-009':
           if (binding.caseId.endsWith('-01')) {

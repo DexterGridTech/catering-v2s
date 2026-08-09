@@ -83,7 +83,7 @@
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
     },
     {
-      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "operationId": "deleteOperationsCatalogCategory",
       "face": "operations-admin",
       "ownerModule": "catalog",
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.yaml"
@@ -275,5 +275,5 @@
       "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
     }
   ],
-  "placementDigest": "38270d5ab5485afe177bbbb866d0e75614634f1f959842202bc6095213a6e388"
+  "placementDigest": "40f00563383b9787e253d3b7b3699e414f054777720bc7ee09d0a5c2fa00a1a1"
 }

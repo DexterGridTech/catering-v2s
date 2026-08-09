@@ -41,6 +41,9 @@ class OperationsOrganizationHierarchyControllerTest {
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, accountId, UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 1L, Set.of(), Set.of(), "Operations tester");
         when(authentication.session("operations-session")).thenReturn(session);
+        var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
+        when(readFacts.sessionReadback()).thenReturn(session);
+        when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
         OrganizationHierarchyService hierarchy = mock(OrganizationHierarchyService.class);
         OrganizationCommandService commercialGroups = mock(OrganizationCommandService.class);
         WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);

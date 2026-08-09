@@ -1402,9 +1402,31 @@ export const adminCatalog = {
       ]
     },
     {
-      "actionKey": "EDIT_CATALOG_LIBRARY",
-      "actionLabel": "编辑商品库",
-      "actionDescription": "编辑商品库",
+      "actionKey": "EDIT_HEAD_COMPANY_CATALOG",
+      "actionLabel": "编辑总公司商品",
+      "actionDescription": "编辑总公司商品",
+      "actionGroupKey": "CATALOG_MANAGEMENT",
+      "actionGroupLabel": "商品与服务",
+      "actionGroupOrder": 500,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-CATALOG-BRAND-ITEMS",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "HEAD_COMPANY"
+          ],
+          "scopeApplicability": "SELECTED_HEAD_COMPANY_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "HEAD_COMPANY"
+      ]
+    },
+    {
+      "actionKey": "EDIT_STORE_CATALOG",
+      "actionLabel": "编辑门店商品",
+      "actionDescription": "编辑门店商品",
       "actionGroupKey": "CATALOG_MANAGEMENT",
       "actionGroupLabel": "商品与服务",
       "actionGroupOrder": 500,
@@ -1415,24 +1437,22 @@ export const adminCatalog = {
             "GROUP",
             "REGION",
             "PROJECT",
-            "HEAD_COMPANY",
             "STORE"
           ],
-          "scopeApplicability": "SELECTED_CATALOG_SCOPE"
+          "scopeApplicability": "SELECTED_STORE_SCOPE"
         }
       ],
       "grantableRoleNodeTypes": [
         "GROUP",
         "REGION",
         "PROJECT",
-        "HEAD_COMPANY",
         "STORE"
       ]
     },
     {
-      "actionKey": "READ_INVENTORY_ADVANCED_DIAGNOSTICS",
-      "actionLabel": "查看库存高级诊断",
-      "actionDescription": "查看库存高级诊断",
+      "actionKey": "EDIT_STORE_INVENTORY",
+      "actionLabel": "编辑门店库存",
+      "actionDescription": "编辑门店库存",
       "actionGroupKey": "CATALOG_MANAGEMENT",
       "actionGroupLabel": "商品与服务",
       "actionGroupOrder": 500,
@@ -1605,8 +1625,9 @@ export const ACTION_CAPABILITIES = {
   "CONTRACT_CREATE": "BC-CONTRACT-CREATE",
   "CONTRACT_EDIT": "BC-CONTRACT-EDIT",
   "CONTRACT_INVALIDATE": "BC-CONTRACT-INVALIDATE",
-  "EDIT_CATALOG_LIBRARY": "EDIT_CATALOG_LIBRARY",
-  "READ_INVENTORY_ADVANCED_DIAGNOSTICS": "READ_INVENTORY_ADVANCED_DIAGNOSTICS"
+  "EDIT_HEAD_COMPANY_CATALOG": "EDIT_HEAD_COMPANY_CATALOG",
+  "EDIT_STORE_CATALOG": "EDIT_STORE_CATALOG",
+  "EDIT_STORE_INVENTORY": "EDIT_STORE_INVENTORY"
 } as const;
 export type AdminActionCapabilityKey = typeof ACTION_CAPABILITIES[keyof typeof ACTION_CAPABILITIES];
 export const USER_MANAGEMENT_PAGE_DESIGN_KEYS = [

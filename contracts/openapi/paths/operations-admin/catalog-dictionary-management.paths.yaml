@@ -5,7 +5,7 @@
     "createOperationsCatalogCategory",
     "updateOperationsCatalogCategory",
     "moveOperationsCatalogCategory",
-    "transitionOperationsCatalogCategoryStatus",
+    "deleteOperationsCatalogCategory",
     "getOperationsCatalogDictionary",
     "createOperationsCatalogDictionaryEntry",
     "updateOperationsCatalogDictionaryEntry",
@@ -25,8 +25,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_CATEGORY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_CATEGORY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -71,7 +83,7 @@
         }
       }
     },
-    "/operations/catalog-inventory/categories/{categoryCode}": {
+    "/operations/catalog-inventory/categories/{categoryRef}": {
       "patch": {
         "operationId": "updateOperationsCatalogCategory",
         "tags": [
@@ -83,8 +95,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_CATEGORY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_CATEGORY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -109,7 +133,7 @@
         },
         "parameters": [
           {
-            "name": "categoryCode",
+            "name": "categoryRef",
             "in": "path",
             "required": true,
             "schema": {
@@ -135,9 +159,85 @@
             }
           }
         }
+      },
+      "delete": {
+        "operationId": "deleteOperationsCatalogCategory",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
+        ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY",
+        "x-mutation": true,
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogCategoryDeleteReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "categoryRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogCategoryDeleteRequest"
+              }
+            }
+          }
+        }
       }
     },
-    "/operations/catalog-inventory/categories/{categoryCode}/move": {
+    "/operations/catalog-inventory/categories/{categoryRef}/move": {
       "post": {
         "operationId": "moveOperationsCatalogCategory",
         "tags": [
@@ -149,8 +249,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_MOVE_OPERATIONS_CATALOG_CATEGORY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_MOVE_OPERATIONS_CATALOG_CATEGORY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -175,7 +287,7 @@
         },
         "parameters": [
           {
-            "name": "categoryCode",
+            "name": "categoryRef",
             "in": "path",
             "required": true,
             "schema": {
@@ -203,72 +315,6 @@
         }
       }
     },
-    "/operations/catalog-inventory/categories/{categoryCode}/status": {
-      "post": {
-        "operationId": "transitionOperationsCatalogCategoryStatus",
-        "tags": [
-          "Catalog"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "catalog",
-        "x-coordinated-owners": [],
-        "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
-        ],
-        "responses": {
-          "200": {
-            "description": "Typed readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogCategoryReadback"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Typed problem",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TypedProblem"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "categoryCode",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogCategoryTransitionRequest"
-              }
-            }
-          }
-        }
-      }
-    },
     "/operations/catalog-inventory/dictionaries/{dictionaryKind}": {
       "get": {
         "operationId": "getOperationsCatalogDictionary",
@@ -281,6 +327,13 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -354,8 +407,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -420,8 +485,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -494,8 +571,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -560,8 +649,20 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
-          "EDIT_CATALOG_LIBRARY"
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
         ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS",
+        "x-mutation": true,
         "responses": {
           "200": {
             "description": "Typed readback",

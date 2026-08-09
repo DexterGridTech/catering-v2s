@@ -17,6 +17,8 @@ import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.workspaceiam.WorkspaceInvitationCandidatePageWireMapper;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
+import com.catering.v2s.workspace.iam.application.PlatformInvitationCandidatesTaskReadService;
+import com.catering.v2s.workspace.iam.application.PlatformWorkspaceInvitationTaskReadService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import java.util.List;
 import java.util.UUID;
@@ -42,12 +44,16 @@ public final class PlatformWorkspaceInvitationController {
     private final WorkspaceAdministrationService workspaces;
     private final WorkspaceInvitationService invitations;
     private final WorkspaceUserService users;
+    private final PlatformInvitationCandidatesTaskReadService candidates;
+    private final PlatformWorkspaceInvitationTaskReadService reads;
 
-    public PlatformWorkspaceInvitationController(PlatformSessionResolver sessions, WorkspaceAdministrationService workspaces, WorkspaceInvitationService invitations, WorkspaceUserService users) {
+    public PlatformWorkspaceInvitationController(PlatformSessionResolver sessions, WorkspaceAdministrationService workspaces, WorkspaceInvitationService invitations, WorkspaceUserService users, PlatformInvitationCandidatesTaskReadService candidates, PlatformWorkspaceInvitationTaskReadService reads) {
         this.sessions = sessions;
         this.workspaces = workspaces;
         this.invitations = invitations;
         this.users = users;
+        this.candidates = candidates;
+        this.reads = reads;
     }
 
     @GetMapping("/invitations")
@@ -67,7 +73,7 @@ public final class PlatformWorkspaceInvitationController {
         @RequestParam(defaultValue = "20") int pageSize
     ) {
         var workspace = workspace(request, groupWorkspaceKey);
-        return PlatformWorkspaceInvitationPageWireMapper.page(invitations.managementPage(
+        return PlatformWorkspaceInvitationPageWireMapper.page(reads.page(
             workspace.workspaceUuid(), groupWorkspaceKey,
             new WorkspaceInvitationService.ManagementInvitationPageRequest(mobile, targetOrganizationType == null ? null : targetOrganizationType.name(), targetOrganizationRef, roleId, status == null ? null : status.name(), expiresFrom, expiresTo, sort == null ? WorkspaceInvitationSortKey.CREATED_AT.name() : sort.name(), direction == null ? SortDirection.DESC.name() : direction.name(), page, pageSize)
         ));
@@ -86,13 +92,13 @@ public final class PlatformWorkspaceInvitationController {
         @RequestParam(required = false) UUID selectedOrganizationRef
     ) {
         var workspace = workspace(request, groupWorkspaceKey);
-        return WorkspaceInvitationCandidatePageWireMapper.page(users.candidates(WorkspaceUserService.CandidateQuery.forPlatform(workspace.workspaceUuid(), groupWorkspaceKey, targetOrganizationType.name(), subjectType, candidateUsage, queryText, page, pageSize, selectedOrganizationRef)));
+        return WorkspaceInvitationCandidatePageWireMapper.page(candidates.candidates(WorkspaceUserService.CandidateQuery.forPlatform(workspace.workspaceUuid(), groupWorkspaceKey, targetOrganizationType.name(), subjectType, candidateUsage, queryText, page, pageSize, selectedOrganizationRef)));
     }
 
     @GetMapping("/invitations/{invitationId}")
     PlatformWorkspaceInvitation detail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID invitationId) {
         var workspace = workspace(request, groupWorkspaceKey);
-        return PlatformWorkspaceInvitationWireMapper.wire(invitations.managementInvitation(workspace.workspaceUuid(), groupWorkspaceKey, invitationId));
+        return PlatformWorkspaceInvitationWireMapper.wire(reads.detail(workspace.workspaceUuid(), groupWorkspaceKey, invitationId));
     }
 
     @PostMapping("/invitations")
@@ -127,9 +133,8 @@ public final class PlatformWorkspaceInvitationController {
         return PlatformWorkspaceInvitationWireMapper.wire(invitations.managementView(invitations.reissue(workspace.workspaceUuid(), groupWorkspaceKey, invitationId, expected(body == null ? null : body.expectedVersion()), idempotencyKey, sessions.actor(session))));
     }
 
-    private com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback workspace(EdgeRequestContext request, String groupWorkspaceKey) {
-        sessions.require(request);
-        return workspaces.requireEnabled(groupWorkspaceKey);
+    private PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace(EdgeRequestContext request, String groupWorkspaceKey) {
+        return sessions.requireRead(request).requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey);
     }
 
     private static UUID uuid(String value) {

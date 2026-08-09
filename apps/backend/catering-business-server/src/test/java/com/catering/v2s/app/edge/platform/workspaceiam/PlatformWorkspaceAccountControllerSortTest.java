@@ -18,6 +18,7 @@ import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationSe
 import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordResetService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
+import com.catering.v2s.workspace.iam.application.PlatformWorkspaceAccountTaskReadService;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -29,27 +30,27 @@ class PlatformWorkspaceAccountControllerSortTest {
     void platformAccountListDelegatesRequestedSortToOwner() {
         Fixture fixture = fixture();
         UUID organizationRef = UUID.randomUUID();
-        when(fixture.user.page(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == null && fixture.workspace.workspaceUuid().equals(query.workspaceUuid()) && "STORE".equals(query.targetType()) && organizationRef.equals(query.organizationRef()) && "UPDATED_AT".equals(query.sort()) && "DESC".equals(query.direction()))))
+        when(fixture.reads.page(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == null && fixture.workspace.workspaceUuid().equals(query.workspaceUuid()) && "STORE".equals(query.targetType()) && organizationRef.equals(query.organizationRef()) && "UPDATED_AT".equals(query.sort()) && "DESC".equals(query.direction()))))
             .thenReturn(new WorkspaceUserService.AccountPage(List.of(), 1, 50, 0L, null, null, null, null, "UPDATED_AT", "DESC"));
 
         var result = fixture.controller.list(fixture.request, KEY, null, null, null, null, null, ServiceNodeType.STORE, organizationRef.toString(), WorkspacePlatformAccountSortKey.UPDATED_AT, SortDirection.DESC, 1, 50);
 
         assertEquals(WorkspacePlatformAccountSortKey.UPDATED_AT, result.sort());
         assertEquals(SortDirection.DESC, result.direction());
-        verify(fixture.user).page(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == null && fixture.workspace.workspaceUuid().equals(query.workspaceUuid()) && "STORE".equals(query.targetType()) && organizationRef.equals(query.organizationRef()) && "UPDATED_AT".equals(query.sort()) && "DESC".equals(query.direction())));
+        verify(fixture.reads).page(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == null && fixture.workspace.workspaceUuid().equals(query.workspaceUuid()) && "STORE".equals(query.targetType()) && organizationRef.equals(query.organizationRef()) && "UPDATED_AT".equals(query.sort()) && "DESC".equals(query.direction())));
     }
 
     @Test
     void platformAccountListKeepsOwnerDefaultWhenSortIsAbsent() {
         Fixture fixture = fixture();
-        when(fixture.user.page(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == null && fixture.workspace.workspaceUuid().equals(query.workspaceUuid()) && query.targetType() == null && query.organizationRef() == null && query.sort() == null && query.direction() == null)))
+        when(fixture.reads.page(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == null && fixture.workspace.workspaceUuid().equals(query.workspaceUuid()) && query.targetType() == null && query.organizationRef() == null && query.sort() == null && query.direction() == null)))
             .thenReturn(new WorkspaceUserService.AccountPage(List.of(), 1, 50, 0L, null, null, null, null, "LOGIN_NAME", "ASC"));
 
         var result = fixture.controller.list(fixture.request, KEY, null, null, null, null, null, null, null, null, null, 1, 50);
 
         assertEquals(WorkspacePlatformAccountSortKey.LOGIN_NAME, result.sort());
         assertEquals(SortDirection.ASC, result.direction());
-        verify(fixture.user).page(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == null && fixture.workspace.workspaceUuid().equals(query.workspaceUuid()) && query.targetType() == null && query.organizationRef() == null && query.sort() == null && query.direction() == null));
+        verify(fixture.reads).page(org.mockito.ArgumentMatchers.argThat(query -> query.operationsSession() == null && fixture.workspace.workspaceUuid().equals(query.workspaceUuid()) && query.targetType() == null && query.organizationRef() == null && query.sort() == null && query.direction() == null));
     }
 
     private static Fixture fixture() {
@@ -61,12 +62,13 @@ class PlatformWorkspaceAccountControllerSortTest {
         WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(workspaceUuid, KEY, "Test workspace", "Operations", null, null, "ENABLED", 1L, 1L, 1L, 1L, true);
         when(workspaces.requireEnabled(KEY)).thenReturn(workspace);
         WorkspaceUserService user = mock(WorkspaceUserService.class);
+        PlatformWorkspaceAccountTaskReadService reads = mock(PlatformWorkspaceAccountTaskReadService.class);
         PlatformWorkspaceAccountController controller = new PlatformWorkspaceAccountController(
             new PlatformSessionResolver(authentication), workspaces, mock(WorkspaceAccountService.class),
-            mock(WorkspacePasswordResetService.class), user);
+            mock(WorkspacePasswordResetService.class), user, reads);
         EdgeRequestContext request = new EdgeRequestContext("test-fingerprint", "test-correlation", PlatformSessionCookie.fromCookie("platform-session"), null, null, null, null);
-        return new Fixture(controller, user, workspace, request);
+        return new Fixture(controller, reads, workspace, request);
     }
 
-    private record Fixture(PlatformWorkspaceAccountController controller, WorkspaceUserService user, WorkspaceAdministrationReadback workspace, EdgeRequestContext request) { }
+    private record Fixture(PlatformWorkspaceAccountController controller, PlatformWorkspaceAccountTaskReadService reads, WorkspaceAdministrationReadback workspace, EdgeRequestContext request) { }
 }

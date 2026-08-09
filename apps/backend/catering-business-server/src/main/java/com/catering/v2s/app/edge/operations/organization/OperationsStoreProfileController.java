@@ -18,6 +18,7 @@ import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
+import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import tools.jackson.databind.JsonNode;
@@ -40,23 +41,27 @@ public final class OperationsStoreProfileController {
     private final BusinessEntityService entities;
     private final OrganizationOverviewTaskReadService overview;
     private final ContractTaskReadService contracts;
+    private final OperationsOrganizationTaskReadService reads;
 
-    public OperationsStoreProfileController(OperationsSessionResolver sessions, BusinessEntityService entities, OrganizationOverviewTaskReadService overview, ContractTaskReadService contracts) { this.sessions = sessions; this.entities = entities; this.overview = overview; this.contracts = contracts; }
+    /** Legacy focused-test constructor; production uses the explicit GET-only task reader. */
+    public OperationsStoreProfileController(OperationsSessionResolver sessions, BusinessEntityService entities, OrganizationOverviewTaskReadService overview, ContractTaskReadService contracts) { this(sessions, entities, overview, contracts, new OperationsOrganizationTaskReadService(entities, overview)); }
+    @org.springframework.beans.factory.annotation.Autowired
+    public OperationsStoreProfileController(OperationsSessionResolver sessions, BusinessEntityService entities, OrganizationOverviewTaskReadService overview, ContractTaskReadService contracts, OperationsOrganizationTaskReadService reads) { this.sessions = sessions; this.entities = entities; this.overview = overview; this.contracts = contracts; this.reads = reads; }
 
     @GetMapping OrganizationStore profile(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam long expectedContextVersion) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
         java.util.UUID storeId = requireStore(session);
         OrganizationEntityReadback entity = entities.requireEntity(OrganizationEntityType.STORE.wire(), session.workspaceUuid(), groupWorkspaceKey, storeId);
-        return StoreWireMapper.store(entity, overview.detail(session.workspaceUuid(), groupWorkspaceKey, OrganizationEntityType.STORE.wire(), storeId), contracts.derivedStoreStatus(session.workspaceUuid(), groupWorkspaceKey, storeId));
+        return StoreWireMapper.store(entity, reads.store(session.workspaceUuid(), groupWorkspaceKey, storeId), contracts.derivedStoreStatus(session.workspaceUuid(), groupWorkspaceKey, storeId));
     }
 
     @GetMapping("/contracts") StoreContractPage contracts(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam long expectedContextVersion, @RequestParam StoreContractViewState state, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
-        return contractPage(contracts.fixedStoreContractPage(session.workspaceUuid(), groupWorkspaceKey, requireStore(session), ContractTaskReadService.FixedStoreContractViewState.valueOf(state.name()), page, pageSize));
+        return contractPage(contracts.operationsFixedStoreContractPage(session.workspaceUuid(), groupWorkspaceKey, requireStore(session), ContractTaskReadService.FixedStoreContractViewState.valueOf(state.name()), page, pageSize));
     }
 
     private WorkspaceSessionReadback context(EdgeRequestContext request, String key, long expected) {
-        return sessions.requireWorkspaceAtContextVersion(request, key, expected);
+        return sessions.requireWorkspaceReadAtContextVersion(request, key, expected);
     }
     private static StoreContractPage contractPage(ContractTaskReadService.FixedStoreContractPage value) {
         return new StoreContractPage(new StoreContractPageMetadata(value.groupWorkspaceKey(), value.project().id().toString(), value.project().name(), (long) value.page(), (long) value.pageSize(), value.total(), StoreContractSortKey.CONTRACT_NO, StoreContractSortDirection.ASC), value.items().stream().map(OperationsStoreProfileController::contract).toList());

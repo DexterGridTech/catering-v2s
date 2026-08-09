@@ -41,14 +41,14 @@ public final class PlatformContractOverviewController {
     public PlatformContractOverviewController(PlatformSessionResolver sessions, ContractTaskReadService reads, ExtensionDefinitionService definitions, WorkspaceAdministrationService workspaces) { this.sessions = sessions; this.reads = reads; this.definitions = definitions; this.workspaces = workspaces; }
 
     @GetMapping ContractOverviewPage page(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam(required = false) String contractNo, @RequestParam(required = false) UUID storeId, @RequestParam(required = false) String phaseName, @RequestParam(required = false) UUID tenantId, @RequestParam(required = false) String itemCode, @RequestParam(required = false) String status, @RequestParam(defaultValue = "UPDATED_AT") String sort, @RequestParam(defaultValue = "DESC") String direction, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "50") int pageSize) {
-        sessions.require(request); UUID workspaceUuid = workspaces.requireEnabled(groupWorkspaceKey).workspaceUuid();
-        return overview(reads.list(workspaceUuid, groupWorkspaceKey, new ContractTaskReadService.ContractListQuery(null, storeId, tenantId, contractNo, phaseName, itemCode, null, null, status, sort, direction, page, pageSize)));
+        UUID workspaceUuid = sessions.requireRead(request).requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey).workspaceUuid();
+        return overview(reads.platformOverviewTaskPage(workspaceUuid, groupWorkspaceKey, new ContractTaskReadService.ContractListQuery(null, storeId, tenantId, contractNo, phaseName, itemCode, null, null, status, sort, direction, page, pageSize)));
     }
 
     @GetMapping("/{contractId}") ContractOverviewItem detail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID contractId) {
-        sessions.require(request); UUID workspaceUuid = workspaces.requireEnabled(groupWorkspaceKey).workspaceUuid();
-        var value = reads.view(workspaceUuid, groupWorkspaceKey, contractId);
-        return overviewItem(value, extensionFields(workspaceUuid, groupWorkspaceKey, value.extensionValues()));
+        UUID workspaceUuid = sessions.requireRead(request).requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey).workspaceUuid();
+        var value = reads.platformOverviewTaskDetail(workspaceUuid, groupWorkspaceKey, contractId);
+        return overviewItem(value, extensionFields(definitions.platformContractManagementDefinition(workspaceUuid, groupWorkspaceKey), value.extensionValues()));
     }
 
     private static ContractOverviewPage overview(ContractTaskReadService.ContractPage value) {
@@ -76,9 +76,8 @@ public final class PlatformContractOverviewController {
     private static ContractOverviewItemStoreRef storeRef(ContractTaskReadService.Reference value) { return new ContractOverviewItemStoreRef(value.id().toString(), value.code(), value.name(), "RESOLVED"); }
     private static ContractOverviewItemProjectRef projectRef(ContractTaskReadService.Reference value) { return new ContractOverviewItemProjectRef(value.id().toString(), value.code(), value.name(), "RESOLVED"); }
     private static ContractOverviewItemTenantRef tenantRef(ContractTaskReadService.Reference value) { return new ContractOverviewItemTenantRef(value.id().toString(), value.code(), value.name(), "RESOLVED"); }
-    private java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields(UUID workspaceUuid, String groupWorkspaceKey, java.util.Map<String, String> values) {
-        try { return definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.CONTRACT).fields().stream().filter(field -> "ENABLED".equals(field.status())).sorted(java.util.Comparator.comparingInt(ExtensionDefinitionReadback.Field::displayOrder)).map(field -> new ContractOverviewItemExtensionFieldsItem(field.label(), displayValue(values.get(field.fieldKey())))).toList(); }
-        catch (ExtensionDefinitionService.DefinitionNotFoundException absent) { return java.util.List.of(); }
+    private java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields(ExtensionDefinitionReadback definition, java.util.Map<String, String> values) {
+        return definition.fields().stream().filter(field -> "ENABLED".equals(field.status())).sorted(java.util.Comparator.comparingInt(ExtensionDefinitionReadback.Field::displayOrder)).map(field -> new ContractOverviewItemExtensionFieldsItem(field.label(), displayValue(values.get(field.fieldKey())))).toList();
     }
     private static String displayValue(String encoded) { if (encoded == null) return null; try { JsonNode value = JSON.readTree(encoded); return value.isValueNode() ? value.asText() : value.toString(); } catch (java.io.IOException failure) { throw new IllegalArgumentException("invalid contract extension value", failure); } }
 

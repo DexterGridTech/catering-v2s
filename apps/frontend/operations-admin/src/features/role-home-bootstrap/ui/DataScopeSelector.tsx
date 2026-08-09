@@ -13,7 +13,7 @@ type DataScopePage = {requiredDataNodeType: RequiredDataNodeType; noDataNodeProm
 type Props = {entry: WorkspaceSessionEntry; page?: DataScopePage; collapsed?: boolean; disabled?: boolean; onChanged: (entry: WorkspaceSessionEntry) => void};
 
 const scopeProblem = '暂时无法更新管理范围，请重试';
-const label = (node: WorkspaceScopeNode) => <NameCodeText name={node.dataNodeName} code={node.dataNodeCode}/>;
+const label = (node: WorkspaceScopeNode, emphasizeName = false) => <NameCodeText name={node.dataNodeName} code={node.dataNodeCode} emphasizeName={emphasizeName}/>;
 const plainLabel = (node: WorkspaceScopeNode) => [node.dataNodeName, node.dataNodeCode].filter(Boolean).join(' ');
 const unique = (values: WorkspaceScopeNode[]): WorkspaceScopeNode[] => [...new Map(values.map((value) => [value.dataNodeRef, value])).values()];
 const selectedFor = (context: WorkspaceSessionEntry['scopeContext'], type: RequiredDataNodeType) => type === 'REGION' ? context?.region : type === 'PROJECT' ? context?.project : type === 'STORE' ? context?.store : type === 'HEAD_COMPANY' ? context?.headCompany : null;
@@ -95,6 +95,7 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
     : type === 'PROJECT' ? [[cascadeLabel(0, '大区'), region], [cascadeLabel(1, '项目'), project]]
       : type === 'STORE' ? [[cascadeLabel(0, '大区'), region], [cascadeLabel(1, '项目'), project], [cascadeLabel(2, '门店'), store]]
         : [['总公司', headCompany]];
+  const scopeSummary = triggerLines.map(([name, node]) => `${name}：${node ? plainLabel(node as WorkspaceScopeNode) : '未选择'}`).join('；');
   const option = (nodes: WorkspaceScopeNode[]): Option[] => nodes.map((node) => ({value: node.dataNodeRef, label: label(node)}));
   const candidate = type === 'REGION'
     ? regions.find((node) => node.dataNodeRef === regionRef)
@@ -135,11 +136,13 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
     </Space>
     {!candidates.length && <Alert type="info" showIcon title={noCandidatePrompt}/>} 
   </Space>;
-  const trigger = <Button className="operations-scope-trigger" type="text" aria-label={collapsed ? `管理范围：${selected ? plainLabel(selected) : noDataNodePrompt}` : undefined} icon={collapsed ? <ApartmentOutlined/> : undefined} disabled={!entry.selected || disabled || locked || submitting} {...testId('operations-data-scope-trigger')}>
-      {collapsed ? null : <Space orientation="vertical" size={4} align="start" style={{width: '100%'}}>
-        <Space size={8}><ApartmentOutlined/><Typography.Text strong>管理范围</Typography.Text></Space>
-        {triggerLines.map(([name, node]) => <Typography.Text key={name} className="operations-scope-trigger-line"><Typography.Text type="secondary">{name}：</Typography.Text>{node ? label(node as WorkspaceScopeNode) : '未选择'}</Typography.Text>)}
-      </Space>}
+  const trigger = <Button className="operations-scope-trigger" type="text" aria-label={collapsed ? `管理范围：${selected ? plainLabel(selected) : noDataNodePrompt}` : `切换可查看范围；${scopeSummary}`} icon={collapsed ? <ApartmentOutlined/> : undefined} disabled={!entry.selected || disabled || locked || submitting} {...testId('operations-data-scope-trigger')}>
+      {collapsed ? null : <div className="operations-scope-trigger-summary">
+        {triggerLines.map(([name, node]) => <div key={name} className="operations-scope-trigger-line">
+          <Typography.Text type="secondary" className="operations-scope-trigger-type">{name}：</Typography.Text>
+          <span className="operations-scope-trigger-value">{node ? label(node as WorkspaceScopeNode, true) : <Typography.Text type="secondary">未选择</Typography.Text>}</span>
+        </div>)}
+      </div>}
     </Button>;
   return <Popover open={open} onOpenChange={(nextOpen) => { if (!nextOpen) resetDraft(); setOpen(nextOpen); }} placement="rightBottom" trigger="click" content={content}>
     {collapsed ? <Tooltip title={<span>管理范围：{selected ? label(selected) : noDataNodePrompt}</span>}><span>{trigger}</span></Tooltip> : trigger}

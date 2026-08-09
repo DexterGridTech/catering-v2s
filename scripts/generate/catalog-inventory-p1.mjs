@@ -8,10 +8,23 @@ const REVISION = "CATALOG_INVENTORY_P1_20260806";
 const REQUIREMENTS_PATH = "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md";
 const IA_PATH = "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md";
 const OPERATION_CONTRACT_PATH = "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json";
+const CATEGORY_REMEDIATION_DESIGN_PATH = "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md";
+const REFERENCE_PATH_MATRIX = "contracts/policy/catalog-inventory-reference-path-matrix.json";
 const COPY_POLICY_PATH = "contracts/policy/catalog-inventory-copy-policy.json";
 const DESIGN_COVERAGE_PATH = "contracts/policy/catalog-inventory-design-byte-coverage.json";
 const MEDIA_CATALOG_PATH = "contracts/policy/catalog-inventory-media-assets.json";
 const MEDIA_ASSET_DIR = "contracts/policy/catalog-inventory-p1-media";
+// The media catalog retains the historical P1 representative-seed marker; the
+// final full-parity delivery obligation is owned by the P4 acceptance package.
+const FULL_CATALOG_PARITY_DELIVERY_PHASE = "P4";
+// A catalog whole-save may coordinate only these two inventory definition
+// commands. They remain inventory-owned commands, but inherit the save
+// operation's catalog capability; direct inventory writes retain their own
+// EDIT_STORE_INVENTORY requirement.
+const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = Object.freeze([
+  "ensureCatalogInventoryTarget",
+  "saveCatalogProductBom",
+]);
 
 function abs(rel) { return path.join(ROOT, rel); }
 function ensureParent(rel) { fs.mkdirSync(path.dirname(abs(rel)), {recursive: true}); }
@@ -42,10 +55,12 @@ function kebab(value) {
 }
 
 const operationContract = readJson(OPERATION_CONTRACT_PATH);
+const referencePathMatrix = readJson(REFERENCE_PATH_MATRIX);
 const copyPolicy = readJson(COPY_POLICY_PATH);
 const designCoverage = readJson(DESIGN_COVERAGE_PATH);
 const mediaCatalog = readJson(MEDIA_CATALOG_PATH);
 if (designCoverage.kind !== "catalog-inventory-design-byte-coverage" || designCoverage.schemaVersion !== 1) throw new Error("P1_DESIGN_COVERAGE_POLICY_INVALID");
+if (referencePathMatrix.policyId !== "CATALOG_TYPED_REFERENCE_PATH_MATRIX" || referencePathMatrix.status !== "DEXTER_ACCEPTED_20260808" || !Array.isArray(referencePathMatrix.entries) || referencePathMatrix.entries.filter((entry) => /^R(?:0[1-9]|1[0-4])$/.test(entry.id)).length !== 14) throw new Error("P1_REFERENCE_PATH_MATRIX_INVALID");
 for (const [assetKey, asset] of Object.entries(mediaCatalog.assets || {})) {
   const assetPath = path.join(ROOT, MEDIA_ASSET_DIR, asset.fileName);
   if (!fs.existsSync(assetPath) || fileHash(path.join(MEDIA_ASSET_DIR, asset.fileName)) !== asset.sha256) throw new Error("P1_MEDIA_ASSET_HASH_INVALID:" + assetKey);
@@ -59,6 +74,8 @@ if (!copyPolicy.limits || !Number.isInteger(copyPolicy.limits.selectedItemCount)
 const requirementsHash = fileHash(REQUIREMENTS_PATH);
 const iaHash = fileHash(IA_PATH);
 const operationContractHash = fileHash(OPERATION_CONTRACT_PATH);
+const categoryRemediationDesignHash = fileHash(CATEGORY_REMEDIATION_DESIGN_PATH);
+const referencePathMatrixHash = fileHash(REFERENCE_PATH_MATRIX);
 const designCoverageHash = fileHash(DESIGN_COVERAGE_PATH);
 const designCoverageRows = Array.isArray(designCoverage.rows) ? designCoverage.rows : [];
 const designCoverageByModel = new Map(designCoverageRows.map((row) => [row.model, row]));
@@ -100,9 +117,9 @@ const routeByOrdinal = {
   6: "/operations/catalog-inventory/items/{itemCode}",
   7: "/operations/catalog-inventory/items/{itemCode}/status",
   8: "/operations/catalog-inventory/categories",
-  9: "/operations/catalog-inventory/categories/{categoryCode}",
-  10: "/operations/catalog-inventory/categories/{categoryCode}/move",
-  11: "/operations/catalog-inventory/categories/{categoryCode}/status",
+  9: "/operations/catalog-inventory/categories/{categoryRef}",
+  10: "/operations/catalog-inventory/categories/{categoryRef}/move",
+  11: "/operations/catalog-inventory/categories/{categoryRef}",
   12: "/operations/catalog-inventory/dictionaries/{dictionaryKind}",
   13: "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries",
   14: "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}",
@@ -287,7 +304,11 @@ if (copyPolicy.kind !== "catalog-inventory-copy-policy" || copyPolicy.sourceOfTr
 
 const readModels = {
   schemaVersion: 1, kind: "catalog-inventory-read-models", revision: REVISION,
-  sourceBindings: {designCoverage: {path: DESIGN_COVERAGE_PATH, sha256: designCoverageHash}},
+  sourceBindings: {
+    designCoverage: {path: DESIGN_COVERAGE_PATH, sha256: designCoverageHash},
+    categoryRemediationDesign: {path: CATEGORY_REMEDIATION_DESIGN_PATH, sha256: categoryRemediationDesignHash},
+    referencePathMatrix: {path: REFERENCE_PATH_MATRIX, sha256: referencePathMatrixHash}
+  },
   models: readModelNames.map((name) => ({name: name, required: readModelRequired[name] || ["revision", "requestId", "data"], recovery: ["loading", "error", "empty", "ready"], ownerFactsAreReadOnly: true})),
   sixInventoryDetailZones: ["current", "changeSummary", "businessHistory", "consumptionReferences", "ledger", "advancedDiagnostics"]
 };
@@ -297,7 +318,9 @@ const operationMetadata = operationRows.map(function (row) {
   const source = operationById.get(row.operationId);
   if (!source) throw new Error("P1_OPERATION_CONTRACT_MISSING:" + row.operationId);
   const isInventory = row.ordinal >= 29 && row.ordinal <= 39;
-  const isWrite = row.auth !== "PR";
+  // Auth codes describe the operation, not the HTTP verb.  DR is a normal
+  // read detail and must never turn into an action capability.
+  const isWrite = row.auth === "EW";
   const isLocalCopy = row.ordinal >= 21 && row.ordinal <= 23;
   const isBrandCopy = row.ordinal >= 26 && row.ordinal <= 28;
   let pageKeys;
@@ -305,13 +328,30 @@ const operationMetadata = operationRows.map(function (row) {
   else if (isLocalCopy) pageKeys = ["PG-CATALOG-STORE-ITEMS"];
   else if (isBrandCopy) pageKeys = ["PG-CATALOG-STORE-ITEMS"];
   else pageKeys = ["PG-CATALOG-STORE-ITEMS", "PG-CATALOG-BRAND-ITEMS"];
-  let capabilityKeys = isWrite ? ["EDIT_CATALOG_LIBRARY"] : [];
-  if (row.ordinal === 35) capabilityKeys = ["READ_INVENTORY_ADVANCED_DIAGNOSTICS"];
+  const allowedDataNodeTypes = isInventory || isLocalCopy || isBrandCopy
+    ? ["STORE"]
+    : ["HEAD_COMPANY", "STORE"];
+  const capabilityByDataNodeType = !isWrite ? {}
+    : isInventory
+      ? {STORE: "EDIT_STORE_INVENTORY"}
+      : allowedDataNodeTypes.length === 1
+        ? {STORE: "EDIT_STORE_CATALOG"}
+        : {HEAD_COMPANY: "EDIT_HEAD_COMPANY_CATALOG", STORE: "EDIT_STORE_CATALOG"};
+  const capabilityKeys = Array.from(new Set(Object.values(capabilityByDataNodeType))).sort();
+  const authorizationRequirementId = isWrite
+    ? "CATALOG_INVENTORY_OPERATION_" + row.operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase()
+    : null;
+  const coordinatedInventoryDefinitionCommands = row.operationId === "saveOperationsCatalogItem"
+    ? CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS
+    : undefined;
   return {
     ordinal: row.ordinal, operationId: row.operationId,
-    method: row.operationId.startsWith("getOperations") ? "GET" : (row.operationId.startsWith("updateOperations") || row.operationId.startsWith("saveOperations") ? "PATCH" : "POST"),
+    method: row.operationId === "deleteOperationsCatalogCategory" ? "DELETE" : (row.operationId.startsWith("getOperations") ? "GET" : (row.operationId.startsWith("updateOperations") || row.operationId.startsWith("saveOperations") ? "PATCH" : "POST")),
     path: routeByOrdinal[row.ordinal],
     consumerFaces: ["operations-admin"], pageKeys: pageKeys, capabilityKeys: capabilityKeys,
+    mutation: isWrite, authorizationRequirementId: authorizationRequirementId,
+    capabilityByDataNodeType: capabilityByDataNodeType, allowedDataNodeTypes: allowedDataNodeTypes,
+    ...(coordinatedInventoryDefinitionCommands ? {coordinatedInventoryDefinitionCommands} : {}),
     initiatingOwner: source.initiatingOwner === "APP_COORDINATOR" ? "catalog" : source.initiatingOwner,
     coordinatedOwners: source.coordinatedOwners, requestComponent: row.requestComponent, responseComponent: row.responseComponent,
     problemCodes: source.problemCodes, logicSteps: source.logicSteps, callChain: source.callChain,
@@ -328,12 +368,35 @@ const edgeContract = {
   typedProblemCodes: Array.from(new Set(operationMetadata.flatMap((entry) => entry.problemCodes))).sort(),
   readModels: readModels.models.map((entry) => entry.name),
   copyPolicyRef: "contracts/policy/catalog-inventory-copy-policy.json",
-  sourceBindings: {operationDesignContract: {path: OPERATION_CONTRACT_PATH, sha256: operationContractHash}, shapeManifest: {path: "contracts/catalog/catalog-item-editor-manifest.json", digest: shapeManifestWithDigest.manifestDigest}},
+  sourceBindings: {
+    operationDesignContract: {path: OPERATION_CONTRACT_PATH, sha256: operationContractHash},
+    categoryRemediationDesign: {path: CATEGORY_REMEDIATION_DESIGN_PATH, sha256: categoryRemediationDesignHash},
+    referencePathMatrix: {path: REFERENCE_PATH_MATRIX, sha256: referencePathMatrixHash},
+    shapeManifest: {path: "contracts/catalog/catalog-item-editor-manifest.json", digest: shapeManifestWithDigest.manifestDigest}
+  },
   contractDigest: ""
 };
 const routeKeys = operationMetadata.map((entry) => entry.method + " " + entry.path);
 if (new Set(routeKeys).size !== routeKeys.length) throw new Error("P1_ROUTE_METHOD_COLLISION");
 const edgeContractWithDigest = writeDigested("contracts/catalog/catalog-inventory-edge-contract.json", edgeContract, "contractDigest");
+// The Spring diagnostic/test registry is a projection of the same canonical
+// operation metadata as OpenAPI.  Keeping it here prevents a second, stale
+// category route/lifecycle declaration from surviving contract replacement.
+const catalogRouteRegistryPath = "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json";
+writeJson(catalogRouteRegistryPath, {
+  schemaVersion: 1,
+  kind: "catalog-inventory-edge-route-registry",
+  revision: REVISION,
+  generatedFrom: "contracts/catalog/catalog-inventory-edge-contract.json",
+  contractDigest: edgeContractWithDigest.contractDigest,
+  operations: operationMetadata.map((entry) => ({
+    operationId: entry.operationId,
+    method: entry.method,
+    path: entry.path,
+    owner: entry.initiatingOwner,
+    consumerFaces: entry.consumerFaces
+  }))
+});
 
 const placement = {
   schemaVersion: 1, kind: "catalog-inventory-edge-placement", revision: REVISION,
@@ -375,12 +438,22 @@ const fieldSchema = (model, field) => {
   if (field === "revision" || field === "requestId" || field === "generation" || field === "cursor" || field === "preflightDigest" || field.endsWith("Ref") || field.endsWith("Code")) return stringField("P1 typed field " + model + "." + field);
   if (["total", "entryCount", "pageSize", "version", "sourceVersion", "targetVersion", "selectedCount", "closureCount"].includes(field)) return integerField("P1 typed count/version " + model + "." + field);
   if (["loading", "error", "empty", "ready", "diagnosticsAvailability", "permission"].includes(field)) return objectField("P1 state fact " + model + "." + field);
-  if (["tree", "smartViews", "shapeCounts", "items", "tabs", "references", "inventoryBom", "productionTags", "governance", "closure", "mappings", "compatibilityResults", "targetVersions", "entries", "queries", "timings", "warnings", "recentChanges", "ledger", "balance", "configuration", "stockState"].includes(field)) return arrayField("P1 collection fact " + model + "." + field, objectField("typed entry"));
+  if (["tree", "smartViews", "shapeCounts", "items", "tabs", "references", "inventoryBom", "productionTags", "governance", "closure", "referenceMappings", "compatibilityResults", "targetVersions", "entries", "queries", "timings", "warnings", "recentChanges", "ledger", "balance", "configuration", "stockState"].includes(field)) return arrayField("P1 collection fact " + model + "." + field, objectField("typed entry"));
   if (["summary", "item", "target", "data", "changeSummary", "current", "source", "result", "resource", "details"].includes(field)) return objectField("P1 object fact " + model + "." + field);
   if (["increase", "decrease", "netChange", "quantity", "actual", "limit"].includes(field)) return integerField("P1 numeric fact " + model + "." + field);
   return stringField("P1 typed field " + model + "." + field);
 };
 const typedEntry = (properties, required = []) => ({type: "object", additionalProperties: false, required, properties});
+// Copy plans are identity plans.  A code can remain a label in the returned
+// mapping, but it must never be used as the edge identity or replay input.
+const copyReferenceMappingSchema = typedEntry({
+  objectType: stringField("typed copied object kind"),
+  sourceRef: {type: "string", format: "uuid", description: "source opaque reference"},
+  targetRef: {type: "string", format: "uuid", description: "target opaque reference"},
+  targetCode: stringField("target business-code label"),
+  targetSkuCode: {type: ["string", "null"], description: "optional target SKU business-code label"},
+  targetOptionValueCode: {type: ["string", "null"], description: "optional target option-value business-code label"}
+}, ["objectType", "sourceRef", "targetRef", "targetCode"]);
 function schemaFromCoverageField(spec) {
   const schema = {type: spec.type, description: spec.description || "design-bound field"};
   if (spec.format) schema.format = spec.format;
@@ -391,7 +464,7 @@ function schemaFromCoverageField(spec) {
     schema.required = [];
   }
   if (spec.type === "array") {
-    schema.items = spec.itemType === "object" ? {type: "object", additionalProperties: false, properties: {}, required: []} : {type: spec.itemType || "string"};
+    schema.items = spec.itemType === "object" ? {type: "object", additionalProperties: false, properties: {}, required: []} : {type: spec.itemType || "string", ...(spec.itemFormat ? {format: spec.itemFormat} : {})};
   }
   return schema;
 }
@@ -451,10 +524,10 @@ const requestFieldMap = {
   CatalogItemCreateRequest: {dataNodeRef: stringField("selected data node"), name: stringField("catalog item name"), code: stringField("immutable catalog code"), shapeKey: stringField("shape"), attributes: objectField("free descriptive map", true)},
   CatalogItemSaveRequest: {dataNodeRef: stringField("selected data node"), itemCode: stringField("catalog item code"), expectedVersion: integerField("expected version"), sections: objectField("typed save sections")},
   CatalogItemTransitionRequest: {itemCode: stringField("catalog item code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
-  CatalogCategoryCreateRequest: {dataNodeRef: stringField("selected data node"), code: stringField("immutable category code"), name: stringField("category name"), parentCode: stringField("parent category")},
-  CatalogCategoryUpdateRequest: {categoryCode: stringField("category code"), expectedVersion: integerField("expected version"), name: stringField("category name")},
-  CatalogCategoryMoveRequest: {categoryCode: stringField("category code"), expectedVersion: integerField("expected version"), parentCode: stringField("target parent")},
-  CatalogCategoryTransitionRequest: {categoryCode: stringField("category code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
+  CatalogCategoryCreateRequest: {dataNodeRef: stringField("selected data node"), code: stringField("immutable category code"), name: stringField("category name"), parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "target parent category opaque ref"}},
+  CatalogCategoryUpdateRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version"), name: stringField("category name")},
+  CatalogCategoryMoveRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version"), action: {type: "string", enum: ["REPARENT", "UP", "DOWN"], description: "category movement action"}, parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "target parent category opaque ref; required only for REPARENT"}},
+  CatalogCategoryDeleteRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version")},
   CatalogDictionaryQuery: {dataNodeRef: stringField("selected data node"), dictionaryKind: stringField("dictionary kind"), cursor: stringField("cursor"), pageSize: integerField("page size")},
   CatalogDictionaryEntryCreateRequest: {dictionaryKind: stringField("dictionary kind"), code: stringField("immutable entry code"), name: stringField("entry name")},
   CatalogDictionaryEntryUpdateRequest: {dictionaryKind: stringField("dictionary kind"), entryCode: stringField("entry code"), expectedVersion: integerField("expected version"), name: stringField("entry name")},
@@ -483,26 +556,35 @@ const requestFieldMap = {
   InventoryIncreaseRequest: {targetRef: stringField("inventory target reference"), expectedVersion: integerField("expected version"), quantity: decimalField("positive increase"), unit: stringField("input unit"), note: stringField("operator note")},
   InventoryAdjustmentRequest: {targetRef: stringField("inventory target reference"), expectedVersion: integerField("expected version"), direction: stringField("adjustment direction"), quantity: decimalField("adjustment quantity"), unit: stringField("input unit"), reasonCode: stringField("controlled reason"), note: stringField("operator note")},
   InventoryTargetConfigurationRequest: {targetRef: stringField("inventory target reference"), expectedVersion: integerField("expected version"), configuration: objectField("typed configuration")},
-  CatalogAssetStageRequest: {fileName: stringField("uploaded file name"), content: binaryField("real asset bytes; multipart/form-data only"), mediaType: stringField("media type"), contentDigest: stringField("content digest")},
+  CatalogAssetStageRequest: {dataNodeRef: stringField("selected data node"), fileName: stringField("uploaded file name"), content: binaryField("real asset bytes; multipart/form-data only"), mediaType: stringField("media type"), contentDigest: stringField("content digest")},
   CatalogAssetReleaseRequest: {assetRef: stringField("staged asset reference"), expectedVersion: integerField("expected version")},
-  CatalogShapeManifestQuery: {revision: stringField("requested manifest revision")}
+  CatalogShapeManifestQuery: {dataNodeRef: stringField("selected data node"), revision: stringField("requested manifest revision")}
 };
 const responseFieldMap = {
   CatalogItemCommandReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({operation: stringField("operation"), resourceRef: stringField("resource reference"), status: stringField("result status"), version: integerField("new version")}, ["operation", "status"]), version: integerField("new version")},
   CatalogItemSaveReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({item: objectField("saved item"), inventoryBom: arrayField("saved inventory/BOM", typedEntry({targetRef: stringField("target ref"), mode: stringField("mode")}, ["targetRef", "mode"])), productionTags: arrayField("saved production tags", typedEntry({code: stringField("tag code"), status: stringField("status")}, ["code", "status"])), version: integerField("new version")}, ["item"]), version: integerField("new version")},
-  CatalogCategoryReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({code: stringField("category code"), name: stringField("category name"), parentCode: stringField("parent code"), status: stringField("status"), version: integerField("version")}, ["code", "name", "status"]), version: integerField("version")},
+  CatalogCategoryReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, code: stringField("category business code"), name: stringField("category name"), parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "parent category opaque ref"}, version: integerField("version"), displayOrder: integerField("sibling display order"), deletionAvailability: typedEntry({canDelete: booleanField("whether the category subtree can be deleted"), subtreeSize: integerField("category subtree size"), blockingReferenceCount: integerField("blocking product reference count"), blockingReferenceLabels: arrayField("safe blocking product labels")}, ["canDelete", "subtreeSize", "blockingReferenceCount", "blockingReferenceLabels"])}, ["categoryRef", "code", "name", "parentCategoryRef", "version", "displayOrder", "deletionAvailability"]), version: integerField("version")},
+  CatalogCategoryDeleteReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({categoryRef: {type: "string", format: "uuid", description: "deleted category opaque ref"}, deletedSubtreeSize: integerField("deleted category subtree size"), deletedCategoryCodes: arrayField("deleted category business codes")}, ["categoryRef", "deletedSubtreeSize", "deletedCategoryCodes"]), version: integerField("version")},
   CatalogDictionaryEntryReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({dictionaryKind: stringField("dictionary kind"), code: stringField("entry code"), name: stringField("entry name"), status: stringField("status"), version: integerField("version")}, ["dictionaryKind", "code", "name", "status"]), version: integerField("version")},
   ProductionTagReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({code: stringField("tag code"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "production tag kind"}, name: stringField("tag name"), ownerScope: objectField("tag owner scope"), status: stringField("status"), version: integerField("version")}, ["code", "tagKind", "name", "status"]), version: integerField("version")},
-  LocalCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), updated: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), mappings: arrayField("rewritten mappings", typedEntry({fromCode: stringField("from"), toCode: stringField("to")}, ["fromCode", "to"])), targetVersion: integerField("target version")}, ["preflightDigest"]), version: integerField("target version")},
-  BrandCatalogCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), reused: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), mappings: arrayField("rewritten mappings", typedEntry({fromCode: stringField("from"), toCode: stringField("to"), referenceKind: stringField("reference kind")}, ["fromCode", "toCode", "referenceKind"])), targetVersions: arrayField("target versions", typedEntry({targetRef: stringField("target ref"), version: integerField("version")}, ["targetRef", "version"]))}, ["preflightDigest"])},
+  LocalCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), updated: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), referenceMappings: arrayField("opaque rewritten reference mappings", copyReferenceMappingSchema), targetVersion: integerField("target version")}, ["preflightDigest", "referenceMappings"]), version: integerField("target version")},
+  BrandCatalogCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), reused: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), referenceMappings: arrayField("opaque rewritten reference mappings", copyReferenceMappingSchema), targetVersions: arrayField("target versions", typedEntry({targetRef: stringField("target ref"), version: integerField("version")}, ["targetRef", "version"]))}, ["preflightDigest", "referenceMappings"])},
   InventoryWriteReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({targetRef: stringField("target ref"), before: decimalField("before balance"), change: decimalField("signed change"), after: decimalField("after balance"), ledgerEntryRef: stringField("ledger entry"), version: integerField("version")}, ["targetRef", "before", "change", "after", "ledgerEntryRef"]), version: integerField("version")},
-  StagedCatalogAsset: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({assetRef: stringField("asset ref"), status: stringField("asset status"), mediaType: stringField("media type"), contentDigest: stringField("content digest")}, ["assetRef", "status"]), version: integerField("version")},
+  StagedCatalogAsset: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({assetRef: stringField("asset ref"), bindGrant: stringField("one-time staged asset bind proof; transient client memory only, never a catalog field"), status: stringField("asset status"), mediaType: stringField("media type"), contentDigest: stringField("content digest")}, ["assetRef", "bindGrant", "status"]), version: integerField("version")},
   CatalogAssetReleaseReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({assetRef: stringField("asset ref"), disposition: stringField("release disposition"), releasedAt: epochMillisField("release time")}, ["assetRef", "disposition"]), version: integerField("version")}
 };
 for (const entry of operationMetadata) {
-  const fields = requestFieldMap[entry.requestComponent] || {dataNodeRef: stringField("selected data node")};
+  const baseFields = requestFieldMap[entry.requestComponent] || {dataNodeRef: stringField("selected data node")};
+  const fields = entry.mutation && !baseFields.dataNodeRef
+    ? {...baseFields, dataNodeRef: stringField("selected data node")}
+    : baseFields;
   const requestCoverage = designCoverageByRequest.get(entry.requestComponent);
-  componentSchemas[entry.requestComponent] = requestCoverage ? schemaFromCoverageRow(requestCoverage) : {type: "object", additionalProperties: false, required: Object.keys(fields).filter((field) => !["cursor", "keyword", "pageSize", "revision", "dataNodeRef"].includes(field)), properties: fields};
+  const generatedRequestSchema = requestCoverage ? schemaFromCoverageRow(requestCoverage) : {type: "object", additionalProperties: false, required: Object.keys(fields).filter((field) => !["cursor", "keyword", "pageSize", "revision", "dataNodeRef"].includes(field)), properties: fields};
+  if (entry.mutation) {
+    if (!generatedRequestSchema.properties.dataNodeRef) generatedRequestSchema.properties.dataNodeRef = stringField("selected data node");
+    generatedRequestSchema.required = Array.from(new Set([...(generatedRequestSchema.required || []), "dataNodeRef"]));
+  }
+  componentSchemas[entry.requestComponent] = generatedRequestSchema;
   if (!componentSchemas[entry.responseComponent]) {
     const required = ["revision", "requestId", "result"];
     componentSchemas[entry.responseComponent] = {type: "object", additionalProperties: false, required, properties: responseFieldMap[entry.responseComponent] || {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({factType: stringField("result type"), resourceRef: stringField("resource reference"), status: stringField("result status")}, ["factType", "status"]), version: integerField("result version")}};
@@ -517,6 +599,12 @@ for (const entry of operationMetadata) {
     operationId: entry.operationId, tags: [entry.ordinal >= 29 && entry.ordinal <= 39 ? "Inventory" : "Catalog"],
     "x-consumer-faces": entry.consumerFaces, "x-owner-module": entry.initiatingOwner,
     "x-coordinated-owners": entry.coordinatedOwners, "x-capability-keys": entry.capabilityKeys,
+    "x-capability-by-data-node-type": entry.capabilityByDataNodeType,
+    "x-allowed-data-node-types": entry.allowedDataNodeTypes,
+    "x-authorization-requirement-id": entry.authorizationRequirementId,
+    ...(entry.coordinatedInventoryDefinitionCommands ? {"x-coordinated-inventory-definition-commands": entry.coordinatedInventoryDefinitionCommands} : {}),
+    ...(entry.mutation ? {"x-required-capability": entry.authorizationRequirementId} : {}),
+    "x-mutation": entry.mutation,
     responses: {
       "200": {description: "Typed readback", content: {"application/json": {schema: {$ref: "#/components/schemas/" + entry.responseComponent}}}},
       "4XX": {description: "Typed problem", content: {"application/problem+json": {schema: {$ref: "#/components/schemas/TypedProblem"}}}}
@@ -526,6 +614,7 @@ for (const entry of operationMetadata) {
   const requestSchema = componentSchemas[entry.requestComponent];
   const queryParameters = entry.method === "GET" ? Object.entries(requestSchema.properties).filter(([name]) => !pathParameters.some((parameter) => parameter.name === name)).map(([name, schema]) => ({name, in: "query", required: requestSchema.required.includes(name), schema})) : [];
   const headerParameters = entry.method === "GET" ? [] : [{name: "Idempotency-Key", in: "header", required: true, schema: {type: "string"}}];
+  if (entry.operationId === "saveOperationsCatalogItem") headerParameters.push({name: "X-Catalog-Asset-Bind-Grants", in: "header", required: false, description: "JSON assetRef-to-bindGrant map for this save only. It is transient proof material, never catalog data or log content.", schema: {type: "string", writeOnly: true}});
   operation.parameters = [...pathParameters, ...queryParameters, ...headerParameters];
   if (entry.method !== "GET") {
     const mediaType = entry.operationId === "stageOperationsCatalogAsset" ? "multipart/form-data" : "application/json";
@@ -771,9 +860,9 @@ const fixtureCatalog = {
     catalogCreate: {operationId: "createOperationsCatalogItem", transport: "HTTP_JSON", requestComponent: "CatalogItemCreateRequest", usesReturnedAssetRefs: true},
     catalogSave: {operationId: "saveOperationsCatalogItem", transport: "HTTP_JSON", requestComponent: "CatalogItemSaveRequest", sequence: "after-create-before-readback", usesReturnedAssetRefs: true},
     catalogSave: {operationId: "saveOperationsCatalogItem", transport: "HTTP_JSON", requestComponent: "CatalogItemSaveRequest", sequence: "after-create-before-readback", usesReturnedAssetRefs: true},
-    fullCatalogParity: {sourceDirectory: mediaCatalog.sourceBindings.v4CatalogItemSources, expectedCatalogItemCount: mediaCatalog.coverage.v4CatalogItemCount, expectedMediaAssetCount: mediaCatalog.coverage.v4MediaAssetCount, requiredIn: "P2", reductionIsNotFinalSeedPolicy: true},
+    fullCatalogParity: {sourceDirectory: mediaCatalog.sourceBindings.v4CatalogItemSources, expectedCatalogItemCount: mediaCatalog.coverage.v4CatalogItemCount, expectedMediaAssetCount: mediaCatalog.coverage.v4MediaAssetCount, requiredIn: FULL_CATALOG_PARITY_DELIVERY_PHASE, reductionIsNotFinalSeedPolicy: true},
     readback: [{operationId: "getOperationsCatalogItem", purpose: "created item and mediaRefs"}, {operationId: "getOperationsCatalogNavigation", purpose: "tree and counts"}, {operationId: "getOperationsInventoryTargets", purpose: "inventory targets"}],
-    cleanup: {strategy: "MANAGED_RESET_RUN_SCOPED_REVERT", mediaPurgeRequired: true, mediaNamespace: "run-scoped", readback: "asset namespace absence", businessAndCleanupSeparate: true},
+    cleanup: {seed: {strategy: "PASS_PRESERVED_DEV_STATE", readback: "business readback complete; DEV facts retained", destructiveCleanupOwner: "r5-reset"}, reset: {strategy: "MANAGED_RESET_RUN_SCOPED_REVERT", mediaPurgeRequired: true, mediaNamespace: "run-scoped", readback: "asset namespace absence", owner: "r5-reset"}, businessAndCleanupSeparate: true},
     failureRule: "If asset upload or create readback fails, stop and retain first failure evidence; do not fall back to SQL."
   },
   separation: {seedIsLegalInitialState: true, testIsConstructedBoundaryState: true, sharedBy: ["P2_API", "P3_L2"], seedExecutionNotAuthorized: true},
@@ -807,6 +896,11 @@ const fixtureSchema = {
     }}
   }
 };
+fixtureSchema.properties.seedExecutionPlan.properties.cleanup = fixtureObject({
+  seed: fixtureObject({strategy: {const: "PASS_PRESERVED_DEV_STATE"}, readback: stringField("seed business readback"), destructiveCleanupOwner: {const: "r5-reset"}}, ["strategy", "readback", "destructiveCleanupOwner"]),
+  reset: fixtureObject({strategy: {const: "MANAGED_RESET_RUN_SCOPED_REVERT"}, mediaPurgeRequired: {const: true}, mediaNamespace: {const: "run-scoped"}, readback: stringField("reset cleanup readback"), owner: {const: "r5-reset"}}, ["strategy", "mediaPurgeRequired", "mediaNamespace", "readback", "owner"]),
+  businessAndCleanupSeparate: {const: true}
+}, ["seed", "reset", "businessAndCleanupSeparate"]);
 writeJson("contracts/policy/catalog-inventory-fixture-catalog.schema.json", fixtureSchema);
 
 const apiCaseCounts = [1, 7, 1, 1, 9, 10, 1, 3, 2, 1, 6, 4, 3, 6, 2, 2, 2, 18, 2, 2, 2, 2, 1, 4, 3, 5];
@@ -1017,12 +1111,21 @@ for (const operation of operationMetadata) {
 }
 const assertionMatrix = {
   schemaVersion: 1, kind: "catalog-inventory-assertion-matrix", revision: REVISION,
-  sourceBindings: {operationDesignContract: {path: OPERATION_CONTRACT_PATH, sha256: operationContractHash}, ia: {path: IA_PATH, sha256: iaHash}, apiScenarios: {path: "contracts/policy/catalog-inventory-api-scenarios.json"}, l2Scenarios: {path: "contracts/policy/catalog-inventory-l2-scenarios.json"}},
+  sourceBindings: {
+    operationDesignContract: {path: OPERATION_CONTRACT_PATH, sha256: operationContractHash},
+    categoryRemediationDesign: {path: CATEGORY_REMEDIATION_DESIGN_PATH, sha256: categoryRemediationDesignHash},
+    referencePathMatrix: {path: REFERENCE_PATH_MATRIX, sha256: referencePathMatrixHash},
+    ia: {path: IA_PATH, sha256: iaHash},
+    apiScenarios: {path: "contracts/policy/catalog-inventory-api-scenarios.json"},
+    l2Scenarios: {path: "contracts/policy/catalog-inventory-l2-scenarios.json"}
+  },
   count: operationMetadata.length, iaIdCount: iaIds.length,
   operations: operationMetadata.map(function (entry) {
     return {
       operationId: entry.operationId, face: "operations-admin", initiatingOwner: entry.initiatingOwner, coordinatedOwners: entry.coordinatedOwners,
-      pageKeys: entry.pageKeys, capabilityKeys: entry.capabilityKeys,
+      pageKeys: entry.pageKeys, capabilityKeys: entry.capabilityKeys, mutation: entry.mutation,
+      authorizationRequirementId: entry.authorizationRequirementId, capabilityByDataNodeType: entry.capabilityByDataNodeType, allowedDataNodeTypes: entry.allowedDataNodeTypes,
+      ...(entry.coordinatedInventoryDefinitionCommands ? {coordinatedInventoryDefinitionCommands: entry.coordinatedInventoryDefinitionCommands} : {}),
       request: {component: entry.requestComponent, method: entry.method, path: entry.path}, response: {component: entry.responseComponent},
       problemCodes: entry.problemCodes, logicSteps: entry.logicSteps, callChain: entry.callChain, conditionToProblem: entry.conditionToProblem,
       normalPathDbOperations: entry.normalPathDbOperations, assertions: assertionsByOperation.get(entry.operationId)
@@ -1036,14 +1139,16 @@ const tsPath = "contracts/catalog/catalogInventoryShapeManifest.ts";
 const javaEscape = (value) => value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\r?\n/g, "\\n");
 const manifestWireJson = JSON.stringify(shapeManifestWithDigest);
 const designFieldDigest = hash(JSON.stringify({rows: designCoverage.rows, requestRows: designCoverage.requestRows || [], closedFindingRows: designCoverage.closedFindingRows || [], typeConventions: designCoverage.typeConventions || []}));
-const edgeWireJson = JSON.stringify({revision: REVISION, operationCount: operationMetadata.length, readModelCount: readModels.models.length, designCoverageHash, designFieldDigest, operations: operationMetadata.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, requestComponent: entry.requestComponent, responseComponent: entry.responseComponent, problemCodes: entry.problemCodes}))});
+const edgeWireJson = JSON.stringify({revision: REVISION, operationCount: operationMetadata.length, readModelCount: readModels.models.length, designCoverageHash, designFieldDigest, operations: operationMetadata.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, requestComponent: entry.requestComponent, responseComponent: entry.responseComponent, problemCodes: entry.problemCodes, mutation: entry.mutation, authorizationRequirementId: entry.authorizationRequirementId, capabilityByDataNodeType: entry.capabilityByDataNodeType, allowedDataNodeTypes: entry.allowedDataNodeTypes, coordinatedInventoryDefinitionCommands: entry.coordinatedInventoryDefinitionCommands || []}))});
 const javaShapeEnum = (value) => value.replace(/[^A-Za-z0-9_]/g, "_");
 const javaShapeRules = shapes.map((shape) => "    new ShapeRule(ShapeKey." + shape.key + ", \"" + javaEscape(shape.itemKind) + "\", \"" + shape.measureMode + "\", \"" + shape.skuPolicy.skuMode + "\", \"" + shape.skuPolicy.priceGranularity + "\", List.of(" + shape.usageCapabilities.map((capability) => "Capability." + capability).join(", ") + "), " + (!shape.disabledReason) + ", " + Boolean(shape.disabledReason) + ", " + (shape.disabledReason ? "\"" + javaEscape(shape.disabledReason) + "\"" : "null") + ")").join(",\n");
 const javaModeRules = modeRules.map((rule) => "    new ModeRule(\"" + rule.nodeType + "\", " + (rule.condition === null ? "null" : "\"" + rule.condition + "\"") + ", List.of(" + rule.allowedModes.map((mode) => "\"" + mode + "\"").join(", ") + "))").join(",\n");
-const javaEdgeOperations = operationMetadata.map((entry) => "    new Operation(\"" + entry.operationId + "\", \"" + entry.method + "\", \"" + javaEscape(entry.path) + "\", \"" + entry.requestComponent + "\", \"" + entry.responseComponent + "\", List.of(" + entry.problemCodes.map((code) => "\"" + code + "\"").join(", ") + "))").join(",\n");
+const javaMap = (values) => { const entries = Object.entries(values); return entries.length === 0 ? "Map.of()" : "Map.of(" + entries.map(([key, value]) => "\"" + key + "\", \"" + value + "\"").join(", ") + ")"; };
+const javaCommandList = (commands) => !commands?.length ? "List.of()" : "List.of(" + commands.map((command) => "\"" + command + "\"").join(", ") + ")";
+const javaEdgeOperations = operationMetadata.map((entry) => "    new Operation(\"" + entry.operationId + "\", \"" + entry.method + "\", \"" + javaEscape(entry.path) + "\", \"" + entry.requestComponent + "\", \"" + entry.responseComponent + "\", List.of(" + entry.problemCodes.map((code) => "\"" + code + "\"").join(", ") + "), " + entry.mutation + ", " + (entry.authorizationRequirementId ? "\"" + entry.authorizationRequirementId + "\"" : "null") + ", " + javaMap(entry.capabilityByDataNodeType) + ", List.of(" + entry.allowedDataNodeTypes.map((type) => "\"" + type + "\"").join(", ") + "), " + javaCommandList(entry.coordinatedInventoryDefinitionCommands) + ")").join(",\n");
 writeText(javaPath,
   "package com.catering.v2s.contracts.generated.cataloginventory;\n\n" +
-  "import java.util.List;\n\n" +
+  "import java.util.List;\nimport java.util.Map;\n\n" +
   "/** Generated from " + REVISION + "; do not edit. */\n" +
   "public final class CatalogInventoryShapeManifest {\n" +
   "  public enum Capability { SELLABLE, STOCK_MANAGED, BOM_COMPONENT, PRODUCIBLE }\n" +
@@ -1067,10 +1172,13 @@ writeText(tsPath,
 );
 writeText("contracts/catalog/CatalogInventoryEdgeWire.java",
   "package com.catering.v2s.contracts.generated.cataloginventory;\n\n" +
-  "import java.util.List;\n\n" +
+  "import java.util.List;\nimport java.util.Map;\n\n" +
   "/** Generated from " + REVISION + "; do not edit. */\n" +
   "public final class CatalogInventoryEdgeWire {\n" +
-  "  public record Operation(String operationId, String method, String path, String requestComponent, String responseComponent, List<String> problemCodes) {}\n" +
+  "  public record Operation(String operationId, String method, String path, String requestComponent, String responseComponent, List<String> problemCodes, boolean mutation, String authorizationRequirementId, Map<String, String> capabilityByDataNodeType, List<String> allowedDataNodeTypes, List<String> coordinatedInventoryDefinitionCommands) {\n" +
+  "    public String capabilityForDataNodeType(String dataNodeType) { return capabilityByDataNodeType.get(dataNodeType); }\n" +
+  "    public boolean coordinatesInventoryDefinitionCommand(String command) { return coordinatedInventoryDefinitionCommands.contains(command); }\n" +
+  "  }\n" +
   "  public static final String REVISION = \"" + REVISION + "\";\n" +
   "  public static final int OPERATION_COUNT = " + operationMetadata.length + ";\n" +
   "  public static final int READ_MODEL_COUNT = " + readModels.models.length + ";\n" +
@@ -1097,7 +1205,7 @@ const implementationManifest = {
     apiScenarios: ["contracts/policy/catalog-inventory-api-scenarios.json"],
     l2Scenarios: ["contracts/policy/catalog-inventory-l2-scenarios.json"],
     assertionMatrix: ["contracts/policy/catalog-inventory-assertion-matrix.json"],
-    generated: [javaPath, tsPath, "contracts/catalog/CatalogInventoryEdgeWire.java", "contracts/catalog/catalogInventoryEdgeWire.ts"]
+    generated: [javaPath, tsPath, "contracts/catalog/CatalogInventoryEdgeWire.java", "contracts/catalog/catalogInventoryEdgeWire.ts", catalogRouteRegistryPath]
   },
   forbiddenSurfaces: ["apps/backend/catering-business-server/modules/catalog", "apps/backend/catering-business-server/modules/inventory", "db/migration", "seed execution", "DEV/UAT/L2 execution", "runtime deployment", "Git"],
   authorizationBoundary: "P1 definition implementation only: contract/read-model/seed-fixture/scenario/generated artifacts; no owner runtime, schema, migration, reset/seed execution, browser execution or deployment.",

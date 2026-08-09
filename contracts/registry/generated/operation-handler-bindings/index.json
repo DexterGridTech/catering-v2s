@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "generated-owner-operation-binding-index",
+  "operationCount": 196,
+  "owners": [
+    "asset",
+    "catalog",
+    "contract",
+    "extension",
+    "fulfillment-production",
+    "inventory",
+    "organization",
+    "platform-asset",
+    "platform-iam",
+    "platform-workspace",
+    "workspace-iam"
+  ],
+  "outputs": [
+    "contracts/registry/generated/operation-handler-bindings/asset.json",
+    "contracts/registry/generated/operation-handler-bindings/catalog.json",
+    "contracts/registry/generated/operation-handler-bindings/contract.json",
+    "contracts/registry/generated/operation-handler-bindings/extension.json",
+    "contracts/registry/generated/operation-handler-bindings/fulfillment-production.json",
+    "contracts/registry/generated/operation-handler-bindings/inventory.json",
+    "contracts/registry/generated/operation-handler-bindings/organization.json",
+    "contracts/registry/generated/operation-handler-bindings/platform-asset.json",
+    "contracts/registry/generated/operation-handler-bindings/platform-iam.json",
+    "contracts/registry/generated/operation-handler-bindings/platform-workspace.json",
+    "contracts/registry/generated/operation-handler-bindings/workspace-iam.json"
+  ],
+  "javaOutputs": [
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/OperationBindingTypes.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/asset/AssetOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/catalog/CatalogOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/contract/ContractOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/extension/ExtensionOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/fulfillmentproduction/FulfillmentProductionOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/inventory/InventoryOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/organization/OrganizationOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/platformasset/PlatformAssetOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/platformiam/PlatformIamOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/platformworkspace/PlatformWorkspaceOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/workspaceiam/WorkspaceIamOperationBindings.java"
+  ],
+  "dispatchStrategy": "OWNER_LOCAL_CLOSED_SWITCH",
+  "dynamicDispatch": false,
+  "runtimeIntegration": {
+    "status": "IMPLEMENTED_BP_U06",
+    "legacyDispatcher": "NO_LEGACY_DISPATCH",
+    "reason": "BP-U06 completed the 42-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
+  }
+}

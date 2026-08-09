@@ -5,6 +5,7 @@ import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.catering.v2s.platform.iam.api.PlatformDiagnosticBootstrap;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
@@ -258,17 +259,29 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     /** Owner-bounded platform-administrator query; the edge never materializes or slices this population. */
     @Transactional(readOnly = true)
     public PlatformAdminPage pageAdministrators(String userName, String loginName, String status, int page, int pageSize, String sortKey, String sortDirection) {
+        return pageAdministratorsWithBudget(userName, loginName, status, page, pageSize, sortKey, sortDirection);
+    }
+
+    /** Platform task-read page boundary: the bounded primary read and its matching count stay separately measurable. */
+    @Transactional(readOnly = true)
+    public PlatformAdminPage platformAdministratorPage(String userName, String loginName, String status, int page, int pageSize, String sortKey, String sortDirection) {
+        return pageAdministratorsWithBudget(userName, loginName, status, page, pageSize, sortKey, sortDirection);
+    }
+
+    private PlatformAdminPage pageAdministratorsWithBudget(String userName, String loginName, String status, int page, int pageSize, String sortKey, String sortDirection) {
         if (page < 1 || pageSize < 1 || pageSize > 100 || !validFilter(userName, 128) || !validFilter(loginName, 64)
             || (status != null && !Set.of("ENABLED", "DISABLED").contains(status))
             || !Set.of("USER_NAME", "LOGIN_NAME", "LAST_LOGIN_AT", "UPDATED_AT").contains(sortKey)
             || !Set.of("ASC", "DESC").contains(sortDirection)) throw new InvalidAdministratorInputException();
         String where = " WHERE (CAST(? AS text) IS NULL OR a.display_name ILIKE '%' || CAST(? AS text) || '%') AND (CAST(? AS text) IS NULL OR a.login_name ILIKE '%' || CAST(? AS text) || '%') AND (CAST(? AS text) IS NULL OR a.status=CAST(? AS text))";
         Object[] values = new Object[] {userName, userName, loginName, loginName, status, status};
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM platform_iam.platform_admin a" + where, Long.class, values);
+        Long total = ReadBudgetComponent.measure(ReadBudgetComponent.Component.OPTIONAL_COUNT,
+            () -> jdbc.queryForObject("SELECT COUNT(*) FROM platform_iam.platform_admin a" + where, Long.class, values));
         long offset;
         try { offset = Math.multiplyExact((long) page - 1, pageSize); } catch (ArithmeticException exception) { throw new InvalidAdministratorInputException(); }
         List<Object> pageValues = new java.util.ArrayList<>(java.util.Arrays.asList(values)); pageValues.add((long) pageSize); pageValues.add(offset);
-        List<PlatformAdminReadback> items = jdbc.query(readbackSql(where + " ORDER BY " + administratorOrderBy(sortKey, sortDirection) + " LIMIT ? OFFSET ?"), (result, rowNumber) -> mapReadback(result), pageValues.toArray());
+        List<PlatformAdminReadback> items = ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> jdbc.query(readbackSql(where + " ORDER BY " + administratorOrderBy(sortKey, sortDirection) + " LIMIT ? OFFSET ?"), (result, rowNumber) -> mapReadback(result), pageValues.toArray()));
         return new PlatformAdminPage(items, page, pageSize, total == null ? 0L : total, sortKey, sortDirection);
     }
 
@@ -278,6 +291,13 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
             if (!result.next()) throw new PlatformAdminNotFoundException();
             return mapReadback(result);
         });
+    }
+
+    /** Platform task-read detail boundary; command readbacks continue to use {@link #requireAdministrator(UUID)}. */
+    @Transactional(readOnly = true)
+    public PlatformAdminReadback platformAdministratorDetail(UUID id) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> requireAdministrator(id));
     }
 
     @Transactional

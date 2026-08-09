@@ -6,11 +6,14 @@ import {fileURLToPath} from 'node:url';
 
 const sha256 = (value) => createHash('sha256').update(String(value ?? '')).digest('hex');
 
+/** Canonical identity token shared by every local managed-process producer/consumer. */
+export const canonicalStartToken = (value) => String(value ?? '').trim().replace(/\s+/g, ' ');
+
 export function parseProcessTable(output) {
   return String(output ?? '').split('\n').map((line) => {
     const match = line.match(/^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.{24})\s+(.*)$/);
     if (!match) return null;
-    return {pid: Number(match[1]), ppid: Number(match[2]), pgid: Number(match[3]), startToken: match[4].trim(), command: match[5], commandSha256: sha256(match[5])};
+    return {pid: Number(match[1]), ppid: Number(match[2]), pgid: Number(match[3]), startToken: canonicalStartToken(match[4]), command: match[5], commandSha256: sha256(match[5])};
   }).filter(Boolean);
 }
 
@@ -61,7 +64,8 @@ function selfTest() {
   const deadLeader = snapshotProcessTree({...root, startToken: 'reused-leader'}, table);
   if (evaluateCleanupReadback(deadLeader) !== false || !deadLeader.every((value) => value.ownershipUnverified === true)) throw new Error('MANAGED_PROCESS_TREE_SELF_TEST_LEADER_CHILD_RED');
   if (evaluateCleanupReadback([]) !== true) throw new Error('MANAGED_PROCESS_TREE_SELF_TEST_EMPTY');
-  process.stdout.write('MANAGED_PROCESS_TREE_SELF_TEST=PASS\nRED=LEADER_DEAD_CHILD_ALIVE_CLEANUP_FAIL\n');
+  if (canonicalStartToken('Sun Aug  9 11:09:26 2026   ') !== 'Sun Aug 9 11:09:26 2026') throw new Error('MANAGED_PROCESS_TREE_SELF_TEST_START_TOKEN');
+  process.stdout.write('MANAGED_PROCESS_TREE_SELF_TEST=PASS\nRED=LEADER_DEAD_CHILD_ALIVE_CLEANUP_FAIL\nRED_START_TOKEN_INTERNAL_SPACE_PRESERVED=PASS\n');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url) && process.argv[2] === '--self-test') selfTest();

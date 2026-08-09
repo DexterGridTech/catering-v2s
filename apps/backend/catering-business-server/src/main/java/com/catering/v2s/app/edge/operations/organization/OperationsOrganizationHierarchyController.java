@@ -17,6 +17,7 @@ import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.organization.application.OrganizationCommandService;
+import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
 import java.util.List;
@@ -40,6 +41,7 @@ public final class OperationsOrganizationHierarchyController {
     private final OrganizationHierarchyService hierarchy;
     private final OrganizationCommandService commercialGroups;
     private final WorkspaceCapabilityScopeResolver capabilityScopes;
+    private final OperationsOrganizationTaskReadService reads;
 
     public OperationsOrganizationHierarchyController(
         OperationsSessionResolver sessions,
@@ -47,16 +49,30 @@ public final class OperationsOrganizationHierarchyController {
         OrganizationCommandService commercialGroups,
         WorkspaceCapabilityScopeResolver capabilityScopes
     ) {
+        this(sessions, hierarchy, commercialGroups, capabilityScopes,
+            new OperationsOrganizationTaskReadService(null, null, hierarchy, commercialGroups));
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public OperationsOrganizationHierarchyController(
+        OperationsSessionResolver sessions,
+        OrganizationHierarchyService hierarchy,
+        OrganizationCommandService commercialGroups,
+        WorkspaceCapabilityScopeResolver capabilityScopes,
+        OperationsOrganizationTaskReadService reads
+    ) {
         this.sessions = sessions;
         this.hierarchy = hierarchy;
         this.commercialGroups = commercialGroups;
         this.capabilityScopes = capabilityScopes;
+        this.reads = reads;
     }
 
     @GetMapping
     OrganizationHierarchySnapshot list(EdgeRequestContext request, @PathVariable String groupWorkspaceKey) {
         UUID workspaceUuid = workspace(request, groupWorkspaceKey);
-        return OrganizationHierarchyWireMapper.snapshot(groupWorkspaceKey, commercialGroups.requireCommercialGroup(groupWorkspaceKey), hierarchy.list(workspaceUuid, groupWorkspaceKey));
+        OperationsOrganizationTaskReadService.HierarchySnapshot snapshot = reads.hierarchy(workspaceUuid, groupWorkspaceKey);
+        return OrganizationHierarchyWireMapper.snapshot(groupWorkspaceKey, snapshot.commercialGroup(), snapshot.nodes());
     }
 
     @PostMapping("/regions")
@@ -104,7 +120,7 @@ public final class OperationsOrganizationHierarchyController {
     }
 
     private UUID workspace(EdgeRequestContext request, String groupWorkspaceKey) {
-        return sessions.requireWorkspace(request, groupWorkspaceKey).workspaceUuid();
+        return sessions.requireWorkspaceRead(request, groupWorkspaceKey).workspaceUuid();
     }
 
     private WorkspaceCapabilityScopeResolver.ScopeResolution requireCapability(com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session, String requirementId, String targetType, UUID targetId) {

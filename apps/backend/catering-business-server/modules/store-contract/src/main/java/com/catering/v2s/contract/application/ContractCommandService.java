@@ -149,11 +149,7 @@ public class ContractCommandService {
 
     @Transactional(readOnly = true)
     public String derivedStoreStatus(UUID workspaceUuid, String key, UUID storeId) {
-        LocalDate today = businessDate.today();
-        int operating = jdbc.queryForObject("SELECT COUNT(*) FROM contract.store_contract WHERE workspace_uuid=? AND group_workspace_key=? AND store_id=? AND status='ACTIVE' AND effective_from<=? AND (effective_to IS NULL OR effective_to>=?)", Integer.class, workspaceUuid, key, storeId, today, today);
-        if (operating > 0) return "OPERATING";
-        int preparing = jdbc.queryForObject("SELECT COUNT(*) FROM contract.store_contract WHERE workspace_uuid=? AND group_workspace_key=? AND store_id=? AND status='ACTIVE' AND effective_from>?", Integer.class, workspaceUuid, key, storeId, today);
-        return preparing > 0 ? "PREPARING" : "NOT_OPERATING";
+        return DerivedStoreStatusFacts.load(jdbc, workspaceUuid, key, List.of(storeId), businessDate.today()).statusOf(storeId);
     }
 
     private void validateContract(LocalDate from, LocalDate to, String phase, List<String> projectPhases, List<ItemInput> items) { if (from == null || (to != null && to.isBefore(from)) || (phase != null && !phase.isBlank() && !projectPhases.contains(phase)) || items == null || items.isEmpty() || items.stream().anyMatch(item -> item == null || item.itemCode() == null || item.itemCode().isBlank() || item.itemCode().trim().length() > 120 || item.itemName() == null || item.itemName().isBlank() || item.itemName().trim().length() > 240) || items.stream().map(item -> item.itemCode().strip().toLowerCase(java.util.Locale.ROOT)).distinct().count() != items.size()) throw new ContractValidationException(); }

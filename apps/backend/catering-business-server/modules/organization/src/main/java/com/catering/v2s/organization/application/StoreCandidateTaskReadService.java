@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
+import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,13 @@ public class StoreCandidateTaskReadService {
         if (projectId != null && !projects.isEmpty() && projects.stream().noneMatch(candidate -> projectId.equals(candidate.id()))) projects = List.of();
         DataScope dataScope = visibleScope == null ? new DataScope(null, null, null) : new DataScope(visibleScope.targetType(), visibleScope.targetId(), visibleScope.displayPath());
         return new Page(key, dataScope, projects, brands, tenants, heads);
+    }
+
+    /** Explicit operations-admin store-editor boundary; commands never call this task reader. */
+    @Transactional(readOnly = true)
+    public Page operationsStoreCandidates(UUID workspaceUuid, String key, UUID assignmentId, UUID visibleNodeId, UUID projectId, UUID brandId, UUID tenantId) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> candidates(workspaceUuid, key, assignmentId, visibleNodeId, projectId, brandId, tenantId));
     }
 
     /** Unified owner-backed candidate protocol for cross-entity selectors. */
@@ -69,6 +77,38 @@ public class StoreCandidateTaskReadService {
         return new CandidatePage(new CandidateQueryMetadata(subjectType, normalizedQuery, safePage, safeSize, all.size(), selectedId), List.copyOf(slice));
     }
 
+    /** Platform contract selector: one bounded organization projection, never a generic edge query bus. */
+    @Transactional(readOnly = true)
+    public CandidatePage platformContractCandidatePage(UUID workspaceUuid, String key, PlatformContractCandidateQuery query) {
+        if (workspaceUuid == null || key == null || key.isBlank() || query == null) throw new BusinessEntityService.OrganizationNotFoundException();
+        String pattern = query.queryText() == null || query.queryText().isBlank() ? null : "%" + query.queryText().trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        long offset = (long) (query.page() - 1) * query.pageSize();
+        List<PlatformCandidateRow> rows = ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY, () -> jdbc.query(
+            platformContractCandidateSql(),
+            (row, index) -> new PlatformCandidateRow(row.getObject("id", UUID.class), row.getString("code"), row.getString("name"), row.getLong("total"), row.getLong("page_rank"), row.getBoolean("selected")),
+            query.subjectType().name(), workspaceUuid, key, query.projectId(), query.projectId(),
+            query.subjectType().name(), workspaceUuid, key, query.projectId(), query.projectId(),
+            pattern, pattern, pattern, query.selectedId(), offset, offset + query.pageSize(), query.selectedId(), query.selectedId()
+        ));
+        if (query.selectedId() != null && rows.stream().noneMatch(PlatformCandidateRow::selected)) throw new BusinessEntityService.OrganizationNotFoundException();
+        long total = rows.isEmpty() ? 0L : rows.getFirst().total();
+        List<PlatformCandidateRow> paged = rows.stream().filter(row -> row.pageRank() > offset && row.pageRank() <= offset + query.pageSize()).toList();
+        List<Candidate> items = new java.util.ArrayList<>(paged.stream().map(row -> new Candidate(row.id(), row.code(), row.name(), null)).toList());
+        if (query.selectedId() != null && items.stream().noneMatch(item -> query.selectedId().equals(item.id()))) {
+            PlatformCandidateRow selected = rows.stream().filter(PlatformCandidateRow::selected).findFirst().orElseThrow(BusinessEntityService.OrganizationNotFoundException::new);
+            Candidate value = new Candidate(selected.id(), selected.code(), selected.name(), null);
+            if (items.size() == query.pageSize()) items.set(query.pageSize() - 1, value); else items.add(value);
+        }
+        return new CandidatePage(new CandidateQueryMetadata(query.subjectType().name(), query.queryText(), query.page(), query.pageSize(), total, query.selectedId()), List.copyOf(items));
+    }
+
+    /** Explicit operations-admin relation-selector boundary; keeps the bounded selector protocol owner-local. */
+    @Transactional(readOnly = true)
+    public CandidatePage operationsCandidatePage(UUID workspaceUuid, String key, UUID assignmentId, UUID visibleNodeId, String subjectType, String candidateUsage, String queryText, Integer page, Integer pageSize, UUID selectedId, UUID projectId, UUID brandId, UUID tenantId) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
+            () -> candidatePage(workspaceUuid, key, assignmentId, visibleNodeId, subjectType, candidateUsage, queryText, page, pageSize, selectedId, projectId, brandId, tenantId));
+    }
+
     private List<Candidate> defaultCandidates(UUID workspaceUuid, String key, UUID assignmentId, UUID visibleNodeId, String subjectType, UUID projectId, UUID brandId, UUID tenantId) {
         return switch (subjectType) {
             case ServiceNodeTypes.PROJECT -> requiredVisibleProjects(workspaceUuid, key, assignmentId, visibleNodeId);
@@ -88,6 +128,15 @@ public class StoreCandidateTaskReadService {
         };
     }
 
+    private static String platformContractCandidateSql() {
+        return "WITH candidates AS ("
+            + "SELECT store.id, store.code, store.name FROM organization.store store WHERE ?='STORE' AND store.workspace_uuid=? AND store.group_workspace_key=? AND (?::uuid IS NULL OR store.project_id=?) "
+            + "UNION ALL SELECT DISTINCT tenant.id, tenant.code, tenant.name FROM organization.tenant tenant JOIN organization.store store ON store.tenant_id=tenant.id AND store.workspace_uuid=tenant.workspace_uuid AND store.group_workspace_key=tenant.group_workspace_key WHERE ?='TENANT' AND tenant.workspace_uuid=? AND tenant.group_workspace_key=? AND (?::uuid IS NULL OR store.project_id=?)"
+            + "), filtered AS (SELECT * FROM candidates WHERE (?::text IS NULL OR code ILIKE ? ESCAPE '!' OR name ILIKE ? ESCAPE '!')), ranked AS ("
+            + "SELECT id, code, name, count(*) OVER() AS total, row_number() OVER(ORDER BY code, id) AS page_rank, id=?::uuid AS selected FROM filtered"
+            + ") SELECT id, code, name, total, page_rank, selected FROM ranked WHERE page_rank>? AND page_rank<=? OR (?::uuid IS NOT NULL AND id=?) ORDER BY page_rank";
+    }
+
     private List<Candidate> queryCandidates(String sql, Object... arguments) {
         return jdbc.query(sql + " ORDER BY code", (row, index) -> new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null), arguments);
     }
@@ -97,6 +146,23 @@ public class StoreCandidateTaskReadService {
         int to = Math.min(values.size(), from + pageSize);
         return values.subList(from, to);
     }
+
+    public enum PlatformContractCandidateSubject { STORE, TENANT }
+
+    public record PlatformContractCandidateQuery(
+        PlatformContractCandidateSubject subjectType,
+        String queryText,
+        int page,
+        int pageSize,
+        UUID selectedId,
+        UUID projectId
+    ) {
+        public PlatformContractCandidateQuery {
+            if (subjectType == null || page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("invalid platform contract candidate query");
+        }
+    }
+
+    private record PlatformCandidateRow(UUID id, String code, String name, long total, long pageRank, boolean selected) { }
 
     private OrganizationTaskPathLookup.TaskPath visibleScope(UUID workspaceUuid, String key, WorkspaceAssignmentScopeLookup.AssignmentScope assignment, UUID visibleNodeId) {
         if (visibleNodeId == null) throw new BusinessEntityService.OrganizationNotFoundException();

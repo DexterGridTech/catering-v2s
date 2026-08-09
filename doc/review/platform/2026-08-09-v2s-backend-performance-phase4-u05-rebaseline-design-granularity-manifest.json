@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "BACKEND_PERFORMANCE_PHASE4_U05_REBASELINE_20260809",
+  "design": {
+    "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+    "sha256": "79ecbd69629f764529aa647cafa9efeea12f0cfe4a34a9904d87027b161c6f69"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-08-09-v2s-backend-performance-phase3-to-phase4-rebaseline.md",
+    "sha256": "ea4640a9138f03e0b01f6a0c99c8feed5104cff609bcf4e97e6823bf47ffb6aa",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {"path":"scripts/check/implementation-design-granularity","sha256":"e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"},
+    "tool": {"path":"tools/implementation-design-granularity/cli.mjs","sha256":"0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"},
+    "selfTest": true,
+    "redFixtures": ["DESIGN_HASH_DRIFT","MISSING_BUSINESS_EVIDENCE","REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT","REVIEWER_INPUT_CHECKLIST_NOT_FOUND","FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE","UNIT_SOURCE_COMPLIANCE_DENOMINATOR_INVALID"]
+  },
+  "adversarialReviewPolicy": {"version":"INDEPENDENT_SUBAGENT_V1","reviewerKindRequired":"INDEPENDENT_SUBAGENT","blindReviewRequired":true},
+  "candidateJourney": {
+    "id":"BACKEND-PERFORMANCE-READ-SIDE-REBASELINE",
+    "status":"DESIGN_ONLY_TECHNICAL_MAINTENANCE",
+    "actor":"Dexter-directed backend engineering team",
+    "task":"move only source-proven read-side efficiency work into typed owner-local task-read boundaries without changing existing HTTP consumers",
+    "pageKey":"NON_UI_BACKEND_PERFORMANCE_READ_SIDE",
+    "ownerReadback":"83 GET policy exact-set, 78 request budget components, and immutable snapshot evidence",
+    "mutations":[]
+  },
+  "deliveryUnits":[
+    {
+      "id":"BP-U05",
+      "title":"Task-read facts, C5 command reconciliation, and request-scope budget governance",
+      "approvedAssertions":[
+        "M1 read is exactly 58 task-read operations; getOperationsWorkspaceLoginEntry remains a protocol read and never loads workspace read authorization facts.",
+        "M2 is exactly two C5 session-selection commands plus 58 task reads; generic commands are not inferred applicable from consumer face.",
+        "All 83 GET operations have an explicit disposition: 78 task reads receive request-scope budget policy and five protocol/content reads remain a closed exemption set.",
+        "The only primaryQueryCap>1 rows are the 10 owner-projection exceptions frozen by the phase4 owner-projection rebaseline; every projection boundary has logicalStatementCap=1 and all other 68 task reads remain cap=1.",
+        "Platform audit preserves the actual branch boundary: GROUP_WORKSPACE plus five workspace-host entity types require EnabledSelectedWorkspaceFact; PLATFORM_ADMIN does not.",
+        "C5 command reconciliation is limited to WorkspaceAuthenticationService selectContext/selectDataNode after mutation; it does not reuse task-read facts or WorkspaceSessionRequestCache."
+      ],
+      "approvedSources":[
+        {"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","sha256":"79ecbd69629f764529aa647cafa9efeea12f0cfe4a34a9904d87027b161c6f69","anchor":"### BP-U05｜任务型 reader、M1/M2 read facts 与 read budget"},
+        {"path":"doc/decisions/2026-08-09-v2s-backend-performance-phase4-owner-projection-rebaseline.md","sha256":"cd475e35288e9ebdafd3380d7756e27daeab0f17fdcf15e193cf92e9c8b30759","anchor":"## 2. 问题族、全量分母与反例"},
+        {"path":"doc/decisions/2026-08-09-v2s-backend-performance-phase3-to-phase4-rebaseline.md","sha256":"ea4640a9138f03e0b01f6a0c99c8feed5104cff609bcf4e97e6823bf47ffb6aa","anchor":"## 3. 冻结后的分母与 ownership"},
+        {"path":"contracts/registry/task-read-surface-policy.json","sha256":"a1f54fc79621ab204f6c6921fe8b4142cd6e1f420325c730bacc22d589bd6617","anchor":"\"kind\": \"task-read-surface-policy\""}
+      ],
+      "detailDesign":{"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","anchor":"### BP-U05｜任务型 reader、M1/M2 read facts 与 read budget"},
+      "currentDeviation":"All 78 task-read rows have finite typed owner-reader boundaries, but no managed workload snapshot is authorized or supplied; every request remains BLOCKED_UNMEASURED and no SQL optimization outcome is claimed.",
+      "changeSurfaces":[
+        {"path":"contracts/registry/task-read-surface-policy.json","disposition":"update","target":"design-time semantic truth: 83 GET exact dispositions, 78 budgets, five closed protocol/content exemptions, and audit branch-level enabled-workspace fact rule"},
+        {"path":"scripts/generate/task-read-surface-policy.mjs","disposition":"update","target":"derive policy exact sets from both generated route registries and operation bindings"},
+        {"path":"scripts/check/backend-performance-read-budget","disposition":"update","target":"reject missing disposition, protocol contamination, strict-supertype drift, unclassified component, and cap overflow"},
+        {"path":"contracts/registry/backend-performance-sql-merge-applicability.json","disposition":"update","target":"record EnabledSelectedWorkspaceFact with the exact audit branch policy plus the BP-U05 read-side fact ownership"},
+        {"path":"scripts/generate/backend-performance-sql-merge-applicability.mjs","disposition":"update","target":"validate the source-bound platform audit branch set and BP-U05 fact ownership without claiming measurement"},
+        {"path":"scripts/check/backend-performance-sql-merge-coverage","disposition":"update","target":"fail on audit branch fact/control drift while retaining snapshot-only unmeasured status"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceReadAuthorizationFacts.java","disposition":"update","target":"immutable request-local active-session assignment enabled-role projection with no owner grant"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java","disposition":"update","target":"typed immutable read-side visible facts with the existing C5 command invocation kept separate"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java","disposition":"update","target":"C5 command-local reconciliation after mutation/readback; never invoke a task reader"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceSessionRequestCache.java","disposition":"update","target":"preserve legacy session projection cache while proving new read facts never delegate to it"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java","disposition":"update","target":"construct one operations read context rather than repeatedly resolving session facts"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java","disposition":"update","target":"pass only typed C5 command input to the owner; no edge task-reader or read-fact construction"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java","disposition":"update","target":"construct platform read facts and retain branch-specific selected-workspace behavior"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java","disposition":"update","target":"preserve source-bound selected-workspace fact branches and leave PLATFORM_ADMIN ungated"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogTaskReadService.java","disposition":"update","target":"catalog task-read boundary separate from command dispatch"},
+        {"path":"apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryTaskReadService.java","disposition":"update","target":"inventory task-read boundary separate from command dispatch"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java","disposition":"update","target":"closed ReadBudgetComponent evidence emitted at request completion"}
+        ,{"path":"apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java","disposition":"update","target":"typed contract task projections with no generic operationId dispatch"}
+        ,{"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java","disposition":"update","target":"typed platform organization page/tree/detail projections with owner-local bounded queries"}
+        ,{"path":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java","disposition":"update","target":"typed platform group-workspace page/detail projection without edge query aggregation"}
+        ,{"path":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAuditHistoryService.java","disposition":"update","target":"bounded group-workspace audit projection that retains commercial-group initialization facts"}
+        ,{"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuditAuthorizationService.java","disposition":"update","target":"typed operations audit host authorization projection with no target-loop reads"}
+        ,{"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/audit/OperationsAuditTaskReadService.java","disposition":"update","target":"closed nine-type operations audit task coordinator; each branch delegates once to its owner-local target-plus-scope-plus-window projection"}
+        ,{"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/audit/OperationsAuditTaskReadServiceTest.java","disposition":"update","target":"nine-type branch, absent/mismatch and no-legacy-lookup focused proof"}
+        ,{"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/audit/PlatformAuditHistoryTaskReadService.java","disposition":"update","target":"closed platform audit coordinator retaining group-workspace two-stage and platform-admin ungated counterexamples"}
+        ,{"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/audit/PlatformAuditHistoryTaskReadServiceTest.java","disposition":"update","target":"platform audit branch/owner-boundary focused proof"}
+        ,{"path":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java","disposition":"update","target":"typed group-workspace page/detail coordinator for frozen cap-three/cap-four owner projections"}
+        ,{"path":"apps/backend/catering-business-server/modules/workspace/src/test/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadServiceTest.java","disposition":"update","target":"group-workspace page/detail owner-boundary focused proof"}
+      ],
+      "orderedChain":["derive all 83 GET policy rows and the M1/M2 exact partitions","introduce immutable owner-local read facts without an OwnerGrant","wire readers and the two C5 commands at their separate invocation boundaries","attribute every JDBC operation to one closed read budget component","run source-bound red fixtures and only then managed read-budget workload"],
+      "dependencyAndSerialBoundaries":["Claude must recheck this POST_REMEDIATION_V1 design binding before implementation authority returns; operations audit remains cap=1 only through its static nine-type typed target-authorization projection.","The two C5 POST commands remain command-invocation work and may not call a task reader.","BP-U06 dispatcher or legacy-signature retirement is excluded.","No optimization success or numeric claim exists until immutable snapshot and fixture evidence are measured."],
+      "dataEvolution":{"policy":"No schema, migration, foreign key, or cross-schema DML change. Read facts are request-local immutable values only."},
+      "uiAndTerms":{"notApplicableReason":"Existing HTTP operations and consumer wording stay unchanged; this is an internal read-boundary and measurement change.","termSource":"AGENTS.md"},
+      "evidence":{"l1":"83 GET policy/binding exact-set checker with protocol, C5, and audit-branch red mutations","l2":"owner-local set-based reader tests and command/task-reader separation tests","l3":"immutable snapshot request-component cap evidence for all measured B operations","business":"managed focused reader and C5 command tests","cleanup":"managed workload cleanup manifest"},
+      "forbiddenPseudoFixes":["derive M2 applicability from consumer face","put getOperationsWorkspaceLoginEntry in a session read fact","call a task reader from command transaction","make getPlatformEntityAuditHistory selected-workspace gate unconditional","global query bus or cross-request cache","BP-U06 legacy retirement"],
+      "discriminator":{"fixture":"Changing the pre-login GET into a task read, moving a C5 POST into a task reader, delegating a new read fact to WorkspaceSessionRequestCache, adding PLATFORM_ADMIN to the audit enabled set, or removing GROUP_WORKSPACE from it makes the policy gate fail."}
+    }
+  ],
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "OVERALL_PHASE_4_U05_OWNER_PROJECTION_REBASELINE_DESIGN_20260809",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-08-09-v2s-backend-performance-phase4-owner-projection-rebaseline-design-review-round2.md",
+    "reviewSha256": "cb55d66ae20f3c7ba53e670c3309a7f9efd8bb8cee7a02c2cc4d296adfadd9b0",
+    "reviewedManifestSha256": "064941a233295496ffa4742fa0a88cdbc02d9a4c133e9576eda3a99673c672dd",
+    "intake": {
+      "path": "doc/review/platform/2026-08-09-v2s-backend-performance-phase4-owner-projection-rebaseline-author-intake.md",
+      "sha256": "b4c79c61d999efe83c55c88c0d2e9c9d71cdca3d0961ac098f56748e6ad7f399"
+    },
+    "reason": "After the final independent owner-projection design round found an executable operations-audit reader contract gap and unadmitted future-reader surfaces, the author bound the actual nine-type source denominator, static typed reader/test paths, and transition red-control requirements. The current bytes were not independently reviewed in this cycle; no third Codex adversarial round is permitted, Claude recheck is required, and implementation remains unauthorized.",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false
+  }
+}

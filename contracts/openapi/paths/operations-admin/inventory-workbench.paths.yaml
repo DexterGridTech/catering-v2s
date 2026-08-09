@@ -25,6 +25,12 @@
           "catalog"
         ],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -72,7 +78,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             }
           },
           {
@@ -127,6 +134,12 @@
           "catalog"
         ],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -173,6 +186,12 @@
         "x-owner-module": "inventory",
         "x-coordinated-owners": [],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -228,6 +247,12 @@
         "x-owner-module": "inventory",
         "x-coordinated-owners": [],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -294,6 +319,12 @@
           "catalog"
         ],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -358,6 +389,12 @@
         "x-owner-module": "inventory",
         "x-coordinated-owners": [],
         "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -421,9 +458,13 @@
         ],
         "x-owner-module": "inventory",
         "x-coordinated-owners": [],
-        "x-capability-keys": [
-          "READ_INVENTORY_ADVANCED_DIAGNOSTICS"
+        "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "STORE"
         ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
         "responses": {
           "200": {
             "description": "Typed readback",

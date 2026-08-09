@@ -45,7 +45,7 @@ BEGIN
   END IF;
 END $$;
 INSERT INTO platform_iam.platform_admin (id, login_name, login_name_normalized, display_name, mobile_mask_source, status, version, created_at_epoch_millis, updated_at_epoch_millis, is_builtin)
-VALUES (${sqlLiteral(rootId)}::uuid, 'root', 'root', 'Root', NULL, 'ENABLED', 1, ${fixedEpochMillis}, ${fixedEpochMillis}, TRUE);
+VALUES (${sqlLiteral(rootId)}::uuid, 'root', 'root', '平台超级管理员', NULL, 'ENABLED', 1, ${fixedEpochMillis}, ${fixedEpochMillis}, TRUE);
 INSERT INTO platform_iam.platform_credential (platform_admin_id, password_hash, algorithm, changed_at_epoch_millis, failed_attempts, locked_until_epoch_millis, version)
 VALUES (${sqlLiteral(rootId)}::uuid, ${sqlLiteral(passwordHash)}, 'bcrypt', ${fixedEpochMillis}, 0, NULL, 1);
 INSERT INTO platform_iam.audit_event (id, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json)

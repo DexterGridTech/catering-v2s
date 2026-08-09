@@ -2,6 +2,8 @@
   "schemaVersion": 1,
   "kind": "catalog-inventory-edge-route-registry",
   "revision": "CATALOG_INVENTORY_P1_20260806",
+  "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
+  "contractDigest": "b83ca9b6120557ed70757d58bcb06c1ba9889315c384b281740ce72e35b47c42",
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",
@@ -78,7 +80,7 @@
     {
       "operationId": "updateOperationsCatalogCategory",
       "method": "PATCH",
-      "path": "/operations/catalog-inventory/categories/{categoryCode}",
+      "path": "/operations/catalog-inventory/categories/{categoryRef}",
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
@@ -87,16 +89,16 @@
     {
       "operationId": "moveOperationsCatalogCategory",
       "method": "POST",
-      "path": "/operations/catalog-inventory/categories/{categoryCode}/move",
+      "path": "/operations/catalog-inventory/categories/{categoryRef}/move",
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
       ]
     },
     {
-      "operationId": "transitionOperationsCatalogCategoryStatus",
-      "method": "POST",
-      "path": "/operations/catalog-inventory/categories/{categoryCode}/status",
+      "operationId": "deleteOperationsCatalogCategory",
+      "method": "DELETE",
+      "path": "/operations/catalog-inventory/categories/{categoryRef}",
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"

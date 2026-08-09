@@ -27,28 +27,29 @@ class WorkspaceAdministrationPageRequestTest {
         assertThrows(IllegalArgumentException.class, () -> new WorkspaceAdministrationPageRequest(null, null, null, null, 1, 20, "NAME; DROP", "ASC"));
     }
 
-    @Test void ownerPerformsTheFilteredCountAndBoundedSortedRead() {
+    @Test void ownerPerformsTheFilteredWindowCountAndBoundedSortedReadWithoutOrganizationLookup() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceAdministrationService(jdbc, null, null, null, null);
 
         var page = service.list(new WorkspaceAdministrationPageRequest("North", "north-1", "Operations", "ENABLED", 3, 20, "UPDATED_AT", "DESC"));
 
-        assertEquals(73, page.total());
+        assertEquals(0, page.total());
         assertEquals(3, page.page());
         assertEquals(20, page.pageSize());
         assertEquals("UPDATED_AT", page.sortKey());
         assertEquals("DESC", page.sortDirection());
-        assertEquals(8, jdbc.countArgs.length);
         assertEquals(10, jdbc.listArgs.length);
         assertEquals(20L, jdbc.listArgs[8]);
         assertEquals(40L, jdbc.listArgs[9]);
-        assertEquals("North", jdbc.countArgs[0]);
-        assertEquals("ENABLED", jdbc.countArgs[6]);
-        assertEquals(4, occurrences(jdbc.countSql, "CAST(? AS text) IS NULL"));
         assertEquals(4, occurrences(jdbc.listSql, "CAST(? AS text) IS NULL"));
+        assertEquals(1, occurrences(jdbc.listSql, "count(*) OVER() AS total_count"));
+        assertEquals(0, occurrences(jdbc.listSql, "organization."));
+        assertEquals(0, occurrences(jdbc.listSql, "EXISTS"));
         assertEquals(1, occurrences(jdbc.listSql, "LIMIT ? OFFSET ?"));
         assertEquals(1, occurrences(jdbc.listSql, "ORDER BY updated_at_epoch_millis DESC, group_workspace_key ASC"));
         assertEquals(0, occurrences(jdbc.listSql, "ORDER BY UPDATED_AT"));
+        assertEquals(1, jdbc.queryCalls);
+        assertNull(jdbc.countSql);
     }
 
     private static int occurrences(String value, String token) {
@@ -60,6 +61,7 @@ class WorkspaceAdministrationPageRequestTest {
         private String countSql;
         private Object[] listArgs;
         private Object[] countArgs;
+        private int queryCalls;
 
         @Override public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
             countSql = sql;
@@ -68,6 +70,7 @@ class WorkspaceAdministrationPageRequestTest {
         }
 
         @Override public <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) {
+            queryCalls++;
             listSql = sql;
             listArgs = args;
             return List.of();

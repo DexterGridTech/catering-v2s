@@ -29,7 +29,7 @@ describe('inventory management focused contract', () => {
     expect(page).not.toContain('filter((row) => matchesStockView');
   });
 
-  it('keeps all six detail zones distinct and diagnostics permission-gated', () => {
+  it('keeps all six detail zones distinct and diagnostics as a scoped read', () => {
     for (const title of ['当前状态', '库存变化', '盘点与库存增加历史', '关联商品与扣减规则', '全部变化记录', '高级诊断']) {
       expect(detail).toContain(title);
     }
@@ -37,9 +37,14 @@ describe('inventory management focused contract', () => {
     expect(detail).toContain('adminWideDetailDescriptionsProps');
     expect(detail).toContain('useGetOperationsInventoryTargetDiagnosticsQuery');
     expect(detail).toContain('skip: !shouldRequestInventoryDiagnostics');
-    expect(shouldRequestInventoryDiagnostics(true, true)).toBe(true);
-    expect(shouldRequestInventoryDiagnostics(true, false)).toBe(false);
-    expect(shouldRequestInventoryDiagnostics(false, true)).toBe(false);
+    expect(detail).not.toContain('diagnosticsAvailability');
+    expect(shouldRequestInventoryDiagnostics(true)).toBe(true);
+    expect(shouldRequestInventoryDiagnostics(false)).toBe(false);
+  });
+
+  it('gates inventory mutations with the store-inventory capability only', () => {
+    expect(page).toContain('EDIT_STORE_INVENTORY');
+    expect(page).not.toContain('EDIT_CATALOG_LIBRARY');
   });
 
   it('keeps cursor pagination independent for each pageable detail zone', () => {
@@ -76,6 +81,13 @@ describe('inventory management focused contract', () => {
     expect(action).toContain('negativeBlocked');
     expect(action).not.toContain('contractGap');
     expect(action).not.toContain('当前生成契约尚未提供快捷配置业务字段');
+  });
+
+  it('threads the selected scope through each inventory mutation without an unsafe cast', () => {
+    expect(page).toContain('queryContext={queryContext}');
+    expect(detail).toContain('queryContext={queryContext}');
+    expect(action).toContain('const common = {dataNodeRef: requireOperationsScopeRef(queryContext)');
+    expect(action).not.toContain('as Inventory');
   });
 
   it('decodes both enveloped pages and raw detail read models', () => {

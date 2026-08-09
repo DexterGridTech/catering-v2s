@@ -122,6 +122,25 @@ test('formal seed group administrator owns every executor-required ORG and contr
   assert.deepEqual(requiredCapabilities.filter((capability) => !role.actionCapabilityKeys.includes(capability)), []);
 });
 
+test('formal seed catalog principals match the catalog seed login assignments and their scope-specific grants', async () => {
+  const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
+  const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
+  const {roles, assignments} = actual.stableFixtures.workspaceIam;
+  const roleByKey = new Map(roles.map((role) => [role.key, role]));
+  const storeRole = roleByKey.get('role-store');
+  const headCompanyRole = roleByKey.get('role-head-company');
+
+  assert.equal(assignments.find((assignment) => assignment.account === 'account-single-role')?.role, 'role-store');
+  assert.equal(assignments.find((assignment) => assignment.account === 'account-invite-existing' && assignment.node === 'hc-a')?.role, 'role-head-company');
+  assert.ok(storeRole?.pageAccessKeys.includes('PG-CATALOG-STORE-ITEMS'));
+  assert.ok(storeRole?.actionCapabilityKeys.includes('EDIT_STORE_CATALOG'));
+  assert.ok(headCompanyRole?.pageAccessKeys.includes('PG-CATALOG-BRAND-ITEMS'));
+  assert.ok(headCompanyRole?.actionCapabilityKeys.includes('EDIT_HEAD_COMPANY_CATALOG'));
+  assert.equal(storeRole?.actionCapabilityKeys.includes('EDIT_HEAD_COMPANY_CATALOG'), false);
+  assert.equal(headCompanyRole?.actionCapabilityKeys.includes('EDIT_STORE_CATALOG'), false);
+  assert.equal(roles.some((role) => role.actionCapabilityKeys.includes('EDIT_CATALOG_LIBRARY')), false);
+});
+
 test('formal seed preserves administrator-defined extension keys and refuses partial values', () => {
   const definition = {fields: [{key: 'brandLevel', label: '品牌等级'}, {key: 'brandOrigin', label: '品牌来源'}]};
   const ownerReadback = {definitions: [{key: 'brandLevel', label: '品牌等级'}, {key: 'brandOrigin', label: '品牌来源'}]};

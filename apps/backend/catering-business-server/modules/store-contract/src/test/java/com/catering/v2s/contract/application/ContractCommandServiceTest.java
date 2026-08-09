@@ -72,6 +72,16 @@ class ContractCommandServiceTest {
         assertEquals("NOT_OPERATING", contracts.derivedStoreStatus(workspaceId, "contract-test", storeId));
     }
 
+    @Test void commandAndTaskReadsUseTheSameBoundedDerivedStoreStatusFact() {
+        UUID projectId = jdbc().queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
+        contracts.create(workspaceId, "contract-test", "CT-PREPARING", storeId, projectId, LocalDate.of(2026, 12, 1), null, "筹备", List.of(new ContractCommandService.ItemInput("tea", "茶")), Map.of());
+
+        ContractTaskReadService taskReads = new ContractTaskReadService(jdbc(), new BusinessDateProvider(() -> now));
+        assertEquals("PREPARING", contracts.derivedStoreStatus(workspaceId, "contract-test", storeId));
+        assertEquals("PREPARING", taskReads.derivedStoreStatus(workspaceId, "contract-test", storeId));
+        assertEquals("PREPARING", taskReads.derivedStoreStatuses(workspaceId, "contract-test", List.of(storeId)).get(storeId));
+    }
+
     @Test void rejectsInvalidDatesDuplicateItemCodesAndUnknownPhase() {
         UUID projectId = jdbc().queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
         assertThrows(ContractCommandService.ContractValidationException.class, () -> contracts.create(workspaceId, "contract-test", "CT-bad-date", storeId, projectId, LocalDate.of(2026, 8, 2), LocalDate.of(2026, 8, 1), null, List.of(new ContractCommandService.ItemInput("tea", "茶")), Map.of()));

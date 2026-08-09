@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "packageId": "RUNTIME-START-TOKEN-SAFETY-20260809",
+  "kind": "rm1-execution-package-exit",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "scripts/env/check-runtime-resource-budget",
+    "scripts/dev/managed-process-tree.mjs",
+    "scripts/dev/r5-dev-runner.mjs",
+    "scripts/dev/http-diagnostic-runner.mjs",
+    "scripts/dev/r5-reset.mjs",
+    "scripts/dev/owner-command-seed-executor.mjs",
+    "scripts/dev/catalog-inventory-seed-executor.mjs",
+    "scripts/test/r5-joint-remote-l2.mjs",
+    "scripts/test/r5-remote-testcontainers.mjs"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "completionRules": ["fresh package baseline", "Pre/Post receipt for each actual path", "all sourceDenominator paths evaluated", "static self-tests pass", "runtime remains NOT_RUN"],
+  "businessStatus": "NOT_RUN_STATIC_SAFETY_ONLY",
+  "cleanupStatus": "NOT_RUN_STATIC_SAFETY_ONLY"
+}

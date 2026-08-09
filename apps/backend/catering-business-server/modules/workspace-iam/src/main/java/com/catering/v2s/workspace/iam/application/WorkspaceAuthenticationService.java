@@ -1,6 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
@@ -14,6 +15,8 @@ import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -35,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkspaceAuthenticationService {
     private static final long SESSION_TTL_MILLIS = 8 * 60 * 60 * 1000L;
     private static final long OTP_TTL_MILLIS = 5 * 60 * 1000L;
+    private static final ObjectMapper JSON = new ObjectMapper();
     private final JdbcTemplate jdbc; private final TimeProvider time; private final WorkspaceRoleService roles; private final OrganizationNodeLookup nodes; private final StoreAssignmentLookup stores; private final OrganizationEntityLookup entities; private final CommercialGroupLookup groups; private final WorkspaceLoginRateLimitService loginLimits; private final WorkspaceOtpRateLimitService otpLimits; private final WorkspaceStatusLookup workspaces; private final OrganizationVisibilityLookup visibility; private final WorkspaceSessionRequestCache sessionCache; private final OrganizationTaskPathLookup taskPaths; private final boolean debugCodeExposure;
     private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder(); private final SecureRandom random = new SecureRandom();
     public WorkspaceAuthenticationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities) { this(jdbc, time, roles, nodes, stores, entities, legacyGroups(nodes), new WorkspaceLoginRateLimitService(jdbc, time), new WorkspaceOtpRateLimitService(jdbc, time), (workspaceUuid, groupWorkspaceKey) -> true, (workspaceUuid, groupWorkspaceKey, assignmentNodeType, assignmentNodeId, visibleNodeId) -> true, new WorkspaceSessionRequestCache(false), null, new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("", false)); }
@@ -123,10 +127,11 @@ public class WorkspaceAuthenticationService {
         if (current.contextVersion() != expectedContextVersion) throw new SessionConflictException();
         Assignment assignment = requireAssignment(current, assignmentId);
         if (!enterable(current.workspaceUuid(), current.key(), assignment.nodeType(), assignment.nodeId())) throw new SessionInvalidException();
-        ScopeSelection locked = lockedSelection(current, assignment);
+        var visibleFacts = visibility.resolveSessionEntryFacts(current.workspaceUuid(), current.key(), assignment.nodeType(), assignment.nodeId(), current.selectedRegionId(), current.selectedProjectId(), current.selectedStoreId(), current.selectedHeadCompanyId());
+        ScopeSelection locked = lockedSelection(visibleFacts, assignment);
         if (jdbc.update("UPDATE workspace_iam.workspace_session SET current_assignment_id=?, selected_region_id=?, selected_project_id=?, selected_store_id=?, selected_head_company_id=?, context_version=context_version+1, authorization_revision=authorization_revision+1 WHERE id=? AND context_version=?", assignmentId, locked.regionId(), locked.projectId(), locked.storeId(), locked.headCompanyId(), current.id(), expectedContextVersion) != 1) throw new SessionConflictException();
         sessionCache.evict(rawToken);
-        return sessionEntry(rawToken);
+        return sessionEntry(require(rawToken), withScopeSelection(visibleFacts, locked));
     }
 
     @Transactional
@@ -134,19 +139,65 @@ public class WorkspaceAuthenticationService {
         SessionRow current = requireNormal(rawToken);
         if (current.contextVersion() != expectedContextVersion || current.assignmentId() == null) throw new SessionConflictException();
         Assignment assignment = requireAssignment(current, current.assignmentId());
-        OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = visibility.listVisibleDataNodeCandidates(current.workspaceUuid(), current.key(), assignment.nodeType(), assignment.nodeId()).stream()
+        var visibleFacts = visibility.resolveSessionEntryFacts(current.workspaceUuid(), current.key(), assignment.nodeType(), assignment.nodeId(), current.selectedRegionId(), current.selectedProjectId(), current.selectedStoreId(), current.selectedHeadCompanyId());
+        OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = visibleFacts.candidates().stream()
             .filter(value -> value.dataNodeId().equals(scopeNodeId) && value.dataNodeType().equals(dataNodeType))
             .findFirst()
             .orElseThrow(SessionInvalidException::new);
         ScopeSelection next = selectedScope(current, candidate);
         if (jdbc.update("UPDATE workspace_iam.workspace_session SET selected_region_id=?, selected_project_id=?, selected_store_id=?, selected_head_company_id=?, context_version=context_version+1, authorization_revision=authorization_revision+1 WHERE id=? AND context_version=?", next.regionId(), next.projectId(), next.storeId(), next.headCompanyId(), current.id(), expectedContextVersion) != 1) throw new SessionConflictException();
         sessionCache.evict(rawToken);
-        return sessionEntry(rawToken);
+        return sessionEntry(require(rawToken), withScopeSelection(visibleFacts, next));
     }
 
     @Transactional(readOnly = true)
     public WorkspaceSessionReadback session(String rawToken) {
         return sessionCache.read(rawToken, () -> loadSession(rawToken));
+    }
+
+    /**
+     * Fresh M1/M2 fact minting for an authenticated operations task read.  The request cache
+     * remains reserved for the legacy session projection and is never consulted here.
+     */
+    @Transactional(readOnly = true)
+    public WorkspaceReadAuthorizationFacts readAuthorizationFacts(String rawToken) {
+        ReadAuthorizationRow row = ReadBudgetComponent.measure(
+            ReadBudgetComponent.Component.CONTEXT_WORKSPACE_IAM,
+            () -> jdbc.query(
+                "SELECT s.id, s.workspace_uuid, s.group_workspace_key, s.account_id, s.current_assignment_id, "
+                    + "s.selected_region_id, s.selected_project_id, s.selected_store_id, s.selected_head_company_id, "
+                    + "s.context_version, s.authorization_revision, a.display_name, ra.role_id, ra.service_node_type, "
+                    + "ra.service_node_id, r.page_access_keys, r.capability_keys "
+                    + "FROM workspace_iam.workspace_session s "
+                    + "JOIN workspace_iam.workspace_account a ON a.id=s.account_id "
+                    + "JOIN workspace_iam.role_assignment ra ON ra.id=s.current_assignment_id "
+                    + "AND ra.account_id=s.account_id AND ra.workspace_uuid=s.workspace_uuid "
+                    + "AND ra.group_workspace_key=s.group_workspace_key AND ra.status='ACTIVE' "
+                    + "JOIN workspace_iam.workspace_role r ON r.id=ra.role_id AND r.workspace_uuid=s.workspace_uuid "
+                    + "AND r.group_workspace_key=s.group_workspace_key AND r.status='ENABLED' "
+                    + "WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?",
+                statement -> { statement.setString(1, sha256(rawToken)); statement.setLong(2, time.currentEpochMillis()); },
+                result -> {
+                    if (!result.next()) throw new SessionInvalidException();
+                    return new ReadAuthorizationRow(
+                        result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3),
+                        result.getObject(4, UUID.class), result.getObject(5, UUID.class), result.getObject(6, UUID.class),
+                        result.getObject(7, UUID.class), result.getObject(8, UUID.class), result.getObject(9, UUID.class),
+                        result.getLong(10), result.getLong(11), result.getString(12), result.getObject(13, UUID.class),
+                        result.getString(14), result.getObject(15, UUID.class), result.getString(16), result.getString(17)
+                    );
+                }
+            )
+        );
+        var visibleFacts = visibility.resolveSessionEntryFacts(
+            row.workspaceUuid(), row.key(), row.assignmentNodeType(), row.assignmentNodeId(),
+            row.selectedRegionId(), row.selectedProjectId(), row.selectedStoreId(), row.selectedHeadCompanyId()
+        );
+        return new WorkspaceReadAuthorizationFacts(
+            row.sessionId(), row.workspaceUuid(), row.key(), row.accountId(), row.assignmentId(), row.roleId(),
+            row.assignmentNodeType(), row.assignmentNodeId(), row.contextVersion(), row.authorizationRevision(),
+            row.accountDisplayName(), permissionKeys(row.pageAccessKeys()), permissionKeys(row.actionCapabilityKeys()), visibleFacts
+        );
     }
 
     /** Restricted read used only by the password-change edge route. */
@@ -166,18 +217,22 @@ public class WorkspaceAuthenticationService {
 
     @Transactional(readOnly = true)
     public WorkspaceSessionEntryReadback sessionEntry(String rawToken) {
-        return sessionEntry(require(rawToken));
+        return sessionEntry(sessionEntryAuthenticationFacts(rawToken).canonicalEntryInput());
     }
 
     /** A path-key guard belongs with the session owner, not with an edge-local pre-read. */
     @Transactional(readOnly = true)
     public WorkspaceSessionEntryReadback sessionEntry(String rawToken, String groupWorkspaceKey) {
-        SessionRow row = require(rawToken);
-        if (!row.key().equals(groupWorkspaceKey)) throw new SessionInvalidException();
-        return sessionEntry(row);
+        SessionEntryAuthenticationFacts facts = sessionEntryAuthenticationFacts(rawToken);
+        if (!facts.key().equals(groupWorkspaceKey)) throw new SessionInvalidException();
+        return sessionEntry(facts.canonicalEntryInput());
     }
 
     private WorkspaceSessionEntryReadback sessionEntry(SessionRow row) {
+        return sessionEntry(row, null);
+    }
+
+    private WorkspaceSessionEntryReadback sessionEntry(SessionRow row, OrganizationVisibilityLookup.VisibleOrganizationFacts suppliedVisibleFacts) {
         if (row.passwordChangeRequired()) {
             return new WorkspaceSessionEntryReadback(row.key(), row.accountId(), row.accountDisplayName(), row.workspaceName(), row.operationsTitle(), row.logoAssetRef(), row.contextVersion(), WorkspaceSessionEntryReadback.Mode.EMPTY, WorkspaceSessionEntryReadback.Outcome.PASSWORD_CHANGE_REQUIRED, List.of(), Set.of(), List.of(), null, null);
         }
@@ -209,10 +264,13 @@ public class WorkspaceAuthenticationService {
             .filter(value -> value.id().equals(selected.roleAssignmentId()))
             .findFirst()
             .orElseThrow(SessionInvalidException::new);
-        List<WorkspaceSessionEntryReadback.VisibleDataNodeCandidate> dataNodes = visibility.listVisibleDataNodeCandidates(row.workspaceUuid(), row.key(), assignment.nodeType(), assignment.nodeId()).stream()
+        OrganizationVisibilityLookup.VisibleOrganizationFacts visibleFacts = suppliedVisibleFacts == null
+            ? visibility.resolveSessionEntryFacts(row.workspaceUuid(), row.key(), assignment.nodeType(), assignment.nodeId(), row.selectedRegionId(), row.selectedProjectId(), row.selectedStoreId(), row.selectedHeadCompanyId())
+            : suppliedVisibleFacts;
+        List<WorkspaceSessionEntryReadback.VisibleDataNodeCandidate> dataNodes = visibleFacts.candidates().stream()
             .map(value -> new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(value.dataNodeType(), value.dataNodeId(), value.dataNodeName(), value.dataNodeCode(), value.ancestorPath(), value.regionId(), value.projectId(), value.storeId(), value.headCompanyId()))
             .toList();
-        WorkspaceSessionEntryReadback.ScopeContext scopeContext = scopeContext(row, dataNodes);
+        WorkspaceSessionEntryReadback.ScopeContext scopeContext = scopeContext(row, dataNodes, visibleFacts.scopeContext());
         boolean scopeRequired = selected.navigation().stream().anyMatch(item -> !"NONE".equals(item.requiredDataNodeType()));
         WorkspaceSessionEntryReadback.Mode mode = candidates.size() == 1 ? WorkspaceSessionEntryReadback.Mode.DIRECT : WorkspaceSessionEntryReadback.Mode.SELECT;
         WorkspaceSessionEntryReadback.Outcome outcome = scopeRequired && selected.navigation().stream().anyMatch(item -> !"NONE".equals(item.requiredDataNodeType()) && scopeContext.selectionFor(item.requiredDataNodeType()) == null) ? WorkspaceSessionEntryReadback.Outcome.SELECT_SCOPE : WorkspaceSessionEntryReadback.Outcome.HOME;
@@ -241,6 +299,21 @@ public class WorkspaceAuthenticationService {
     private LoginEntryResult createSessionEntry(Account account) { CreatedSession created = createRawSession(account); return new LoginEntryResult(created.rawToken(), sessionEntry(created.rawToken(), account.key())); }
     private CreatedSession createRawSession(Account account) { List<Assignment> assignments = jdbc.query("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'", (row, index) -> new Assignment(row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getObject(4, UUID.class)), account.id(), account.workspaceUuid(), account.key()); List<Assignment> enterable = availableAssignments(account.workspaceUuid(), account.key(), assignments); Assignment selected = enterable.size() == 1 ? enterable.getFirst() : null; ScopeSelection locked = selected == null ? ScopeSelection.empty() : lockedSelection(account.workspaceUuid(), account.key(), selected); String raw = rawToken(); UUID sessionId = UUID.randomUUID(); long now = time.currentEpochMillis(); jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, current_assignment_id, selected_region_id, selected_project_id, selected_store_id, selected_head_company_id, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 'ACTIVE', ?)", sessionId, account.workspaceUuid(), account.key(), account.id(), sha256(raw), selected == null ? null : selected.id(), locked.regionId(), locked.projectId(), locked.storeId(), locked.headCompanyId(), now + SESSION_TTL_MILLIS); jdbc.update("INSERT INTO workspace_iam.workspace_authentication_history (id, workspace_uuid, group_workspace_key, account_id, authenticated_at_epoch_millis) VALUES (?, ?, ?, ?, ?)", UUID.randomUUID(), account.workspaceUuid(), account.key(), account.id(), now); return new CreatedSession(raw); }
     private Account accountByMobile(String groupWorkspaceKey, String mobile) { Account account = jdbc.query("SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_change_required FROM workspace_iam.workspace_account a JOIN workspace_iam.workspace_credential c ON c.account_id=a.id WHERE a.group_workspace_key=? AND a.mobile_normalized=?", statement -> { statement.setString(1, groupWorkspaceKey); statement.setString(2, mobile); }, result -> result.next() ? new Account(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), null, null, result.getBoolean(5)) : null); if (account == null) throw new InvalidCredentialsException(); if (!"ENABLED".equals(account.status())) throw new AccountDisabledException(); if (!workspaces.isEnabled(account.workspaceUuid(), account.key())) throw new WorkspaceDisabledException(); return account; }
+    /** Fresh owner-local fact for canonical session-entry composition; this path never consults the request cache. */
+    private SessionEntryAuthenticationFacts sessionEntryAuthenticationFacts(String rawToken) {
+        return sessionEntryAuthenticationFacts(ReadBudgetComponent.measure(
+            ReadBudgetComponent.Component.CONTEXT_WORKSPACE_IAM,
+            () -> require(rawToken)
+        ));
+    }
+    private static SessionEntryAuthenticationFacts sessionEntryAuthenticationFacts(SessionRow row) {
+        return new SessionEntryAuthenticationFacts(
+            row.id(), row.workspaceUuid(), row.key(), row.accountId(), row.assignmentId(), row.selectedRegionId(),
+            row.selectedProjectId(), row.selectedStoreId(), row.selectedHeadCompanyId(), row.contextVersion(),
+            row.authorizationRevision(), row.accountDisplayName(), row.workspaceName(), row.operationsTitle(),
+            row.logoAssetRef(), row.passwordChangeRequired()
+        );
+    }
     private SessionRow require(String raw) { return jdbc.query("SELECT s.id, s.workspace_uuid, s.group_workspace_key, s.account_id, s.current_assignment_id, s.selected_region_id, s.selected_project_id, s.selected_store_id, s.selected_head_company_id, s.context_version, s.authorization_revision, a.display_name, gw.name, gw.operations_title, gw.logo_asset_ref, c.password_change_required FROM workspace_iam.workspace_session s JOIN workspace_iam.workspace_account a ON a.id=s.account_id JOIN workspace_iam.workspace_credential c ON c.account_id=a.id JOIN platform_workspace.group_workspace gw ON gw.workspace_uuid=s.workspace_uuid AND gw.group_workspace_key=s.group_workspace_key WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?", statement -> { statement.setString(1, sha256(raw)); statement.setLong(2, time.currentEpochMillis()); }, result -> { if (!result.next()) throw new SessionInvalidException(); return new SessionRow(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getObject(4, UUID.class), result.getObject(5, UUID.class), result.getObject(6, UUID.class), result.getObject(7, UUID.class), result.getObject(8, UUID.class), result.getObject(9, UUID.class), result.getLong(10), result.getLong(11), result.getString(12), result.getString(13), result.getString(14), result.getString(15), result.getBoolean(16)); }); }
     private SessionRow requireNormal(String raw) { SessionRow row = require(raw); if (row.passwordChangeRequired()) throw new PasswordChangeRequiredException(); return row; }
     private boolean enterable(UUID workspace, String key, String type, UUID node) {
@@ -265,6 +338,33 @@ public class WorkspaceAuthenticationService {
         OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = visibility.listVisibleDataNodeCandidates(workspaceUuid, key, assignment.nodeType(), assignment.nodeId()).stream().filter(value -> value.dataNodeId().equals(assignment.nodeId())).findFirst().orElseThrow(SessionInvalidException::new);
         return selectionFor(candidate, null);
     }
+    private static ScopeSelection lockedSelection(OrganizationVisibilityLookup.VisibleOrganizationFacts facts, Assignment assignment) {
+        if (ServiceNodeTypes.GROUP.equals(assignment.nodeType())) return ScopeSelection.empty();
+        OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = facts.candidates().stream().filter(value -> value.dataNodeId().equals(assignment.nodeId())).findFirst().orElseThrow(SessionInvalidException::new);
+        return selectionFor(candidate, null);
+    }
+    private static OrganizationVisibilityLookup.VisibleOrganizationFacts withScopeSelection(OrganizationVisibilityLookup.VisibleOrganizationFacts facts, ScopeSelection selection) {
+        return new OrganizationVisibilityLookup.VisibleOrganizationFacts(
+            facts.candidates(),
+            new OrganizationVisibilityLookup.ScopeContext(
+                findVisible(facts, ServiceNodeTypes.REGION, selection.regionId()),
+                findVisible(facts, ServiceNodeTypes.PROJECT, selection.projectId()),
+                findVisible(facts, ServiceNodeTypes.STORE, selection.storeId()),
+                findVisible(facts, ServiceNodeTypes.HEAD_COMPANY, selection.headCompanyId())
+            )
+        );
+    }
+    private static OrganizationVisibilityLookup.VisibleDataNodeCandidate findVisible(OrganizationVisibilityLookup.VisibleOrganizationFacts facts, String type, UUID id) {
+        if (id == null) return null;
+        OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate = facts.candidates().stream().filter(value -> type.equals(value.dataNodeType()) && id.equals(value.dataNodeId())).findFirst().orElse(null);
+        if (candidate != null) return candidate;
+        OrganizationVisibilityLookup.ScopeContext scope = facts.scopeContext();
+        return java.util.stream.Stream.of(scope.region(), scope.project(), scope.store(), scope.headCompany())
+            .filter(java.util.Objects::nonNull)
+            .filter(value -> type.equals(value.dataNodeType()) && id.equals(value.dataNodeId()))
+            .findFirst()
+            .orElse(null);
+    }
     private ScopeSelection selectedScope(SessionRow current, OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate) { return selectionFor(candidate, new ScopeSelection(current.selectedRegionId(), current.selectedProjectId(), current.selectedStoreId(), current.selectedHeadCompanyId())); }
     private static ScopeSelection selectionFor(OrganizationVisibilityLookup.VisibleDataNodeCandidate candidate, ScopeSelection current) {
         ScopeSelection base = current == null ? ScopeSelection.empty() : current;
@@ -283,8 +383,10 @@ public class WorkspaceAuthenticationService {
         return scopeContext(row, visibleCandidates(row, assignment).stream().map(value -> new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(value.dataNodeType(), value.dataNodeId(), value.dataNodeName(), value.dataNodeCode(), value.ancestorPath(), value.regionId(), value.projectId(), value.storeId(), value.headCompanyId())).toList());
     }
     private WorkspaceSessionEntryReadback.ScopeContext scopeContext(SessionRow row, List<WorkspaceSessionEntryReadback.VisibleDataNodeCandidate> candidates) {
+        return scopeContext(row, candidates, visibility.describeScopeContext(row.workspaceUuid(), row.key(), row.selectedRegionId(), row.selectedProjectId(), row.selectedStoreId(), row.selectedHeadCompanyId()));
+    }
+    private WorkspaceSessionEntryReadback.ScopeContext scopeContext(SessionRow row, List<WorkspaceSessionEntryReadback.VisibleDataNodeCandidate> candidates, OrganizationVisibilityLookup.ScopeContext ownerContext) {
         WorkspaceSessionEntryReadback.ScopeContext fallback = new WorkspaceSessionEntryReadback.ScopeContext(findCandidate(candidates, ServiceNodeTypes.REGION, row.selectedRegionId()), findCandidate(candidates, ServiceNodeTypes.PROJECT, row.selectedProjectId()), findCandidate(candidates, ServiceNodeTypes.STORE, row.selectedStoreId()), findCandidate(candidates, ServiceNodeTypes.HEAD_COMPANY, row.selectedHeadCompanyId()));
-        OrganizationVisibilityLookup.ScopeContext ownerContext = visibility.describeScopeContext(row.workspaceUuid(), row.key(), row.selectedRegionId(), row.selectedProjectId(), row.selectedStoreId(), row.selectedHeadCompanyId());
         return new WorkspaceSessionEntryReadback.ScopeContext(
             ownerContext.region() == null ? fallback.region() : scopeNode(ownerContext.region()),
             ownerContext.project() == null ? fallback.project() : scopeNode(ownerContext.project()),
@@ -335,6 +437,10 @@ public class WorkspaceAuthenticationService {
     private static CommercialGroupLookup legacyGroups(OrganizationNodeLookup nodes) { return new CommercialGroupLookup() { @Override public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) { throw new UnsupportedOperationException("legacy tests supply a GROUP node"); } @Override public boolean isEnterableCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.isEnterable(workspaceUuid, groupWorkspaceKey, commercialGroupRef); } @Override public String describeCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.describePath(workspaceUuid, groupWorkspaceKey, commercialGroupRef); } }; }
     private static String normalizedMobile(String value) { String normalized = value == null ? "" : value.replace(" ", "").replace("-", ""); if (!normalized.matches("^\\+?[0-9]{8,20}$")) throw new InvalidCredentialsException(); return normalized.startsWith("+") ? normalized.substring(1) : normalized; }
     private static String sha256(String input) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8))); } catch (Exception error) { throw new IllegalStateException(error); } }
+    private static Set<String> permissionKeys(String value) {
+        try { return Set.copyOf(JSON.readValue(value, new TypeReference<List<String>>() { })); }
+        catch (Exception failure) { throw new SessionInvalidException(); }
+    }
     public record LoginResult(String rawSessionToken, WorkspaceSessionReadback session) { }
     public record LoginEntryResult(String rawSessionToken, WorkspaceSessionEntryReadback sessionEntry) { }
     /**
@@ -347,8 +453,14 @@ public class WorkspaceAuthenticationService {
     private record CreatedSession(String rawToken) { }
     private record Assignment(UUID id, UUID roleId, String nodeType, UUID nodeId) { }
     private record SessionCredential(UUID sessionId, UUID accountId, long contextVersion, String passwordHash, long credentialVersion) { }
+    private record ReadAuthorizationRow(UUID sessionId, UUID workspaceUuid, String key, UUID accountId, UUID assignmentId, UUID selectedRegionId, UUID selectedProjectId, UUID selectedStoreId, UUID selectedHeadCompanyId, long contextVersion, long authorizationRevision, String accountDisplayName, UUID roleId, String assignmentNodeType, UUID assignmentNodeId, String pageAccessKeys, String actionCapabilityKeys) { }
     private record ScopeSelection(UUID regionId, UUID projectId, UUID storeId, UUID headCompanyId) { static ScopeSelection empty() { return new ScopeSelection(null, null, null, null); } }
     private record SessionRow(UUID id, UUID workspaceUuid, String key, UUID accountId, UUID assignmentId, UUID selectedRegionId, UUID selectedProjectId, UUID selectedStoreId, UUID selectedHeadCompanyId, long contextVersion, long authorizationRevision, String accountDisplayName, String workspaceName, String operationsTitle, String logoAssetRef, boolean passwordChangeRequired) { }
+    private record SessionEntryAuthenticationFacts(UUID id, UUID workspaceUuid, String key, UUID accountId, UUID assignmentId, UUID selectedRegionId, UUID selectedProjectId, UUID selectedStoreId, UUID selectedHeadCompanyId, long contextVersion, long authorizationRevision, String accountDisplayName, String workspaceName, String operationsTitle, String logoAssetRef, boolean passwordChangeRequired) {
+        private SessionRow canonicalEntryInput() {
+            return new SessionRow(id, workspaceUuid, key, accountId, assignmentId, selectedRegionId, selectedProjectId, selectedStoreId, selectedHeadCompanyId, contextVersion, authorizationRevision, accountDisplayName, workspaceName, operationsTitle, logoAssetRef, passwordChangeRequired);
+        }
+    }
     public static final class InvalidCredentialsException extends RuntimeException { }
     public static final class AccountDisabledException extends RuntimeException { }
     public static final class CredentialLockedException extends RuntimeException { }

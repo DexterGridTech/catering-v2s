@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-phase1-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-PHASE1-20260809",
+  "status": "ACTIVE_NOT_EXIT",
+  "scope": {
+    "includedUnits": ["BP-U01", "BP-U02"],
+    "excludedUnits": ["BP-U03", "BP-U04", "BP-U05", "BP-U06", "BP-U07"],
+    "authorization": "Dexter authorized the complete first phase only: request-level observability, evidence snapshot, gate disposition, and static owner-local binding."
+  },
+  "sourceDenominators": {
+    "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+      "project-memory/decisions/deterministic-context-only.md",
+      "project-memory/decisions/incremental-compliance-hook.md",
+      "project-memory/operations/verification-governance.md"
+    ],
+    "APPROVED_ASSERTIONS": [
+      "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md#BP-U01",
+      "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md#BP-U02",
+      "doc/review/platform/2026-08-09-v2s-backend-performance-refactor-bp-u01-u02-remediation-recheck-round2-claude.md"
+    ],
+    "FORBIDDEN_PSEUDO_FIXES": [
+      "no SQL merge, cache, index, transaction-boundary or business authorization optimization",
+      "no BP-U03 through BP-U07 implementation",
+      "no live evidence accepted without same-run tuple join and content-addressed snapshot",
+      "no dynamic operation registry, reflection, service locator or Map dispatcher"
+    ],
+    "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+      "BP-U01 tracker, section, phase, content-addressed evidence and 44-gate disposition",
+      "BP-U02 196 route exact-set, owner partition, typed context and generated negative compilation"
+    ],
+    "OWNED_SURFACE_AND_OPERATION_KEYS": [
+      "U01: request diagnostics, foundation JDBC tracker, owner command/readback phase boundary, managed seed evidence",
+      "U02: two generated route registries union=196 and generated owner-local static binding outputs"
+    ],
+    "DUE_STANDARDS_RULE_IDS": [
+      "scripts/check/backend-performance-gate-dispositions",
+      "scripts/check/backend-performance-evidence-snapshot",
+      "scripts/check/backend-performance-observability",
+      "scripts/check/operation-handler-bindings",
+      "scripts/check/standards-coverage --phase R5"
+    ]
+  }
+}

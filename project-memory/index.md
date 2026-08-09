@@ -22,7 +22,7 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [pitfalls.log-first-failure-retry](../project-memory/pitfalls/log-first-failure-retry.md) `044df40abd43efb5948e6457b29f770b7798252c614e53eae1a7a92c40e9e909`
 - [decisions.confirmed-business-language-corpus](../project-memory/decisions/confirmed-business-language-corpus.md) `3dba1c80579d4a0eca281efd59d27fbfb20aa86572648f8e36c83a68a603b4f3`
 - [operations.business-corpus-adoption-and-read-policy](../project-memory/operations/business-corpus-adoption-and-read-policy.md) `d362c4f78c5fc0cb1225a7a4465f82ebbd0c41b886535d69b9f698ea162cd7a9`
-- [operations.phase-retrospective-and-systemic-repair](../project-memory/operations/phase-retrospective-and-systemic-repair.md) `72c60ae9235079d5b9f3c17052394343723a7f51409b2bd28a3aca391df0fd21`
+- [operations.phase-retrospective-and-systemic-repair](../project-memory/operations/phase-retrospective-and-systemic-repair.md) `aa217082dd2dd9500ff3ce59258be46190c5941afe5cd813967c0773657e12ba`
 - [operations.business-corpus-parked-domain-intake](../project-memory/operations/business-corpus-parked-domain-intake.md) `739473d09701aba15332c6de72f1f1965b7b5048732fd60d3b97c7934febee9e`
 - [decisions.incremental-compliance-hook](../project-memory/decisions/incremental-compliance-hook.md) `a75469c7eb945b35f06d95cead2e11c368cc4a47dca851f32652556546985f81`
 - [operations.implementation-source-reread-discipline](../project-memory/operations/implementation-source-reread-discipline.md) `6944ae47f0e059a52e75096b17620a3c43852e52a9b44e69737554ac646293ce`

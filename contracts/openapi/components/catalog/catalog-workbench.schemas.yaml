@@ -129,27 +129,33 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "nodeRef": {
+              "categoryRef": {
                 "type": "string",
-                "description": "design-bound field"
-              },
-              "label": {
-                "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "code": {
                 "type": "string",
                 "description": "design-bound field"
               },
-              "parentCode": {
+              "name": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "parentCategoryRef": {
                 "type": [
                   "string",
                   "null"
                 ],
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "version": {
+                "type": "integer",
                 "description": "design-bound field"
               },
-              "status": {
-                "type": "string",
+              "displayOrder": {
+                "type": "integer",
                 "description": "design-bound field"
               },
               "count": {
@@ -164,76 +170,49 @@
                   "SELF_AND_DESCENDANTS"
                 ]
               },
-              "voidAvailability": {
+              "deletionAvailability": {
                 "type": "object",
                 "description": "design-bound field",
                 "additionalProperties": false,
                 "properties": {
-                  "canVoid": {
+                  "canDelete": {
                     "type": "boolean",
                     "description": "design-bound field"
                   },
-                  "blockingReferences": {
-                    "type": "array",
-                    "description": "design-bound field",
-                    "items": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "referenceKind": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "referenceRef": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        }
-                      },
-                      "required": [
-                        "referenceKind",
-                        "referenceRef"
-                      ]
-                    }
+                  "subtreeSize": {
+                    "type": "integer",
+                    "description": "design-bound field"
                   },
-                  "dependentFacts": {
+                  "blockingReferenceCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "blockingReferenceLabels": {
                     "type": "array",
                     "description": "design-bound field",
                     "items": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "factKind": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "factRef": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        }
-                      },
-                      "required": [
-                        "factKind",
-                        "factRef"
-                      ]
+                      "type": "string"
                     }
                   }
                 },
                 "required": [
-                  "canVoid",
-                  "blockingReferences",
-                  "dependentFacts"
+                  "canDelete",
+                  "subtreeSize",
+                  "blockingReferenceCount",
+                  "blockingReferenceLabels"
                 ]
               }
             },
             "required": [
-              "nodeRef",
-              "label",
+              "categoryRef",
               "code",
-              "parentCode",
-              "status",
+              "name",
+              "parentCategoryRef",
+              "version",
+              "displayOrder",
               "count",
               "countSemantics",
-              "voidAvailability"
+              "deletionAvailability"
             ]
           }
         },
@@ -321,6 +300,11 @@
                 ],
                 "description": "design-bound field"
               },
+              "itemRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
               "code": {
                 "type": "string",
                 "description": "design-bound field"
@@ -340,14 +324,16 @@
                 "type": "array",
                 "description": "design-bound field",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "uuid"
                 }
               },
               "productionTagRefs": {
                 "type": "array",
                 "description": "design-bound field",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "uuid"
                 }
               },
               "shapeKey": {
@@ -456,6 +442,7 @@
             },
             "required": [
               "primaryImageAssetRef",
+              "itemRef",
               "code",
               "name",
               "shortName",
@@ -560,7 +547,8 @@
         },
         "categoryRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "uncategorized": {
           "type": "boolean",
@@ -651,7 +639,8 @@
                 "properties": {
                   "attributeRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "attributeCode": {
                     "type": "string",
@@ -716,7 +705,8 @@
                 "properties": {
                   "productSkuRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "skuCode": {
                     "type": "string",
@@ -735,7 +725,8 @@
                       "properties": {
                         "attributeRef": {
                           "type": "string",
-                          "description": "design-bound field"
+                          "description": "design-bound field",
+                          "format": "uuid"
                         },
                         "attributeCode": {
                           "type": "string",
@@ -747,7 +738,8 @@
                         },
                         "attributeValueRef": {
                           "type": "string",
-                          "description": "design-bound field"
+                          "description": "design-bound field",
+                          "format": "uuid"
                         },
                         "valueCode": {
                           "type": "string",
@@ -828,15 +820,38 @@
               "type": "array",
               "description": "design-bound field",
               "items": {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               }
             },
             "productionTagRefs": {
               "type": "array",
               "description": "design-bound field",
               "items": {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               }
+            },
+            "tagRefs": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "salesUnitRefs": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "itemRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
             },
             "code": {
               "type": "string",
@@ -1020,6 +1035,11 @@
                           "type": "string",
                           "description": "design-bound field"
                         },
+                        "attributeValueRef": {
+                          "type": "string",
+                          "description": "design-bound field",
+                          "format": "uuid"
+                        },
                         "name": {
                           "type": "string",
                           "description": "design-bound field"
@@ -1046,6 +1066,7 @@
                       },
                       "required": [
                         "code",
+                        "attributeValueRef",
                         "name",
                         "default",
                         "extraPrice",
@@ -1093,6 +1114,19 @@
                           "type": "string",
                           "description": "design-bound field"
                         },
+                        "itemRef": {
+                          "type": "string",
+                          "description": "design-bound field",
+                          "format": "uuid"
+                        },
+                        "productSkuRef": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "design-bound field",
+                          "format": "uuid"
+                        },
                         "skuCode": {
                           "type": [
                             "string",
@@ -1128,6 +1162,8 @@
                       },
                       "required": [
                         "itemCode",
+                        "itemRef",
+                        "productSkuRef",
                         "skuCode",
                         "quantity",
                         "unit",
@@ -1163,7 +1199,8 @@
                   },
                   "targetRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "quantity": {
                     "type": "string",
@@ -1181,6 +1218,27 @@
                   "itemCode": {
                     "type": "string",
                     "description": "design-bound field"
+                  },
+                  "itemRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "productSkuRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "optionValueRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "skuCode": {
                     "type": [
@@ -1205,6 +1263,9 @@
                   "unit",
                   "version",
                   "itemCode",
+                  "itemRef",
+                  "productSkuRef",
+                  "optionValueRef",
                   "skuCode",
                   "optionValueCode"
                 ]
@@ -1336,6 +1397,9 @@
             "skus",
             "categoryRefs",
             "productionTagRefs",
+            "tagRefs",
+            "salesUnitRefs",
+            "itemRef",
             "code",
             "name",
             "shortName",
@@ -1438,7 +1502,8 @@
               },
               "targetRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "quantity": {
                 "type": "string",
@@ -1456,6 +1521,27 @@
               "itemCode": {
                 "type": "string",
                 "description": "design-bound field"
+              },
+              "itemRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "productSkuRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "optionValueRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "skuCode": {
                 "type": [
@@ -1480,6 +1566,9 @@
               "unit",
               "version",
               "itemCode",
+              "itemRef",
+              "productSkuRef",
+              "optionValueRef",
               "skuCode",
               "optionValueCode"
             ]
@@ -1496,6 +1585,11 @@
                 "type": "string",
                 "description": "design-bound field"
               },
+              "tagRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
               "name": {
                 "type": "string",
                 "description": "design-bound field"
@@ -1507,6 +1601,7 @@
             },
             "required": [
               "code",
+              "tagRef",
               "name",
               "owner"
             ]
@@ -1619,6 +1714,19 @@
                       "type": "string",
                       "description": "design-bound field"
                     },
+                    "itemRef": {
+                      "type": "string",
+                      "description": "design-bound field",
+                      "format": "uuid"
+                    },
+                    "productSkuRef": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "design-bound field",
+                      "format": "uuid"
+                    },
                     "skuCode": {
                       "type": [
                         "string",
@@ -1654,6 +1762,8 @@
                   },
                   "required": [
                     "itemCode",
+                    "itemRef",
+                    "productSkuRef",
                     "skuCode",
                     "quantity",
                     "unit",
@@ -1894,9 +2004,14 @@
         "fileName",
         "content",
         "mediaType",
-        "contentDigest"
+        "contentDigest",
+        "dataNodeRef"
       ],
       "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
+        },
         "fileName": {
           "type": "string",
           "description": "uploaded file name"
@@ -1943,6 +2058,10 @@
               "type": "string",
               "description": "design-bound field"
             },
+            "bindGrant": {
+              "type": "string",
+              "description": "design-bound field"
+            },
             "status": {
               "type": "string",
               "description": "design-bound field"
@@ -1970,6 +2089,7 @@
           },
           "required": [
             "assetRef",
+            "bindGrant",
             "status",
             "mediaType",
             "contentDigest",
@@ -1988,7 +2108,8 @@
       "additionalProperties": false,
       "required": [
         "assetRef",
-        "expectedVersion"
+        "expectedVersion",
+        "dataNodeRef"
       ],
       "properties": {
         "assetRef": {
@@ -1998,6 +2119,10 @@
         "expectedVersion": {
           "type": "integer",
           "description": "expected version"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
         }
       }
     },
@@ -2060,6 +2185,10 @@
       "additionalProperties": false,
       "required": [],
       "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "selected data node"
+        },
         "revision": {
           "type": "string",
           "description": "requested manifest revision"
@@ -2420,6 +2549,11 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
+                  "tagRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
                   "code": {
                     "type": "string",
                     "description": "design-bound field"
@@ -2531,6 +2665,7 @@
                   }
                 },
                 "required": [
+                  "tagRef",
                   "code",
                   "name",
                   "tagKind",
@@ -2832,33 +2967,6 @@
                 ]
               }
             },
-            "closureEdges": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "fromCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "toCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "referenceKind": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  }
-                },
-                "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind"
-                ]
-              }
-            },
             "objectVersions": {
               "type": "array",
               "description": "design-bound field",
@@ -2891,35 +2999,51 @@
                 ]
               }
             },
-            "mappingPreview": {
+            "referenceMappings": {
               "type": "array",
               "description": "design-bound field",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "fromCode": {
+                  "objectType": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "toCode": {
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "referenceKind": {
-                    "type": "string",
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
                   },
-                  "status": {
-                    "type": "string",
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
                   }
                 },
                 "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind",
-                  "status"
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
                 ]
               }
             },
@@ -2947,33 +3071,6 @@
                   "objectType",
                   "result",
                   "reason"
-                ]
-              }
-            },
-            "referenceRewritePreview": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "fromCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "toCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "referenceKind": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  }
-                },
-                "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind"
                 ]
               }
             },
@@ -3011,11 +3108,9 @@
             "targetScope",
             "selectedItems",
             "closureItems",
-            "closureEdges",
             "objectVersions",
-            "mappingPreview",
+            "referenceMappings",
             "compatibilityResults",
-            "referenceRewritePreview",
             "preflightDigest",
             "selectedCount",
             "selectedLimit",
@@ -3119,30 +3214,51 @@
                 ]
               }
             },
-            "mappings": {
+            "referenceMappings": {
               "type": "array",
               "description": "design-bound field",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "fromCode": {
+                  "objectType": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "toCode": {
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "referenceKind": {
-                    "type": "string",
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
                   }
                 },
                 "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind"
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
                 ]
               }
             },
@@ -3201,7 +3317,7 @@
             "created",
             "reused",
             "skipped",
-            "mappings",
+            "referenceMappings",
             "targetVersions",
             "ownerReadbacks"
           ]
@@ -3621,13 +3737,11 @@
         "selectedCount",
         "selectedLimit",
         "closureItems",
-        "closureEdges",
         "closureCount",
         "closureLimit",
         "objectVersions",
-        "mappingPreview",
+        "referenceMappings",
         "compatibilityResults",
-        "referenceRewritePreview",
         "preflightDigest",
         "blockingCount",
         "confirmationRequiredCount"
@@ -3748,33 +3862,6 @@
             ]
           }
         },
-        "closureEdges": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "fromCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "toCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "referenceKind": {
-                "type": "string",
-                "description": "design-bound field"
-              }
-            },
-            "required": [
-              "fromCode",
-              "toCode",
-              "referenceKind"
-            ]
-          }
-        },
         "closureCount": {
           "type": "integer",
           "description": "design-bound field"
@@ -3815,35 +3902,51 @@
             ]
           }
         },
-        "mappingPreview": {
+        "referenceMappings": {
           "type": "array",
           "description": "design-bound field",
           "items": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "fromCode": {
+              "objectType": {
                 "type": "string",
                 "description": "design-bound field"
               },
-              "toCode": {
+              "sourceRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "targetRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "targetCode": {
                 "type": "string",
                 "description": "design-bound field"
               },
-              "referenceKind": {
-                "type": "string",
+              "targetSkuCode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "design-bound field"
               },
-              "status": {
-                "type": "string",
+              "targetOptionValueCode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "design-bound field"
               }
             },
             "required": [
-              "fromCode",
-              "toCode",
-              "referenceKind",
-              "status"
+              "objectType",
+              "sourceRef",
+              "targetRef",
+              "targetCode"
             ]
           }
         },
@@ -3871,33 +3974,6 @@
               "objectType",
               "result",
               "reason"
-            ]
-          }
-        },
-        "referenceRewritePreview": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "fromCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "toCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "referenceKind": {
-                "type": "string",
-                "description": "design-bound field"
-              }
-            },
-            "required": [
-              "fromCode",
-              "toCode",
-              "referenceKind"
             ]
           }
         },
@@ -3985,30 +4061,51 @@
                 ]
               }
             },
-            "mappings": {
+            "referenceMappings": {
               "type": "array",
               "description": "design-bound field",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "fromCode": {
+                  "objectType": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "toCode": {
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "referenceKind": {
-                    "type": "string",
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
                   }
                 },
                 "required": [
-                  "fromCode",
-                  "toCode",
-                  "referenceKind"
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
                 ]
               }
             },
@@ -4066,7 +4163,7 @@
             "preflightDigest",
             "created",
             "reused",
-            "mappings",
+            "referenceMappings",
             "targetVersions",
             "ownerReadbacks"
           ]

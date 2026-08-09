@@ -1,0 +1,78 @@
+package com.catering.v2s.audit.read;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import com.catering.v2s.audit.contract.AuditHistoryPage;
+import com.catering.v2s.audit.contract.AuditReadScope;
+import com.catering.v2s.audit.contract.AuditTarget;
+import com.catering.v2s.audit.read.OperationsAuditTaskReadService.OperationsAuditQuery;
+import com.catering.v2s.contract.application.ContractAuditHistoryService;
+import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
+import com.catering.v2s.organization.application.OrganizationAuditHistoryService;
+import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
+import com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class OperationsAuditTaskReadServiceTest {
+    @Test
+    void dispatchesTheNineClosedQueriesOnlyToTheirNamedOwners() {
+        WorkspaceIamAuditHistoryService workspaceIam = mock(WorkspaceIamAuditHistoryService.class);
+        OrganizationAuditHistoryService organization = mock(OrganizationAuditHistoryService.class);
+        ContractAuditHistoryService contract = mock(ContractAuditHistoryService.class);
+        WorkspaceReadAuthorizationFacts facts = mock(WorkspaceReadAuthorizationFacts.class);
+        when(facts.workspaceUuid()).thenReturn(UUID.randomUUID());
+        when(facts.groupWorkspaceKey()).thenReturn("gw");
+        when(facts.assignmentNodeType()).thenReturn("STORE");
+        OrganizationVisibilityLookup.VisibleOrganizationFacts visibleFacts = mock(OrganizationVisibilityLookup.VisibleOrganizationFacts.class);
+        when(facts.visibleOrganizationFacts()).thenReturn(visibleFacts);
+        AuditHistoryPage empty = new AuditHistoryPage(List.of(), 1, 20, 0);
+        when(workspaceIam.readOperationsAuditProjection(any(), any(), anyLong(), anyLong())).thenReturn(empty);
+        when(organization.readOperationsAuditProjection(any(), any(), any(), any(), anyLong(), anyLong())).thenReturn(empty);
+        when(contract.readOperationsAuditProjection(any(), any(), any(), anyLong(), anyLong())).thenReturn(empty);
+        OperationsAuditTaskReadService service = new OperationsAuditTaskReadService(workspaceIam, organization, contract);
+        String id = UUID.randomUUID().toString();
+        List<OperationsAuditQuery> queries = List.of(
+            new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("WORKSPACE_ACCOUNT", id), 1, 20),
+            new OperationsAuditQuery.WorkspaceInvitation(new AuditTarget("WORKSPACE_INVITATION", id), 1, 20),
+            new OperationsAuditQuery.CommercialGroup(new AuditTarget("COMMERCIAL_GROUP", id), 1, 20),
+            new OperationsAuditQuery.OrganizationNode(new AuditTarget("ORGANIZATION_NODE", id), 1, 20),
+            new OperationsAuditQuery.Brand(new AuditTarget("BRAND", id), 1, 20),
+            new OperationsAuditQuery.Tenant(new AuditTarget("TENANT", id), 1, 20),
+            new OperationsAuditQuery.HeadCompany(new AuditTarget("HEAD_COMPANY", id), 1, 20),
+            new OperationsAuditQuery.Store(new AuditTarget("STORE", id), 1, 20),
+            new OperationsAuditQuery.StoreContract(new AuditTarget("STORE_CONTRACT", id), 1, 20));
+        queries.forEach(query -> service.read(facts, query));
+        AuditReadScope scope = new AuditReadScope(facts.workspaceUuid(), facts.groupWorkspaceKey());
+        verify(workspaceIam).readOperationsAuditProjection(same(facts), same(queries.get(0).target()), eq(1L), eq(20L));
+        verify(workspaceIam).readOperationsAuditProjection(same(facts), same(queries.get(1).target()), eq(1L), eq(20L));
+        for (int index = 2; index < 8; index++) verify(organization).readOperationsAuditProjection(eq(scope), eq("STORE"), same(visibleFacts), same(queries.get(index).target()), eq(1L), eq(20L));
+        verify(contract).readOperationsAuditProjection(eq(scope), same(visibleFacts), same(queries.get(8).target()), eq(1L), eq(20L));
+        verifyNoMoreInteractions(workspaceIam, organization, contract);
+    }
+
+    @Test
+    void closedQueriesAcceptOnlyTheirCanonicalNineTargetTypes() {
+        String id = UUID.randomUUID().toString();
+        assertDoesNotThrow(() -> new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("WORKSPACE_ACCOUNT", id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.WorkspaceInvitation(new AuditTarget("WORKSPACE_INVITATION", id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.CommercialGroup(new AuditTarget("COMMERCIAL_GROUP", id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.OrganizationNode(new AuditTarget("ORGANIZATION_NODE", id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.Brand(new AuditTarget("BRAND", id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.Tenant(new AuditTarget("TENANT", id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.HeadCompany(new AuditTarget("HEAD_COMPANY", id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.Store(new AuditTarget("STORE", id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.StoreContract(new AuditTarget("STORE_CONTRACT", id), 1, 20));
+        assertThrows(IllegalArgumentException.class, () -> new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("STORE", id), 1, 20));
+    }
+}

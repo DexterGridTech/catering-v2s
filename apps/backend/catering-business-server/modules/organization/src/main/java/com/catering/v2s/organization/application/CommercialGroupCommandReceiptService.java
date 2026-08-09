@@ -2,6 +2,7 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.organization.api.CommercialGroupReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -37,12 +38,14 @@ public final class CommercialGroupCommandReceiptService {
             if (!requestHash.equals(existing.requestHash())) throw new OrganizationHierarchyCommandReceiptService.OrganizationIdempotencyConflictException();
             return deserialize(existing.responseJson());
         }
-        CommercialGroupReadback result = command.get();
-        jdbc.update(
-            "INSERT INTO organization.commercial_group_command_receipt (workspace_uuid, idempotency_key, commercial_group_uuid, request_hash, response_json, state, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?::jsonb, 'SUCCEEDED', ?)",
-            workspaceUuid, key, result.id(), requestHash, serialize(result), time.currentEpochMillis()
-        );
-        return result;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            CommercialGroupReadback result = command.get();
+            jdbc.update(
+                "INSERT INTO organization.commercial_group_command_receipt (workspace_uuid, idempotency_key, commercial_group_uuid, request_hash, response_json, state, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?::jsonb, 'SUCCEEDED', ?)",
+                workspaceUuid, key, result.id(), requestHash, serialize(result), time.currentEpochMillis()
+            );
+            return result;
+        }
     }
 
     private static CommercialGroupReadback deserialize(String value) {

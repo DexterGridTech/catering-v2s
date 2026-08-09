@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, normalizeEdgePath, resolveGeneratedOperationById} from './seed-report.mjs';
+import {catalogImageBindEvidenceInputs} from './catalog-image-bind-evidence-inputs.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR || '');
@@ -20,6 +21,8 @@ const reportPath = path.join(runtime, 'results/catalog-inventory-l2-test-fixture
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const required = (value, name) => { if (value === null || value === undefined || value === '') throw new Error(`${name}_REQUIRED`); return value; };
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const requiredUuid = (value, name) => { if (typeof value !== 'string' || !uuidPattern.test(value)) throw new Error(`L2_OWNER_REF_MISSING:${name}`); return value; };
 const fail = (reason) => { process.stderr.write(`CATALOG_INVENTORY_L2_TEST_FIXTURE=FAIL; REASON=${reason}\n`); process.exitCode = 2; };
 
 function registry() {
@@ -52,12 +55,15 @@ async function execute() {
     if (!process.env.CATALOG_INVENTORY_OPERATIONS_LOGIN) throw new Error('CATALOG_INVENTORY_OPERATIONS_LOGIN_REQUIRED');
     const sample = {scopeContext: {store: {dataNodeRef: 'store-ref'}}, dataNodeCandidates: [{dataNodeType: 'STORE', dataNodeRef: 'store-ref'}], contextVersion: 7};
     if (dataNodeFromSession(sample, 'STORE', 'store-ref').ref !== 'store-ref') throw new Error('SESSION_WIRE_DATA_NODE_REF_REQUIRED');
+    let codeRefRejected = false; try { requiredUuid('LATTE-001', 'PRODUCT_SKU'); } catch { codeRefRejected = true; }
+    if (!codeRefRejected) throw new Error('L2_CODE_TYPED_REF_MUST_REJECT');
     process.stdout.write('CATALOG_INVENTORY_L2_TEST_FIXTURE_SELF_TEST=PASS\n');
     return;
   }
   if (!runtime || !fs.existsSync(managedManifestPath)) throw new Error('MANAGED_RUN_MANIFEST_REQUIRED');
   const manifest = readJson(managedManifestPath);
   if (manifest.kind !== 'r5-dev-run-manifest' || manifest.freshDatabase !== true) throw new Error('MANAGED_RUN_MANIFEST_INVALID');
+  const imageBindEvidenceInputs = catalogImageBindEvidenceInputs(root);
   const credentials = Object.fromEntries(fs.readFileSync(required(manifest.credentialsFile, 'CREDENTIALS_FILE'), 'utf8').trim().split('\n').filter(Boolean).map((line) => line.split('=', 2)));
   const all = registry();
   const base = (process.env.CATALOG_INVENTORY_EDGE_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
@@ -75,8 +81,12 @@ async function execute() {
     const headers = {Accept: 'application/json', 'X-Seed-Operation-Id': operationId, 'X-Seed-Run-Id': manifest.runId, 'X-Correlation-Id': correlationId};
     if (options.cookie) headers.Cookie = options.cookie;
     if (options.brandRef) headers['X-Workspace-Brand-Ref'] = options.brandRef;
-    if (operation.method !== 'GET') { headers['Idempotency-Key'] = `catalog-l2-fixture-${sha256(`${manifest.runId}:${operationId}:${options.idempotencySuffix || 'default'}`).slice(0, 48)}`; headers['Content-Type'] = 'application/json'; }
-    const response = await fetch(`${base}${pathname}`, {method: operation.method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: AbortSignal.timeout(30_000)});
+    Object.assign(headers, options.headers || {});
+    if (operation.method !== 'GET') {
+      headers['Idempotency-Key'] = `catalog-l2-fixture-${sha256(`${manifest.runId}:${operationId}:${options.idempotencySuffix || 'default'}`).slice(0, 48)}`;
+      if (!options.form) headers['Content-Type'] = 'application/json';
+    }
+    const response = await fetch(`${base}${pathname}`, {method: operation.method, headers, body: options.form ?? (options.body === undefined ? undefined : JSON.stringify(options.body)), signal: AbortSignal.timeout(30_000)});
     const text = await response.text(); let json = null; try { json = text ? JSON.parse(text) : null; } catch { /* response shape is recorded, not raw */ }
     const accepted = (options.expected || [200]).includes(response.status);
     calls.push({operationId, method: operation.method, routeTemplate: operation.path, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'FAILED', requestId: response.headers.get('x-request-id')});
@@ -123,7 +133,6 @@ async function execute() {
   const weighedCode = l2Code('PORK-WEIGHT-001');
   const autoSyncCode = l2Code('AUTO-001');
   const temporaryItemCode = l2Code('TEMP-001');
-  const skuRows = ['S', 'M', 'L'].map((size, index) => ({productSkuRef: `LATTE-SKU-${size}-REF`, skuCode: `LATTE-SKU-${size}`, skuName: `${size}杯`, attributeValueRefs: [{attributeRef: 'SIZE', attributeCode: 'SIZE', attributeName: '杯型', attributeValueRef: size, valueCode: size, valueLabel: size, displayOrder: index, status: index === 2 ? 'ARCHIVED' : 'ENABLED'}], skuBarcode: `LATTE-SKU-${size}-BARCODE`, standardSalePrice: 100 + index * 20, isDefault: index === 0, status: index === 2 ? 'ARCHIVED' : 'ENABLED', version: 1, mediaRefs: []}));
 
   // L2 owns its visible facts.  These are intentionally not the business seed
   // and are not read from the API acceptance report.  They provide only the
@@ -131,7 +140,16 @@ async function execute() {
   // commands that a real operator would use.
   const getDetail = async (code) => request('getOperationsCatalogItem', {itemCode: code}, {cookie, brandRef, queryParameters: {dataNodeRef}, expected: [200, 404], allowRejected: true});
   const createItem = async (code, shapeKey, attributes = {}) => request('createOperationsCatalogItem', {}, {cookie, brandRef, expected: [200], idempotencySuffix: `l2-create-${code}`, body: {dataNodeRef, name: code, code, shapeKey, attributes: {fixtureRef: 'L2_ACCEPTANCE', ...attributes}}});
-  const saveItem = async (code, version, draft, inventoryConfiguration = {nodes: []}) => request('saveOperationsCatalogItem', {itemCode: code}, {cookie, brandRef, idempotencySuffix: `l2-save-${code}`, body: {itemCode: code, sections: {catalogDraft: draft, inventoryConfiguration, expectedCatalogVersion: version, expectedInventoryVersions: []}}});
+  const stagedAssetBindGrants = new Map();
+  const catalogAssetBindGrantHeaders = (draft) => {
+    const refs = [
+      ...(draft.images || []),
+      ...(draft.skus || []).flatMap((sku) => sku.mediaRefs || []),
+    ].map((ref) => typeof ref === 'string' ? ref : ref?.assetRef).filter(Boolean);
+    const grants = Object.fromEntries(refs.map((assetRef) => [assetRef, stagedAssetBindGrants.get(assetRef)]).filter(([, bindGrant]) => typeof bindGrant === 'string' && bindGrant.length > 0));
+    return Object.keys(grants).length ? {'X-Catalog-Asset-Bind-Grants': JSON.stringify(grants)} : {};
+  };
+  const saveItem = async (code, version, draft, inventoryConfiguration = {nodes: []}) => request('saveOperationsCatalogItem', {itemCode: code}, {cookie, brandRef, idempotencySuffix: `l2-save-${code}`, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef, itemCode: code, sections: {catalogDraft: draft, inventoryConfiguration, expectedCatalogVersion: version, expectedInventoryVersions: []}}});
   const ensureItem = async ({code, shapeKey, attributes = {}, draft, inventoryConfiguration}) => {
     const existing = await getDetail(code);
     if (existing.status === 404) {
@@ -143,14 +161,65 @@ async function execute() {
       if (current?.shapeKey !== shapeKey) throw new Error(`L2_FIXTURE_SHAPE_CONFLICT:${code}`);
     }
   };
+  const refsByScope = new Map();
+  const refsFor = (scope, scopeDataNodeRef) => {
+    const key = `${scope}:${scopeDataNodeRef}`;
+    if (!refsByScope.has(key)) refsByScope.set(key, {dictionary: new Map(), item: new Map(), sku: new Map(), value: new Map(), local: new Map()});
+    return refsByScope.get(key);
+  };
+  const dictionaryKey = (kind, code) => `${kind}:${code}`;
+  const localRef = (refs, key) => { if (!refs.local.has(key)) refs.local.set(key, randomUUID()); return refs.local.get(key); };
+  const dictionaryRef = (refs, kind, code) => requiredUuid(refs.dictionary.get(dictionaryKey(kind, code)), `${kind}:${code}`);
+  const itemRef = (refs, code) => requiredUuid(refs.item.get(code), `CATALOG_ITEM:${code}`);
+  const skuRef = (refs, code) => requiredUuid(refs.sku.get(code), `PRODUCT_SKU:${code}`);
+  const recordRefs = async (scope, scopeCookie, scopeDataNodeRef, phase, code) => {
+    const detail = await request('getOperationsCatalogItem', {itemCode: code}, {cookie: scopeCookie, brandRef, queryParameters: {dataNodeRef: scopeDataNodeRef}});
+    const item = itemResult(detail.json)?.item || itemResult(detail.json);
+    const refs = refsFor(scope, scopeDataNodeRef);
+    refs.item.set(code, requiredUuid(item.itemRef, `CATALOG_ITEM:${code}:readback`));
+    for (const sku of item.skus || []) refs.sku.set(sku.skuCode, requiredUuid(sku.productSkuRef, `PRODUCT_SKU:${sku.skuCode}:readback`));
+    for (const dimension of item.skuVariantDimensions || []) for (const value of dimension.values || []) refs.value.set(value.valueCode, requiredUuid(value.valueRef, `SKU_ATTRIBUTE_VALUE:${value.valueCode}:readback`));
+    for (const group of item.orderOptions || []) for (const value of group.values || []) if (value.code) refs.value.set(value.code, requiredUuid(value.attributeValueRef, `SKU_ATTRIBUTE_VALUE:${value.code}:readback`));
+    events.push({at: new Date().toISOString(), operationId: 'getOperationsCatalogItem', status: 'PASS', typedReferenceReadback: phase, itemCode: code});
+    return item;
+  };
+  const materializeDictionaryRefs = async (scope, scopeCookie, scopeDataNodeRef) => {
+    const refs = refsFor(scope, scopeDataNodeRef);
+    for (const [kind, codes] of [['SKU_ATTRIBUTE', ['SIZE']], ['SKU_ATTRIBUTE_VALUE', ['S', 'M', 'L', 'CAESAR-DRESSING-DEFAULT', 'CAESAR-SIZE-DEFAULT', 'CAESAR-TOPPING-DEFAULT']]]) {
+      for (const code of codes) await request('createOperationsCatalogDictionaryEntry', {dictionaryKind: kind}, {cookie: scopeCookie, brandRef, idempotencySuffix: `${scope}-${kind}-${code}`, body: {dataNodeRef: scopeDataNodeRef, dictionaryKind: kind, code, name: code}});
+      const readback = itemResult((await request('getOperationsCatalogDictionary', {dictionaryKind: kind}, {cookie: scopeCookie, brandRef, queryParameters: {dataNodeRef: scopeDataNodeRef}})).json);
+      for (const entry of readback.entries || []) refs.dictionary.set(dictionaryKey(kind, entry.code), requiredUuid(entry.entryRef, `${kind}:${entry.code}:readback`));
+      for (const code of codes) dictionaryRef(refs, kind, code);
+    }
+  };
+  await materializeDictionaryRefs('STORE', cookie, dataNodeRef);
+  await materializeDictionaryRefs('HEAD_COMPANY', headCookie, headDataNodeRef);
+  const latteDraft = (refs, scopeLatteCode) => ({skuVariantDimensions: [{attributeRef: dictionaryRef(refs, 'SKU_ATTRIBUTE', 'SIZE'), attributeCode: 'SIZE', attributeName: '杯型', values: ['S', 'M', 'L'].map((value, displayOrder) => ({valueRef: dictionaryRef(refs, 'SKU_ATTRIBUTE_VALUE', value), valueCode: value, valueLabel: value, displayOrder, status: displayOrder === 2 ? 'ARCHIVED' : 'ENABLED'}))}], skus: ['S', 'M', 'L'].map((size, index) => ({productSkuRef: localRef(refs, `SKU:${scopeLatteCode}-SKU-${size}`), skuCode: `${scopeLatteCode}-SKU-${size}`, skuName: `${size}杯`, attributeValueRefs: [{attributeRef: dictionaryRef(refs, 'SKU_ATTRIBUTE', 'SIZE'), attributeCode: 'SIZE', attributeName: '杯型', attributeValueRef: dictionaryRef(refs, 'SKU_ATTRIBUTE_VALUE', size), valueCode: size, valueLabel: size, displayOrder: index, status: index === 2 ? 'ARCHIVED' : 'ENABLED'}], skuBarcode: `${scopeLatteCode}-SKU-${size}-BARCODE`, standardSalePrice: 100 + index * 20, isDefault: index === 0, status: index === 2 ? 'ARCHIVED' : 'ENABLED', version: 1, mediaRefs: []}))});
   const commonDraft = (code, shapeKey, extra = {}) => ({name: code, shapeKey, attributes: {fixtureRef: 'L2_ACCEPTANCE'}, images: [], productionTagRefs: [], categoryRefs: [], ordering: {priceGranularity: shapeKey === 'SKU_VARIANT_SALE_COUNTED' ? 'SKU' : 'ITEM', standardSalePrice: 100, listedSalePrice: 100, missingPriceCount: 0}, ...extra});
+  const stageImage = async (fixtureRef, fileName) => {
+    const bytes = fs.readFileSync(path.join(root, 'contracts/policy/catalog-inventory-p1-media', fileName));
+    const form = new FormData();
+    form.set('dataNodeRef', dataNodeRef);
+    form.set('fileName', fileName);
+    form.set('mediaType', 'image/jpeg');
+    form.set('contentDigest', sha256(bytes));
+    form.set('content', new Blob([bytes], {type: 'image/jpeg'}), fileName);
+    const staged = await request('stageOperationsCatalogAsset', {}, {cookie, brandRef, form, idempotencySuffix: `l2-image-${fixtureRef}-${fileName}`});
+    const result = itemResult(staged.json);
+    const assetRef = result?.assetRef;
+    const bindGrant = result?.bindGrant;
+    if (typeof assetRef !== 'string' || assetRef.length === 0) throw new Error(`L2_IMAGE_STAGE_READBACK_MISSING:${fixtureRef}:${fileName}`);
+    if (typeof bindGrant !== 'string' || bindGrant.length === 0) throw new Error(`L2_IMAGE_STAGE_BIND_GRANT_MISSING:${fixtureRef}:${fileName}`);
+    stagedAssetBindGrants.set(assetRef, bindGrant);
+    return assetRef;
+  };
   // Brand-copy candidates are owned by the head-company + brand source scope.
   // Keep that source fact separate from the store-owned target fixtures: the
   // browser journey must prove the real organization-derived copy boundary,
   // not pass because a same-scope target item happens to be present.
   const headGetDetail = async (code) => request('getOperationsCatalogItem', {itemCode: code}, {cookie: headCookie, brandRef, queryParameters: {dataNodeRef: headDataNodeRef}, expected: [200, 404]});
   const headCreateItem = async (code, shapeKey, attributes = {}) => request('createOperationsCatalogItem', {}, {cookie: headCookie, brandRef, expected: [200], idempotencySuffix: `l2-head-create-${code}`, body: {dataNodeRef: headDataNodeRef, name: code, code, shapeKey, attributes: {fixtureRef: 'L2_ACCEPTANCE_HEAD_COMPANY', ...attributes}}});
-  const headSaveItem = async (code, version, draft, inventoryConfiguration = {nodes: []}) => request('saveOperationsCatalogItem', {itemCode: code}, {cookie: headCookie, brandRef, idempotencySuffix: `l2-head-save-${code}`, body: {itemCode: code, sections: {catalogDraft: draft, inventoryConfiguration, expectedCatalogVersion: version, expectedInventoryVersions: []}}});
+  const headSaveItem = async (code, version, draft, inventoryConfiguration = {nodes: []}) => request('saveOperationsCatalogItem', {itemCode: code}, {cookie: headCookie, brandRef, idempotencySuffix: `l2-head-save-${code}`, body: {dataNodeRef: headDataNodeRef, itemCode: code, sections: {catalogDraft: draft, inventoryConfiguration, expectedCatalogVersion: version, expectedInventoryVersions: []}}});
   const ensureHeadItem = async ({code, shapeKey, attributes = {}, draft, inventoryConfiguration}) => {
     const existing = await headGetDetail(code);
     if (existing.status === 404) {
@@ -163,7 +232,8 @@ async function execute() {
     }
   };
   await ensureHeadItem({code: beanCode, shapeKey: 'MATERIAL', attributes: {fixtureRef: 'SEED-MATERIALS', source: 'HEAD_COMPANY_COPY_SOURCE'}, draft: commonDraft(beanCode, 'MATERIAL', {materialRole: 'RAW_MATERIAL'}), inventoryConfiguration: {nodes: [{nodeType: 'ITEM', itemCode: beanCode, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'GRAM', configuration: {allowNegative: false, lowStockThreshold: '1', countingUnit: 'KILOGRAM', conversionFactor: '1000'}}]}});
-  await ensureHeadItem({code: latteCode, shapeKey: 'SKU_VARIANT_SALE_COUNTED', attributes: {fixtureRef: 'SEED-LATTE', source: 'HEAD_COMPANY_COPY_SOURCE'}, draft: commonDraft(latteCode, 'SKU_VARIANT_SALE_COUNTED', {skuVariantDimensions: [{attributeRef: 'SIZE', attributeCode: 'SIZE', attributeName: '杯型', values: ['S', 'M', 'L'].map((value, displayOrder) => ({valueRef: value, valueCode: value, valueLabel: value, displayOrder, status: displayOrder === 2 ? 'ARCHIVED' : 'ENABLED'}))}], skus: skuRows.map((row) => ({...row, skuCode: `${latteCode}-SKU-${row.skuCode.split('-').at(-1)}`, productSkuRef: `${latteCode}-SKU-${row.skuCode.split('-').at(-1)}-REF`}))})});
+  await ensureHeadItem({code: latteCode, shapeKey: 'SKU_VARIANT_SALE_COUNTED', attributes: {fixtureRef: 'SEED-LATTE', source: 'HEAD_COMPANY_COPY_SOURCE'}, draft: commonDraft(latteCode, 'SKU_VARIANT_SALE_COUNTED', latteDraft(refsFor('HEAD_COMPANY', headDataNodeRef), latteCode))});
+  await recordRefs('HEAD_COMPANY', headCookie, headDataNodeRef, 'HEAD_LATTTE', latteCode);
   const headSourceDetail = await headGetDetail(beanCode);
   const headSourceData = itemResult(headSourceDetail.json)?.item || itemResult(headSourceDetail.json);
   if (headSourceDetail.status !== 200 || headSourceData?.code !== beanCode || headSourceData?.shapeKey !== 'MATERIAL') throw new Error('L2_BRAND_COPY_SOURCE_READBACK_MISSING');
@@ -171,12 +241,31 @@ async function execute() {
   const sourceCandidateItems = responseData(sourceCandidates.json)?.items || [];
   if (!sourceCandidateItems.some((item) => item.code === beanCode)) throw new Error('L2_BRAND_COPY_CANDIDATE_READBACK_MISSING');
   await ensureItem({code: beanCode, shapeKey: 'MATERIAL', attributes: {fixtureRef: 'SEED-MATERIALS'}, draft: commonDraft(beanCode, 'MATERIAL', {materialRole: 'RAW_MATERIAL'}), inventoryConfiguration: {nodes: [{nodeType: 'ITEM', itemCode: beanCode, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'GRAM', configuration: {allowNegative: false, lowStockThreshold: '1', countingUnit: 'KILOGRAM', conversionFactor: '1000'}}]}});
-  await ensureItem({code: latteCode, shapeKey: 'SKU_VARIANT_SALE_COUNTED', attributes: {fixtureRef: 'SEED-LATTE'}, draft: commonDraft(latteCode, 'SKU_VARIANT_SALE_COUNTED', {skuVariantDimensions: [{attributeRef: 'SIZE', attributeCode: 'SIZE', attributeName: '杯型', values: ['S', 'M', 'L'].map((value, displayOrder) => ({valueRef: value, valueCode: value, valueLabel: value, displayOrder, status: displayOrder === 2 ? 'ARCHIVED' : 'ENABLED'}))}], skus: skuRows.map((row) => ({...row, skuCode: `${latteCode}-SKU-${row.skuCode.split('-').at(-1)}`, productSkuRef: `${latteCode}-SKU-${row.skuCode.split('-').at(-1)}-REF`}))})});
-  await ensureItem({code: dinnerCode, shapeKey: 'COMPOSITE', attributes: {fixtureRef: 'SEED-DINNER-SET'}, draft: commonDraft(dinnerCode, 'COMPOSITE', {compositeGroups: [{groupCode: 'DINNER-COMPONENTS', groupName: '套餐组件', selectionRule: 'REQUIRED', components: [{itemCode: latteCode, skuCode: `${latteCode}-SKU-M`, quantity: '1', unit: 'EACH', default: true, extraPrice: null, status: 'ENABLED'}]}]})});
-  await ensureItem({code: caesarCode, shapeKey: 'STANDARD_SALE_COUNTED', attributes: {fixtureRef: 'SEED-CAESAR'}, draft: commonDraft(caesarCode, 'STANDARD_SALE_COUNTED', {orderOptions: ['CAESAR-DRESSING', 'CAESAR-SIZE', 'CAESAR-TOPPING'].map((groupCode) => ({groupCode, groupName: groupCode, selectionMode: 'SINGLE', required: true, values: [{code: `${groupCode}-DEFAULT`, name: `${groupCode}-DEFAULT`, default: true, extraPrice: null, productionEffects: []}]}))})});
+  await ensureItem({code: latteCode, shapeKey: 'SKU_VARIANT_SALE_COUNTED', attributes: {fixtureRef: 'SEED-LATTE'}, draft: commonDraft(latteCode, 'SKU_VARIANT_SALE_COUNTED', latteDraft(refsFor('STORE', dataNodeRef), latteCode))});
+  await recordRefs('STORE', cookie, dataNodeRef, 'STORE_LATTE', latteCode);
+  const storeRefs = refsFor('STORE', dataNodeRef);
+  await ensureItem({code: dinnerCode, shapeKey: 'COMPOSITE', attributes: {fixtureRef: 'SEED-DINNER-SET'}, draft: commonDraft(dinnerCode, 'COMPOSITE', {compositeGroups: [{groupCode: 'DINNER-COMPONENTS', groupName: '套餐组件', selectionRule: 'REQUIRED', components: [{itemCode: latteCode, itemRef: itemRef(storeRefs, latteCode), skuCode: `${latteCode}-SKU-M`, productSkuRef: skuRef(storeRefs, `${latteCode}-SKU-M`), quantity: '1', unit: 'EACH', default: true, extraPrice: null, status: 'ENABLED'}]}]})});
+  await ensureItem({code: caesarCode, shapeKey: 'STANDARD_SALE_COUNTED', attributes: {fixtureRef: 'SEED-CAESAR'}, draft: commonDraft(caesarCode, 'STANDARD_SALE_COUNTED', {orderOptions: ['CAESAR-DRESSING', 'CAESAR-SIZE', 'CAESAR-TOPPING'].map((groupCode) => ({groupCode, groupName: groupCode, selectionMode: 'SINGLE', required: true, values: [{code: `${groupCode}-DEFAULT`, name: `${groupCode}-DEFAULT`, attributeValueRef: dictionaryRef(storeRefs, 'SKU_ATTRIBUTE_VALUE', `${groupCode}-DEFAULT`), default: true, extraPrice: null, productionEffects: []}]}))})});
   await ensureItem({code: weighedCode, shapeKey: 'STANDARD_SALE_WEIGHED', attributes: {fixtureRef: 'SEED-WEIGHED'}, draft: commonDraft(weighedCode, 'STANDARD_SALE_WEIGHED')});
   await ensureItem({code: autoSyncCode, shapeKey: 'STANDARD_SALE_COUNTED', attributes: {fixtureRef: 'FIXTURE-AUTO-SYNC', source: 'AUTO_SYNC'}, draft: commonDraft(autoSyncCode, 'STANDARD_SALE_COUNTED', {source: 'AUTO_SYNC', governanceStatus: 'AUTO_SYNC'})});
-  await request('createOperationsProductionTag', {}, {cookie, brandRef, expected: [200], idempotencySuffix: 'l2-tag', body: {code: l2Code('L2-TAG-001'), name: 'L2生产提示', tagKind: 'PRODUCTION'}}).catch((error) => { if (!String(error?.message).includes('HTTP_409')) throw error; });
+  // This fixture owns the two real image bytes used by browser L2.  It never
+  // consumes the DEV seed or API-suite report: stage, claim and readback all
+  // pass through the normal owner HTTP operations in this run namespace.
+  const assetItemCode = l2Code('ASSET-IMAGE-001');
+  const primaryImageAssetRef = await stageImage('FIXTURE-ASSET-PROCESSING', 'coffee.jpg');
+  const secondaryImageAssetRef = await stageImage('FIXTURE-ASSET-PROCESSING', 'tiramisu.jpg');
+  await ensureItem({
+    code: assetItemCode,
+    shapeKey: 'STANDARD_SALE_COUNTED',
+    attributes: {fixtureRef: 'FIXTURE-ASSET-PROCESSING', source: 'L2_ACCEPTANCE_ONLY'},
+    draft: commonDraft(assetItemCode, 'STANDARD_SALE_COUNTED', {images: [primaryImageAssetRef, secondaryImageAssetRef]}),
+  });
+  const assetItemDetail = await request('getOperationsCatalogItem', {itemCode: assetItemCode}, {cookie, brandRef, queryParameters: {dataNodeRef}});
+  const assetItemImages = itemResult(assetItemDetail.json)?.item?.images ?? itemResult(assetItemDetail.json)?.images;
+  if (!Array.isArray(assetItemImages) || assetItemImages.length !== 2 || assetItemImages[0] !== primaryImageAssetRef || assetItemImages[1] !== secondaryImageAssetRef) {
+    throw new Error('L2_IMAGE_FIXTURE_CLAIM_READBACK_MISSING');
+  }
+  await request('createOperationsProductionTag', {}, {cookie, brandRef, expected: [200], idempotencySuffix: 'l2-tag', body: {dataNodeRef, code: l2Code('L2-TAG-001'), name: 'L2生产提示', tagKind: 'PRODUCTION'}}).catch((error) => { if (!String(error?.message).includes('HTTP_409')) throw error; });
 
   const created = await request('createOperationsCatalogItem', {}, {cookie, brandRef, expected: [200], idempotencySuffix: 'create-temp', body: {
     dataNodeRef, name: '外部订单临时拿铁', code: temporaryItemCode, shapeKey: 'STANDARD_SALE_COUNTED',
@@ -184,7 +273,7 @@ async function execute() {
   }});
   const version = Number(itemResult(created.json)?.version || created.json?.version || 1);
   await request('saveOperationsCatalogItem', {itemCode: temporaryItemCode}, {cookie, brandRef, idempotencySuffix: 'save-temp', body: {
-    itemCode: temporaryItemCode, sections: {
+    dataNodeRef, itemCode: temporaryItemCode, sections: {
       catalogDraft: {
         name: '外部订单临时拿铁', shapeKey: 'STANDARD_SALE_COUNTED',
         source: 'EXTERNAL_ORDER_TEMPORARY', governanceStatus: 'GOVERNANCE_TODO',
@@ -216,7 +305,9 @@ async function execute() {
     attributes: {fixtureRef: 'FIXTURE-L2-INVENTORY-ACTION', source: 'L2_ACCEPTANCE_ONLY'},
   }});
   const inventoryVersion = Number(itemResult(inventoryCreated.json)?.version || inventoryCreated.json?.version || 1);
+  await recordRefs('STORE', cookie, dataNodeRef, 'L2_INVENTORY', l2InventoryCode);
   const inventorySaved = await request('saveOperationsCatalogItem', {itemCode: l2InventoryCode}, {cookie, brandRef, idempotencySuffix: 'save-l2-inventory', body: {
+    dataNodeRef,
     itemCode: l2InventoryCode,
     sections: {
       catalogDraft: {
@@ -238,6 +329,8 @@ async function execute() {
         nodes: [{
           nodeType: 'ITEM',
           itemCode: l2InventoryCode,
+          itemRef: itemRef(storeRefs, l2InventoryCode),
+          productSkuRef: null,
           mode: 'INDEPENDENT_STOCK',
           consumptionUnit: 'EACH',
           configuration: {allowNegative: false, lowStockThreshold: '1', countingUnit: 'EACH', conversionFactor: '1'},
@@ -267,7 +360,7 @@ async function execute() {
     'FIXTURE-AUTO-SYNC': itemBinding(autoSyncCode),
     'FIXTURE-VOID-INBOUND-REFERENCE': itemBinding(dinnerCode),
     'FIXTURE-VOID-DEPENDENT-FACT': itemBinding(beanCode),
-    'FIXTURE-ASSET-PROCESSING': itemBinding(latteCode),
+    'FIXTURE-ASSET-PROCESSING': {...itemBinding(assetItemCode), assetRefs: [primaryImageAssetRef, secondaryImageAssetRef]},
     'FIXTURE-UNIT-GRAM-EACH': itemBinding(beanCode),
     'FIXTURE-STALE-SOURCE': itemBinding(latteCode),
     'FIXTURE-SURFACE-STATES': itemBinding(temporaryItemCode),
@@ -281,7 +374,7 @@ async function execute() {
     'FIXTURE-COUNT-INCREASE-ADJUST': {primaryTargetRef: inventoryTarget.targetRef, primaryTargetProductCode: l2InventoryCode},
     'FIXTURE-CONFIG-ONLY': {primaryTargetRef: inventoryTarget.targetRef, primaryTargetProductCode: l2InventoryCode},
   };
-  const report = {schemaVersion: 1, kind: 'catalog-inventory-l2-test-fixture', fixtureRef: 'FIXTURE-TEMPORARY-ITEM', runId: manifest.runId, startedAt, finishedAt: new Date().toISOString(), status: 'PASS', dataNodeRef, itemCode: temporaryItemCode, l2InventoryItemCode: l2InventoryCode, l2InventoryTargetRef: inventoryTarget.targetRef, l2FixtureBindings, calls, events, httpOnly: true};
+  const report = {schemaVersion: 1, kind: 'catalog-inventory-l2-test-fixture', fixtureRef: 'FIXTURE-TEMPORARY-ITEM', runId: manifest.runId, startedAt, finishedAt: new Date().toISOString(), status: 'PASS', imageBindEvidenceInputs, dataNodeRef, itemCode: temporaryItemCode, l2InventoryItemCode: l2InventoryCode, l2InventoryTargetRef: inventoryTarget.targetRef, l2FixtureBindings, calls, events, httpOnly: true};
   fs.mkdirSync(path.dirname(reportPath), {recursive: true, mode: 0o700}); fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});
   process.stdout.write(`CATALOG_INVENTORY_L2_TEST_FIXTURE=PASS; REPORT=${reportPath}\n`);
 }

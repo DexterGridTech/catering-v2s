@@ -25,12 +25,15 @@ public final class PublicSecurityDiagnosticRequestState {
     public static PublicSecurityDiagnosticRequestState getOrCreate(HttpServletRequest request, PublicSecurityOperationRegistry.Definition definition) {
         Object existing = request.getAttribute(ATTRIBUTE);
         if (existing instanceof PublicSecurityDiagnosticRequestState state) return state;
-        RequestDiagnosticContext context = new RequestDiagnosticContext(
-                sanitizeCorrelationId(request.getHeader("X-Correlation-Id")),
-                "req-" + UUID.randomUUID(),
-                definition.operationId(),
-                definition.routeTemplate(),
-                definition.owner());
+        RequestDiagnosticContext context = HttpRequestMetricsInterceptor.context(request);
+        if (context == null) {
+            context = new RequestDiagnosticContext(
+                    sanitizeCorrelationId(request.getHeader("X-Correlation-Id")),
+                    "req-" + UUID.randomUUID(),
+                    definition.operationId(),
+                    definition.routeTemplate(),
+                    definition.owner());
+        }
         PublicSecurityDiagnosticRequestState state = new PublicSecurityDiagnosticRequestState(context);
         request.setAttribute(ATTRIBUTE, state);
         return state;

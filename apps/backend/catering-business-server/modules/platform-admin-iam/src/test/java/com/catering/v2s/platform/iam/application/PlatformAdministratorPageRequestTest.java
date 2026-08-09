@@ -13,7 +13,7 @@ class PlatformAdministratorPageRequestTest {
         var jdbc = new RecordingJdbcTemplate();
         var service = new PlatformAuthenticationService(jdbc, () -> 1L);
 
-        var page = service.pageAdministrators("Dexter", "dext", "ENABLED", 2, 50, "UPDATED_AT", "DESC");
+        var page = service.platformAdministratorPage("Dexter", "dext", "ENABLED", 2, 50, "UPDATED_AT", "DESC");
 
         assertEquals(73, page.total());
         assertEquals(2, page.page());

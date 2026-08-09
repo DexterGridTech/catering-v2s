@@ -50,10 +50,12 @@ class WorkspaceAccountPlatformReceiptTest {
         assertThrows(WorkspaceIamCommandReceiptService.WorkspaceIamIdempotencyConflictException.class, () -> accounts.transitionStatusForPlatform(workspaceId, "receipt-test", accountId, "ENABLED", 2L, "platform-account-status-001", actor));
     }
 
-    @Test void rejectsAPlatformAccountWriteWhenTheOwnerWorkspaceIsDisabled() {
+    @Test void ownerCommandDoesNotDuplicateThePlatformSelectedWorkspaceGate() {
         jdbc.update("UPDATE platform_workspace.group_workspace SET status='DISABLED' WHERE workspace_uuid=?", workspaceId);
         AuditActor actor = new AuditActor("PLATFORM_ADMIN", UUID.randomUUID(), "Platform admin");
-        assertThrows(WorkspaceAccountService.WorkspaceDisabledException.class, () -> accounts.transitionStatusForPlatform(workspaceId, "receipt-test", accountId, "ENABLED", 2L, "platform-account-status-disabled", actor));
+        var result = accounts.transitionStatusForPlatform(workspaceId, "receipt-test", accountId, "ENABLED", 2L, "platform-account-status-disabled", actor);
+        assertEquals("ENABLED", result.status());
+        assertEquals(3L, result.version());
         jdbc.update("UPDATE platform_workspace.group_workspace SET status='ENABLED' WHERE workspace_uuid=?", workspaceId);
     }
 

@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "BACKEND_PERFORMANCE_REFACTOR_20260808",
+  "design": {
+    "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+    "sha256": "a02b7b807a27cda3d97a93bc0cdf91904194168a98f275fe5decaedcbfe38950"
+  },
+  "authorization": {
+    "path": "doc/decisions/2026-08-08-v2s-backend-performance-refactor-design-authorization.md",
+    "sha256": "0595e3679cfc355a82098a5925a55bebe82b234693b6320113894d1f2db0f7a0",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "REVIEWER_INPUT_CHECKLIST_NOT_FOUND",
+      "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE",
+      "UNIT_SOURCE_COMPLIANCE_DENOMINATOR_INVALID"
+    ]
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "BACKEND-PERFORMANCE-REFACTOR-DESIGN-20260808",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-08-08-v2s-backend-performance-refactor-design-independent-review-round2.json",
+    "reviewedManifestSha256": "9ad7d4f3128f3a2ec432c848990ddd46ff6c4cde06bb501c856ada43c7e437ad",
+    "reviewSha256": "dcad12e61a2be6253d6fdc5239aa03a33efb6b8e4a2d3fe81179c9bf13440b41",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false,
+    "reason": "Claude recheck findings and Dexter's full-coverage requirement add bounded SQL-M1 through SQL-M6 design, correct C5/B.6.6/gate semantics, and a 196-operation coverage baseline after the permitted independent-review limit.",
+    "intake": {
+      "path": "doc/review/platform/2026-08-09-v2s-backend-performance-refactor-design-claude-recheck-intake.md",
+      "sha256": "1a5bdbb7a54d9c5875c022d74878a280245ddf10372d52b5964500fa9b2e1c4e"
+    },
+    "addedDeliveryUnitIds": ["BP-U07"]
+  },
+  "candidateJourney": {
+    "id": "BACKEND-PERFORMANCE-REFACTOR",
+    "status": "DESIGN_ONLY_TECHNICAL_MAINTENANCE",
+    "actor": "Dexter-directed backend engineering team",
+    "task": "reduce proven request-local database round trips without weakening authorization or owner boundaries",
+    "pageKey": "NON_UI_BACKEND_PERFORMANCE_REFACTOR",
+    "ownerReadback": "generated binding exact-set and run-scoped measurement report",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "BP-U01",
+      "title": "Request evidence and database-operation measurement baseline",
+      "approvedAssertions": ["Freeze evidence before optimization and distinguish logical section from JDBC kind."],
+      "approvedSources": [{"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","sha256":"a02b7b807a27cda3d97a93bc0cdf91904194168a98f275fe5decaedcbfe38950","anchor":"### BP-U01｜请求证据、数据库操作计量基线与门处置"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","anchor":"### BP-U01｜请求证据、数据库操作计量基线与门处置"},
+      "currentDeviation": "Existing measurements do not yet provide complete phase and operation-kind evidence for every intended workload.",
+      "changeSurfaces": [
+        {"path":"apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTracker.java","disposition":"update","target":"closed operation measurement and suspect classification"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java","disposition":"update","target":"run-scoped request measurement emission"},
+        {"path":"scripts/check/backend-performance-observability","disposition":"create","target":"measurement schema and nonempty evidence gate"},
+        {"path":"scripts/check/backend-performance-evidence-snapshot","disposition":"create","target":"content-addressed snapshot-only coverage input gate"}
+      ],
+      "orderedChain": ["freeze measurement schema", "atomically materialize content-addressed evidence snapshot", "prove nonempty request evidence", "classify repeat and N+1 suspects", "retain a workload baseline"],
+      "dependencyAndSerialBoundaries": ["BP-U01 completes before any numeric baseline comparison.", "No optimization uses evidence with an unknown measurement basis."],
+      "dataEvolution": {"policy":"No business schema evolution; evidence files are run-scoped and additive."},
+      "uiAndTerms": {"notApplicableReason":"No user interaction or product vocabulary changes.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"measurement schema and red fixture","l2":"single known route with nonempty database operation JSONL","l3":"exact event/report join check","business":"fixture report with measurement basis","cleanup":"run-scoped evidence cleanup"},
+      "forbiddenPseudoFixes": ["mixing operation kinds into business sections", "using zero-filled diagnostics as a baseline", "optimizing SQL before establishing a baseline"],
+      "discriminator": {"fixture":"A request with repeated statementId and paramsHash is classified without raw SQL or bind-value logging."}
+    },
+    {
+      "id": "BP-U02",
+      "title": "Generated owner-local binding for all routes",
+      "approvedAssertions": ["The 196-operation binding is explicit, exact-set checked, and has no dynamic dispatcher."],
+      "approvedSources": [{"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","sha256":"a02b7b807a27cda3d97a93bc0cdf91904194168a98f275fe5decaedcbfe38950","anchor":"### BP-U02｜196 路由的 owner-local 静态 binding"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","anchor":"### BP-U02｜196 路由的 owner-local 静态 binding"},
+      "currentDeviation": "The catalog family has string dispatch and the other registry family lacks an explicit business binding truth source.",
+      "changeSurfaces": [
+        {"path":"contracts/registry/operation-handler-bindings.json","disposition":"create","target":"one explicit operation binding per registry operation"},
+        {"path":"scripts/generate/edge-codegen.mjs","disposition":"update","target":"owner-local static binding generation and exact-set validation"},
+        {"path":"scripts/generate/catalog-inventory-p1.mjs","disposition":"update","target":"catalog-inventory static binding generation"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java","disposition":"update","target":"typed adapter dispatch without string business routing"}
+      ],
+      "orderedChain": ["declare 196 rows", "generate per-owner closed switches", "red-mutate registry/binding drift", "remove old dynamic dispatch after parity proof"],
+      "dependencyAndSerialBoundaries": ["BP-U02 consumes only the two generated route registries.", "BP-U03 cannot delete legacy grants until descriptor binding is generated."],
+      "dataEvolution": {"policy":"Contract/generator evolution only; no database change."},
+      "uiAndTerms": {"notApplicableReason":"HTTP operation semantics and UI journeys are retained.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"196 exact-set and owner-partition assertion","l2":"generated binding compile proof","l3":"dynamic dispatcher absence scan plus red mutation","business":"adapter parity focused tests","cleanup":"NOT_APPLICABLE"},
+      "forbiddenPseudoFixes": ["Map keyed by operationId", "service locator", "reflection", "using EdgeRouteFaceRegistry diagnostic merge as a handler input"],
+      "discriminator": {"fixture":"Multipart stage asset has its own typed decoder binding and is not coerced into ObjectNode."}
+    },
+    {
+      "id": "BP-U03",
+      "title": "Transaction-local command context and catalog authorization scope",
+      "approvedAssertions": ["All command authorization judgments are created once at transaction start and replay first rechecks authorization and object facts."],
+      "approvedSources": [{"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","sha256":"a02b7b807a27cda3d97a93bc0cdf91904194168a98f275fe5decaedcbfe38950","anchor":"### BP-U03｜workspace command context 与 catalog judgment scope"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","anchor":"### BP-U03｜workspace command context 与 catalog judgment scope"},
+      "currentDeviation": "Catalog authorization, brand scope, and grant creation occur before the command transaction and current owner grants are publicly constructible records.",
+      "changeSurfaces": [
+        {"path":"apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/WorkspaceCommandOperationToken.java","disposition":"create","target":"non-constructible generated operation policy token"},
+        {"path":"apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/CatalogInventoryWorkspaceCommandTokens.java","disposition":"create","target":"exact 26 catalog-inventory workspace-command token constants"},
+        {"path":"apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/OwnerGrant.java","disposition":"create","target":"owner-visible opaque grant verification capability"},
+        {"path":"apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/WorkspaceExecutionContext.java","disposition":"create","target":"immutable transaction-local command context contract"},
+        {"path":"apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/CatalogAuthorizationScope.java","disposition":"create","target":"organization-judged catalog authorization scope"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java","disposition":"create","target":"transaction-local context factory"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/CatalogScopeLookup.java","disposition":"update","target":"typed brand and copy-source judgment result"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java","disposition":"update","target":"grant/object-fact/replay ordering"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java","disposition":"update","target":"remove controller-side authority derivation"},
+        {"path":"scripts/generate/catalog-inventory-workspace-command-tokens.mjs","disposition":"create","target":"generate and exact-set check the compile-visible authorization token projection"}
+      ],
+      "orderedChain": ["mint immutable context inside command transaction", "bind catalog scope from organization judgments", "migrate owner verification", "prove revoked/replay/header-override failures", "retire old signatures"],
+      "dependencyAndSerialBoundaries": ["Requires BP-U02 OperationDescriptor.", "Catalog bare brand/source parameters retire atomically with CatalogAuthorizationScope."],
+      "dataEvolution": {"policy":"Authorization object shape only; no client-provided authority is persisted."},
+      "uiAndTerms": {"notApplicableReason":"No new UI operation; existing typed authorization errors are preserved.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"opaque construction compile failure","l2":"revoke, role-disabled, header override, and copy-source negative tests","l3":"owner IAM-query and old-signature scans","business":"focused receipt replay and command authorization proof","cleanup":"managed focused-run cleanup"},
+      "forbiddenPseudoFixes": ["ThreadLocal context", "public grant record", "client brand/source authority", "receipt lookup before object recheck"],
+      "discriminator": {"fixture":"A replayed idempotency key after authorization or object-state change fails before its old receipt can return."}
+    },
+    {
+      "id": "BP-U04",
+      "title": "Owner-local duplicate-read and bounded judgment remediation",
+      "approvedAssertions": ["Only branch-proven redundant reads are removed; CAS and required readback remain."],
+      "approvedSources": [{"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","sha256":"a02b7b807a27cda3d97a93bc0cdf91904194168a98f275fe5decaedcbfe38950","anchor":"### BP-U04｜C4/C6 分支语义与命令基线精确分母"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","anchor":"### BP-U04｜C4/C6 分支语义与命令基线精确分母"},
+      "currentDeviation": "Catalog save duplicates detail reads across asset and inventory coordination, and BOM target existence checks iterate one row at a time.",
+      "changeSurfaces": [
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java","disposition":"update","target":"owner-local coordination result instead of branch-proven duplicate reads"},
+        {"path":"apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java","disposition":"update","target":"distinct target-ref batch judgment"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogCategoryOwnerIntegrationTest.java","disposition":"update","target":"five save branch regressions"},
+        {"path":"contracts/registry/performance-refactor-command-baselines.json","disposition":"create","target":"exact 79 numeric command baseline rows and 38 parity-only exclusions"},
+        {"path":"scripts/generate/performance-refactor-command-baselines.mjs","disposition":"create","target":"derive and exact-set verify the 79 numeric and 38 parity rows from both generated route registries"},
+        {"path":"scripts/check/backend-performance-command-baselines","disposition":"create","target":"expose the deterministic baseline exact-set gate and red fixtures"}
+      ],
+      "orderedChain": ["measure every C4 branch", "classify each read semantic role", "remove only redundant paths", "batch target judgment", "replay branch measurements"],
+      "dependencyAndSerialBoundaries": ["Requires BP-U01 measurement basis and BP-U03 context semantics.", "No C4 branch is optimized by a general cache."],
+      "dataEvolution": {"policy":"No schema change; transaction and receipt semantics remain owner-local."},
+      "uiAndTerms": {"notApplicableReason":"No user-visible workflow is changed.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"five branch call-count assertions","l2":"BOM many-row N+1 red/green proof","l3":"same-fixture baseline comparison","business":"focused catalog and inventory owner tests","cleanup":"managed focused-run cleanup"},
+      "forbiddenPseudoFixes": ["cross-request cache", "removing CAS load", "dropping mutation readback", "catalog direct inventory schema read"],
+      "discriminator": {"fixture":"The five save branches preserve their asset and receipt behavior while only proven duplicate loads can decrease."}
+    },
+    {
+      "id": "BP-U05",
+      "title": "Task-read adapters and read budget governance",
+      "approvedAssertions": ["Exactly 78 task reads receive budget governance; protocol/content reads are explicit exemptions."],
+      "approvedSources": [{"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","sha256":"a02b7b807a27cda3d97a93bc0cdf91904194168a98f275fe5decaedcbfe38950","anchor":"### BP-U05｜任务型 reader 与 read budget"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","anchor":"### BP-U05｜任务型 reader 与 read budget"},
+      "currentDeviation": "Catalog mixes task read assembly with command dispatch and the task-read budget set is not yet explicit.",
+      "changeSurfaces": [
+        {"path":"contracts/registry/task-read-surface-policy.json","disposition":"create","target":"83 GET dispositions and 78 task-read budget set"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogTaskReadService.java","disposition":"create","target":"catalog typed task read boundary"},
+        {"path":"apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryTaskReadService.java","disposition":"create","target":"inventory typed task read boundary"}
+      ],
+      "orderedChain": ["disposition all GET operations by ReadContextKind", "write owner-local readers", "apply set-based query proof", "measure closed budget components and declared caps", "separate from command dispatch"],
+      "dependencyAndSerialBoundaries": ["B=78 is provisional only until independent review accepts all five exemptions.", "BP-U05 must not introduce a global read module or invoke readers from commands."],
+      "dataEvolution": {"policy":"Read-model implementation only; no cross-schema DML or new foreign key."},
+      "uiAndTerms": {"notApplicableReason":"Existing consumers keep their current operation contracts.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"GET disposition exact-set and budget red mutation","l2":"per-reader set-based query proof","l3":"budget workload evidence","business":"focused read operation tests","cleanup":"managed workload cleanup"},
+      "forbiddenPseudoFixes": ["global query layer", "reader invoked in write transaction", "loop repository reads", "unlabelled GET exemption"],
+      "discriminator": {"fixture":"A newly added GET operation without an explicit task/protocol disposition fails generation."}
+    },
+    {
+      "id": "BP-U06",
+      "title": "Legacy-path retirement and evidence closure",
+      "approvedAssertions": ["Legacy dynamic paths are removed by source absence after static parity and focused proof."],
+      "approvedSources": [{"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","sha256":"a02b7b807a27cda3d97a93bc0cdf91904194168a98f275fe5decaedcbfe38950","anchor":"### BP-U06｜旧路径退出和证据闭环"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md","anchor":"### BP-U06｜旧路径退出和证据闭环"},
+      "currentDeviation": "The current dynamic dispatch, controller-side judgment derivation, and public grant construction can coexist with future paths until explicit retirement.",
+      "changeSurfaces": [
+        {"path":"scripts/check/backend-performance-refactor-retirement","disposition":"create","target":"absence and exact-set retirement gate"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/cataloginventory/CatalogInventoryApplicationService.java","disposition":"update","target":"remove global string operation dispatcher after binding cutover"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application","disposition":"delete","target":"retire legacy application layout and satisfy code-layout exit"},
+        {"path":"doc/review/platform/2026-08-08-v2s-backend-performance-refactor-evidence-report.md","disposition":"create","target":"fixture-bound before/after evidence and non-regression report"}
+      ],
+      "orderedChain": ["complete unit parity", "prove legacy replacement", "remove old signatures and dynamic paths", "run absence gate", "publish evidence disposition"],
+      "dependencyAndSerialBoundaries": ["BP-U06 starts only after BP-U01 through BP-U05 package exits pass.", "No individual legacy path retires without its owner-focused proof."],
+      "dataEvolution": {"policy":"No data migration; evidence retains historical measurement-basis labels."},
+      "uiAndTerms": {"notApplicableReason":"No UI state, terminology, or interaction changes.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"legacy signature and dispatcher absence scans","l2":"focused parity tests","l3":"all binding and policy static gates","business":"same-fixture baseline report","cleanup":"all authorized managed run cleanup evidence"},
+      "forbiddenPseudoFixes": ["leaving deprecated overloads executable", "claiming retirement because no current caller exists", "reporting predicted performance as measured"],
+      "discriminator": {"fixture":"Reintroducing an operationId keyed dynamic dispatcher fails the retirement gate."}
+    },
+    {
+      "id": "BP-U07",
+      "title": "Owner-local SQL merge abstractions and 196-operation coverage closure",
+      "approvedAssertions": [
+        "SQL-M1 through SQL-M6 reuse only finite owner-local typed facts or batch judgments; no endpoint-specific SQL catalog and no global query bus.",
+        "Every generated route receives exactly one evidence coverage state, and any unmeasured applicable route blocks that SQL merge success claim."
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+          "sha256": "a02b7b807a27cda3d97a93bc0cdf91904194168a98f275fe5decaedcbfe38950",
+          "anchor": "### BP-U07｜SQL-M1～M6 合并、目标与 196 行覆盖矩阵"
+        },
+        {
+          "path": "doc/review/platform/2026-08-08-v2s-backend-performance-refactor-plan-claude.md",
+          "sha256": "b9126afa2640ef1578632b400ab36c490b4ecf07ac1c793555051392d8d61efe",
+          "anchor": "## 14. SQL 合并清单（新增批次，Dexter 2026-08-09 追加要求）"
+        },
+        {
+          "path": "doc/review/platform/2026-08-09-v2s-backend-performance-refactor-operation-coverage-initial.md",
+          "sha256": "0cf0ef45a0193f16f42d53be6204b0c8a69f6991be0a3e21516b5d09bb8fc2db",
+          "anchor": "# 后台性能重构 196 operation 初版覆盖矩阵"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+        "anchor": "### BP-U07｜SQL-M1～M6 合并、目标与 196 行覆盖矩阵"
+      },
+      "currentDeviation": "The current design had no complete SQL-M1 through SQL-M6 applicability denominator, C5 omitted two command operations, coverage evidence mixed seed-report groups with DB-operation rows, and budget evidence had no immutable snapshot or mechanically bounded fact implementation inventory.",
+      "changeSurfaces": [
+        {"path":"contracts/registry/backend-performance-sql-merge-applicability.json","disposition":"create","target":"generated-registry exact 196 applicability plus fact implementation, legacy allowlist, M5 mapping, read-mode declarations and M4 source-retirement/retained-preauth exact sets"},
+        {"path":"scripts/generate/backend-performance-sql-merge-applicability.mjs","disposition":"create","target":"rebuild the two generated route registries into the 196-row SQL-M applicability denominator and reject drift"},
+        {"path":"scripts/check/backend-performance-sql-merge-coverage","disposition":"create","target":"snapshot-only coverage, normalized route tuple, unmeasured blocker, fact-loader cardinality, M4 source-absence/retained-guard and SQL-M exact-set gate"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCommandAuthorizationFacts.java","disposition":"create","target":"finite command authorization fact projection"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceReadAuthorizationFacts.java","disposition":"create","target":"finite read authorization fact projection"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java","disposition":"update","target":"reuse one invocation-scoped authorization/visibility path without changing credential-flow guards"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java","disposition":"update","target":"construct the finite command authorization fact with one owner-local statement while retaining ACTIVE/ENABLED/capability predicates"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java","disposition":"update","target":"consume the finite command authorization fact within the existing command transaction"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java","disposition":"update","target":"construct and reuse one invocation-scoped VisibleOrganizationFacts projection"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationVisibilityLookup.java","disposition":"update","target":"expose the typed finite visibility-and-scope projection without a generic request fact bag"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/VisibleOrganizationFacts.java","disposition":"create","target":"invocation-scoped visible organization fact projection"},
+        {"path":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/api/EnabledSelectedWorkspaceFact.java","disposition":"create","target":"immutable selected enabled workspace UUID/key/status fact for existing platform task reads"},
+        {"path":"apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java","disposition":"update","target":"provide existing-platform selected-workspace fact without changing natural-expiry transitionStatus semantics"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java","disposition":"update","target":"retire post-auth WorkspaceStatusLookup guard"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java","disposition":"update","target":"retire post-auth WorkspaceStatusLookup guard"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java","disposition":"update","target":"retire post-auth WorkspaceStatusLookup guard without changing platform-controller gate"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java","disposition":"update","target":"retire post-auth WorkspaceStatusLookup guard without changing platform-controller gate"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java","disposition":"update","target":"catalog coordination and dictionary reference snapshots only where branch-proven duplicate reads exist"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java","disposition":"update","target":"retire post-auth WorkspaceStatusLookup guard while preserving command facts; CommercialGroupPreState M5 owner-local pre-state reuse"},
+        {"path":"apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java","disposition":"update","target":"ExtensionDefinitionPreState M5 owner-local pre-state reuse"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java","disposition":"update","target":"InvitationAssignmentIntentFacts M5 owner-local projection"},
+        {"path":"apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java","disposition":"update","target":"DerivedStoreStatusFacts M5 command-owner reuse"},
+        {"path":"apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java","disposition":"update","target":"DerivedStoreStatusFacts M5 task-read reuse"},
+        {"path":"apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/ResolvedBomTargets.java","disposition":"create","target":"distinct target-ref batch judgment result"}
+        ,{"path":"apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application","disposition":"update","target":"focused authorization, invitation facts and retained credential-guard proofs"}
+        ,{"path":"apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application","disposition":"update","target":"focused visibility, commercial-group pre-state and natural-expiry proofs"}
+        ,{"path":"apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application","disposition":"update","target":"catalog coordination and dictionary reference snapshot branch proofs"}
+        ,{"path":"apps/backend/catering-business-server/modules/inventory/src/test/java/com/catering/v2s/inventory/application","disposition":"update","target":"bounded ten-row BOM judgment proof"}
+        ,{"path":"apps/backend/catering-business-server/modules/extension/src/test/java/com/catering/v2s/extension/application","disposition":"update","target":"extension pre-state merge proofs"}
+        ,{"path":"apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application","disposition":"update","target":"derived store-status facts proofs"}
+      ],
+      "orderedChain": [
+        "rebuild and freeze the 196 row coverage tuple set from a content-addressed snapshot",
+        "declare finite owner-local fact implementations, legacy allowlist, M5 rows and operation applicability",
+        "measure every unmeasured applicable route with a controlled fixture",
+        "implement only proven SQL-M targets with red/green proof",
+        "reject a merge whose full applicability set is not measured"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "Requires BP-U01 request-scope measurement schema and evidence join.",
+        "Does not authorize SQL implementation before Claude accepts this design and Dexter grants implementation authority.",
+        "Fact loaders remain inside their owner and cannot become a cross-owner coordinator or global query service."
+      ],
+      "dataEvolution": {"policy":"No business schema change; coverage and applicability manifests are design/gate metadata only."},
+      "uiAndTerms": {"notApplicableReason":"No UI behavior, terminology, or consumer contract changes are designed by this unit.","termSource":"AGENTS.md"},
+      "evidence": {"l1":"196 tuple exact-set and SQL-M applicability red mutations","l2":"owner-local fact/judgment focused proofs including ten-row BOM fixture","l3":"request-evidence coverage gate with unmeasured blocker enforcement","business":"fixture-bound before/after operation reports","cleanup":"authorized managed workload cleanup only after later authority"},
+      "forbiddenPseudoFixes": ["one endpoint-specific SQL per operation", "global query bus", "Map or Object request facts", "cross-owner cache", "declaring a SQL-M successful while an applicable route is unmeasured"],
+      "discriminator": {"fixture":"A ten-row BOM command emits one bounded target lookup while a different-key or write-separated read cannot reuse its fact."}
+    }
+  ]
+}

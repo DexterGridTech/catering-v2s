@@ -10,6 +10,10 @@ export const normalizeEdgePath = (value) => value.startsWith(`${EDGE_PREFIX}/`) 
 
 const SECRET_KEY = /(?:password|secret|token|cookie|authorization|otp|mobile|login|account|payload|sql|bind)/i;
 const SECRET_VALUE = /(?:password|secret|token|cookie|authorization|otp|jdbc:|postgres(?:ql)?:\/\/)/i;
+const nonEmpty = (value, code) => {
+  if (typeof value !== 'string' || value.trim() === '') throw new Error(code);
+  return value;
+};
 
 export function loadGeneratedOperationRegistry(registryPath) {
   const json = JSON.parse(readFileSync(registryPath, 'utf8'));
@@ -97,13 +101,22 @@ function isScalar(value) { return typeof value === 'string' || typeof value === 
 
 function escapeRegExp(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-export function buildSeedReport({runId, seedProfile, startedAt, finishedAt, status, calls, events, nonApiStages = [], expectedNonApiStageIds = null, firstFailure = null}) {
-  const byRequest = new Map(events.filter((event) => event?.runId === runId && event.correlationId && event.requestId).map((event) => [`${event.correlationId}:${event.requestId}`, event]));
+export function buildSeedReport({runId, managedDevRunId = runId, measurement = null, seedProfile, startedAt, finishedAt, status, calls, events, nonApiStages = [], expectedNonApiStageIds = null, firstFailure = null}) {
+  const effectiveManagedDevRunId = nonEmpty(managedDevRunId, 'SEED_REPORT_MANAGED_DEV_RUN_ID_INVALID');
+  const eventRun = (event) => event?.managedDevRunId ?? event?.runId;
+  const keyFor = (event) => `${effectiveManagedDevRunId}:${event.correlationId}:${event.requestId}`;
+  const expectedRequestKeys = new Set(calls.map((call) => `${call.managedDevRunId ?? effectiveManagedDevRunId}:${call.correlationId ?? 'missing'}:${call.requestId ?? 'missing'}`));
+  // Multiple independent seed executors share one managed DEV run.  Only an exact request tuple
+  // belongs to this report; same-run activity from another executor is preserved as out of scope.
+  const scopedEvents = events.filter((event) => eventRun(event) === effectiveManagedDevRunId && expectedRequestKeys.has(keyFor(event)));
+  const outOfScopeEvents = events.filter((event) => !scopedEvents.includes(event));
+  const byRequest = new Map(scopedEvents.filter((event) => event?.correlationId && event.requestId).map((event) => [keyFor(event), event]));
   const unmatchedHttpEvents = [];
   const unmatchedDatabaseEvents = [];
   const groups = new Map();
   for (const call of calls) {
-    const key = `${call.correlationId ?? 'missing'}:${call.requestId ?? 'missing'}`;
+    const callManagedDevRunId = call.managedDevRunId ?? effectiveManagedDevRunId;
+    const key = `${callManagedDevRunId}:${call.correlationId ?? 'missing'}:${call.requestId ?? 'missing'}`;
     const event = byRequest.get(key);
     if (!event) { unmatchedHttpEvents.push(call.operationId ?? 'operation.unresolved'); continue; }
     if (event.operationId !== call.operationId || event.method !== call.method || event.routeTemplate !== call.routeTemplate) {
@@ -111,7 +124,7 @@ export function buildSeedReport({runId, seedProfile, startedAt, finishedAt, stat
       continue;
     }
     const groupKey = `${call.owner}|${call.operationId}|${call.method}|${call.routeTemplate}`;
-    const group = groups.get(groupKey) ?? {owner: call.owner, operationId: call.operationId, method: call.method, routeTemplate: call.routeTemplate, stageIds: new Set(), calls: [], events: []};
+    const group = groups.get(groupKey) ?? {owner: call.owner, consumerFace: call.consumerFace ?? null, operationId: call.operationId, method: call.method, routeTemplate: call.routeTemplate, stageIds: new Set(), calls: [], events: []};
     group.stageIds.add(call.stageId);
     group.calls.push(call);
     group.events.push(event);
@@ -119,12 +132,13 @@ export function buildSeedReport({runId, seedProfile, startedAt, finishedAt, stat
   }
   const consumed = new Set();
   const apiEndpoints = [...groups.values()].map((group) => {
-    for (const event of group.events) consumed.add(`${event.correlationId}:${event.requestId}`);
+    for (const event of group.events) consumed.add(keyFor(event));
     const http = group.calls.map((call) => call.durationMs);
     const dbCount = group.events.map((event) => event.databaseOperationCount);
     const dbDuration = group.events.map((event) => event.databaseDurationMillis);
     return {
       owner: group.owner,
+      consumerFace: group.consumerFace,
       operationId: group.operationId,
       method: group.method,
       routeTemplate: group.routeTemplate,
@@ -136,19 +150,19 @@ export function buildSeedReport({runId, seedProfile, startedAt, finishedAt, stat
       outcomes: outcomes(group.events),
     };
   });
-  for (const event of events) {
-    const key = `${event.correlationId}:${event.requestId}`;
-    if (event.runId === runId && !consumed.has(key)) unmatchedDatabaseEvents.push(event.operationId ?? 'operation.unresolved');
+  for (const event of scopedEvents) {
+    const key = keyFor(event);
+    if (!consumed.has(key)) unmatchedDatabaseEvents.push(event.operationId ?? 'operation.unresolved');
   }
   const actualNonApiStageIds = nonApiStages.map((stage) => stage.stageId).sort();
   const expectedStages = expectedNonApiStageIds ? [...expectedNonApiStageIds].sort() : null;
   const nonApiStagesMatch = !expectedStages || JSON.stringify(actualNonApiStageIds) === JSON.stringify(expectedStages);
-  const complete = unmatchedHttpEvents.length === 0 && unmatchedDatabaseEvents.length === 0 && calls.length === events.filter((event) => event?.runId === runId).length && calls.every((call) => call.correlationId && call.requestId) && nonApiStagesMatch;
+  const complete = unmatchedHttpEvents.length === 0 && unmatchedDatabaseEvents.length === 0 && calls.length === scopedEvents.length && calls.every((call) => (call.managedDevRunId ?? effectiveManagedDevRunId) === effectiveManagedDevRunId && call.correlationId && call.requestId) && nonApiStagesMatch;
   const report = {
-    kind: 'r5-full-seed-report', schemaVersion: 1, runId, seedProfile, status: status === 'PASS' && complete ? 'PASS' : 'FAIL',
+    kind: 'r5-full-seed-report', schemaVersion: 2, runId, managedDevRunId: effectiveManagedDevRunId, measurement, seedProfile, status: status === 'PASS' && complete ? 'PASS' : 'FAIL',
     startedAt, finishedAt, durationMs: Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime()),
     apiEndpoints, nonApiStages,
-    completeness: {apiCallCount: calls.length, reportedApiCallCount: events.filter((event) => event?.runId === runId).length, endpointGroupCount: apiEndpoints.length, unmatchedHttpEvents, unmatchedDatabaseEvents, nonApiStageIds: actualNonApiStageIds, expectedNonApiStageIds: expectedStages},
+    completeness: {apiCallCount: calls.length, reportedApiCallCount: scopedEvents.length, outOfScopeDatabaseEventCount: outOfScopeEvents.length, endpointGroupCount: apiEndpoints.length, unmatchedHttpEvents, unmatchedDatabaseEvents, nonApiStageIds: actualNonApiStageIds, expectedNonApiStageIds: expectedStages},
     firstFailure: firstFailure ? safeFailure(firstFailure) : (nonApiStagesMatch ? (complete ? null : 'SEED_REPORT_INCOMPLETE') : 'SEED_REPORT_NON_API_STAGE_SET_MISMATCH'),
   };
   assertSafe(report);
@@ -183,6 +197,7 @@ export function renderSeedReportMarkdown(report) {
   const completeness = report.completeness ?? {};
   const endpointRows = (report.apiEndpoints ?? []).map((endpoint) => [
     endpoint.owner,
+    endpoint.consumerFace ?? '-',
     endpoint.operationId,
     endpoint.method,
     endpoint.routeTemplate,
@@ -202,6 +217,8 @@ export function renderSeedReportMarkdown(report) {
     '',
     `- Seed profile：\`${escapeMarkdown(report.seedProfile)}\``,
     `- Run ID：\`${escapeMarkdown(report.runId)}\``,
+    `- Managed DEV Run ID：\`${escapeMarkdown(report.managedDevRunId)}\``,
+    `- 计量口径：${report.measurement ? `v${report.measurement.schemaVersion} / \`${escapeMarkdown(report.measurement.basis)}\`` : '未声明'}`,
     `- 开始：${escapeMarkdown(report.startedAt)}`,
     `- 结束：${escapeMarkdown(report.finishedAt)}`,
     `- 总耗时：${formatNumber(report.durationMs)} ms`,
@@ -214,6 +231,7 @@ export function renderSeedReportMarkdown(report) {
         ['API 调用总数', completeness.apiCallCount ?? 0],
         ['Endpoint 分组数', completeness.endpointGroupCount ?? 0],
         ['后端已关联调用数', completeness.reportedApiCallCount ?? 0],
+        ['范围外历史数据库事件', completeness.outOfScopeDatabaseEventCount ?? 0],
         ['未关联 HTTP 事件', (completeness.unmatchedHttpEvents ?? []).length],
         ['未关联数据库事件', (completeness.unmatchedDatabaseEvents ?? []).length],
         ['非 API 阶段', `${(report.nonApiStages ?? []).filter((stage) => stage.status === 'PASS').length}/${(report.nonApiStages ?? []).length} PASS`],
@@ -225,7 +243,7 @@ export function renderSeedReportMarkdown(report) {
     '',
     'HTTP 与数据库列均为“平均 / 最低 / 最高”；结果列为“成功 / 拒绝 / 错误”。',
     '',
-    markdownTable(['Owner', 'Operation', 'Method', 'Route', '次数', 'HTTP ms（均/低/高）', 'DB 次数（均/低/高）', 'DB ms（均/低/高）', '结果'], endpointRows),
+    markdownTable(['Owner', 'Consumer face', 'Operation', 'Method', 'Route', '次数', 'HTTP ms（均/低/高）', 'DB 次数（均/低/高）', 'DB ms（均/低/高）', '结果'], endpointRows),
     '',
     '## 非 API 阶段',
     '',

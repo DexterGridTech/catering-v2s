@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-phase4-u05-package-exit-plan",
+  "packageId": "BACKEND-PERFORMANCE-PHASE4-U05-20260809",
+  "status": "ACTIVE_IMPLEMENTATION_NOT_EXIT",
+  "finalExitContract": {
+    "kind": "rm1-execution-package-exit",
+    "reviewTarget": "IMPLEMENTATION",
+    "reviewCycleId": "OVERALL_PHASE_4_U05_IMPLEMENTATION_20260809",
+    "changedPathRule": "The final changedPaths set must enumerate every actual implementation-authority path and each must have a Pre/Post hook receipt; package creation paths alone cannot evidence implementation.",
+    "businessAndCleanupRule": "Each required focused or managed workload proof must retain run manifest, first failure, business result and cleanup result separately. No DEV/reset/seed/L2/UAT is in this package unless separately authorized."
+  },
+  "exitDenominators": {
+    "POLICY": ["83 GET rows", "78 TASK_READ rows", "5 PROTOCOL_READ_EXEMPT rows", "58/15/4/1 read-context-kind partition"],
+    "FACT_BOUNDARIES": ["WorkspaceReadAuthorizationFacts=58", "VisibleOrganizationFacts task read=58", "C5 command-local reconciliation=2", "EnabledSelectedWorkspaceFact=15 fixed platform rows plus audit branch policy"],
+    "BUDGET": ["B=78", "closed ReadBudgetComponent vocabulary", "UNCLASSIFIED=0", "component totals equal request databaseOperationCount"],
+    "BEHAVIOR_COUNTEREXAMPLES": ["getOperationsWorkspaceLoginEntry never loads workspace facts", "C5 command never invokes TaskReadService", "audit PLATFORM_ADMIN remains ungated", "all six audit enabled branches retain selected-workspace typed failure"],
+    "CONTROL_AND_REVIEW": ["task-read policy generator/checker red mutations", "immutable snapshot-only evidence", "fresh IMPLEMENTATION independent review with at most two rounds", "no BP-U06 path in changedPaths"],
+    "RUNTIME": ["NOT_APPLICABLE until a separate runtime authority is issued", "future authorized managed workload must have business PASS and cleanup PASS"]
+  },
+  "plannedExitStates": {
+    "static": "PENDING_IMPLEMENTATION",
+    "business": "NOT_RUN_IMPLEMENTATION_IN_PROGRESS",
+    "cleanup": "NOT_RUN_IMPLEMENTATION_IN_PROGRESS",
+    "optimization": "BLOCKED_UNMEASURED_UNTIL_BUDGET_FIXTURE_AND_IMMUTABLE_SNAPSHOT_EVIDENCE"
+  },
+  "authorizationBoundary": "Dexter explicitly authorized BP-U05 implementation and verification. BP-U06, SQL numeric optimization, DEV, reset/seed, L2/UAT, deployment and repository-control actions remain excluded."
+}

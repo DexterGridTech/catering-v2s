@@ -41,7 +41,7 @@ function queryType(operation) {
 function headerType(operation) {
   return operation.method === "GET"
     ? `{ "X-Workspace-Brand-Ref"?: string; }`
-    : `{ "X-Workspace-Brand-Ref"?: string; "Idempotency-Key": string; }`;
+    : `{ "X-Workspace-Brand-Ref"?: string; "Idempotency-Key": string;${operation.operationId === "saveOperationsCatalogItem" ? ' "X-Catalog-Asset-Bind-Grants"?: string;' : ""} }`;
 }
 
 function schemaRefName(schema) {

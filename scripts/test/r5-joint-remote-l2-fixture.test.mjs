@@ -30,7 +30,10 @@ test('joint L2 fixture declares every browser environment input consumed by eith
   ].flatMap((file) => requiredKeys(readFileSync(file, 'utf8'))));
   const expected = new Set(declaredKeys(fixture, /const expectedBrowserInputKeys = \[([\s\S]*?)\];/));
   const publicValues = new Set(declaredKeys(fixture, /const values = \{([\s\S]*?)\n\};\nconst privateValues/));
-  const privateValues = new Set(declaredKeys(fixture, /const privateValues = \{([\s\S]*?)\n\};\nconst ownerReadbackKeys/));
+  const privateValues = new Set([
+    ...declaredKeys(fixture, /const privateValues = \{([\s\S]*?)\n\};\nif \(process\.env\.R5_JOINT_INCLUDE_CATALOG_INVENTORY/),
+    ...declaredKeys(fixture, /Object\.assign\(privateValues, \{([\s\S]*?)\n\}\);/),
+  ]);
   const fixtureInputs = new Set([...publicValues, ...privateValues]);
 
   assert.deepEqual([...required].filter((key) => !expected.has(key)), []);

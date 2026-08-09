@@ -3,17 +3,18 @@ import {adminWideDetailDescriptionsProps, adminWideDrawerSurfaceProps, NameCodeT
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
+import type {OperationsPageContext} from '../../../app/routing/model';
 import {INVENTORY_ACTION_TRIGGER_TEST_IDS, InventoryActionModal, type InventoryActionKind} from './InventoryActionModal';
 import {envelopeData, shouldRequestInventoryDiagnostics, type CursorPage, type InventoryCurrentView, type InventoryDiagnostics, type InventoryHistoryEntry, type InventoryLedgerEntry, type InventoryReference} from './inventoryManagementModel';
 
-type Props = {targetRef?: string; canEdit: boolean; canReadDiagnostics: boolean; onClose: () => void; onListChanged: () => void};
+type Props = {targetRef?: string; canEdit: boolean; queryContext: OperationsPageContext; onClose: () => void; onListChanged: () => void};
 type InventoryZone = 'current' | 'changes' | 'history' | 'references' | 'ledger' | 'diagnostics';
 
 function ZoneProblem({title, onRetry}: {title: string; onRetry: () => void}) {
   return <Alert type="error" showIcon title={`${title}暂时无法获取`} action={<Button size="small" onClick={onRetry}>重试</Button>}/>;
 }
 
-export function InventoryDetailDrawer({targetRef, canEdit, canReadDiagnostics, onClose, onListChanged}: Props) {
+export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose, onListChanged}: Props) {
   const [action, setAction] = useState<InventoryActionKind>();
   const [expandedZones, setExpandedZones] = useState<string[]>(['current']);
   const [historyCursors, setHistoryCursors] = useState<string[]>(['']);
@@ -60,8 +61,8 @@ export function InventoryDetailDrawer({targetRef, canEdit, canReadDiagnostics, o
     ),
     {skip: !zoneLoaded('ledger')}
   );
-  const requestDiagnostics = shouldRequestInventoryDiagnostics(zoneLoaded('diagnostics'), canReadDiagnostics);
-  const diagnostics = operationsRtk.useGetOperationsInventoryTargetDiagnosticsQuery(catalogInventoryRtkRequest.getOperationsInventoryTargetDiagnostics(path), {skip: !shouldRequestInventoryDiagnostics(zoneLoaded('diagnostics'), canReadDiagnostics)});
+  const requestDiagnostics = shouldRequestInventoryDiagnostics(zoneLoaded('diagnostics'));
+  const diagnostics = operationsRtk.useGetOperationsInventoryTargetDiagnosticsQuery(catalogInventoryRtkRequest.getOperationsInventoryTargetDiagnostics(path), {skip: !shouldRequestInventoryDiagnostics(zoneLoaded('diagnostics'))});
   const currentView = envelopeData<InventoryCurrentView>(current.data);
   const historyPage = envelopeData<CursorPage<InventoryHistoryEntry>>(history.data);
   const referencePage = envelopeData<CursorPage<InventoryReference>>(references.data);
@@ -133,12 +134,12 @@ export function InventoryDetailDrawer({targetRef, canEdit, canReadDiagnostics, o
         {title: '来源', dataIndex: 'source'}, {title: '原因', dataIndex: 'reasonCode'}, {title: '变更前', dataIndex: 'beforeQuantity'}, {title: '变化量', dataIndex: 'changeQuantity'}, {title: '变更后', dataIndex: 'afterQuantity'}, {title: '时间', dataIndex: 'occurredAt', render: (value: number) => new Date(value).toLocaleString()},
       ]}/>} 
     </Card>},
-    ...(canReadDiagnostics ? [{key: 'diagnostics', label: '⑥ 高级诊断', children: <Card size="small" title="⑥ 高级诊断" {...testId('inventory-zone-diagnostics')}>
+    ...([{key: 'diagnostics', label: '⑥ 高级诊断', children: <Card size="small" title="⑥ 高级诊断" {...testId('inventory-zone-diagnostics')}>
       {diagnostics.error ? <ZoneProblem title="高级诊断" onRetry={() => void diagnostics.refetch()}/> : diagnostics.isLoading && !diagnostics.data ? <Skeleton active/> : !diagnosticsView ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无诊断数据"/> : <>
         {diagnosticsView.warnings.length > 0 && <Alert type="warning" showIcon title="诊断提示" description={diagnosticsView.warnings.map((entry) => `${entry.code}：${entry.message}`).join('；')} style={{marginBottom: 12}}/>}
         <Table size="small" rowKey="queryName" pagination={false} dataSource={diagnosticsView.queries} columns={[{title: '查询', dataIndex: 'queryName'}, {title: '数据库操作数', dataIndex: 'databaseOperationCount'}, {title: '耗时(ms)', dataIndex: 'durationMillis'}]}/>
       </>}
-    </Card>}] : []),
+    </Card>}]),
   ];
 
   return <>
@@ -153,6 +154,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, canReadDiagnostics, o
       {identityBlocked && <Alert type="error" showIcon title="库存对象详情未完成" description="关键对象身份暂时无法获取，请重试。" action={<Button onClick={() => void current.refetch()}>重试</Button>} {...testId('inventory-zone-current-problem')}/>} 
       {!identityBlocked && currentView && <Collapse activeKey={expandedZones} onChange={handleZoneChange} items={zoneItems}/>} 
     </Drawer>
-    <InventoryActionModal action={action} current={currentView} expectedVersion={currentView?.version} onClose={closeAction} onCompleted={refreshAll}/>
+    <InventoryActionModal action={action} current={currentView} expectedVersion={currentView?.version} queryContext={queryContext} onClose={closeAction} onCompleted={refreshAll}/>
   </>;
 }

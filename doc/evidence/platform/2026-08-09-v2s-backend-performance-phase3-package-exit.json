@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm1-execution-package-exit",
+  "packageId": "BACKEND-PERFORMANCE-PHASE3-20260809",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "OVERALL_PHASE_3_BP_U07_20260809",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java",
+    "apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogCategoryOwnerIntegrationTest.java",
+    "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java",
+    "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+    "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/ResolvedBomTargets.java",
+    "apps/backend/catering-business-server/modules/inventory/src/test/java/com/catering/v2s/inventory/application/InventoryBomBatchIntegrationTest.java",
+    "apps/backend/catering-business-server/modules/inventory/src/test/java/com/catering/v2s/inventory/application/ResolvedBomTargetsTest.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationVisibilityLookup.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationHierarchyService.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java",
+    "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+    "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java",
+    "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java",
+    "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountPlatformReceiptTest.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java",
+    "contracts/registry/backend-performance-sql-merge-applicability.json",
+    "doc/evidence/platform/2026-08-09-v2s-backend-performance-phase3-package-input.json",
+    "doc/evidence/platform/2026-08-09-v2s-backend-performance-phase3-package-exit.json",
+    "doc/review/platform/2026-08-08-v2s-backend-performance-refactor-design-granularity-manifest.json",
+    "scripts/check/backend-performance-sql-merge-coverage",
+    "scripts/generate/backend-performance-sql-merge-applicability.mjs"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "scopeDisposition": {
+    "BP-U07": "PARTIAL_CLOSED_BY_DEXTER_REBASELINE: M1_COMMAND_68, M3_M4_M5_M6 remain historically evidenced; M2 command is narrowed to the two C5 session-selection commands; M1_READ_58_AND_M2_TASK_READ_58_TRANSFER_TO_BP_U05; remaining 66 commands are NOT_APPLICABLE_WITHOUT_SAME_INVOCATION_SOURCE_PROOF",
+    "BP-U05_TO_BP-U06": "NOT_IMPLEMENTED_OUT_OF_SCOPE",
+    "NUMERIC_OPTIMIZATION_CLAIMS": "BLOCKED_BY_UNMEASURED_196_ROUTE_MATRIX"
+  },
+  "completionStatus": "PARTIAL_CLOSED_BY_DEXTER_REBASELINE",
+  "rebaseline": {
+    "path": "doc/decisions/2026-08-09-v2s-backend-performance-phase3-to-phase4-rebaseline.md",
+    "sha256": "1ff0686885de919c4ed0d1b2721bd447231eb47e8cf3f6592958e710529d9c40",
+    "successorDesignPackageId": "BACKEND-PERFORMANCE-PHASE4-U05-REBASELINE-DESIGN-20260809",
+    "noNumericOptimizationClaim": true
+  },
+  "hookReceiptSetStatus": "TRIM_MODE_DOES_NOT_PROVE_PRE_POST_EXACT_SET_EQUALITY",
+  "dynamicEvidence": [
+    "r5-tc-1786250279541-8720: WorkspaceCapabilityScopeResolverTest 6/0/0, business PASS, cleanup PASS",
+    "r5-tc-1786250374177-10577: ExtensionDefinitionServiceTest 7/0/0, business PASS, cleanup PASS",
+    "r5-tc-1786250132422-5687: CatalogCategoryOwnerIntegrationTest 8/0/0, business PASS, cleanup PASS",
+    "r5-tc-1786249611497-93860: InventoryBomBatchIntegrationTest 2/0/0 plus ResolvedBomTargetsTest 1/0/0, business PASS, cleanup PASS",
+    "r5-tc-1786251377588-7997: WorkspaceRoleServiceTest 4/0/0 plus WorkspaceAccountPlatformReceiptTest 2/0/0, business PASS, cleanup PASS",
+    "r5-tc-1786251869810-17690: WorkspaceInvitationPublicFlowTest 11/0/0, business PASS, cleanup PASS",
+    "r5-tc-1786252165318-23688: OrganizationOwnerServiceTest 22/0/0, business PASS, cleanup PASS"
+  ],
+  "business": "PASS_FOCUSED_OWNER_PROOFS_ONLY",
+  "cleanup": "PASS"
+}

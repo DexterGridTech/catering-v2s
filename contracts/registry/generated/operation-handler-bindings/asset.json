@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "generated-owner-operation-bindings",
+  "owner": "asset",
+  "operationCount": 2,
+  "readCount": 0,
+  "commandCount": 2,
+  "dispatchStrategy": "CLOSED_SWITCH",
+  "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
+  "dynamicDispatch": false,
+  "operations": [
+    {
+      "operationId": "stageOperationsCatalogAsset",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/assets/stage",
+      "normalizedPath": "/operations/catalog-inventory/assets/stage",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.platform.asset.application.StageOperationsCatalogAssetMultipartOperation",
+      "wireRequest": "CatalogAssetStageRequest",
+      "wireResponse": "StagedCatalogAsset",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "stageOperationsCatalogAsset"
+    },
+    {
+      "operationId": "releaseOperationsCatalogStagedAsset",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/assets/{assetRef}/release",
+      "normalizedPath": "/operations/catalog-inventory/assets/{assetRef}/release",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.platform.asset.application.ReleaseOperationsCatalogStagedAssetOperation",
+      "wireRequest": "CatalogAssetReleaseRequest",
+      "wireResponse": "CatalogAssetReleaseReadback",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "releaseOperationsCatalogStagedAsset"
+    }
+  ],
+  "commandContextGroups": {
+    "WORKSPACE_EXECUTION_CONTEXT": [
+      "stageOperationsCatalogAsset",
+      "releaseOperationsCatalogStagedAsset"
+    ]
+  }
+}

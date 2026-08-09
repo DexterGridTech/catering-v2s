@@ -1,6 +1,7 @@
 package com.catering.v2s.platform.iam.application;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -24,9 +25,11 @@ public final class PlatformCommandReceiptService {
         jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(?))", key);
         Receipt prior = jdbc.query("SELECT request_hash, response_json::text FROM platform_iam.platform_command_receipt WHERE idempotency_key=?", statement -> statement.setString(1, key), result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
         if (prior != null) { if (!hash.equals(prior.requestHash())) throw new PlatformIdempotencyConflictException(); return deserialize(prior.responseJson()); }
-        PlatformAuthenticationService.PlatformAdminReadback result = command.get();
-        jdbc.update("INSERT INTO platform_iam.platform_command_receipt (idempotency_key, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?::jsonb, ?)", key, hash, serialize(result), time.currentEpochMillis());
-        return result;
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
+            PlatformAuthenticationService.PlatformAdminReadback result = command.get();
+            jdbc.update("INSERT INTO platform_iam.platform_command_receipt (idempotency_key, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?::jsonb, ?)", key, hash, serialize(result), time.currentEpochMillis());
+            return result;
+        }
     }
     private static String serialize(PlatformAuthenticationService.PlatformAdminReadback value) { return "{" + field("id", value.id().toString()) + "," + field("loginName", value.loginName()) + "," + field("displayName", value.displayName()) + "," + field("mobile", value.mobile()) + "," + field("status", value.status()) + "," + field("builtIn", String.valueOf(value.builtIn())) + "," + field("version", String.valueOf(value.version())) + "," + field("createdAt", String.valueOf(value.createdAtEpochMillis())) + "," + field("updatedAt", String.valueOf(value.updatedAtEpochMillis())) + "," + field("lastLoginAt", value.lastLoginAtEpochMillis() == null ? null : String.valueOf(value.lastLoginAtEpochMillis())) + "," + field("auditSummary", value.auditSummary()) + "}"; }
     private static PlatformAuthenticationService.PlatformAdminReadback deserialize(String json) { try { return new PlatformAuthenticationService.PlatformAdminReadback(UUID.fromString(read(json, "id")), read(json, "loginName"), read(json, "displayName"), nullable(json, "mobile"), read(json, "status"), Boolean.parseBoolean(optionalRead(json, "builtIn", "false")), Long.parseLong(read(json, "version")), Long.parseLong(read(json, "createdAt")), Long.parseLong(read(json, "updatedAt")), nullable(json, "lastLoginAt") == null ? null : Long.valueOf(read(json, "lastLoginAt")), read(json, "auditSummary")); } catch (RuntimeException failure) { throw new PlatformReceiptCorruptException(failure); } }
